@@ -18,12 +18,10 @@ import {
   FlowExitException,
   isInheritedFrom,
   type ModelConstructor,
-  type CreateModelOptions,
   tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
-import { findSelfOrAncestor, findRefHostInfoFromAncestors } from '../utils/refHost';
 import {
   TEMPLATE_LIST_PAGE_SIZE,
   calcHasMore,
@@ -32,6 +30,7 @@ import {
   resolveExpectedResourceInfoByModelChain,
 } from '../utils/templateCompatibility';
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
+import { REF_HOST_CTX_KEY } from '../constants';
 
 type ImporterProps = {
   expectedRootUse?: string | string[];
@@ -185,20 +184,7 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
     if (mode === 'copy') {
       const scoped = createBlockScopedEngine(mountTarget.flowEngine);
       const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
-      if (!root) {
-        throw new Error(`[block-reference] Template target root not found: '${targetUid}'.`);
-      }
-
-      const fragment = root.subModels?.grid;
-      let gridModel: FlowModel | undefined;
-      if (fragment instanceof FlowModel) {
-        gridModel = fragment;
-      } else if (Array.isArray(fragment)) {
-        gridModel = fragment.find((m) => m instanceof FlowModel);
-      }
-      if (!gridModel) {
-        throw new Error('[block-reference] Template fragment is invalid: subModels.grid');
-      }
+      const gridModel = root.subModels?.grid as FlowModel;
 
       const duplicated = await mountTarget.flowEngine.duplicateModel(gridModel.uid);
       const duplicatedUid = duplicated.uid;
@@ -405,20 +391,13 @@ SubModelTemplateImporterModel.define({
       return true;
     }
 
-    // 1) 若处于"字段模板引用"内部（当前正在渲染模板 grid），直接隐藏，避免误清空模板侧字段
-    const hostInfo = findRefHostInfoFromAncestors(ctx.model);
-    const hostRef = hostInfo?.ref;
-    if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
-      return true;
-    }
-
     // 2) 若当前区块是 ReferenceBlockModel 渲染的 target，隐藏 "From template"
     // 因为在 ReferenceBlockModel 内部编辑字段会直接影响被引用的模板
     if (isModelInsideReferenceBlock(blockModel)) {
       return true;
     }
 
-    return blockModel.subModels?.grid?.use === 'ReferenceFormGridModel';
+    return Object.prototype.hasOwnProperty.call(blockModel.context, REF_HOST_CTX_KEY);
   },
   createModelOptions: (ctx: FlowModelContext) => {
     const blockModel = findBlockModel(ctx.model);
@@ -552,7 +531,7 @@ SubModelTemplateImporterModel.registerFlow({
         }
 
         // 固定挂载到 parent.parent（即 grid 的父级 block）
-        let mountTarget = parent.parent;
+        const mountTarget = parent.parent;
         const api = (ctx as FlowContext).api;
         if (!mountTarget) {
           throw new Error(
@@ -578,31 +557,6 @@ SubModelTemplateImporterModel.registerFlow({
         const templateName = (tpl?.name || params?.templateName || '').trim();
         const templateDescription = (tpl?.description || params?.templateDescription || '').trim();
         const mode = String(params?.mode || 'reference');
-
-        if (mode !== 'reference' && mode !== 'copy') {
-          throw new Error(`[block-reference] Invalid template import mode: '${mode}'.`);
-        }
-
-        // 若当前位于"引用片段"内部，则禁止再次 From template，避免误清空模板侧字段
-        const hostInfo = findRefHostInfoFromAncestors(importer);
-        const hostRef = hostInfo?.ref;
-        if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
-          const msg =
-            (ctx as FlowContext).t?.(
-              'This block already references field template, please convert fields to copy first',
-              {
-                ns: [NAMESPACE, 'client'],
-                nsMode: 'fallback',
-              },
-            ) || '当前区块已引用字段模板，请先将引用字段转换为复制';
-          const messageApi = (ctx as FlowContext).message || mountTarget.context.message || importer.context.message;
-          messageApi?.warning?.(msg);
-          throw new FlowExitException(FLOW_KEY, importer.uid, msg);
-        }
-
-        // mountTarget 兜底：如果按层级拿不到目标 subModel，则继续向上查找
-        mountTarget =
-          findSelfOrAncestor(mountTarget, (m) => !!(m.subModels as Record<string, unknown>)?.grid) || mountTarget;
 
         // 禁止跨数据源/数据表使用字段模板（在 UI 侧禁用的同时，这里做一次硬校验，避免绕过）
         const expectedResource = importer.resolveExpectedResourceInfo(ctx as FlowContext, mountTarget);

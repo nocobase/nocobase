@@ -25,8 +25,6 @@ const SETTINGS_STEP_KEY = 'useTemplate';
 /** 标记已添加 host context bridge，避免重复添加 */
 const BRIDGE_MARKER = Symbol.for('nocobase.refGridHostBridge');
 
-export { REF_HOST_CTX_KEY };
-
 export type ReferenceFormGridTargetSettings = {
   /** 模板 uid（flowModelTemplates.uid） */
   templateUid: string;
@@ -36,19 +34,6 @@ export type ReferenceFormGridTargetSettings = {
   targetUid: string;
   /** 从模板根上取片段的路径，当前仅支持 'subModels.grid' */
   targetPath?: string;
-};
-
-type ReferenceHostInfo = {
-  hostUid?: string;
-  hostUse?: string;
-  ref: {
-    templateUid: string;
-    templateName?: string;
-    targetUid: string;
-    targetPath: string;
-    mountSubKey: 'grid';
-    mode: 'reference';
-  };
 };
 
 export class ReferenceFormGridModel extends FlowModel {
@@ -212,7 +197,8 @@ export class ReferenceFormGridModel extends FlowModel {
       if (!root) return undefined;
 
       const host = this.parent as FlowModel | undefined;
-      const hostInfo: ReferenceHostInfo = {
+      root.setParent(host);
+      const hostInfo = {
         hostUid: host?.uid,
         hostUse: host?.use,
         ref: {
@@ -230,8 +216,6 @@ export class ReferenceFormGridModel extends FlowModel {
       let gridModel: FlowModel | undefined;
       if (fragment instanceof FlowModel) {
         gridModel = fragment;
-      } else if (Array.isArray(fragment)) {
-        gridModel = fragment.find((m) => m instanceof FlowModel);
       }
       // 将宿主区块上下文注入到被引用的 grid：
       // - Details 区块字段渲染依赖 ctx.record/resource/blockModel 等（定义在宿主 block context 上）；
