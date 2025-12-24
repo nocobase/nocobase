@@ -59,7 +59,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
 
                 // Delay the update until the page and tab become active
                 const disposer = autorun(() => {
-                  if (ctxRef.current?.pageActive?.value && ctxRef.current?.tabActive?.value) {
+                  if (ctxRef.current?.pageActive?.value || ctxRef.current?.tabActive?.value) {
                     updater();
                     disposer();
                     pendingDisposerRef.current = null;
