@@ -10,6 +10,7 @@
 import { observer as originalObserver, IObserverOptions, ReactFC } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
 import { useFlowContext } from '../FlowContextProvider';
+import { autorun } from '@formily/reactive';
 
 type ObserverComponentProps<P, Options extends IObserverOptions> = Options extends {
   forwardRef: true;
@@ -35,6 +36,13 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
             const tabActive = ctxRef.current?.tabActive?.value;
 
             if (pageActive === false || tabActive === false) {
+              // Delay the update until the page and tab become active
+              const disposer = autorun(() => {
+                if (ctxRef.current?.pageActive?.value && ctxRef.current?.tabActive?.value) {
+                  updater();
+                  disposer();
+                }
+              });
               return;
             }
 
