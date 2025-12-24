@@ -6705,17 +6705,32 @@
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-x64-msvc/-/license-kit-win32-x64-msvc-0.3.5.tgz#bf4635d9b1c28a48c74f61c1cc528d233f2a4d2b"
   integrity sha512-n2AoNdg4wjHhEv28Q+q4Xm/fgRStB3CsyAfImlCW5tHht7pqXZMuG+FsAT7JSjTbg5OuH5YB95Ev2i6GmBeQjA==
 
-<<<<<<< HEAD
-"@nocobase/license-kit@^0.3.0", "@nocobase/license-kit@^0.3.4":
+"@nocobase/license-kit@^0.3.0":
   version "0.3.4"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit/-/license-kit-0.3.4.tgz#efbe800a1a3c9150b41ab711bb3896076727e0f7"
   integrity sha512-MX6dpTwe63QxNZHQvwF9qsJXbc3bdNZxuf0vS1NzEBLUmqNHUZCfPsPBwWAzwD+35cqRNEnIwqPd2HnaAGIPdw==
-=======
+  optionalDependencies:
+    "@nocobase/license-kit-android-arm-eabi" "0.3.4"
+    "@nocobase/license-kit-android-arm64" "0.3.4"
+    "@nocobase/license-kit-darwin-arm64" "0.3.4"
+    "@nocobase/license-kit-darwin-universal" "0.3.4"
+    "@nocobase/license-kit-darwin-x64" "0.3.4"
+    "@nocobase/license-kit-freebsd-x64" "0.3.4"
+    "@nocobase/license-kit-linux-arm-gnueabihf" "0.3.4"
+    "@nocobase/license-kit-linux-arm-musleabihf" "0.3.4"
+    "@nocobase/license-kit-linux-arm64-gnu" "0.3.4"
+    "@nocobase/license-kit-linux-arm64-musl" "0.3.4"
+    "@nocobase/license-kit-linux-riscv64-gnu" "0.3.4"
+    "@nocobase/license-kit-linux-x64-gnu" "0.3.4"
+    "@nocobase/license-kit-linux-x64-musl" "0.3.4"
+    "@nocobase/license-kit-win32-arm64-msvc" "0.3.4"
+    "@nocobase/license-kit-win32-ia32-msvc" "0.3.4"
+    "@nocobase/license-kit-win32-x64-msvc" "0.3.4"
+
 "@nocobase/license-kit@^0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit/-/license-kit-0.3.5.tgz#ca02014a5540a649a39b0bc189ddf38155e7c88c"
   integrity sha512-HdYwlHmdUM7F+QJ5xJHFRVEumHrlCFRaNdR1ulfJT3DM6kEBL4Yu2C9AC72bou+7ylQsGMEQ8C+z6IXrBSYokA==
->>>>>>> next
   optionalDependencies:
     "@nocobase/license-kit-android-arm-eabi" "0.3.5"
     "@nocobase/license-kit-android-arm64" "0.3.5"
