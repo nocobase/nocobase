@@ -390,9 +390,9 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
-  const { flowSettingsEnabled } = useFlowContext();
+  const ctx = useFlowContext();
   // Only render if flowSettings is enabled
-  if (!flowSettingsEnabled) {
+  if (!ctx.flowSettingsEnabled) {
     return <>{props.children}</>;
   }
   if (isModelByIdProps(props)) {
