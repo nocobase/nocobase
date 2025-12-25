@@ -101,7 +101,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
         wrapper: HeaderWrapperComponent,
       },
     };
-    return <SubTableField {...this.props} columns={columns} components={components} />;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
+
+    return <SubTableField {...this.props} columns={columns} components={components} isConfigMode={isConfigMode} />;
   }
   onInit(options: any): void {
     super.onInit(options);

@@ -13,6 +13,7 @@ import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -28,6 +29,7 @@ export function SubTableField(props) {
     allowDisassociation,
     pageSize,
     allowCreate, //acl
+    isConfigMode,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -157,16 +159,31 @@ export function SubTableField(props) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              minHeight: '20px',
             }}
           >
-            <Space size={'middle'}>
-              {!disabled && allowAddNew !== false && (
-                <Button type="link" onClick={handleAdd} disabled={!allowCreate}>
-                  <PlusOutlined /> {t('Add new')}
-                </Button>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <Button type="link" onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}>
+            <Space>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={handleAdd} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button
+                  type="link"
+                  onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}
+                  disabled={disabled}
+                >
                   <ZoomInOutlined /> {t('Select record')}
                 </Button>
               )}
