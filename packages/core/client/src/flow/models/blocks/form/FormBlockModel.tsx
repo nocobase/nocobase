@@ -118,73 +118,60 @@ export class FormBlockModel<
   setStepParams(allParams: Record<string, any>): void;
   setStepParams(flowKeyOrAllParams: any, stepKeyOrStepsParams?: any, params?: any): void {
     const grid = this.subModels.grid;
-    const emitChanged = () => this.emitter?.emit?.('onStepParamsChanged');
 
-    if (typeof flowKeyOrAllParams === 'string') {
-      const flowKey = flowKeyOrAllParams;
-      if (typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
-        const stepKey = stepKeyOrStepsParams;
-        if (isGridDelegatedStep(flowKey, stepKey) && grid) {
-          grid.setStepParams(flowKey, stepKey, params);
-          emitChanged();
-          return;
+    // 分离单个 flow 的 steps：委托部分直接写入 grid，返回本地部分
+    const splitFlowSteps = (flowKey: string, stepsParams: Record<string, any>): Record<string, any> => {
+      const delegatedKeys = GRID_DELEGATED_STEP_KEYS[flowKey];
+      if (!delegatedKeys || !grid) return stepsParams;
+      const localSteps: Record<string, any> = {};
+      for (const [k, v] of Object.entries(stepsParams)) {
+        if (delegatedKeys.has(k)) {
+          grid.setStepParams(flowKey, k, v);
+        } else {
+          localSteps[k] = v;
         }
-        super.setStepParams(flowKey, stepKey, params);
-        return;
       }
-      if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
-        const stepsParams = stepKeyOrStepsParams as Record<string, any>;
-        const delegatedKeys = GRID_DELEGATED_STEP_KEYS[flowKey];
-        const localSteps: Record<string, any> = {};
-        let didDelegate = false;
-        for (const [k, v] of Object.entries(stepsParams)) {
-          if (delegatedKeys?.has(k) && grid) {
-            grid.setStepParams(flowKey, k, v);
-            didDelegate = true;
-          } else {
-            localSteps[k] = v;
-          }
-        }
-        if (Object.keys(localSteps).length > 0) {
-          super.setStepParams(flowKey, localSteps);
-          return;
-        }
-        if (didDelegate) {
-          emitChanged();
-        }
-        return;
+      return localSteps;
+    };
+
+    // 形式1: (flowKey, stepKey, params)
+    if (typeof flowKeyOrAllParams === 'string' && typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
+      if (isGridDelegatedStep(flowKeyOrAllParams, stepKeyOrStepsParams) && grid) {
+        grid.setStepParams(flowKeyOrAllParams, stepKeyOrStepsParams, params);
+      } else {
+        super.setStepParams(flowKeyOrAllParams, stepKeyOrStepsParams, params);
       }
+      return;
     }
 
+    // 形式2: (flowKey, stepsParams)
+    if (
+      typeof flowKeyOrAllParams === 'string' &&
+      typeof stepKeyOrStepsParams === 'object' &&
+      stepKeyOrStepsParams !== null
+    ) {
+      const localSteps = splitFlowSteps(flowKeyOrAllParams, stepKeyOrStepsParams);
+      if (Object.keys(localSteps).length > 0) {
+        super.setStepParams(flowKeyOrAllParams, localSteps);
+      }
+      return;
+    }
+
+    // 形式3: (allParams)
     if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
-      const allParams = flowKeyOrAllParams as Record<string, any>;
       const localAll: Record<string, any> = {};
-      let didDelegate = false;
-      for (const [flowKey, steps] of Object.entries(allParams)) {
-        if (!GRID_DELEGATED_STEP_KEYS[flowKey] || typeof steps !== 'object' || steps === null || !grid) {
+      for (const [flowKey, steps] of Object.entries(flowKeyOrAllParams)) {
+        if (typeof steps !== 'object' || steps === null) {
           localAll[flowKey] = steps;
           continue;
         }
-        const delegatedKeys = GRID_DELEGATED_STEP_KEYS[flowKey];
-        const localSteps: Record<string, any> = {};
-        for (const [k, v] of Object.entries(steps as Record<string, any>)) {
-          if (delegatedKeys.has(k)) {
-            grid.setStepParams(flowKey, k, v);
-            didDelegate = true;
-          } else {
-            localSteps[k] = v;
-          }
-        }
+        const localSteps = splitFlowSteps(flowKey, steps as Record<string, any>);
         if (Object.keys(localSteps).length > 0) {
           localAll[flowKey] = localSteps;
         }
       }
       if (Object.keys(localAll).length > 0) {
         super.setStepParams(localAll);
-        return;
-      }
-      if (didDelegate) {
-        emitChanged();
       }
     }
   }
