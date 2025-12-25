@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
+import { ActionWithoutPermission } from '../../base/ActionModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -157,6 +158,7 @@ const ArrayNester = ({
 }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
@@ -251,20 +253,25 @@ const ArrayNester = ({
               );
             })}
             <Space>
-              {allowAddNew && (
-                <Button
-                  type="link"
-                  onClick={() => allowCreate && add({ isNew: true })}
-                  disabled={disabled || !allowCreate}
-                >
-                  <PlusOutlined />
-                  {t('Add new')}
-                </Button>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick()} style={{ marginTop: 8 }}>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button type="link" onClick={() => onSelectExitRecordClick()} disabled={disabled}>
                   <ZoomInOutlined /> {t('Select record')}
-                </a>
+                </Button>
               )}
             </Space>
           </>

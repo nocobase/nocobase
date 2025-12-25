@@ -159,7 +159,11 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         {...mergedProps}
         name={fieldPath}
         validateFirst={true}
-        disabled={this.props.disabled || (!_.isEmpty(record) && !record.isNew && this.props.aclDisabled)}
+        disabled={
+          this.props.disabled ||
+          (!_.isEmpty(record) && !record.isNew && this.props.aclDisabled) ||
+          (!_.isEmpty(record) && record.isNew && this.props.aclCreateDisabled)
+        }
       >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
@@ -233,6 +237,22 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'view',
           });
+          if (ctx.prefixFieldPath && ctx.currentObject) {
+            //子表单下的新增
+            const createFieldAclResult = await ctx.aclCheck({
+              dataSourceKey: ctx.dataSource?.key,
+              resourceName: ctx.collectionField?.collectionName,
+              fields: [ctx.collectionField.name],
+              actionName: 'create',
+            });
+
+            if (!createFieldAclResult) {
+              ctx.model.setProps({
+                aclCreateDisabled: true,
+              });
+            }
+          }
+
           if (!resultView) {
             ctx.model.hidden = true;
             ctx.model.forbidden = {
@@ -260,7 +280,8 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'update',
           });
-          if (!result) {
+          if (!result && !ctx.currentObject?.isStored) {
+            // 子表单中选择的记录
             ctx.model.hidden = true;
             ctx.model.forbidden = {
               actionName: blockActionName,

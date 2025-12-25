@@ -126,8 +126,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const model: any = useFlowModel();
-  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
-
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const QuickAddContent = ({ searchText }) => {
     return (
