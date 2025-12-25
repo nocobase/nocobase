@@ -15,6 +15,7 @@ export function getDefaultOperator(model: any) {
     model.operator ||
     model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value ||
     model.subModels.field?.operator ||
+    model.collectionField?.filterable?.operators?.[0]?.value ||
     '$includes'
   );
 }

@@ -17,8 +17,8 @@ export class FilterFormSubmitActionModel extends FilterFormActionModel {
     type: 'primary',
   };
 
-  onMount(): void {
-    super.onMount();
+  onInit(options): void {
+    super.onInit(options);
     this.context.blockModel.autoTriggerFilter = false;
   }
 
