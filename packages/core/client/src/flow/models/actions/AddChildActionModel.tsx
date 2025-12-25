@@ -20,6 +20,14 @@ export class AddChildActionModel extends PopupActionModel {
   getAclActionName() {
     return 'create';
   }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('association', {
+      get: () => {
+        return this.context.blockModel.dataSource.getAssociation(`${this.context.blockModel.collection.name}.children`);
+      },
+    });
+  }
 }
 
 AddChildActionModel.registerFlow({
@@ -28,10 +36,12 @@ AddChildActionModel.registerFlow({
     addChildInit: {
       async handler(ctx, params) {
         ctx.model.onClick = (e) => {
+          ctx.resource.setSourceId(ctx.record.id);
+
           ctx.model.dispatchEvent('click', {
             event: e,
-            parentRecord: ctx.record,
             ...ctx.inputArgs,
+            filterByTk: null,
           });
         };
       },
