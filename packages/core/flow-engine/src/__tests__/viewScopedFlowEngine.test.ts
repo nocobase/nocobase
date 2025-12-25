@@ -18,6 +18,7 @@ import { APIClient as SDKApiClient } from '@nocobase/sdk';
 import { FlowEngine } from '../flowEngine';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { FlowModel } from '../models';
+import type { IFlowModelRepository } from '../types';
 
 describe('ViewScopedFlowEngine', () => {
   it('shares global actions/events and model classes with parent', async () => {
@@ -118,6 +119,54 @@ describe('ViewScopedFlowEngine', () => {
     expect((res as any).context.foo).toBe(123);
   });
 
+  it('hydrates sub-model from previous engine to avoid repository requests', async () => {
+    const parent = new FlowEngine();
+    const repo: IFlowModelRepository = {
+      findOne: vi.fn(async () => null),
+      save: vi.fn(async () => ({ uid: 'saved' }) as any),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => ({}) as any),
+      duplicate: vi.fn(async () => null),
+    };
+    parent.setModelRepository(repo);
+
+    const parentModel = parent.createModel({
+      uid: 'parent-uid',
+      use: 'FlowModel',
+      subModels: {
+        page: {
+          uid: 'page-uid',
+          use: 'FlowModel',
+          stepParams: { a: 1 },
+        },
+      },
+    });
+    const parentPage = (parentModel.subModels as any).page as FlowModel;
+
+    const scoped = createViewScopedEngine(parent);
+
+    const page = await scoped.loadOrCreateModel({
+      async: true,
+      parentId: 'parent-uid',
+      subKey: 'page',
+      subType: 'object',
+      use: 'FlowModel',
+    });
+
+    expect(page).toBeTruthy();
+    expect(page?.uid).toBe('page-uid');
+    expect(page).not.toBe(parentPage);
+
+    expect(repo.findOne).not.toHaveBeenCalled();
+    expect(repo.save).not.toHaveBeenCalled();
+
+    // Ensure mounted locally so subsequent lookups by parentId/subKey hit memory.
+    expect(scoped.getModel('parent-uid')).toBeTruthy();
+    const byParent = scoped.findModelByParentId('parent-uid', 'page');
+    expect(byParent?.uid).toBe('page-uid');
+    expect(scoped.getModel('page-uid')).toBe(page);
+  });
+
   it('uses local context and delegates to parent context', () => {
     const parent = new FlowEngine();
     const child = createViewScopedEngine(parent);
@@ -130,11 +179,27 @@ describe('ViewScopedFlowEngine', () => {
     parent.context.defineProperty('api', { value: api });
     const parentCtx = parent.context;
     const childCtx = child.context;
-    expect(Object.is(childCtx, parentCtx)).toBe(true);
+    expect(Object.is(childCtx, parentCtx)).toBe(false);
+    // child context should bind to scoped engine (not parent engine)
+    expect((child.context as any).engine).toBe(child);
     // define a value on parent context
     parent.context.defineProperty('foo', { value: 42 });
     // child context should be able to read via delegate chain
     expect((child.context as any).foo).toBe(42);
+
+    // define a value on child context should not affect parent context
+    child.context.defineProperty('bar', { value: 7 });
+    expect((child.context as any).bar).toBe(7);
+    expect((parent.context as any).bar).toBeUndefined();
+
+    // engine-bound helpers should still work via scoped engine (shared registries through proxy)
+    parent.registerActions({
+      ping: {
+        name: 'ping',
+        handler: () => 'pong',
+      },
+    });
+    expect(child.context.getAction('ping')).toBeDefined();
   });
 
   it('delegates saveModel to parent (concurrency gate sharing)', async () => {
