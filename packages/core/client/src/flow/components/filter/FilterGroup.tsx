@@ -8,10 +8,10 @@
  */
 
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { observer } from '@formily/reactive-react';
 import { Button, Select, Space, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import React, { FC, ReactNode } from 'react';
+import { observer } from '@nocobase/flow-engine';
 
 const itemKeyMap = new WeakMap<Record<string, any>, string>();
 let itemKeyCounter = 0;

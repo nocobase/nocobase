@@ -281,6 +281,55 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(flows.has('eventSettings')).toBe(true);
   });
 
+  it('delegates layout/linkageRules stepParams to grid model', async () => {
+    const model = await setupFormModel();
+    const engine = model.flowEngine as FlowEngine;
+
+    const save = vi.fn(async (m: any) => ({ uid: m.uid }));
+    engine.setModelRepository({
+      findOne: vi.fn(async () => null),
+      save,
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+    } as any);
+
+    const grid = engine.createModel({
+      uid: 'grid-1',
+      use: 'FlowModel',
+      parentId: model.uid,
+      subKey: 'grid',
+      subType: 'object',
+    });
+    model.setSubModel('grid', grid as any);
+
+    const layoutParams = {
+      layout: 'horizontal',
+      labelAlign: 'right',
+      labelWidth: 160,
+      labelWrap: false,
+      colon: false,
+    };
+    model.setStepParams('formModelSettings', 'layout', layoutParams);
+    model.setStepParams('eventSettings', 'linkageRules', { value: [{ key: 'r1' }] });
+
+    expect(grid.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(grid.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
+
+    // model reads delegated params from grid first
+    expect(model.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(model.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
+
+    // model no longer stores these params locally
+    expect((model.stepParams as any)?.formModelSettings?.layout).toBeUndefined();
+    expect((model.stepParams as any)?.eventSettings?.linkageRules).toBeUndefined();
+
+    await model.saveStepParams();
+    const savedUids = save.mock.calls.map((c) => c[0]?.uid).sort();
+    expect(savedUids).toContain('form-1');
+    expect(savedUids).toContain('grid-1');
+  });
+
   it('builds non-empty contextParams for ctx.formValues.* deep association path', async () => {
     const model = await setupFormModel();
     // 注入 api mock 到引擎上下文，拦截 variables:resolve 的请求

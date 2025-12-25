@@ -1,13 +1,6 @@
-
-
 import { useFieldSchema } from '@formily/react';
-import { observer } from '@formily/reactive-react';
-import {
-  SchemaComponent,
-  ISchema,
-  Plugin,
-  DragHandler
-} from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
+import { SchemaComponent, ISchema, Plugin, DragHandler } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 import React from 'react';
@@ -108,7 +101,7 @@ const Demo = () => {
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

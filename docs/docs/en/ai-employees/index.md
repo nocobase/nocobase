@@ -2,34 +2,64 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-# AI Employees · Getting Started
+# Overview
 
-In NocoBase, AI Employees are not chatbots or isolated agents — they are intelligent colleagues seamlessly integrated into your business system, capable of understanding business context and directly executing tasks.
+![clipboard-image-1766653060](https://static-docs.nocobase.com/clipboard-image-1766653060.png)
 
-They appear wherever you need them — next to tables and forms — so you can summon them effortlessly.
+AI Employees are a set of intelligent agents deeply integrated into the NocoBase business system.
+
+Unlike ordinary Chatbots, AI Employees are the "anthropomorphic colleagues" of an enterprise. They are not only capable of natural language conversation but also possess the following core characteristics:
+
+*   **Context Awareness**: Capable of understanding the current page, selected data rows, and system table structure definitions.
+*   **Actionable**: Capable of executing actual business operations, such as querying databases, analyzing emails, filling out forms, configuring charts, writing JS modules, triggering workflows, etc.
+*   **Persona**: Each AI Employee has a specific professional role (such as "Data Analyst", "Translation Assistant", "Frontend Engineer", etc.) and is equipped with corresponding skills.
 
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+## Core Concepts
+
+Before using AI Employees, understanding the following core concepts will help you better configure and manage them:
+
+*   **AI Employee**: An independent intelligent colleague. It consists of **Role Setting** (Persona), **Model (LLM)**, and **Tools** (Skills).
+*   **LLM (Large Language Model)**: The "brain" of the AI Employee. Supports mainstream models like OpenAI (GPT-4), Anthropic (Claude 3), etc., determining the AI's understanding and reasoning capabilities.
+*   **Tool**: Functional units provided to the AI for execution, equivalent to the AI's hands and feet. For example, `webSearch` (Web Search), `queryDatabase` (Query Database).
+*   **Context**: The ability of the AI Employee to perceive its environment. Includes the current page structure, selected data rows, form field definitions, etc., without the need for manual copy-pasting by the user.
+*   **Knowledge Base / RAG**: The "long-term memory" or "reference book" of the AI Employee. Through RAG (Retrieval-Augmented Generation) technology, you can upload internal enterprise documents such as PDFs and Word files, allowing the AI to prioritize these materials when answering questions.
+*   **Vector Store**: Technical infrastructure used to support the Knowledge Base. It slices documents and converts them into vectors for semantic search.
+*   **Chat**: A complete interaction process between the user and the AI Employee. The system saves chat history so the AI can understand the context.
 
 
-You can also summon them from the employee list at the bottom-right corner of the page.
+## Entry Points
 
+You can Summon them from the shortcut employee list in the bottom-right corner.
 
 ![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
 
 
-They automatically retrieve data as context — for example, **Viz** beside a table block automatically gets the data from the table and calls appropriate tools to process it. This means you no longer need to copy data to a chatbot.
+You can also Summon them casually next to Blocks, such as Table Blocks, Form Blocks, Chart Blocks, Code Blocks, etc.
+
+![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+
+
+They automatically retrieve data as Context. For example, **Viz** on a Table Block automatically retrieves data from the table and calls appropriate Tools to process it. This means you don't need to copy this data to a Chatbot.
 
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.13.35-2025-11-02-12-13-46.mp4" type="video/mp4"></video>
 
-They can also automatically understand page structures as context — for instance, **Dex** beside a form block automatically gets the form’s field structure and calls the right tools to operate on the page. This means you don’t need to copy data back from a chatbot.
+They can also automatically retrieve page structure as Context. For example, **Dex** on a Form Block automatically retrieves the field structure of the form and calls appropriate Tools to operate on the page. This means you don't need to copy data back from a Chatbot.
 
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.16.07-2025-11-02-12-16-21.mp4" type="video/mp4"></video>
 
-You can also directly select elements on the page and send them to an AI Employee, allowing them to extract the corresponding data and structure automatically.
+You can also directly select Blocks on the page and send them to the AI Employee, who will extract the corresponding data and page structure from them.
 
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.17.25-2025-11-02-12-17-44.mp4" type="video/mp4"></video>
 
-You can preset tasks for each AI Employee in the current location, allowing users to trigger them with a single click — no input required.
+
+## Shortcuts（Tasks）
+
+You can preset common Tasks for each AI Employee based on their current location, allowing you to start working with a single click—fast and convenient.
 
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
+
+
+## Installation
+
+AI Employees is a built-in plugin of NocoBase, ready to use out of the box without separate installation.

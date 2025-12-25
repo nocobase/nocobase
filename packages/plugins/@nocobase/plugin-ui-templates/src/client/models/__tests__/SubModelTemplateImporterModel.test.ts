@@ -40,11 +40,6 @@ describe('SubModelTemplateImporterModel', () => {
       parentId: grid.uid,
       subKey: 'items',
       subType: 'array',
-      props: {
-        mountToParentLevel: 1,
-        defaultSourcePath: 'subModels.grid',
-        defaultMountSubKey: 'grid',
-      },
     });
     importer.setParent(grid);
 
@@ -76,8 +71,6 @@ describe('SubModelTemplateImporterModel', () => {
     expect(saved.mode).toBe('reference');
     expect(saved.targetUid).toBe('tpl-root');
     expect(saved.templateName).toBe('Template 1');
-    expect(saved.targetPath).toBe('subModels.grid');
-    expect(saved.mountSubKey).toBe('grid');
   });
 
   it('filters by expectedRootUse and disables mismatched dataSource/collection', async () => {
@@ -307,11 +300,6 @@ describe('SubModelTemplateImporterModel', () => {
       parentId: grid.uid,
       subKey: 'items',
       subType: 'array',
-      props: {
-        mountToParentLevel: 1,
-        defaultSourcePath: 'subModels.grid',
-        defaultMountSubKey: 'grid',
-      },
     });
     grid.addSubModel('items', importer);
 
@@ -340,6 +328,86 @@ describe('SubModelTemplateImporterModel', () => {
 
     expect(viewer.dialog).not.toHaveBeenCalled();
     expect(view.close).not.toHaveBeenCalled();
+  });
+
+  it('prompts confirm when details grid has existing items', async () => {
+    const engine = new FlowEngine();
+
+    class DetailsBlockModel extends FlowModel {}
+    class DetailsGridModel extends FlowModel {}
+    class DummyItemModel extends FlowModel {}
+    class FormItemModel extends FlowModel {}
+    class FormCustomItemModel extends FlowModel {}
+    class FormJSFieldItemModel extends FlowModel {}
+
+    engine.registerModels({
+      DetailsBlockModel,
+      DetailsGridModel,
+      DummyItemModel,
+      FormItemModel,
+      FormCustomItemModel,
+      FormJSFieldItemModel,
+      SubModelTemplateImporterModel,
+    });
+
+    const block = engine.createModel<DetailsBlockModel>({ uid: 'host-details', use: 'DetailsBlockModel' });
+    const grid = engine.createModel<DetailsGridModel>({
+      uid: 'host-grid',
+      use: 'DetailsGridModel',
+      parentId: block.uid,
+      subKey: 'grid',
+      subType: 'object',
+    });
+    block.setSubModel('grid', grid);
+
+    const dummy = engine.createModel<DummyItemModel>({
+      uid: 'dummy-item',
+      use: 'DummyItemModel',
+      parentId: grid.uid,
+      subKey: 'items',
+      subType: 'array',
+    });
+    grid.addSubModel('items', dummy);
+
+    const importer = engine.createModel<SubModelTemplateImporterModel>({
+      uid: 'importer-1',
+      use: 'SubModelTemplateImporterModel',
+      parentId: grid.uid,
+      subKey: 'items',
+      subType: 'array',
+    });
+    grid.addSubModel('items', importer);
+
+    const flow: any = importer.getFlow('subModelTemplateImportSettings');
+    const step: any = flow?.getStep?.('selectTemplate')?.serialize?.();
+    expect(typeof step?.beforeParamsSave).toBe('function');
+
+    const viewer = {
+      dialog: vi.fn((opts: any) => {
+        // 默认模拟用户关闭弹窗 => 视为取消
+        opts?.onClose?.();
+      }),
+    };
+    const view = { close: vi.fn() };
+    const ctx: any = {
+      model: importer,
+      api: {
+        resource: () => ({
+          get: async () => ({ data: { data: { uid: 'tpl-1', name: 'Template 1', targetUid: 'tpl-root' } } }),
+        }),
+      },
+      viewer,
+      view,
+      t: (k: string) => k,
+      message: { warning: vi.fn(), error: vi.fn() },
+    };
+
+    const params: any = { templateUid: 'tpl-1', mode: 'reference' };
+    importer.setStepParams('subModelTemplateImportSettings', 'selectTemplate', params);
+    await expect(step.beforeParamsSave(ctx, params)).rejects.toBeTruthy();
+
+    expect(view.close).toHaveBeenCalled();
+    expect(viewer.dialog).toHaveBeenCalled();
   });
 
   it('waits parent grid saveStepParams before replaceModel save', async () => {
@@ -411,11 +479,6 @@ describe('SubModelTemplateImporterModel', () => {
       parentId: grid.uid,
       subKey: 'items',
       subType: 'array',
-      props: {
-        mountToParentLevel: 1,
-        defaultSourcePath: 'subModels.grid',
-        defaultMountSubKey: 'grid',
-      },
       stepParams: {
         subModelTemplateImportSettings: {
           selectTemplate: {
@@ -423,8 +486,6 @@ describe('SubModelTemplateImporterModel', () => {
             targetUid: 'tpl-root',
             templateName: 'Template 1',
             mode: 'reference',
-            targetPath: 'subModels.grid',
-            mountSubKey: 'grid',
           },
         },
       },

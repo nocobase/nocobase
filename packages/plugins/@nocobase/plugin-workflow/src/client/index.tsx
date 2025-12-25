@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Plugin, useCompile, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import MobileManager from '@nocobase/plugin-mobile/client';

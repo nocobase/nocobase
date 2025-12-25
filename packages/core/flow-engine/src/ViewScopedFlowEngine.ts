@@ -27,7 +27,6 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
   if (parent.modelRepository) {
     local.setModelRepository(parent.modelRepository);
   }
-  local.context.addDelegate(parent.context);
 
   // 视图引擎关闭时，主动释放本地调度器以避免残留任务与引用
   const originalUnlink = local.unlinkFromStack.bind(local);
@@ -41,6 +40,7 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
   const localOnly = new Set<keyof FlowEngine | string>([
     '_modelInstances',
     '_applyFlowCache',
+    '_flowContext',
     'executor',
     'context',
     'previousEngine',
@@ -87,5 +87,11 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
 
   // 建立 previous/next 链表指针，表示视图栈关系
   local.linkAfter(parent);
-  return new Proxy(local, handler) as FlowEngine;
+  const scoped = new Proxy(local, handler) as FlowEngine;
+  // FlowEngine 构造时会提前创建 context（FlowSettings 里会用到），因此这里需要“重绑定”：
+  // 让 scopedEngine.context.engine 指向 proxy（scoped），否则 ctx.engine 会落到 local 实例上导致全局注册不可见。
+  scoped.context.defineProperty('engine', { value: scoped });
+  // 委托父级上下文能力
+  scoped.context.addDelegate(parent.context);
+  return scoped;
 }

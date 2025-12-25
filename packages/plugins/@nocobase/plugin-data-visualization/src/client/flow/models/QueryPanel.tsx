@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ObjectField, Field, connect, useForm, observer } from '@formily/react';
+import { ObjectField, Field, connect, useForm } from '@formily/react';
 import React, { useState } from 'react';
 import { SQLEditor } from './SQLEditor';
 import { Radio, Button, Space } from 'antd';
@@ -15,7 +15,7 @@ import { useT } from '../../locale';
 import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined, RightSquareOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
 import { ResultPanel } from './ResultPanel';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { configStore } from './config-store';
 import { validateQuery } from './QueryBuilder.service';
 

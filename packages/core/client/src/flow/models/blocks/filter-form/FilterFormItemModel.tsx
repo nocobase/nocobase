@@ -21,6 +21,7 @@ import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
+import { FilterManager } from '../filter-manager';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
@@ -145,6 +146,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   operator: string;
+  mounted = false;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
 
@@ -171,6 +173,11 @@ export class FilterFormItemModel extends FilterableItemModel<{
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
   }
 
+  onMount(): void {
+    super.onMount();
+    this.mounted = true;
+  }
+
   onUnmount() {
     super.onUnmount();
     // 取消防抖函数的执行
@@ -178,11 +185,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   doFilter() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   doReset() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   /**
@@ -190,9 +199,15 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const rawValue = this.subModels.field.getFilterValue
+    const fieldValue = this.subModels.field.getFilterValue
       ? this.subModels.field.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
+
+    let rawValue = fieldValue;
+
+    if (!this.mounted) {
+      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+    }
 
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
@@ -204,6 +219,10 @@ export class FilterFormItemModel extends FilterableItemModel<{
     }
 
     return rawValue;
+  }
+
+  getDefaultValue() {
+    return this.getStepParams('filterFormItemSettings', 'initialValue')?.defaultValue;
   }
 
   /**
