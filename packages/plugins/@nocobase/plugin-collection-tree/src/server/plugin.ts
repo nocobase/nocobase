@@ -82,6 +82,7 @@ class PluginCollectionTreeServer extends Plugin {
           // after remove
           this.db.on(`${collection.name}.afterBulkUpdate`, async (options) => {
             const tk = collection.filterTargetKey as string;
+            const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
             if (!(options.where && options.where[tk])) {
               return;
             }
@@ -92,6 +93,10 @@ class PluginCollectionTreeServer extends Plugin {
               transaction: options.transaction,
             });
             for (const model of instances) {
+              // only update parentId and filterTargetKey
+              if (!(model._changed.has(tk) || model._changed.has(parentForeignKey))) {
+                continue;
+              }
               await this.updateTreePath(model, collection, name, options.transaction);
             }
           });
