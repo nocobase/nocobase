@@ -29,8 +29,8 @@ const useCollections = (collections: CollectionDataType[]) => {
         collection.fields?.map((field) => {
           const fieldInterface = fim.getFieldInterface(field.interface);
           if (fieldInterface) {
-            field.type = fieldInterface.default?.type || field.type;
-            field.uiSchema = fieldInterface.default?.uiSchema || field.uiSchema;
+            field.type = field.type || fieldInterface.default?.type;
+            field.uiSchema = field.uiSchema || fieldInterface.default?.uiSchema;
           }
           field.uiSchema = {
             ...field.uiSchema,
