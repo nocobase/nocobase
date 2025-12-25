@@ -232,7 +232,7 @@ SubTableFieldModel.registerFlow({
   },
   steps: {
     openView: {
-      title: tExpr('Edit popup'),
+      title: tExpr('Edit select record popup'),
       hideInSettings(ctx) {
         const allowSelectExistingRecord = ctx.model.getStepParams?.(
           'subTableColumnSettings',
