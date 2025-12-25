@@ -10,7 +10,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
-import { observer } from '@formily/reactive-react';
 import {
   VariableInput,
   type MetaTreeNode,
@@ -18,6 +17,7 @@ import {
   useFlowViewContext,
   parseValueToPath,
   FlowModel,
+  observer,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';

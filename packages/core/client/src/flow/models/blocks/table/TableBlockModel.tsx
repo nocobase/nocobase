@@ -10,7 +10,6 @@
 import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
 import {
   AddSubModelButton,
   autorun,
@@ -26,6 +25,7 @@ import {
   observable,
   useFlowContext,
   useFlowEngine,
+  observer,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Table } from 'antd';
 import classNames from 'classnames';

@@ -11,10 +11,9 @@ import React from 'react';
 import { DownOutlined } from '@ant-design/icons';
 import type { ButtonProps } from 'antd/es/button';
 import { Button, InputNumber } from 'antd';
-import { observer } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { tExpr, useFlowModel } from '@nocobase/flow-engine';
+import { observer, tExpr, useFlowModel } from '@nocobase/flow-engine';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 // 使用observable创建响应式状态

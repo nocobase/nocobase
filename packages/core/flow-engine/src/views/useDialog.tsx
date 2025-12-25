@@ -173,8 +173,9 @@ export function useDialog() {
       },
     );
 
+    const key = config?.inputArgs?.viewUid || `page-${uuid}`;
     const dialog = (
-      <FlowEngineProvider engine={scopedEngine}>
+      <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DialogWithContext />
         </FlowViewContextProvider>

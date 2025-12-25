@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
 import { Card, Collapse, Empty } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { FlowModel } from '../../../../models';
@@ -15,6 +14,7 @@ import { StepDefinition } from '../../../../types';
 import { shouldHideStepInSettings } from '../../../../utils';
 import { FlowSettings } from './FlowSettings';
 import { FlowDefinition } from '../../../../FlowDefinition';
+import { observer } from '../../../../reactive';
 
 const { Panel } = Collapse;
 

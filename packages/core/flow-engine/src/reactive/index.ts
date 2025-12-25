@@ -7,11 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@nocobase/flow-engine';
-
-export const KanbanCardViewer: any = observer(
-  (props: any) => {
-    return props.children;
-  },
-  { displayName: 'KanbanCardViewer' },
-);
+export * from '@formily/reactive';
+export { observer } from './observer';

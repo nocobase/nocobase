@@ -8,10 +8,10 @@
  */
 
 import React, { useRef } from 'react';
-import { connect, mapProps, useForm, observer } from '@formily/react';
+import { connect, mapProps, useForm } from '@formily/react';
 import { Select, Form } from 'antd';
 import { CodeEditor, CodeEditorHandle } from '../components/CodeEditor';
-import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
+import { FlowContextSelector, observer, useFlowContext } from '@nocobase/flow-engine';
 import { useDataSourceManager, useCompile, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { useT } from '../../locale';
 
