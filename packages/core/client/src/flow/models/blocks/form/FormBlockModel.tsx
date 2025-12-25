@@ -31,6 +31,15 @@ type DefaultCollectionBlockModelStructure = {
 };
 
 type CustomFormBlockModelClassesEnum = {};
+
+const GRID_DELEGATED_STEP_KEYS: Record<string, Set<string>> = {
+  formModelSettings: new Set(['layout']),
+  eventSettings: new Set(['linkageRules']),
+};
+
+function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
+  return !!GRID_DELEGATED_STEP_KEYS[flowKey]?.has(stepKey);
+}
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
@@ -64,6 +73,127 @@ export class FormBlockModel<
 
   setFieldValue(fieldName: string, value: any) {
     this.form.setFieldValue(fieldName, value);
+  }
+
+  public async onDispatchEventStart(eventName: string, options?: any, inputArgs?: Record<string, any>): Promise<void> {
+    if (eventName === 'beforeRender') {
+      const grid = this.subModels.grid;
+      if (grid) {
+        await grid.dispatchEvent('beforeRender', inputArgs, { useCache: options?.useCache });
+      }
+    }
+    await super.onDispatchEventStart?.(eventName, options, inputArgs);
+  }
+
+  getStepParams(flowKey: string, stepKey: string): any | undefined;
+  getStepParams(flowKey: string): Record<string, any> | undefined;
+  getStepParams(): Record<string, any>;
+  getStepParams(flowKey?: string, stepKey?: string): any {
+    const grid = this.subModels.grid;
+
+    if (flowKey && stepKey && isGridDelegatedStep(flowKey, stepKey) && grid) {
+      const fromGrid = grid.getStepParams(flowKey, stepKey);
+      if (typeof fromGrid !== 'undefined') {
+        return fromGrid;
+      }
+      return super.getStepParams(flowKey, stepKey);
+    }
+
+    if (flowKey && !stepKey && GRID_DELEGATED_STEP_KEYS[flowKey] && grid) {
+      const base = (super.getStepParams(flowKey) || {}) as Record<string, any>;
+      const fromGrid = (grid.getStepParams(flowKey) || {}) as Record<string, any>;
+      for (const k of GRID_DELEGATED_STEP_KEYS[flowKey]) {
+        if (Object.prototype.hasOwnProperty.call(fromGrid, k) && typeof fromGrid[k] !== 'undefined') {
+          base[k] = fromGrid[k];
+        }
+      }
+      return base;
+    }
+
+    return super.getStepParams(flowKey, stepKey);
+  }
+
+  setStepParams(flowKey: string, stepKey: string, params: any): void;
+  setStepParams(flowKey: string, stepParams: Record<string, any>): void;
+  setStepParams(allParams: Record<string, any>): void;
+  setStepParams(flowKeyOrAllParams: any, stepKeyOrStepsParams?: any, params?: any): void {
+    const grid = this.subModels.grid;
+    const emitChanged = () => this.emitter?.emit?.('onStepParamsChanged');
+
+    if (typeof flowKeyOrAllParams === 'string') {
+      const flowKey = flowKeyOrAllParams;
+      if (typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
+        const stepKey = stepKeyOrStepsParams;
+        if (isGridDelegatedStep(flowKey, stepKey) && grid) {
+          grid.setStepParams(flowKey, stepKey, params);
+          emitChanged();
+          return;
+        }
+        super.setStepParams(flowKey, stepKey, params);
+        return;
+      }
+      if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
+        const stepsParams = stepKeyOrStepsParams as Record<string, any>;
+        const delegatedKeys = GRID_DELEGATED_STEP_KEYS[flowKey];
+        const localSteps: Record<string, any> = {};
+        let didDelegate = false;
+        for (const [k, v] of Object.entries(stepsParams)) {
+          if (delegatedKeys?.has(k) && grid) {
+            grid.setStepParams(flowKey, k, v);
+            didDelegate = true;
+          } else {
+            localSteps[k] = v;
+          }
+        }
+        if (Object.keys(localSteps).length > 0) {
+          super.setStepParams(flowKey, localSteps);
+          return;
+        }
+        if (didDelegate) {
+          emitChanged();
+        }
+        return;
+      }
+    }
+
+    if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
+      const allParams = flowKeyOrAllParams as Record<string, any>;
+      const localAll: Record<string, any> = {};
+      let didDelegate = false;
+      for (const [flowKey, steps] of Object.entries(allParams)) {
+        if (!GRID_DELEGATED_STEP_KEYS[flowKey] || typeof steps !== 'object' || steps === null || !grid) {
+          localAll[flowKey] = steps;
+          continue;
+        }
+        const delegatedKeys = GRID_DELEGATED_STEP_KEYS[flowKey];
+        const localSteps: Record<string, any> = {};
+        for (const [k, v] of Object.entries(steps as Record<string, any>)) {
+          if (delegatedKeys.has(k)) {
+            grid.setStepParams(flowKey, k, v);
+            didDelegate = true;
+          } else {
+            localSteps[k] = v;
+          }
+        }
+        if (Object.keys(localSteps).length > 0) {
+          localAll[flowKey] = localSteps;
+        }
+      }
+      if (Object.keys(localAll).length > 0) {
+        super.setStepParams(localAll);
+        return;
+      }
+      if (didDelegate) {
+        emitChanged();
+      }
+    }
+  }
+
+  async saveStepParams() {
+    const res = await super.saveStepParams();
+    const grid = this.subModels.grid;
+    await grid?.saveStepParams();
+    return res;
   }
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {

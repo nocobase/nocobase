@@ -25,6 +25,7 @@ import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
   renderReferenceTargetPlaceholder,
+  ensureScopedEngineView,
   unlinkScopedEngine,
 } from './referenceShared';
 
@@ -133,6 +134,9 @@ export class ReferenceBlockModel extends BlockModel {
 
   private _ensureScopedEngine(): FlowEngine {
     this._scopedEngine = ensureBlockScopedEngine(this.flowEngine, this._scopedEngine);
+    // 引用区块会在 scoped engine 中 loadModel，目标模型的 onInit 可能会读取 ctx.view。
+    // 部分场景（如审批配置）view 仅存在于宿主模型上下文而非 engine.context，需要显式桥接。
+    ensureScopedEngineView(this._scopedEngine, this.context as any);
     return this._scopedEngine;
   }
 
