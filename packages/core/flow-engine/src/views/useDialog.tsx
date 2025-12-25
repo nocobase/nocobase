@@ -150,6 +150,7 @@ export function useDialog() {
         return (
           <DialogComponent
             className="nb-dialog-overflow-hidden"
+            key={`dialog-${uuid}`}
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
             {...config}

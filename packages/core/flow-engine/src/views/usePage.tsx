@@ -132,11 +132,7 @@ export function usePage() {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         // 支持 content 为函数，传递 currentPage
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const pageContent = React.useMemo(
-          () => (typeof content === 'function' ? content(currentPage, ctx) : content),
-          [],
-        );
+        const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
         // 响应themeToken的响应式更新
         void ctx.themeToken;
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -152,6 +148,7 @@ export function usePage() {
 
         return (
           <PageComponent
+            key={`page-${uuid}`}
             ref={pageRef}
             hidden={config.inputArgs?.hidden?.value}
             {...restConfig}
