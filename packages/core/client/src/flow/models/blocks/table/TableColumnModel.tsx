@@ -125,10 +125,6 @@ export class TableColumnModel extends DisplayItemModel {
     await this.dispatchEvent('beforeRender');
   }
   renderHiddenInConfig(): React.ReactNode | undefined {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
-    }
-
     return this.renderOriginal.call(this);
   }
 
@@ -237,19 +233,20 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
-                if (this.hidden && this.flowEngine.flowSettings?.enabled) {
+                if (this.hidden && this.context.flowSettingsEnabled) {
                   if (this.forbidden) {
                     return <FieldWithoutPermissionPlaceholder />;
                   }
-                  if (!this.fieldDeleted) {
-                    return (
-                      <Tooltip
-                        title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
-                      >
-                        <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
-                      </Tooltip>
-                    );
-                  }
+                  return (
+                    <Tooltip
+                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                    >
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                    </Tooltip>
+                  );
+                }
+                if (!this.collectionField) {
+                  return <FieldDeletePlaceholder />;
                 }
                 return cellRenderer(value, record, record.__index || index);
               })()}
@@ -257,14 +254,14 @@ export class TableColumnModel extends DisplayItemModel {
           </FlowModelProvider>
         );
       },
-      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
+      hidden: this.hidden && !this.context.flowSettingsEnabled,
     };
   }
   onInit(options: any): void {
     super.onInit(options);
   }
 
-  render(): any {
+  renderItem(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {

@@ -10,7 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Model } from '@nocobase/database';
-import { parseResponseMessage } from '../utils';
+import { parseResponseMessage, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 
 async function getAIEmployee(ctx: Context, username: string) {
@@ -36,8 +36,7 @@ function setupSSEHeaders(ctx: Context) {
 }
 
 function sendErrorResponse(ctx: Context, errorMessage: string) {
-  ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: errorMessage })} \n\n`);
-  ctx.res.end();
+  sendSSEError(ctx, errorMessage);
 }
 
 export default {
@@ -357,7 +356,7 @@ export default {
         await aiEmployee.processMessages(messages, editingMessageId);
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Chat error warning');
+        sendErrorResponse(ctx, err.message || 'Tool call error');
       }
 
       await next();
@@ -421,7 +420,7 @@ export default {
         await aiEmployee.resendMessages(messageId);
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, 'Chat error warning');
+        sendErrorResponse(ctx, err.message || 'Chat error warning');
       }
 
       await next();
@@ -525,7 +524,7 @@ export default {
         await aiEmployee.callTool(message.messageId, false);
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, 'Tool call error');
+        sendErrorResponse(ctx, err.message || 'Tool call error');
       }
       await next();
     },
@@ -584,7 +583,7 @@ export default {
         await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, 'Tool call confirm error');
+        sendErrorResponse(ctx, err.message || 'Tool call confirm error');
       }
       await next();
     },

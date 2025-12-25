@@ -13,7 +13,6 @@ import { Input as AntInput, Space, theme } from 'antd';
 import type { CascaderProps, DefaultOptionType } from 'antd/lib/cascader';
 import useInputStyle from 'antd/es/input/style';
 import React, { useCallback, useEffect, useMemo, useRef, useState, isValidElement } from 'react';
-import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
 
 import { error } from '@nocobase/utils/client';
@@ -124,13 +123,33 @@ function createOptionsValueLabelMap(options: any[], fieldNames: CascaderProps['f
   return map;
 }
 
+function reactNodeToPlainText(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+
+  if (typeof node === 'string' || typeof node === 'number') {
+    return `${node}`;
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(reactNodeToPlainText).join('');
+  }
+
+  if (isValidElement(node)) {
+    return reactNodeToPlainText(node.props.children);
+  }
+
+  return '';
+}
+
 function createVariableTagHTML(variable, keyLabelMap) {
   let labels = keyLabelMap.get(variable);
 
   if (labels) {
     labels = labels.map((label) => {
       if (isReactElement(label) || isValidElement(label)) {
-        return renderToString(label);
+        return reactNodeToPlainText(label);
       }
       return label;
     });

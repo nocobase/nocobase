@@ -9,7 +9,6 @@
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Alert, Space } from 'antd';
-import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ToolbarItemConfig } from '../../../../types';
@@ -17,6 +16,8 @@ import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
 import { getT } from '../../../../utils';
+import { useFlowContext } from '../../../..';
+import { observer } from '../../../../reactive';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -389,9 +390,9 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
-  const flowEngine = useFlowEngine();
+  const ctx = useFlowContext();
   // Only render if flowSettings is enabled
-  if (!flowEngine.flowSettings?.enabled) {
+  if (!ctx.flowSettingsEnabled) {
     return <>{props.children}</>;
   }
   if (isModelByIdProps(props)) {

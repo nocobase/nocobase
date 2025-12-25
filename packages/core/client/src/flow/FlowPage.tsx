@@ -244,9 +244,8 @@ export const FlowRoute = () => {
       dispose?.();
       prevViewListRef.current.forEach((viewItem) => {
         flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
-        delete viewStateRef.current[getKey(viewItem)];
+        viewStateRef.current[getKey(viewItem)].close(true);
       });
-      prevViewListRef.current = [];
     };
   }, [flowEngine, isMobileLayout, routeModel]);
 

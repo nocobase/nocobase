@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  tExpr,
+  FlowModelRenderer,
+  useFlowEngine,
+  useFlowSettingsContext,
+  SingleRecordResource,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { AxiosRequestConfig } from 'axios';
@@ -202,7 +209,11 @@ UpdateRecordActionModel.registerFlow({
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
-        await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
+        if (ctx.resource instanceof SingleRecordResource) {
+          await ctx.resource.save(assignedValues, params.requestConfig);
+        } else if (ctx.resource instanceof MultiRecordResource) {
+          await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
+        }
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));

@@ -10,8 +10,8 @@
 import { Form, GeneralField, isVoidField } from '@formily/core';
 import { RenderPropsChildren, SchemaComponentsContext } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import { observer } from '@formily/reactive-react';
 import { FormPath, isFn } from '@formily/shared';
+import { observer } from '@nocobase/flow-engine';
 import React, { Fragment, useContext } from 'react';
 interface IReactiveFieldProps {
   field: GeneralField;

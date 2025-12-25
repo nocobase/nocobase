@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Button, Divider } from 'antd';
-import { LeftOutlined, RightOutlined, PlusOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import React, { useMemo, useState } from 'react';
+import { Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { AddSubModelButton, FlowModelRenderer } from '@nocobase/flow-engine';
+import React from 'react';
 import { useShortcuts } from './useShortcuts';
-import { useDesignable, useToken } from '@nocobase/client';
+import { useDesignable } from '@nocobase/client';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { isHide } from '../built-in/utils';
 
