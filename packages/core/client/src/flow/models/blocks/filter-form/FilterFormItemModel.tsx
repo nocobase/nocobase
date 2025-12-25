@@ -146,6 +146,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   operator: string;
+  mounted = false;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
 
@@ -172,6 +173,11 @@ export class FilterFormItemModel extends FilterableItemModel<{
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
   }
 
+  onMount(): void {
+    super.onMount();
+    this.mounted = true;
+  }
+
   onUnmount() {
     super.onUnmount();
     // 取消防抖函数的执行
@@ -193,11 +199,15 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const defaultValue = this.getStepParams('filterFormItemSettings', 'initialValue')?.defaultValue;
     const fieldValue = this.subModels.field.getFilterValue
       ? this.subModels.field.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
-    const rawValue = _.isEmpty(fieldValue) ? defaultValue : fieldValue;
+
+    let rawValue = fieldValue;
+
+    if (!this.mounted) {
+      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+    }
 
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
@@ -209,6 +219,10 @@ export class FilterFormItemModel extends FilterableItemModel<{
     }
 
     return rawValue;
+  }
+
+  getDefaultValue() {
+    return this.getStepParams('filterFormItemSettings', 'initialValue')?.defaultValue;
   }
 
   /**
