@@ -24,8 +24,11 @@ import {
   ModelRenderMode,
   useFlowEngine,
   observer,
+  FlowModelProvider,
+  FlowErrorFallback,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Input } from 'antd';
+import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
@@ -133,7 +136,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       <span
         style={{ pointerEvents: 'none' }} // 不拦截点击
       >
-        {/* {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />} */}
         {content}
       </span>
     </div>
@@ -255,6 +257,7 @@ export class SubTableColumnModel<
               text-overflow: ellipsis;
               white-space: nowrap;
               width: calc(${this.props.width}px - 16px);
+              opacity: ${this.hidden ? '0.3' : '1'};
             `}
           >
             {this.props.required && (
@@ -267,6 +270,7 @@ export class SubTableColumnModel<
         </FlowsFloatContextMenu>
       </Droppable>
     );
+    const cellRenderer = this.render();
     return {
       ...this.props,
       ellipsis: true,
@@ -290,8 +294,37 @@ export class SubTableColumnModel<
         title: this.props.title,
         model: this,
       }),
-      render: this.renderItem(),
+      // render: this.renderItem(),
       hidden: this.hidden && !this.context.flowSettingsEnabled,
+      render: (value, record, index) => {
+        return (
+          <FlowModelProvider model={this}>
+            <ErrorBoundary FallbackComponent={FlowErrorFallback}>
+              {(() => {
+                const err = this['__autoFlowError'];
+                if (err) throw err;
+                if (this.hidden && this.context.flowSettingsEnabled) {
+                  if (this.forbidden) {
+                    return <FieldWithoutPermissionPlaceholder targetModel={this} />;
+                  }
+                  return (
+                    <Tooltip
+                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                    >
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record?.__index || index)}</div>
+                    </Tooltip>
+                  );
+                }
+                if (!this.collectionField) {
+                  return 'field not found';
+                  // return <FieldDeletePlaceholder />;
+                }
+                return cellRenderer(value, record, record?.__index || index);
+              })()}
+            </ErrorBoundary>
+          </FlowModelProvider>
+        );
+      },
     };
   }
   renderItem(): any {
@@ -395,6 +428,8 @@ SubTableColumnModel.registerFlow({
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
+        const blockActionName = ctx.blockModel.context.actionName;
+
         const updateResult = await ctx.aclCheck({
           dataSourceKey: ctx.dataSource?.key,
           resourceName: ctx.collectionField?.collectionName,
@@ -407,6 +442,21 @@ SubTableColumnModel.registerFlow({
           fields: [ctx.collectionField.name],
           actionName: 'create',
         });
+        if (blockActionName === 'update') {
+          const resultView = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'view',
+          });
+          if (!resultView) {
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: 'view',
+            };
+            ctx.exitAll();
+          }
+        }
         if (!updateResult) {
           ctx.model.setProps({
             aclDisabled: true,
