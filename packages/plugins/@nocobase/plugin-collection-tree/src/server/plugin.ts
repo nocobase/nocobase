@@ -67,6 +67,26 @@ class PluginCollectionTreeServer extends Plugin {
             });
           });
 
+          //afterBulkCreate
+          this.db.on(`${collection.name}.afterBulkCreate`, async (instances: Model[], options) => {
+            const { transaction } = options;
+            const tk = collection.filterTargetKey as string;
+            const records = [];
+            for (const model of instances) {
+              let path = `/${model.get(tk)}`;
+              path = await this.getTreePath(model, path, collection, name, transaction);
+              const rootPk = path.split('/')[1] || null;
+              records.push({
+                nodePk: model.get(tk),
+                path,
+                rootPk,
+              });
+            }
+            await this.app.db.getModel(name).bulkCreate(records, {
+              transaction,
+            });
+          });
+
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
             const tk = collection.filterTargetKey;
@@ -82,7 +102,6 @@ class PluginCollectionTreeServer extends Plugin {
           // after remove
           this.db.on(`${collection.name}.afterBulkUpdate`, async (options) => {
             const tk = collection.filterTargetKey as string;
-            const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
             if (!(options.where && options.where[tk])) {
               return;
             }
@@ -93,10 +112,6 @@ class PluginCollectionTreeServer extends Plugin {
               transaction: options.transaction,
             });
             for (const model of instances) {
-              // only update parentId and filterTargetKey
-              if (!(model._changed.has(tk) || model._changed.has(parentForeignKey))) {
-                continue;
-              }
               await this.updateTreePath(model, collection, name, options.transaction);
             }
           });
