@@ -70,16 +70,36 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 
-如果缺失就会弹窗提示用户，要在这里填写需要新增的环境变量，然后继续
+如果.env中的 `DB_UNDERSCORED` 、`USE_DB_SCHEMA_IN_SUBAPP` 、`DB_TABLE_PREFIX` 、`DB_SCHEMA` 、 `COLLECTION_MANAGER_SCHEMA` 不一致，则会弹窗提示不能够继续迁移
 
-![20250102210009](https://static-docs.nocobase.com/20250102210009.png)
+![918b8d56037681b29db8396ccad63364](https://static-docs.nocobase.com/918b8d56037681b29db8396ccad63364.png)
+
+如果缺失动态配置的环境变量或密钥就会弹窗提示用户，要在这里填写需要新增的环境变量或密钥，然后继续
+
+![93a4fcb44f92c43d827d57b7874f6ae6](https://static-docs.nocobase.com/93a4fcb44f92c43d827d57b7874f6ae6.png)
+
+应用插件检测，如果当前环境缺少插件就会弹窗提示，此时也可以选择继续迁移
+
+![bb5690a1e95660e1a5e0fd7440b6425c](https://static-docs.nocobase.com/bb5690a1e95660e1a5e0fd7440b6425c.png)
 
 ## 迁移日志
 
-![20250102205738](https://static-docs.nocobase.com/20250102205738.png)
+执行完迁移后，服务器上会保存执行日志文件，可以在线查看或下载。
+
+![20251225184721](https://static-docs.nocobase.com/20251225184721.png)
+
+在线查看执行日志文件时，还可以下载迁移数据结构时执行的SQL。
+
+![162cc81c3d47da0783018a61676584ae](https://static-docs.nocobase.com/162cc81c3d47da0783018a61676584ae.png)
+
+点击 `过程` 按钮可以查看已完成迁移执行过程
+
+![c065716cfbb7655f5826bf0ceae4b156](https://static-docs.nocobase.com/c065716cfbb7655f5826bf0ceae4b156.png)
+
+![f4abe566de1186a9432174ce70b2f960](https://static-docs.nocobase.com/f4abe566de1186a9432174ce70b2f960.png)
 
 ## 回滚
 
 执行迁移前，会自动对当前应用进行备份。如果迁移失败或结果不符合预期，可通过 [备份管理器](../backup-manager/index.mdx) 进行回滚恢复。
 
-![20250105195029](https://static-docs.nocobase.com/20250105195029.png)
+![5a55ed5f3dd072d74e51dcdc5ebea518](https://static-docs.nocobase.com/5a55ed5f3dd072d74e51dcdc5ebea518.png)

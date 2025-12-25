@@ -90,28 +90,41 @@ Select independent rules and the tables to be processed by the current independe
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-
 Application environment variable check (learn more about [Environment Variables](../variables-and-secrets/index.md))
-
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 
+If the values of `DB_UNDERSCORED`, `USE_DB_SCHEMA_IN_SUBAPP`, `DB_TABLE_PREFIX`, `DB_SCHEMA`, or `COLLECTION_MANAGER_SCHEMA` in the .env file are inconsistent, a pop-up dialog will appear indicating that the migration cannot continue.
 
-If any are missing, a pop-up will prompt the user to enter the required new environment variables here, and then continue
+![918b8d56037681b29db8396ccad63364](https://static-docs.nocobase.com/918b8d56037681b29db8396ccad63364.png)
 
+If any dynamically configured environment variables or secrets are missing, a pop-up will prompt the user to enter the required environment variables or secrets here, and then continue.
 
-![20250102210009](https://static-docs.nocobase.com/20250102210009.png)
+![93a4fcb44f92c43d827d57b7874f6ae6](https://static-docs.nocobase.com/93a4fcb44f92c43d827d57b7874f6ae6.png)
 
+Application plugin check. If required plugins are missing in the current environment, a pop-up notification will appear. You can also choose to continue the migration anyway.
+
+![bb5690a1e95660e1a5e0fd7440b6425c](https://static-docs.nocobase.com/bb5690a1e95660e1a5e0fd7440b6425c.png)
 
 ## Migration Logs
 
+After the migration is completed, migration log files are saved on the server. You can view them online or download them.
 
-![20250102205738](https://static-docs.nocobase.com/20250102205738.png)
+![20251225184721](https://static-docs.nocobase.com/20251225184721.png)
 
+When viewing the migration logs online, you can also download the SQL statements executed during the migration of the data schema.
+
+![162cc81c3d47da0783018a61676584ae](https://static-docs.nocobase.com/162cc81c3d47da0783018a61676584ae.png)
+
+Click the `Process` button to view the completed migration execution process.
+
+![c065716cfbb7655f5826bf0ceae4b156](https://static-docs.nocobase.com/c065716cfbb7655f5826bf0ceae4b156.png)
+
+![f4abe566de1186a9432174ce70b2f960](https://static-docs.nocobase.com/f4abe566de1186a9432174ce70b2f960.png)
 
 ## Rollback
 
 Before any migration runs, the current application is automatically backed up. If the migration fails or the results are not as expected, you can roll back using the [Backup Manager](../backup-manager/index.mdx).
 
 
-![20250105195029](https://static-docs.nocobase.com/20250105195029.png)
+![5a55ed5f3dd072d74e51dcdc5ebea518](https://static-docs.nocobase.com/5a55ed5f3dd072d74e51dcdc5ebea518.png)
