@@ -7,14 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
-import { pipeline } from 'stream/promises';
+import { Transform, TransformCallback } from 'stream';
 import { AttachmentModel, StorageModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
+
+class CountingStream extends Transform {
+  size = 0;
+
+  _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+    this.size += chunk.length;
+    callback(null, chunk);
+  }
+}
 
 export default class extends StorageType {
   static defaults() {
@@ -92,30 +100,26 @@ export default class extends StorageType {
           done(error);
           return;
         }
-
-        let tmpDir;
         try {
-          const tmpBaseDir = path.join(process.cwd(), 'storage/tmp');
-          await fs.promises.mkdir(tmpBaseDir, { recursive: true });
-          tmpDir = await fs.promises.mkdtemp(path.join(tmpBaseDir, 's3-'));
-          const tmpFile = path.join(tmpDir, crypto.randomUUID());
-          const writeStream = fs.createWriteStream(tmpFile);
-          await pipeline(file.stream, writeStream);
-          const { size } = await fs.promises.stat(tmpFile);
           const contentType = file.mimetype || 'application/octet-stream';
-          const readStream = fs.createReadStream(tmpFile);
-          const command = new PutObjectCommand({
-            Bucket: bucket,
-            Key: key,
-            ACL: acl,
-            Body: readStream,
-            ContentType: contentType,
-            ContentLength: size,
+          const counter = new CountingStream();
+          const uploadStream = file.stream.pipe(counter);
+          const upload = new Upload({
+            client,
+            params: {
+              Bucket: bucket,
+              Key: key,
+              ACL: acl,
+              Body: uploadStream,
+              ContentType: contentType,
+            },
+            queueSize: 1,
+            leavePartsOnError: false,
           });
 
-          const result = await client.send(command);
+          const result = await upload.done();
           done(null, {
-            size,
+            size: counter.size,
             bucket,
             key,
             acl,
@@ -125,10 +129,6 @@ export default class extends StorageType {
           });
         } catch (error) {
           done(error);
-        } finally {
-          if (tmpDir) {
-            await fs.promises.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
-          }
         }
       },
       _removeFile(req, file, cb) {
