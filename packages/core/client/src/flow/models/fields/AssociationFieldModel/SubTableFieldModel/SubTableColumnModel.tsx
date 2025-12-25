@@ -316,7 +316,6 @@ export class SubTableColumnModel<
             const namePath = action.context.fieldPath.split('.').pop();
 
             const fork: any = action.createFork({}, `${id}`);
-            console.log(record);
             if (this.props.readPretty) {
               fork.setProps({
                 value: value,
@@ -331,7 +330,11 @@ export class SubTableColumnModel<
                   style={{ marginBottom: 0 }}
                   showLabel={false}
                   initialValue={value}
-                  disabled={this.props.disabled || (!record.isNew && this.props.aclDisabled)}
+                  disabled={
+                    this.props.disabled ||
+                    (!record.isNew && this.props.aclDisabled) ||
+                    (record.isNew && this.props.aclCreateDisabled)
+                  }
                 >
                   {fork.constructor.isLargeField ? (
                     <LargeFieldEdit
@@ -341,7 +344,11 @@ export class SubTableColumnModel<
                         index: id,
                       }}
                       defaultValue={value}
-                      disabled={this.props.disabled || (!record.isNew && this.props.aclDisabled)}
+                      disabled={
+                        this.props.disabled ||
+                        (!record.isNew && this.props.aclDisabled) ||
+                        (record.isNew && this.props.aclCreateDisabled)
+                      }
                     />
                   ) : (
                     <FieldModelRenderer model={fork} id={[(this.parent as FieldModel).context.fieldPath, rowIdx]} />
@@ -388,15 +395,26 @@ SubTableColumnModel.registerFlow({
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
-        const result = await ctx.aclCheck({
+        const updateResult = await ctx.aclCheck({
           dataSourceKey: ctx.dataSource?.key,
           resourceName: ctx.collectionField?.collectionName,
           fields: [ctx.collectionField.name],
           actionName: 'update',
         });
-        if (!result) {
+        const createResult = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField.name],
+          actionName: 'create',
+        });
+        if (!updateResult) {
           ctx.model.setProps({
             aclDisabled: true,
+          });
+        }
+        if (!createResult) {
+          ctx.model.setProps({
+            aclCreateDisabled: true,
           });
         }
       },
