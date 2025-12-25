@@ -329,7 +329,7 @@ export class XlsxImporter extends EventEmitter {
         );
       }
 
-      if (error.params.rowIndex) {
+      if (error.params?.rowIndex) {
         handingRowIndex += error.params.rowIndex;
         error.params.rowIndex = handingRowIndex;
       }
