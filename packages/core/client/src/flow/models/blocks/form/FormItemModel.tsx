@@ -273,13 +273,13 @@ FormItemModel.registerFlow({
           // 新增表单
           const updateCollectionAclResult = await ctx.aclCheck({
             dataSourceKey: ctx.dataSource?.key,
-            resourceName: ctx.collectionField?.target || ctx.collectionField?.collectionName,
+            resourceName: ctx.collectionField?.collectionName,
             actionName: 'update',
           });
 
           const updateFieldAclResult = await ctx.aclCheck({
             dataSourceKey: ctx.dataSource?.key,
-            resourceName: ctx.collectionField?.target || ctx.collectionField?.collectionName,
+            resourceName: ctx.collectionField?.collectionName,
             fields: [ctx.collectionField.name],
             actionName: 'update',
           });
