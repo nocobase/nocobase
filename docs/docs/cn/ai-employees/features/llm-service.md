@@ -1,12 +1,14 @@
-# 快速开始
 
-## 介绍
+# 配置 LLM 服务
 
-在使用 AI 员工之前，需要先接入在线 LLM 服务，NocoBase 目前支持主流的在线 LLM 服务，如 OpenAI, Gemini, Claude, DepSeek, Qwen 等。
-除了在线 LLM 服务，NocoBase也支持 Ollama 本地模型的接入。
+在使用 AI 员工之前，需要先接入在线 LLM 服务。
 
-## 配置 LLM 服务
+NocoBase 目前支持主流的在线 LLM 服务，如 OpenAI, Gemini, Claude, DepSeek, Qwen（阿里千问） 等。
 
+除了在线 LLM 服务，NocoBase 也支持 Ollama 本地模型的接入。
+
+
+## 选择 LLM 服务
 进入 AI 员工插件配置页面，点击 `LLM service` 标签页，进入 LLM 服务管理页
 
 ![20251021213122](https://static-docs.nocobase.com/20251021213122.png)
