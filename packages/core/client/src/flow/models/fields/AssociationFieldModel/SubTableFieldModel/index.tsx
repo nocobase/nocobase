@@ -141,9 +141,6 @@ SubTableFieldModel.registerFlow({
   title: tExpr('Sub-table settings'),
   sort: 300,
   steps: {
-    aclCheck: {
-      use: 'aclCheck',
-    },
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
