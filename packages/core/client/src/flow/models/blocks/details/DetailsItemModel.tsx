@@ -236,7 +236,7 @@ DetailsItemModel.registerFlow({
       use: 'titleField',
       title: tExpr('Title field'),
       beforeParamsSave: async (ctx, params, previousParams) => {
-        if (!ctx.collectionField.isAssociationField()) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
         }
         if (params.label !== previousParams.label) {
@@ -261,7 +261,7 @@ DetailsItemModel.registerFlow({
         }
       },
       async handler(ctx: any, params) {
-        if (ctx.model.subModels.field.disableTitleField) {
+        if (!ctx.collectionField || ctx.model.subModels.field.disableTitleField) {
           return;
         }
         ctx.model.setProps({
