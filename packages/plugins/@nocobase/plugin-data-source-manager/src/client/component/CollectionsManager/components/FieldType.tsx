@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useRecord } from '@nocobase/client';
 import { Select, Tag } from 'antd';
 import React from 'react';

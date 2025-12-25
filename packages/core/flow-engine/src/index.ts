@@ -23,8 +23,7 @@ export * from './hooks';
 export * from './models';
 export * from './provider';
 
-export * from '@formily/reactive';
-export { observer } from '@formily/reactive-react';
+export * from './reactive';
 export * from './components';
 export * from './data-source';
 export * from './decorators';

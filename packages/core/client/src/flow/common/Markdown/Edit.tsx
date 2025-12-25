@@ -309,7 +309,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
   const ref = useRef<TextAreaRef>(null);
-  const isConfigMode = !!flowCtx.model.flowEngine?.flowSettings?.enabled;
+  const isConfigMode = !!flowCtx.model.context.flowSettingsEnabled;
   useEffect(() => {
     if (quoteFlag !== false) {
       setInnerValue(value);

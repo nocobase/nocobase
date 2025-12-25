@@ -9,11 +9,11 @@
 
 import React from 'react';
 import { Button, Radio } from 'antd';
-import { ObjectField, Field, connect, useForm, observer } from '@formily/react';
+import { ObjectField, Field, connect, useForm } from '@formily/react';
 import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
-import { FunctionOutlined, InteractionOutlined } from '@ant-design/icons';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { FunctionOutlined } from '@ant-design/icons';
+import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 
 const DEFAULT_EVENTS_RAW = `// chart.off('click');
 // chart.on('click', 'series', function() {

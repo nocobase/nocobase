@@ -9,13 +9,13 @@
 
 import React from 'react';
 import { Alert, Button, Radio } from 'antd';
-import { ObjectField, useForm, observer } from '@formily/react';
+import { ObjectField, useForm } from '@formily/react';
 import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 
 export const chartOptionDefaultValue = `return {
   dataset: { source: ctx.data.objects || [] },

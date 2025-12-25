@@ -16,7 +16,7 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { Icon, useApp, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
 import { MobilePopup } from '@nocobase/plugin-mobile/client';
 import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';

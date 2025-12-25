@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { css, useApp, useCurrentUserContext } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 import { Badge, InfiniteScroll, List, NavBar } from 'antd-mobile';

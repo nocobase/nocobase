@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { tExpr, FlowModel, FlowModelRenderer, observable } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { Icon } from '../../../../icon';
@@ -38,6 +38,13 @@ export class BasePageTabModel extends FlowModel<{
     grid: BlockGridModel;
   };
 }> {
+  onInit(options) {
+    super.onInit(options);
+    this.context.defineProperty('tabActive', {
+      value: observable.ref(true), // TODO: 默认值应该是 false，且需要在 onMount 中设置为 true。但现在 onMount 有 BUG，会在每次切换 tab 时触发
+    });
+  }
+
   getTabTitle(defaultTitle = 'Untitled') {
     return this.context.t(this.stepParams.pageTabSettings?.tab?.title || defaultTitle);
   }

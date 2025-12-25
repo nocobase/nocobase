@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
-import { Observer } from '@formily/reactive-react';
-import { DefaultStructure, tExpr, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, tExpr, FlowModel, observer } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { Tooltip } from 'antd';
@@ -33,6 +32,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   _defaultCustomModelClasses = {} as any;
   customModelClasses = {} as any;
   collectionRequired = false;
+  private ObservedRenderComponent = null;
   static _getScene() {
     return _.castArray(this['scene'] || []);
   }
@@ -58,11 +58,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     return (
       <Tooltip title={this.context.t('The block is hidden and only visible when the UI Editor is active')}>
         <BlockItemCard ref={this.context.ref} {...this.decoratorProps} style={{ opacity: '0.3' }}>
-          <Observer>
-            {() => {
-              return this.renderComponent();
-            }}
-          </Observer>
+          <this.ObservedRenderComponent />
         </BlockItemCard>
       </Tooltip>
     );
@@ -73,6 +69,14 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     this.context.defineMethod('getModelClassName', (className: string) => {
       return this.getModelClassName(className);
     });
+    this.ObservedRenderComponent = observer(
+      () => {
+        return this.renderComponent();
+      },
+      {
+        displayName: 'ObservedRenderComponent',
+      },
+    );
   }
 
   setDecoratorProps(props) {
@@ -100,11 +104,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     }
     return (
       <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
-        <Observer>
-          {() => {
-            return this.renderComponent();
-          }}
-        </Observer>
+        <this.ObservedRenderComponent />
       </BlockItemCard>
     );
   }

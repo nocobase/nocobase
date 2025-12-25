@@ -64,7 +64,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
 
   getColumns() {
     const { enableIndexColumn } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
       Boolean,

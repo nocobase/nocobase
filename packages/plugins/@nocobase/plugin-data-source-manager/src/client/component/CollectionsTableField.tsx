@@ -10,7 +10,7 @@
 import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react';
 import { Button, Table, Checkbox, Input, message, Tooltip } from 'antd';
 import { ReloadOutlined, QuestionCircleOutlined, ClearOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useAPIClient } from '@nocobase/client';
 
 const CollectionsTable = observer((tableProps: any) => {
