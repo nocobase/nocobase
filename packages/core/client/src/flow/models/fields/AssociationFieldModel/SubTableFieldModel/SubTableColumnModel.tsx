@@ -296,7 +296,8 @@ export class SubTableColumnModel<
       }),
       // render: this.renderItem(),
       hidden: this.hidden && !this.context.flowSettingsEnabled,
-      render: (value, record, index) => {
+      render: (value) => {
+        const { record, rowIndex: index } = value;
         return (
           <FlowModelProvider model={this}>
             <ErrorBoundary FallbackComponent={FlowErrorFallback}>
@@ -355,7 +356,7 @@ export class SubTableColumnModel<
               });
               return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
             } else {
-              return (
+              return this.props.aclViewDisabled && !record.isNew ? null : (
                 <FormItem
                   {...this.props}
                   key={id}
@@ -450,11 +451,9 @@ SubTableColumnModel.registerFlow({
             actionName: 'view',
           });
           if (!resultView) {
-            ctx.model.hidden = true;
-            ctx.model.forbidden = {
-              actionName: 'view',
-            };
-            ctx.exitAll();
+            ctx.model.setProps({
+              aclViewDisabled: true,
+            });
           }
         }
         if (!updateResult) {
