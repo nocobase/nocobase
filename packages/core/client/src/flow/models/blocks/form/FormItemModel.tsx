@@ -221,11 +221,14 @@ FormItemModel.registerFlow({
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
+        if (!ctx.collectionField) {
+          return;
+        }
         const blockActionName = ctx.blockModel.context.actionName;
         const result = await ctx.aclCheck({
           dataSourceKey: ctx.dataSource?.key,
           resourceName: ctx.collectionField?.collectionName,
-          fields: [ctx.collectionField.name],
+          fields: [ctx.collectionField?.name],
           actionName: blockActionName,
         });
 
@@ -253,7 +256,7 @@ FormItemModel.registerFlow({
             }
           }
 
-          if (!resultView) {
+          if (!resultView && !ctx.currentObject?.isNew) {
             ctx.model.hidden = true;
             ctx.model.forbidden = {
               actionName: 'view',
