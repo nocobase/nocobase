@@ -807,6 +807,10 @@ export class FlowEngine {
     // 1) Prefer exact uid match when provided.
     if (uid && !this._modelInstances.has(uid)) {
       const existing = this.findModelInPreviousEngines<T>(uid);
+      if (existing?.context.flowSettingsEnabled) {
+        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
+        return null;
+      }
       if (existing) {
         const data = existing.serialize();
         return this.createModel<T>(data as any, extra);
@@ -851,7 +855,10 @@ export class FlowEngine {
           localParent.setSubModel(subKey, localModel as any);
         }
       }
-
+      if (localModel.context.flowSettingsEnabled) {
+        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
+        return null;
+      }
       return localModel;
     }
 
