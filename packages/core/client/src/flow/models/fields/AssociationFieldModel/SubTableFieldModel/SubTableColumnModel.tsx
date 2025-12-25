@@ -33,6 +33,7 @@ import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
+import { FieldDeletePlaceholder } from '../../../blocks/table/TableColumnModel';
 
 function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
@@ -317,8 +318,7 @@ export class SubTableColumnModel<
                   );
                 }
                 if (!this.collectionField) {
-                  return 'field not found';
-                  // return <FieldDeletePlaceholder />;
+                  return <FieldDeletePlaceholder collection={this.parent.context.collectionField.targetCollection} />;
                 }
                 return cellRenderer(value, record, record?.__index || index);
               })()}
@@ -426,9 +426,70 @@ SubTableColumnModel.registerFlow({
         }
       },
     },
+    title: {
+      title: tExpr('Column title'),
+      uiSchema: (ctx) => {
+        return {
+          title: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              placeholder: tExpr('Column title'),
+            },
+            'x-reactions': (field) => {
+              const { model } = ctx;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.model.collectionField?.title,
+        };
+      },
+      handler(ctx, params) {
+        const title = ctx.t(params.title || ctx.model.collectionField?.title);
+        ctx.model.setProps('title', title || ctx.fieldPath.split('.').pop());
+      },
+    },
+    tooltip: {
+      title: tExpr('Tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('tooltip', params.tooltip);
+      },
+    },
+    width: {
+      title: tExpr('Column width'),
+      uiSchema: {
+        width: {
+          'x-component': 'NumberPicker',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        width: 200,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('width', params.width);
+      },
+    },
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
+        if (!ctx.collectionField) {
+          return;
+        }
         const blockActionName = ctx.blockModel.context.actionName;
 
         const updateResult = await ctx.aclCheck({
@@ -519,64 +580,6 @@ SubTableColumnModel.registerFlow({
           },
         });
         await model.dispatchEvent('beforeRender');
-      },
-    },
-    title: {
-      title: tExpr('Column title'),
-      uiSchema: (ctx) => {
-        return {
-          title: {
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              placeholder: tExpr('Column title'),
-            },
-            'x-reactions': (field) => {
-              const { model } = ctx;
-              const originTitle = model.collectionField?.title;
-              field.decoratorProps = {
-                ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
-              };
-            },
-          },
-        };
-      },
-      defaultParams: (ctx) => {
-        return {
-          title: ctx.model.collectionField?.title,
-        };
-      },
-      handler(ctx, params) {
-        const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title);
-      },
-    },
-    tooltip: {
-      title: tExpr('Tooltip'),
-      uiSchema: {
-        tooltip: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
-      },
-    },
-    width: {
-      title: tExpr('Column width'),
-      uiSchema: {
-        width: {
-          'x-component': 'NumberPicker',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        width: 200,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('width', params.width);
       },
     },
     initialValue: {

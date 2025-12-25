@@ -35,13 +35,13 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
-function FieldDeletePlaceholder() {
+export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
-  const name = model.fieldPath;
+  const collection = props?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.props.title || model.fieldPath;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
