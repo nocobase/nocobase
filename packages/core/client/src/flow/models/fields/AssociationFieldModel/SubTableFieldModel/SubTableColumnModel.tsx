@@ -24,6 +24,7 @@ import {
   FormItem,
   ModelRenderMode,
   useFlowEngine,
+  observer,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Input } from 'antd';
 import React, { useRef, useMemo } from 'react';
@@ -291,7 +292,7 @@ export class SubTableColumnModel<
         model: this,
       }),
       render: this.renderItem(),
-      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
+      hidden: this.hidden && !this.context.flowSettingsEnabled,
     };
   }
   renderItem(): any {

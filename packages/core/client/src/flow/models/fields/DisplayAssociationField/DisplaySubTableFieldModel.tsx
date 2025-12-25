@@ -8,12 +8,18 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, tExpr, FlowSettingsButton, DndProvider, useFlowEngine } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  tExpr,
+  FlowSettingsButton,
+  DndProvider,
+  useFlowEngine,
+  observer,
+} from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
 import { isEmpty } from 'lodash';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +92,7 @@ const DisplayTable = (props) => {
   }, [currentPage, currentPageSize, value]);
 
   const getColumns = () => {
-    const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!model.context.flowSettingsEnabled;
 
     const cols = adjustColumnOrder(
       [

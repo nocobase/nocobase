@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
 import { Button, Space } from 'antd';
 import React, { FC } from 'react';
 import { FilterGroup } from './FilterGroup';
+import { observer } from '@nocobase/flow-engine';
 
 /**
  * 筛选项组件的属性接口
