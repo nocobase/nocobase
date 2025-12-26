@@ -55,7 +55,7 @@ export const FlowRoute = () => {
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(flowEngine.context.route.params.name);
   const viewStateRef = useRef<{
-    [uid in string]: { close: (force?: boolean) => void; update: (value: any) => void };
+    [uid in string]: { close: (force?: boolean) => void; update: (value: any) => void; navigation: ViewNavigation };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
   const hasStepNavigatedRef = useRef(false);
@@ -190,6 +190,10 @@ export const FlowRoute = () => {
             const openViewParams = getOpenViewStepParams(viewItem.model);
             const openerUids = prevViewListCopy.map((item) => item.params.viewUid);
             prevViewListCopy.push(viewItem);
+            const navigation = new ViewNavigation(
+              flowEngine.context,
+              prevViewListCopy.map((item) => item.params),
+            );
 
             viewItem.model.dispatchEvent('click', {
               target: layoutContentRef.current,
@@ -200,10 +204,7 @@ export const FlowRoute = () => {
               updateRef,
               openerUids,
               ...viewItem.params,
-              navigation: new ViewNavigation(
-                flowEngine.context,
-                prevViewListCopy.map((item) => item.params),
-              ),
+              navigation,
               onOpen() {
                 openView(index + 1); // 递归打开下一个视图
               },
@@ -214,6 +215,7 @@ export const FlowRoute = () => {
             viewStateRef.current[getKey(viewItem)] = {
               close: (force?: boolean) => closeRef.current?.(undefined, force),
               update: (value: any) => updateRef.current?.(value),
+              navigation,
             };
           };
 
@@ -225,6 +227,12 @@ export const FlowRoute = () => {
           viewStateRef.current[getKey(viewItem)]?.close?.(true);
           delete viewStateRef.current[getKey(viewItem)];
         });
+
+        // 6. 当没有视图需要打开和关闭时，说明只是更新了当前视图的参数，比如切换 tab。这是需要更新当前视图 navigation 的 viewStack，避免 URL 错乱
+        if (viewsToClose.length === 0 && viewsToOpen.length === 0) {
+          const currentViewItem = viewList.at(-1);
+          viewStateRef.current[getKey(currentViewItem)]?.navigation.setViewStack(viewList.map((item) => item.params));
+        }
 
         prevViewListRef.current = viewList.map((item, index) => {
           if (prevViewListRef.current[index]) {
