@@ -62,12 +62,10 @@ StFormSubmitActionModel.registerFlow({
         try {
           await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue(true);
-          console.log(values);
           subTableModel.updateRow(values);
         } catch (error) {
           return;
         }
-        ctx.message.success(ctx.t('Saved successfully'));
         if (ctx.view) {
           ctx.view.close();
         }

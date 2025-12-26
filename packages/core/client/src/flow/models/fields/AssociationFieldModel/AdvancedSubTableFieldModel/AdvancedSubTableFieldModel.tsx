@@ -102,15 +102,35 @@ const DisplayTable = (props) => {
     [rowKey],
   );
 
+  const removeRow = useCallback(
+    (recordOrPk) => {
+      const pk = typeof recordOrPk === 'object' ? recordOrPk[rowKey] : recordOrPk;
+
+      setTableData((prev) => {
+        const index = prev.findIndex((item) => item[rowKey] === pk);
+        if (index === -1) return prev;
+
+        // 只删除一行，其它行引用不变
+        const next = prev.slice();
+        next.splice(index, 1);
+        return next;
+      });
+    },
+    [rowKey],
+  );
+
   useEffect(() => {
     model.updateRow = updateRow;
-
+    model.removeRow = removeRow;
     return () => {
       if (model.updateRow === updateRow) {
         delete model.updateRow;
       }
+      if (model.removeRow === removeRow) {
+        delete model.removeRow;
+      }
     };
-  }, [model, updateRow]);
+  }, [model, updateRow, removeRow]);
 
   // 前端分页
   const pagination = useMemo(() => {

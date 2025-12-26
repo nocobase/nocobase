@@ -40,7 +40,9 @@ SubTableRecordDeleteActionModel.registerFlow({
       },
     },
     delete: {
-      async handler(ctx, params) {},
+      async handler(ctx, params) {
+        console.log(ctx.record, ctx.associationMode, ctx.model);
+      },
     },
   },
 });
