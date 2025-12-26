@@ -119,7 +119,10 @@ export const DataModelingModal: React.FC<{
   saveToolArgs: (args: unknown) => Promise<void>;
 }> = ({ tool, saveToolArgs }) => {
   const t = useT();
-  const collections = useCollections(tool.args.collections);
+  const collectionTypeStr = typeof tool.args.collections;
+  const collections = useCollections(
+    collectionTypeStr === 'string' ? JSON.parse(tool.args.collections as unknown as string) : tool.args.collections,
+  );
   const setAdjustArgs = useChatToolsStore.use.setAdjustArgs();
   const { updateCollectionRecord, updateFieldRecord } = useUpdateTool(tool, saveToolArgs);
 
@@ -128,7 +131,7 @@ export const DataModelingModal: React.FC<{
       ...tool.args,
       collections,
     });
-  }, [tool.args, collections, setAdjustArgs]);
+  }, [tool.args, tool.args.collections, setAdjustArgs]);
 
   const items = [
     {

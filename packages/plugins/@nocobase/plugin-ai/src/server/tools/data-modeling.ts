@@ -312,13 +312,15 @@ export const defineCollections: ToolOptions = {
       .describe('An array of collections to be defined or edited.'),
   }),
   invoke: async (ctx: Context, args: any) => {
-    const { intent, collections } = ctx.action?.params?.values?.args ?? args ?? {};
+    const { intent, collections: originalCollections } = ctx.action?.params?.values?.args ?? args ?? {};
     if (!intent || !['create', 'edit'].includes(intent)) {
       return {
         status: 'error',
         content: `Please explicitly specify your intent. The value of the intent parameter must be either 'create' or 'edit'.`,
       };
     }
+    const collectionsType = typeof originalCollections;
+    const collections = collectionsType === 'string' ? JSON.parse(originalCollections) : originalCollections;
     if (!collections || !Array.isArray(collections)) {
       return {
         status: 'error',
