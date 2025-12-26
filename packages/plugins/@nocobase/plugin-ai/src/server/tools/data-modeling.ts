@@ -93,6 +93,12 @@ const editPrompt = `## Existing Schema Editing Flow
    - Until the tool responds successfully, assume changes have not been saved — the user may continue editing.
    - **Do not say or imply the schema is being or has been updated until a tool response is received.**`;
 
+class IntentError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export const dataModelingIntentRouter: ToolOptions = {
   name: 'intentRouter',
   title: '{{t("Intent Router")}}',
@@ -306,7 +312,7 @@ export const defineCollections: ToolOptions = {
       .describe('An array of collections to be defined or edited.'),
   }),
   invoke: async (ctx: Context, args: any) => {
-    const { intent, collections } = ctx.action?.params?.value?.args ?? args ?? {};
+    const { intent, collections } = ctx.action?.params?.values?.args ?? args ?? {};
     if (!intent || !['create', 'edit'].includes(intent)) {
       return {
         status: 'error',
@@ -364,10 +370,9 @@ export const defineCollections: ToolOptions = {
           const collection = await repo.findOne({ filter: { name: options.name }, transaction });
           if (!collection) {
             if (intent === 'edit') {
-              return {
-                status: 'error',
-                content: `You want to edit a collection definition, but there is no existing data table definition named '${options.name}'.`,
-              };
+              throw new IntentError(
+                `You want to edit a collection definition, but there is no existing data table definition named '${options.name}'.`,
+              );
             }
             await repo.create({
               values: { ...options, fields: baseFields },
@@ -376,10 +381,9 @@ export const defineCollections: ToolOptions = {
             });
           } else {
             if (intent === 'create') {
-              return {
-                status: 'error',
-                content: `You want to create a collection definition, but a collection definition named '${options.name}' already exists. Please change the name of your collection definition and then invoke this tool again.`,
-              };
+              throw new IntentError(
+                `You want to create a collection definition, but a collection definition named '${options.name}' already exists. Please change the name of your collection definition and then invoke this tool again.`,
+              );
             }
             await repo.update({
               filterByTk: options.name,
@@ -453,6 +457,12 @@ export const defineCollections: ToolOptions = {
         stack: e.stack,
         cause: e.cause,
       });
+      if (e instanceof IntentError) {
+        return {
+          status: 'error',
+          content: e.message,
+        };
+      }
       return {
         status: 'error',
         content: `Failed to define collections: ${e.message}`,
