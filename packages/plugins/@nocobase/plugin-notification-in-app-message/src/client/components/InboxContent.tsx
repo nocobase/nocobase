@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { Schema } from '@formily/react';
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { useApp } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 import { Badge, Button, Flex, Layout, List, theme } from 'antd';

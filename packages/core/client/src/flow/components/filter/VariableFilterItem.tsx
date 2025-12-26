@@ -10,7 +10,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
-import { observer } from '@formily/reactive-react';
 import { createForm, onFieldValueChange } from '@formily/core';
 import type { Form, GeneralField, Field } from '@formily/core';
 import type { ISchema } from '@formily/json-schema';
@@ -23,6 +22,7 @@ import {
   parseValueToPath,
   createEphemeralContext,
   createCollectionContextMeta,
+  observer,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';

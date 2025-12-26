@@ -25,6 +25,19 @@ export function ensureBlockScopedEngine(flowEngine: FlowEngine, scopedEngine?: F
   return scopedEngine ?? createBlockScopedEngine(flowEngine);
 }
 
+export function ensureScopedEngineView(engine: FlowEngine, hostContext?: FlowContext): void {
+  if (!engine?.context || !hostContext) return;
+  const ctx = engine.context as any;
+  if (typeof ctx.getPropertyOptions === 'function' && ctx.getPropertyOptions('view')) {
+    return;
+  }
+
+  ctx.defineProperty('view', {
+    cache: false,
+    get: () => (hostContext as any).view,
+  });
+}
+
 export function unlinkScopedEngine(engine?: FlowEngine): void {
   engine?.unlinkFromStack?.();
 }

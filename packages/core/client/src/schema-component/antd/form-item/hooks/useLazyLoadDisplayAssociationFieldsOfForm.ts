@@ -61,10 +61,16 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
     ? {}
     : untracked(() => _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values));
 
-  const sourceKeyValue =
+  const sourceKeyValueRaw =
     isDisplayField(schemaName) && sourceCollectionFieldRef.current
       ? _.get(formValue, `${schemaName.split('.')[0]}.${sourceCollectionFieldRef.current?.targetKey || 'id'}`)
       : undefined;
+
+  const sourceKeyValueRef = useRef(sourceKeyValueRaw);
+  if (!_.isEqual(sourceKeyValueRef.current, sourceKeyValueRaw)) {
+    sourceKeyValueRef.current = sourceKeyValueRaw;
+  }
+  const sourceKeyValue = sourceKeyValueRef.current;
 
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
@@ -97,9 +103,14 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
         nextTick(() => {
           const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
           if (result == null) {
-            field.value = null;
+            if (field.value != null) {
+              field.value = null;
+            }
           } else {
-            field.value = result;
+            if (_.isEqual(field.value, result)) {
+              return;
+            }
+            field.setValue(result);
             field.componentProps = {
               ...field.componentProps,
               readOnlySubmit: true,

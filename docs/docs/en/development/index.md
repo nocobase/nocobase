@@ -56,4 +56,11 @@ features:
       - title: File Preview Extension
         details: Extend file preview capabilities to support online preview and rendering of more file formats.
         link: /file-manager/development
+  - title: Plugin Samples
+    details: Practical examples and tutorials demonstrating common plugin development scenarios and best practices.
+    items:
+      - title: SchemaInitializer Examples
+        details: Learn how to add blocks, fields, and actions to the interface using SchemaInitializer.
+        link: /plugin-samples/schema-initializer
+        showOnHome: true
 ---

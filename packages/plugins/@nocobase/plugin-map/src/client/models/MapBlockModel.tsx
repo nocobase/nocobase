@@ -108,7 +108,7 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   renderComponent() {
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <div>

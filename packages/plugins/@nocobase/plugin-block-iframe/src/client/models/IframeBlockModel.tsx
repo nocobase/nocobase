@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, useFlowContext, FlowContextSelector } from '@nocobase/flow-engine';
+import { escapeT, useFlowContext, FlowContextSelector, observer } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
 import { Card, Spin, theme, Tooltip, Select, InputNumber } from 'antd';
 import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import RIframe from 'react-iframe';
