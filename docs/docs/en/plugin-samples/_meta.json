@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Plugin Samples",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/plugin-samples"
+      },
+      {
+        "type": "custom-link",
+        "label": "SchemaInitializer",
+        "link": "/plugin-samples/schema-initializer"
+      }
+    ]
+  }
+]

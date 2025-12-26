@@ -150,7 +150,6 @@ export function useDialog() {
         return (
           <DialogComponent
             className="nb-dialog-overflow-hidden"
-            key={`dialog-${uuid}`}
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
             {...config}
@@ -173,8 +172,9 @@ export function useDialog() {
       },
     );
 
+    const key = config?.inputArgs?.viewUid || `page-${uuid}`;
     const dialog = (
-      <FlowEngineProvider engine={scopedEngine}>
+      <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DialogWithContext />
         </FlowViewContextProvider>

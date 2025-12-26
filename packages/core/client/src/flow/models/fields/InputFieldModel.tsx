@@ -27,7 +27,20 @@ EditableItemModel.bindModelToInterface('InputFieldModel', ['input', 'email', 'ph
 
 FilterableItemModel.bindModelToInterface(
   'InputFieldModel',
-  ['input', 'email', 'phone', 'uuid', 'url', 'nanoid', 'textarea', 'markdown', 'richText', 'password', 'color'],
+  [
+    'input',
+    'email',
+    'phone',
+    'uuid',
+    'url',
+    'nanoid',
+    'textarea',
+    'markdown',
+    'vditor',
+    'richText',
+    'password',
+    'color',
+  ],
   {
     isDefault: true,
   },

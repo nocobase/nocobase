@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { parseHTML } from '@nocobase/utils/client';
 import { Dropdown, Menu, Popover } from 'antd';
 import React, { useState } from 'react';

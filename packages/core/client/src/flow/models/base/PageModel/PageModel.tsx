@@ -49,6 +49,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
     const tabModel: BasePageTabModel = this.flowEngine.getModel(tabActiveKey);
 
     if (tabModel) {
+      if (tabModel.context.tabActive) {
+        tabModel.context.tabActive.value = tabModel.context.pageActive?.value ? method === 'onActive' : false;
+      }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
         item[method]?.();
       });

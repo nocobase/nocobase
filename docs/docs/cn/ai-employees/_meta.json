@@ -7,85 +7,58 @@
   {
     "type": "custom-link",
     "label": "快速开始",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "功能介绍",
     "items": [
       {
         "type": "custom-link",
         "label": "配置 LLM 服务",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "创建 AI 员工",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "启用 AI 员工",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
         "label": "与 AI 员工协作",
-        "link": "/ai-employees/quick-start/collaborate"
+        "link": "/ai-employees/features/collaborate"
+      },
+      {
+        "type": "custom-link",
+        "label": "添加上下文 - 区块",
+        "link": "/ai-employees/features/pick-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用技能",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "快捷任务",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "联网搜索",
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "新建 AI 员工",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
   {
     "type": "custom-link",
     "label": "内置 AI 员工",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "概述",
-        "link": "/ai-employees/built-in/index"
-      },
-      {
-        "type": "custom-link",
-        "label": "Viz：洞察分析师",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin：数据建模专家",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex：数据整理专家",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan：前端工程师",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "进阶",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "选择区块",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "数据源",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "技能",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "任务",
-        "link": "/ai-employees/advanced/task"
-      },
-      {
-        "type": "custom-link",
-        "label": "联网搜索",
-        "link": "/ai-employees/advanced/web-search"
-      }
-    ]
+    "link": "/ai-employees/built-in-employee"
   },
   {
     "type": "custom-link",
@@ -97,33 +70,7 @@
     "label": "文件管理",
     "link": "/ai-employees/file-manager"
   },
-  {
-    "type": "custom-link",
-    "label": "工作流",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "LLM节点",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "文本对话",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "多模态对话",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "结构化输出",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
-  },
+
   {
     "type": "custom-link",
     "label": "AI 知识库",
@@ -157,7 +104,34 @@
   },
   {
     "type": "custom-link",
-    "label": "应用文档",
+    "label": "工作流",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "LLM节点",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "文本对话",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "多模态对话",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "结构化输出",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "应用实践",
     "items": [
       {
         "type": "custom-link",

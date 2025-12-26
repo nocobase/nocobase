@@ -8,14 +8,14 @@
  */
 
 import React from 'react';
-import { observer } from '@formily/reactive-react';
-import { useFlowEngine } from '../../provider';
+import { useFlowContext } from '../../FlowContextProvider';
+import { observer } from '../..';
 
 /**
  * 高阶组件：仅在设计模式启用时渲染子组件
  *
  * @param WrappedComponent 要包装的组件
- * @returns 包装后的组件，只在 flowSettings.enabled 为 true 时渲染
+ * @returns 包装后的组件，只在 flowSettingsEnabled 为 true 时渲染
  *
  * @example
  * ```tsx
@@ -29,10 +29,10 @@ import { useFlowEngine } from '../../provider';
  */
 export function withFlowDesignMode<P extends Record<string, any>>(WrappedComponent: React.ComponentType<P>) {
   const WithFlowDesignModeComponent = observer((props: P) => {
-    const flowEngine = useFlowEngine();
+    const ctx = useFlowContext();
 
     // 如果设计模式未启用，直接返回 null，避免执行子组件的计算
-    if (!flowEngine.flowSettings.enabled) {
+    if (!ctx.flowSettingsEnabled) {
       return null;
     }
 

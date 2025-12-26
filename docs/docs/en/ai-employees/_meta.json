@@ -7,122 +7,68 @@
   {
     "type": "custom-link",
     "label": "Quick Start",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Features",
     "items": [
       {
         "type": "custom-link",
         "label": "Configure LLM Service",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
+      },
+      {
+        "type": "custom-link",
+        "label": "Enable AI Employees",
+        "link": "/ai-employees/features/enable-ai-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collaborate with AI Employees",
+        "link": "/ai-employees/features/collaborate"
+      },
+      {
+        "type": "custom-link",
+        "label": "Add Context - Blocks",
+        "link": "/ai-employees/features/pick-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Use Skills",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "Shortcuts",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Web Search",
+        "link": "/ai-employees/features/web-search"
       },
       {
         "type": "custom-link",
         "label": "Create AI Employee",
-        "link": "/ai-employees/quick-start/ai-employees"
-      },
-      {
-        "type": "custom-link",
-        "label": "Collaborate with AI Employee",
-        "link": "/ai-employees/quick-start/collaborate"
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
   {
     "type": "custom-link",
     "label": "Built-in AI Employees",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Overview",
-        "link": "/ai-employees/built-in/index"
-      },
-      {
-        "type": "custom-link",
-        "label": "Viz: Insight Analyst",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: Data Modeling Expert",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: Data Organizer",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: Frontend Engineer",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
+    "link": "/ai-employees/built-in-employee"
   },
   {
     "type": "custom-link",
-    "label": "Advanced",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Block Selection",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "Data Sources",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "Skills",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Tasks",
-        "link": "/ai-employees/advanced/task"
-      },
-      {
-        "type": "custom-link",
-        "label": "Web Search",
-        "link": "/ai-employees/advanced/web-search"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Access Control",
+    "label": "Permissions",
     "link": "/ai-employees/permission"
   },
   {
     "type": "custom-link",
     "label": "File Management",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "Workflow",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "LLM Nodes",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Text Chat",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Multimodal Chat",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Structured Output",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,7 +103,34 @@
   },
   {
     "type": "custom-link",
-    "label": "Application Documentation",
+    "label": "Workflow",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "LLM Node",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Text Chat",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Multimodal Chat",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Structured Output",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Application Practices",
     "items": [
       {
         "type": "custom-link",
