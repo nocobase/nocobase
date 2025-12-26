@@ -77,7 +77,14 @@ FormSubmitActionModel.registerFlow({
         if (!ctx.blockModel) {
           throw new Error('Block model is not initialized');
         }
-        await submitHandler(ctx, params);
+        try {
+          await submitHandler(ctx, params);
+        } catch (error) {
+          // 显示保存失败提示
+          ctx.message.error(ctx.t('Save failed'));
+          console.error('Form submission error:', error);
+          return;
+        }
       },
     },
     refreshAndClose: {
