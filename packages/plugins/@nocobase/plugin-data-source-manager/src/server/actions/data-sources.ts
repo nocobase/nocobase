@@ -69,6 +69,7 @@ export default {
       dataSourceModel.loadIntoApplication({
         app: ctx.app,
         refresh: true,
+        reuseDB: true,
       });
 
       ctx.app.syncMessageManager.publish(plugin.name, {
