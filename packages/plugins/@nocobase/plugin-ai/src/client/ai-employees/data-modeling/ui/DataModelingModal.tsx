@@ -85,7 +85,7 @@ const useUpdateTool = (
         ...collections[collectionIndex],
         ...collection,
       };
-      saveToolArgs({ collections });
+      saveToolArgs({ ...tool.args, collections });
     },
     [tool, saveToolArgs],
   );
@@ -101,7 +101,7 @@ const useUpdateTool = (
         ...oldField,
         ...field,
       };
-      saveToolArgs({ collections });
+      saveToolArgs({ ...tool.args, collections });
     },
     [tool, saveToolArgs],
   );
@@ -125,9 +125,10 @@ export const DataModelingModal: React.FC<{
 
   useEffect(() => {
     setAdjustArgs({
+      ...tool.args,
       collections,
     });
-  }, [collections, setAdjustArgs]);
+  }, [tool.args, collections, setAdjustArgs]);
 
   const items = [
     {
