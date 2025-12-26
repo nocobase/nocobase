@@ -11,5 +11,6 @@ export * from './AdvancedSubTableFieldModel';
 export * from './SubTableActionGroupModel';
 export * from './SubTableActionsColumnModel';
 export * from './actions/SubTableEditActionModel';
+export * from './actions/SubTableRecordDeleteActionModel';
 export * from './actions/SubTableFormActionGroupModel';
 export * from './blocks/SubTableEditFormModel';

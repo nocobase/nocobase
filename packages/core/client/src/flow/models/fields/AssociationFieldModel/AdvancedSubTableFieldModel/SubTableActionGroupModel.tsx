@@ -9,9 +9,11 @@
 
 import { ActionGroupModel } from '../../../base/ActionGroupModel';
 import { SubTableEditActionModel } from './actions/SubTableEditActionModel';
+import { SubTableRecordDeleteActionModel } from './actions/SubTableRecordDeleteActionModel';
 
 export class SubTableActionGroupModel extends ActionGroupModel {}
 
 SubTableActionGroupModel.registerActionModels({
   SubTableEditActionModel,
+  SubTableRecordDeleteActionModel,
 });
