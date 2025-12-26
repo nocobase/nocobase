@@ -23,8 +23,29 @@ export const suggestions: ToolOptions = {
           'Each option represents a possible next user message.',
       ),
   }),
-  invoke: async (ctx: Context) => {
-    const { args } = ctx.action?.params?.values || {};
+  invoke: async (ctx: Context, _args, id) => {
+    const { messageId, args } = ctx.action?.params?.values || {};
+    if (messageId) {
+      const messageRepo = ctx.app.db.getRepository('aiMessages');
+      const message = await messageRepo.findOne({
+        filterByTk: messageId,
+      });
+      const toolCalls = message.toolCalls || [];
+      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === id);
+      if (index !== -1) {
+        toolCalls[index] = {
+          ...toolCalls[index],
+          selectedSuggestion: args?.option,
+        };
+        await messageRepo.update({
+          filter: { messageId },
+          values: {
+            toolCalls,
+          },
+        });
+      }
+    }
+
     return {
       status: 'success',
       content: args?.option,
