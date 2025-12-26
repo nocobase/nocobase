@@ -793,7 +793,6 @@ export class FlowEngine {
 
   /**
    * Hydrate a model into current engine from an already-existing model instance in previous engines.
-   * - Keeps view-scoped instance isolation (creates a new instance in current engine).
    * - Avoids repository requests when the model tree is already present in memory.
    */
   private hydrateModelFromPreviousEngines<T extends FlowModel = FlowModel>(
