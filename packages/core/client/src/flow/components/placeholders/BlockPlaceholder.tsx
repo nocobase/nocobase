@@ -19,7 +19,7 @@ export const BlockPlaceholder = () => {
   const { t } = useTranslation();
   const model: BlockModel = useFlowModel();
   const blockModel = model.context.blockModel;
-  const collection = model.context.collectionField?.targetCollection || blockModel.collection;
+  const collection = blockModel.collection;
   const dataSource = collection.dataSource;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
