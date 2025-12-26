@@ -448,9 +448,7 @@ TableColumnModel.registerFlow({
       title: tExpr('Sortable'),
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
-        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-          ctx.model.collectionField.interface,
-        );
+        const targetInterface = ctx.model.collectionField.getInterfaceOptions();
         return !targetInterface.sortable;
       },
       defaultParams: {
