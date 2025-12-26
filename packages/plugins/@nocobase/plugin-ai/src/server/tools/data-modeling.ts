@@ -465,6 +465,11 @@ export const defineCollections: ToolOptions = {
           content: e.message,
         };
       }
+      if (intent === 'create') {
+        for (const options of sorted) {
+          ctx.db.removeCollection(options.name);
+        }
+      }
       return {
         status: 'error',
         content: `Failed to define collections: ${e.message}`,
