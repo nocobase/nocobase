@@ -25,6 +25,7 @@ import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
+import { EditFormModel } from '../form/EditFormModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   const isConfigMode = !!model.context.flowSettingsEnabled;
@@ -198,5 +199,8 @@ TableActionsColumnModel.define({
         },
       },
     },
+  },
+  hide(ctx) {
+    return ctx.blockModel instanceof EditFormModel;
   },
 });

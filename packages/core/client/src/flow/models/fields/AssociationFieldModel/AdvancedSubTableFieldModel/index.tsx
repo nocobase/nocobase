@@ -10,3 +10,5 @@
 export * from './AdvancedSubTableFieldModel';
 export * from './SubTableActionGroupModel';
 export * from './SubTableActionsColumnModel';
+export * from './actions/SubTableEditActionModel';
+export * from './blocks/SubTableEditFormModel';

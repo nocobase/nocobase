@@ -23,6 +23,9 @@ DataBlockModel.define({
       if (scene === 'select') {
         return M['_isScene']?.('select');
       }
+      if (scene === 'editInFront') {
+        return M['_isScene']?.('editInFront');
+      }
       if (scene === 'new' || (collectionName && !filterByTk)) {
         return M['_isScene']?.('new');
       }
