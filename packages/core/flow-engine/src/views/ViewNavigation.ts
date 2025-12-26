@@ -72,25 +72,42 @@ export function generatePathnameFromViewParams(viewParams: ViewParam[]): string 
   return '/' + segments.join('/');
 }
 
+function normalizePath(path: string) {
+  try {
+    let decoded = decodeURIComponent(path);
+    if (decoded.endsWith('/')) {
+      decoded = decoded.slice(0, -1);
+    }
+    return decoded;
+  } catch (e) {
+    return path;
+  }
+}
+
 export class ViewNavigation {
-  viewStack: ViewParam[];
+  viewStack: ReadonlyArray<ViewParam>; // 只能通过 setViewStack 修改
   ctx: FlowEngineContext;
 
   constructor(ctx: FlowEngineContext, viewParams: ViewParam[]) {
-    this.viewStack = [...viewParams];
+    this.setViewStack(viewParams);
     this.ctx = ctx;
   }
 
+  setViewStack(viewParams: ViewParam[]) {
+    this.viewStack = Object.freeze([...viewParams]);
+  }
+
   changeTo(viewParam: ViewParam) {
-    // 1. 根据传入的参数，改变当前视图的参数。当前视图的参数是 viewStack 中最后一个元素
-    if (this.viewStack.length === 0) {
-      this.viewStack.push(viewParam);
-    } else {
-      this.viewStack[this.viewStack.length - 1] = { ...this.viewStack[this.viewStack.length - 1], ...viewParam };
-    }
+    // 1. 根据传入的参数，合并成新的 viewStack
+    const newViewStack = this.viewStack.map((item, index) => {
+      if (index === this.viewStack.length - 1) {
+        return { ...item, ...viewParam };
+      }
+      return { ...item };
+    });
 
     // 2. 根据 viewStack 生成新的 pathname
-    const newPathname = generatePathnameFromViewParams(this.viewStack);
+    const newPathname = generatePathnameFromViewParams(newViewStack);
 
     // 3. 触发一次跳转。使用 replace 的方式
     this.ctx.router.navigate(newPathname, { replace: true });
@@ -106,26 +123,20 @@ export class ViewNavigation {
 
     // 4. 判断新的 pathname 是否与当前 location.pathname 的结尾一致。防止出现重复路径
     //    不用 this.ctx.route.pathname 是因为它的值可能不是最新的，会导致判断失误
-    if (location.pathname.endsWith(newPathname)) {
-      return this.ctx.router.navigate(-1); // 避免点击按钮没反应的问题
+    const currentPath = normalizePath(location.pathname);
+    const targetPath = normalizePath(newPathname);
+
+    if (currentPath.endsWith(targetPath)) {
+      return;
     }
 
     // 5. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
     this.ctx.router.navigate(newPathname, opts);
-
-    // 6. 当 viewStack 为空时，把当前参数 push 到 viewStack 中
-    if (this.viewStack.length === 0) {
-      this.viewStack.push(viewParam);
-    }
   }
 
   back() {
-    const pathname = generatePathnameFromViewParams(this.viewStack);
-
-    // 防止重复触发返回操作
-    if (location.pathname.endsWith(pathname)) {
-      this.ctx.router.navigate(-1);
-      this.viewStack.pop();
-    }
+    const prevStack = this.viewStack.slice(0, -1);
+    const prevPath = generatePathnameFromViewParams(prevStack);
+    this.ctx.router.navigate(prevPath, { replace: true });
   }
 }
