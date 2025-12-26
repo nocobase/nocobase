@@ -35,17 +35,17 @@ function RemoteModelRenderer({ options, fieldModel }) {
       refreshDeps: [ctx, options],
     },
   );
-
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
   }
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
-export function EditFormContent({ model }) {
+export function EditFormContent({ model, scene = 'edit' }) {
   const ctx = useFlowContext();
   const { Header, type } = ctx.view;
   model._closeView = ctx.view.close;
+  const title = scene === 'new' ? ctx.t('Add new') : ctx.t('Detail');
   return (
     <div>
       <Header
@@ -58,17 +58,17 @@ export function EditFormContent({ model }) {
                 backgroundColor: 'var(--colorBgLayout)',
               }}
             >
-              {ctx.t('Detail')}
+              {title}
             </div>
           ) : (
-            ctx.t('Detail')
+            title
           )
         }
       />
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
-          subKey: 'grid-block',
+          subKey: `${scene}.edit-form-grid-block`,
           async: true,
           delegateToParent: false,
           subType: 'object',
@@ -141,8 +141,6 @@ SubTableEditActionModel.registerFlow({
         size: 'medium',
       },
       handler(ctx, params) {
-        console.log(ctx.record);
-        const { onChange } = ctx.inputArgs;
         const sizeToWidthMap: Record<string, any> = {
           drawer: {
             small: '30%',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined, ZoomInOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   AddSubModelButton,
   tExpr,
@@ -15,8 +15,9 @@ import {
   DndProvider,
   useFlowEngine,
   EditableItemModel,
+  observable,
 } from '@nocobase/flow-engine';
-import { Table } from 'antd';
+import { Table, Button, Space } from 'antd';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
@@ -24,8 +25,10 @@ import { observer } from '@formily/reactive-react';
 import { isEmpty } from 'lodash';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
+import { EditFormContent } from './actions/SubTableEditActionModel';
 
 const HeaderWrapperComponent = React.memo((props) => {
   const engine = useFlowEngine();
@@ -65,7 +68,21 @@ const AddFieldColumn = ({ model }) => {
 };
 
 const DisplayTable = (props) => {
-  const { pageSize, value, size, collection, baseColumns, enableIndexColumn = true, model, onChange } = props;
+  const {
+    pageSize,
+    value,
+    size,
+    collection,
+    baseColumns,
+    enableIndexColumn = true,
+    model,
+    onChange,
+    allowAddNew,
+    allowSelectExistingRecord,
+    disabled,
+    onAddRecordClick,
+    onSelectExitRecordClick,
+  } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const { t } = useTranslation();
@@ -88,18 +105,27 @@ const DisplayTable = (props) => {
       setTableData((prev) => {
         const pk = updatedRecord[rowKey];
         const index = prev.findIndex((item) => item[rowKey] === pk);
-        if (index === -1) return prev;
 
-        const next = [...prev];
-        next[index] = {
-          ...prev[index],
-          ...updatedRecord,
-        };
-        onChange(next);
+        let next;
+        if (index === -1) {
+          // 没找到：作为新记录追加到最后
+          next = [...prev, updatedRecord];
+          const lastPage = Math.ceil(next.length / currentPageSize);
+          setCurrentPage(lastPage);
+        } else {
+          // 找到：更新原有记录
+          next = [...prev];
+          next[index] = {
+            ...prev[index],
+            ...updatedRecord,
+          };
+        }
+
+        onChange?.(next);
         return next;
       });
     },
-    [rowKey],
+    [rowKey, onChange, setCurrentPage, currentPageSize],
   );
 
   const removeRow = useCallback(
@@ -113,6 +139,7 @@ const DisplayTable = (props) => {
         // 只删除一行，其它行引用不变
         const next = prev.slice();
         next.splice(index, 1);
+        onChange(next);
         return next;
       });
     },
@@ -232,6 +259,32 @@ const DisplayTable = (props) => {
           cell: RenderCell,
         },
       }}
+      footer={() => (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Space size={'middle'}>
+            {!disabled && allowAddNew !== false && (
+              <Button type="link" onClick={onAddRecordClick} style={{ marginTop: 8 }}>
+                <PlusOutlined /> {t('Add new')}
+              </Button>
+            )}
+            {!disabled && allowSelectExistingRecord && (
+              <Button
+                type="link"
+                onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}
+                style={{ marginTop: 8 }}
+              >
+                <ZoomInOutlined /> {t('Select record')}
+              </Button>
+            )}
+          </Space>
+        </div>
+      )}
     />
   );
 };
@@ -239,6 +292,9 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
   disableTitleField = true;
   defaultOverflowMode = 'ellipsis';
   updateAssociation = true;
+  selectedRows = observable.ref([]);
+  setCurrentPage;
+  currentPageSize;
   get collection() {
     return this.context.collection;
   }
@@ -262,6 +318,29 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
     this.context.defineProperty('associationModel', {
       value: this,
     });
+    // 监听表单reset
+    this.context.blockModel.emitter.on('onFieldReset', () => {
+      this.props.onChange([]);
+    });
+    this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
+      this.setCurrentPage = setCurrentPage;
+      this.currentPageSize = currentPageSize;
+      this.dispatchEvent('openSelectRecordView', {
+        setCurrentPage,
+        currentPageSize,
+      });
+    };
+    this.onAddRecordClick = () => {
+      this.dispatchEvent('openAddRecordView', {});
+    };
+  }
+
+  set onSelectExitRecordClick(fn) {
+    this.setProps({ onSelectExitRecordClick: fn });
+  }
+
+  set onAddRecordClick(fn) {
+    this.setProps({ onAddRecordClick: fn });
   }
 
   async afterAddAsSubModel() {
@@ -276,6 +355,13 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
 
     return baseColumns;
   }
+
+  change() {
+    const lastPage = Math.ceil(this.selectedRows.value.length / this.currentPageSize);
+    this.setCurrentPage(lastPage);
+    this.props.onChange(this.selectedRows.value);
+  }
+
   public render() {
     return (
       <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns()} model={this} />
@@ -324,6 +410,251 @@ AdvancedSubTableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           pageSize: params.pageSize,
+        });
+      },
+    },
+    allowAddNew: {
+      title: tExpr('Enable add new action'),
+      uiMode: { type: 'switch', key: 'allowAddNew' },
+      defaultParams: {
+        allowAddNew: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowAddNew: params.allowAddNew,
+        });
+      },
+    },
+
+    allowDisassociation: {
+      title: tExpr('Enable remove action'),
+      uiMode: { type: 'switch', key: 'allowDisassociation' },
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Enable select action'),
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
+  },
+});
+
+// 添加新纪录
+AdvancedSubTableFieldModel.registerFlow({
+  key: 'popupSettings',
+  title: tExpr('Edit setting'),
+  on: {
+    eventName: 'openAddRecordView',
+  },
+  sort: 300,
+  steps: {
+    openView: {
+      title: tExpr('Edit Add new popup'),
+      hideInSettings(ctx) {
+        const allowAddNew = ctx.model.getStepParams?.('advanceSubTableAssociation', 'allowAddNew')?.allowAddNew;
+        return allowAddNew === false;
+      },
+      uiSchema: {
+        mode: {
+          type: 'string',
+          title: tExpr('Open mode'),
+          enum: [
+            { label: tExpr('Drawer'), value: 'drawer' },
+            { label: tExpr('Dialog'), value: 'dialog' },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+        size: {
+          type: 'string',
+          title: tExpr('Popup size'),
+          enum: [
+            { label: tExpr('Small'), value: 'small' },
+            { label: tExpr('Medium'), value: 'medium' },
+            { label: tExpr('Large'), value: 'large' },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          target: ctx.layoutContentElement,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'editInFront',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
+          },
+          content: () => <EditFormContent model={ctx.model} scene="new" />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
+        });
+      },
+    },
+  },
+});
+
+// 选择已有纪录关联
+AdvancedSubTableFieldModel.registerFlow({
+  key: 'selectExitRecordSettings',
+  title: tExpr('Selector setting'),
+  sort: 400,
+  on: {
+    eventName: 'openSelectRecordView',
+  },
+  steps: {
+    openView: {
+      title: tExpr('Edit select record popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.(
+          'advanceSubTableAssociation',
+          'allowSelectExistingRecord',
+        )?.allowSelectExistingRecord;
+        return !allowSelectExistingRecord;
+      },
+      uiSchema(ctx) {
+        return {
+          mode: {
+            type: 'string',
+            title: tExpr('Open mode'),
+            enum: [
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+          size: {
+            type: 'string',
+            title: tExpr('Popup size'),
+            enum: [
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+        };
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.model.selectedRows.value = ctx.model.props.value || [];
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          target: ctx.layoutContentElement,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'select',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
+            rowSelectionProps: {
+              type: 'checkbox',
+              defaultSelectedRows: () => {
+                return ctx.model.props.value;
+              },
+              renderCell: undefined,
+              selectedRowKeys: undefined,
+              onChange: (_, selectedRows) => {
+                const prev = ctx.model.props.value || [];
+                const merged = [
+                  ...prev,
+                  ...selectedRows.map((v) => {
+                    return {
+                      ...v,
+                      isNew: true,
+                    };
+                  }),
+                ];
+
+                // 去重，防止同一个值重复
+                const unique = merged.filter(
+                  (row, index, self) =>
+                    index ===
+                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                );
+                ctx.model.selectedRows.value = unique;
+              },
+            },
+          },
+          content: () => <RecordPickerContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
         });
       },
     },

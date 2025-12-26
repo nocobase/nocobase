@@ -201,7 +201,6 @@ SubTableActionsColumnModel.define({
     },
   },
   hide(ctx) {
-    console.log(1111111111111, ctx.blockModel, ctx.model);
     return ctx.blockModel instanceof TableBlockModel;
   },
 });
