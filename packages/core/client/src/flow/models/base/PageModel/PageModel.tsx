@@ -20,6 +20,7 @@ import {
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
+  getPageActive,
   tExpr,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
@@ -50,7 +51,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
     if (tabModel) {
       if (tabModel.context.tabActive) {
-        tabModel.context.tabActive.value = tabModel.context.pageActive?.value ? method === 'onActive' : false;
+        tabModel.context.tabActive.value = getPageActive(tabModel.context) ? method === 'onActive' : false;
       }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
         item[method]?.();
