@@ -20,6 +20,7 @@ import { Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../base/BlockModel';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { submitHandler } from './submitHandler';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormBlockModel {
@@ -42,6 +43,10 @@ export class CreateFormModel extends FormBlockModel {
 
   getAclActionName() {
     return 'create';
+  }
+
+  async submit(params: any = {}) {
+    await submitHandler(this.context, params);
   }
 
   renderComponent() {
