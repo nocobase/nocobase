@@ -46,7 +46,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
       () =>
         originalObserver(Component, {
           scheduler(updater) {
-            const pageActive = ctxRef.current?.pageActive?.value;
+            const pageActive = ctxRef.current?.view?.inputArgs.pageActive || ctxRef.current?.pageActive?.value;
             const tabActive = ctxRef.current?.tabActive?.value;
 
             if (pageActive === false || tabActive === false) {
