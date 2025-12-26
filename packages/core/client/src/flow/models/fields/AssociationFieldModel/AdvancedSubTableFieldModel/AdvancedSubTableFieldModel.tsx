@@ -65,21 +65,59 @@ const AddFieldColumn = ({ model }) => {
 };
 
 const DisplayTable = (props) => {
-  const { pageSize, value, size, collection, baseColumns, enableIndexColumn = true, model } = props;
+  const { pageSize, value, size, collection, baseColumns, enableIndexColumn = true, model, onChange } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const { t } = useTranslation();
 
+  const rowKey = collection.filterTargetKey;
+
+  // 表格内部数据
+  const [tableData, setTableData] = useState(value);
+
+  useEffect(() => {
+    setTableData(value);
+  }, [value]);
+
   useEffect(() => {
     setCurrentPageSize(pageSize);
   }, [pageSize]);
+
+  const updateRow = useCallback(
+    (updatedRecord) => {
+      setTableData((prev) => {
+        const pk = updatedRecord[rowKey];
+        const index = prev.findIndex((item) => item[rowKey] === pk);
+        if (index === -1) return prev;
+
+        const next = [...prev];
+        next[index] = {
+          ...prev[index],
+          ...updatedRecord,
+        };
+        onChange(next);
+        return next;
+      });
+    },
+    [rowKey],
+  );
+
+  useEffect(() => {
+    model.updateRow = updateRow;
+
+    return () => {
+      if (model.updateRow === updateRow) {
+        delete model.updateRow;
+      }
+    };
+  }, [model, updateRow]);
 
   // 前端分页
   const pagination = useMemo(() => {
     return {
       current: currentPage, // 当前页码
       pageSize: currentPageSize, // 每页条目数
-      total: value?.length, // 数据总条数
+      total: tableData?.length, // 数据总条数
       onChange: (page, size) => {
         setCurrentPage(page); // 更新当前页码
         setCurrentPageSize(size); // 更新每页显示条目数
@@ -89,9 +127,9 @@ const DisplayTable = (props) => {
         return t('Total {{count}} items', { count: total });
       },
     } as any;
-  }, [currentPage, currentPageSize, value]);
+  }, [currentPage, currentPageSize, tableData]);
 
-  const getColumns = () => {
+  const columns = useMemo(() => {
     const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
 
     const cols = adjustColumnOrder(
@@ -101,26 +139,28 @@ const DisplayTable = (props) => {
           width: 48,
           align: 'center',
           fixed: 'left',
-          render: (props, record, index) => {
+          render: (_: any, __: any, index: number) => {
             const pageRowIdx = (currentPage - 1) * currentPageSize + index;
             return pageRowIdx + 1;
           },
         },
-        ...baseColumns.concat({
-          key: 'empty',
-        }),
+        ...baseColumns,
+        { key: 'empty' },
       ].filter(Boolean),
-    ) as any;
+    ) as any[];
+
     if (isConfigMode) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
         width: 100,
         title: <AddFieldColumn model={model} />,
-      } as any);
+      });
     }
+
     return cols;
-  };
+  }, [baseColumns, enableIndexColumn, currentPage, currentPageSize, model.flowEngine?.flowSettings?.enabled, model]);
+
   const handleChange = useCallback(
     async (pagination, filters, sorter) => {
       //支持列点击排序
@@ -149,8 +189,8 @@ const DisplayTable = (props) => {
       size={size}
       rowKey={collection.filterTargetKey}
       scroll={{ x: 'max-content' }}
-      dataSource={value}
-      columns={getColumns()}
+      dataSource={tableData}
+      columns={columns}
       pagination={pagination}
       onChange={handleChange}
       className={css`
@@ -178,6 +218,7 @@ const DisplayTable = (props) => {
 export class AdvancedSubTableFieldModel extends AssociationFieldModel {
   disableTitleField = true;
   defaultOverflowMode = 'ellipsis';
+  updateAssociation = true;
   get collection() {
     return this.context.collection;
   }
@@ -197,6 +238,9 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
       get: () => {
         return this.context.fieldPath;
       },
+    });
+    this.context.defineProperty('associationModel', {
+      value: this,
     });
   }
 

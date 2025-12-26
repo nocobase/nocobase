@@ -26,20 +26,16 @@ function RemoteModelRenderer({ options, fieldModel }) {
   const { data, loading } = useRequest(
     async () => {
       const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      model.context.defineProperty('associationModel', {
+        value: fieldModel.context.associationModel,
+      });
       return model;
     },
     {
       refreshDeps: [ctx, options],
     },
   );
-  useEffect(() => {
-    if (!data) {
-      return;
-    }
-    if (fieldModel) {
-      fieldModel.selectBlockModel = data;
-    }
-  }, [data]);
+
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
   }
@@ -95,42 +91,17 @@ export class SubTableEditActionModel extends ActionModel {
     return 'update';
   }
 
-  // protected onMount(): void {
-  //   this.onClick = (e) => {
-  //     this.dispatchEvent('openView', {
-  //       event: e,
-  //     });
-  //   };
-  // }
-
   onClick(event) {
     this.dispatchEvent('openView', {
       event,
       ...this.getInputArgs(),
     });
   }
-
-  change() {
-    console.log(this.selectedRows.value);
-    // this.props.onChange(this.selectedRows.value);
-  }
 }
 
 SubTableEditActionModel.define({
   label: tExpr('Edit'),
 });
-
-// SubTableEditActionModel.registerFlow({
-//   key: 'subTableEditSettings',
-//   on: 'click',
-//   steps: {
-//     edit: {
-//       async handler(ctx, params) {
-//         console.log(ctx.record, params);
-//       },
-//     },
-//   },
-// });
 
 SubTableEditActionModel.registerFlow({
   key: 'popupSettings',

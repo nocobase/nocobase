@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { AxiosRequestConfig } from 'axios';
-//  import { EditFormModel } from './EditFormModel';
-//  import { FormBlockModel } from './FormBlockModel';
 import { ActionGroupModel, ActionModel } from '../../../../base';
 
 export class StFormSubmitActionModel extends ActionModel {
@@ -61,10 +58,12 @@ StFormSubmitActionModel.registerFlow({
     save: {
       async handler(ctx, params) {
         const blockModel = ctx.blockModel;
+        const subTableModel = blockModel.context.associationModel;
         try {
           await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue(true);
           console.log(values);
+          subTableModel.updateRow(values);
         } catch (error) {
           return;
         }
