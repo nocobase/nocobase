@@ -127,6 +127,7 @@ export class ViewNavigation {
     const targetPath = normalizePath(newPathname);
 
     if (currentPath.endsWith(targetPath)) {
+      this.ctx.router.navigate(-1);
       return;
     }
 
