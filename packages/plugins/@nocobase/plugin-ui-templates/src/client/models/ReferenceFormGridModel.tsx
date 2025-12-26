@@ -44,6 +44,51 @@ export class ReferenceFormGridModel extends FlowModel {
   private _resolvedTargetUid?: string;
   private _invalidTargetUid?: string;
 
+  /**
+   * 字段模板场景下，模板内 FormItemModel/CollectionFieldModel 的 onInit 会调用 ctx.blockModel.addAppends(fieldPath)。
+   * 但模板 root 自身也是一个 CollectionBlockModel，会在未桥接宿主上下文时被识别为 blockModel，导致 appends 写到模板 root 的 resource，
+   * 从而宿主表单（如 ApplyFormModel）在刷新记录时缺少关联 appends（例如 users.roles）。
+   *
+   * 这里在目标 grid 解析完成后扫描字段路径，并把需要的 appends 同步到宿主 block（master + forks），确保关系数据可展示。
+   */
+  private _syncHostResourceAppends(host: FlowModel, targetGrid: FlowModel) {
+    if (!host['addAppends']) {
+      return;
+    }
+    const candidates = new Set<string>();
+    const addCandidate = (val: unknown) => {
+      const s = typeof val === 'string' ? val.trim() : '';
+      if (!s) return;
+      candidates.add(s);
+      const top = s.split('.')[0]?.trim();
+      if (top) candidates.add(top);
+    };
+
+    const visit = (m: FlowModel) => {
+      const init = m.getStepParams?.('fieldSettings', 'init') as
+        | { fieldPath?: string; associationPathName?: string }
+        | undefined;
+      if (init) {
+        addCandidate(init.fieldPath);
+        addCandidate(init.associationPathName);
+      }
+      const subs = m.subModels || {};
+      for (const v of Object.values(subs)) {
+        if (Array.isArray(v)) {
+          v.forEach((c) => c instanceof FlowModel && visit(c));
+        } else if (v instanceof FlowModel) {
+          visit(v);
+        }
+      }
+    };
+
+    visit(targetGrid);
+    if (candidates.size === 0) return;
+    for (const fieldPath of candidates) {
+      (host as any).addAppends?.(fieldPath);
+    }
+  }
+
   constructor(options: any) {
     super(options);
 
@@ -321,6 +366,10 @@ export class ReferenceFormGridModel extends FlowModel {
         (gridModel.context as FlowContext & { [BRIDGE_MARKER]?: boolean })[BRIDGE_MARKER] = true;
       }
       if (!gridModel) return undefined;
+      // 同步模板字段需要的关联 appends 到宿主 block 的 resource（避免 users.roles 等关系字段为空）
+      if (host) {
+        this._syncHostResourceAppends(host, gridModel);
+      }
       return { root, grid: gridModel };
     };
 
