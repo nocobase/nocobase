@@ -50,7 +50,7 @@ export function SchemaSettingsConnectDataBlocks(props) {
   }
 
   const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+    const title = `${compile(block.collection.title)} ${block.uid ? `#${block.uid.slice(0, 4)}` : ''}`;
     const onHover = () => {
       block.highlightBlock();
     };
