@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
 import { ActionModel } from '../../base';
-import { EditFormModel } from './EditFormModel';
-import { FormBlockModel } from './FormBlockModel';
+import { submitHandler } from './submitHandler';
 
 export class FormActionModel extends ActionModel {}
 
@@ -78,48 +77,18 @@ FormSubmitActionModel.registerFlow({
         if (!ctx.blockModel) {
           throw new Error('Block model is not initialized');
         }
-        const resource = ctx.resource;
-        const blockModel = ctx.blockModel as FormBlockModel;
         try {
-          await blockModel.form.validateFields();
-          const values = blockModel.form.getFieldsValue(true);
-          if (resource instanceof SingleRecordResource) {
-            if (blockModel instanceof EditFormModel) {
-              const currentFilterByTk = resource.getMeta('currentFilterByTk');
-              if (!currentFilterByTk) {
-                resource.isNewRecord = true; // 设置为新记录
-              } else {
-                resource.setFilterByTk(currentFilterByTk);
-              }
-            }
-            const data: any = await resource.save(values, params.requestConfig);
-            if (blockModel instanceof EditFormModel) {
-              resource.isNewRecord = false;
-              await resource.refresh();
-            } else {
-              blockModel.form.resetFields();
-              blockModel.emitter.emit('onFieldReset');
-              if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
-                ctx.view.inputArgs.onChange(data?.data);
-              }
-            }
-          } else if (resource instanceof MultiRecordResource) {
-            const currentFilterByTk = resource.getMeta('currentFilterByTk');
-            if (!currentFilterByTk) {
-              ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
-              return;
-            }
-            await resource.update(currentFilterByTk, values, params.requestConfig);
-          }
+          await submitHandler(ctx, params);
         } catch (error) {
           // 显示保存失败提示
           ctx.message.error(ctx.t('Save failed'));
           console.error('Form submission error:', error);
           return;
         }
-
-        ctx.message.success(ctx.t('Saved successfully'));
-
+      },
+    },
+    refreshAndClose: {
+      async handler(ctx) {
         if (ctx.view) {
           const viewUid = ctx.view.inputArgs?.viewUid;
           const actionModel = ctx.engine.getModel(viewUid, true);

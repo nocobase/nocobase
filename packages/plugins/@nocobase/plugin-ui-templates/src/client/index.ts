@@ -15,7 +15,6 @@ import { BlockTemplatesPage, PopupTemplatesPage } from './components/FlowModelTe
 // @ts-ignore
 import pkg from '../../package.json';
 import { registerMenuExtensions } from './menuExtensions';
-import { registerSubModelMenuExtensions } from './subModelMenuExtensions';
 import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
 
 const NAMESPACE = 'ui-templates';
@@ -27,7 +26,6 @@ export class PluginBlockReferenceClient extends Plugin {
       ReferenceFormGridModel,
       SubModelTemplateImporterModel,
     });
-    registerSubModelMenuExtensions(this.flowEngine);
     registerOpenViewPopupTemplateAction(this.flowEngine);
 
     // 父级菜单（只有标题，无组件）
