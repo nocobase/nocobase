@@ -198,6 +198,7 @@ SubTableEditActionModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
+            record: ctx.record,
           },
           content: () => <EditFormContent model={ctx.model} />,
           styles: {

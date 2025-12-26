@@ -36,10 +36,14 @@ export class SubTableEditFormModel extends FormBlockModel {
     this.context.defineProperty('resourceName', {
       get: () => null,
     });
+    const recordData = this.context.view.inputArgs.record || {};
+    this.context.defineProperty('record', {
+      get: () => recordData,
+    });
   }
 
   _defaultCustomModelClasses = {
-    FormActionGroupModel: 'FormActionGroupModel',
+    FormActionGroupModel: 'SubTableFormActionGroupModel',
     FormItemModel: 'FormItemModel',
     FormCustomItemModel: 'FormCustomItemModel',
   };
@@ -238,6 +242,7 @@ export class SubTableEditFormModel extends FormBlockModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    console.log(this.context.record);
 
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
