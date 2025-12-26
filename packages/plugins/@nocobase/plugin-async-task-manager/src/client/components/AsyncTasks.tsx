@@ -168,7 +168,7 @@ const AsyncTasksButton = (props) => {
             <Popconfirm
               key="cancel"
               title={localT('Confirm cancel')}
-              description={localT('Confirm cancel description')}
+              description={localT('Confirm to cancel this task?')}
               onConfirm={async () => {
                 await api.resource('asyncTasks').stop({
                   filterByTk: record.id,
