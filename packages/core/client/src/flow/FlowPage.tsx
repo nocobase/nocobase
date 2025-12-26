@@ -259,7 +259,7 @@ type FlowPageProps = {
   defaultTabTitle?: string;
 };
 
-export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
+export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {
   const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowViewContext();
@@ -314,7 +314,9 @@ export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
     return <SkeletonFallback style={{ margin: ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock }} />;
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
-};
+});
+
+FlowPage.displayName = 'FlowPage';
 
 export const RemoteFlowModelRenderer = (props) => {
   const { uid, parentId, subKey, ...rest } = props;
