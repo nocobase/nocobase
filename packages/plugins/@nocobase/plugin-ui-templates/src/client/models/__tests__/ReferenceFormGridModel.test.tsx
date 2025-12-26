@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { CollectionFieldModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, it, expect, vi } from 'vitest';
 import { ReferenceFormGridModel } from '../ReferenceFormGridModel';
 
@@ -45,7 +45,7 @@ describe('ReferenceFormGridModel', () => {
         const data = store[query.uid];
         return data ? clone(data) : null;
       }),
-      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      save: vi.fn(async (model) => ({ uid: model?.uid })),
       destroy: vi.fn(async () => true),
       move: vi.fn(async () => {}),
       duplicate: vi.fn(async () => null),
@@ -94,6 +94,400 @@ describe('ReferenceFormGridModel', () => {
     expect(serialized.subModels).toBeUndefined();
   });
 
+  it('bridges host view (inputArgs) to scoped engine (override parent engine view)', async () => {
+    class HostModel extends FlowModel {}
+    class GridModel extends FlowModel {}
+    class ViewReaderModel extends FlowModel {
+      onInit(options: any) {
+        super.onInit(options);
+        const foo = (this.context as any)?.view?.inputArgs?.foo;
+        this.setStepParams('viewSettings', 'read', { foo });
+      }
+    }
+
+    const engine = new FlowEngine();
+    const store: Record<string, any> = {
+      'tpl-root': {
+        uid: 'tpl-root',
+        use: 'ViewReaderModel',
+        subModels: {
+          grid: {
+            uid: 'tpl-grid',
+            use: 'GridModel',
+            subKey: 'grid',
+            subType: 'object',
+            subModels: {
+              items: [],
+            },
+          },
+        },
+      },
+    };
+
+    const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
+    const mockRepository = {
+      findOne: vi.fn(async (query) => {
+        const data = store[query.uid];
+        return data ? clone(data) : null;
+      }),
+      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+    };
+
+    engine.setModelRepository(mockRepository as any);
+    engine.registerModels({
+      HostModel,
+      GridModel,
+      ViewReaderModel,
+      ReferenceFormGridModel,
+    });
+
+    // 外层（父引擎）view：模拟列表页
+    engine.context.defineProperty('view', { value: { inputArgs: { foo: 'from-parent' } } });
+
+    // 宿主区块 view：模拟抽屉/弹窗的详情页 inputArgs
+    const host = engine.createModel<HostModel>({ uid: 'host', use: 'HostModel' });
+    host.context.defineProperty('view', { value: { inputArgs: { foo: 'from-host' } } });
+
+    const refGrid = engine.createModel({
+      uid: 'host-grid',
+      use: 'ReferenceFormGridModel',
+      parentId: host.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: {
+        referenceSettings: {
+          useTemplate: {
+            templateUid: 'tpl-1',
+            targetUid: 'tpl-root',
+            targetPath: 'subModels.grid',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    host.setSubModel('grid', refGrid);
+
+    await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+    const targetRoot = (refGrid as any)._targetRoot as FlowModel;
+    expect(targetRoot).toBeTruthy();
+    expect(targetRoot.getStepParams('viewSettings', 'read')).toEqual({ foo: 'from-host' });
+  });
+
+  it('syncs association appends to host block (field template reference)', async () => {
+    class HostBlockModel extends FlowModel {
+      appends: string[] = [];
+      onInit(options: any) {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+      addAppends(fieldPath: string) {
+        this.appends.push(fieldPath);
+      }
+    }
+
+    class TemplateRootBlockModel extends FlowModel {
+      appends: string[] = [];
+      onInit(options: any) {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+      addAppends(fieldPath: string) {
+        this.appends.push(fieldPath);
+      }
+    }
+
+    class GridModel extends FlowModel {}
+    class ItemModel extends CollectionFieldModel {}
+
+    const engine = new FlowEngine();
+    const store: Record<string, any> = {
+      'tpl-root': {
+        uid: 'tpl-root',
+        use: 'TemplateRootBlockModel',
+        subModels: {
+          grid: {
+            uid: 'tpl-grid',
+            use: 'GridModel',
+            subKey: 'grid',
+            subType: 'object',
+            subModels: {
+              items: [
+                {
+                  uid: 'tpl-item-1',
+                  use: 'ItemModel',
+                  subKey: 'items',
+                  subType: 'array',
+                  stepParams: {
+                    fieldSettings: {
+                      init: {
+                        dataSourceKey: 'main',
+                        collectionName: 'users',
+                        fieldPath: 'roles.name',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
+    const mockRepository = {
+      findOne: vi.fn(async (query) => {
+        const data = store[query.uid];
+        return data ? clone(data) : null;
+      }),
+      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+    };
+
+    engine.setModelRepository(mockRepository as any);
+    engine.registerModels({
+      HostBlockModel,
+      TemplateRootBlockModel,
+      GridModel,
+      ItemModel,
+      ReferenceFormGridModel,
+    });
+
+    const host = engine.createModel<HostBlockModel>({ uid: 'host', use: 'HostBlockModel' });
+
+    const refGrid = engine.createModel({
+      uid: 'host-grid',
+      use: 'ReferenceFormGridModel',
+      parentId: host.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: {
+        referenceSettings: {
+          useTemplate: {
+            templateUid: 'tpl-1',
+            targetUid: 'tpl-root',
+            targetPath: 'subModels.grid',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    host.setSubModel('grid', refGrid);
+
+    await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+    // host should receive the top-level association append ('roles') from template fieldPath 'roles.name'
+    expect(host.appends).toContain('roles');
+
+    // template root still receives its own addAppends during onInit, but it should not be the only one
+    const tplRoot = (refGrid as any)._targetRoot as TemplateRootBlockModel;
+    expect(tplRoot).toBeTruthy();
+    expect(tplRoot.appends.length).toBeGreaterThan(0);
+  });
+
+  it('bridges host view (inputArgs) to scoped engine (override parent engine view)', async () => {
+    class HostModel extends FlowModel {}
+    class GridModel extends FlowModel {}
+    class ViewReaderModel extends FlowModel {
+      onInit(options: any) {
+        super.onInit(options);
+        const foo = (this.context as any)?.view?.inputArgs?.foo;
+        this.setStepParams('viewSettings', 'read', { foo });
+      }
+    }
+
+    const engine = new FlowEngine();
+    const store: Record<string, any> = {
+      'tpl-root': {
+        uid: 'tpl-root',
+        use: 'ViewReaderModel',
+        subModels: {
+          grid: {
+            uid: 'tpl-grid',
+            use: 'GridModel',
+            subKey: 'grid',
+            subType: 'object',
+            subModels: {
+              items: [],
+            },
+          },
+        },
+      },
+    };
+
+    const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
+    const mockRepository = {
+      findOne: vi.fn(async (query) => {
+        const data = store[query.uid];
+        return data ? clone(data) : null;
+      }),
+      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+    };
+
+    engine.setModelRepository(mockRepository as any);
+    engine.registerModels({
+      HostModel,
+      GridModel,
+      ViewReaderModel,
+      ReferenceFormGridModel,
+    });
+
+    // 外层（父引擎）view：模拟列表页
+    engine.context.defineProperty('view', { value: { inputArgs: { foo: 'from-parent' } } });
+
+    // 宿主区块 view：模拟抽屉/弹窗的详情页 inputArgs
+    const host = engine.createModel<HostModel>({ uid: 'host', use: 'HostModel' });
+    host.context.defineProperty('view', { value: { inputArgs: { foo: 'from-host' } } });
+
+    const refGrid = engine.createModel({
+      uid: 'host-grid',
+      use: 'ReferenceFormGridModel',
+      parentId: host.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: {
+        referenceSettings: {
+          useTemplate: {
+            templateUid: 'tpl-1',
+            targetUid: 'tpl-root',
+            targetPath: 'subModels.grid',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    host.setSubModel('grid', refGrid);
+
+    await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+    const targetRoot = (refGrid as any)._targetRoot as FlowModel;
+    expect(targetRoot).toBeTruthy();
+    expect(targetRoot.getStepParams('viewSettings', 'read')).toEqual({ foo: 'from-host' });
+  });
+
+  it('syncs association appends to host block (field template reference)', async () => {
+    class HostBlockModel extends FlowModel {
+      appends: string[] = [];
+      onInit(options: any) {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+      addAppends(fieldPath: string) {
+        this.appends.push(fieldPath);
+      }
+    }
+
+    class TemplateRootBlockModel extends FlowModel {
+      appends: string[] = [];
+      onInit(options: any) {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+      addAppends(fieldPath: string) {
+        this.appends.push(fieldPath);
+      }
+    }
+
+    class GridModel extends FlowModel {}
+    class ItemModel extends CollectionFieldModel {}
+
+    const engine = new FlowEngine();
+    const store: Record<string, any> = {
+      'tpl-root': {
+        uid: 'tpl-root',
+        use: 'TemplateRootBlockModel',
+        subModels: {
+          grid: {
+            uid: 'tpl-grid',
+            use: 'GridModel',
+            subKey: 'grid',
+            subType: 'object',
+            subModels: {
+              items: [
+                {
+                  uid: 'tpl-item-1',
+                  use: 'ItemModel',
+                  subKey: 'items',
+                  subType: 'array',
+                  stepParams: {
+                    fieldSettings: {
+                      init: {
+                        dataSourceKey: 'main',
+                        collectionName: 'users',
+                        fieldPath: 'roles.name',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
+    const mockRepository = {
+      findOne: vi.fn(async (query) => {
+        const data = store[query.uid];
+        return data ? clone(data) : null;
+      }),
+      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+    };
+
+    engine.setModelRepository(mockRepository as any);
+    engine.registerModels({
+      HostBlockModel,
+      TemplateRootBlockModel,
+      GridModel,
+      ItemModel,
+      ReferenceFormGridModel,
+    });
+
+    const host = engine.createModel<HostBlockModel>({ uid: 'host', use: 'HostBlockModel' });
+
+    const refGrid = engine.createModel({
+      uid: 'host-grid',
+      use: 'ReferenceFormGridModel',
+      parentId: host.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: {
+        referenceSettings: {
+          useTemplate: {
+            templateUid: 'tpl-1',
+            targetUid: 'tpl-root',
+            targetPath: 'subModels.grid',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    host.setSubModel('grid', refGrid);
+
+    await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+    // host should receive the top-level association append ('roles') from template fieldPath 'roles.name'
+    expect(host.appends).toContain('roles');
+
+    // template root still receives its own addAppends during onInit, but it should not be the only one
+    const tplRoot = (refGrid as any)._targetRoot as TemplateRootBlockModel;
+    expect(tplRoot).toBeTruthy();
+    expect(tplRoot.appends.length).toBeGreaterThan(0);
+  });
+
   it('bridges host context (record) to referenced grid while keeping scoped engine', async () => {
     const engine = new FlowEngine();
     const store: Record<string, any> = {
@@ -120,7 +514,7 @@ describe('ReferenceFormGridModel', () => {
         const data = store[query.uid];
         return data ? clone(data) : null;
       }),
-      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      save: vi.fn(async (model) => ({ uid: model?.uid })),
       destroy: vi.fn(async () => true),
       move: vi.fn(async () => {}),
       duplicate: vi.fn(async () => null),
@@ -229,7 +623,7 @@ describe('ReferenceFormGridModel', () => {
         const data = store[query.uid];
         return data ? clone(data) : null;
       }),
-      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      save: vi.fn(async (model) => ({ uid: model?.uid })),
       destroy: vi.fn(async () => true),
       move: vi.fn(async () => {}),
       duplicate: vi.fn(async () => null),
@@ -343,7 +737,7 @@ describe('ReferenceFormGridModel', () => {
         const data = store[query.uid];
         return data ? clone(data) : null;
       }),
-      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      save: vi.fn(async (model) => ({ uid: model?.uid })),
       destroy: vi.fn(async () => true),
       move: vi.fn(async () => {}),
       duplicate: vi.fn(async () => null),
@@ -426,7 +820,7 @@ describe('ReferenceFormGridModel', () => {
         const data = store[query.uid];
         return data ? clone(data) : null;
       }),
-      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      save: vi.fn(async (model) => ({ uid: model?.uid })),
       destroy: vi.fn(async () => true),
       move: vi.fn(async () => {}),
       duplicate: vi.fn(async () => null),
@@ -512,7 +906,7 @@ describe('ReferenceFormGridModel', () => {
         const data = store[query.uid];
         return data ? clone(data) : null;
       }),
-      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      save: vi.fn(async (model) => ({ uid: model?.uid })),
       destroy: vi.fn(async () => true),
       move: vi.fn(async () => {}),
       duplicate: vi.fn(async () => null),

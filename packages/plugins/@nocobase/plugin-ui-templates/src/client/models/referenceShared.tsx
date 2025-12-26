@@ -27,14 +27,9 @@ export function ensureBlockScopedEngine(flowEngine: FlowEngine, scopedEngine?: F
 
 export function ensureScopedEngineView(engine: FlowEngine, hostContext?: FlowContext): void {
   if (!engine?.context || !hostContext) return;
-  const ctx = engine.context as any;
-  if (typeof ctx.getPropertyOptions === 'function' && ctx.getPropertyOptions('view')) {
-    return;
-  }
-
-  ctx.defineProperty('view', {
+  engine.context.defineProperty('view', {
     cache: false,
-    get: () => (hostContext as any).view,
+    get: () => hostContext.view,
   });
 }
 

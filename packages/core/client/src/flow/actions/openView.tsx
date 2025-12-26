@@ -270,6 +270,7 @@ export const openView = defineAction({
       associationName: runtimeAssociationName,
       tabUid: mergedTabUid,
       openerUids,
+      pageActive: true, // 打开一个弹窗时，页面肯定是激活的
     };
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = mergedFilterByTk;
@@ -303,6 +304,12 @@ export const openView = defineAction({
 
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
+              });
+              pageModel.context.defineProperty('flowSettingsEnabled', {
+                get: () => {
+                  return ctx.flowSettingsEnabled;
+                },
+                cache: false,
               });
               // 统一视图上下文：无论内部还是外部弹窗，页面内的 ctx.view 都指向“当前视图”
               // 这样在路由模式下，外部弹窗（通过 ctx.openView 触发）与内部弹窗拥有一致的 ctx.view 行为
