@@ -185,6 +185,8 @@ export const FlowRoute = () => {
           // 3. 对比新旧列表，区分开需要打开和关闭的视图
           const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(prevViewListRef.current, viewList);
 
+          console.log('[NocoBase] FlowRoute view diff:', { viewsToClose, viewsToOpen });
+
           // 4. 处理需要打开的视图
           if (viewsToOpen.length) {
             const prevViewListCopy = [...prevViewListRef.current];
