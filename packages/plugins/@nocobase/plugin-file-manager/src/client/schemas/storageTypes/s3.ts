@@ -50,18 +50,7 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
-        renameMode: {
-          title: `{{t("file_renaming_method", { ns: "${NAMESPACE}" })}}`,
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: `{{t("md5_renaming", { ns: "${NAMESPACE}" })}}`, value: 'md5' },
-            { label: `{{t("original_filename_suffix", { ns: "${NAMESPACE}" })}}`, value: 'suffix' },
-          ],
-          default: 'md5',
-          description: `{{t("file_renaming_method_description", { ns: "${NAMESPACE}" })}}`,
-        },
+        renameMode: common.renameMode,
         endpoint: {
           title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
