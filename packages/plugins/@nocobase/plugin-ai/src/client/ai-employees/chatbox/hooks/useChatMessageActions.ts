@@ -506,6 +506,7 @@ export const useChatMessageActions = () => {
     resendMessages,
     cancelRequest,
     callTool,
+    confirmToolCall,
     updateToolArgs,
     lastMessageRef,
     startEditingMessage,

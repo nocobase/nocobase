@@ -43,6 +43,10 @@ export default {
         name: 'dataSource-dataSourceQuery',
         autoCall: true,
       },
+      {
+        name: 'dataModeling-suggestions',
+        autoCall: false,
+      },
     ],
   },
 };

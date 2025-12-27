@@ -42,8 +42,7 @@ export const DataModelingCard: React.FC<{
         <Spin indicator={<LoadingOutlined spin />} size="small" /> {t('Generating...')}
       </>
     );
-  }
-  if (!tool.args.collections) {
+  } else if (!tool.args.collections) {
     console.error('Invalid definition', tool.args);
     description = (
       <>

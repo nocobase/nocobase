@@ -70,6 +70,7 @@ export type ToolCall<T> = {
   invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
   auto: boolean;
   args: T;
+  [key: string]: any;
 };
 
 export type MessageType = 'text' | 'greeting';

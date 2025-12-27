@@ -55,6 +55,7 @@ import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
 import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
+import { suggestionsTool } from './ai-employees/suggestions/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -165,6 +166,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool(...chartGeneratorTool);
     this.aiManager.registerTool(...listCodeSnippetTool);
     this.aiManager.registerTool(...getCodeSnippetTool);
+    this.aiManager.registerTool(...suggestionsTool);
   }
 
   setupWorkflow() {
