@@ -17,9 +17,7 @@ export const validation = defineAction({
     if (!ctx.model.collectionField) {
       return;
     }
-    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-      ctx.model.collectionField.interface,
-    );
+    const targetInterface = ctx.model.collectionField.getInterfaceOptions();
     if (!targetInterface.validationType) {
       return null;
     }
