@@ -75,6 +75,9 @@ export const pattern = defineAction({
         targetUse: binding.modelName,
         defaultProps: resolveDefaultProps(binding, targetCollectionTitleField || ctx.collectionField),
       });
+      if (binding.modelName) {
+        ctx.model.setStepParams('editItemSettings', 'model', { use: binding.modelName });
+      }
     } else {
       const binding = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
       if (previousParams.pattern === 'readPretty') {

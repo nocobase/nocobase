@@ -115,7 +115,7 @@ export function RecordPickerContent({ model, toOne = false }) {
 }
 
 function RecordPickerField(props) {
-  const { fieldNames } = props;
+  const { fieldNames, onClick, disabled } = props;
   const ctx = useFlowContext();
   const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
   useEffect(() => {
@@ -141,6 +141,11 @@ function RecordPickerField(props) {
     <Select
       {...props}
       open={false}
+      onClick={(e) => {
+        if (!disabled) {
+          onClick(e);
+        }
+      }}
       value={normalizeValue(props.value, fieldNames, toOne)}
       labelRender={(item) => {
         return <LabelByField option={item} fieldNames={fieldNames} />;

@@ -153,8 +153,18 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
+    const record = this.context.currentObject || this.context.record;
     return (
-      <FormItem {...mergedProps} name={fieldPath} validateFirst={true}>
+      <FormItem
+        {...mergedProps}
+        name={fieldPath}
+        validateFirst={true}
+        disabled={
+          this.props.disabled ||
+          (!_.isEmpty(record) && !record.isNew && this.props.aclDisabled) ||
+          (!_.isEmpty(record) && record.isNew && this.props.aclCreateDisabled)
+        }
+      >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
@@ -210,6 +220,84 @@ FormItemModel.registerFlow({
     },
     aclCheck: {
       use: 'aclCheck',
+      async handler(ctx, params) {
+        if (!ctx.collectionField) {
+          return;
+        }
+        const blockActionName = ctx.blockModel.context.actionName;
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField?.name],
+          actionName: blockActionName,
+        });
+
+        if (blockActionName === 'update') {
+          // 编辑表单
+          const resultView = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'view',
+          });
+          if (ctx.prefixFieldPath && ctx.currentObject) {
+            //子表单下的新增
+            const createFieldAclResult = await ctx.aclCheck({
+              dataSourceKey: ctx.dataSource?.key,
+              resourceName: ctx.collectionField?.collectionName,
+              fields: [ctx.collectionField.name],
+              actionName: 'create',
+            });
+
+            if (!createFieldAclResult) {
+              ctx.model.setProps({
+                aclCreateDisabled: true,
+              });
+            }
+          }
+
+          if (!resultView && !ctx.currentObject?.isNew) {
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: 'view',
+            };
+            ctx.exitAll();
+          }
+
+          if (!result) {
+            ctx.model.setProps({
+              aclDisabled: true,
+            });
+          }
+        } else if (blockActionName === 'create') {
+          // 新增表单
+          const updateCollectionAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            actionName: 'update',
+          });
+
+          const updateFieldAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'update',
+          });
+          if (!result && !ctx.currentObject?.isStored) {
+            // 子表单中选择的记录
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: blockActionName,
+            };
+            ctx.exitAll();
+          }
+          if (!updateCollectionAclResult || !updateFieldAclResult) {
+            ctx.model.setProps({
+              aclDisabled: true,
+            });
+          }
+        }
+      },
     },
     init: {
       async handler(ctx) {

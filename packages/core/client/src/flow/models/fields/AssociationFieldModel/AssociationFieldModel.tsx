@@ -26,5 +26,17 @@ AssociationFieldModel.registerFlow({
         }
       },
     },
+    allowCreateCheck: {
+      async handler(ctx) {
+        const aclCreate = await ctx.aclCheck({
+          dataSourceKey: ctx.collectionField.dataSourceKey,
+          resourceName: ctx.collectionField?.target,
+          actionName: 'create',
+        });
+        ctx.model.setProps({
+          allowCreate: !!aclCreate,
+        });
+      },
+    },
   },
 });

@@ -107,6 +107,12 @@ export class DetailsItemModel extends DisplayItemModel<{
 
   onInit(options: any) {
     super.onInit(options);
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return 'view';
+      },
+      cache: false,
+    });
   }
 
   renderItem() {

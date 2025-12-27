@@ -9,7 +9,7 @@
 
 import { CollectionField, tExpr } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
-import { castArray, get } from 'lodash';
+import { castArray, get, omit } from 'lodash';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
@@ -116,7 +116,7 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
-    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
+    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = omit(this.props, 'disabled');
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }
