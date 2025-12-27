@@ -31,9 +31,12 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
 
   // 找出需要关闭的视图：存在于旧列表但不在新列表中
   const viewsToClose: ViewItem[] = [];
-  prevViewMap.forEach((viewItem, key) => {
+  prevViewMap.forEach((preViewItem, key) => {
     if (!currentViewMap.has(key)) {
-      viewsToClose.push(viewItem);
+      viewsToClose.push(preViewItem);
+    } else {
+      // 修复子页面切换时，hidden 状态失去响应性的问题
+      currentViewMap.get(key).hidden = preViewItem.hidden;
     }
   });
 

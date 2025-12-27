@@ -198,13 +198,14 @@ export const FlowRoute = () => {
                     }
                   }),
                 );
-                // Model 加载后，重新计算 hidden 状态
-                updateViewListHidden(viewList);
               }
 
               if (forceStopRef.current) {
                 return;
               }
+
+              // 重新计算 hidden 状态
+              updateViewListHidden(viewList);
 
               const openView = (index: number) => {
                 if (!viewsToOpen[index]) {
@@ -258,10 +259,15 @@ export const FlowRoute = () => {
           }
 
           // 5. 处理需要关闭的视图（强制关闭，确保触发 onClose 并绕过 preventClose）
-          viewsToClose.forEach((viewItem) => {
-            viewStateRef.current[getKey(viewItem)]?.close?.(true);
-            delete viewStateRef.current[getKey(viewItem)];
-          });
+          if (viewsToClose.length) {
+            viewsToClose.forEach((viewItem) => {
+              viewStateRef.current[getKey(viewItem)]?.close?.(true);
+              delete viewStateRef.current[getKey(viewItem)];
+            });
+
+            // 重新计算 hidden 状态
+            updateViewListHidden(viewList);
+          }
 
           // 6. 当没有视图需要打开和关闭时，说明只是更新了当前视图的参数，比如切换 tab。这是需要更新当前视图 navigation 的 viewStack，避免 URL 错乱
           if (viewsToClose.length === 0 && viewsToOpen.length === 0) {
@@ -273,13 +279,7 @@ export const FlowRoute = () => {
             }
           }
 
-          prevViewListRef.current = viewList.map((item, index) => {
-            if (prevViewListRef.current[index]) {
-              // 修复子页面切换时，hidden 状态失去响应性的问题
-              item.hidden = prevViewListRef.current[index].hidden;
-            }
-            return item;
-          });
+          prevViewListRef.current = [...viewList];
         } catch (error) {
           console.error(`[NocoBase] Failed to resolve view params to view list:`, error);
         }
