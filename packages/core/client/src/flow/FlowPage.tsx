@@ -194,7 +194,6 @@ export const FlowRoute = () => {
 
           // 5. 处理需要打开的视图
           if (viewsToOpen.length) {
-            const prevViewListSnapshot = [...prevViewListRef.current];
             const handleOpenViews = async () => {
               const missingModels = viewsToOpen.filter((v) => !v.model);
               if (missingModels.length > 0) {
@@ -230,11 +229,10 @@ export const FlowRoute = () => {
                 const closeRef = React.createRef<(result?: any, force?: boolean) => void>();
                 const updateRef = React.createRef<(value: any) => void>();
                 const openViewParams = getOpenViewStepParams(viewItem.model);
-                const openerUids = prevViewListSnapshot.map((item) => item.params.viewUid);
-                prevViewListSnapshot.push(viewItem);
+                const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
                 const navigation = new ViewNavigation(
                   flowEngine.context,
-                  prevViewListSnapshot.map((item) => item.params),
+                  viewList.slice(0, viewItem.index + 1).map((item) => item.params),
                 );
 
                 viewItem.model.dispatchEvent('click', {
