@@ -181,7 +181,18 @@ export const FlowRoute = () => {
 
           console.log('[NocoBase] FlowRoute view diff:', { viewsToClose, viewsToOpen });
 
-          // 4. 处理需要打开的视图
+          // 4. 处理需要关闭的视图（强制关闭，确保触发 onClose 并绕过 preventClose）
+          if (viewsToClose.length) {
+            viewsToClose.forEach((viewItem) => {
+              viewStateRef.current[getKey(viewItem)]?.close?.(true);
+              delete viewStateRef.current[getKey(viewItem)];
+            });
+
+            // 重新计算 hidden 状态
+            updateViewListHidden(viewList);
+          }
+
+          // 5. 处理需要打开的视图
           if (viewsToOpen.length) {
             const prevViewListSnapshot = [...prevViewListRef.current];
             const handleOpenViews = async () => {
@@ -256,17 +267,6 @@ export const FlowRoute = () => {
             handleOpenViews();
           }
 
-          // 5. 处理需要关闭的视图（强制关闭，确保触发 onClose 并绕过 preventClose）
-          if (viewsToClose.length) {
-            viewsToClose.forEach((viewItem) => {
-              viewStateRef.current[getKey(viewItem)]?.close?.(true);
-              delete viewStateRef.current[getKey(viewItem)];
-            });
-
-            // 重新计算 hidden 状态
-            updateViewListHidden(viewList);
-          }
-
           // 6. 当没有视图需要打开和关闭时，说明只是更新了当前视图的参数，比如切换 tab。这是需要更新当前视图 navigation 的 viewStack，避免 URL 错乱
           if (viewsToClose.length === 0 && viewsToOpen.length === 0) {
             const currentViewItem = viewList.at(-1);
@@ -292,7 +292,7 @@ export const FlowRoute = () => {
       dispose?.();
       prevViewListRef.current.forEach((viewItem) => {
         flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
-        viewStateRef.current[getKey(viewItem)].close(true);
+        viewStateRef.current[getKey(viewItem)]?.close(true);
       });
     };
   }, [flowEngine, isMobileLayout, routeModel]);
