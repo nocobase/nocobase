@@ -67,7 +67,7 @@ export const createConnectionCondition: Predicate<AppDbCreatorOptions> = ({ appO
   appOptions?.dbConnType === 'new_connection';
 
 export const createSchemaCondition: Predicate<AppDbCreatorOptions> = ({ appOptions }) =>
-  process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' || appOptions.dbConnType === 'new_schema';
+  appOptions.dbConnType === 'new_schema';
 
 export const createDatabase: AppDbCreator = async ({ app }) => {
   const { host, port, username, password, dialect, database } = app.options.database as any;

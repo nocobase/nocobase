@@ -80,9 +80,6 @@ describe('app supervisor db creator predicates', () => {
   it('detects when a schema should be created', () => {
     expect(createSchemaCondition({ appOptions: { dbConnType: 'new_schema' } } as any)).toBe(true);
     expect(createSchemaCondition({ appOptions: { dbConnType: 'custom' } } as any)).toBe(false);
-
-    process.env.USE_DB_SCHEMA_IN_SUBAPP = 'true';
-    expect(createSchemaCondition({ appOptions: { dbConnType: 'custom' } } as any)).toBe(true);
   });
 });
 

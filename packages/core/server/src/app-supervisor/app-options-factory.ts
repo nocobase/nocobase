@@ -29,6 +29,7 @@ function getDatabaseConfig(app: Application): IDatabaseOptions {
 
 export const appOptionsFactory = (appName: string, mainApp: Application, options: AppModelOptions) => {
   const rawDatabaseOptions = getDatabaseConfig(mainApp);
+  let dbConnType = 'new_database';
 
   if (rawDatabaseOptions.dialect === 'sqlite') {
     const mainAppStorage = rawDatabaseOptions.storage;
@@ -41,11 +42,13 @@ export const appOptionsFactory = (appName: string, mainApp: Application, options
     ['postgres', 'kingbase'].includes(rawDatabaseOptions.dialect)
   ) {
     rawDatabaseOptions.schema = appName;
+    dbConnType = 'new_schema';
   } else {
     rawDatabaseOptions.database = appName;
   }
 
   const defaultOptions = {
+    dbConnType,
     database: {
       ...rawDatabaseOptions,
       tablePrefix: '',
