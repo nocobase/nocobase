@@ -14,7 +14,7 @@ import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { isVariable, useCollectionManager_deprecated } from '../../../';
+import { isVariable, useCollectionManager_deprecated, translateValidatorMessage } from '../../../';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   CollectionFieldProvider,
@@ -23,6 +23,7 @@ import {
 import { useDynamicComponentProps } from '../../../hoc/withDynamicSchemaProps';
 import { ErrorFallback, useCompile, useComponent } from '../../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   component: any;
@@ -66,6 +67,7 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
   );
   const ctx = useFormBlockContext();
   const dynamicProps = useDynamicComponentProps(uiSchemaOrigin?.['x-use-component-props'], props);
+  const { t } = useTranslation();
   // TODO: 初步适配
   useEffect(() => {
     if (!uiSchemaOrigin) {
@@ -82,7 +84,7 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
 
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
-      field.validator = concatSchema;
+      field.validator = translateValidatorMessage(concatSchema, t);
     }
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
