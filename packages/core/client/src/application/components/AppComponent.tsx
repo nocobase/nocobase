@@ -31,7 +31,8 @@ export const AppComponent: FC<AppComponentProps> = observer(
     }, [app]);
     const AppError = app.getComponent('AppError');
     if (app.loading) return app.renderComponent('AppSpin', { app });
-    if (!app.maintained && app.maintaining) return app.renderComponent('AppMaintaining', { app });
+    if (!app.maintained && app.maintaining)
+      return app.renderComponent(app.error?.command?.components?.maintaining ?? 'AppMaintaining', { app });
     if (app.error?.code && !(app.maintained && app.maintaining)) {
       return <AppError app={app} error={app.error} />;
     }
@@ -41,7 +42,9 @@ export const AppComponent: FC<AppComponentProps> = observer(
         onError={handleErrors}
       >
         <ApplicationContext.Provider value={app}>
-          {app.maintained && app.maintaining && app.renderComponent('AppMaintainingDialog', { app })}
+          {app.maintained &&
+            app.maintaining &&
+            app.renderComponent(app.error?.command?.components?.maintainingDialog ?? 'AppMaintainingDialog', { app })}
           {app.renderComponent('AppMain', undefined, children)}
         </ApplicationContext.Provider>
       </ErrorBoundary>
