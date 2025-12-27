@@ -12,45 +12,48 @@ import { RouteModel } from './models/base/RouteModel';
 
 export interface ViewItem {
   params: ViewParam;
-  model: FlowModel;
+  modelUid: string;
+  model?: FlowModel;
   hidden: {
     value: boolean;
   };
   index: number;
 }
 
-export async function resolveViewParamsToViewList(
+export function resolveViewParamsToViewList(
   flowEngine: FlowEngine,
   viewParams: ViewParam[],
   routeModel: FlowModel,
-): Promise<ViewItem[]> {
-  const viewItems = viewParams.map(async (params, index) => {
+): ViewItem[] {
+  const viewItems = viewParams.map((params, index) => {
     let model;
+    let modelUid = params.viewUid;
 
     // 第一个视图是根页面
     if (index === 0) {
       model = routeModel;
+      modelUid = routeModel.uid;
     } else {
-      model = flowEngine.getModel(params.viewUid, true) || (await flowEngine.loadModel({ uid: params.viewUid }));
+      model = flowEngine.getModel(params.viewUid, true);
     }
 
-    if (!model) {
-      throw new Error(`Model with uid ${params.viewUid} not found`);
-    }
     return {
       params,
+      modelUid,
       model,
       hidden: observable.ref(false), // Will be calculated after all items are resolved
       index,
     };
   });
 
-  const resolvedViewItems = await Promise.all(viewItems);
+  return viewItems;
+}
 
+export function updateViewListHidden(viewItems: ViewItem[]) {
   // Calculate hidden values based on view types and positions
   let hasEmbedAfter = false;
-  for (let i = resolvedViewItems.length - 1; i >= 0; i--) {
-    const viewItem = resolvedViewItems[i];
+  for (let i = viewItems.length - 1; i >= 0; i--) {
+    const viewItem = viewItems[i];
     const viewType = getViewType(viewItem);
 
     if (viewType === 'embed' && !hasEmbedAfter) {
@@ -60,13 +63,15 @@ export async function resolveViewParamsToViewList(
       viewItem.hidden.value = hasEmbedAfter;
     }
   }
-
-  return resolvedViewItems;
 }
 
 function getViewType(viewItem: ViewItem): string {
   if (viewItem.model instanceof RouteModel) {
     return 'embed';
+  }
+
+  if (!viewItem.model) {
+    return 'drawer';
   }
 
   const params = viewItem.model.getStepParams('popupSettings', 'openView');

@@ -22,7 +22,7 @@ import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
-import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
+import { resolveViewParamsToViewList, ViewItem, updateViewListHidden } from './resolveViewParamsToViewList';
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from './flows/openViewFlow';
 import { useDesignable } from '../schema-component';
@@ -139,7 +139,7 @@ export const FlowRoute = () => {
   useEffect(() => {
     const dispose = reaction(
       () => flowEngine.context.route,
-      async (newRoute) => {
+      (newRoute) => {
         if (newRoute.params.name !== pageUidRef.current) {
           forceStopRef.current = true;
           return;
@@ -152,7 +152,7 @@ export const FlowRoute = () => {
           const viewStack = parsePathnameToViewParams(newRoute.pathname);
 
           // 2. 根据视图参数获取更多信息
-          const viewList = await resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
+          const viewList = resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
 
           if (forceStopRef.current) {
             return;
@@ -189,48 +189,72 @@ export const FlowRoute = () => {
 
           // 4. 处理需要打开的视图
           if (viewsToOpen.length) {
-            const prevViewListCopy = [...prevViewListRef.current];
-            const openView = (index: number) => {
-              if (!viewsToOpen[index]) {
-                return;
+            const prevViewListSnapshot = [...prevViewListRef.current];
+            const handleOpenViews = async () => {
+              const missingModels = viewsToOpen.filter((v) => !v.model);
+              if (missingModels.length > 0) {
+                await Promise.all(
+                  missingModels.map(async (viewItem) => {
+                    try {
+                      viewItem.model = await flowEngine.loadModel({ uid: viewItem.modelUid });
+                    } catch (error) {
+                      console.error(`[NocoBase] Failed to load model ${viewItem.modelUid}:`, error);
+                    }
+                  }),
+                );
+                // Model 加载后，重新计算 hidden 状态
+                updateViewListHidden(viewList);
               }
 
-              const viewItem = viewsToOpen[index];
-              const closeRef = React.createRef<(result?: any, force?: boolean) => void>();
-              const updateRef = React.createRef<(value: any) => void>();
-              const openViewParams = getOpenViewStepParams(viewItem.model);
-              const openerUids = prevViewListCopy.map((item) => item.params.viewUid);
-              prevViewListCopy.push(viewItem);
-              const navigation = new ViewNavigation(
-                flowEngine.context,
-                prevViewListCopy.map((item) => item.params),
-              );
+              const openView = (index: number) => {
+                if (!viewsToOpen[index]) {
+                  return;
+                }
 
-              viewItem.model.dispatchEvent('click', {
-                target: layoutContentRef.current,
-                collectionName: openViewParams?.collectionName,
-                associationName: openViewParams?.associationName,
-                dataSourceKey: openViewParams?.dataSourceKey,
-                closeRef,
-                updateRef,
-                openerUids,
-                ...viewItem.params,
-                navigation,
-                onOpen() {
-                  openView(index + 1); // 递归打开下一个视图
-                },
-                hidden: viewItem.hidden, // 是否隐藏视图
-                isMobileLayout,
-              });
+                const viewItem = viewsToOpen[index];
 
-              viewStateRef.current[getKey(viewItem)] = {
-                close: (force?: boolean) => closeRef.current?.(undefined, force),
-                update: (value: any) => updateRef.current?.(value),
-                navigation,
+                if (!viewItem.model) {
+                  return;
+                }
+
+                const closeRef = React.createRef<(result?: any, force?: boolean) => void>();
+                const updateRef = React.createRef<(value: any) => void>();
+                const openViewParams = getOpenViewStepParams(viewItem.model);
+                const openerUids = prevViewListSnapshot.map((item) => item.params.viewUid);
+                prevViewListSnapshot.push(viewItem);
+                const navigation = new ViewNavigation(
+                  flowEngine.context,
+                  prevViewListSnapshot.map((item) => item.params),
+                );
+
+                viewItem.model.dispatchEvent('click', {
+                  target: layoutContentRef.current,
+                  collectionName: openViewParams?.collectionName,
+                  associationName: openViewParams?.associationName,
+                  dataSourceKey: openViewParams?.dataSourceKey,
+                  closeRef,
+                  updateRef,
+                  openerUids,
+                  ...viewItem.params,
+                  navigation,
+                  onOpen() {
+                    openView(index + 1); // 递归打开下一个视图
+                  },
+                  hidden: viewItem.hidden, // 是否隐藏视图
+                  isMobileLayout,
+                });
+
+                viewStateRef.current[getKey(viewItem)] = {
+                  close: (force?: boolean) => closeRef.current?.(undefined, force),
+                  update: (value: any) => updateRef.current?.(value),
+                  navigation,
+                };
               };
+
+              openView(0);
             };
 
-            openView(0);
+            handleOpenViews();
           }
 
           // 5. 处理需要关闭的视图（强制关闭，确保触发 onClose 并绕过 preventClose）
@@ -242,7 +266,11 @@ export const FlowRoute = () => {
           // 6. 当没有视图需要打开和关闭时，说明只是更新了当前视图的参数，比如切换 tab。这是需要更新当前视图 navigation 的 viewStack，避免 URL 错乱
           if (viewsToClose.length === 0 && viewsToOpen.length === 0) {
             const currentViewItem = viewList.at(-1);
-            viewStateRef.current[getKey(currentViewItem)]?.navigation.setViewStack(viewList.map((item) => item.params));
+            if (currentViewItem) {
+              viewStateRef.current[getKey(currentViewItem)]?.navigation.setViewStack(
+                viewList.map((item) => item.params),
+              );
+            }
           }
 
           prevViewListRef.current = viewList.map((item, index) => {

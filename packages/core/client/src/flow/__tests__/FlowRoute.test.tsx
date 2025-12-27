@@ -51,7 +51,7 @@ const mockGetOpenViewStepParams = vi.mocked(getOpenViewStepParams);
 describe('FlowRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockResolveViewParamsToViewList.mockResolvedValue([]);
+    mockResolveViewParamsToViewList.mockReturnValue([]);
     mockGetViewDiffAndUpdateHidden.mockReturnValue({ viewsToClose: [], viewsToOpen: [] });
     mockGetOpenViewStepParams.mockReturnValue({} as any);
   });
@@ -91,9 +91,10 @@ describe('FlowRoute', () => {
 
     const removeSpy = vi.spyOn(engine, 'removeModelWithSubModels');
 
-    mockResolveViewParamsToViewList.mockImplementation(async (_engine, viewParams) => {
+    mockResolveViewParamsToViewList.mockImplementation((_engine, viewParams) => {
       return viewParams.map((params, index) => ({
         params,
+        modelUid: params.viewUid,
         model: { dispatchEvent: vi.fn(() => Promise.resolve()) } as any,
         hidden: { value: false },
         index,
