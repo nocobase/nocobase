@@ -118,7 +118,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     if (!collectionName) {
       return children(ctx);
     }
-    if (this._isScene('new') || this._isScene('select')) {
+    if (this._isScene('select')) {
       const initOptions = {
         dataSourceKey,
         collectionName,
@@ -140,6 +140,76 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               },
             },
           }),
+        },
+        {
+          key: genKey('others-collections'),
+          label: 'Other collections',
+          children: children(ctx),
+        },
+      ];
+    }
+    if (this._isScene('new')) {
+      const initOptions = {
+        dataSourceKey,
+        collectionName,
+        // filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      };
+      if (associationName) {
+        initOptions['associationName'] = associationName;
+        initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
+      }
+      return [
+        {
+          key: genKey('current-collection'),
+          label: 'Current collection',
+          useModel: this.name,
+          createModelOptions: createModelOptions({
+            stepParams: {
+              resourceSettings: {
+                init: initOptions,
+              },
+            },
+          }),
+        },
+        {
+          key: genKey('associated'),
+          label: 'Associated records',
+          children: () => {
+            const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+            return collection
+              .getAssociationFields(this._getScene())
+              .map((field) => {
+                if (!field.targetCollection) {
+                  return null;
+                }
+                if (!this.filterCollection(field.targetCollection)) {
+                  return null;
+                }
+                let sourceId = `{{ctx.popup.record.${field.sourceKey || field.collection.filterTargetKey}}}`;
+                if (field.sourceKey === field.collection.filterTargetKey) {
+                  sourceId = '{{ctx.view.inputArgs.filterByTk}}'; // 此时可以直接通过弹窗url读取，减少后端解析
+                }
+                const initOptions = {
+                  dataSourceKey,
+                  collectionName: field.target,
+                  associationName: field.resourceName,
+                  sourceId,
+                };
+                return {
+                  key: genKey(`associated-${field.name}`),
+                  label: field.title,
+                  useModel: this.name,
+                  createModelOptions: createModelOptions({
+                    stepParams: {
+                      resourceSettings: {
+                        init: initOptions,
+                      },
+                    },
+                  }),
+                };
+              })
+              .filter(Boolean);
+          },
         },
         {
           key: genKey('others-collections'),
