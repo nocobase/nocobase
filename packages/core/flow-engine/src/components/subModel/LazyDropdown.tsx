@@ -478,10 +478,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       setRootItems(resolvedItems);
     };
 
-    if (menuVisible) {
-      loadRootItems();
-    }
-  }, [menuVisible, stateVersion, menuItems]);
+    loadRootItems();
+  }, [stateVersion, menuItems]);
 
   // 递归解析 items，支持 children 为同步/异步函数
   function buildSearchChildren(
@@ -666,6 +664,17 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     `;
   }, [dropdownMaxHeight]);
 
+  const items =
+    rootLoading && rootItems.length === 0
+      ? [
+          {
+            key: 'root-loading',
+            label: <Spin size="small" />,
+            disabled: true,
+          },
+        ]
+      : resolveItems(rootItems);
+
   return (
     <Dropdown
       {...props}
@@ -675,16 +684,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       placement="bottomLeft"
       menu={{
         ...dropdownMenuProps,
-        items:
-          rootLoading && rootItems.length === 0
-            ? [
-                {
-                  key: 'root-loading',
-                  label: <Spin size="small" />,
-                  disabled: true,
-                },
-              ]
-            : resolveItems(rootItems),
+        items: items,
         onClick: () => {},
         style: {
           maxHeight: dropdownMaxHeight,
