@@ -154,10 +154,6 @@ export const FlowRoute = () => {
           // 2. 根据视图参数获取更多信息
           const viewList = resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
 
-          if (forceStopRef.current) {
-            return;
-          }
-
           // 特殊处理：当通过一个多级 url 打开时，需要把这个 url 分成多步，然后逐步打开。这样做是为了能在点击返回按钮时返回到上一级
           if (prevViewListRef.current.length === 0 && viewList.length > 1 && !hasStepNavigatedRef.current) {
             const navigateTo = (index: number) => {
@@ -204,6 +200,10 @@ export const FlowRoute = () => {
                 );
                 // Model 加载后，重新计算 hidden 状态
                 updateViewListHidden(viewList);
+              }
+
+              if (forceStopRef.current) {
+                return;
               }
 
               const openView = (index: number) => {
