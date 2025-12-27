@@ -412,9 +412,8 @@ async function originalHandler(ctx, params) {
     const labelFieldName = ctx.model.props.fieldNames.label;
     const targetLabelField = targetCollection.getField(labelFieldName);
 
-    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-      targetLabelField.options.interface,
-    );
+    const targetInterface = targetLabelField.getInterfaceOptions();
+
     const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
 
     const searchText = ctx.inputArgs.searchText?.trim();
