@@ -1516,6 +1516,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return collected;
   }
 
+  refresh() {
+    return this.rerender();
+  }
+
   // =============================
   // Dynamic flows (disabled)
   // The following APIs are kept as comments to preserve context
