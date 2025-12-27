@@ -12,7 +12,7 @@ import { RouteModel } from './models/base/RouteModel';
 
 export interface ViewItem {
   params: ViewParam;
-  modelUid: string;
+  modelUid?: string;
   model?: FlowModel;
   hidden: {
     value: boolean;

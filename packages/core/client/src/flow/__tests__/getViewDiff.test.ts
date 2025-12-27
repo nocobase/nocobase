@@ -33,11 +33,13 @@ describe('getViewDiff', () => {
         params: { viewUid: 'view1' },
         model: createMockModel('view1'),
         hidden: observable.ref(false),
+        index: 0,
       },
       {
         params: { viewUid: 'view2' },
         model: createMockModel('view2'),
         hidden: observable.ref(false),
+        index: 1,
       },
     ];
 
@@ -52,11 +54,13 @@ describe('getViewDiff', () => {
         params: { viewUid: 'view1' },
         model: createMockModel('view1'),
         hidden: observable.ref(false),
+        index: 0,
       },
       {
         params: { viewUid: 'view2' },
         model: createMockModel('view2'),
         hidden: observable.ref(false),
+        index: 1,
       },
     ];
 
@@ -70,11 +74,13 @@ describe('getViewDiff', () => {
       params: { viewUid: 'view1' },
       model: createMockModel('view1'),
       hidden: observable.ref(false),
+      index: 0,
     };
     const view2: ViewItem = {
       params: { viewUid: 'view2' },
       model: createMockModel('view2'),
       hidden: observable.ref(false),
+      index: 1,
     };
 
     const prevViewList = [view1, view2];
@@ -83,11 +89,13 @@ describe('getViewDiff', () => {
         params: { viewUid: 'view1' },
         model: createMockModel('view1'),
         hidden: observable.ref(false),
+        index: 0,
       },
       {
         params: { viewUid: 'view2' },
         model: createMockModel('view2'),
         hidden: observable.ref(false),
+        index: 1,
       },
     ];
 
@@ -101,21 +109,25 @@ describe('getViewDiff', () => {
       params: { viewUid: 'view1' },
       model: createMockModel('view1'),
       hidden: observable.ref(false),
+      index: 0,
     };
     const view2: ViewItem = {
       params: { viewUid: 'view2' },
       model: createMockModel('view2'),
       hidden: observable.ref(false),
+      index: 1,
     };
     const view3: ViewItem = {
       params: { viewUid: 'view3' },
       model: createMockModel('view3'),
       hidden: observable.ref(false),
+      index: 2,
     };
     const view4: ViewItem = {
       params: { viewUid: 'view4' },
       model: createMockModel('view4'),
       hidden: observable.ref(false),
+      index: 3,
     };
 
     const prevViewList = [view1, view2]; // view1, view2 were open
@@ -143,6 +155,7 @@ describe('getViewDiff', () => {
       },
       model: createMockModel('view1'),
       hidden: observable.ref(false),
+      index: 0,
     };
     const view2: ViewItem = {
       params: {
@@ -152,6 +165,7 @@ describe('getViewDiff', () => {
       },
       model: createMockModel('view1'),
       hidden: observable.ref(false),
+      index: 1,
     };
 
     const prevViewList = [view1];
