@@ -114,7 +114,7 @@ After the migration is completed, migration log files are saved on the server. Y
 
 When viewing the migration logs online, you can also download the SQL statements executed during the migration of the data schema.
 
-![162cc81c3d47da0783018a61676584ae](https://static-docs.nocobase.com/162cc81c3d47da0783018a61676584ae.png)
+![20251227164116](https://static-docs.nocobase.com/20251227164116.png)
 
 Click the `Process` button to view the completed migration execution process.
 
@@ -127,4 +127,4 @@ Click the `Process` button to view the completed migration execution process.
 Before any migration runs, the current application is automatically backed up. If the migration fails or the results are not as expected, you can roll back using the [Backup Manager](../backup-manager/index.mdx).
 
 
-![5a55ed5f3dd072d74e51dcdc5ebea518](https://static-docs.nocobase.com/5a55ed5f3dd072d74e51dcdc5ebea518.png)
+![20251227164004](https://static-docs.nocobase.com/20251227164004.png)

@@ -90,7 +90,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 在线查看执行日志文件时，还可以下载迁移数据结构时执行的SQL。
 
-![162cc81c3d47da0783018a61676584ae](https://static-docs.nocobase.com/162cc81c3d47da0783018a61676584ae.png)
+![20251227164116](https://static-docs.nocobase.com/20251227164116.png)
 
 点击 `过程` 按钮可以查看已完成迁移执行过程
 
@@ -102,4 +102,4 @@ pkg: '@nocobase/plugin-migration-manager'
 
 执行迁移前，会自动对当前应用进行备份。如果迁移失败或结果不符合预期，可通过 [备份管理器](../backup-manager/index.mdx) 进行回滚恢复。
 
-![5a55ed5f3dd072d74e51dcdc5ebea518](https://static-docs.nocobase.com/5a55ed5f3dd072d74e51dcdc5ebea518.png)
+![20251227164004](https://static-docs.nocobase.com/20251227164004.png)
