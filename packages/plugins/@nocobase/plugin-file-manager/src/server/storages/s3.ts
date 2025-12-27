@@ -8,7 +8,6 @@
  */
 
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
@@ -61,11 +60,6 @@ export default class extends StorageType {
       },
       key: cloudFilenameGetter(this.storage),
     });
-  }
-
-  calculateContentMD5(body) {
-    const hash = crypto.createHash('md5').update(body).digest('base64');
-    return hash;
   }
 
   async deleteS3Objects(bucketName: string, objects: string[]) {

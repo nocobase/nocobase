@@ -19,9 +19,16 @@ export function getFilename(req, file, cb) {
   cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
 
+function getOriginalFilename(file) {
+  const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
+  const extname = path.extname(originalname);
+  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), extname);
+  return `${baseName}${extname}`;
+}
+
 export const cloudFilenameGetter = (storage) => (req, file, cb) => {
-  const renameMode = storage.options?.renameMode;
-  if (renameMode === 'random' || renameMode === 'md5') {
+  const renameMode = storage.options?.renameMode === 'md5' ? 'random' : storage.options?.renameMode;
+  if (renameMode === 'random') {
     crypto.pseudoRandomBytes(16, function (err, raw) {
       if (err) {
         return cb(err);
@@ -32,8 +39,8 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
     return;
   }
   if (renameMode === 'none') {
-    const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
-    cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${originalname}`);
+    const filename = getOriginalFilename(file);
+    cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
     return;
   }
   getFilename(req, file, (err, filename) => {
@@ -42,6 +49,25 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
     }
     cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
   });
+};
+
+export const diskFilenameGetter = (storage) => (req, file, cb) => {
+  const renameMode = storage.options?.renameMode === 'md5' ? 'random' : storage.options?.renameMode;
+  if (renameMode === 'random') {
+    crypto.pseudoRandomBytes(16, function (err, raw) {
+      if (err) {
+        return cb(err);
+      }
+      const filename = `${raw.toString('hex')}${path.extname(file.originalname)}`;
+      cb(null, filename);
+    });
+    return;
+  }
+  if (renameMode === 'none') {
+    cb(null, getOriginalFilename(file));
+    return;
+  }
+  getFilename(req, file, cb);
 };
 
 export function getFileKey(record) {
