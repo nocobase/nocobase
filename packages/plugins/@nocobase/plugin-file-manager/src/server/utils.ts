@@ -27,7 +27,7 @@ function getOriginalFilename(file) {
 }
 
 export const cloudFilenameGetter = (storage) => (req, file, cb) => {
-  const renameMode = storage.options?.renameMode === 'md5' ? 'random' : storage.options?.renameMode;
+  const renameMode = storage.options?.renameMode;
   if (renameMode === 'random') {
     crypto.pseudoRandomBytes(16, function (err, raw) {
       if (err) {
@@ -52,7 +52,7 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
 };
 
 export const diskFilenameGetter = (storage) => (req, file, cb) => {
-  const renameMode = storage.options?.renameMode === 'md5' ? 'random' : storage.options?.renameMode;
+  const renameMode = storage.options?.renameMode;
   if (renameMode === 'random') {
     crypto.pseudoRandomBytes(16, function (err, raw) {
       if (err) {

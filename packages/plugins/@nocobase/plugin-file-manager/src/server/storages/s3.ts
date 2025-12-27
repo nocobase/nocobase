@@ -8,9 +8,11 @@
  */
 
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import urlJoin from 'url-join';
+import { isURL } from '@nocobase/utils';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
-import { cloudFilenameGetter } from '../utils';
+import { cloudFilenameGetter, ensureUrlEncoded } from '../utils';
 
 export default class extends StorageType {
   static defaults() {
@@ -60,6 +62,25 @@ export default class extends StorageType {
       },
       key: cloudFilenameGetter(this.storage),
     });
+  }
+
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    if (file.url && isURL(file.url)) {
+      return super.getFileURL(file, preview);
+    }
+
+    const { bucket, endpoint } = this.storage.options;
+    const baseUrlHasBucket = endpoint && this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
+
+    const keys = [
+      this.storage.baseUrl,
+      endpoint && !baseUrlHasBucket ? bucket : undefined,
+      file.path && encodeURI(file.path),
+      ensureUrlEncoded(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+
+    return urlJoin(keys);
   }
 
   async deleteS3Objects(bucketName: string, objects: string[]) {
