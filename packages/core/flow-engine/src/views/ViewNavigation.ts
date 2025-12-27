@@ -72,18 +72,6 @@ export function generatePathnameFromViewParams(viewParams: ViewParam[]): string 
   return '/' + segments.join('/');
 }
 
-function normalizePath(path: string) {
-  try {
-    let decoded = decodeURIComponent(path);
-    if (decoded.endsWith('/')) {
-      decoded = decoded.slice(0, -1);
-    }
-    return decoded;
-  } catch (e) {
-    return path;
-  }
-}
-
 export class ViewNavigation {
   viewStack: ReadonlyArray<ViewParam>; // 只能通过 setViewStack 修改
   ctx: FlowEngineContext;
@@ -121,16 +109,7 @@ export class ViewNavigation {
     // 3. 与 pathname 拼接成新的 pathname（这里直接使用新生成的 pathname）
     const newPathname = newViewPathname;
 
-    // 4. 判断新的 pathname 是否与当前 location.pathname 的结尾一致。防止出现重复路径
-    //    不用 this.ctx.route.pathname 是因为它的值可能不是最新的，会导致判断失误
-    const currentPath = normalizePath(location.pathname);
-    const targetPath = normalizePath(newPathname);
-
-    if (currentPath.endsWith(targetPath)) {
-      return;
-    }
-
-    // 5. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
+    // 4. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
     this.ctx.router.navigate(newPathname, opts);
   }
 

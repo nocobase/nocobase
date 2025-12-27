@@ -51,15 +51,6 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   const prevViewMap = new Map<string, ViewItem>();
   const currentViewMap = new Map<string, ViewItem>();
 
-  // 备忘：当快速切换 URL 时，在性能低的机器上可能只会触发一次路由更新。这个时候就会出现这种情况，需要做容错处理。
-  // 这种情况不应该发生，但为了避免出现打不开视图的情况，做一下容错处理
-  if (prevViewList.length > 0 && currentViewList.length > 0 && _.isEqual(prevViewList, currentViewList)) {
-    return {
-      viewsToClose: [prevViewList.at(-1)],
-      viewsToOpen: [currentViewList.at(-1)],
-    };
-  }
-
   prevViewList.forEach((viewItem) => {
     const key = getKey(viewItem);
     prevViewMap.set(key, viewItem);
