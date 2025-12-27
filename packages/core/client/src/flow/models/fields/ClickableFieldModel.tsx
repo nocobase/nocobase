@@ -59,13 +59,19 @@ export class ClickableFieldModel extends FieldModel {
         filterByTk = currentRecord[targetCollection.filterTargetKey];
       }
       const parentObj = associationPathName ? get(this.context.record, associationPathName) : this.context.record;
-      this.dispatchEvent('click', {
-        event,
-        filterByTk,
-        collectionName: this.collectionField.collection.name,
-        associationName: `${sourceCollection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
-        sourceId: parentObj[sourceKey],
-      });
+      this.dispatchEvent(
+        'click',
+        {
+          event,
+          filterByTk,
+          collectionName: this.collectionField.collection.name,
+          associationName: `${sourceCollection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
+          sourceId: parentObj[sourceKey],
+        },
+        {
+          debounce: true,
+        },
+      );
       return;
     }
 
@@ -92,23 +98,35 @@ export class ClickableFieldModel extends FieldModel {
           filterByTk = associationRecord?.[targetCollection.filterTargetKey];
         }
 
-        this.dispatchEvent('click', {
-          event,
-          filterByTk,
-          collectionName: this.collectionField.collection.name,
-          associationName: `${associationField.collection.name}.${this.collectionField.name}`,
-          // list api， 如果append了关系字段的某个属性，它并不会将关系字段对应的 filterByTk (sourceKey) 属性值返回， 但是会返回foriegnKey对应的值
-          sourceId: parentObj[sourceKey] || this.context.record[foreignKey],
-        });
+        this.dispatchEvent(
+          'click',
+          {
+            event,
+            filterByTk,
+            collectionName: this.collectionField.collection.name,
+            associationName: `${associationField.collection.name}.${this.collectionField.name}`,
+            // list api， 如果append了关系字段的某个属性，它并不会将关系字段对应的 filterByTk (sourceKey) 属性值返回， 但是会返回foriegnKey对应的值
+            sourceId: parentObj[sourceKey] || this.context.record[foreignKey],
+          },
+          {
+            debounce: true,
+          },
+        );
         return;
       }
     }
 
-    this.dispatchEvent('click', {
-      event,
-      sourceId: this.context.resource?.getSourceId(),
-      filterByTk: this.context.collection.getFilterByTK(this.context.record),
-    });
+    this.dispatchEvent(
+      'click',
+      {
+        event,
+        sourceId: this.context.resource?.getSourceId(),
+        filterByTk: this.context.collection.getFilterByTK(this.context.record),
+      },
+      {
+        debounce: true,
+      },
+    );
   }
 
   renderComponent(value, wrap?) {

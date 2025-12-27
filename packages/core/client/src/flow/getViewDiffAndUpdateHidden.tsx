@@ -7,7 +7,37 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import { ViewItem } from './resolveViewParamsToViewList';
+
+// 将参数值稳定序列化为字符串，保证对象键名有序以便生成稳定的 key
+const stableStringify = (value: any): string => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) {
+      return '[' + value.map(stableStringify).join(',') + ']';
+    }
+    const keys = Object.keys(value).sort();
+    return '{' + keys.map((k) => `${k}:${stableStringify(value[k])}`).join(',') + '}';
+  }
+
+  return String(value);
+};
+
+export const getKey = (viewItem: ViewItem) => {
+  const { params, index } = viewItem;
+  const parts = [
+    stableStringify(params.viewUid),
+    stableStringify(params.sourceId),
+    stableStringify(params.filterByTk),
+    String(index),
+  ];
+
+  return parts.join('_');
+};
 
 /**
  * 对比新旧视图列表，获取需要关闭和打开的视图
@@ -22,20 +52,22 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   const currentViewMap = new Map<string, ViewItem>();
 
   prevViewList.forEach((viewItem) => {
-    prevViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
+    const key = getKey(viewItem);
+    prevViewMap.set(key, viewItem);
   });
 
   currentViewList.forEach((viewItem) => {
-    currentViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
+    currentViewMap.set(getKey(viewItem), viewItem);
   });
 
   // 找出需要关闭的视图：存在于旧列表但不在新列表中
   const viewsToClose: ViewItem[] = [];
-  prevViewMap.forEach((viewItem, key) => {
+  prevViewMap.forEach((preViewItem, key) => {
     if (!currentViewMap.has(key)) {
-      viewsToClose.push(viewItem);
+      viewsToClose.push(preViewItem);
     } else {
-      viewItem.hidden.value = currentViewMap.get(key).hidden.value; // 用于控制已经渲染的视图是否隐藏
+      // 修复子页面切换时，hidden 状态失去响应性的问题
+      currentViewMap.get(key).hidden = preViewItem.hidden;
     }
   });
 
