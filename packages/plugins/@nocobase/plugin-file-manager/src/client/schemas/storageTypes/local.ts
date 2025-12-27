@@ -34,6 +34,7 @@ export default {
           'x-display': 'hidden',
           default: 'storage/uploads',
         },
+        renameMode: common.renameMode,
       },
     },
     path: {

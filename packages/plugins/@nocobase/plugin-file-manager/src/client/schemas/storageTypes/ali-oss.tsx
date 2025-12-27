@@ -51,6 +51,7 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
+        renameMode: common.renameMode,
         timeout: {
           title: `{{t("Timeout", { ns: "${NAMESPACE}" })}}`,
           description: `{{t('Upload timeout for a single file in milliseconds. Default is 600000.', { ns: "${NAMESPACE}" })}}`,

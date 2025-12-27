@@ -50,6 +50,7 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
+        renameMode: common.renameMode,
         endpoint: {
           title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
           type: 'string',

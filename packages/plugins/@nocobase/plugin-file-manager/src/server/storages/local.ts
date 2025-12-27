@@ -16,7 +16,7 @@ import type { Readable } from 'stream';
 import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
-import { getFilename } from '../utils';
+import { diskFilenameGetter } from '../utils';
 
 const DEFAULT_BASE_URL = '/storage/uploads';
 
@@ -50,7 +50,7 @@ export default class extends StorageType {
         const mkdirp = require('mkdirp');
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
-      filename: getFilename,
+      filename: diskFilenameGetter(this.storage),
     });
   }
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
