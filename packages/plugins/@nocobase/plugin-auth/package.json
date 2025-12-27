@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "1.9.30",
+  "version": "1.9.32",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth",
