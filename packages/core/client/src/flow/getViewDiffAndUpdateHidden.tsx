@@ -9,7 +9,34 @@
 
 import { ViewItem } from './resolveViewParamsToViewList';
 
-export const getKey = (viewItem: ViewItem) => `${viewItem.params.viewUid}_${viewItem.index}`;
+// 将参数值稳定序列化为字符串，保证对象键名有序以便生成稳定的 key
+const stableStringify = (value: any): string => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) {
+      return '[' + value.map(stableStringify).join(',') + ']';
+    }
+    const keys = Object.keys(value).sort();
+    return '{' + keys.map((k) => `${k}:${stableStringify(value[k])}`).join(',') + '}';
+  }
+
+  return String(value);
+};
+
+export const getKey = (viewItem: ViewItem) => {
+  const { params, index } = viewItem;
+  const parts = [
+    stableStringify(params.viewUid),
+    stableStringify(params.sourceId),
+    stableStringify(params.filterByTk),
+    String(index),
+  ];
+
+  return parts.join('_');
+};
 
 /**
  * 对比新旧视图列表，获取需要关闭和打开的视图
