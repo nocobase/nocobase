@@ -10,12 +10,18 @@ import { vi } from 'vitest';
 import 'jsdom-worker';
 import path from 'path';
 
+if (typeof process !== 'undefined' && process.env) {
+  process.env.RHTL_DISABLE_ERROR_FILTERING = process.env.RHTL_DISABLE_ERROR_FILTERING || 'true';
+}
+
+const targetWindow = globalThis as Window & typeof globalThis;
+
 configure({ asyncUtilTimeout: 30000 });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
 // 解决 TypeError: window.matchMedia is not a function
 // 参见： https://github.com/vitest-dev/vitest/issues/821#issuecomment-1046954558
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(targetWindow, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
     matches: false,
@@ -31,8 +37,8 @@ Object.defineProperty(window, 'matchMedia', {
 
 // 解决 Error: Not implemented: window.computedStyle(elt, pseudoElt)
 // 参见：https://github.com/nickcolley/jest-axe/issues/147#issuecomment-758804533
-const { getComputedStyle } = window;
-window.getComputedStyle = (elt) => getComputedStyle(elt);
+const { getComputedStyle } = targetWindow;
+targetWindow.getComputedStyle = (elt) => getComputedStyle(elt);
 
 /**
  * 解决 TypeError: range.getBoundingClientRect is not a function
