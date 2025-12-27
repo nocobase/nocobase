@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import { ViewItem } from './resolveViewParamsToViewList';
 
 // 将参数值稳定序列化为字符串，保证对象键名有序以便生成稳定的 key
@@ -49,6 +50,15 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   // 将视图列表转换为以 viewUid 为键的 Map，便于查找
   const prevViewMap = new Map<string, ViewItem>();
   const currentViewMap = new Map<string, ViewItem>();
+
+  // 备忘：当快速切换 URL 时，在性能低的机器上可能只会触发一次路由更新。这个时候就会出现这种情况，需要做容错处理。
+  // 这种情况不应该发生，但为了避免出现打不开视图的情况，做一下容错处理
+  if (prevViewList.length > 0 && currentViewList.length > 0 && _.isEqual(prevViewList, currentViewList)) {
+    return {
+      viewsToClose: [prevViewList.at(-1)],
+      viewsToOpen: [currentViewList.at(-1)],
+    };
+  }
 
   prevViewList.forEach((viewItem) => {
     const key = getKey(viewItem);
