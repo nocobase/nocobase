@@ -26,6 +26,9 @@ const NAMESPACE = 'client';
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
+  renderComponent(): React.ReactNode {
+    return <div ref={this.context.ref} />;
+  }
   render() {
     const decoratorProps = this.decoratorProps || {};
     const { className, id: _ignoredId, title, description, ...rest } = decoratorProps;
