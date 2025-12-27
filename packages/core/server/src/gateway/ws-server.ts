@@ -85,7 +85,7 @@ export class WSServer extends EventEmitter {
 
         client.tags.add(`app#${handleAppName}`);
 
-        AppSupervisor.getInstance().bootStrapApp(handleAppName);
+        AppSupervisor.getInstance().bootstrapApp(handleAppName);
       });
     });
 
@@ -112,6 +112,7 @@ export class WSServer extends EventEmitter {
 
       const payload = getPayloadByErrorCode(status, {
         app,
+        appName,
         message,
         command,
       });
@@ -279,7 +280,7 @@ export class WSServer extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
 
     if (!hasApp) {
-      AppSupervisor.getInstance().bootStrapApp(handleAppName);
+      AppSupervisor.getInstance().bootstrapApp(handleAppName);
     }
   }
 
