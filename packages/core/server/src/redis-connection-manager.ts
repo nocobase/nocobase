@@ -88,12 +88,51 @@ export class RedisConnectionManager {
     });
   }
 
-  async close() {
-    for (const conn of this.connections.values()) {
-      if (!conn?.status || conn.status === 'close' || conn.status === 'end') {
+  private async exitSubscriberMode(key: string, conn: Redis) {
+    if (conn.mode !== 'subscriber') {
+      return;
+    }
+
+    const unsubscribeCommands = ['unsubscribe', 'punsubscribe', 'sunsubscribe'] as const;
+    for (const command of unsubscribeCommands) {
+      const fn = (conn as any)[command];
+      if (typeof fn !== 'function') {
         continue;
       }
+      try {
+        await fn.call(conn);
+      } catch (err) {
+        this.logger.warn(`Failed to ${command} redis connection`, {
+          err,
+          method: 'exitSubscriberMode',
+          key,
+        });
+      }
+    }
+  }
+
+  private async closeConnection(key: string, conn: Redis) {
+    if (!conn?.status || conn.status === 'close' || conn.status === 'end') {
+      return;
+    }
+
+    await this.exitSubscriberMode(key, conn);
+
+    try {
       await conn.quit();
+    } catch (err) {
+      this.logger.warn(`Failed to quit redis connection`, {
+        err,
+        method: 'closeConnection',
+        key,
+      });
+      conn.disconnect();
+    }
+  }
+
+  async close() {
+    for (const [key, conn] of this.connections.entries()) {
+      await this.closeConnection(key, conn);
     }
   }
 }

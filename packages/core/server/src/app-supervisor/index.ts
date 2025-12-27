@@ -544,7 +544,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       name: this.environmentName,
       url: this.environmentUrl || '',
       appVersion: mainApp.getPackageVersion(),
-      lastHeartbeatAt: Math.floor(Date.now() / 1000),
+      lastHeartbeatAt: Date.now(),
     });
     if (registered) {
       this.heartbeatEnvironment();
@@ -571,7 +571,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         available: false,
       };
     }
-    const available = Math.floor(Date.now() / 1000) - lastHeartbeatAt <= this.environmentHeartbeatInterval;
+    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval;
     return {
       ...environment,
       available,
