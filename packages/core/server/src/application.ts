@@ -1249,6 +1249,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const options = this.options;
     this._instanceId = options.instanceId;
 
+    this.keys = [process.env.APP_KEY];
+
     this.initLogger(options.logger);
 
     this.reInitEvents();

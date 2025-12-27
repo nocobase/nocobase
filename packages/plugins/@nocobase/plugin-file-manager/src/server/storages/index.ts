@@ -14,6 +14,7 @@ import type { Readable } from 'stream';
 import urlJoin from 'url-join';
 import { isURL } from '@nocobase/utils';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
+import { Model } from '@nocobase/database';
 export interface StorageModel {
   id?: number;
   title: string;
@@ -27,7 +28,7 @@ export interface StorageModel {
   paranoid?: boolean;
 }
 
-export interface AttachmentModel {
+export interface AttachmentModel extends Model {
   title: string;
   filename: string;
   mimetype?: string;
