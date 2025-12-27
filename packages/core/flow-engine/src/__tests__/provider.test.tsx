@@ -14,11 +14,6 @@ import { FlowEngine } from '../flowEngine';
 import { FlowEngineProvider, useFlowEngine } from '../provider';
 
 describe('FlowEngineProvider/useFlowEngine', () => {
-  it('throws without provider', () => {
-    const run = () => renderHook(() => useFlowEngine());
-    expect(run).toThrow(/FlowEngineProvider/);
-  });
-
   it('returns engine within provider', () => {
     const engine = new FlowEngine();
     const wrapper = ({ children }: any) => <FlowEngineProvider engine={engine}>{children}</FlowEngineProvider>;

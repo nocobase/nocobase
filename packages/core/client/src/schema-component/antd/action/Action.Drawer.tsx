@@ -102,6 +102,10 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       };
     }, [hidden, drawerProps?.style, others?.style]);
 
+    const container = React.useMemo(() => {
+      return document.querySelector('#nocobase-app-container');
+    }, []);
+
     if (process.env.__E2E__) {
       useSetAriaLabelForDrawer(visible);
     }
@@ -126,6 +130,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
         <zIndexContext.Provider value={zIndex}>
           <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
             <Drawer
+              getContainer={container}
               zIndex={zIndex}
               width={openSizeWidthMap.get(openSize)}
               title={typeof field.title === 'string' ? t(field.title, { ns: NAMESPACE_UI_SCHEMA }) : field.title}

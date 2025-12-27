@@ -152,9 +152,9 @@ export function useDialog() {
             className="nb-dialog-overflow-hidden"
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
-            {...config}
             footer={currentFooter}
             header={currentHeader}
+            {...config}
             afterClose={() => {
               closeFunc?.();
               config.onClose?.();

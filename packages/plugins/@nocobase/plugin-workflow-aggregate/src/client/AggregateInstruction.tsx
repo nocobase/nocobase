@@ -35,7 +35,8 @@ import {
   Instruction,
 } from '@nocobase/plugin-workflow/client';
 
-import { NAMESPACE, useLang } from '../locale';
+import { lang, NAMESPACE, useLang } from '../locale';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function matchToManyField(field): boolean {
   // const fieldPrefix = `${field.name}.`;
@@ -439,6 +440,33 @@ export default class extends Instruction {
       Component: ValueBlock.Initializer,
       node,
       resultTitle,
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ node }): SubModelItem {
+    return {
+      key: `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'NodeValueModel',
+      createModelOptions: {
+        use: 'NodeValueModel',
+        stepParams: {
+          valueSettings: {
+            init: {
+              dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
+              defaultValue: lang('Query result'),
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Aggregate", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+      },
     };
   }
 }
