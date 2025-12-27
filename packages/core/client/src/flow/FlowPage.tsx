@@ -23,7 +23,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem, updateViewListHidden } from './resolveViewParamsToViewList';
-import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
+import { getKey, getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from './flows/openViewFlow';
 import { useDesignable } from '../schema-component';
 import { deviceType } from 'react-device-detect';
@@ -44,8 +44,6 @@ function InternalFlowPage({ uid, ...props }) {
     />
   );
 }
-
-const getKey = (viewItem: ViewItem) => `${viewItem.params.viewUid}_${viewItem.index}`;
 
 export const FlowRoute = () => {
   const layoutContentRef = useRef(null);

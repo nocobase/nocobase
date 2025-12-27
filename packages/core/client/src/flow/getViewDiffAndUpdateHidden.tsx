@@ -9,6 +9,8 @@
 
 import { ViewItem } from './resolveViewParamsToViewList';
 
+export const getKey = (viewItem: ViewItem) => `${viewItem.params.viewUid}_${viewItem.index}`;
+
 /**
  * 对比新旧视图列表，获取需要关闭和打开的视图
  *
@@ -22,11 +24,12 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   const currentViewMap = new Map<string, ViewItem>();
 
   prevViewList.forEach((viewItem) => {
-    prevViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
+    const key = getKey(viewItem);
+    prevViewMap.set(key, viewItem);
   });
 
   currentViewList.forEach((viewItem) => {
-    currentViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
+    currentViewMap.set(getKey(viewItem), viewItem);
   });
 
   // 找出需要关闭的视图：存在于旧列表但不在新列表中
