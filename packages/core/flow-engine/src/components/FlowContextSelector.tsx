@@ -10,6 +10,7 @@
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { Button, Cascader, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import { cx, css } from '@emotion/css';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import {
   buildContextSelectorItems,
@@ -24,6 +25,14 @@ const defaultButtonStyle = {
   fontStyle: 'italic' as const,
   fontFamily: 'New York, Times New Roman, Times, serif',
 };
+
+// 参考 1.x FilterItem 的实现：下拉高度随内容自适应，过长时占用更多可视区以减少滚动。
+const cascaderPopupAutoHeightClassName = css`
+  .ant-cascader-menu {
+    height: fit-content;
+    max-height: 50vh;
+  }
+`;
 
 const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   value,
@@ -238,6 +247,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     [onChange, customFormatPathToValue, onlyLeafSelectable],
   );
 
+  const mergedPopupClassName = useMemo(() => {
+    return cx(cascaderPopupAutoHeightClassName, cascaderProps.popupClassName);
+  }, [cascaderProps.popupClassName]);
+
   return (
     <Cascader
       {...cascaderProps}
@@ -250,6 +263,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       expandTrigger="click"
       open={open}
       showSearch={children === null}
+      popupClassName={mergedPopupClassName}
     >
       {children === null ? null : children || defaultChildren}
     </Cascader>
