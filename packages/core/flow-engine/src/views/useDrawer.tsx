@@ -184,10 +184,11 @@ export function useDrawer() {
             footer={currentFooter}
             header={config.header || currentHeader}
             hidden={config.inputArgs?.hidden?.value}
-            afterClose={() => {
-              closeFunc?.();
+            onClose={() => {
               config.onClose?.();
-              resolvePromise?.(config.result);
+              currentDrawer.close(config.result);
+            }}
+            afterClose={() => {
               // 关闭时修正 previous/next 指针
               scopedEngine.unlinkFromStack();
             }}

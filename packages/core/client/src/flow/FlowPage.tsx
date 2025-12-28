@@ -250,6 +250,7 @@ export const FlowRoute = () => {
                   },
                   hidden: viewItem.hidden, // 是否隐藏视图
                   isMobileLayout,
+                  preventClose: true, // 会通过 URL 强制关闭
                 });
 
                 viewStateRef.current[getKey(viewItem)] = {
