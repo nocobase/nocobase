@@ -88,6 +88,8 @@ export type AppOptionsFactory = (appName: string, mainApp: Application, options?
 /**
  * Abstraction for discovering applications across deployment environments.
  */
+export type AppStatusesResult = Record<string, AppStatus | Record<string, AppStatus> | null>;
+
 export interface AppDiscoveryAdapter {
   readonly name: string;
   readonly environmentName?: string;
@@ -111,11 +113,7 @@ export interface AppDiscoveryAdapter {
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
 
   loadAppModels?(mainApp: Application): Promise<void>;
-  getAppsStatuses?(appNames?: string[]):
-    | Promise<{
-        [app: string]: AppStatus | null;
-      }>
-    | { [app: string]: AppStatus | null };
+  getAppsStatuses?(appNames?: string[]): Promise<AppStatusesResult> | AppStatusesResult;
 
   addAutoStartApps?(environmentName: string, appName: string[]): Promise<void>;
   getAutoStartApps?(environmentName: string): Promise<string[]>;
