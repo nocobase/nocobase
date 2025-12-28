@@ -79,8 +79,8 @@
           },
           {
             "type": "custom-link",
-            "label": "引用区块",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
+            "label": "区块模板",
+            "link": "/interface-builder/blocks/other-blocks/block-template"
           },
           {
             "type": "custom-link",
@@ -152,6 +152,11 @@
         "type": "custom-link",
         "label": "概述",
         "link": "/interface-builder/fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "字段模板",
+        "link": "/interface-builder/fields/field-template"
       },
       {
         "type": "custom-link",

@@ -57,6 +57,12 @@
 
 ![20251023192935](https://static-docs.nocobase.com/20251023192935.png)
 
+### 字段模板
+
+字段模板用于在表单区块中复用字段区域的配置。详情见 [字段模板](/interface-builder/fields/field-template)。
+
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
 ## 配置操作
 
 ![20251023193231](https://static-docs.nocobase.com/20251023193231.png)
