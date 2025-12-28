@@ -340,7 +340,7 @@ export class Gateway extends EventEmitter {
         this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
         return;
       }
-      appInstance.runCommand('start', '--quickstart');
+      AppSupervisor.getInstance().startApp(handleApp);
       appStatus = await AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 

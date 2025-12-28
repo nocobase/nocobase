@@ -57,6 +57,11 @@ export type EnvironmentInfo = {
   lastHeartbeatAt?: number;
 };
 
+export type BootstrapLock = {
+  acquire: () => Promise<boolean>;
+  release: () => Promise<void>;
+};
+
 export type AppModelOptions = {
   dbConnType?: 'new_database' | 'new_connection' | 'new_schema' | string;
   database?: IDatabaseOptions;
@@ -126,6 +131,7 @@ export interface AppDiscoveryAdapter {
   listEnvironments?(): Promise<EnvironmentInfo[]>;
   getEnvironment?(environmentName: string): Promise<EnvironmentInfo | null>;
   heartbeatEnvironment?(): Promise<void>;
+  getBootstrapLock?(appName: string): Promise<BootstrapLock | null> | BootstrapLock | null;
 
   dispose?(): Promise<void>;
 }

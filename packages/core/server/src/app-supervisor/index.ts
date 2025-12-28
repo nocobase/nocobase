@@ -24,6 +24,7 @@ import type {
   AppDbCreatorOptions,
   AppCommandAdapter,
   AppModel,
+  BootstrapLock,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
 import { ConditionalRegistry, Predicate } from './condition-registry';
@@ -303,11 +304,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (this.hasApp(appName)) {
       return;
     }
-    const app = this.registerApp({ appModel, mainApp });
+    this.registerApp({ appModel, mainApp });
 
     // must skip load on upgrade
     if (!loadButNotStart) {
-      await app.runCommand('start', '--quickstart');
+      await this.startApp(appName);
     }
   }
 
@@ -349,6 +350,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async getAppsStatuses(appNames?: string[]) {
     return this.discoveryAdapter.getAppsStatuses?.(appNames) ?? {};
+  }
+
+  async getBootstrapLock(appName: string): Promise<BootstrapLock | null> {
+    if (typeof this.discoveryAdapter.getBootstrapLock !== 'function') {
+      return null;
+    }
+    return this.discoveryAdapter.getBootstrapLock(appName);
   }
 
   registerApp({ appModel, mainApp, hook }: { appModel: AppModel; mainApp?: Application; hook?: boolean }) {
@@ -755,5 +763,6 @@ export type {
   AppOptionsFactory,
   AppModel,
   AppModelOptions,
+  BootstrapLock,
 } from './types';
 export { MainOnlyAdapter } from './main-only-adapter';
