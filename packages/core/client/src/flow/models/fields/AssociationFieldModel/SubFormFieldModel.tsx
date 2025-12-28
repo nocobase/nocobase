@@ -461,7 +461,9 @@ SubFormListFieldModel.registerFlow({
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===
-                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.isNew,
                 );
                 ctx.model.selectedRows.value = unique;
               },
