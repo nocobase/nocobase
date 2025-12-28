@@ -83,7 +83,7 @@ FormSubmitActionModel.registerFlow({
           // 显示保存失败提示
           ctx.message.error(ctx.t('Save failed'));
           console.error('Form submission error:', error);
-          return;
+          ctx.exit();
         }
       },
     },

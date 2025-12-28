@@ -263,6 +263,7 @@ export const openView = defineAction({
       typeof inputArgs.preventClose !== 'undefined' ? !!inputArgs.preventClose : !!params.preventClose;
 
     const finalInputArgs: Record<string, unknown> = {
+      viewUid: ctx.model.uid,
       ...ctx.inputArgs,
       ...inputArgs,
       dataSourceKey: runtimeDataSourceKey,
