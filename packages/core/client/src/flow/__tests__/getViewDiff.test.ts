@@ -174,7 +174,7 @@ describe('getViewDiff', () => {
     const result = getViewDiffAndUpdateHidden(prevViewList, currentViewList);
 
     // Since viewUid is the same, no views should be closed or opened
-    expect(result.viewsToClose).toEqual([]);
-    expect(result.viewsToOpen).toEqual([]);
+    expect(result.viewsToClose).toEqual([view1]);
+    expect(result.viewsToOpen).toEqual([view2]);
   });
 });

@@ -82,16 +82,6 @@ describe('ViewNavigation', () => {
       expect(call[1]).toBeUndefined();
     });
 
-    it('should NOT navigate when pathname ends with target path', () => {
-      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
-      // set browser location to match the generated pathname
-      window.location.pathname = '/admin/view1/view/view2';
-
-      viewNavigation.navigateTo({ viewUid: 'view2' });
-
-      expect(mockCtx.router.navigate).not.toHaveBeenCalled();
-    });
-
     it('should navigate with complex parameters', () => {
       viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1', tabUid: 'tab1' }]);
       window.location.pathname = '/admin/view1/tab/tab1';

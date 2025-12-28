@@ -9,7 +9,7 @@
 
 import { FlowEngine, FlowModel, ViewParam } from '@nocobase/flow-engine';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { resolveViewParamsToViewList } from '../resolveViewParamsToViewList';
+import { resolveViewParamsToViewList, updateViewListHidden } from '../resolveViewParamsToViewList';
 import { RouteModel } from '../models/base/RouteModel';
 
 // Mock FlowEngine for testing
@@ -128,6 +128,7 @@ describe('resolveViewParamsToViewList', () => {
       ];
 
       const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
+      updateViewListHidden(result);
 
       expect(result).toHaveLength(4);
       expect(result[0].hidden.value).toBe(true); // before embed
@@ -159,6 +160,7 @@ describe('resolveViewParamsToViewList', () => {
       ];
 
       const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
+      updateViewListHidden(result);
 
       expect(result).toHaveLength(4);
       expect(result[0].hidden.value).toBe(true); // before first embed
@@ -177,6 +179,7 @@ describe('resolveViewParamsToViewList', () => {
       const viewParams: ViewParam[] = [{ viewUid: 'view1' }, { viewUid: 'view2' }, { viewUid: 'view3' }];
 
       const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModelEmbed);
+      updateViewListHidden(result);
 
       expect(result).toHaveLength(3);
       expect(result[0].hidden.value).toBe(false); // embed itself
@@ -194,6 +197,7 @@ describe('resolveViewParamsToViewList', () => {
       const viewParams: ViewParam[] = [{ viewUid: 'view1' }, { viewUid: 'view2' }, { viewUid: 'view3' }];
 
       const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
+      updateViewListHidden(result);
 
       expect(result).toHaveLength(3);
       expect(result[0].hidden.value).toBe(true); // before embed
@@ -207,6 +211,7 @@ describe('resolveViewParamsToViewList', () => {
       const viewParams: ViewParam[] = [{ viewUid: 'view1' }];
 
       const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModelEmbed);
+      updateViewListHidden(result);
 
       expect(result).toHaveLength(1);
       expect(result[0].hidden.value).toBe(false); // embed itself
@@ -220,7 +225,8 @@ describe('resolveViewParamsToViewList', () => {
 
       const viewParams: ViewParam[] = [{ viewUid: 'view1' }, { viewUid: 'view2' }];
 
-      resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
+      const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
+      updateViewListHidden(result);
 
       // mockRouteModel is checked for instanceof RouteModel, so getStepParams might not be called if it is RouteModel
       // In implementation: if (viewItem.model instanceof RouteModel) return 'embed';

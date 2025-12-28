@@ -30,10 +30,12 @@ vi.mock('../../route-switch', () => ({
 
 vi.mock('../resolveViewParamsToViewList', () => ({
   resolveViewParamsToViewList: vi.fn(),
+  updateViewListHidden: vi.fn(),
 }));
 
 vi.mock('../getViewDiffAndUpdateHidden', () => ({
   getViewDiffAndUpdateHidden: vi.fn(),
+  getKey: vi.fn(),
 }));
 
 vi.mock('../flows/openViewFlow', async (importOriginal) => {
