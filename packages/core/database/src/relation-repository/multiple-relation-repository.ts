@@ -24,6 +24,7 @@ import {
   FirstOrCreateOptions,
 } from './types';
 import { valuesToFilter } from '../utils/filter-utils';
+import { Model } from '../model';
 
 export abstract class MultipleRelationRepository extends RelationRepository {
   async targetRepositoryFilterOptionsBySourceValue(): Promise<any> {
@@ -41,6 +42,17 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     };
   }
 
+  private normalizeScope(scope: Record<string, any>, model: Model) {
+    const result = {};
+    for (const [key, value] of Object.entries(scope)) {
+      const attr = model.getAttributes()[key];
+      if (attr?.field) {
+        result[attr.field] = value;
+      }
+    }
+    return result;
+  }
+
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 
@@ -52,6 +64,10 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       sourceKey: association.targetKey,
       realAs: association.through.model.name,
     };
+
+    if (association.through.scope) {
+      oneFromTargetOptions['scope'] = this.normalizeScope(association.through.scope, association.through.model);
+    }
 
     const pivotAssoc = new HasOne(association.target, association.through.model, oneFromTargetOptions);
 

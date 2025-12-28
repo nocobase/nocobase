@@ -965,3 +965,79 @@ describe('belongs to many', () => {
     await transaction.commit();
   });
 });
+
+describe('through scope', () => {
+  let db: Database;
+  let Post;
+  let Tag;
+  let PostTag;
+
+  beforeEach(async () => {
+    db = await createMockDatabase();
+    await db.clean({ drop: true });
+    PostTag = db.collection({
+      name: 'posts_tags',
+      fields: [
+        { type: 'string', name: 'tagged_at' },
+        { type: 'boolean', name: 'isAvailable' },
+      ],
+    });
+
+    Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'belongsToMany', name: 'tags', through: 'posts_tags', throughScope: { isAvailable: true } },
+        { type: 'string', name: 'title' },
+      ],
+    });
+
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
+        { type: 'string', name: 'name' },
+      ],
+    });
+
+    await db.sync({ force: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should find with scope', async () => {
+    const post = await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+    const tags = await Tag.repository.create({
+      values: [
+        {
+          name: 'tag1',
+        },
+        {
+          name: 'tag2',
+        },
+      ],
+    });
+    await PostTag.repository.create({
+      values: [
+        {
+          postId: post.id,
+          tagId: tags[0].id,
+          isAvailable: true,
+        },
+        {
+          postId: post.id,
+          tagId: tags[1].id,
+          isAvailable: false,
+        },
+      ],
+    });
+    const tag = await db.getRepository('posts.tags', post.id).find();
+    expect(tag.length).toBe(1);
+    expect(tag[0].name).toBe('tag1');
+  });
+});

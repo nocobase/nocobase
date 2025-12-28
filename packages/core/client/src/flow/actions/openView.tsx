@@ -263,6 +263,7 @@ export const openView = defineAction({
       typeof inputArgs.preventClose !== 'undefined' ? !!inputArgs.preventClose : !!params.preventClose;
 
     const finalInputArgs: Record<string, unknown> = {
+      viewUid: ctx.model.uid,
       ...ctx.inputArgs,
       ...inputArgs,
       dataSourceKey: runtimeDataSourceKey,
@@ -270,6 +271,7 @@ export const openView = defineAction({
       associationName: runtimeAssociationName,
       tabUid: mergedTabUid,
       openerUids,
+      pageActive: true, // 打开一个弹窗时，页面肯定是激活的
     };
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = mergedFilterByTk;

@@ -26,6 +26,7 @@ export class DetailsCustomItemModel extends FlowModel {
           sort: (ModelClass.meta.sort ?? 999) as number,
           searchable: !!ModelClass.meta?.searchable,
           searchPlaceholder: ModelClass.meta?.searchPlaceholder,
+          hide: ModelClass.meta?.hide,
         };
         if (hasChildren) {
           item.children = (innerCtx: FlowModelContext) => {
@@ -35,7 +36,7 @@ export class DetailsCustomItemModel extends FlowModel {
             return ModelClass.meta?.children || [];
           };
         } else {
-          item.createModelOptions = { use: name };
+          item.createModelOptions = ModelClass.meta?.createModelOptions || { use: name };
         }
         return item;
       });
