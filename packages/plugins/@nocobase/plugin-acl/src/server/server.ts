@@ -428,17 +428,6 @@ export class PluginACLServer extends Plugin {
         ],
       });
 
-      this.app.on('afterLoad', async (app) => {
-        app.db.on('rolesUsers.beforeSave', async (model: Model) => {
-          if (!model._changed.has('roleName')) {
-            return;
-          }
-          if (model.roleName === 'root') {
-            throw new Error('No permissions');
-          }
-        });
-      });
-
       const rolesResourcesScopes = this.app.db.getRepository('dataSourcesRolesResourcesScopes');
       await rolesResourcesScopes.createMany({
         records: [
@@ -455,6 +444,17 @@ export class PluginACLServer extends Plugin {
             },
           },
         ],
+      });
+    });
+
+    this.app.on('afterLoad', async (app) => {
+      app.db.on('rolesUsers.beforeSave', async (model: Model) => {
+        if (!model._changed.has('roleName')) {
+          return;
+        }
+        if (model.roleName === 'root') {
+          throw new Error('No permissions');
+        }
       });
     });
 
