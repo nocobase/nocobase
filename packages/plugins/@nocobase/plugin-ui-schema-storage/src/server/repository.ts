@@ -309,6 +309,8 @@ export class UiSchemaRepository extends Repository {
       'x-component-props.content',
       'x-component-props.tooltip',
       'x-component-props.children',
+      'x-component-props.confirm.title',
+      'x-component-props.confirm.content',
     ];
     let r = false;
     for (const key of keys) {
