@@ -83,7 +83,7 @@ export class ActionPanelBlockModel extends BlockModel {
                     if (action.hidden && !isConfigMode) {
                       return;
                     }
-                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
+                    const { icon, color = '#1677FF', title } = action.props;
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
@@ -183,7 +183,7 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action: ActionModel) => {
-                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
+                    const { icon, color = '#1677FF', title } = action.props;
                     action.enableEditDanger = false;
                     action.enableEditType = false;
                     action.renderHiddenInConfig = () => {

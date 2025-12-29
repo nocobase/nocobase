@@ -7,19 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionGroupModel, PopupActionModel, LinkActionModel, JSActionModel } from '@nocobase/client';
-import { tExpr } from '@nocobase/flow-engine';
+import { ActionGroupModel, PopupActionModel, LinkActionModel } from '@nocobase/client';
+import { escapeT } from '@nocobase/flow-engine';
 import { ActionPanelScanActionModel } from './ActionPanelScanActionModel';
 
 export class ActionPanelGroupActionModel extends ActionGroupModel {}
 
 ActionPanelGroupActionModel.define({
-  label: tExpr('Action panel action', { ns: 'block-workbench' }),
+  label: escapeT('Action panel action', { ns: 'block-workbench' }),
 });
 
 ActionPanelGroupActionModel.registerActionModels({
   PopupActionModel,
   LinkActionModel,
   ActionPanelScanActionModel,
-  JSActionModel,
 });
