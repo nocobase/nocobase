@@ -11,7 +11,7 @@ import { Context } from '@nocobase/actions';
 import { ToolOptions } from '../manager/tool-manager';
 import { z } from 'zod';
 import PluginAIServer from '../plugin';
-import { truncateLongStrings, MAX_QUERY_LIMIT } from './utils';
+import { truncateLongStrings, MAX_QUERY_LIMIT, normalizeLimitOffset, buildPagedToolResult } from './utils';
 
 const ArgSchema = z.object({
   datasource: z.string().describe('{{t("Data source key")}}'),
@@ -92,10 +92,7 @@ export const dataSourceQuery: ToolOptions = {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 
     // 限制单次查询数量
-    const rawLimit = typeof args.limit === 'number' && Number.isFinite(args.limit) ? args.limit : undefined;
-    const rawOffset = typeof args.offset === 'number' && Number.isFinite(args.offset) ? args.offset : undefined;
-    const limit = Math.min(Math.max(rawLimit ?? 50, 1), MAX_QUERY_LIMIT);
-    const offset = Math.max(rawOffset ?? 0, 0);
+    const { limit, offset } = normalizeLimitOffset(args, { defaultLimit: 50, maxLimit: MAX_QUERY_LIMIT });
 
     const content = await plugin.aiContextDatasourceManager.query(ctx, {
       ...args,
@@ -106,22 +103,12 @@ export const dataSourceQuery: ToolOptions = {
     // 截断长字符串字段
     const records = truncateLongStrings(content?.records || []);
     const total = content?.total || 0;
-    const nextOffset = offset + records.length;
-    const hasMore = total > nextOffset;
 
     // 构造结果，包含分页提示供 LLM 理解
-    const result: any = {
-      total,
-      offset,
-      limit,
-      returned: records.length,
-      hasMore,
-      nextOffset,
-      records,
-    };
+    const result: any = buildPagedToolResult({ total, offset, limit, records });
 
-    if (hasMore) {
-      result.note = `Showing ${records.length} of ${total} records. To fetch more, call this tool again with offset:${nextOffset}`;
+    if (result.hasMore) {
+      result.note = `Showing ${result.returned} of ${result.total} records. To fetch more, call this tool again with offset:${result.nextOffset}`;
     }
 
     return {

@@ -12,6 +12,46 @@ export const MAX_STRING_LENGTH = 500;
 /** 单次查询最大记录数 */
 export const MAX_QUERY_LIMIT = 100;
 
+export function normalizeLimitOffset(
+  args: { limit?: unknown; offset?: unknown },
+  options?: { defaultLimit?: number; maxLimit?: number },
+): { limit: number; offset: number } {
+  const defaultLimit = options?.defaultLimit ?? 50;
+  const maxLimit = options?.maxLimit ?? MAX_QUERY_LIMIT;
+
+  const rawLimit = typeof args.limit === 'number' && Number.isFinite(args.limit) ? args.limit : undefined;
+  const rawOffset = typeof args.offset === 'number' && Number.isFinite(args.offset) ? args.offset : undefined;
+
+  const limit = Math.min(Math.max(rawLimit ?? defaultLimit, 1), maxLimit);
+  const offset = Math.max(rawOffset ?? 0, 0);
+
+  return { limit, offset };
+}
+
+export function buildPagedToolResult<T>(params: { total: number; offset: number; limit: number; records: T[] }): {
+  total: number;
+  offset: number;
+  limit: number;
+  returned: number;
+  hasMore: boolean;
+  nextOffset: number;
+  records: T[];
+} {
+  const returned = params.records.length;
+  const nextOffset = params.offset + returned;
+  const hasMore = params.total > nextOffset;
+
+  return {
+    total: params.total,
+    offset: params.offset,
+    limit: params.limit,
+    returned,
+    hasMore,
+    nextOffset,
+    records: params.records,
+  };
+}
+
 /**
  * 递归截断对象中的长字符串，保持 JSON 结构完整
  */
