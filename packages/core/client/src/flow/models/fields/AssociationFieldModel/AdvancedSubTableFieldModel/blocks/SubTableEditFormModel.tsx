@@ -65,149 +65,7 @@ export class SubTableEditFormModel extends FormBlockModel {
     const genKey = (key) => {
       return this.name + key;
     };
-    const { dataSourceKey, collectionName, associationName } = ctx.view.inputArgs;
-    // const dataSources = ctx.dataSourceManager
-    //   .getDataSources()
-    //   .map((dataSource) => {
-    //     if (dataSource.getCollections().length === 0) {
-    //       return null;
-    //     }
-    //     return {
-    //       key: genKey(`ds-${dataSource.key}`),
-    //       label: dataSource.displayName,
-    //       searchable: true,
-    //       searchPlaceholder: tExpr('Search'),
-    //       children: (ctx) => {
-    //         return dataSource
-    //           .getCollections()
-    //           .map((collection) => {
-    //             if (!this.filterCollection(collection)) {
-    //               return null;
-    //             }
-    //             const initOptions = {
-    //               dataSourceKey: collection.dataSourceKey,
-    //               collectionName: collection.name,
-    //             };
-    //             return {
-    //               key: genKey(`ds-${dataSource.key}.${collection.name}`),
-    //               label: collection.title,
-    //               useModel: this.name,
-    //               createModelOptions: createModelOptions({
-    //                 stepParams: {
-    //                   resourceSettings: {
-    //                     init: initOptions,
-    //                   },
-    //                 },
-    //               }),
-    //             };
-    //           })
-    //           .filter(Boolean);
-    //       },
-    //     };
-    //   })
-    //   .filter(Boolean);
-    // const children = (ctx) => {
-    //   if (dataSources.length === 1) {
-    //     return dataSources[0].children(ctx);
-    //   }
-    //   return dataSources;
-    // };
-    // if (!collectionName) {
-    //   return children(ctx);
-    // }
-    // if (this._isScene('new') || this._isScene('select')) {
-    //   const initOptions = {
-    //     dataSourceKey,
-    //     collectionName,
-    //     // filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
-    //   };
-    //   if (associationName) {
-    //     initOptions['associationName'] = associationName;
-    //     initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
-    //   }
-    //   return [
-    //     {
-    //       key: genKey('current-collection'),
-    //       label: 'Current collection',
-    //       useModel: this.name,
-    //       createModelOptions: createModelOptions({
-    //         stepParams: {
-    //           resourceSettings: {
-    //             init: initOptions,
-    //           },
-    //         },
-    //       }),
-    //     },
-    //     {
-    //       key: genKey('others-collections'),
-    //       label: 'Other collections',
-    //       children: children(ctx),
-    //     },
-    //   ];
-    // }
-    // const items = [
-    //   {
-    //     key: genKey('associated'),
-    //     label: 'Associated records',
-    //     children: () => {
-    //       const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-    //       return collection
-    //         .getAssociationFields(this._getScene())
-    //         .map((field) => {
-    //           if (!field.targetCollection) {
-    //             return null;
-    //           }
-    //           if (!this.filterCollection(field.targetCollection)) {
-    //             return null;
-    //           }
-    //           let sourceId = `{{ctx.popup.record.${field.sourceKey || field.collection.filterTargetKey}}}`;
-    //           if (field.sourceKey === field.collection.filterTargetKey) {
-    //             sourceId = '{{ctx.view.inputArgs.filterByTk}}'; // 此时可以直接通过弹窗url读取，减少后端解析
-    //           }
-    //           const initOptions = {
-    //             dataSourceKey,
-    //             collectionName: field.target,
-    //             associationName: field.resourceName,
-    //             sourceId,
-    //           };
-    //           return {
-    //             key: genKey(`associated-${field.name}`),
-    //             label: field.title,
-    //             useModel: this.name,
-    //             createModelOptions: createModelOptions({
-    //               stepParams: {
-    //                 resourceSettings: {
-    //                   init: initOptions,
-    //                 },
-    //               },
-    //             }),
-    //           };
-    //         })
-    //         .filter(Boolean);
-    //     },
-    //   },
-    //   {
-    //     key: genKey('others-records'),
-    //     label: 'Other records',
-    //     children: children(ctx),
-    //   },
-    // ];
-    // if (this._isScene('one')) {
-    //   const currentCollection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-    //   if (!currentCollection || !this.filterCollection(currentCollection)) {
-    //     return items;
-    //   }
-    //   const initOptions = {
-    //     dataSourceKey,
-    //     collectionName,
-    //     filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
-    //   };
-    //   if (associationName) {
-    //     initOptions['associationName'] = associationName;
-    //     initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
-    //   }
-    //   items.unshift( as any);
-    // }
+    const { dataSourceKey, collectionName } = ctx.view.inputArgs;
     const initOptions = {
       dataSourceKey,
       collectionName,
@@ -232,9 +90,6 @@ export class SubTableEditFormModel extends FormBlockModel {
     super.onMount();
   }
 
-  // getCurrentRecord() {
-  //   return this.context.record;
-  // }
   getAclActionName() {
     return 'update';
   }
@@ -242,8 +97,6 @@ export class SubTableEditFormModel extends FormBlockModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
-    console.log(this.context.record);
-
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />

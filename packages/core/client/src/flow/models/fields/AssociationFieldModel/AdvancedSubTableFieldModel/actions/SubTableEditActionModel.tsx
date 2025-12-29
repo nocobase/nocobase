@@ -16,7 +16,7 @@ import {
   FlowModelRenderer,
 } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useRequest } from 'ahooks';
 import { ActionModel } from '../../../../base/ActionModel';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
