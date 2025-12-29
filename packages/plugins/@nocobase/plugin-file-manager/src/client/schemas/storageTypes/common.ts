@@ -70,4 +70,19 @@ export default {
     'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
   },
+  renameMode: {
+    title: `{{t("Renaming", { ns: "${NAMESPACE}" })}}`,
+    type: 'string',
+    'x-decorator': 'FormItem',
+    'x-component': 'Radio.Group',
+    enum: [
+      { label: `{{t("Append random suffix", { ns: "${NAMESPACE}" })}}`, value: 'appendRandomSuffix' },
+      { label: `{{t("Random string", { ns: "${NAMESPACE}" })}}`, value: 'random' },
+      {
+        label: `{{t("Keep original filename (will be overwrite if filename is existed)", { ns: "${NAMESPACE}" })}}`,
+        value: 'none',
+      },
+    ],
+    default: 'appendRandomSuffix',
+  },
 };
