@@ -39,11 +39,17 @@ AddChildActionModel.registerFlow({
         ctx.model.onClick = (e) => {
           ctx.resource.setSourceId(ctx.record.id);
 
-          ctx.model.dispatchEvent('click', {
-            event: e,
-            ...ctx.inputArgs,
-            filterByTk: null,
-          });
+          ctx.model.dispatchEvent(
+            'click',
+            {
+              event: e,
+              ...ctx.inputArgs,
+              filterByTk: null,
+            },
+            {
+              debounce: true,
+            },
+          );
         };
       },
     },

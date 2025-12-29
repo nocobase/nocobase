@@ -62,10 +62,7 @@ const DialogComponent = forwardRef<unknown, DialogComponentProps>(
         getContainer={container}
         {...modalProps}
         open={visible}
-        onCancel={(e) => {
-          setVisible(false);
-          config.onCancel?.(e);
-        }}
+        onCancel={config.onCancel}
         afterClose={() => {
           afterClose?.();
         }}
