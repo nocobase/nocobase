@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SettingOutlined, ZoomInOutlined, PlusOutlined } from '@ant-design/icons';
+import { SettingOutlined, ZoomInOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import {
   AddSubModelButton,
   tExpr,
@@ -16,19 +16,21 @@ import {
   useFlowEngine,
   EditableItemModel,
   observable,
+  createCurrentRecordMetaFactory,
+  useFlowModel,
 } from '@nocobase/flow-engine';
 import { Table, Button, Space } from 'antd';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { isEmpty } from 'lodash';
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
 import { EditFormContent } from './actions/SubTableEditActionModel';
+import { QuickEditFormModel } from '../../../blocks/form/QuickEditFormModel';
 
 const HeaderWrapperComponent = React.memo((props) => {
   const engine = useFlowEngine();
@@ -47,13 +49,100 @@ const HeaderWrapperComponent = React.memo((props) => {
 });
 
 const RenderCell = observer<any>((props) => {
-  const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
+  const { className, title, editable, width, record, recordIndex, dataIndex, children, ...restProps } = props;
+  const ref = useRef(null);
+  const model: any = useFlowModel();
+  if (editable) {
+    return (
+      <td
+        ref={ref}
+        {...restProps}
+        className={classNames(
+          className,
+          css`
+            .edit-icon {
+              position: absolute;
+              display: none;
+              color: #1890ff;
+              margin-left: 8px;
+              cursor: pointer;
+              z-index: 100;
+              top: 50%;
+              right: 8px;
+              transform: translateY(-50%);
+            }
+            &:hover {
+              background: rgba(24, 144, 255, 0.1) !important;
+            }
+            &:hover .edit-icon {
+              display: inline-flex;
+            }
+          `,
+        )}
+      >
+        <EditOutlined
+          className="edit-icon"
+          onClick={async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // 阻止事件冒泡，避免触发行选中
+            try {
+              await QuickEditFormModel.open({
+                flowEngine: model.flowEngine,
+                target: ref.current,
+                dataSourceKey: model.collection.dataSourceKey,
+                collectionName: model.collection.name,
+                fieldPath: dataIndex,
+                record: record,
+                fieldProps: { ...model.props, ...model.subModels.field.props },
+                onOk: (values) => {
+                  record[dataIndex] = values[dataIndex];
+                  // 仅重渲染单元格
+                  const fork: any = model.subModels.field.createFork({}, `${recordIndex}`);
+                  // Provide expandable meta for current row record based on the collection in context
+                  const recordMeta = createCurrentRecordMetaFactory(
+                    fork.context,
+                    () => (fork.context as any).collection,
+                  );
+                  fork.context.defineProperty('record', {
+                    get: () => record,
+                    cache: false,
+                    meta: recordMeta,
+                  });
+                  fork.setProps({ ...model.props, value: values[dataIndex] });
+                  fork.context.defineProperty('recordIndex', {
+                    get: () => recordIndex,
+                  });
+
+                  model.rerender();
+                },
+              });
+            } catch (error) {
+              console.log(error);
+            }
+          }}
+        />
+        <div
+          ref={ref}
+          className={css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: calc(${width}px - 16px);
+          `}
+        >
+          {children}
+        </div>
+      </td>
+    );
+  }
   return (
     <td className={classNames(className)} {...restProps}>
       <div style={{ width }}> {children}</div>
     </td>
   );
 });
+
 const AddFieldColumn = ({ model }) => {
   return (
     <AddSubModelButton
