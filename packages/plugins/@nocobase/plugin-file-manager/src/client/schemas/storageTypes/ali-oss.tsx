@@ -60,7 +60,7 @@ export default {
           default: 600_000,
         },
         thumbnailRule: {
-          title: 'Thumbnail rule',
+          title: `{{t("File pre-process parameters", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
