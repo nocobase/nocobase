@@ -70,7 +70,7 @@ export default {
       comment: '重命名模式',
       type: 'string',
       name: 'renameMode',
-      defaultValue: 'appendRandomSuffix',
+      defaultValue: 'appendRandomID',
     },
     // TODO(feature): 需要使用一个实现了可设置默认值的字段
     {
