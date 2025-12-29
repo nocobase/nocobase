@@ -8,10 +8,21 @@
  */
 
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import crypto from 'crypto';
-import { AttachmentModel, StorageType } from '.';
+import { Transform, TransformCallback } from 'stream';
+import { AttachmentModel, StorageModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
+
+class CountingStream extends Transform {
+  size = 0;
+
+  _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+    this.size += chunk.length;
+    callback(null, chunk);
+  }
+}
 
 export default class extends StorageType {
   static defaults() {
@@ -31,36 +42,111 @@ export default class extends StorageType {
 
   static filenameKey = 'key';
 
-  make() {
-    const multerS3 = require('multer-s3');
-    const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = this.storage.options;
-    if (options.endpoint) {
-      options.forcePathStyle = true;
-    } else {
-      options.endpoint = undefined;
-    }
-    const s3 = new S3Client({
+  client: S3Client;
+
+  constructor(storage: StorageModel) {
+    super(storage);
+    const { accessKeyId, secretAccessKey, ...options } = this.storage.options;
+    const params: any = {
       ...options,
-      credentials: {
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+    };
+    if (accessKeyId && secretAccessKey) {
+      params.credentials = {
         accessKeyId,
         secretAccessKey,
-      },
-    });
+      };
+    }
+    if (options.endpoint) {
+      params.forcePathStyle = true;
+    } else {
+      params.endpoint = undefined;
+    }
+    this.client = new S3Client(params);
+    this.client.middlewareStack.remove('flexibleChecksumsMiddleware');
+    this.client.middlewareStack.remove('flexibleChecksumsInputMiddleware');
+  }
 
-    return multerS3({
-      s3,
-      bucket,
-      acl,
-      contentType(req, file, cb) {
-        if (file.mimetype) {
-          cb(null, file.mimetype);
+  make() {
+    const { bucket, acl = 'public-read' } = this.storage.options;
+    const keyGetter = cloudFilenameGetter(this.storage);
+    const client = this.client;
+
+    const once = (fn) => {
+      let called = false;
+      return (...args) => {
+        if (called) return;
+        called = true;
+        fn(...args);
+      };
+    };
+
+    return {
+      s3: client,
+      async _handleFile(req, file, cb) {
+        const done = once(cb);
+        let key: string;
+        try {
+          key = await new Promise<string>((resolve, reject) => {
+            keyGetter(req, file, (err, value) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve(value);
+            });
+          });
+        } catch (error) {
+          done(error);
           return;
         }
+        try {
+          const contentType = file.mimetype || 'application/octet-stream';
+          const counter = new CountingStream();
+          const uploadStream = file.stream.pipe(counter);
+          const upload = new Upload({
+            client,
+            params: {
+              Bucket: bucket,
+              Key: key,
+              ACL: acl,
+              Body: uploadStream,
+              ContentType: contentType,
+            },
+            queueSize: 1,
+            leavePartsOnError: false,
+          });
 
-        multerS3.AUTO_CONTENT_TYPE(req, file, cb);
+          const result = await upload.done();
+          done(null, {
+            size: counter.size,
+            bucket,
+            key,
+            acl,
+            contentType,
+            etag: result.ETag,
+            versionId: result.VersionId,
+          });
+        } catch (error) {
+          done(error);
+        }
       },
-      key: cloudFilenameGetter(this.storage),
-    });
+      _removeFile(req, file, cb) {
+        (async () => {
+          try {
+            await client.send(
+              new DeleteObjectCommand({
+                Bucket: bucket,
+                Key: file.key,
+              }),
+            );
+            cb(null);
+          } catch (err) {
+            cb(err);
+          }
+        })();
+      },
+    };
   }
 
   calculateContentMD5(body) {
@@ -69,14 +155,13 @@ export default class extends StorageType {
   }
 
   async deleteS3Objects(bucketName: string, objects: string[]) {
-    const { s3 } = this.make();
     const Deleted = [];
     for (const Key of objects) {
       const deleteCommand = new DeleteObjectCommand({
         Bucket: bucketName,
         Key,
       });
-      await s3.send(deleteCommand);
+      await this.client.send(deleteCommand);
       Deleted.push({ Key });
     }
     return {
