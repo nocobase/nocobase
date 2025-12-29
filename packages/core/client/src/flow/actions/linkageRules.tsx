@@ -1275,6 +1275,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     }
   });
 
+  const valuePatches: Array<{ path: any; value: any }> = [];
+
   mergedByUid.forEach((model: any, uid) => {
     const patchProps = mergedPropsByUid.get(uid) || {};
     const newProps = { ...model.__originalProps, ...patchProps };
@@ -1302,14 +1304,40 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     if ('value' in newProps && model.context.form) {
       const path = model.isFork ? model.context.fieldPathArray : model.props.name;
       if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
-        model.context.form.setFieldValue(path, newProps.value);
-        model.context.blockModel?.dispatchEvent('formValuesChange', {});
-        model.context.blockModel?.emitter.emit('formValuesChange', {});
+        valuePatches.push({ path, value: newProps.value });
       }
     }
 
     model.__props = null;
   });
+
+  if (valuePatches.length) {
+    const setter = (ctx as any)?.setFormValues;
+    let wrote = false;
+    if (typeof setter === 'function') {
+      try {
+        await setter(valuePatches, { source: 'linkage' });
+        wrote = true;
+      } catch (error) {
+        console.warn(
+          '[linkageRules] Failed to set form values via ctx.setFormValues, fallback to form.setFieldValue',
+          error,
+        );
+      }
+    }
+
+    if (!wrote) {
+      valuePatches.forEach(({ path, value }) => {
+        try {
+          ctx.model?.context?.form?.setFieldValue?.(path, value);
+        } catch {
+          // ignore
+        }
+      });
+      ctx.model?.context?.blockModel?.dispatchEvent?.('formValuesChange', {});
+      ctx.model?.context?.blockModel?.emitter?.emit?.('formValuesChange', {});
+    }
+  }
 };
 
 export const blockLinkageRules = defineAction({

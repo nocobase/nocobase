@@ -149,12 +149,13 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
           })()
         : fieldModel;
     const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
+    const { initialValue, ...mergedPropsWithoutInitial } = mergedProps as any;
     const fieldPath = buildDynamicName(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     return (
-      <FormItem {...mergedProps} name={fieldPath} validateFirst={true}>
+      <FormItem {...mergedPropsWithoutInitial} name={fieldPath} validateFirst={true}>
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );

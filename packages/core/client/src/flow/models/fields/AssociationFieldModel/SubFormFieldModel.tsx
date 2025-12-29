@@ -80,8 +80,8 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
-    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
-      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    this.context.blockModel.emitter.on('formValuesChange', (payload) => {
+      this.dispatchEvent('formValuesChange', payload, { debounce: true });
     });
 
     this.context.defineProperty('currentObject', {
@@ -161,7 +161,7 @@ const ArrayNester = ({
       get: () => disabled,
       cache: false,
     });
-  }, [disabled]);
+  }, [disabled, gridModel.context]);
 
   return (
     <Card
@@ -269,8 +269,8 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
-    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
-      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    this.context.blockModel.emitter.on('formValuesChange', (payload) => {
+      this.dispatchEvent('formValuesChange', payload, { debounce: true });
     });
 
     this.context.defineProperty('currentObject', {
