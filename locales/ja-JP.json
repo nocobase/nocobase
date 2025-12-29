@@ -1557,7 +1557,7 @@
     "Completed": "完了",
     "Confirm": "確定",
     "Confirm cancel": "キャンセルの確認",
-    "Confirm cancel description": "このタスクをキャンセルしてもよろしいですか？",
+    "Confirm to cancel this task?": "このタスクをキャンセルしてもよろしいですか？",
     "Created at": "作成日時",
     "Data": "データ",
     "Download": "ダウンロード",

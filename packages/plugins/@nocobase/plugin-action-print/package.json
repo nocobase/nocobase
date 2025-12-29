@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-print",
-  "version": "1.9.30",
+  "version": "1.9.32",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-print",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-print",

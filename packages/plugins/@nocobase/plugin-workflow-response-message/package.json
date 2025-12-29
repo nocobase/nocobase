@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-response-message",
-  "version": "1.9.30",
+  "version": "1.9.32",
   "displayName": "Workflow: Response message",
   "displayName.ru-RU": "Рабочий процесс: Сообщение ответа",
   "displayName.zh-CN": "工作流：响应消息",
