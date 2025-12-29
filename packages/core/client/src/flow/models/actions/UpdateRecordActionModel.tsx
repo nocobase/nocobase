@@ -214,8 +214,6 @@ UpdateRecordActionModel.registerFlow({
         } else if (ctx.resource instanceof MultiRecordResource) {
           await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
         }
-        // 刷新与提示
-        ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));
       },
     },
