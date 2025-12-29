@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-ui-templates"
+---
+
 # 字段模板
 
 ## 介绍
@@ -23,14 +27,14 @@
    - `引用`：引用模板字段，所有引用处保持同步
    - `复制`：复制模板字段为独立配置，后续互不影响
 
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
+![use-field-template-config-20251228](https://static-docs.nocobase.com/use-field-template-config-20251228.png)
+
 ### 引用与复制的区别
 
 - `引用`：所有引用处共享同一份字段区域配置；修改模板或任一引用处，其他引用处都会同步更新。
 - `复制`：仅在复制时生成一份独立字段配置；后续对模板或其它区块的修改不会同步到这里。
-
-![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
-
-![use-field-template-config-20251228](https://static-docs.nocobase.com/use-field-template-config-20251228.png)
 
 ### 覆盖提示
 

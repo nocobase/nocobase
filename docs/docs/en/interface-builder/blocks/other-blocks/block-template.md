@@ -8,10 +8,6 @@ pkg: "@nocobase/plugin-ui-templates"
 
 Block templates let you reuse a configured block without rebuilding it each time.
 
-## Enable the feature
-
-This feature is provided by the `UI templates` plugin. If you don’t see related entries, check **Plugin manager** and make sure `UI templates` is enabled.
-
 ## Create a block template
 
 1) Open a configured block’s settings menu and click `Save as template`  
@@ -32,14 +28,14 @@ This feature is provided by the `UI templates` plugin. If you don’t see relate
      - `Reference`: all places that reference the template stay in sync
      - `Duplicate`: creates an independent copy; later changes won’t sync
 
+![block-template-menu-20251228](https://static-docs.nocobase.com/block-template-menu-20251228.png)
+
+![select-block-template-20251228](https://static-docs.nocobase.com/select-block-template-20251228.png)
+
 ### Reference vs Duplicate
 
 - `Reference`: all references share the same configuration. Changes made in the template (or in any referenced place) will be reflected everywhere.
 - `Duplicate`: creates a standalone copy at the time of duplication. Later changes won’t be synchronized.
-
-![block-template-menu-20251228](https://static-docs.nocobase.com/block-template-menu-20251228.png)
-
-![select-block-template-20251228](https://static-docs.nocobase.com/select-block-template-20251228.png)
 
 ## Manage templates
 

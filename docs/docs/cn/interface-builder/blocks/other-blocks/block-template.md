@@ -8,10 +8,6 @@ pkg: "@nocobase/plugin-ui-templates"
 
 区块模板用于复用已配置好的区块，避免在不同页面/位置重复搭建与配置。
 
-## 启用功能
-
-本功能由 `界面模板` 插件提供。如未看到相关入口，请先在“插件管理器”中确认 `界面模板` 已启用。
-
 ## 保存区块为模板
 
 1) 打开目标区块的设置菜单，点击 `保存为模板`  
@@ -32,14 +28,14 @@ pkg: "@nocobase/plugin-ui-templates"
      - `引用`：引用模板，所有引用处保持同步
      - `复制`：生成独立区块，后续互不影响
 
+![block-template-menu-20251228](https://static-docs.nocobase.com/block-template-menu-20251228.png)
+
+![select-block-template-20251228](https://static-docs.nocobase.com/select-block-template-20251228.png)
+
 ### 引用与复制的区别
 
 - `引用`：所有引用处共享同一份区块配置；修改模板或任一引用处，其他引用处都会同步更新。
 - `复制`：仅在复制时生成一份独立区块；后续对模板或其它区块的修改不会同步到这里。
-
-![block-template-menu-20251228](https://static-docs.nocobase.com/block-template-menu-20251228.png)
-
-![select-block-template-20251228](https://static-docs.nocobase.com/select-block-template-20251228.png)
 
 ## 管理区块模板
 
@@ -51,7 +47,7 @@ pkg: "@nocobase/plugin-ui-templates"
 
 ## 将引用转换为复制
 
-当区块正在引用模板时，可在区块设置菜单中使用 `将引用转换为复制`，把当前区块改为独立配置。
+当区块正在引用模板时，可在区块设置菜单中使用 `将引用转换为复制`，把当前区块改为普通区块。
 
 ![convert-block-template-duplicate-20251228](https://static-docs.nocobase.com/convert-block-template-duplicate-20251228.png)
 

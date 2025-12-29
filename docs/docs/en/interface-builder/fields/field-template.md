@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-ui-templates"
+---
+
 # Field template
 
 ## Introduction
@@ -23,14 +27,14 @@ Field templates come from **Block templates**. It is recommended to first create
    - `Reference`: reference the template fields and keep all references in sync
    - `Duplicate`: duplicate the template fields as an independent configuration; later changes won’t sync
 
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
+![use-field-template-config-20251228](https://static-docs.nocobase.com/use-field-template-config-20251228.png)
+
 ### Reference vs Duplicate
 
 - `Reference`: all references share the same field section configuration. Changes made to the template (or in any referenced place) will be synchronized everywhere.
 - `Duplicate`: creates a standalone field configuration at the time of duplication. Later changes to the template or other blocks will not be synchronized here.
-
-![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
-
-![use-field-template-config-20251228](https://static-docs.nocobase.com/use-field-template-config-20251228.png)
 
 ### Overwrite prompt
 
