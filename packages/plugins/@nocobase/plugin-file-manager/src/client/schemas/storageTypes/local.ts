@@ -43,6 +43,7 @@ export default {
         addonBefore: 'storage/uploads/',
       },
     },
+    renameMode: common.renameMode,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,

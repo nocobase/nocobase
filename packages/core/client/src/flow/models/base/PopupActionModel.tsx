@@ -15,7 +15,7 @@ import { ActionModel } from './ActionModel';
 export class PopupActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     title: tExpr('Popup'),
-    icon: 'SettingOutlined',
+    icon: 'ExportOutlined',
   };
 }
 
