@@ -123,7 +123,11 @@ export interface JSFieldMenuChildrenOptions {
   fieldUseModel: string;
   refreshTargets: string[];
   associationPathName?: string;
-  associationProvider: (ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>;
+  /**
+   * 仅在需要“关系字段”入口时传入（例如 Table / Details 区块）；
+   * 表单的 JS field 菜单默认不展示关系字段。
+   */
+  associationProvider?: (ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>;
 }
 
 export async function buildJSFieldMenuChildren(ctx: FlowModelContext, opts: JSFieldMenuChildrenOptions) {
@@ -139,15 +143,16 @@ export async function buildJSFieldMenuChildren(ctx: FlowModelContext, opts: JSFi
   if (Array.isArray(maybeChildren)) {
     directChildren = maybeChildren;
   }
+
+  if (!associationProvider) return directChildren;
+
   // 仅当“关联字段”实际存在时，才追加该分组
-  let result = [...directChildren];
   const assocRaw = await associationProvider(ctx);
-  if (Array.isArray(assocRaw) && assocRaw.length > 0) {
-    const assocJSGroup = buildAssociationJSGroup(ctx, associationProvider, {
-      fieldUseModel,
-      refreshTargets,
-    });
-    result = [...directChildren, assocJSGroup];
-  }
-  return result;
+  if (!Array.isArray(assocRaw) || assocRaw.length === 0) return directChildren;
+
+  const assocJSGroup = buildAssociationJSGroup(ctx, associationProvider, {
+    fieldUseModel,
+    refreshTargets,
+  });
+  return [...directChildren, assocJSGroup];
 }
