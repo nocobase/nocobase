@@ -26,6 +26,7 @@ export class DeleteActionModel extends ActionModel {
 
 DeleteActionModel.define({
   label: tExpr('Delete'),
+  sort: 60,
 });
 
 DeleteActionModel.registerFlow({

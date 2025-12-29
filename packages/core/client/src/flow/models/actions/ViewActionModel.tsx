@@ -26,4 +26,5 @@ export class ViewActionModel extends PopupActionModel {
 
 ViewActionModel.define({
   label: tExpr('View'),
+  sort: 10,
 });

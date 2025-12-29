@@ -20,4 +20,5 @@ export class PopupCollectionActionModel extends PopupActionModel {
 
 PopupCollectionActionModel.define({
   label: tExpr('Popup'),
+  sort: 30,
 });

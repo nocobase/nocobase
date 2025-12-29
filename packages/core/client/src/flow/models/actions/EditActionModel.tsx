@@ -26,4 +26,5 @@ export class EditActionModel extends PopupActionModel {
 
 EditActionModel.define({
   label: tExpr('Edit'),
+  sort: 20,
 });
