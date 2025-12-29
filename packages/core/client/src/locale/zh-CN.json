@@ -1564,5 +1564,8 @@
   "File type is not supported for previewing,": "文件类型不支持预览，",
   "download it to preview": "请下载后预览",
   "Your browser does not support the video tag.": "您的浏览器不支持视频标签。",
-  "Your browser does not support the audio tag.": "您的浏览器不支持音频标签。"
+  "Your browser does not support the audio tag.": "您的浏览器不支持音频标签。",
+  "Sub-table(Advanced)": "子表格（高级）",
+  "Edit Add new popup": "编辑新增数据弹窗",
+  "Edit select record popup": "编辑选择数据弹窗"
 }

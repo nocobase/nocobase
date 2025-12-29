@@ -86,7 +86,6 @@ const DisplayTable = (props) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const { t } = useTranslation();
-
   const rowKey = collection.filterTargetKey;
 
   // 表格内部数据
@@ -207,29 +206,6 @@ const DisplayTable = (props) => {
 
     return cols;
   }, [baseColumns, enableIndexColumn, currentPage, currentPageSize, model.flowEngine?.flowSettings?.enabled, model]);
-
-  const handleChange = useCallback(
-    async (pagination, filters, sorter) => {
-      //支持列点击排序
-      if (!isEmpty(sorter)) {
-        const resource = model.context.blockModel.resource;
-        const globalSort = model.props.globalSort;
-        const fieldPath = model.context.collectionField.name;
-        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
-        const sortPath = sort ? `${fieldPath}(sort=${sort})` : fieldPath;
-        const appends = resource.getAppends();
-        const newAppends = appends.map((item) =>
-          new RegExp(`^${fieldPath}\\(sort=[^)]+\\)$`).test(item) || item === fieldPath ? sortPath : item,
-        );
-        if (sorter) {
-          resource.setAppends(newAppends);
-        }
-        await resource.refresh();
-      }
-    },
-    [model],
-  );
-
   return (
     <Table
       tableLayout="fixed"
@@ -239,7 +215,6 @@ const DisplayTable = (props) => {
       dataSource={tableData}
       columns={columns}
       pagination={pagination}
-      onChange={handleChange}
       className={css`
         .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
           display: inline;
