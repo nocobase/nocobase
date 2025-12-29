@@ -29,13 +29,22 @@ import _ from 'lodash';
 
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
+  const openedDynamicFlowsViewRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    return () => {
+      openedDynamicFlowsViewRef.current?.destroy?.();
+      openedDynamicFlowsViewRef.current = null;
+    };
+  }, []);
 
   const handleClick = () => {
-    const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
+    const target = document.getElementById('nocobase-embed-container') as HTMLDivElement | null;
+    if (!target) return;
 
-    target.innerHTML = ''; // 清空容器内原有内容
+    openedDynamicFlowsViewRef.current?.destroy?.();
 
-    model.context.viewer.embed({
+    const view = model.context.viewer.embed({
       type: 'embed',
       target,
       title: 'Edit event flows',
@@ -46,9 +55,14 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
       onClose() {
         target.style.width = 'auto';
         target.style.maxWidth = 'none';
+        if (openedDynamicFlowsViewRef.current === view) {
+          openedDynamicFlowsViewRef.current = null;
+        }
       },
       content: <DynamicFlowsEditor model={model} />,
     });
+
+    openedDynamicFlowsViewRef.current = view;
   };
 
   return <ThunderboltOutlined style={{ cursor: 'pointer' }} onClick={handleClick} />;
