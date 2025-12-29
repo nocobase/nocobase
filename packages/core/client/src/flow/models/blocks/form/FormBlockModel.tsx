@@ -24,6 +24,7 @@ import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
+import { FormValueRuntime } from './FormValueRuntime';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -44,6 +45,7 @@ export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
   private userModifiedTopLevelFields = new Set<string>();
+  formValueRuntime?: FormValueRuntime;
 
   get form() {
     return this.context.form as FormInstance;
@@ -71,10 +73,24 @@ export class FormBlockModel<
   }
 
   setFieldsValue(values: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValues === 'function') {
+      void ctx.setFormValues(values, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form values via ctx.setFormValues', error);
+      });
+      return;
+    }
     this.form.setFieldsValue(values);
   }
 
-  setFieldValue(fieldName, value) {
+  setFieldValue(fieldName: string, value: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValue === 'function') {
+      void ctx.setFormValue(fieldName, value, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form value via ctx.setFormValue', error);
+      });
+      return;
+    }
     this.form.setFieldValue(fieldName, value);
   }
 
@@ -227,12 +243,21 @@ export class FormBlockModel<
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form });
+
+    if (!this.formValueRuntime) {
+      this.formValueRuntime = new FormValueRuntime({
+        model: this,
+        getForm: () => this.context.form,
+      });
+    }
+    const runtime = this.formValueRuntime;
+    runtime.mount();
     // 增强：为 formValues 提供基于“已选关联值”的服务端解析锚点
     const formValuesMeta: PropertyMetaFactory = this.createFormValuesMetaFactory();
 
     this.context.defineProperty('formValues', {
       get: () => {
-        return this.context.form.getFieldsValue();
+        return runtime.formValues;
       },
       cache: false,
       meta: formValuesMeta,
@@ -275,7 +300,7 @@ export class FormBlockModel<
           // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
           const assocResolver = createAssociationSubpathResolver(
             () => this.collection,
-            () => this.form.getFieldsValue(),
+            () => runtime.getFormValuesSnapshot(),
           );
           return assocResolver(subPath);
         }
@@ -296,6 +321,18 @@ export class FormBlockModel<
       },
       serverOnlyWhenContextParams: true,
     });
+
+    this.context.defineMethod('getFormValues', function () {
+      return runtime.getFormValuesSnapshot();
+    });
+
+    this.context.defineMethod('setFormValues', function (patch, options) {
+      return runtime.setFormValues(this, patch, options);
+    });
+
+    this.context.defineMethod('setFormValue', function (path, value, options) {
+      return runtime.setFormValues(this, [{ path, value }], options);
+    });
   }
 
   onInit(options) {
@@ -311,10 +348,17 @@ export class FormBlockModel<
 
   protected onMount() {
     super.onMount();
+    this.formValueRuntime?.mount({ sync: true });
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
     }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
+  }
+
+  onUnmount() {
+    this.formValueRuntime?.dispose();
+    this.formValueRuntime = undefined;
+    super.onUnmount();
   }
 
   getCurrentRecord() {
@@ -345,8 +389,19 @@ export function FormComponent({
       initialValues={model.context?.view?.inputArgs?.formData || model.context.record || initialValues}
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onFieldsChange={(changedFields) => {
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormFieldsChange(changedFields as any);
+        }
+      }}
       onValuesChange={(changedValues, allValues) => {
         model.markUserModifiedFields?.(changedValues);
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormValuesChange(changedValues, allValues);
+          return;
+        }
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
