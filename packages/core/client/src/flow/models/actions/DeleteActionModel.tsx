@@ -17,6 +17,7 @@ export class DeleteActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('Delete'),
+    icon: 'DeleteOutlined',
   };
 
   getAclActionName() {

@@ -15,6 +15,7 @@ export class PopupCollectionActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.all;
   defaultProps: ButtonProps = {
     title: tExpr('Popup'),
+    icon: 'ExportOutlined',
   };
 }
 

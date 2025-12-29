@@ -18,6 +18,7 @@ export class BulkDeleteActionModel extends ActionModel {
     title: tExpr('Delete'),
     icon: 'DeleteOutlined',
   };
+
   getAclActionName() {
     return 'destroy';
   }

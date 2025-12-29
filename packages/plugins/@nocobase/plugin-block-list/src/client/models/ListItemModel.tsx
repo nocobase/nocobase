@@ -43,7 +43,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         subModelBaseClass={this.context.getModelClassName('RecordActionGroupModel')}
         subModelKey="actions"
         afterSubModelInit={async (actionModel) => {
-          actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
         }}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>

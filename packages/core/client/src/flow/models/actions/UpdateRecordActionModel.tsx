@@ -104,6 +104,7 @@ export class UpdateRecordActionModel extends ActionModel<{
   defaultProps: ButtonProps = {
     title: tExpr('Update record'),
     type: 'link',
+    icon: 'EditOutlined',
   };
 
   getAclActionName() {
