@@ -771,7 +771,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   private _dispatchEventWithDebounce = _.debounce(
-    async (eventName: string, inputArgs?: Record<string, any>, options?: DispatchEventOptions) => {
+    async function (
+      this: FlowModel,
+      eventName: string,
+      inputArgs?: Record<string, any>,
+      options?: DispatchEventOptions,
+    ) {
       return this._dispatchEvent(eventName, inputArgs, options);
     },
     500,
