@@ -13,7 +13,7 @@ import urlJoin from 'url-join';
 import { promisify } from 'util';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
-import { getFileKey, getFilename } from '../utils';
+import { diskFilenameGetter, getFileKey } from '../utils';
 
 export default class extends StorageType {
   static defaults() {
@@ -40,7 +40,7 @@ export default class extends StorageType {
         ...this.storage.options,
         dir: (this.storage.path ?? '').replace(/\/+$/, ''),
       },
-      filename: getFilename,
+      filename: diskFilenameGetter(this.storage),
     });
   }
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
