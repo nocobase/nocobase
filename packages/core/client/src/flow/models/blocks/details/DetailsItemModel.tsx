@@ -146,7 +146,7 @@ export class DetailsItemModel extends DisplayItemModel<{
 }
 
 DetailsItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 

@@ -311,7 +311,7 @@ export class TableColumnModel extends DisplayItemModel {
 }
 
 TableColumnModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
 });
 
 TableColumnModel.registerFlow({

@@ -32,7 +32,8 @@ export class AssociationFieldGroupModel extends FlowModel {
               return [
                 {
                   key: `${fPath}-children-collectionField`,
-                  label: 'Display collection fields',
+                  // @ts-ignore
+                  label: this.context.t('Display fields'),
                   type: 'group',
                   children: field.targetCollection
                     .getFields()
@@ -93,6 +94,6 @@ export class AssociationFieldGroupModel extends FlowModel {
 }
 
 AssociationFieldGroupModel.define({
-  label: '{{t("Display association fields")}}',
+  label: '{{t("Display fields")}}',
   //   hide: true,
 });
