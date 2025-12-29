@@ -138,7 +138,7 @@ export abstract class LLMProvider {
     }
   }
 
-  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
+  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']): any {
     const { responseFormat } = this.modelOptions || {};
     const { schema, name, description, strict } = structuredOutput || {};
     if (!schema) {
