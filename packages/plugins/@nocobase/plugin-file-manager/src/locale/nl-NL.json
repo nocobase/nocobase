@@ -30,7 +30,6 @@
   "Keep file in storage when destroy the file record": "Keep file in storage when destroy the file record",
   "Local storage": "Lokale opslag",
   "MIME type": "MIME type",
-  "Minimum from 1 byte, maximum up to 1GB.": "Minimaal vanaf 1 byte, maximaal tot 1 GB.",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
   "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Meerdere typen gescheiden door een komma, bijvoorbeeld: \"image/*\", \"image/png\", \"image/*, application/pdf\" enz.",
   "Path": "Pad",

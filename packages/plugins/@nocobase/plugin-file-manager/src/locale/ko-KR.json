@@ -31,7 +31,6 @@
   "Keep file in storage when destroying a record": "레코드 삭제 시 파일을 저장소에 보존",
   "Local storage": "로컬 저장소",
   "MIME type": "MIME 타입",
-  "Minimum from 1 byte, maximum up to 1GB.": "Minimum from 1 byte, maximum up to 1GB.",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
   "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
   "Path": "경로",
