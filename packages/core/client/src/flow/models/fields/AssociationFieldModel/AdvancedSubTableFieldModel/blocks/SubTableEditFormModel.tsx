@@ -14,6 +14,7 @@ import {
   Droppable,
   FlowModelRenderer,
   MemoFlowModelRenderer,
+  useFlowModel,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { Space } from 'antd';
@@ -125,8 +126,14 @@ export class SubTableEditFormModel extends FormBlockModel {
   }
 }
 
+const FormLabel = () => {
+  console.log(8888);
+  const model = useFlowModel();
+  console.log(model);
+  return tExpr('Form (Edit)') as any;
+};
 SubTableEditFormModel.define({
-  label: tExpr('Form (Edit)'),
+  label: <FormLabel />,
   searchable: true,
   searchPlaceholder: tExpr('Search'),
   createModelOptions: {
