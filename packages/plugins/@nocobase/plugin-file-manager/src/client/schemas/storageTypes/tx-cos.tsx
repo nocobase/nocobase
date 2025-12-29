@@ -52,7 +52,6 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
-        renameMode: common.renameMode,
         thumbnailRule: {
           title: 'Thumbnail rule',
           type: 'string',
@@ -66,6 +65,7 @@ export default {
       },
     },
     path: common.path,
+    renameMode: common.renameMode,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,

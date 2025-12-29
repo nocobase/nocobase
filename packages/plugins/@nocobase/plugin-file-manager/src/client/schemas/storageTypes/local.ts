@@ -34,7 +34,6 @@ export default {
           'x-display': 'hidden',
           default: 'storage/uploads',
         },
-        renameMode: common.renameMode,
       },
     },
     path: {
@@ -44,6 +43,7 @@ export default {
         addonBefore: 'storage/uploads/',
       },
     },
+    renameMode: common.renameMode,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,

@@ -76,11 +76,11 @@ export default {
     'x-decorator': 'FormItem',
     'x-component': 'Radio.Group',
     enum: [
+      { label: `{{t("Random string", { ns: "${NAMESPACE}" })}}`, value: 'random' },
       {
         label: `{{t("Keep original filename (will be overwrite if filename is existed)", { ns: "${NAMESPACE}" })}}`,
         value: 'none',
       },
-      { label: `{{t("Random string", { ns: "${NAMESPACE}" })}}`, value: 'random' },
       { label: `{{t("Append random suffix", { ns: "${NAMESPACE}" })}}`, value: 'appendRandomSuffix' },
     ],
     default: 'random',
