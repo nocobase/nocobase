@@ -24,6 +24,7 @@ import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
+import { FormValueRuntime } from './FormValueRuntime';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -43,7 +44,7 @@ function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
-  private userModifiedTopLevelFields = new Set<string>();
+  formValueRuntime?: FormValueRuntime;
 
   get form() {
     return this.context.form as FormInstance;
@@ -71,10 +72,24 @@ export class FormBlockModel<
   }
 
   setFieldsValue(values: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValues === 'function') {
+      void ctx.setFormValues(values, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form values via ctx.setFormValues', error);
+      });
+      return;
+    }
     this.form.setFieldsValue(values);
   }
 
-  setFieldValue(fieldName, value) {
+  setFieldValue(fieldName: string, value: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValue === 'function') {
+      void ctx.setFormValue(fieldName, value, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form value via ctx.setFormValue', error);
+      });
+      return;
+    }
     this.form.setFieldValue(fieldName, value);
   }
 
@@ -227,74 +242,41 @@ export class FormBlockModel<
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form });
+
+    if (!this.formValueRuntime) {
+      this.formValueRuntime = new FormValueRuntime({
+        model: this,
+        getForm: () => this.context.form,
+      });
+    }
+    const runtime = this.formValueRuntime;
+    runtime.mount();
     // 增强：为 formValues 提供基于“已选关联值”的服务端解析锚点
     const formValuesMeta: PropertyMetaFactory = this.createFormValuesMetaFactory();
 
     this.context.defineProperty('formValues', {
       get: () => {
-        return this.context.form.getFieldsValue();
+        return runtime.formValues;
       },
       cache: false,
       meta: formValuesMeta,
-      resolveOnServer: (subPath: string) => {
-        // 约定：
-        // - 已配置到表单网格的字段：优先使用前端表单值（仅关联字段子路径按需服务端补全）
-        // - 未配置到表单网格但存在于 collection 的字段：编辑表单场景下可走服务端按 DB 值解析
-        if (!subPath) return false;
-
-        const getTopLevel = (p: string): string | undefined => {
-          const m = String(p || '').match(/^([^.[]+)/);
-          return m?.[1];
-        };
-        const top = getTopLevel(subPath);
-        if (!top) return false;
-
-        // 仅对存在于 collection 的字段生效（避免未知字段触发无意义的服务端解析）
-        const field = this.collection?.getField?.(top);
-        if (!field) return false;
-
-        const getActiveTopLevelFieldNames = (): Set<string> => {
-          const items = this.subModels.grid?.subModels?.items ?? [];
-          const names = new Set<string>();
-          for (const it of items) {
-            const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-            const active = fp?.toString().split('.')[0];
-            if (active) names.add(active);
-          }
-          return names;
-        };
-        const activeTopLevel = getActiveTopLevelFieldNames();
-        const isConfiguredField = activeTopLevel.has(top);
-
-        if (isConfiguredField) {
-          // 编辑表单场景：若前端已将关联字段清空（但尚未提交到服务端），
-          // 则不应回落到服务端按 DB 值解析（否则会把“旧关联值”解析回来）。
-          const topValue = this.form?.getFieldValue?.(top);
-          if (topValue == null) return false;
-          if (Array.isArray(topValue) && topValue.length === 0) return false;
-          // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
-          const assocResolver = createAssociationSubpathResolver(
-            () => this.collection,
-            () => this.form.getFieldsValue(),
-          );
-          return assocResolver(subPath);
-        }
-
-        // 未配置字段：仅在可推断当前记录锚点（filterByTk）时才允许服务端解析；
-        // 新建表单无锚点时直接返回 false（最终取值为 undefined）。
-        try {
-          const tk =
-            this.context?.resource?.getMeta?.('currentFilterByTk') ??
-            this.context?.resource?.getFilterByTk?.() ??
-            this.collection?.getFilterByTK?.(this.context?.record);
-          if (typeof tk === 'undefined' || tk === null) return false;
-        } catch (_) {
-          return false;
-        }
-
-        return true;
-      },
+      resolveOnServer: createAssociationSubpathResolver(
+        () => this.collection,
+        () => runtime.getFormValuesSnapshot(),
+      ),
       serverOnlyWhenContextParams: true,
+    });
+
+    this.context.defineMethod('getFormValues', function () {
+      return runtime.getFormValuesSnapshot();
+    });
+
+    this.context.defineMethod('setFormValues', function (patch, options) {
+      return runtime.setFormValues(this, patch, options);
+    });
+
+    this.context.defineMethod('setFormValue', function (path, value, options) {
+      return runtime.setFormValues(this, [{ path, value }], options);
     });
   }
 
@@ -311,10 +293,17 @@ export class FormBlockModel<
 
   protected onMount() {
     super.onMount();
+    this.formValueRuntime?.mount({ sync: true });
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
     }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
+  }
+
+  onUnmount() {
+    this.formValueRuntime?.dispose();
+    this.formValueRuntime = undefined;
+    super.onUnmount();
   }
 
   getCurrentRecord() {
@@ -345,8 +334,18 @@ export function FormComponent({
       initialValues={model.context?.view?.inputArgs?.formData || model.context.record || initialValues}
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onFieldsChange={(changedFields) => {
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormFieldsChange(changedFields as any);
+        }
+      }}
       onValuesChange={(changedValues, allValues) => {
-        model.markUserModifiedFields?.(changedValues);
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormValuesChange(changedValues, allValues);
+          return;
+        }
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
