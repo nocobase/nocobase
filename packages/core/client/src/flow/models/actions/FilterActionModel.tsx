@@ -118,6 +118,7 @@ export class FilterActionModel extends ActionModel {
 FilterActionModel.define({
   label: tExpr('Filter'),
   toggleable: true,
+  sort: 5,
 });
 
 FilterActionModel.registerFlow({

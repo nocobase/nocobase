@@ -10,28 +10,26 @@
 import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr, compileRunJs } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { CodeEditor } from '../../components/code-editor';
-import { ActionSceneEnum, RecordActionModel } from '../base';
+import { ActionModel } from '../base';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
-export class JSRecordActionModel extends RecordActionModel {
-  static scene = ActionSceneEnum.record;
-
+export class JSActionModel extends ActionModel {
   defaultProps: ButtonProps = {
-    type: 'link',
+    type: 'default',
     title: tExpr('JS action'),
     icon: 'JavaScriptOutlined',
   };
 }
 
-JSRecordActionModel.define({
+JSActionModel.define({
   label: tExpr('JS action'),
   sort: 9999,
   createModelOptions: {
-    use: 'JSRecordActionModel',
+    use: 'JSActionModel',
   },
 });
 
-JSRecordActionModel.registerFlow({
+JSActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
   title: tExpr('Click settings'),
@@ -67,11 +65,7 @@ JSRecordActionModel.registerFlow({
         return {
           version: 'v1',
           code: `
-if (!ctx.record) {
-  ctx.message.error('No record');
-} else {
-  ctx.message.success('Record ID: ' + (ctx.filterByTk ?? ctx.record?.id));
-}
+ctx.message.info('Hello JS action.');
 `,
         };
       },
