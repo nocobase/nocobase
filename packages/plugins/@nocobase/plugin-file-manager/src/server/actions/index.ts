@@ -12,38 +12,6 @@ import { createMiddleware } from './attachments';
 import * as storageActions from './storages';
 
 export default function ({ app }) {
-  app.resourcer.use(async (ctx, next) => {
-    if (ctx.action.resourceName === 'storages' && ['create', 'update'].includes(ctx.action.actionName)) {
-      const { values } = ctx.action.params;
-      if (values && values.renameMode) {
-        values.options = {
-          ...values.options,
-          renameMode: values.renameMode,
-        };
-      }
-    }
-    await next();
-    if (ctx.action.resourceName === 'storages' && ['get', 'list', 'create', 'update'].includes(ctx.action.actionName)) {
-      const transform = (item) => {
-        if (!item) return item;
-        const data = item.toJSON ? item.toJSON() : item;
-        if (data.options && data.options.renameMode) {
-          data.renameMode = data.options.renameMode;
-        }
-        return data;
-      };
-
-      if (Array.isArray(ctx.body)) {
-        ctx.body = ctx.body.map(transform);
-      } else if (ctx.body && typeof ctx.body === 'object') {
-        if (ctx.body.rows && Array.isArray(ctx.body.rows)) {
-          ctx.body.rows = ctx.body.rows.map(transform);
-        } else {
-          ctx.body = transform(ctx.body);
-        }
-      }
-    }
-  });
   app.resourcer.define({
     name: 'storages',
     actions: storageActions,
