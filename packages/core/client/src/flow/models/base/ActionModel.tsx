@@ -52,10 +52,10 @@ export const ActionSceneEnum = {
 };
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
-  declare props: ButtonProps;
+  declare props: ButtonProps & { tooltip?: string };
   declare scene: ActionSceneType;
 
-  defaultProps: ButtonProps = {
+  defaultProps: ButtonProps & { tooltip?: string } = {
     type: 'default',
     title: tExpr('Action'),
   };
@@ -129,10 +129,12 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   getTitle() {
     return this.props.title;
   }
+
   getIcon() {
     return this.props.icon;
   }
-  render() {
+
+  renderButton() {
     const props = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
 
@@ -141,6 +143,14 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
         {props.children || this.getTitle()}
       </Button>
     );
+  }
+
+  render() {
+    if (this.props.tooltip) {
+      return <Tooltip title={this.props.tooltip}>{this.renderButton()}</Tooltip>;
+    }
+
+    return this.renderButton();
   }
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
@@ -223,9 +233,10 @@ ActionModel.registerFlow({
         return ctx.model.defaultProps;
       },
       handler(ctx, params) {
-        const { title, ...rest } = params;
+        const { title, tooltip, ...rest } = params;
         ctx.model.setProps({
-          title: ctx.t(title),
+          title: title ? ctx.t(title) : undefined,
+          tooltip: tooltip ? ctx.t(tooltip) : undefined,
           ...rest,
         });
       },
