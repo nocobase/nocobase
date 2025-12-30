@@ -29,7 +29,8 @@ const ArrayNester = ({ name, value = [] }: any) => {
   const isConfigMode = !!model.context.flowSettingsEnabled;
 
   const resultValue = isConfigMode && value.length === 0 ? [{}] : value;
-
+  const resource = model.context.blockModel.resource;
+  const blockPage = resource?.getPage?.() || 0;
   return (
     resultValue.length > 0 && (
       <Card
@@ -42,7 +43,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
         `}
       >
         {resultValue.map((item: any, index: number) => {
-          const key = `row_${index}`;
+          const key = `row_${index}_${blockPage}`;
           if (!forksRef.current[key]) {
             const fork = gridModel.createFork();
             fork.gridContainerRef = React.createRef<HTMLDivElement>();
