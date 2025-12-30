@@ -103,21 +103,15 @@ export class Auth {
    * @internal
    */
   getOption(key: string) {
-    if (!this.KEYS[key]) {
-      return;
-    }
-    return this.api.storage.getItem(this.KEYS[key]);
+    return this.api.storage.getItem(key);
   }
 
   /**
    * @internal
    */
   setOption(key: string, value?: string) {
-    if (!this.KEYS[key]) {
-      return;
-    }
     this.options[key] = value;
-    return this.api.storage.setItem(this.KEYS[key], value || '');
+    return this.api.storage.setItem(key, value || '');
   }
 
   /**
@@ -283,14 +277,19 @@ export class Auth {
   }
 }
 
-export abstract class Storage {
+export abstract class BaseStorage {
+  storagePrefix: string;
   abstract clear(): void;
   abstract getItem(key: string): string | null;
   abstract removeItem(key: string): void;
   abstract setItem(key: string, value: string): void;
+
+  toUpperCase(...arr: string[]) {
+    return arr.map((str) => str.toUpperCase()).join('_');
+  }
 }
 
-export class MemoryStorage extends Storage {
+export class MemoryStorage extends BaseStorage {
   items = new Map();
 
   clear() {
@@ -310,6 +309,54 @@ export class MemoryStorage extends Storage {
   }
 }
 
+export class LocalStorage extends BaseStorage {
+  items: Storage;
+  constructor(public storagePrefix: string) {
+    super();
+    this.items = window.localStorage;
+  }
+
+  clear() {
+    return this.items.clear();
+  }
+
+  getItem(key: string) {
+    return this.items.getItem(this.toUpperCase(this.storagePrefix, key));
+  }
+
+  setItem(key: string, value: string) {
+    return this.items.setItem(this.toUpperCase(this.storagePrefix, key), value);
+  }
+
+  removeItem(key: string) {
+    return this.items.removeItem(this.toUpperCase(this.storagePrefix, key));
+  }
+}
+
+export class SessionStorage extends BaseStorage {
+  items: Storage;
+  constructor(public storagePrefix: string) {
+    super();
+    this.items = window.sessionStorage;
+  }
+
+  clear() {
+    return this.items.clear();
+  }
+
+  getItem(key: string) {
+    return this.items.getItem(this.toUpperCase(this.storagePrefix, key));
+  }
+
+  setItem(key: string, value: string) {
+    return this.items.setItem(this.toUpperCase(this.storagePrefix, key), value);
+  }
+
+  removeItem(key: string) {
+    return this.items.removeItem(this.toUpperCase(this.storagePrefix, key));
+  }
+}
+
 interface ExtendedOptions {
   authClass?: any;
   storageType?: 'localStorage' | 'sessionStorage' | 'memory';
@@ -323,7 +370,7 @@ export class APIClient {
   options?: APIClientOptions;
   axios: AxiosInstance;
   auth: Auth;
-  storage: Storage;
+  storage: BaseStorage;
   storagePrefix = 'NOCOBASE_';
 
   toErrMessages(error) {
@@ -396,11 +443,11 @@ export class APIClient {
       return;
     }
     if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
-      this.storage = localStorage;
+      this.storage = new LocalStorage(this.storagePrefix);
       return;
     }
     if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
-      this.storage = sessionStorage;
+      this.storage = new SessionStorage(this.storagePrefix);
       return;
     }
     this.storage = new MemoryStorage();
