@@ -400,6 +400,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return null;
   }
 
+  refresh() {
+    if (!this.resource) {
+      return super.refresh();
+    }
+    return this.resource.refresh();
+  }
+
   protected defaultBlockTitle() {
     const blockLabel = this.translate(this.constructor['meta']?.label || this.constructor.name);
     const dsName = this.dataSource?.displayName || this.dataSource?.key;
