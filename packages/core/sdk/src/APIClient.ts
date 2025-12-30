@@ -113,6 +113,16 @@ export class APIClient {
     this.interceptors();
   }
 
+  createStorage(storageType: 'localStorage' | 'sessionStorage' | 'memory') {
+    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
+      return new LocalStorage(this.storagePrefix, this.baseStoragePrefix);
+    }
+    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
+      return new SessionStorage(this.storagePrefix, this.baseStoragePrefix);
+    }
+    return new MemoryStorage();
+  }
+
   private initStorage(storage?: any, storageType = 'localStorage') {
     if (storage) {
       this.storage = new storage(this);
