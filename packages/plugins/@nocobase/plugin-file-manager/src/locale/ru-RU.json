@@ -30,7 +30,6 @@
   "Keep file in storage when destroy the file record": "Keep file in storage when destroy the file record",
   "Local storage": "Локальное хранилище",
   "MIME type": "Тип MIME",
-  "Minimum from 1 byte, maximum up to 1GB.": "Минимум от 1 байта, максимум до 1 ГБ.",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
   "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Множественные типы, разделенные запятой, например: \"image/*\", \"image/png\", \"image/*, application/pdf\" и т.д.",
   "Path": "Путь",
