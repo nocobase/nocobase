@@ -19,7 +19,6 @@ export const PageComponent = forwardRef((props: any, ref) => {
     visible = true,
     footer: _footer = null,
     header: _header = null,
-    afterClose,
     children,
     hidden,
     title: _title,
@@ -36,7 +35,6 @@ export const PageComponent = forwardRef((props: any, ref) => {
     destroy: () => {
       if (!closedRef.current) {
         closedRef.current = true;
-        afterClose?.();
       }
     },
     update: (newConfig: any) => {

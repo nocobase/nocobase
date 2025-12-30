@@ -94,9 +94,12 @@ export function usePage() {
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: (result?: any) => {
+        config.onClose?.();
         resolvePromise?.(result);
         pageRef.current?.destroy();
         closeFunc?.();
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
       },
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
@@ -165,12 +168,7 @@ export function usePage() {
             hidden={config.inputArgs?.hidden?.value}
             {...restConfig}
             onClose={() => {
-              config.onClose?.();
               currentPage.close(config.result);
-            }}
-            afterClose={() => {
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
             }}
           >
             {pageContent}

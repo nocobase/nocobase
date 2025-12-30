@@ -120,9 +120,12 @@ export function useDrawer() {
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: (result?: any) => {
+        config.onClose?.();
         drawerRef.current?.destroy();
         closeFunc?.();
         resolvePromise?.(result);
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
       },
       update: (newConfig) => drawerRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
@@ -194,12 +197,7 @@ export function useDrawer() {
             header={config.header || currentHeader}
             hidden={config.inputArgs?.hidden?.value}
             onClose={() => {
-              config.onClose?.();
               currentDrawer.close(config.result);
-            }}
-            afterClose={() => {
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
             }}
             isMobile={ctx.isMobileLayout}
           >

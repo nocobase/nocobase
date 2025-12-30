@@ -91,9 +91,12 @@ export function useDialog() {
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: (result?: any) => {
+        config.onClose?.();
         dialogRef.current?.destroy();
         closeFunc?.();
         resolvePromise?.(result);
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
       },
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
@@ -165,12 +168,7 @@ export function useDialog() {
             footer={currentFooter}
             header={currentHeader}
             onCancel={() => {
-              config.onClose?.();
               currentDialog.close(config.result);
-            }}
-            afterClose={() => {
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
             }}
           >
             {content}
