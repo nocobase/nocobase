@@ -36,7 +36,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   collectionRequired = true;
   private previousBeforeRenderHash; // qs 变化后为了防止区块依赖qs, 因此重跑beforeRender, task-1357
 
-  onMount() {
+  protected onMount() {
+    super.onMount();
     this.previousBeforeRenderHash = this.context.location.search;
   }
 

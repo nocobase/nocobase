@@ -93,6 +93,7 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   protected onMount(): void {
+    super.onMount();
     this.onOpenView = (record) => {
       const filterByTk = this.context.collection.getFilterByTK(record);
       this.dispatchEvent('click', {
