@@ -19,14 +19,28 @@ import { DefaultSettingsIcon } from '../DefaultSettingsIcon';
 // ---- Mock antd to capture Dropdown menu props ----
 const dropdownMenus: any[] = [];
 vi.mock('antd', async (importOriginal) => {
+  const messageApi = {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  };
+  const modalApi = {
+    confirm: (opts: any) => {
+      if (opts && typeof opts.onOk === 'function') return opts.onOk();
+    },
+    error: vi.fn(),
+  };
+  const appApi = { message: messageApi, modal: modalApi };
+
   const Dropdown = (props: any) => {
     (globalThis as any).__lastDropdownMenu = props.menu;
+    (globalThis as any).__lastDropdownOnOpenChange = props.onOpenChange;
     dropdownMenus.push(props.menu);
     return React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
   };
 
   const App = Object.assign(({ children }: any) => React.createElement(React.Fragment, null, children), {
-    useApp: () => ({ message: { success: () => {}, error: () => {}, info: () => {} } }),
+    useApp: () => appApi,
   });
 
   const ConfigProvider = ({ children }: any) => React.createElement(React.Fragment, null, children);
@@ -83,6 +97,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
   beforeEach(() => {
     dropdownMenus.length = 0;
     (globalThis as any).__lastDropdownMenu = undefined;
+    (globalThis as any).__lastDropdownOnOpenChange = undefined;
   });
 
   afterEach(() => {
@@ -140,22 +155,18 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    // 等待菜单内出现静态流分组，确保异步加载完成
+    // 等待菜单渲染完成，并且只包含静态流的步骤
     await waitFor(() => {
       const menu = (globalThis as any).__lastDropdownMenu;
       expect(menu).toBeTruthy();
       const items = (menu?.items || []) as any[];
-      const groupLabels = items.filter((it) => it.type === 'group').map((it) => String(it.label));
-      expect(groupLabels).toContain('Static Flow');
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys.some((k) => k.startsWith('static1:'))).toBe(true);
+      expect(keys.some((k) => k.startsWith('dyn1:'))).toBe(false);
     });
 
     const menu = (globalThis as any).__lastDropdownMenu;
     const items = (menu?.items || []) as any[];
-
-    // groups for flows are labeled with flow.title; ensure static group exists, dynamic group不存在
-    const groupLabels = items.filter((it) => it.type === 'group').map((it) => String(it.label));
-    expect(groupLabels).toContain('Static Flow');
-    expect(groupLabels).not.toContain('Dynamic Flow');
 
     // 静态流的 step 存在（key: `${flowKey}:${stepKey}`），动态流 step 不存在
     expect(items.some((it) => String(it.key || '').startsWith('static1:'))).toBe(true);
@@ -361,68 +372,6 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
-  it('adds "Copy popup UID" for popupSettings flow (current model and sub-model)', async () => {
-    class Parent extends FlowModel {}
-    class Child extends FlowModel {}
-    const engine = new FlowEngine();
-    const parent = new Parent({ uid: 'parent-2', flowEngine: engine });
-    const child = new Child({ uid: 'child-2', flowEngine: engine });
-
-    // current model popupSettings
-    Parent.registerFlow({
-      key: 'popupSettings',
-      title: 'Popup',
-      steps: { stage: { title: 'Stage', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
-    });
-    // sub model popupSettings
-    Child.registerFlow({
-      key: 'popupSettings',
-      title: 'Popup Child',
-      steps: { stage: { title: 'Stage', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
-    });
-    parent.addSubModel('items', child);
-
-    // mock clipboard
-    Object.defineProperty(window.navigator, 'clipboard', {
-      value: { writeText: vi.fn().mockResolvedValue(undefined) },
-      configurable: true,
-    });
-
-    render(
-      React.createElement(
-        ConfigProvider as any,
-        null,
-        React.createElement(
-          App as any,
-          null,
-          React.createElement(DefaultSettingsIcon as any, {
-            model: parent,
-            menuLevels: 2,
-            flattenSubMenus: true,
-          }),
-        ),
-      ),
-    );
-
-    // 等待“Copy popup UID”对应的菜单项出现，避免异步时序导致的偶发失败
-    await waitFor(() => {
-      const m = (globalThis as any).__lastDropdownMenu;
-      const is = (m?.items || []) as any[];
-      const current = is.find((it) => String(it.key) === 'copy-pop-uid:popupSettings:stage');
-      const sub = is.find((it) => String(it.key).startsWith('copy-pop-uid:items[0]:popupSettings:stage'));
-      expect(current).toBeTruthy();
-      expect(sub).toBeTruthy();
-    });
-
-    // click and verify clipboard（直接使用最新的 menu）
-    const menu = (globalThis as any).__lastDropdownMenu;
-    menu.onClick?.({ key: 'copy-pop-uid:popupSettings:stage' });
-    expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('parent-2');
-
-    menu.onClick?.({ key: 'copy-pop-uid:items[0]:popupSettings:stage' });
-    expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('child-2');
-  });
-
   it('refreshes menu when current model step params change', async () => {
     class TestFlowModel extends FlowModel {}
     const engine = new FlowEngine();
@@ -539,5 +488,78 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       const items = (menu?.items || []) as any[];
       expect(items.some((it) => String(it.key || '').startsWith('items[0]:childFlow:childStep'))).toBe(true);
     });
+  });
+});
+
+describe('DefaultSettingsIcon - extra menu items', () => {
+  beforeEach(() => {
+    dropdownMenus.length = 0;
+    (globalThis as any).__lastDropdownMenu = undefined;
+    (globalThis as any).__lastDropdownOnOpenChange = undefined;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('renders and triggers extra menu items registered on FlowModel class', async () => {
+    const onClick = vi.fn();
+
+    class TestFlowModel extends FlowModel {}
+    const dispose = TestFlowModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: 10,
+      items: [{ key: 'extra-action', label: 'Extra Action', onClick }],
+    });
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-extra', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'flow',
+      title: 'Flow',
+      steps: { s: { title: 'S', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } } },
+    });
+
+    try {
+      render(
+        React.createElement(
+          ConfigProvider as any,
+          null,
+          React.createElement(
+            App as any,
+            null,
+            React.createElement(DefaultSettingsIcon as any, {
+              model,
+              showCopyUidButton: false,
+              showDeleteButton: false,
+            }),
+          ),
+        ),
+      );
+
+      await waitFor(() => {
+        expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+        expect((globalThis as any).__lastDropdownOnOpenChange).toBeTruthy();
+      });
+
+      // extra menu items are loaded when dropdown becomes visible
+      await act(async () => {
+        (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+      });
+
+      await waitFor(() => {
+        const menu = (globalThis as any).__lastDropdownMenu;
+        const items = (menu?.items || []) as any[];
+        expect(items.some((it) => String(it.key || '') === 'extra-action')).toBe(true);
+      });
+
+      const menu = (globalThis as any).__lastDropdownMenu;
+      menu.onClick?.({ key: 'extra-action' });
+      expect(onClick).toHaveBeenCalled();
+    } finally {
+      dispose?.();
+    }
   });
 });

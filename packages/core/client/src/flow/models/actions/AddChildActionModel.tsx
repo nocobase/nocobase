@@ -7,18 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionGroupModel, PopupActionModel } from '../base';
 
 export class AddChildActionModel extends PopupActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: escapeT('Add child'),
+    title: tExpr('Add child'),
+    icon: 'PlusOutlined',
   };
 
   getAclActionName() {
     return 'create';
+  }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('association', {
+      get: () => {
+        return this.context.blockModel.dataSource.getAssociation(`${this.context.blockModel.collection.name}.children`);
+      },
+    });
   }
 }
 
@@ -28,11 +37,19 @@ AddChildActionModel.registerFlow({
     addChildInit: {
       async handler(ctx, params) {
         ctx.model.onClick = (e) => {
-          ctx.model.dispatchEvent('click', {
-            event: e,
-            parentRecord: ctx.record,
-            ...ctx.inputArgs,
-          });
+          ctx.resource.setSourceId(ctx.record.id);
+
+          ctx.model.dispatchEvent(
+            'click',
+            {
+              event: e,
+              ...ctx.inputArgs,
+              filterByTk: null,
+            },
+            {
+              debounce: true,
+            },
+          );
         };
       },
     },
@@ -40,7 +57,7 @@ AddChildActionModel.registerFlow({
 });
 
 AddChildActionModel.define({
-  label: escapeT('Add child'),
+  label: tExpr('Add child'),
   hide(ctx) {
     return ctx.collection?.template !== 'tree' || ctx.blockModel.props.treeTable === false;
   },

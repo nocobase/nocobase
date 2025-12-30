@@ -577,7 +577,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collections.set(collection.name, collection);
 
-    this.emit('afterDefineCollection', collection);
+    this.emit('afterDefineCollection', collection, { fieldModels: options.fieldModels });
 
     return collection;
   }
@@ -641,6 +641,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   removeCollection(name: string) {
     const collection = this.collections.get(name);
+    if (!collection) {
+      return;
+    }
     this.emit('beforeRemoveCollection', collection);
 
     collection.resetFields();

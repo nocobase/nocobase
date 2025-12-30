@@ -9,7 +9,6 @@
 
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
@@ -20,6 +19,7 @@ import {
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
+  observer,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
@@ -27,10 +27,11 @@ import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
-  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   return (
     <DndProvider>
       <Space
+        wrap
         size={'middle'}
         className={css`
           button {
@@ -102,7 +103,7 @@ const AddActionToolbarComponent = ({ model }) => {
       subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
-        actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
       }}
     >
       <PlusOutlined />
@@ -117,7 +118,7 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
 
   getColumnProps() {
     // 非配置态且列被标记为隐藏时，直接返回 null，从表格列中移除整列
-    if (this.hidden && !this.flowEngine.flowSettings?.enabled) {
+    if (this.hidden && !this.context.flowSettingsEnabled) {
       return null;
     }
     const titleContent = (
@@ -177,7 +178,7 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
           overflow: hidden;
           transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
           &:hover {
-            overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
+            overflow: ${this.context.flowSettingsEnabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
           }
         `}
       >

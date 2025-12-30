@@ -8,7 +8,6 @@
  */
 
 import { DeleteOutlined, ExclamationCircleOutlined, SettingOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
 import type { MenuProps } from 'antd';
 import { Alert, Dropdown, Modal } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -18,6 +17,7 @@ import { FlowModel } from '../../../../models';
 import { getT, setupRuntimeContextSteps, shouldHideStepInSettings } from '../../../../utils';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { ActionDefinition } from '../../../../types';
+import { observer } from '../../../../reactive';
 
 // 右键菜单组件接口
 interface ModelProvidedProps {

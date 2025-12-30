@@ -59,6 +59,18 @@ describe('ViewScopedFlowEngine', () => {
     expect(child.getModel(uid)).toBe(cm);
   });
 
+  it('mounts parent model from previous engine when creating models in scoped engine', () => {
+    const parent = new FlowEngine();
+    const scoped = createViewScopedEngine(parent);
+
+    const parentModel = parent.createModel({ use: 'FlowModel', uid: 'parent-uid' });
+
+    const childModel = scoped.createModel({ use: 'FlowModel', uid: 'child-uid', parentId: parentModel.uid });
+
+    expect(childModel.parent).toBe(parentModel);
+    expect(childModel.parent?.uid).toBe('parent-uid');
+  });
+
   it('isolates beforeRender event cache across engines with identical model uid', async () => {
     const parent = new FlowEngine();
     const child = createViewScopedEngine(parent);
@@ -208,5 +220,91 @@ describe('ViewScopedFlowEngine', () => {
     // global lookup should now resolve to c1's instance
     const resolved = root.getModel<TM>(uid, true);
     expect(resolved?.flowEngine.previousEngine).toBe(root);
+  });
+
+  it('hydrateModelFromPreviousEngines returns null for ALL subModels when parent has flowSettingsEnabled (bug fix: ensures all children rebuild)', async () => {
+    // Bug scenario: When a parent model (like a popup) has flowSettingsEnabled=true,
+    // ALL its child models should be rebuilt from scratch, not just those with their own flowSettingsEnabled.
+    // Previously, only child models with their own flowSettingsEnabled were being rebuilt.
+    const root = new FlowEngine();
+
+    // Mock minimal api to satisfy ctx.auth and related getters
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    root.context.defineProperty('api', { value: api });
+
+    // Create parent model with subModels in root engine
+    class ParentModel extends FlowModel {}
+    class ChildModel extends FlowModel {}
+    root.registerModels({ ParentModel, ChildModel });
+
+    const parentModel = root.createModel<ParentModel>({ use: ParentModel, uid: 'parent-with-settings' });
+    const child1 = root.createModel<ChildModel>({ use: ChildModel, uid: 'child-1' });
+    const child2 = root.createModel<ChildModel>({ use: ChildModel, uid: 'child-2' });
+
+    // Mount children under parent (neither child has flowSettingsEnabled)
+    parentModel.setSubModel('popup', child1);
+    parentModel.addSubModel('items', child2);
+
+    // Enable flowSettingsEnabled on parent (simulating a popup/drawer that needs fresh data)
+    parentModel.context.flowSettingsEnabled = true;
+
+    // Create scoped engine
+    const scoped = createViewScopedEngine(root);
+
+    // Both children should return null from hydration because parent has flowSettingsEnabled
+    // This is the bug fix: previously only children with their own flowSettingsEnabled would return null
+    const result1 = (scoped as any).hydrateModelFromPreviousEngines({
+      parentId: 'parent-with-settings',
+      subKey: 'popup',
+    });
+    const result2 = (scoped as any).hydrateModelFromPreviousEngines({
+      parentId: 'parent-with-settings',
+      subKey: 'items',
+    });
+
+    // Both should be null, ensuring all children are rebuilt with fresh data
+    expect(result1).toBeNull();
+    expect(result2).toBeNull();
+  });
+
+  it('hydrateModelFromPreviousEngines returns hydrated model when parent does NOT have flowSettingsEnabled', async () => {
+    const root = new FlowEngine();
+
+    // Mock minimal api to satisfy ctx.auth and related getters
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    root.context.defineProperty('api', { value: api });
+
+    // Create parent model with subModels in root engine
+    class ParentModel extends FlowModel {}
+    class ChildModel extends FlowModel {}
+    root.registerModels({ ParentModel, ChildModel });
+
+    const parentModel = root.createModel<ParentModel>({ use: ParentModel, uid: 'parent-normal' });
+    const child = root.createModel<ChildModel>({ use: ChildModel, uid: 'child-normal' });
+
+    // Mount child under parent
+    parentModel.setSubModel('content', child);
+
+    // Parent does NOT have flowSettingsEnabled (default behavior)
+    expect(parentModel.context.flowSettingsEnabled).toBeFalsy();
+
+    // Create scoped engine
+    const scoped = createViewScopedEngine(root);
+
+    // Call the private method hydrateModelFromPreviousEngines directly
+    const result = (scoped as any).hydrateModelFromPreviousEngines({
+      parentId: 'parent-normal',
+      subKey: 'content',
+    });
+
+    // hydrateModelFromPreviousEngines should return a hydrated model (not null)
+    expect(result).not.toBeNull();
+    expect(result?.uid).toBe('child-normal');
   });
 });

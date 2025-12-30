@@ -88,41 +88,38 @@ export class PluginBlockTemplateClient extends Plugin {
     }
 
     this.#afterAllPluginsLoaded();
-    this.app.pluginSettingsManager.add('block-templates', {
-      title: `{{t("Block templates (deprecated)", { ns: "${NAMESPACE}" })}}`,
-      icon: 'ProfileOutlined',
-      sort: 1000,
-      // Component: BlockTemplateList,
-    });
 
-    this.app.pluginSettingsManager.add(`block-templates.reference`, {
-      title: `{{t("Reference template")}}`,
+    // 注入到 ui-templates 下作为 v1 版本，sort 值较大排在后面
+    this.app.pluginSettingsManager.add(`ui-templates.reference-v1`, {
+      title: `{{t("Reference template (v1)", { ns: "${NAMESPACE}" })}}`,
       Component: BlockTemplatesPane,
+      sort: 100,
     });
 
-    this.app.pluginSettingsManager.add(`block-templates.inherited`, {
-      title: `{{t("Inherited template")}}`,
+    this.app.pluginSettingsManager.add(`ui-templates.inherited-v1`, {
+      title: `{{t("Inherited template (v1)", { ns: "${NAMESPACE}" })}}`,
       Component: BlockTemplateList,
+      sort: 101,
     });
 
-    this.app.pluginSettingsManager.add(`block-templates/inherited/:key`, {
+    this.app.pluginSettingsManager.add(`ui-templates/inherited-v1/:key`, {
       title: false,
-      pluginKey: 'block-templates',
+      pluginKey: 'ui-templates',
       isTopLevel: false,
       Component: BlockTemplatePage,
     });
 
     // add mobile router
     this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileRouter?.add('mobile.schema.blockTemplate', {
-      path: `/block-templates/inherited/:key/:pageSchemaUid`,
+      path: `/ui-templates/inherited-v1/:key/:pageSchemaUid`,
       Component: BlockTemplateMobilePage,
     });
   }
 
   isInBlockTemplateConfigPage() {
     const mobilePath =
-      this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates/inherited';
-    const desktopPath = 'admin/settings/block-templates/inherited';
+      this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/ui-templates/inherited-v1';
+    const desktopPath = 'admin/settings/ui-templates/inherited-v1';
     return window.location.pathname.includes(desktopPath) || window.location.pathname.includes(mobilePath);
   }
 

@@ -23,10 +23,10 @@ import {
   createSafeWindow,
   createSafeNavigator,
   compileRunJs,
+  observer,
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
 import React from 'react';
-import { observer } from '@formily/reactive-react';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { CodeEditor } from '../../../components/code-editor';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
@@ -94,7 +94,7 @@ export class JSColumnModel extends TableCustomColumnModel {
       </Droppable>
     );
 
-    if (this.hidden && !this.flowEngine.flowSettings.enabled) {
+    if (this.hidden && !this.context.flowSettingsEnabled) {
       return null;
     }
 

@@ -8,7 +8,9 @@
  */
 
 import { tExpr, FlowModel, ModelRenderMode } from '@nocobase/flow-engine';
-
+import { Divider } from 'antd';
+import React from 'react';
+import { CustomWidth } from './TableColumnModel';
 export class TableCustomColumnModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 }
@@ -57,11 +59,42 @@ TableCustomColumnModel.registerFlow({
     },
     width: {
       title: tExpr('Column width'),
-      uiSchema: {
-        width: {
-          'x-component': 'NumberPicker',
-          'x-decorator': 'FormItem',
-        },
+      uiMode(ctx) {
+        const columnWidth = ctx.model.props.width;
+        return {
+          type: 'select',
+          key: 'width',
+          props: {
+            options: [
+              { label: 50, value: 50 },
+              { label: 100, value: 100 },
+              { label: 150, value: 150 },
+              { label: 200, value: 200 },
+              { label: 250, value: 250 },
+              { label: 300, value: 300 },
+              { label: 350, value: 350 },
+              { label: 400, value: 400 },
+              { label: 450, value: 450 },
+              { label: 500, value: 500 },
+            ],
+            dropdownRender: (menu, setOpen, handleChange) => {
+              return (
+                <>
+                  {menu}
+                  <Divider style={{ margin: '4px 0' }} />
+                  <CustomWidth
+                    setOpen={setOpen}
+                    handleChange={handleChange}
+                    t={ctx.t}
+                    defaultValue={
+                      [50, 100, 150, 200, 250, 300, 350, 400, 450, 500].includes(columnWidth) ? null : columnWidth
+                    }
+                  />
+                </>
+              );
+            },
+          },
+        };
       },
       defaultParams: {
         width: 150,

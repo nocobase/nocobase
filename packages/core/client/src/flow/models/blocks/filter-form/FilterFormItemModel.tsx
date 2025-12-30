@@ -21,9 +21,11 @@ import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
+import { FilterManager } from '../filter-manager';
 
 const getModelFields = async (model: CollectionBlockModel) => {
-  const collection = model.context.collection as Collection;
+  // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
+  const collection = (model as any).collection || (model.context.collection as Collection);
   const fields = (await model?.getFilterFields?.()) || [];
   return fields
     .map((field: any) => {
@@ -144,6 +146,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   operator: string;
+  mounted = false;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
 
@@ -170,6 +173,11 @@ export class FilterFormItemModel extends FilterableItemModel<{
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
   }
 
+  onMount(): void {
+    super.onMount();
+    this.mounted = true;
+  }
+
   onUnmount() {
     super.onUnmount();
     // 取消防抖函数的执行
@@ -177,11 +185,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   doFilter() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   doReset() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   /**
@@ -189,16 +199,30 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
+    const fieldValue = this.subModels.field.getFilterValue
+      ? this.subModels.field.getFilterValue()
+      : this.context.form?.getFieldValue(this.props.name);
+
+    let rawValue = fieldValue;
+
+    if (!this.mounted) {
+      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+    }
+
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
+      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      if (Array.isArray(options)) {
+        return rawValue;
+      }
       return true;
     }
 
-    if (this.subModels.field.getFilterValue) {
-      return this.subModels.field.getFilterValue();
-    }
+    return rawValue;
+  }
 
-    return this.context.form?.getFieldValue(this.props.name);
+  getDefaultValue() {
+    return this.getStepParams('filterFormItemSettings', 'initialValue')?.defaultValue;
   }
 
   /**
@@ -224,7 +248,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     };
   }
 
-  render() {
+  renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
       <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
@@ -294,16 +318,7 @@ FilterFormItemModel.registerFlow({
 
     showLabel: {
       title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: { type: 'switch', key: 'showLabel' },
       defaultParams: {
         showLabel: true,
       },
@@ -352,22 +367,25 @@ FilterFormItemModel.registerFlow({
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
-      uiSchema: (ctx) => {
+      uiMode(ctx) {
         const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
-        if (classes.length === 1) {
-          return null;
-        }
+        const t = ctx.t;
         return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model.modelName,
+          type: 'select',
+          key: 'use',
+          props: {
+            options: classes.map((model) => ({
+              label: t(model.modelName),
               value: model.modelName,
             })),
           },
         };
+      },
+      hideInSettings(ctx) {
+        const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
+        if (classes.length === 1) {
+          return true;
+        }
       },
     },
     connectFields: {

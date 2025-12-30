@@ -1,0 +1,36 @@
+{
+  "name": "@nocobase/plugin-ui-templates",
+  "displayName": "UI templates",
+  "displayName.zh-CN": "界面模板",
+  "description": "Provides block templates and popup templates for UI reuse.",
+  "description.zh-CN": "提供区块模板和弹窗模板复用的能力。",
+  "version": "2.0.0-alpha.59",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "types": "./dist/index.d.ts",
+  "devDependencies": {
+    "@formily/shared": "2.x",
+    "antd": "5.x",
+    "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "nocobase": {
+    "supportedVersions": [
+      "2.x"
+    ]
+  },
+  "keywords": [
+    "nocobase",
+    "plugin",
+    "ui",
+    "templates",
+    "block",
+    "popup"
+  ]
+}

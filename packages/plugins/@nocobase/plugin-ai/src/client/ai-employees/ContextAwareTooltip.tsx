@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../locale';
 import { Tooltip, Avatar, Flex } from 'antd';
 import { contextAware } from './stores/context-aware';

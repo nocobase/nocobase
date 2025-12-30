@@ -150,16 +150,16 @@ export function useDialog() {
         return (
           <DialogComponent
             className="nb-dialog-overflow-hidden"
-            key={`dialog-${uuid}`}
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
             {...config}
             footer={currentFooter}
             header={currentHeader}
-            afterClose={() => {
-              closeFunc?.();
+            onCancel={() => {
               config.onClose?.();
-              resolvePromise?.(config.result);
+              currentDialog.close(config.result);
+            }}
+            afterClose={() => {
               // 关闭时修正 previous/next 指针
               scopedEngine.unlinkFromStack();
             }}
@@ -173,8 +173,9 @@ export function useDialog() {
       },
     );
 
+    const key = config?.inputArgs?.viewUid || `page-${uuid}`;
     const dialog = (
-      <FlowEngineProvider engine={scopedEngine}>
+      <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DialogWithContext />
         </FlowViewContextProvider>

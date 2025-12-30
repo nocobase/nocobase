@@ -407,6 +407,10 @@ export class Collection<
 
     if (!autoGenId) {
       this.model.removeAttribute('id');
+
+      // the auto add `id` attribute let autoIncrementAttribute = 'id', if remove `id` attribute should set autoIncrementAttribute to null
+      // @ts-ignore
+      this.model.autoIncrementAttribute = null;
     }
 
     // @ts-ignore

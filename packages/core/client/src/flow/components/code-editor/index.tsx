@@ -7,20 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { useFlowContext, getRunJSScenesForContext } from '@nocobase/flow-engine';
 import { useRunJSDocCompletions } from './hooks/useRunJSDocCompletions';
 import { clearDiagnostics, parseErrorLineColumn, markErrorAt, jumpTo } from './errorHelpers';
-import { Button } from 'antd';
+import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+import { createPortal } from 'react-dom';
 import { EditorCore } from './core/EditorCore';
 import type { EditorRef } from './types';
 import { RightExtra as RightExtraPanel } from './panels/RightExtra';
 import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
+import { useFullscreenOverlay } from '../../../hooks/useFullscreenOverlay';
 interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -59,9 +62,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   scene,
   RightExtra,
 }) => {
-  console.log(RightExtra);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const { isFullscreen, toggleFullscreen, placeholderRef, placeholderStyle, container } = useFullscreenOverlay();
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
@@ -146,15 +149,34 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // snippet group display handled in SnippetsDrawer
 
-  return (
+  useEffect(() => {
+    viewRef.current?.requestMeasure();
+  }, [isFullscreen]);
+
+  const fullscreenButton = (
+    <Tooltip title={isFullscreen ? tr('Exit fullscreen') : tr('Fullscreen')}>
+      <Button
+        size="small"
+        aria-label={isFullscreen ? tr('Exit fullscreen') : tr('Fullscreen')}
+        icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+        onClick={toggleFullscreen}
+      />
+    </Tooltip>
+  );
+
+  const node = (
     <div
       style={{
-        border: '1px solid #d9d9d9',
-        borderRadius: '6px',
+        border: isFullscreen ? 'none' : '1px solid #d9d9d9',
+        borderRadius: isFullscreen ? 0 : '6px',
         overflow: 'visible',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
+        boxSizing: isFullscreen ? 'border-box' : undefined,
+        padding: isFullscreen ? 16 : undefined,
+        height: isFullscreen ? '100%' : undefined,
+        minHeight: isFullscreen ? 0 : undefined,
         ...wrapperStyle,
       }}
       ref={wrapperRef}
@@ -165,41 +187,46 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
         extraContent={
-          RightExtra ? (
-            <RightExtra viewRef={viewRef} />
-          ) : (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Button size="small" onClick={() => setSnippetOpen(true)}>
-                {tr('Snippets')}
-              </Button>
-              <>
-                <Button
-                  size="small"
-                  loading={running}
-                  onClick={async () => {
-                    const code = viewRef.current?.state.doc.toString() || '';
-                    clearDiagnostics(viewRef.current);
-                    const res = await run(code);
-                    if (!res?.success) {
-                      const rawErr = res?.error;
-                      const errText = res?.timeout ? tr('Execution timed out') : String(rawErr || tr('Unknown error'));
-                      const pos = parseErrorLineColumn(rawErr);
-                      if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
-                    }
-                  }}
-                >
-                  {tr('Run')}
+          <>
+            {RightExtra ? (
+              <RightExtra viewRef={viewRef} />
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Button size="small" onClick={() => setSnippetOpen(true)}>
+                  {tr('Snippets')}
                 </Button>
-              </>
-            </div>
-          )
+                <>
+                  <Button
+                    size="small"
+                    loading={running}
+                    onClick={async () => {
+                      const code = viewRef.current?.state.doc.toString() || '';
+                      clearDiagnostics(viewRef.current);
+                      const res = await run(code);
+                      if (!res?.success) {
+                        const rawErr = res?.error;
+                        const errText = res?.timeout
+                          ? tr('Execution timed out')
+                          : String(rawErr || tr('Unknown error'));
+                        const pos = parseErrorLineColumn(rawErr);
+                        if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
+                      }
+                    }}
+                  >
+                    {tr('Run')}
+                  </Button>
+                </>
+              </div>
+            )}
+            {fullscreenButton}
+          </>
         }
       />
       <EditorCore
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        height={height}
+        height={isFullscreen ? '100%' : height}
         minHeight={minHeight}
         theme={theme}
         readonly={readonly}
@@ -232,6 +259,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         }}
       />
     </div>
+  );
+
+  return (
+    <>
+      <div ref={placeholderRef} style={isFullscreen ? placeholderStyle : { display: 'contents' }} />
+      {container ? createPortal(node, container) : null}
+    </>
   );
 };
 

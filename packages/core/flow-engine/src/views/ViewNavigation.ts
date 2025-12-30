@@ -8,9 +8,10 @@
  */
 
 import { FlowEngineContext } from '../flowContext';
+import { define, observable } from '../reactive';
 import { ViewParam as SharedViewParam } from '../utils';
 
-type ViewParam = Omit<SharedViewParam, 'viewUid'> & { viewUid?: string };
+type ViewParams = Omit<SharedViewParam, 'viewUid'> & { viewUid?: string };
 
 function encodeFilterByTk(val: SharedViewParam['filterByTk']): string {
   if (val === undefined || val === null) return '';
@@ -38,7 +39,7 @@ function encodeFilterByTk(val: SharedViewParam['filterByTk']): string {
  * generatePathnameFromViewParams([{ viewUid: 'xxx' }, { viewUid: 'yyy' }]) // '/admin/xxx/view/yyy'
  * ```
  */
-export function generatePathnameFromViewParams(viewParams: ViewParam[]): string {
+export function generatePathnameFromViewParams(viewParams: ViewParams[]): string {
   if (!viewParams || viewParams.length === 0) {
     return '/admin';
   }
@@ -73,30 +74,41 @@ export function generatePathnameFromViewParams(viewParams: ViewParam[]): string 
 }
 
 export class ViewNavigation {
-  viewStack: ViewParam[];
+  viewStack: ReadonlyArray<ViewParams>; // 只能通过 setViewStack 修改
   ctx: FlowEngineContext;
+  viewParams: ViewParams;
 
-  constructor(ctx: FlowEngineContext, viewParams: ViewParam[]) {
-    this.viewStack = [...viewParams];
+  constructor(ctx: FlowEngineContext, viewParams: ViewParams[]) {
+    this.setViewStack(viewParams);
     this.ctx = ctx;
+
+    define(this, {
+      viewParams: observable,
+    });
   }
 
-  changeTo(viewParam: ViewParam) {
-    // 1. 根据传入的参数，改变当前视图的参数。当前视图的参数是 viewStack 中最后一个元素
-    if (this.viewStack.length === 0) {
-      this.viewStack.push(viewParam);
-    } else {
-      this.viewStack[this.viewStack.length - 1] = { ...this.viewStack[this.viewStack.length - 1], ...viewParam };
-    }
+  setViewStack(viewParams: ViewParams[]) {
+    this.viewStack = Object.freeze([...viewParams]);
+    this.viewParams = this.viewStack[this.viewStack.length - 1] || {};
+  }
+
+  changeTo(viewParam: ViewParams) {
+    // 1. 根据传入的参数，合并成新的 viewStack
+    const newViewStack = this.viewStack.map((item, index) => {
+      if (index === this.viewStack.length - 1) {
+        return { ...item, ...viewParam };
+      }
+      return { ...item };
+    });
 
     // 2. 根据 viewStack 生成新的 pathname
-    const newPathname = generatePathnameFromViewParams(this.viewStack);
+    const newPathname = generatePathnameFromViewParams(newViewStack);
 
     // 3. 触发一次跳转。使用 replace 的方式
     this.ctx.router.navigate(newPathname, { replace: true });
   }
 
-  navigateTo(viewParam: ViewParam, opts?: { replace?: boolean; state?: any }) {
+  navigateTo(viewParam: ViewParams, opts?: { replace?: boolean; state?: any }) {
     // 1. 基于当前 viewStack 生成一个 pathname
     // 2. 将当前传入的参数转为 path string
     const newViewPathname = generatePathnameFromViewParams([...this.viewStack, viewParam]);
@@ -104,27 +116,13 @@ export class ViewNavigation {
     // 3. 与 pathname 拼接成新的 pathname（这里直接使用新生成的 pathname）
     const newPathname = newViewPathname;
 
-    // 4. 判断新的 pathname 是否与当前 location.pathname 的结尾一致。防止出现重复路径
-    //    不用 this.ctx.route.pathname 是因为它的值可能不是最新的，会导致判断失误
-    if (location.pathname.endsWith(newPathname)) {
-      return this.ctx.router.navigate(-1); // 避免点击按钮没反应的问题
-    }
-
-    // 5. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
+    // 4. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
     this.ctx.router.navigate(newPathname, opts);
-
-    // 6. 当 viewStack 为空时，把当前参数 push 到 viewStack 中
-    if (this.viewStack.length === 0) {
-      this.viewStack.push(viewParam);
-    }
   }
 
   back() {
-    const pathname = generatePathnameFromViewParams(this.viewStack);
-
-    // 防止重复触发返回操作
-    if (location.pathname.endsWith(pathname)) {
-      this.ctx.router.navigate(-1);
-    }
+    const prevStack = this.viewStack.slice(0, -1);
+    const prevPath = generatePathnameFromViewParams(prevStack);
+    this.ctx.router.navigate(prevPath, { replace: true });
   }
 }

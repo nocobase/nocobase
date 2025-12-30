@@ -50,10 +50,10 @@ export class NumberFieldModel extends FieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id'], {
+EditableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });
 
-FilterableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id'], {
+FilterableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });

@@ -9,17 +9,11 @@
 
 import { Alert, Form, Input, InputNumber, Select, Switch } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
-// TODO: ISchema may need to be imported from a different package or refactored.
-import { observer } from '@formily/react';
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import {
-  resolveDefaultParams,
-  setupRuntimeContextSteps,
-  shouldHideStepInSettings,
-  createEphemeralContext,
-} from '../../../../utils';
+import { resolveDefaultParams, setupRuntimeContextSteps, shouldHideStepInSettings } from '../../../../utils';
+import { observer } from '../../../../reactive';
 
 const { Item: FormItem } = Form;
 

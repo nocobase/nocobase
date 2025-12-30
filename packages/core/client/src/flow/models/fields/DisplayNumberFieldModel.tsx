@@ -224,11 +224,11 @@ export const UnitConversion = () => {
 
 DisplayNumberFieldModel.registerFlow({
   key: 'numberSettings',
-  sort: 100,
+  sort: 500,
   title: tExpr('Number settings'),
   steps: {
     format: {
-      title: tExpr('Format'),
+      title: tExpr('Number format'),
       uiSchema: (ctx) => {
         return {
           formatStyle: {
@@ -342,6 +342,6 @@ DisplayNumberFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id'], {
+DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });

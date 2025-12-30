@@ -80,6 +80,17 @@ export class XlsxImporter extends EventEmitter {
     return data;
   }
 
+  async validateBySpaces(data: string[][], ctx?: Context) {
+    if (ctx?.space?.can) {
+      await ctx.space.can({
+        data: data?.slice(1) || [],
+        columns: this.options.columns.map((column) => column.dataIndex),
+        collection: this.options.collection.name,
+        ctx,
+      });
+    }
+  }
+
   async validate(ctx?: Context) {
     const columns = this.getColumnsByPermission(ctx);
     if (columns.length == 0) {
@@ -94,6 +105,9 @@ export class XlsxImporter extends EventEmitter {
     }
 
     const data = await this.getData(ctx);
+
+    await this.validateBySpaces(data, ctx);
+
     return data;
   }
 
@@ -333,6 +347,10 @@ export class XlsxImporter extends EventEmitter {
         );
       }
 
+      if (error.params?.rowIndex) {
+        handingRowIndex += error.params.rowIndex;
+        error.params.rowIndex = handingRowIndex;
+      }
       this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
         rowIndex: handingRowIndex,
         rowData: rows[handingRowIndex],

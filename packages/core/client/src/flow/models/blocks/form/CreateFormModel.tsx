@@ -20,6 +20,7 @@ import { Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../base/BlockModel';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { submitHandler } from './submitHandler';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormBlockModel {
@@ -44,14 +45,18 @@ export class CreateFormModel extends FormBlockModel {
     return 'create';
   }
 
+  async submit(params: any = {}) {
+    await submitHandler(this.context, params);
+  }
+
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
-          <Space>
+          <Space wrap>
             {this.mapSubModels('actions', (action) => {
               if (action.hidden && !isConfigMode) {
                 return;
@@ -61,7 +66,7 @@ export class CreateFormModel extends FormBlockModel {
                   <MemoFlowModelRenderer
                     key={action.uid}
                     model={action}
-                    showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
+                    showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
                     extraToolbarItems={this.actionExtraToolbarItems}
                   />
                 </Droppable>
@@ -83,19 +88,6 @@ CreateFormModel.registerFlow({
       async handler(ctx) {
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
-        }
-        if (ctx.view.inputArgs.filterByTk) {
-          const resource = ctx.createResource(SingleRecordResource);
-          resource.setResourceName(ctx.model.collection.name);
-          resource.setFilterByTk(ctx.view.inputArgs.filterByTk);
-          resource.isNewRecord = false;
-          await resource.refresh();
-          const parentRecord = await resource.getData();
-          // //树表添加子节点
-          if (parentRecord) {
-            ctx.form.setFieldValue('parentId', ctx.view.inputArgs.filterByTk);
-            ctx.form.setFieldValue('parent', parentRecord);
-          }
         }
       },
     },

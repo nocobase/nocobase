@@ -8,22 +8,31 @@
  */
 
 import { defineAction, tExpr } from '@nocobase/flow-engine';
+import { TableColumnModel } from '../models/blocks/table';
 
 export const renderMode = defineAction({
   title: tExpr('Render mode'),
   name: 'renderMode',
-  uiSchema: {
-    textOnly: {
-      type: 'string',
-      enum: [
-        { label: tExpr('Text only'), value: true },
-        { label: tExpr('Html'), value: false },
-      ],
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-    },
+  uiMode(ctx) {
+    const t = ctx.t;
+    return {
+      type: 'select',
+      key: 'textOnly',
+      props: {
+        options: [
+          { label: t('Text only'), value: true },
+          { label: t('Html'), value: false },
+        ],
+      },
+    };
   },
-
+  hideInSettings: async (ctx) => {
+    const overflowMode = ctx.model.getStepParams?.('displayFieldSettings', 'overflowMode')?.overflowMode;
+    if (overflowMode === undefined) {
+      return ctx.model.parent instanceof TableColumnModel;
+    }
+    return overflowMode === true || overflowMode === 'ellipsis';
+  },
   defaultParams: {
     textOnly: true,
   },

@@ -43,7 +43,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         subModelBaseClass={this.context.getModelClassName('RecordActionGroupModel')}
         subModelKey="actions"
         afterSubModelInit={async (actionModel) => {
-          actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
         }}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
@@ -69,7 +69,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
       get: () => index,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <div
@@ -84,17 +84,11 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={grid as any} showFlowSettings={false} />
         </FormComponent>
-        <div style={{ marginLeft: '-5px' }}>
+        <div>
           <DndProvider>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Space
-                className={css`
-                  button {
-                    padding: 5px;
-                  }
-                `}
-              >
-                {this.mapSubModels('actions', (action) => {
+              <Space wrap>
+                {this.mapSubModels('actions', (action, i) => {
                   const fork = action.createFork({}, `${index}`);
                   if (fork.hidden && !isConfigMode) {
                     return;
@@ -118,20 +112,28 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                     meta: recordMeta,
                     cache: false,
                   });
-
                   return (
                     <Droppable model={fork} key={fork.uid}>
-                      <FlowModelRenderer
-                        model={fork}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
+                      <div
+                        className={css`
+                          button {
+                            padding: 5px;
+                            padding-left: ${i === 0 ? '0px' : null};
+                          }
+                        `}
+                      >
+                        <FlowModelRenderer
+                          model={fork}
+                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                          extraToolbarItems={[
+                            {
+                              key: 'drag-handler',
+                              component: DragHandler,
+                              sort: 1,
+                            },
+                          ]}
+                        />
+                      </div>
                     </Droppable>
                   );
                 })}

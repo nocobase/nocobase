@@ -8,7 +8,7 @@
  */
 
 import { DragEndEvent } from '@dnd-kit/core';
-import { autorun, reaction } from '@nocobase/flow-engine';
+import { reaction } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
@@ -117,6 +117,7 @@ RootPageModel.registerFlow({
             props: {
               route,
             },
+            flowRegistry: route.options?.flowRegistry,
             stepParams: {
               pageTabSettings: {
                 tab: {

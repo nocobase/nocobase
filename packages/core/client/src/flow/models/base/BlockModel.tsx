@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
-import { Observer } from '@formily/reactive-react';
-import { DefaultStructure, tExpr, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, tExpr, FlowModel, observer } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
+import { Tooltip } from 'antd';
 import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
-import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
+import { BlockPlaceholder, BlockDeletePlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
 export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | BlockSceneType[];
 
@@ -29,10 +29,10 @@ export const BlockSceneEnum = {
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
   static scene: BlockSceneType;
-
   _defaultCustomModelClasses = {} as any;
   customModelClasses = {} as any;
-
+  collectionRequired = false;
+  private ObservedRenderComponent = null;
   static _getScene() {
     return _.castArray(this['scene'] || []);
   }
@@ -51,7 +51,17 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   // 设置态隐藏时的占位渲染
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <BlockPlaceholder />;
+    if (this.forbidden) {
+      return <BlockPlaceholder />;
+    }
+
+    return (
+      <Tooltip title={this.context.t('The block is hidden and only visible when the UI Editor is active')}>
+        <BlockItemCard ref={this.context.ref} {...this.decoratorProps} style={{ opacity: '0.3' }}>
+          <this.ObservedRenderComponent />
+        </BlockItemCard>
+      </Tooltip>
+    );
   }
 
   onInit(options: any): void {
@@ -59,6 +69,14 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     this.context.defineMethod('getModelClassName', (className: string) => {
       return this.getModelClassName(className);
     });
+    this.ObservedRenderComponent = observer(
+      () => {
+        return this.renderComponent();
+      },
+      {
+        displayName: 'ObservedRenderComponent',
+      },
+    );
   }
 
   setDecoratorProps(props) {
@@ -81,13 +99,12 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   render() {
+    if (this.collectionRequired && !this.context.collection) {
+      return <BlockDeletePlaceholder />;
+    }
     return (
       <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
-        <Observer>
-          {() => {
-            return this.renderComponent();
-          }}
-        </Observer>
+        <this.ObservedRenderComponent />
       </BlockItemCard>
     );
   }

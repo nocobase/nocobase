@@ -129,6 +129,7 @@ describe('query acl scope', () => {
     const context: any = {
       app,
       db,
+      database: db,
       state: { currentRoles: ['analyst'], currentUser: user },
       get: (key: string) => ({ 'x-timezone': '' })[key],
       action: {
@@ -175,6 +176,7 @@ describe('query acl scope', () => {
     const context: any = {
       app,
       db,
+      database: db,
       state: { currentRoles: ['owner'], currentUser: user },
       get: (key: string) => ({ 'x-timezone': '' })[key],
       action: {

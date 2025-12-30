@@ -38,8 +38,8 @@ export const ConfigPanel: React.FC = () => {
   };
 
   useEffect(() => {
-    ctx?.defineMethod?.('writeSql', async (sql: string) => {
-      const dsKey = form?.values?.query?.sqlDatasource ?? DEFAULT_DATA_SOURCE_KEY;
+    ctx?.defineMethod?.('writeSql', async (sql: string, dataSource?: string) => {
+      const dsKey = dataSource || form?.values?.query?.sqlDatasource || DEFAULT_DATA_SOURCE_KEY;
       form?.setValuesIn?.('query.mode', 'sql');
       form?.setValuesIn?.('query.sql', sql);
       form?.setValuesIn?.('query.sqlDatasource', dsKey);

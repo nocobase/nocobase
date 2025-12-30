@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "2.0.0-alpha.53",
+  "version": "2.0.0-alpha.59",
   "main": "dist/server/index.js",
   "displayName": "License settings",
   "displayName.ru-RU": "Настройки лицензии",
@@ -8,9 +8,6 @@
   "description": "Instance ID and license key settings",
   "description.ru-RU": "Настройка идентификатора экземпляра и ключа лицензии",
   "description.zh-CN": "实例 ID 和授权密钥设置",
-  "devDependencies": {
-    "@nocobase/license-kit": "^0.3.2"
-  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

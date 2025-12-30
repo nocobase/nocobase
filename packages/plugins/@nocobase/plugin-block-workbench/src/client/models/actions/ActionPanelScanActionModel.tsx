@@ -64,10 +64,16 @@ const QRCodeScanner = (props) => {
 
 export class ActionPanelScanActionModel extends ActionModel {
   onClick(event) {
-    this.dispatchEvent('click', {
-      event,
-      ...this.getInputArgs(),
-    });
+    this.dispatchEvent(
+      'click',
+      {
+        event,
+        ...this.getInputArgs(),
+      },
+      {
+        debounce: true,
+      },
+    );
   }
 
   defaultProps: ButtonProps = {

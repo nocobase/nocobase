@@ -22,6 +22,7 @@ export default {
       { name: 'dataSource-dataSourceCounting', autoCall: true },
       { name: 'dataSource-dataSourceQuery', autoCall: true },
       // 了解数据结构
+      { name: 'dataModeling-getDataSources', autoCall: true },
       { name: 'dataModeling-getCollectionNames', autoCall: true },
       { name: 'dataModeling-getCollectionMetadata', autoCall: true },
     ],

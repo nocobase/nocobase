@@ -70,7 +70,7 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
               {t('References')}:
             </span>
             <a
-              href={`https://v2.docs.nocobase.com/cn/interface-builder/blocks/other-blocks/markdown`}
+              href={`https://v2.docs.nocobase.com/interface-builder/blocks/other-blocks/markdown`}
               target="_blank"
               rel="noreferrer"
             >

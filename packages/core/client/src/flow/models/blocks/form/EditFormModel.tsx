@@ -23,6 +23,7 @@ import { omitBy, isUndefined } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { submitHandler } from './submitHandler';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
@@ -73,15 +74,19 @@ export class EditFormModel extends FormBlockModel {
     }
   };
 
+  async submit(params: any = {}) {
+    await submitHandler(this.context, params);
+  }
+
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
-          <Space>
+          <Space wrap>
             {this.mapSubModels('actions', (action) => {
               if (action.hidden && !isConfigMode) {
                 return;
@@ -91,7 +96,7 @@ export class EditFormModel extends FormBlockModel {
                   <MemoFlowModelRenderer
                     key={action.uid}
                     model={action}
-                    showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
+                    showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
                     extraToolbarItems={this.actionExtraToolbarItems}
                   />
                 </Droppable>
@@ -158,6 +163,9 @@ EditFormModel.registerFlow({
           ctx.form && ctx.form.setFieldsValue(currentRecord);
         });
       },
+    },
+    dataScope: {
+      use: 'dataScope',
     },
     refresh: {
       async handler(ctx) {

@@ -10,7 +10,7 @@
 import React from 'react';
 import { Checkbox } from 'antd';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
 
 export class DisplayCheckboxFieldModel extends FieldModel {
@@ -22,6 +22,10 @@ export class DisplayCheckboxFieldModel extends FieldModel {
     return showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <Checkbox disabled />;
   }
 }
+
+DisplayCheckboxFieldModel.define({
+  label: tExpr('Checkbox'),
+});
 
 DisplayItemModel.bindModelToInterface('DisplayCheckboxFieldModel', ['checkbox'], {
   isDefault: true,

@@ -212,11 +212,10 @@ const ArrayNester = ({
                 ),
                 serverOnlyWhenContextParams: true,
               });
-
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value[index]?.isNew) && (
+                  {!disabled && (allowDisassociation || value?.[index]?.isNew) && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
                         <CloseOutlined
@@ -325,20 +324,11 @@ SubFormListFieldModel.define({
 SubFormListFieldModel.registerFlow({
   key: 'subFormListSettings',
   title: tExpr('Sub-form settings'),
-  sort: 800,
+  sort: 200,
   steps: {
     allowAddNew: {
-      title: tExpr('Allow add new data'),
-      uiSchema: {
-        allowAddNew: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      title: tExpr('Enable add new action'),
+      uiMode: { type: 'switch', key: 'allowAddNew' },
       defaultParams: {
         allowAddNew: true,
       },
@@ -348,45 +338,27 @@ SubFormListFieldModel.registerFlow({
         });
       },
     },
-    allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing records'),
-      uiSchema: {
-        allowSelectExistingRecord: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowSelectExistingRecord: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowSelectExistingRecord: params.allowSelectExistingRecord,
-        });
-      },
-    },
     allowDisassociation: {
-      title: tExpr('Allow disassociation'),
-      uiSchema: {
-        allowDisassociation: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      title: tExpr('Enable remove action'),
+      uiMode: { type: 'switch', key: 'allowDisassociation' },
       defaultParams: {
         allowDisassociation: true,
       },
       handler(ctx, params) {
         ctx.model.setProps({
           allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Enable select action'),
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
         });
       },
     },
@@ -399,13 +371,16 @@ SubFormListFieldModel.registerFlow({
   on: {
     eventName: 'openView',
   },
+  sort: 300,
   steps: {
     openView: {
       title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.('subFormListSettings', 'allowSelectExistingRecord')
+          ?.allowSelectExistingRecord;
+        return !allowSelectExistingRecord;
+      },
       uiSchema(ctx) {
-        if (!ctx.model.props.allowSelectExistingRecord) {
-          return;
-        }
         return {
           mode: {
             type: 'string',
@@ -450,6 +425,7 @@ SubFormListFieldModel.registerFlow({
         };
         const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.model.selectedRows.value = ctx.model.props.value || [];
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -484,7 +460,9 @@ SubFormListFieldModel.registerFlow({
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===
-                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.isNew,
                 );
                 ctx.model.selectedRows.value = unique;
               },

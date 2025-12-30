@@ -49,7 +49,7 @@ export class MapBlockModel extends CollectionBlockModel {
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
   }
-  renderConfiguireActions() {
+  renderConfigureAction() {
     return (
       <AddSubModelButton
         key={'map-add-actions'}
@@ -108,7 +108,7 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   renderComponent() {
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <div>
@@ -158,7 +158,7 @@ export class MapBlockModel extends CollectionBlockModel {
 
                 return null;
               })}
-              {this.renderConfiguireActions()}
+              {this.renderConfigureAction()}
             </Space>
           </div>
         </DndProvider>

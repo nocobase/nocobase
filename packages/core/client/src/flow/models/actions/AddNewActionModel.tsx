@@ -28,4 +28,5 @@ export class AddNewActionModel extends PopupActionModel {
 
 AddNewActionModel.define({
   label: tExpr('Add new'),
+  sort: 10,
 });
