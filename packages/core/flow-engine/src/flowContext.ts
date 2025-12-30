@@ -1478,11 +1478,17 @@ export class FlowModelContext extends BaseFlowModelContext {
         engineCtx: this.engine.context,
       };
       model.context.defineProperty('view', { value: pendingView });
-      await model.dispatchEvent('click', {
-        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
-        // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
-        ...opts,
-      });
+      await model.dispatchEvent(
+        'click',
+        {
+          // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+          // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
+          ...opts,
+        },
+        {
+          debounce: true,
+        },
+      );
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();

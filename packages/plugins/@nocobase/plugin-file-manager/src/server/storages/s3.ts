@@ -9,11 +9,13 @@
 
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import urlJoin from 'url-join';
+import { isURL } from '@nocobase/utils';
 import crypto from 'crypto';
 import { Transform, TransformCallback } from 'stream';
 import { AttachmentModel, StorageModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
-import { cloudFilenameGetter } from '../utils';
+import { cloudFilenameGetter, ensureUrlEncoded } from '../utils';
 
 class CountingStream extends Transform {
   size = 0;
@@ -149,9 +151,23 @@ export default class extends StorageType {
     };
   }
 
-  calculateContentMD5(body) {
-    const hash = crypto.createHash('md5').update(body).digest('base64');
-    return hash;
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    if (file.url && isURL(file.url)) {
+      return super.getFileURL(file, preview);
+    }
+
+    const { bucket, endpoint } = this.storage.options;
+    const baseUrlHasBucket = endpoint && this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
+
+    const keys = [
+      this.storage.baseUrl,
+      endpoint && !baseUrlHasBucket ? bucket : undefined,
+      file.path && encodeURI(file.path),
+      ensureUrlEncoded(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+
+    return urlJoin(keys);
   }
 
   async deleteS3Objects(bucketName: string, objects: string[]) {
