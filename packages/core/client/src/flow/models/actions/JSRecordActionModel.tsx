@@ -19,6 +19,7 @@ export class JSRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('JS action'),
+    icon: 'JavaScriptOutlined',
   };
 }
 

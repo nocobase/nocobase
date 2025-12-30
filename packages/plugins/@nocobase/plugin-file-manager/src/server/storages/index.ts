@@ -20,6 +20,7 @@ export interface StorageModel {
   type: string;
   name: string;
   baseUrl: string;
+  renameMode?: string;
   options: Record<string, any>;
   rules?: Record<string, any>;
   path?: string;

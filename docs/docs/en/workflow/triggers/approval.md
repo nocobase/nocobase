@@ -22,21 +22,13 @@ Afterward, in the workflow configuration interface, click the trigger to open a 
 
 ## Trigger Configuration
 
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
+
 ### Bind a Collection
 
 NocoBase's Approval plugin is designed for flexibility and can be used with any custom collection. This means the approval configuration does not need to reconfigure the data model but directly reuses an existing collection. Therefore, after entering the trigger configuration, you first need to select a collection to determine which collection's data creation or update will trigger this workflow:
 
-
-![Approval Trigger_Trigger Configuration_Select Collection](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
-
-
-Then, in the form for creating (or editing) data for the corresponding collection, bind this workflow to the submit button:
-
-
-![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
-
-
-After that, when a user submits this form, the corresponding approval workflow will be triggered. The submitted data is not only saved in the corresponding collection but is also snapshotted into the approval flow for subsequent approvers to review and use.
+![Approval Trigger_Trigger Configuration_Select Collection](https://static-docs.nocobase.com/20251226103223.png)
 
 ### Withdraw
 
@@ -78,6 +70,10 @@ In addition to the direct submit button, you can also add a "Save as Draft" acti
 
 In an approval workflow, you need to use the dedicated "Approval" node to configure the operational logic for approvers to process (approve, reject, or return) the initiated approval. The "Approval" node can only be used in approval workflows. Refer to [Approval Node](../nodes/approval.md) for details.
 
+:::info{title=Note}
+If an approval workflow does not contain any "Approval" nodes, the workflow will be automatically approved.
+:::
+
 ## Configure Approval Initiation
 
 After configuring and enabling an approval workflow, you can bind it to the submit button of the corresponding collection's form, allowing users to initiate an approval upon submission:
@@ -86,10 +82,10 @@ After configuring and enabling an approval workflow, you can bind it to the subm
 ![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
 
 
-After binding the workflow, when a user submits the current form, an approval is initiated.
+After that, when a user submits this form, the corresponding approval workflow will be triggered. The submitted data is not only saved in the corresponding collection but is also snapshotted into the approval flow for subsequent approvers to review and use.
 
 :::info{title=Note}
-Currently, the button to initiate an approval only supports the 'Submit' (or 'Save') button in a create or update form. It does not support the 'Submit to workflow' button (which can only be bound to 'After action event').
+Currently, the button to initiate an approval only supports the "Submit" (or "Save") button in a create or update form. It does not support the "Trigger workflow" button (which can only be bound to "Custom action event').
 :::
 
 ## To-do Center

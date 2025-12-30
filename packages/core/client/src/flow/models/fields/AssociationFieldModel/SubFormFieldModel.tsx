@@ -220,7 +220,6 @@ const ArrayNester = ({
                 ),
                 serverOnlyWhenContextParams: true,
               });
-
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
@@ -478,7 +477,9 @@ SubFormListFieldModel.registerFlow({
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===
-                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.isNew,
                 );
                 ctx.model.selectedRows.value = unique;
               },

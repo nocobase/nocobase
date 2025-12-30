@@ -114,10 +114,16 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   onClick(event) {
-    this.dispatchEvent('click', {
-      event,
-      ...this.getInputArgs(),
-    });
+    this.dispatchEvent(
+      'click',
+      {
+        event,
+        ...this.getInputArgs(),
+      },
+      {
+        debounce: true,
+      },
+    );
   }
 
   getTitle() {

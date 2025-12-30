@@ -16,6 +16,7 @@ import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Context } from '@nocobase/actions';
+import { AIChatContext } from '../types/ai-chat-conversation.type';
 
 const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com/v1beta/';
 
@@ -126,6 +127,37 @@ export class GoogleGenAIProvider extends LLMProvider {
         data,
       };
     }
+  }
+
+  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
+    const { responseFormat } = this.modelOptions || {};
+    const { schema, name, description } = structuredOutput || {};
+    if (!schema) {
+      return;
+    }
+
+    const methods = {
+      json_object: 'jsonMode',
+      json_schema: 'jsonSchema',
+    };
+
+    const options: Record<string, any> = {
+      includeRaw: true,
+      name,
+    };
+
+    const method = methods[responseFormat];
+    if (method) {
+      options.method = method;
+    }
+
+    return {
+      schema: {
+        ...schema,
+        description: description ?? schema.description,
+      },
+      options,
+    };
   }
 
   protected builtInTools(): any[] {

@@ -11,7 +11,6 @@ import {
   DndProvider,
   MultiRecordResource,
   FlowModelRenderer,
-  tExpr,
   Droppable,
   DragHandler,
   AddSubModelButton,
@@ -25,6 +24,7 @@ import { List, Space, Slider, Grid, InputNumber, Col } from 'antd';
 import { css } from '@emotion/css';
 import { GridCardItemModel } from './GridCardItemModel';
 import { screenSizeTitleMaps, gridSizes, columnCountMarks, screenSizeMaps } from './utils';
+import { tExpr } from '../locale';
 
 type GridBlockModelStructure = {
   subModels: {
@@ -242,7 +242,7 @@ GridCardBlockModel.registerFlow({
 GridCardBlockModel.registerFlow({
   key: 'GridCardSettings',
   sort: 500,
-  title: tExpr('Grid card block settings', { ns: 'block-grid-card' }),
+  title: tExpr('Grid card block settings'),
   steps: {
     columnCount: {
       title: tExpr('Set the count of columns displayed in a row'),
@@ -293,7 +293,7 @@ GridCardBlockModel.registerFlow({
       },
     },
     rowCount: {
-      title: tExpr('Number of Rows', { ns: 'block-grid-card' }),
+      title: tExpr('Number of Rows'),
       uiSchema: {
         rowCount: {
           'x-component': InputNumber,
@@ -338,8 +338,7 @@ GridCardBlockModel.registerFlow({
 });
 
 GridCardBlockModel.define({
-  label: tExpr('Grid Card'),
-  group: tExpr('Content'),
+  label: tExpr('Grid card'),
   searchable: true,
   searchPlaceholder: tExpr('Search'),
   createModelOptions: {

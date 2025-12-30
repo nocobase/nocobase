@@ -8,7 +8,7 @@
  */
 
 import { tExpr, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
-import { buildFormAssociationChildren, buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
+import { buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
 
 /**
  * “JavaScript 字段（可编辑）”菜单入口（表单）：
@@ -23,7 +23,6 @@ export class FormJSFieldItemModel extends FlowModel {
       fieldUseModel: 'JSEditableFieldModel',
       associationPathName: ctx.prefixFieldPath,
       refreshTargets: ['FormItemModel', 'FilterFormItemModel'],
-      associationProvider: buildFormAssociationChildren,
     });
   }
 }
