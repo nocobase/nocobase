@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
+import { ActionWithoutPermission } from '../../base/ActionModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -35,6 +36,11 @@ class FormAssociationFieldModel extends AssociationFieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
+    if (this.parent.context.actionName === 'update') {
+      this.context.defineProperty('actionName', {
+        get: () => 'view',
+      });
+    }
   }
 }
 export const ObjectNester = (props) => {
@@ -148,9 +154,11 @@ const ArrayNester = ({
   allowSelectExistingRecord,
   onSelectExitRecordClick,
   allowDisassociation,
+  allowCreate,
 }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
@@ -186,7 +194,7 @@ const ArrayNester = ({
                 });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldKey', {
-                  get: () => key,
+                  get: () => fieldIndex,
                 });
                 forksRef.current[key] = fork;
               }
@@ -215,7 +223,7 @@ const ArrayNester = ({
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value?.[index]?.isNew) && (
+                  {!disabled && (allowDisassociation || value?.[index]?.isNew || value?.[index]?.isStored) && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
                         <CloseOutlined
@@ -244,16 +252,25 @@ const ArrayNester = ({
               );
             })}
             <Space>
-              {allowAddNew && (
-                <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
-                  <PlusOutlined />
-                  {t('Add new')}
-                </Button>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick()} style={{ marginTop: 8 }}>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button type="link" onClick={() => onSelectExitRecordClick()} disabled={disabled}>
                   <ZoomInOutlined /> {t('Select record')}
-                </a>
+                </Button>
               )}
             </Space>
           </>
@@ -451,7 +468,7 @@ SubFormListFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      isStored: true,
                     };
                   }),
                 ];

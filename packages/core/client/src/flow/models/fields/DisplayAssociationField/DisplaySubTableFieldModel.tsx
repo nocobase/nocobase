@@ -196,6 +196,12 @@ export class DisplaySubTableFieldModel extends FieldModel {
         return this.context.fieldPath;
       },
     });
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return 'view';
+      },
+      cache: false,
+    });
   }
 
   async afterAddAsSubModel() {

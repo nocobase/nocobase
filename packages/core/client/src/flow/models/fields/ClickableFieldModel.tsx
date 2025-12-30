@@ -11,9 +11,9 @@ import { CollectionField, tExpr } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray, get } from 'lodash';
 import React from 'react';
+import { EllipsisWithTooltip } from '../../components';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
-import { EllipsisWithTooltip } from '../../components';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
@@ -134,7 +134,7 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
-    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
+    const { clickToOpen = false, displayStyle, titleField, overflowMode, disabled, ...restProps } = this.props;
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }

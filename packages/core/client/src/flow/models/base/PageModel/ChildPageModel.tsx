@@ -77,7 +77,7 @@ const BackButtonUsedInSubPage = () => {
       type="text"
       icon={<ArrowLeftOutlined />}
       style={resetStyle}
-      onClick={ctx.view.destroy}
+      onClick={ctx.view.close}
     />
   );
 };

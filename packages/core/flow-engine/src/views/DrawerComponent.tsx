@@ -23,7 +23,6 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
     () => ({
       destroy: () => {
         setOpen(false);
-        drawerProps.afterClose?.();
       },
       update: (newConfig) => {
         // 更新 drawer 配置

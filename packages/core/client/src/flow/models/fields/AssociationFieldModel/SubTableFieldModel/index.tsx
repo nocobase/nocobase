@@ -100,7 +100,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
         wrapper: HeaderWrapperComponent,
       },
     };
-    return <SubTableField {...this.props} columns={columns} components={components} />;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
+
+    return <SubTableField {...this.props} columns={columns} components={components} isConfigMode={isConfigMode} />;
   }
   onInit(options: any): void {
     super.onInit(options);
@@ -140,9 +142,6 @@ SubTableFieldModel.registerFlow({
   title: tExpr('Sub-table settings'),
   sort: 300,
   steps: {
-    aclCheck: {
-      use: 'aclCheck',
-    },
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
@@ -234,7 +233,7 @@ SubTableFieldModel.registerFlow({
   },
   steps: {
     openView: {
-      title: tExpr('Edit popup'),
+      title: tExpr('Edit select record popup'),
       hideInSettings(ctx) {
         const allowSelectExistingRecord = ctx.model.getStepParams?.(
           'subTableColumnSettings',
@@ -313,7 +312,7 @@ SubTableFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      isStored: true,
                     };
                   }),
                 ];
