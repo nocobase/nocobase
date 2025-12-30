@@ -34,7 +34,7 @@ export interface ResourceSettingsInitParams {
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
   collectionRequired = true;
-  private previousBeforeRenderHash;
+  private previousBeforeRenderHash; // qs 变化后为了防止区块依赖qs, 因此重跑beforeRender, task-1357
 
   onMount() {
     this.previousBeforeRenderHash = this.context.location.search;
