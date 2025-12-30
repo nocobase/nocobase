@@ -42,7 +42,9 @@ export class TableSelectModel extends TableBlockModel {
     this.resource.addFilterGroup(`${this.uid}-select`, {
       [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
     });
-    await this.resource.refresh();
+    if (!this.hidden) {
+      await this.resource.refresh();
+    }
   }
 }
 

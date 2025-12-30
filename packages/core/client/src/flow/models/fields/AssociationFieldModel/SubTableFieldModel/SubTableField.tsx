@@ -8,11 +8,12 @@
  */
 
 import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { Table, Form, Space } from 'antd';
+import { Table, Form, Space, Button } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -27,6 +28,8 @@ export function SubTableField(props) {
     onSelectExitRecordClick,
     allowDisassociation,
     pageSize,
+    allowCreate, //acl
+    isConfigMode,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -58,12 +61,14 @@ export function SubTableField(props) {
 
   // 新增一行
   const handleAdd = () => {
-    const newRow = { isNew: true };
-    columns.forEach((col) => (newRow[col.dataIndex] = undefined));
-    const newValue = [...(value || []), newRow];
-    const lastPage = Math.ceil(newValue.length / currentPageSize);
-    setCurrentPage(lastPage);
-    onChange?.([...(value || []), newRow]);
+    if (allowCreate !== false) {
+      const newRow = { isNew: true };
+      columns.forEach((col) => (newRow[col.dataIndex] = undefined));
+      const newValue = [...(value || []), newRow];
+      const lastPage = Math.ceil(newValue.length / currentPageSize);
+      setCurrentPage(lastPage);
+      onChange?.([...(value || []), newRow]);
+    }
   };
 
   // 删除行
@@ -111,7 +116,7 @@ export function SubTableField(props) {
         fixed: 'right',
         render: (v, record, index) => {
           const pageRowIdx = (currentPage - 1) * currentPageSize + index;
-          if (!allowDisassociation && !record.isNew) {
+          if (!allowDisassociation && !(record.isNew || record.isStored)) {
             return;
           }
           return (
@@ -154,18 +159,33 @@ export function SubTableField(props) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              minHeight: '20px',
             }}
           >
-            <Space size={'middle'}>
-              {!disabled && allowAddNew !== false && (
-                <a onClick={handleAdd} style={{ marginTop: 8 }}>
-                  <PlusOutlined /> {t('Add new')}
-                </a>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)} style={{ marginTop: 8 }}>
+            <Space>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={handleAdd} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button
+                  type="link"
+                  onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}
+                  disabled={disabled}
+                >
                   <ZoomInOutlined /> {t('Select record')}
-                </a>
+                </Button>
               )}
             </Space>
           </div>
