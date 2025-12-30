@@ -133,6 +133,26 @@ export function validateQuery(query: Record<string, any>): { success: boolean; m
     if (!query.measures?.length) {
       return { success: false, message: 'please select measures' };
     }
+
+    const allowedOrderFields = new Set<string>();
+    (query.dimensions || []).forEach((d: any) => {
+      const alias = aliasOf(d?.field);
+      if (alias) allowedOrderFields.add(alias);
+    });
+    (query.measures || []).forEach((m: any) => {
+      const alias = aliasOf(m?.field);
+      if (alias) allowedOrderFields.add(alias);
+    });
+
+    if (Array.isArray(query.orders) && query.orders.length) {
+      for (const order of query.orders) {
+        const alias = aliasOf(order?.field);
+        if (!alias || !allowedOrderFields.has(alias)) {
+          return { success: false, message: 'please select valid sort field' };
+        }
+      }
+    }
+
     // 允许filter整体为空（undefined/null），允许 items 为空或空数组
     const filter = query.filter;
     if (filter && Array.isArray(filter.items) && filter.items.length > 0) {
