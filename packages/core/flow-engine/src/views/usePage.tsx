@@ -93,15 +93,24 @@ export function usePage() {
       type: 'embed' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => pageRef.current?.destroy(),
+      destroy: (result?: any) => {
+        resolvePromise?.(result);
+        pageRef.current?.destroy();
+        closeFunc?.();
+      },
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (preventClose && !force) {
           return;
         }
-        resolvePromise?.(result);
-        pageRef.current?.destroy();
-        closeFunc?.();
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentPage.destroy(result);
       },
       Header: HeaderComponent,
       Footer: FooterComponent,
@@ -155,10 +164,11 @@ export function usePage() {
             ref={pageRef}
             hidden={config.inputArgs?.hidden?.value}
             {...restConfig}
-            afterClose={() => {
-              closeFunc?.();
+            onClose={() => {
               config.onClose?.();
-              resolvePromise?.(config.result);
+              currentPage.close(config.result);
+            }}
+            afterClose={() => {
               // 关闭时修正 previous/next 指针
               scopedEngine.unlinkFromStack();
             }}

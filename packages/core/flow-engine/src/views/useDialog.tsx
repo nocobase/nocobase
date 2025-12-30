@@ -90,15 +90,24 @@ export function useDialog() {
       type: 'dialog' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => dialogRef.current?.destroy(),
+      destroy: (result?: any) => {
+        dialogRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
+      },
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
           return;
         }
-        dialogRef.current?.destroy();
-        closeFunc?.();
-        resolvePromise?.(result);
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentDialog.destroy(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,

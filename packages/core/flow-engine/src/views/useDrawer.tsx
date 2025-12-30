@@ -119,15 +119,24 @@ export function useDrawer() {
       type: 'drawer' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => drawerRef.current?.destroy(),
+      destroy: (result?: any) => {
+        drawerRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
+      },
       update: (newConfig) => drawerRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
           return;
         }
-        drawerRef.current?.destroy();
-        closeFunc?.();
-        resolvePromise?.(result);
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentDrawer.destroy(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,

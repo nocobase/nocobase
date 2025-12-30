@@ -91,7 +91,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
             onClick={() => {
               if (!closedRef.current) {
                 closedRef.current = true;
-                afterClose?.();
+                props.onClose?.();
               }
             }}
             style={{
@@ -113,7 +113,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
         {extra && <div>{extra}</div>}
       </div>
     );
-  }, [header, _title, flowEngine.context.themeToken, styles.header, afterClose]);
+  }, [header, _title, flowEngine.context.themeToken, styles.header, props.onClose]);
 
   // Footer 组件
   const FooterComponent = useMemo(() => {
