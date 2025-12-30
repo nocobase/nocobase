@@ -34,8 +34,17 @@ export interface ResourceSettingsInitParams {
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
   collectionRequired = true;
+  private previousBeforeRenderHash;
+
+  onMount() {
+    this.previousBeforeRenderHash = this.context.location.search;
+  }
 
   onActive() {
+    if (!this.hidden && this.previousBeforeRenderHash !== this.context.location.search) {
+      this.rerender();
+      return;
+    }
     if (!this.hidden) {
       this.resource?.refresh();
     }
