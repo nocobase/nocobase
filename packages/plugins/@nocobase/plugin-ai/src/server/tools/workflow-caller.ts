@@ -11,6 +11,7 @@ import { z } from 'zod';
 import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
 import { ToolRegisterOptions } from '../manager/tool-manager';
+import { truncateLongStrings } from './utils';
 
 interface ParameterConfig {
   name: string;
@@ -92,7 +93,7 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
   if (processor.execution.status !== EXECUTION_STATUS.RESOLVED) {
     return { status: 'error' as const, content: 'Workflow execution exceptions' };
   }
-  const lastJobResult = processor.lastSavedJob.result;
+  const lastJobResult = truncateLongStrings(processor.lastSavedJob.result);
   return {
     status: 'success' as const,
     content: JSON.stringify(lastJobResult),
