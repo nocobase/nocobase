@@ -170,6 +170,19 @@ describe('buildJSFieldMenuChildren', () => {
     return ctx as FlowModelContext;
   };
 
+  it('returns only direct collection fields', async () => {
+    const ctx = makeCtx();
+    const result = await buildJSFieldMenuChildren(ctx, {
+      useModel: 'DetailsItemModel',
+      fieldUseModel: 'JSFieldModel',
+      refreshTargets: ['rt'],
+    });
+    // 直接子项等于字段数量
+    expect(result.length).toBe(2);
+    const resolved = await (result[0].createModelOptions as any)(ctx);
+    expect(resolved.subModels.field.use).toBe('JSFieldModel');
+  });
+
   it('when associationProvider returns empty array, do not append association group', async () => {
     const ctx = makeCtx();
     const result = await buildJSFieldMenuChildren(ctx, {
@@ -178,7 +191,6 @@ describe('buildJSFieldMenuChildren', () => {
       refreshTargets: ['rt'],
       associationProvider: async () => [],
     });
-    // 直接子项等于字段数量
     expect(result.length).toBe(2);
   });
 
@@ -195,8 +207,10 @@ describe('buildJSFieldMenuChildren', () => {
     const group = result[2];
     expect(group.type).toBe('group');
     expect(group.label).toBe(tExpr('Display association fields'));
-    // 验证 children 调用可用
+    // 验证 children 调用可用，并完成 JS 化
     const children = await (group.children as any)(makeCtx());
     expect(Array.isArray(children)).toBe(true);
+    const childResolved = await (children[0].createModelOptions as any)(makeCtx());
+    expect(childResolved.subModels.field.use).toBe('JSFieldModel');
   });
 });

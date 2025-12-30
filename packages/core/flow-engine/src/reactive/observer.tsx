@@ -65,7 +65,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
                     (ctxRef.current?.tabActive?.value === true || ctxRef.current?.tabActive?.value === undefined)
                   ) {
                     updater();
-                    disposer();
+                    disposer?.();
                     pendingDisposerRef.current = null;
                   }
                 });

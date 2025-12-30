@@ -155,10 +155,11 @@ export function useDialog() {
             footer={currentFooter}
             header={currentHeader}
             {...config}
-            afterClose={() => {
-              closeFunc?.();
+            onCancel={() => {
               config.onClose?.();
-              resolvePromise?.(config.result);
+              currentDialog.close(config.result);
+            }}
+            afterClose={() => {
               // 关闭时修正 previous/next 指针
               scopedEngine.unlinkFromStack();
             }}

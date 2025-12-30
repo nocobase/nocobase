@@ -17,6 +17,7 @@ export class EditActionModel extends PopupActionModel {
   defaultPopupTitle = tExpr('Edit');
   defaultProps: ButtonProps = {
     title: tExpr('Edit'),
+    icon: 'EditOutlined',
   };
 
   getAclActionName() {
@@ -26,4 +27,5 @@ export class EditActionModel extends PopupActionModel {
 
 EditActionModel.define({
   label: tExpr('Edit'),
+  sort: 20,
 });

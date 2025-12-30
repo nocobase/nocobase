@@ -17,6 +17,7 @@ export class JSActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     type: 'default',
     title: tExpr('JS action'),
+    icon: 'JavaScriptOutlined',
   };
 }
 

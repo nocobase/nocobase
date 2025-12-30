@@ -348,7 +348,8 @@ export class SubTableColumnModel<
           `}
         >
           {this.mapSubModels('field', (action: FieldModel) => {
-            const namePath = action.context.fieldPath.split('.').pop();
+            const fieldPath = action.context.fieldPath.split('.');
+            const namePath = fieldPath.pop();
 
             const fork: any = action.createFork({}, `${id}`);
             if (this.props.readPretty) {
@@ -361,10 +362,10 @@ export class SubTableColumnModel<
                 <FormItem
                   {...this.props}
                   key={id}
-                  name={[(this.parent as FieldModel).context.fieldPath, rowIdx, namePath]}
+                  name={[...fieldPath, rowIdx, namePath]}
                   style={{ marginBottom: 0 }}
                   showLabel={false}
-                  initialValue={value}
+                  // initialValue={value}
                   disabled={
                     this.props.disabled ||
                     (!record.isNew && this.props.aclDisabled) ||
