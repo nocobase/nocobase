@@ -25,10 +25,11 @@ function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
-      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      const model: any = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
       model.context.defineProperty('associationModel', {
         value: fieldModel.context.associationModel,
       });
+      model.scene = options.scene;
       return model;
     },
     {
@@ -73,6 +74,7 @@ export function EditFormContent({ model, scene = 'edit' }) {
           delegateToParent: false,
           subType: 'object',
           use: 'BlockGridModel',
+          scene,
         }}
         fieldModel={model}
       />

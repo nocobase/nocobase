@@ -49,6 +49,23 @@ export class SubTableEditFormModel extends FormBlockModel {
     FormCustomItemModel: 'FormCustomItemModel',
   };
 
+  protected defaultBlockTitle() {
+    const blockLabel: any = <FormLabel />;
+    const dsName = this.dataSource?.displayName || this.dataSource?.key;
+    const dsCount = this.context?.dataSourceManager?.getDataSources?.().length || 0;
+    const colTitle = this.collection?.title;
+    const showDs = dsCount > 1 && !!dsName;
+    const rightPart = `${showDs ? `${dsName} > ` : ''}${colTitle}`;
+
+    return (
+      <span>
+        <span>{blockLabel}</span>
+        <span>: </span>
+        <span>{rightPart}</span>
+      </span>
+    ) as any;
+  }
+
   /**
    * 定义子菜单选项
    */
@@ -127,10 +144,11 @@ export class SubTableEditFormModel extends FormBlockModel {
 }
 
 const FormLabel = () => {
-  console.log(8888);
-  const model = useFlowModel();
-  console.log(model);
-  return tExpr('Form (Edit)') as any;
+  const model: any = useFlowModel();
+  const scene = model.parent?.scene || model.scene;
+  const t = model.context.t;
+  const title = scene === 'new' ? 'Form (Add new)' : 'Form (Edit)';
+  return t(title);
 };
 SubTableEditFormModel.define({
   label: <FormLabel />,
