@@ -30,7 +30,8 @@
     "antd": "5.24.2",
     "async": "^3.2.6",
     "rollup": "4.24.0",
-    "semver": "^7.7.1"
+    "semver": "^7.7.1",
+    "@opentelemetry/resources": "1.19.0"
   },
   "dependencies": {
     "pm2": "^6.0.5",
