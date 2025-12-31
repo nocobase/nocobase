@@ -282,4 +282,4 @@ export * from './utils';
 export * from './variable';
 export { usePopupRecordContext, useTasksCountsContext } from './WorkflowTasks';
 export { createTriggerWorkflowsSchema } from './flows/triggerWorkflows';
-export * from './models';
+export { NodeDetailsModel, NodeValueModel };
