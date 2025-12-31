@@ -89,5 +89,17 @@ export default {
       name: 'url',
       // formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     },
+    {
+      type: 'uuid',
+      name: 'uuid',
+      unique: true,
+      interface: 'uuid',
+      uiSchema: {
+        type: 'string',
+        title: `{{t("UUID")}}`,
+        'x-component': 'Input',
+        'x-read-pretty': true,
+      },
+    },
   ],
 };

@@ -27,6 +27,7 @@ interface EagerLoadingNode {
   where?: any;
   inspectInheritAttribute?: boolean;
   includeOptions?: any;
+  fieldPath: string;
 }
 
 const pushAttribute = (node, attribute) => {
@@ -103,6 +104,7 @@ export class EagerLoadingTree {
     const { model, rootAttributes, includeOption, db, rootQueryOptions } = options;
 
     const buildNode = (node) => {
+      node.fieldPath = node.association ? `${node.parent?.fieldPath || ''}.${node.association.as}` : node.model.name;
       Object.setPrototypeOf(node, EagerLoadingNodeProto);
       node.afterBuild(db);
       return node;
@@ -206,6 +208,13 @@ export class EagerLoadingTree {
     const loadRecursive = async (node, ids = []) => {
       let instances = [];
 
+      const findOptions = {
+        transaction,
+        queryContext: {
+          fieldPath: node.fieldPath,
+        },
+      };
+
       if (!node.parent) {
         // load root instances
         const rootInclude = this.rootQueryOptions?.include || node.includeOption;
@@ -241,10 +250,10 @@ export class EagerLoadingTree {
         if (belongsToAssociationsOnly) {
           instances = await node.model.findAll({
             ...this.rootQueryOptions,
+            ...findOptions,
             attributes: node.attributes,
             distinct: true,
             include: includeForFilter,
-            transaction,
           });
         } else {
           const primaryKeyField = node.model.primaryKeyField || node.model.primaryKeyAttribute;
@@ -267,18 +276,14 @@ export class EagerLoadingTree {
             return { row, pk: row[primaryKeyField] };
           });
 
-          const findOptions = {
-            where: { [primaryKeyField]: ids.map((i) => i.pk) },
-            attributes: node.attributes,
-          };
-
           if (node.order) {
             findOptions['order'] = node.order;
           }
 
           instances = await node.model.findAll({
             ...findOptions,
-            transaction,
+            where: { [primaryKeyField]: ids.map((i) => i.pk) },
+            attributes: node.attributes,
           });
         }
 
@@ -323,14 +328,12 @@ export class EagerLoadingTree {
             };
           }
 
-          const findOptions = {
+          instances = await node.model.findAll({
+            ...findOptions,
             where,
             attributes: node.attributes,
             order: params.order || orderOption(association),
-            transaction,
-          };
-
-          instances = await node.model.findAll(findOptions);
+          });
         }
 
         if (associationType === 'BelongsToArray') {
@@ -347,14 +350,12 @@ export class EagerLoadingTree {
             };
           }
 
-          const findOptions = {
+          instances = await node.model.findAll({
+            ...findOptions,
             where,
             attributes: node.attributes,
             order: params.order || orderOption(association),
-            transaction,
-          };
-
-          instances = await node.model.findAll(findOptions);
+          });
         }
 
         if (associationType == 'BelongsTo') {
@@ -364,7 +365,7 @@ export class EagerLoadingTree {
           const collection = this.db.modelCollection.get(node.model);
 
           instances = await node.model.findAll({
-            transaction,
+            ...findOptions,
             where: {
               [association.targetKey]: parentInstancesForeignKeyValues,
             },
@@ -427,7 +428,7 @@ export class EagerLoadingTree {
           const pivotAssoc = new HasOne(association.target, association.through.model, hasOneOptions);
 
           instances = await node.model.findAll({
-            transaction,
+            ...findOptions,
             attributes: node.attributes,
             include: [
               {
