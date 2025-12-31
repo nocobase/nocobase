@@ -27,7 +27,7 @@ export const useCurrentUserContext = () => {
       data: {
         data: flowEngine.context.user,
       },
-    };
+    } as any;
   }
 
   return contextValue;
