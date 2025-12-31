@@ -762,11 +762,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    // console.log(
-    //   `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
-    //     this.cleanRun
-    //   }, targetIsFork=${(target as any)?.isFork === true}`,
-    // );
+    console.log(
+      `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
+        this.cleanRun
+      }, targetIsFork=${(target as any)?.isFork === true}`,
+    );
     return await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs, options);
   }
 
