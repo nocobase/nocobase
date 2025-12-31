@@ -43,6 +43,52 @@ export function convertDatasetFormats(data: Record<string, any>[]) {
   };
 }
 
+/**
+ * Normalize ECharts option for dataset-based pie charts.
+ * Fixes `{c}` showing `[object Object]` when `dataset.source` is an array of objects by rewriting `{c}` to `{@<valueField>}`.
+ */
+export function normalizeEChartsOption(option: any) {
+  if (!option) return option;
+
+  const dataset = option.dataset;
+  const source = Array.isArray(dataset) ? dataset[0]?.source : dataset?.source;
+  const seriesRaw = option.series;
+  const seriesArr = Array.isArray(seriesRaw) ? seriesRaw : seriesRaw ? [seriesRaw] : [];
+
+  if (!Array.isArray(source) || source.length === 0) return option;
+  const first = source[0];
+  if (!first || typeof first !== 'object' || Array.isArray(first)) return option;
+
+  const pieSeries = seriesArr.filter((s: any) => s?.type === 'pie');
+  if (pieSeries.length === 0) return option;
+
+  const valueField = pieSeries[0]?.encode?.value;
+  let valueDim = Array.isArray(valueField) ? valueField[0] : valueField;
+  if (typeof valueDim !== 'string' || !valueDim) {
+    if (Object.prototype.hasOwnProperty.call(first, 'value')) {
+      valueDim = 'value';
+    }
+  }
+  if (typeof valueDim !== 'string' || !valueDim) return option;
+
+  const replaceC = (tpl: string) => (tpl.includes('{c}') ? tpl.replace(/\{c\}/g, '{@' + valueDim + '}') : tpl);
+
+  pieSeries.forEach((s: any) => {
+    if (s?.label && typeof s.label.formatter === 'string') {
+      s.label.formatter = replaceC(s.label.formatter);
+    }
+    if (s?.tooltip && typeof s.tooltip.formatter === 'string') {
+      s.tooltip.formatter = replaceC(s.tooltip.formatter);
+    }
+  });
+
+  if (option.tooltip && typeof option.tooltip.formatter === 'string') {
+    option.tooltip.formatter = replaceC(option.tooltip.formatter);
+  }
+
+  return option;
+}
+
 export const formatters = {
   datetime: [
     {

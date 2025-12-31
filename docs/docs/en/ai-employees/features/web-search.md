@@ -32,9 +32,9 @@ After enabling Web Search, the AI Employee's reply will display the Web Search r
 
 Currently, the AI Employee Web Search function relies on the online LLM Service platform, and there will be differences in the user experience. The specific differences are as follows:
 
-| Platform | Web Search | tools | Real-time response to search terms | Return reference external link information |
+| Platform | Web Search | Tools | Real-time response to search terms | Return reference external link information |
 | :--- | :--- | :--- | :--- | :--- |
 | OpenAI | ✅ | ✅ | ✅ | ✅ |
 | Gemini | ✅ | ❌ | ❌ | ✅ |
 | Dashscope | ✅ | ✅ | ❌ | ❌ |
-| Deepseek | ❌ | ❌ | ❌ | ❌ |
+| DeepSeek | ❌ | ❌ | ❌ | ❌ |
