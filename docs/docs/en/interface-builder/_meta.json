@@ -79,11 +79,6 @@
           },
           {
             "type": "custom-link",
-            "label": "Block template",
-            "link": "/interface-builder/blocks/other-blocks/block-template"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
@@ -152,11 +147,6 @@
         "type": "custom-link",
         "label": "Overview",
         "link": "/interface-builder/fields"
-      },
-      {
-        "type": "custom-link",
-        "label": "Field template",
-        "link": "/interface-builder/fields/field-template"
       },
       {
         "type": "custom-link",
@@ -499,6 +489,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Templates",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }
