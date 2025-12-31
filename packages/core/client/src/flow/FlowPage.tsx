@@ -53,7 +53,7 @@ export const FlowRoute = () => {
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(flowEngine.context.route.params.name);
   const viewStateRef = useRef<{
-    [uid in string]: { close: (force?: boolean) => void; update: (value: any) => void; navigation: ViewNavigation };
+    [uid in string]: { destroy: (force?: boolean) => void; update: (value: any) => void; navigation: ViewNavigation };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
   const hasStepNavigatedRef = useRef(false);
@@ -184,7 +184,7 @@ export const FlowRoute = () => {
           // 4. 处理需要关闭的视图（强制关闭，确保触发 onClose 并绕过 preventClose）
           if (viewsToClose.length) {
             viewsToClose.forEach((viewItem) => {
-              viewStateRef.current[getKey(viewItem)]?.close?.(true);
+              viewStateRef.current[getKey(viewItem)]?.destroy?.(true);
               delete viewStateRef.current[getKey(viewItem)];
             });
 
@@ -226,7 +226,7 @@ export const FlowRoute = () => {
                   return;
                 }
 
-                const closeRef = React.createRef<(result?: any, force?: boolean) => void>();
+                const destroyRef = React.createRef<(result?: any, force?: boolean) => void>();
                 const updateRef = React.createRef<(value: any) => void>();
                 const openViewParams = getOpenViewStepParams(viewItem.model);
                 const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
@@ -240,7 +240,7 @@ export const FlowRoute = () => {
                   collectionName: openViewParams?.collectionName,
                   associationName: openViewParams?.associationName,
                   dataSourceKey: openViewParams?.dataSourceKey,
-                  closeRef,
+                  destroyRef,
                   updateRef,
                   openerUids,
                   ...viewItem.params,
@@ -250,11 +250,11 @@ export const FlowRoute = () => {
                   },
                   hidden: viewItem.hidden, // 是否隐藏视图
                   isMobileLayout,
-                  preventClose: true, // 会通过 URL 强制关闭
+                  triggerByRouter: true, // 标记该事件是由路由系统触发
                 });
 
                 viewStateRef.current[getKey(viewItem)] = {
-                  close: (force?: boolean) => closeRef.current?.(undefined, force),
+                  destroy: (force?: boolean) => destroyRef.current?.(),
                   update: (value: any) => updateRef.current?.(value),
                   navigation,
                 };
@@ -291,7 +291,7 @@ export const FlowRoute = () => {
       dispose?.();
       prevViewListRef.current.forEach((viewItem) => {
         flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
-        viewStateRef.current[getKey(viewItem)]?.close(true);
+        viewStateRef.current[getKey(viewItem)]?.destroy();
       });
     };
   }, [flowEngine, isMobileLayout, routeModel]);
