@@ -121,7 +121,7 @@ export class ClickableFieldModel extends FieldModel {
       {
         event,
         sourceId: this.context.resource?.getSourceId(),
-        filterByTk: this.context.collection.getFilterByTK(this.context.record),
+        filterByTk: this.context.collection.getFilterByTK(this.context.currentObject || this.context.record),
       },
       {
         debounce: true,

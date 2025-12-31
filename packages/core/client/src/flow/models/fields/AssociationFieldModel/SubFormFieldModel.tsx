@@ -76,6 +76,13 @@ export const ObjectNester = (props) => {
       });
     }
   }, [props.disabled, grid]);
+  useEffect(() => {
+    grid.context.defineProperty('currentObject', {
+      get: () => {
+        return props.value;
+      },
+    });
+  }, [props.value]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />

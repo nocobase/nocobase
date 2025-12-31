@@ -124,7 +124,7 @@ export function createSafeWindow(extra?: Record<string, any>) {
           case 'replace':
             return (u: string) => guardedNavigate(u, { replace: true });
           case 'reload':
-            throw new Error('Access to location.reload is not allowed.');
+            return window.location.reload.bind(window.location);
           case 'href':
             throw new Error('Reading location.href is not allowed.');
           default:
