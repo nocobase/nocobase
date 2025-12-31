@@ -22,6 +22,7 @@ import {
   resolveActionScene,
   type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
+import { patchGridOptionsFromTemplateRoot } from './utils/templateCopy';
 
 type MenuItem = {
   key: string;
@@ -389,18 +390,22 @@ async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?:
       }
 
       const duplicated = await model.flowEngine.duplicateModel(gridModel.uid);
+      const merged = patchGridOptionsFromTemplateRoot(root, duplicated);
 
       // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 save 重建整棵树
       await model.flowEngine.modelRepository.move(duplicated.uid, currentGrid.uid, 'after');
 
       const newGrid = model.flowEngine.createModel<FlowModel>({
-        ...(duplicated as any),
+        ...(merged.options as any),
         parentId: model.uid,
         subKey: 'grid',
         subType: 'object',
       });
       model.setSubModel('grid', newGrid);
       await newGrid.afterAddAsSubModel();
+      if (merged.patched) {
+        await newGrid.saveStepParams();
+      }
 
       // 引用已清理，回退临时标题（移除“字段模板”标记）
       const clearTemplateTitle = (m: FlowModel) => {

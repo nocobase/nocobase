@@ -109,8 +109,12 @@ export class PageModel extends FlowModel<PageModelStructure> {
     }).filter(Boolean);
   }
 
+  getFirstTab() {
+    return this.subModels.tabs?.[0];
+  }
+
   renderFirstTab() {
-    const firstTab = this.subModels.tabs?.[0];
+    const firstTab = this.getFirstTab();
     return firstTab?.renderChildren?.();
   }
 
@@ -122,7 +126,11 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          activeKey={this.props.tabActiveKey}
+          activeKey={
+            this.context.view?.navigation?.viewParams
+              ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
+              : this.props.tabActiveKey
+          }
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
@@ -133,9 +141,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
             this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
             this.setProps('tabActiveKey', activeKey);
-            if (this.context.view.inputArgs) {
-              this.context.view.inputArgs.tabUid = activeKey;
-            }
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{

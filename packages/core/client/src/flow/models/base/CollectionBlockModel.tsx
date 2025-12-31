@@ -34,8 +34,18 @@ export interface ResourceSettingsInitParams {
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
   collectionRequired = true;
+  private previousBeforeRenderHash; // qs 变化后为了防止区块依赖qs, 因此重跑beforeRender, task-1357
+
+  protected onMount() {
+    super.onMount();
+    this.previousBeforeRenderHash = this.context.location.search;
+  }
 
   onActive() {
+    if (!this.hidden && this.previousBeforeRenderHash !== this.context.location.search) {
+      this.rerender();
+      return;
+    }
     if (!this.hidden) {
       this.resource?.refresh();
     }
@@ -395,6 +405,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {
     throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
+  }
+
+  refresh() {
+    if (!this.resource) {
+      return super.refresh();
+    }
+    return this.resource.refresh();
   }
 
   protected defaultBlockTitle() {

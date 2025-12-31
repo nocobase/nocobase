@@ -17,18 +17,18 @@ import { Icon } from '../../../icon/Icon';
 import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
-function ActionWithoutPermission(props) {
+export function ActionWithoutPermission(props) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
+  const collection = props.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} ` : '';
     return `${dataSourcePrefix}${collectionPrefix}`;
   }, []);
-  const { actionName } = model.forbidden;
+  const { actionName } = props?.forbidden || model.forbidden;
   const messageValue = useMemo(() => {
     return t(
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
@@ -38,7 +38,8 @@ function ActionWithoutPermission(props) {
       },
     ).replaceAll('&gt;', '>');
   }, [actionName, nameValue, t]);
-  return <Tooltip title={messageValue}>{props.children}</Tooltip>;
+
+  return <Tooltip title={props.message || messageValue}>{props.children}</Tooltip>;
 }
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
@@ -51,14 +52,15 @@ export const ActionSceneEnum = {
 };
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
-  declare props: ButtonProps;
+  declare props: ButtonProps & { tooltip?: string };
   declare scene: ActionSceneType;
 
-  defaultProps: ButtonProps = {
+  defaultProps: ButtonProps & { tooltip?: string } = {
     type: 'default',
     title: tExpr('Action'),
   };
 
+  enableEditTooltip = true;
   enableEditTitle = true;
   enableEditIcon = true;
   enableEditType = true;
@@ -113,19 +115,27 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   onClick(event) {
-    this.dispatchEvent('click', {
-      event,
-      ...this.getInputArgs(),
-    });
+    this.dispatchEvent(
+      'click',
+      {
+        event,
+        ...this.getInputArgs(),
+      },
+      {
+        debounce: true,
+      },
+    );
   }
 
   getTitle() {
     return this.props.title;
   }
+
   getIcon() {
     return this.props.icon;
   }
-  render() {
+
+  renderButton() {
     const props = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
 
@@ -134,6 +144,14 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
         {props.children || this.getTitle()}
       </Button>
     );
+  }
+
+  render() {
+    if (this.props.tooltip) {
+      return <Tooltip title={this.props.tooltip}>{this.renderButton()}</Tooltip>;
+    }
+
+    return this.renderButton();
   }
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
@@ -173,6 +191,13 @@ ActionModel.registerFlow({
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: tExpr('Button title'),
+              }
+            : undefined,
+          tooltip: ctx.model.enableEditTooltip
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: tExpr('Button tooltip'),
               }
             : undefined,
           icon: ctx.model.enableEditIcon
@@ -216,9 +241,10 @@ ActionModel.registerFlow({
         return ctx.model.defaultProps;
       },
       handler(ctx, params) {
-        const { title, ...rest } = params;
+        const { title, tooltip, ...rest } = params;
         ctx.model.setProps({
-          title: ctx.t(title),
+          title: title ? ctx.t(title) : undefined,
+          tooltip: tooltip ? ctx.t(tooltip) : undefined,
           ...rest,
         });
       },

@@ -21,7 +21,7 @@ First, in the `Profile` tab, we can configure the basic information of the AI Em
 
 ![20251021232246](https://static-docs.nocobase.com/20251021232246.png)
 
-- In the `Bio` input box, enter the introductory text for the AI Employee, describing their skills and functions. This text will be displayed in the AI Employee's profile;
+- In the `Bio` input box, enter the introductory text for the AI Employee, describing their capabilities and role. This text will be displayed in the AI Employee's profile;
 - In the `About me` input box, enter a detailed description of the AI Employee's functions. This text will be used as a System prompt when chatting with the AI Employee.
 - In the `Greeting message` input box, enter the greeting message for the AI Employee. Whenever a user starts a new Chat with the AI Employee, the system will automatically send this message to the user.
   

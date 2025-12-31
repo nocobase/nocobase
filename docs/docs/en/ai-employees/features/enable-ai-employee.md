@@ -8,7 +8,7 @@ You only need to complete the enabling process in the admin panel to let these d
 
 Enter the AI Employee plugin configuration page, click the `AI employees` tab, and enter the AI Employee management page.
 
-You can see that the system already has multiple built-in AI Employees, but none of them are enabled, so you cannot Collaborate with these AI Employees on the application page yet.
+You can see that the system already has multiple built-in AI Employees, but none of them are enabled, so you cannot collaborate with these AI Employees on the application page yet.
 
 ![20251022121248](https://static-docs.nocobase.com/20251022121248.png)
 

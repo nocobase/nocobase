@@ -72,4 +72,55 @@ describe('flow-model duplicate', () => {
     // stepParams deep replacement: refRoot should point to new root uid
     expect(newAction.stepParams?.refRoot).toBe(newRootUid);
   });
+
+  it('should duplicate when a node has multiple parents in tree path', async () => {
+    const tree = {
+      uid: 'tree-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'tree-root',
+            use: 'RootModel',
+            subModels: {
+              inner: {
+                uid: 'p-in',
+                use: 'InnerParentModel',
+                subModels: {
+                  child: {
+                    uid: 'shared-child',
+                    use: 'ChildModel',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    } as any;
+
+    await repository.insertModel(tree);
+
+    const treePath = app.db.getCollection('flowModelTreePath').repository;
+    await treePath.create({
+      values: {
+        ancestor: 'z-external-parent',
+        descendant: 'shared-child',
+        depth: 1,
+      },
+    });
+
+    const duplicated = await repository.duplicate('tree-root');
+    expect(duplicated).toBeTruthy();
+    expect(duplicated.uid).not.toBe('tree-root');
+
+    const newInner = duplicated.subModels.inner;
+    expect(newInner).toBeTruthy();
+    expect(newInner.uid).not.toBe('p-in');
+
+    const newChild = newInner.subModels.child;
+    expect(newChild).toBeTruthy();
+    expect(newChild.uid).not.toBe('shared-child');
+    expect(newChild.parentId).toBe(newInner.uid);
+  });
 });

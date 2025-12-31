@@ -30,6 +30,7 @@ import {
   resolveExpectedResourceInfoByModelChain,
 } from '../utils/templateCompatibility';
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
+import { patchGridOptionsFromTemplateRoot } from '../utils/templateCopy';
 import { REF_HOST_CTX_KEY } from '../constants';
 
 type ImporterProps = {
@@ -212,11 +213,13 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
           })
         : duplicated;
 
+      const merged = patchGridOptionsFromTemplateRoot(root, normalized);
+
       // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 replaceModel/save 重建整棵树
       await mountTarget.flowEngine.modelRepository.move(duplicatedUid, existingGrid.uid, 'after');
 
       const newGrid = mountTarget.flowEngine.createModel<FlowModel>({
-        ...normalized,
+        ...merged.options,
         parentId: mountTarget.uid,
         subKey: 'grid',
         subType: 'object',
@@ -224,6 +227,9 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
       mountTarget.setSubModel('grid', newGrid);
       await newGrid.afterAddAsSubModel();
       await mountTarget.flowEngine.destroyModel(existingGrid.uid);
+      if (merged.patched) {
+        await newGrid.saveStepParams();
+      }
 
       await mountTarget.rerender();
       return;

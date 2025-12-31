@@ -17,6 +17,7 @@ export class ViewActionModel extends PopupActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('View'),
+    icon: 'EyeOutlined',
   };
 
   getAclActionName() {
@@ -26,4 +27,5 @@ export class ViewActionModel extends PopupActionModel {
 
 ViewActionModel.define({
   label: tExpr('View'),
+  sort: 10,
 });

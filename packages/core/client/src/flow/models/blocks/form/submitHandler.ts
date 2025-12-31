@@ -46,6 +46,5 @@ export async function submitHandler(ctx, params) {
     await resource.update(currentFilterByTk, values, params.requestConfig);
   }
 
-
   ctx.message.success(ctx.t('Saved successfully'));
 }

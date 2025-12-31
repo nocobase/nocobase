@@ -1,4 +1,4 @@
-# Shortcuts (Tasks)
+# Shortcut Tasks
 
 To let AI Employees start working more efficiently, we can bind AI Employees to scene pages and Blocks, and preset several commonly used Tasks.
 
@@ -38,11 +38,11 @@ Each tab represents an independent Task. Click the "+" sign next to it to add a 
 
 Task configuration form:
 
-- In the `Tile` input box, enter the Task title, briefly describing the Task content. This title will appear in the AI Employee's Task list.
+- In the `Title` input box, enter the Task title, briefly describing the task content. This title will appear in the AI Employee's task list.
 - In the `Background` input box, enter the main content of the Task. This content will be used as the System prompt when chatting with the AI Employee.
 - In the `Default user message` input box, enter the user message sent by default, which is automatically filled into the user input box after selecting the Task.
 - In `Work context`, select the application Context information sent to the AI Employee by default. This operation is the same as the operation in the Chatbox.
-- The `Skills` selection box displays the Skills possessed by the current AI Employee. You can uncheck a Skill to let the AI Employee ignore using that Skill when executing the Task.
+- The `Tools` selection box displays the Tools available to the current AI Employee. You can uncheck a Tool to let the AI Employee ignore using that Tool when executing the task.
 - The `Send default user message automatically` checkbox configures whether to automatically send the default user message after clicking to execute the Task.
 
 ![20251022140805](https://static-docs.nocobase.com/20251022140805.png)
