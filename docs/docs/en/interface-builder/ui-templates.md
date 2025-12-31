@@ -48,9 +48,7 @@ When a block/popup is already configured, you can use `Save as template` in its 
 1) Add block → "Other blocks" → `Block Template`
 2) In the configuration, select:
    - `Template`: Choose a template
-   - `Mode`:
-     - `Reference`
-     - `Duplicate`
+   - `Mode`: `Reference` or `Duplicate`
 
 ![block-template-menu-20251228](https://static-docs.nocobase.com/block-template-menu-20251228.png)
 
@@ -76,9 +74,7 @@ Field templates are used to reuse field area configurations (field selection, la
 
 1) Enter configuration mode, open the "Fields" menu in a form block or detail block
 2) Select `Field Template`
-3) Choose a template and select mode:
-   - `Reference`
-   - `Duplicate`
+3) Choose a template and select mode: `Reference` or `Duplicate`
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

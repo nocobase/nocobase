@@ -48,9 +48,7 @@ pkg: "@nocobase/plugin-ui-templates"
 1) 添加区块 → “其他区块” → `区块模板`  
 2) 在配置中选择：
    - `模板`：选择一个模板
-   - `模式`：
-     - `引用`
-     - `复制`
+   - `模式`：`引用` 或 `复制`
 
 ![block-template-menu-20251228](https://static-docs.nocobase.com/block-template-menu-20251228.png)
 
@@ -76,9 +74,7 @@ pkg: "@nocobase/plugin-ui-templates"
 
 1) 进入配置模式，在表单区块或详情区块打开“字段”菜单  
 2) 选择 `字段模板`  
-3) 选择一个模板，并选择模式：
-   - `引用`
-   - `复制`
+3) 选择一个模板，并选择模式：`引用` 或 `复制`
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 
