@@ -1,5 +1,5 @@
 ---
-displayName: "界面模板"
+displayName: "UI 模板"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
@@ -10,4 +10,4 @@ builtIn: true
 defaultEnabled: true
 ---
 
-# 界面模板
+# UI 模板
