@@ -12,14 +12,14 @@ Unlike ordinary Chatbots, AI Employees are the "anthropomorphic colleagues" of a
 
 *   **Context Awareness**: Capable of understanding the current page, selected data rows, and system table structure definitions.
 *   **Actionable**: Capable of executing actual business operations, such as querying databases, analyzing emails, filling out forms, configuring charts, writing JS modules, triggering workflows, etc.
-*   **Persona**: Each AI Employee has a specific professional role (such as "Data Analyst", "Translation Assistant", "Frontend Engineer", etc.) and is equipped with corresponding skills.
+*   **Persona**: Each AI Employee has a specific professional role (such as "Data Analyst", "Translation Assistant", "Frontend Engineer", etc.) and is equipped with corresponding tools.
 
 
 ## Core Concepts
 
 Before using AI Employees, understanding the following core concepts will help you better configure and manage them:
 
-*   **AI Employee**: An independent intelligent colleague. It consists of **Role Setting** (Persona), **Model (LLM)**, and **Tools** (Skills).
+*   **AI Employee**: An independent intelligent colleague. It consists of **Role Setting** (Persona), **Model (LLM)**, and **Tools**.
 *   **LLM (Large Language Model)**: The "brain" of the AI Employee. Supports mainstream models like OpenAI (GPT-4), Anthropic (Claude 3), etc., determining the AI's understanding and reasoning capabilities.
 *   **Tool**: Functional units provided to the AI for execution, equivalent to the AI's hands and feet. For example, `webSearch` (Web Search), `queryDatabase` (Query Database).
 *   **Context**: The ability of the AI Employee to perceive its environment. Includes the current page structure, selected data rows, form field definitions, etc., without the need for manual copy-pasting by the user.
@@ -30,12 +30,12 @@ Before using AI Employees, understanding the following core concepts will help y
 
 ## Entry Points
 
-You can Summon them from the shortcut employee list in the bottom-right corner.
+You can open them from the shortcut employee list in the bottom-right corner.
 
 ![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
 
 
-You can also Summon them casually next to Blocks, such as Table Blocks, Form Blocks, Chart Blocks, Code Blocks, etc.
+You can also open them next to Blocks, such as Table Blocks, Form Blocks, Chart Blocks, Code Blocks, etc.
 
 ![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
 
@@ -53,13 +53,13 @@ You can also directly select Blocks on the page and send them to the AI Employee
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.17.25-2025-11-02-12-17-44.mp4" type="video/mp4"></video>
 
 
-## Shortcuts（Tasks）
+## Shortcut Tasks
 
-You can preset common Tasks for each AI Employee based on their current location, allowing you to start working with a single click—fast and convenient.
+You can preset common tasks for each AI Employee based on their current location, allowing you to start working with a single click—fast and convenient.
 
 <video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
 
 
 ## Installation
 
-AI Employees is a built-in plugin of NocoBase, ready to use out of the box without separate installation.
+AI Employees are built into NocoBase (`@nocobase/plugin-ai`), ready to use out of the box without separate installation.

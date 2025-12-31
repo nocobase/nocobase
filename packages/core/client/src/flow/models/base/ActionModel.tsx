@@ -60,6 +60,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     title: tExpr('Action'),
   };
 
+  enableEditTooltip = true;
   enableEditTitle = true;
   enableEditIcon = true;
   enableEditType = true;
@@ -190,6 +191,13 @@ ActionModel.registerFlow({
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: tExpr('Button title'),
+              }
+            : undefined,
+          tooltip: ctx.model.enableEditTooltip
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: tExpr('Button tooltip'),
               }
             : undefined,
           icon: ctx.model.enableEditIcon
