@@ -124,9 +124,29 @@ Popup templates are used to reuse a set of popup interfaces and interaction logi
 
 Popup templates are related to the action scenario that triggers the popup. The selector will automatically filter/disable incompatible templates based on the current scenario (with reasons displayed when conditions are not met).
 
-- **Collection Action Button**: Can only use popup templates created by **Collection actions**, and the **Collection (data table) must match**.
-- **Non-association Record Action**: Can use popup templates created by **Non-association Record actions**, as well as templates created by **Collection actions**, and the **Collection (data table) must match**.
-- **Association Record Action**: Can use popup templates created by **Non-association Record actions** and **Collection actions** (Collection must match); can also use templates created by **Association Record actions**, but must strictly match operations on the **same association field** (same association relationship).
+| Current Action Type | Available Popup Templates |
+| --- | --- |
+| **Collection Action** | Popup templates created by Collection actions of the same Collection |
+| **Non-association Record Action** | Popup templates created by Collection actions or non-association Record actions of the same Collection |
+| **Association Record Action** | Popup templates created by Collection actions or non-association Record actions of the same Collection; or popup templates created by association Record actions of the same association field |
+
+### Association Data Popups
+
+Popups triggered by association data (association fields) have special matching rules:
+
+#### Strict Matching for Association Popup Templates
+
+When a popup template is created from an **Association Record action** (the template has an `associationName`), that template can only be used by actions/fields with the **exact same association field**.
+
+For example, a popup template created on the `Order.Customer` association field can only be used by other `Order.Customer` association field actions. It cannot be used by the `Order.Referrer` association field (even if both target the same `Customer` data table).
+
+This is because association popup templates' internal variables and configurations depend on the specific association relationship context.
+
+#### Association Actions Reusing Target Collection Templates
+
+Association fields/actions can reuse **non-association popup templates from the target data table** (templates created by Collection actions or non-association Record actions), as long as the data table matches.
+
+For example, the `Order.Customer` association field can use popup templates from the `Customer` data table. This approach is suitable for sharing the same popup configuration across multiple association fields (such as a unified customer details popup).
 
 ### Convert Reference to Duplicate
 
