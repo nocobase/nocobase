@@ -447,7 +447,7 @@ export class PluginACLServer extends Plugin {
       });
     });
 
-    this.app.on('afterLoad', async (app) => {
+    this.app.on('afterStart', async (app) => {
       app.db.on('rolesUsers.beforeSave', async (model: Model) => {
         if (!model._changed.has('roleName')) {
           return;
