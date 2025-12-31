@@ -6,7 +6,7 @@ Let's start from scratch and take 5 minutes to quickly understand and use NocoBa
 
 ## 1. Install Plugin
 
-AI Employees is a built-in plugin of NocoBase (`@nocobase/plugin-ai`), ready to use out of the box without separate installation.
+AI Employees are built into NocoBase (`@nocobase/plugin-ai`), ready to use out of the box without separate installation.
 
 ## 2. Configure LLM Service
 
