@@ -10,6 +10,7 @@
     "@rc-component/mini-decimal": "^1.1.0",
     "dayjs": "^1.11.9",
     "deepmerge": "^4.2.2",
+    "fs-extra": "^11.1.1",
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",
     "handlebars": "^4.7.8",
