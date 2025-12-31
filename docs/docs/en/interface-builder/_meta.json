@@ -79,8 +79,8 @@
           },
           {
             "type": "custom-link",
-            "label": "Reference block",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
+            "label": "Block template",
+            "link": "/interface-builder/blocks/other-blocks/block-template"
           },
           {
             "type": "custom-link",
@@ -152,6 +152,11 @@
         "type": "custom-link",
         "label": "Overview",
         "link": "/interface-builder/fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Field template",
+        "link": "/interface-builder/fields/field-template"
       },
       {
         "type": "custom-link",

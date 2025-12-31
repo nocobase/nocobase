@@ -1,15 +1,13 @@
-# Edit Modal
+# Edit popup
 
 ## Introduction
 
-Any action or field that opens a modal when clicked supports configuring the modal's open mode, size, etc.
-
-
+Any action or field that opens a popup when clicked supports configuring the popup's open mode, size, etc.
 ![20251027212617](https://static-docs.nocobase.com/20251027212617.png)
 
 
 
-![20251027212800](https://static-docs.nocobase.com/20251027212800.png)
+![edit-popup-full-20251228](https://static-docs.nocobase.com/edit-popup-full-20251228.png)
 
 
 ## Open Mode
@@ -31,32 +29,53 @@ Any action or field that opens a modal when clicked supports configuring the mod
 
 ![20251027212940](https://static-docs.nocobase.com/20251027212940.png)
 
-
-## Modal Size
+## Popup Size
 
 - Large
 - Medium (default)
 - Small
 
-## Popup UID
+## Popup templates
 
-“Popup UID” is the UID of the component that opens the popup; it also appears in the URL as the viewUID of `view/:viewUid`. You can obtain it from the triggering field or button via the settings menu action “Copy popup UID”. Setting the popup uid enables popup reuse.
+Popup templates let you reuse a popup UI and interaction logic.
 
-![popup-copy-uid-20251102](https://static-docs.nocobase.com/popup-copy-uid-20251102.png)
+### Save a popup as a template
 
-### Internal popup (default)
-- "Popup uid" equals the current action button's UID (by default it uses this button's UID).
+1) Open the settings menu of a button/field that opens a popup, click `Save as template`  
+2) Fill in template name/description and choose a save mode:
+   - `Convert current popup to template`: after saving, the current popup will start referencing this template
+   - `Duplicate current popup as template`: only creates the template; the current popup stays unchanged
 
-### External popup (reuse an existing popup)
-- Enter another button's UID (the popup UID) in "Popup UID" to reuse that popup elsewhere.
-- Typical use: share the same popup UI and logic across pages/blocks without duplicating configuration.
-- When using an external popup, some options become read-only (see below).
+![save-as-template-popup-20251228](https://static-docs.nocobase.com/save-as-template-popup-20251228.png)
 
-## Other related options
+### Use a template in popup settings
 
-- `Data source / Collection`: Read-only. Indicates the data source and collection the popup is bound to; by default it follows the current block’s collection. In external popup mode, it follows the target popup’s configuration and cannot be changed.
-- `Association name`: Optional. Open the popup from an association field; shown only when a default value exists. In external popup mode, it follows the target popup’s configuration and cannot be changed.
-- `Source ID`: Shown only when `Association name` is set; defaults to the current context’s `sourceId`; may be a variable or fixed value.
-- `filterByTk`: Can be empty, a variable, or a fixed value to constrain which record(s) the popup loads.
+1) Open the popup settings of the button/field  
+2) Select a template in `Popup template`
 
-![popup-config-20251102](https://static-docs.nocobase.com/popup-config-20251102.png)
+![edit-popup-select-20251228](https://static-docs.nocobase.com/edit-popup-select-20251228.png)
+
+### Requirements (template availability)
+
+Popup templates depend on the action context. The selector will automatically filter/disable incompatible templates (and show a reason).
+
+- **Collection action buttons**: only templates created from **Collection actions**, and the **collection must match**.
+- **Non-association Record actions**: templates created from **Non-association Record actions** and **Collection actions** are available, and the **collection must match**.
+- **Association Record actions**: templates created from **Non-association Record actions** and **Collection actions** are available (the **collection must match**). Templates created from **Association Record actions** are also available, but they must match the **same association field** (the same association).
+
+### Reference vs Duplicate
+
+- `Reference`: opens the popup from a template; updates to the template affect all references.
+- `Duplicate`: detach via `Convert reference to duplicate`; later changes only affect the current popup.
+
+### Manage popup templates
+
+Go to Settings → `UI templates` → `Popup templates (v2)` to search/edit/delete templates.
+
+> Note: If a template is currently referenced, it cannot be deleted. Use `Convert reference to duplicate` to detach first, then delete the template.
+
+### Convert reference to duplicate
+
+When the popup is referencing a template, use `Convert reference to duplicate` in the settings menu to make it independent.
+
+![convert-popup-to-duplicate-20251228](https://static-docs.nocobase.com/convert-popup-to-duplicate-20251228.png)
