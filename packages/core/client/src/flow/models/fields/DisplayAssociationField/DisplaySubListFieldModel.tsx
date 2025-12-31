@@ -51,6 +51,9 @@ const ArrayNester = ({ name, value = [] }: any) => {
           fork.context.defineProperty('record', {
             get: () => record,
           });
+          fork.context.defineProperty('currentObject', {
+            get: () => item,
+          });
 
           return (
             <div key={key} style={{ marginBottom: 12 }}>
