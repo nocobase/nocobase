@@ -4,7 +4,7 @@ When chatting with an AI Employee, besides sending files, you can also send appl
 
 ### Send Block Information
 
-In the AI Employee Chatbox, click the `Add work context` button in the lower left corner and select `Pick block`. The application page will enter the Block selection state.
+In the AI Employee Chatbox, click the `Add work context` button in the lower left corner and select `Pick Block`. The application page will enter the Block selection state.
 
 ![20251022010148](https://static-docs.nocobase.com/20251022010148.png)
 
