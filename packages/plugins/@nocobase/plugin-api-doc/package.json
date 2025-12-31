@@ -14,7 +14,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/api-doc",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
-    "swagger-ui-dist": "^5.3.1"
+    "swagger-ui-dist": "^5.31.0"
   },
   "peerDependencies": {
     "@nocobase/client": "1.x",
