@@ -61,6 +61,66 @@ export function aliasOf(val: any): string {
   return Array.isArray(val) ? val.filter(Boolean).join('.') : val || '';
 }
 
+export function buildOrderFieldOptions(
+  fieldOptions: any[] = [],
+  dimensionsValue: any[] = [],
+  measuresValue: any[] = [],
+) {
+  const hasAgg = (measuresValue || []).some((m: any) => !!m?.aggregation);
+  if (!hasAgg) return fieldOptions;
+
+  const pickedPaths: string[][] = [];
+
+  const toPath = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean).map(String);
+    return [String(val)];
+  };
+
+  (dimensionsValue || []).forEach((d: any) => {
+    const p = toPath(d?.field);
+    if (p.length) pickedPaths.push(p);
+  });
+  (measuresValue || []).forEach((m: any) => {
+    const p = toPath(m?.field);
+    if (p.length) pickedPaths.push(p);
+  });
+
+  if (!pickedPaths.length) return fieldOptions;
+
+  const filterTree = (options: any[], paths: string[][]): any[] => {
+    const map = new Map<string, string[][]>();
+    paths.forEach((p) => {
+      const [head, ...tail] = p;
+      if (!head) return;
+      const list = map.get(head) || [];
+      list.push(tail);
+      map.set(head, list);
+    });
+
+    return (options || [])
+      .map((opt) => {
+        const name = opt?.name;
+        const tails = map.get(name);
+        if (!tails) return null;
+
+        const hasNext = tails.some((t) => (t || []).length > 0);
+        if (!hasNext) {
+          return opt;
+        }
+
+        const nextPaths = tails.filter((t) => (t || []).length > 0) as string[][];
+        const children = opt?.children ? filterTree(opt.children, nextPaths) : [];
+        if (!children.length) return null;
+
+        return { ...opt, children };
+      })
+      .filter(Boolean);
+  };
+
+  return filterTree(fieldOptions, pickedPaths);
+}
+
 // 纯函数：根据维度“字段值”返回格式化选项
 export function getFormatterOptionsByField(dm: any, collectionPath: string[] | undefined, dimField: any) {
   const alias = aliasOf(dimField);
@@ -134,21 +194,24 @@ export function validateQuery(query: Record<string, any>): { success: boolean; m
       return { success: false, message: 'please select measures' };
     }
 
-    const allowedOrderFields = new Set<string>();
-    (query.dimensions || []).forEach((d: any) => {
-      const alias = aliasOf(d?.field);
-      if (alias) allowedOrderFields.add(alias);
-    });
-    (query.measures || []).forEach((m: any) => {
-      const alias = aliasOf(m?.field);
-      if (alias) allowedOrderFields.add(alias);
-    });
+    const hasAgg = (query.measures || []).some((m: any) => !!m?.aggregation);
+    if (hasAgg) {
+      const allowedOrderFields = new Set<string>();
+      (query.dimensions || []).forEach((d: any) => {
+        const alias = aliasOf(d?.field);
+        if (alias) allowedOrderFields.add(alias);
+      });
+      (query.measures || []).forEach((m: any) => {
+        const alias = aliasOf(m?.field);
+        if (alias) allowedOrderFields.add(alias);
+      });
 
-    if (Array.isArray(query.orders) && query.orders.length) {
-      for (const order of query.orders) {
-        const alias = aliasOf(order?.field);
-        if (!alias || !allowedOrderFields.has(alias)) {
-          return { success: false, message: 'please select valid sort field' };
+      if (Array.isArray(query.orders) && query.orders.length) {
+        for (const order of query.orders) {
+          const alias = aliasOf(order?.field);
+          if (!alias || !allowedOrderFields.has(alias)) {
+            return { success: false, message: 'please select valid sort field' };
+          }
         }
       }
     }

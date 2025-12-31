@@ -13,7 +13,12 @@ import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } f
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { useDataSourceManager, useCompile } from '@nocobase/client';
-import { getFieldOptions, getCollectionOptions, getFormatterOptionsByField } from './QueryBuilder.service';
+import {
+  getFieldOptions,
+  getCollectionOptions,
+  getFormatterOptionsByField,
+  buildOrderFieldOptions,
+} from './QueryBuilder.service';
 import { appendColon, debugLog } from '../utils';
 import AntdFilterSelector from '../components/AntdFilterSelector';
 
@@ -49,56 +54,10 @@ export const QueryBuilder = React.forwardRef<
   const measuresValue = Form.useWatch('measures', form);
   const dimensionsValue = Form.useWatch('dimensions', form);
 
-  const orderFieldOptions = React.useMemo(() => {
-    const pickedPaths: string[][] = [];
-
-    const addPath = (val: any) => {
-      if (!val) return;
-      if (Array.isArray(val)) {
-        const path = val.filter(Boolean).map(String);
-        if (path.length) pickedPaths.push(path);
-        return;
-      }
-      pickedPaths.push([String(val)]);
-    };
-
-    (dimensionsValue || []).forEach((d: any) => addPath(d?.field));
-    (measuresValue || []).forEach((m: any) => addPath(m?.field));
-
-    if (pickedPaths.length === 0) return fieldOptions;
-
-    const filterTree = (options: any[], paths: string[][]): any[] => {
-      const map = new Map<string, string[][]>();
-      paths.forEach((p) => {
-        const [head, ...tail] = p;
-        if (!head) return;
-        const list = map.get(head) || [];
-        list.push(tail);
-        map.set(head, list);
-      });
-
-      return (options || [])
-        .map((opt) => {
-          const name = opt?.name;
-          const tails = map.get(name);
-          if (!tails) return null;
-
-          const hasNext = tails.some((t) => (t || []).length > 0);
-          if (!hasNext) {
-            return opt;
-          }
-
-          const nextPaths = tails.filter((t) => (t || []).length > 0) as string[][];
-          const children = opt?.children ? filterTree(opt.children, nextPaths) : [];
-          if (!children.length) return null;
-
-          return { ...opt, children };
-        })
-        .filter(Boolean);
-    };
-
-    return filterTree(fieldOptions, pickedPaths);
-  }, [dimensionsValue, measuresValue, fieldOptions]);
+  const orderFieldOptions = React.useMemo(
+    () => buildOrderFieldOptions(fieldOptions, dimensionsValue, measuresValue),
+    [dimensionsValue, measuresValue, fieldOptions],
+  );
 
   // 切换集合后，清理依赖旧集合的字段配置
   const onCollectionChange = (val: any) => {
