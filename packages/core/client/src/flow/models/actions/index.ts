@@ -12,6 +12,7 @@ export * from './BulkDeleteActionModel';
 export * from './DeleteActionModel';
 export * from './EditActionModel';
 export * from './FilterActionModel';
+export * from './JSActionModel';
 export * from './JSCollectionActionModel';
 export * from './JSRecordActionModel';
 export * from './PopupCollectionActionModel';

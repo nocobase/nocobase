@@ -8,7 +8,6 @@
  */
 
 import { batch, define, observable, observe } from '@formily/reactive';
-import { observer } from '@formily/reactive-react';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
@@ -32,18 +31,10 @@ import type {
   ParentFlowModel,
   PersistOptions,
   ResolveUseResult,
-  RegisteredModelClassName,
-  StepDefinition,
   StepParams,
 } from '../types';
 import { IModelComponentProps, ReadonlyModelProps } from '../types';
-import {
-  FlowExitException,
-  isInheritedFrom,
-  resolveDefaultParams,
-  resolveExpressions,
-  setupRuntimeContextSteps,
-} from '../utils';
+import { isInheritedFrom, setupRuntimeContextSteps } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
 import { Typography } from 'antd/lib';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
@@ -53,9 +44,10 @@ import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
-import type { DispatchEventOptions, EventDefinition, FlowEvent } from '../types';
+import type { DispatchEventOptions, EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
 import type { MenuProps } from 'antd';
+import { observer } from '..';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -103,7 +95,7 @@ export enum ModelRenderMode {
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
-   * 当 flowSettings.enabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
+   * 当 flowSettingsEnabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
    * 基类默认仅返回一个透明度降低的占位元素
    */
   protected renderHiddenInConfig(): React.ReactNode | undefined {
@@ -779,10 +771,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   private _dispatchEventWithDebounce = _.debounce(
-    async (eventName: string, inputArgs?: Record<string, any>, options?: DispatchEventOptions) => {
+    async function (
+      this: FlowModel,
+      eventName: string,
+      inputArgs?: Record<string, any>,
+      options?: DispatchEventOptions,
+    ) {
       return this._dispatchEvent(eventName, inputArgs, options);
     },
-    100,
+    500,
+    { leading: true },
   );
 
   async dispatchEvent(
@@ -925,7 +923,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       // 如果需要跳过响应式包装（例如返回渲染函数），也需要包一层以处理 hidden/config 逻辑
       if (this.shouldSkipReactiveWrapping()) {
         const wrappedNonReactive = function (this: any) {
-          const isConfigMode = !!this?.flowEngine?.flowSettings?.enabled;
+          const isConfigMode = !!this?.context?.flowSettingsEnabled;
           if (this.hidden) {
             if (!isConfigMode) return null;
             const rendered = this.renderHiddenInConfig?.();
@@ -979,7 +977,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           }, [renderTarget]);
 
           // 处理 hidden 渲染逻辑：
-          const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
+          const isConfigMode = !!modelInstance?.context?.flowSettingsEnabled;
           if (modelInstance.hidden) {
             if (!isConfigMode) {
               return null;
@@ -1522,6 +1520,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     };
     await walk(ModelClass);
     return collected;
+  }
+
+  refresh() {
+    return this.rerender();
   }
 
   // =============================

@@ -8,7 +8,7 @@
  */
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { App, Badge, Button, Flex, Layout, Menu, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
 import { NavBar, Toast } from 'antd-mobile';
 import classnames from 'classnames';
@@ -55,6 +55,7 @@ const layoutClass = css`
 `;
 
 export interface TaskTypeOptions {
+  key: string;
   title: string;
   collection: string;
   action?: string;

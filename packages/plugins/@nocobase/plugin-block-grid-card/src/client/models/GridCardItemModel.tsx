@@ -43,7 +43,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
         subModelBaseClass={this.context.getModelClassName('RecordActionGroupModel')}
         subModelKey="actions"
         afterSubModelInit={async (actionModel) => {
-          actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
         }}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
@@ -86,7 +86,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
       get: () => index,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
     return (
       <Card
         role="button"

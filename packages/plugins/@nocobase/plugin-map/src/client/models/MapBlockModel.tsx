@@ -93,6 +93,7 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   protected onMount(): void {
+    super.onMount();
     this.onOpenView = (record) => {
       const filterByTk = this.context.collection.getFilterByTK(record);
       this.dispatchEvent('click', {
@@ -108,7 +109,7 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   renderComponent() {
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <div>

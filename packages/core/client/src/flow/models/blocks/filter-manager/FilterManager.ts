@@ -223,7 +223,7 @@ export class FilterManager {
   bindToTarget(targetId: string) {
     // 1. 参数验证
     if (!targetId || typeof targetId !== 'string') {
-      console.error('targetId must be a non-empty string');
+      console.error('[NocoBase]: targetId must be a non-empty string');
       return;
     }
 
@@ -232,19 +232,23 @@ export class FilterManager {
 
     // 3. 验证目标模型是否存在
     if (!targetModel) {
-      console.error(`Target model with uid "${targetId}" not found`);
+      console.error(`[NocoBase]: Target model with uid "${targetId}" not found`);
       return;
     }
 
     // 4. 验证目标模型是否具有 resource 属性
     if (!(targetModel as any).resource || typeof (targetModel as any).resource.addFilterGroup !== 'function') {
-      console.error(`Target model with uid "${targetId}" does not have a valid resource with addFilterGroup method`);
+      console.error(
+        `[NocoBase]: Target model with uid "${targetId}" does not have a valid resource with addFilterGroup method`,
+      );
       return;
     }
 
     // 验证目标模型是否具有 removeFilterGroup 方法
     if (typeof (targetModel as any).resource.removeFilterGroup !== 'function') {
-      console.error(`Target model with uid "${targetId}" does not have a valid resource with removeFilterGroup method`);
+      console.error(
+        `[NocoBase]: Target model with uid "${targetId}" does not have a valid resource with removeFilterGroup method`,
+      );
       return;
     }
 
@@ -261,12 +265,12 @@ export class FilterManager {
       const filterModel: any = this.gridModel.flowEngine.getModel(config.filterId);
 
       if (!filterModel) {
-        console.error(`Filter model with uid "${config.filterId}" not found`);
+        console.error(`[NocoBase]: Filter model with uid "${config.filterId}" not found`);
         return;
       }
 
       if (!filterModel.getFilterValue) {
-        console.error(`Filter model with uid "${config.filterId}" does not have getFilterValue method`);
+        console.error(`[NocoBase]: Filter model with uid "${config.filterId}" does not have getFilterValue method`);
         return;
       }
 
@@ -279,7 +283,7 @@ export class FilterManager {
         try {
           (targetModel as any).resource.removeFilterGroup(config.filterId);
         } catch (error) {
-          console.error(`Failed to remove filter configuration from target model: ${error.message}`);
+          console.error(`[NocoBase]: Failed to remove filter configuration from target model: ${error.message}`);
           return;
         }
         return; // 跳过当前配置的处理

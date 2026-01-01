@@ -1216,6 +1216,19 @@
     "@smithy/types" "^4.1.0"
     tslib "^2.6.2"
 
+"@aws-sdk/lib-storage@3.750.0":
+  version "3.750.0"
+  resolved "https://registry.npmmirror.com/@aws-sdk/lib-storage/-/lib-storage-3.750.0.tgz#3e3eb685ae3b302d141fd82ceb21871fc78380f8"
+  integrity sha512-2IHbhUzlKtiAZVW7S5jkJfVDj5pJC9TldHGJLYRAR9GReG9HhK6mI7kLnYE9jf3GchWfe/Bn3wqSwh3BIf0OZQ==
+  dependencies:
+    "@smithy/abort-controller" "^4.0.1"
+    "@smithy/middleware-endpoint" "^4.0.5"
+    "@smithy/smithy-client" "^4.1.5"
+    buffer "5.6.0"
+    events "3.3.0"
+    stream-browserify "3.0.0"
+    tslib "^2.6.2"
+
 "@aws-sdk/lib-storage@^3.46.0":
   version "3.474.0"
   resolved "https://registry.npmmirror.com/@aws-sdk/lib-storage/-/lib-storage-3.474.0.tgz#63e41097570fc57a4dc3a567866736dcc1661171"
@@ -3445,15 +3458,6 @@
     "@codemirror/view" "^6.35.0"
     crelt "^1.0.5"
 
-"@codemirror/lint@^6.8.2":
-  version "6.9.1"
-  resolved "https://registry.npmmirror.com/@codemirror/lint/-/lint-6.9.1.tgz#1af2cf32dca1971b9cf8318fba0a935ddde8adf1"
-  integrity sha512-te7To1EQHePBQQzasDKWmK2xKINIXpk+xAiSYr9ZN+VB4KaT+/Hi2PEkeErTk5BV3PTz1TLyQL4MtJfPkKZ9sw==
-  dependencies:
-    "@codemirror/state" "^6.0.0"
-    "@codemirror/view" "^6.35.0"
-    crelt "^1.0.5"
-
 "@codemirror/search@^6.0.0":
   version "6.5.11"
   resolved "https://registry.npmjs.org/@codemirror/search/-/search-6.5.11.tgz#a324ffee36e032b7f67aa31c4fb9f3e6f9f3ed63"
@@ -3463,14 +3467,14 @@
     "@codemirror/view" "^6.0.0"
     crelt "^1.0.5"
 
-"@codemirror/state@^6.0.0", "@codemirror/state@^6.0.1", "@codemirror/state@^6.1.1", "@codemirror/state@^6.4.0", "@codemirror/state@^6.4.1", "@codemirror/state@^6.5.0":
+"@codemirror/state@^6.0.0", "@codemirror/state@^6.1.1", "@codemirror/state@^6.4.0", "@codemirror/state@^6.4.1", "@codemirror/state@^6.5.0":
   version "6.5.2"
   resolved "https://registry.npmjs.org/@codemirror/state/-/state-6.5.2.tgz#8eca3a64212a83367dc85475b7d78d5c9b7076c6"
   integrity sha512-FVqsPqtPWKVVL3dPSxy8wEF/ymIEuVzF1PK3VbUgrxXpJUSHQWWZz4JMToquRxnkw+36LTamCZG2iua2Ptq0fA==
   dependencies:
     "@marijn/find-cluster-break" "^1.0.0"
 
-"@codemirror/theme-one-dark@^6.0.0", "@codemirror/theme-one-dark@^6.0.1", "@codemirror/theme-one-dark@^6.1.3":
+"@codemirror/theme-one-dark@^6.0.0", "@codemirror/theme-one-dark@^6.1.3":
   version "6.1.3"
   resolved "https://registry.npmjs.org/@codemirror/theme-one-dark/-/theme-one-dark-6.1.3.tgz#1dbb73f6e73c53c12ad2aed9f48c263c4e63ea37"
   integrity sha512-NzBdIvEJmx6fjeremiGp3t/okrLPYT0d9orIc7AFun8oZcRk58aejkqhv6spnz4MLAevrKNPMQYXEWMg4s+sKA==
@@ -3484,16 +3488,6 @@
   version "6.38.0"
   resolved "https://registry.npmjs.org/@codemirror/view/-/view-6.38.0.tgz#4486062b791a4247793e0953e05ae71a9e172217"
   integrity sha512-yvSchUwHOdupXkd7xJ0ob36jdsSR/I+/C+VbY0ffBiL5NiSTEBDfB1ZGWbbIlDd5xgdUkody+lukAdOxYrOBeg==
-  dependencies:
-    "@codemirror/state" "^6.5.0"
-    crelt "^1.0.6"
-    style-mod "^4.1.0"
-    w3c-keyname "^2.2.4"
-
-"@codemirror/view@^6.32.0":
-  version "6.38.6"
-  resolved "https://registry.npmmirror.com/@codemirror/view/-/view-6.38.6.tgz#25d9df071393801196c311025d2caa7a5523c26c"
-  integrity sha512-qiS0z1bKs5WOvHIAC0Cybmv4AJSkAXgX5aD6Mqd2epSLlVJsQl8NG23jCVouIgkh4All/mrbdsf2UOLFnJw0tw==
   dependencies:
     "@codemirror/state" "^6.5.0"
     crelt "^1.0.6"
@@ -6625,97 +6619,192 @@
   resolved "https://registry.npmmirror.com/@nocobase/ai-employee-avatars/-/ai-employee-avatars-1.0.2.tgz#ae38326df34183b63411109fca8a278d84082819"
   integrity sha512-apNfpMyuST5e7mu9wjzo5q+QWQfzgZ13dFlYxY61DF1qEPhTu1VCnq44d6Hyi0No4skiFmhB8+8b1yp0bH3tKg==
 
+"@nocobase/license-kit-android-arm-eabi@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-android-arm-eabi/-/license-kit-android-arm-eabi-0.3.4.tgz#9c69c8abdbd8cb2934513eb79afd6b4d17cfdff8"
+  integrity sha512-3YNGq7CABrEZIr4ihtXm0KGnee1fhNh8Pg7/cX/kGTCmj3O5AiQKTovQVaesgKzEvpGWQ6pNdZANPRbjfHhNYw==
+
 "@nocobase/license-kit-android-arm-eabi@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-android-arm-eabi/-/license-kit-android-arm-eabi-0.3.5.tgz#5b3e7da0394472f194147fcb88829b6f04e28d31"
   integrity sha512-WG2QVyNUmi39kDG0Q0hFV6ryT2pKX7AL8cm6oEn/7XEPN9Cn9qWJRFJSu89TWHlIukjYhMj3stUNLiE4mOzU8g==
+
+"@nocobase/license-kit-android-arm64@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-android-arm64/-/license-kit-android-arm64-0.3.4.tgz#2bc978ef4442d00785a5025c5a4055e320893bc4"
+  integrity sha512-IepebZjAEgqtXiS7lxXMFwNq95CAunWzCLnInHj1k+zzpfA18gHiGVE+LEO19qVEg61+qFlErkdpM0daTbAUNQ==
 
 "@nocobase/license-kit-android-arm64@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-android-arm64/-/license-kit-android-arm64-0.3.5.tgz#6f19f2364158869123f871a64d5e573841a3ce73"
   integrity sha512-SNVD6iM1j8FoApPbuPI+Pu3Q5UGFlL4bt06xPxQrGYdihcQAKVdgULL/fzD915vYz6YeeMfWnlDs6qcVIqMoGg==
 
+"@nocobase/license-kit-darwin-arm64@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-darwin-arm64/-/license-kit-darwin-arm64-0.3.4.tgz#9f0a6a7e7c56c6762e97b87090c9d3f646f4a415"
+  integrity sha512-/9r8EaQ6BV5JztxkSkFyp1bDtCIbzpC9lpFClGUyJkr0N/PmLWY1f1ob15v2G/TQ5dI8B0nAz8vCso+Wy1IsGw==
+
 "@nocobase/license-kit-darwin-arm64@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-darwin-arm64/-/license-kit-darwin-arm64-0.3.5.tgz#a181d8683a7b585aeca2605f06b972e94e2c48d2"
   integrity sha512-dNYgSLlO//gXUHVhZOoBe8NYx0b2q5Bu4VguJp1bAtVhVsZBv91/ITgKyPp7juzQzA4CuWZOVcZBPwFHmY/8nQ==
+
+"@nocobase/license-kit-darwin-universal@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-darwin-universal/-/license-kit-darwin-universal-0.3.4.tgz#537a5813f82580ac0853bb667488dcafc5d64028"
+  integrity sha512-bi9q/i4GLmgjfE38Meyf5NJlcGlU5q/0PSj1vOY+eX1KSVYmvxujHYSepJdrdWc7fKQdMDVYPnbT6H4TdjQb3w==
 
 "@nocobase/license-kit-darwin-universal@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-darwin-universal/-/license-kit-darwin-universal-0.3.5.tgz#b6cf528ad16645a63e0f6abe1f6e52fa3022a002"
   integrity sha512-oSwmxuBhUFnPdkRDPv2hOETlib3uktk0DGnPWpN+enCKoSVUAKMeFuNMQUwWKqNrHtSQuu3bmglqG9EjPGLHnw==
 
+"@nocobase/license-kit-darwin-x64@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-darwin-x64/-/license-kit-darwin-x64-0.3.4.tgz#b3176762d0dc4f1d40e5f9b9a414ced75f20ebe4"
+  integrity sha512-xeAemc1edBC/gKrW7/M8c5xlF1/J6BW9HUCP91HoR2ZqeqifM/iYJ52p0cG2x06DGh5AH4KWPGr+yjuhS3a48Q==
+
 "@nocobase/license-kit-darwin-x64@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-darwin-x64/-/license-kit-darwin-x64-0.3.5.tgz#79d5b676ac6db10e5646c274fe9eaa5062fe175a"
   integrity sha512-EyppZ8Ue9GKjlBfJej/LpR8Kv9IZPBTybLYFj4ZKNzmACQNR5GsvWT5Fv6F16jx9an+7rYuRR+uVjfzCNoZMww==
+
+"@nocobase/license-kit-freebsd-x64@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-freebsd-x64/-/license-kit-freebsd-x64-0.3.4.tgz#5e3ba115b8c20af20355f9e9981dd7984a36cffe"
+  integrity sha512-vCgRtB6t7Gu7iwFEwWc4kjpsCoWc7d+aggIixdYrEsMwm0Mxb0AGIODu2e6o3CxGUXLBJtIuimNhQtePHUat0g==
 
 "@nocobase/license-kit-freebsd-x64@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-freebsd-x64/-/license-kit-freebsd-x64-0.3.5.tgz#7477a07eb5e76caf4afd38dd20ff852f8f90238f"
   integrity sha512-0nhGHtj9AGRwnpv+dHwwUgEnAFvygQBDGmRpJf9svZJYvyrBhOm3KUvsNi+AxBIXPMP36rYYVkq3juEGGpMR8g==
 
+"@nocobase/license-kit-linux-arm-gnueabihf@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm-gnueabihf/-/license-kit-linux-arm-gnueabihf-0.3.4.tgz#f1e8044a8d1d26f8d0aba0503ebc5b01d1af8eb5"
+  integrity sha512-bz+xrJI7TxU1NBjivAvbEh6+5b2gs3b6oS1rb1amlEtCVcrwxU9x0s3eh/JQFAjonnN+UFbD+H0tZbGJncaD5Q==
+
 "@nocobase/license-kit-linux-arm-gnueabihf@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm-gnueabihf/-/license-kit-linux-arm-gnueabihf-0.3.5.tgz#1d17202eb0a1b10374602c964d42faba57866025"
   integrity sha512-MDlIToDli4NHOBIetuOTM7xf44r/rxXBk+xcZsxXUzun6ejqFE1ffv1XsvRFFMCqhdQ7ramz36G7nQ1jdi7nWg==
+
+"@nocobase/license-kit-linux-arm-musleabihf@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm-musleabihf/-/license-kit-linux-arm-musleabihf-0.3.4.tgz#5c314b8ad4b6dcc99fedba4fbb7509cbdfdfaef8"
+  integrity sha512-x49WpOaZZWV1BT/eN7ea3IGry9kBJ/Z2dSG28/DiXdLhK70alZ0527DOtVx3TsyMqKSskBSBkPccXGYP+Io4hg==
 
 "@nocobase/license-kit-linux-arm-musleabihf@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm-musleabihf/-/license-kit-linux-arm-musleabihf-0.3.5.tgz#ce5cd1b9673373bffac98a4ca819ca172d49ca77"
   integrity sha512-9oIw3A90tLVvR21LNDtA0Oxo/9KcnDLOezwN4qyYbh7gSDeqHaI0CWDnCObSNA4Jn0rfZ0XCef7XVBKxm0woWg==
 
+"@nocobase/license-kit-linux-arm64-gnu@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm64-gnu/-/license-kit-linux-arm64-gnu-0.3.4.tgz#83ac0afbff262f7e70d4981981849da066d0f761"
+  integrity sha512-67y5UaRfUYIkPVrotj7RYjjE3z2J0j1qf6kcCCWe3BErzDawFG36HHKh3M6JrHXBvvUP4l1gefnHBO5hEuyKaA==
+
 "@nocobase/license-kit-linux-arm64-gnu@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm64-gnu/-/license-kit-linux-arm64-gnu-0.3.5.tgz#08f925865d10aceec1c0249a763ed1b92c1138ac"
   integrity sha512-ulLv1jA7O0LM6wUcSiiWmqOnRhZPuWX7XXWYK8vF4yKnmAJQI+EqaD1q1Qz/s7pOFYG52dPnh2I+3SrgkbuXxA==
+
+"@nocobase/license-kit-linux-arm64-musl@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm64-musl/-/license-kit-linux-arm64-musl-0.3.4.tgz#a7aba8d075a83032d3fa60613b2ef80f29b05cc4"
+  integrity sha512-vGUkQbqmVqgZ7LdfBJZkwdzSjUiwhRPY5O3GLUvAjN/av4WGlmK0B2guuDizRnXsZWtNNWSfwRp8B+X8s0ZIkg==
 
 "@nocobase/license-kit-linux-arm64-musl@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-arm64-musl/-/license-kit-linux-arm64-musl-0.3.5.tgz#3292bbdb48c379584fc41b0978697e52d6d8e3db"
   integrity sha512-CdUFKUKWWJAMCKxwga7JMnmdL0uxdnD62uuBg1VymJUx4tJQb5FrONEONjvRoZqPFygG0EFXVwnPHOfkp2GG2A==
 
+"@nocobase/license-kit-linux-riscv64-gnu@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-riscv64-gnu/-/license-kit-linux-riscv64-gnu-0.3.4.tgz#5c516f87c1d1d46b5f7893414db17223c6c1afb0"
+  integrity sha512-7jg9uFO7vu/IuwdJztJCPgp2xcEML0mWQSKEPwmw5+fvyTP/a8pxgEsaw6M+Ykxb6ZXRVvXn2sIdlHRuyZ/apw==
+
 "@nocobase/license-kit-linux-riscv64-gnu@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-riscv64-gnu/-/license-kit-linux-riscv64-gnu-0.3.5.tgz#b7d86db09796f153c0e9ccf90b5a86e4c137cddf"
   integrity sha512-RATuoCnOkTm66ADjHnoc69PaPmwHMqAFTvRRNIiFVSjhyCR2LrzPta2pRtuEnrSxET/d90MV0eb55aUVEJvGxQ==
+
+"@nocobase/license-kit-linux-x64-gnu@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-x64-gnu/-/license-kit-linux-x64-gnu-0.3.4.tgz#f96f569efda17c8ec6ce384104c8658c96300a51"
+  integrity sha512-Pqktq0qenhp6+ztxtkJBJCdogMqfTYYgZw9PPCVcGSJ5T2FQthUhZj6vdxhepL9jQ3XSpVCpCpEITd+VlEACuw==
 
 "@nocobase/license-kit-linux-x64-gnu@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-x64-gnu/-/license-kit-linux-x64-gnu-0.3.5.tgz#4d0f4079c326899fa0674df560187c74b65e5273"
   integrity sha512-rjT5vfgTg3Ythg4REObQR9OSMZcKH2wmQ9KFRcqSi5hlXEKFkPEoYUm4txRnMpLLWzsKCnqvJqIbBbwaPjAxHA==
 
+"@nocobase/license-kit-linux-x64-musl@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-x64-musl/-/license-kit-linux-x64-musl-0.3.4.tgz#dd21ad45ae0264052db73a32d271c0c4f64b6454"
+  integrity sha512-57TKewbYiGIDlFSlb1nCAcwsVEhUL6os81rhz2vc35wazDo6/xuRQCVskuqlqVtKYaqGBLCHxPSinuc6QGNkpQ==
+
 "@nocobase/license-kit-linux-x64-musl@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-linux-x64-musl/-/license-kit-linux-x64-musl-0.3.5.tgz#873480bed588079a91ea808d869d6f96f621852b"
   integrity sha512-A89GeZKU5H2lXDLoZMqPjbFgEg8UAnA5e4fqgMYbOv7iVvYT4tXpbgnrfTqS9DeyNoerLrpEgT+dyWMd5uJ2tA==
+
+"@nocobase/license-kit-win32-arm64-msvc@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-arm64-msvc/-/license-kit-win32-arm64-msvc-0.3.4.tgz#11358e0ab1f95fa4fe827ffba5760be564ff6100"
+  integrity sha512-FrrkX8Z+YkwZ9/MweSVuRzcwq9yK4d4MRtHLbdadhaHcg1/4hNtO7Uyf6HKmpw9hz/Z6pjLCQFjzS2J7sDoO6g==
 
 "@nocobase/license-kit-win32-arm64-msvc@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-arm64-msvc/-/license-kit-win32-arm64-msvc-0.3.5.tgz#7f102761201ccd673e19b8c09fb5dc9696fa6fa4"
   integrity sha512-w+hru3uYJ5U09Tcd4lgGiLUUAuE+bG+UY2dU7/R+jMl8iPxxDSRUZI3dyiLc3B2aW1Iuiuj0Bc6VEt9Dz8ON9A==
 
+"@nocobase/license-kit-win32-ia32-msvc@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-ia32-msvc/-/license-kit-win32-ia32-msvc-0.3.4.tgz#d1cba384b0b8b339b17fe99bdc0606dc98065f6e"
+  integrity sha512-S/l/ZLAlMQQ5gn4+WZz07trx7lCGrqbEdtzejkrwp2TxCir8ktH506J5Xk4FbIFGqjNE9ZYUuccfLIcMXutuMg==
+
 "@nocobase/license-kit-win32-ia32-msvc@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-ia32-msvc/-/license-kit-win32-ia32-msvc-0.3.5.tgz#0cbfae993f2c9fd6296bf209c8c7efc0a55947a2"
   integrity sha512-oUA9eCoivEmJiFUsRTWjraavTqy0wvbDaJht0kK8aMjQvijwbQTpl+cBEOq/X79jZ+9HIhDbpQPrkt9QWxnyZQ==
+
+"@nocobase/license-kit-win32-x64-msvc@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-x64-msvc/-/license-kit-win32-x64-msvc-0.3.4.tgz#2069bfd184a3b74587a9a81fe7bad0cb23b4fa0f"
+  integrity sha512-faiiQBb4HHINGAl9T3AafGgYWAYl7nYU+8Z2ukZMnOsHj/XPqCcrMiw7m2IuqQCQb5vEMfsKIC8deLuDiP6Y8w==
 
 "@nocobase/license-kit-win32-x64-msvc@0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit-win32-x64-msvc/-/license-kit-win32-x64-msvc-0.3.5.tgz#bf4635d9b1c28a48c74f61c1cc528d233f2a4d2b"
   integrity sha512-n2AoNdg4wjHhEv28Q+q4Xm/fgRStB3CsyAfImlCW5tHht7pqXZMuG+FsAT7JSjTbg5OuH5YB95Ev2i6GmBeQjA==
 
-<<<<<<< HEAD
-"@nocobase/license-kit@^0.3.0", "@nocobase/license-kit@^0.3.4":
+"@nocobase/license-kit@^0.3.0":
   version "0.3.4"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit/-/license-kit-0.3.4.tgz#efbe800a1a3c9150b41ab711bb3896076727e0f7"
   integrity sha512-MX6dpTwe63QxNZHQvwF9qsJXbc3bdNZxuf0vS1NzEBLUmqNHUZCfPsPBwWAzwD+35cqRNEnIwqPd2HnaAGIPdw==
-=======
+  optionalDependencies:
+    "@nocobase/license-kit-android-arm-eabi" "0.3.4"
+    "@nocobase/license-kit-android-arm64" "0.3.4"
+    "@nocobase/license-kit-darwin-arm64" "0.3.4"
+    "@nocobase/license-kit-darwin-universal" "0.3.4"
+    "@nocobase/license-kit-darwin-x64" "0.3.4"
+    "@nocobase/license-kit-freebsd-x64" "0.3.4"
+    "@nocobase/license-kit-linux-arm-gnueabihf" "0.3.4"
+    "@nocobase/license-kit-linux-arm-musleabihf" "0.3.4"
+    "@nocobase/license-kit-linux-arm64-gnu" "0.3.4"
+    "@nocobase/license-kit-linux-arm64-musl" "0.3.4"
+    "@nocobase/license-kit-linux-riscv64-gnu" "0.3.4"
+    "@nocobase/license-kit-linux-x64-gnu" "0.3.4"
+    "@nocobase/license-kit-linux-x64-musl" "0.3.4"
+    "@nocobase/license-kit-win32-arm64-msvc" "0.3.4"
+    "@nocobase/license-kit-win32-ia32-msvc" "0.3.4"
+    "@nocobase/license-kit-win32-x64-msvc" "0.3.4"
+
 "@nocobase/license-kit@^0.3.5":
   version "0.3.5"
   resolved "https://registry.npmmirror.com/@nocobase/license-kit/-/license-kit-0.3.5.tgz#ca02014a5540a649a39b0bc189ddf38155e7c88c"
   integrity sha512-HdYwlHmdUM7F+QJ5xJHFRVEumHrlCFRaNdR1ulfJT3DM6kEBL4Yu2C9AC72bou+7ylQsGMEQ8C+z6IXrBSYokA==
->>>>>>> next
   optionalDependencies:
     "@nocobase/license-kit-android-arm-eabi" "0.3.5"
     "@nocobase/license-kit-android-arm64" "0.3.5"
@@ -11359,6 +11448,13 @@ ansi-styles@^6.0.0, ansi-styles@^6.1.0:
   version "6.2.1"
   resolved "https://registry.npmmirror.com/ansi-styles/-/ansi-styles-6.2.1.tgz#0e62320cf99c21afff3b3012192546aacbfb05c5"
   integrity sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug==
+
+ansi-to-html@^0.7.2:
+  version "0.7.2"
+  resolved "https://registry.npmmirror.com/ansi-to-html/-/ansi-to-html-0.7.2.tgz#a92c149e4184b571eb29a0135ca001a8e2d710cb"
+  integrity sha512-v6MqmEpNlxF+POuyhKkidusCHWWkaLcGRURzivcU3I9tv7k4JVhFcnukrM5Rlk2rUywdZuzYAZ+kbZqWCnfN3g==
+  dependencies:
+    entities "^2.2.0"
 
 ansi-wrap@0.1.0, ansi-wrap@^0.1.0:
   version "0.1.0"
@@ -16619,7 +16715,7 @@ entities@^1.1.1:
   resolved "https://registry.npmmirror.com/entities/-/entities-1.1.2.tgz#bdfa735299664dfafd34529ed4f8522a275fea56"
   integrity sha512-f2LZMYl1Fzu7YSBKg+RoROelpOaNrcGmE9AZubeDfrCEia483oW4MI4VyFd5VNHIgQ/7qm1I0wUHK1eJnn2y2w==
 
-entities@^2.0.0:
+entities@^2.0.0, entities@^2.2.0:
   version "2.2.0"
   resolved "https://registry.npmmirror.com/entities/-/entities-2.2.0.tgz#098dc90ebb83d8dffa089d55256b351d34c4da55"
   integrity sha512-p92if5Nz619I0w+akJrLZH0MX0Pb5DX39XOwQTtXSdQQOaYH03S1uIQp4mhOZtAXrxq4ViO67YTiLBo2638o9A==

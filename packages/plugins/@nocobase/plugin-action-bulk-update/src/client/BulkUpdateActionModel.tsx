@@ -198,7 +198,11 @@ BulkUpdateActionModel.registerFlow({
           ctx.model.setProps({
             loading: true,
           });
-          await ctx.api.resource(collection).update({ filter, values: assignedValues });
+          await ctx.api
+            .resource(collection, null, {
+              'x-data-source': ctx.collection?.dataSourceKey,
+            })
+            .update({ filter, values: assignedValues });
           ctx.model.setProps({
             loading: false,
           });
@@ -207,7 +211,11 @@ BulkUpdateActionModel.registerFlow({
           ctx.model.setProps({
             loading: true,
           });
-          await ctx.api.resource(collection).update({ values: assignedValues, forceUpdate: true });
+          await ctx.api
+            .resource(collection, null, {
+              'x-data-source': ctx.collection?.dataSourceKey,
+            })
+            .update({ values: assignedValues, forceUpdate: true });
           ctx.model.setProps({
             loading: false,
           });

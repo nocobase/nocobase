@@ -71,6 +71,12 @@ The Form block supports two layout modes, which can be set via the `layout` attr
 
 ![20251023192935](https://static-docs.nocobase.com/20251023192935.png)
 
+### Field template
+
+Field templates let you reuse the field section configuration (selected fields, layout, and field settings) in Form blocks. See [Field template](/interface-builder/fields/field-template).
+
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
 
 ## Configure Actions
 

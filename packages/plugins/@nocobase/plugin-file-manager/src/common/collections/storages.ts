@@ -66,6 +66,12 @@ export default {
       defaultValue: '',
       trim: true,
     },
+    {
+      comment: '重命名模式',
+      type: 'string',
+      name: 'renameMode',
+      defaultValue: 'appendRandomID',
+    },
     // TODO(feature): 需要使用一个实现了可设置默认值的字段
     {
       comment: '默认引擎',

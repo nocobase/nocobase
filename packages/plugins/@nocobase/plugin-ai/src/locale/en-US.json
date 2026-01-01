@@ -93,6 +93,8 @@
   "Get code snippet list": "Get code snippet list",
   "Get collection metadata": "Get collection metadata",
   "Get collection names": "Get collection names",
+  "Get data sources": "Get data sources",
+  "Retrieve list of all available data sources": "Retrieve list of all available data sources",
   "Get models list failed, you can enter a model name manually.": "Get models list failed, you can enter a model name manually.",
   "Greeting message": "Greeting message",
   "Greeting message placeholder": "Opening message sent to the user when starting a new conversation.",
@@ -129,9 +131,9 @@
   "Parameter name": "Parameter name",
   "Parameter type": "Parameter type",
   "Parameters": "Parameters",
-  "Characterization": "Characterization",
-  "Characterization description": "The system prompt for the AI model, defines who \"I\" am, as well as the rules and requirements I follow to perform tasks.",
-  "Characterization placeholder": "The system prompt for the AI model, defines who \"I\" am, as well as the rules and requirements I follow to perform tasks.",
+  "Role setting": "Role setting",
+  "Role setting description": "The system prompt for the AI model, defines who \"I\" am, as well as the rules and requirements I follow to perform tasks.",
+  "Role setting placeholder": "The system prompt for the AI model, defines who \"I\" am, as well as the rules and requirements I follow to perform tasks.",
   "Personalized prompt": "Personalized prompt",
   "Personalized prompt description": "You can set personalized prompt for the current AI employee which will be sent to the LLM at the start of each new conversation.",
   "Pick block": "Pick block",
@@ -204,5 +206,7 @@
   "knowledge Base Prompt default": "From knowledge base:\n{knowledgeBaseData}\nAnswer user's question using this information.",
   "please fix the error": "please fix the error",
   "please review the code": "please review the code",
-  "references {{index}}": "references {{index}}"
+  "references {{index}}": "references {{index}}",
+  "Please complete role setting before submitting": "Please complete role setting before submitting",
+  "Please complete model setting before submitting": "Please complete model setting before submitting"
 }

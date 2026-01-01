@@ -531,10 +531,12 @@ export class FlowModelRepository extends Repository {
 
   @transaction()
   async duplicate(modelUid: string, options?: Transactionable) {
-    const nodes = await this.findNodesById(modelUid, { ...options, includeAsyncNode: true });
+    let nodes = await this.findNodesById(modelUid, { ...options, includeAsyncNode: true });
     if (!nodes?.length) {
       return null;
     }
+
+    nodes = this.dedupeNodesForDuplicate(nodes, modelUid);
 
     // 1) 生成 old -> new uid 映射
     const uidMap: Record<string, string> = {};
@@ -589,6 +591,61 @@ export class FlowModelRepository extends Repository {
 
     // 3) 返回新根节点的完整模型
     return this.findModelById(uidMap[modelUid], { ...options });
+  }
+
+  private dedupeNodesForDuplicate(nodes: any[], rootUid: string) {
+    if (!Array.isArray(nodes) || nodes.length <= 1) {
+      return nodes;
+    }
+
+    const rowsByUid = lodash.groupBy(nodes, 'uid');
+    const uniqueUids = Object.keys(rowsByUid);
+    if (uniqueUids.length === nodes.length) {
+      return nodes;
+    }
+
+    const uidsInSubtree = new Set(uniqueUids);
+    const rootDepthByUid = new Map<string, number>();
+    for (const uid of uniqueUids) {
+      const rows = rowsByUid[uid] || [];
+      const depths = rows.map((row) => Number(row?.depth ?? 0));
+      rootDepthByUid.set(uid, depths.length ? Math.min(...depths) : 0);
+    }
+
+    const pickRowForUid = (uid: string, rows: any[]) => {
+      if (!rows?.length) return null;
+      if (rows.length === 1) return rows[0];
+      if (uid === rootUid) return rows[0];
+
+      let bestRow = rows[0];
+      let bestParentRootDepth = -1;
+
+      for (const row of rows) {
+        const parentUid = row?.parent;
+        if (!parentUid || !uidsInSubtree.has(parentUid)) {
+          continue;
+        }
+
+        const parentRootDepth = rootDepthByUid.get(parentUid) ?? -1;
+        if (parentRootDepth > bestParentRootDepth) {
+          bestParentRootDepth = parentRootDepth;
+          bestRow = row;
+        }
+      }
+
+      return bestRow;
+    };
+
+    const uidsInQueryOrder: string[] = [];
+    const seenUidsInQueryOrder = new Set<string>();
+    for (const row of nodes) {
+      const uid = row?.uid;
+      if (!uid || seenUidsInQueryOrder.has(uid)) continue;
+      seenUidsInQueryOrder.add(uid);
+      uidsInQueryOrder.push(uid);
+    }
+
+    return uidsInQueryOrder.map((uid) => pickRowForUid(uid, rowsByUid[uid])).filter(Boolean);
   }
 
   private replaceStepParamsModelUids(options: any, uidMap: Record<string, string>) {

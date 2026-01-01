@@ -15,7 +15,8 @@ import { Avatar, Popover, Tooltip } from 'antd';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
-import { EditorRef } from '@nocobase/client';
+import { EditorRef, useCompile } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { isEngineer } from '../built-in/utils';
 import { Task } from '../types';
 import { useT } from '../../locale';
@@ -31,6 +32,7 @@ export interface AICodingButtonProps {
 
 export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef, setActive }) => {
   const t = useT();
+  const compile = useCompile();
   const { aiEmployees } = useAIEmployeesData();
   const open = useChatBoxStore.use.open();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -38,6 +40,24 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
   const addContextItems = useChatMessagesStore.use.addContextItems();
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
+  const ctx = useFlowContext();
+
+  const buildCtxVariablesDesc = () => {
+    const metaTree = ctx?.getPropertyMetaTree?.() || [];
+    return metaTree
+      .filter((node) => {
+        const disabled = typeof node.disabled === 'function' ? node.disabled() : node.disabled;
+        return !disabled;
+      })
+      .map((node) => {
+        const paths = node.paths?.length ? node.paths : [node.name].filter(Boolean);
+        const fullPath = ['ctx', ...paths].join('.');
+        const nodeTitle = compile(node.title, { t });
+        const title = nodeTitle && nodeTitle !== node.name ? ` (${nodeTitle})` : '';
+        return `- {{${fullPath}}}${title}`;
+      })
+      .join('\n');
+  };
 
   const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
@@ -72,6 +92,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
 
   const TaskTemplate = (prototype: Partial<Task>) => {
     const { message, ...rest } = prototype;
+    const variablesDesc = buildCtxVariablesDesc();
     return {
       message: {
         workContext: [
@@ -85,7 +106,15 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
               code: editorRef?.read(),
             },
           },
-        ],
+          variablesDesc
+            ? {
+                type: 'text',
+                uid: 'available-variables',
+                title: 'Available variables',
+                content: `You can access the following variables via context:\n${variablesDesc}`,
+              }
+            : null,
+        ].filter(Boolean),
         ...(message ?? {}),
       },
       autoSend: false,
@@ -139,6 +168,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             }
 
             setCurrentEditorRefUid(uid);
+
+            const variablesDesc = buildCtxVariablesDesc();
+
             addContextItems({
               type: 'code-editor',
               uid,
@@ -149,6 +181,15 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
                 code: editorRef?.read(),
               },
             });
+
+            if (variablesDesc) {
+              addContextItems({
+                type: 'text',
+                uid: 'available-variables',
+                title: 'Available variables',
+                content: `You can access the following variables via context:\n${variablesDesc}`,
+              });
+            }
           }}
         />
       </Popover>

@@ -9,7 +9,6 @@
 
 import PluginAIServer from '../plugin';
 import dataModeling from '../ai-employees/built-in/data-modeling';
-import formFiller from '../ai-employees/built-in/form-filler';
 import aiCoding from '../ai-employees/built-in/ai-coding';
 import dataOrganizer from '../ai-employees/built-in/data-organizer';
 import insightsAnalyst from '../ai-employees/built-in/insights-analyst';
@@ -33,7 +32,6 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
 export class BuiltInManager {
   private builtInEmployees = [
     dataModeling,
-    formFiller,
     aiCoding,
     dataOrganizer,
     insightsAnalyst,

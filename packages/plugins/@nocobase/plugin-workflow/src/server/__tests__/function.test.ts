@@ -11,8 +11,8 @@ import dayjs from 'dayjs';
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { parse } from '@nocobase/utils';
-import { dateRangeFns } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import PluginWorkflowServer, { dateRangeFns, Processor } from '..';
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 let last2days;
@@ -75,11 +75,14 @@ describe('workflow > functions > system variable', () => {
   let CommentRepo;
   let WorkflowModel;
   let workflow;
+  let plugin: PluginWorkflowServer;
 
   beforeEach(async () => {
     app = await getApp();
 
     db = app.db;
+    plugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
+    WorkflowModel = db.getModel('workflows');
     PostCollection = db.getCollection('posts');
     PostRepo = PostCollection.repository;
 
@@ -138,7 +141,41 @@ describe('workflow > functions > system variable', () => {
 
   afterEach(() => app.destroy());
 
-  describe('system variable should', () => {
+  describe('basic', () => {
+    it('instanceId', async () => {
+      workflow = await WorkflowModel.create({
+        type: 'syncTrigger',
+        enabled: true,
+      });
+      const n1 = await workflow.createNode({
+        type: 'echoVariable',
+        config: {
+          variable: '{{$system.instanceId}}',
+        },
+      });
+      const { execution } = (await plugin.trigger(workflow, {})) as Processor;
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(app.instanceId);
+    });
+
+    it('genSnowflakeId', async () => {
+      workflow = await WorkflowModel.create({
+        type: 'syncTrigger',
+        enabled: true,
+      });
+      const n1 = await workflow.createNode({
+        type: 'echoVariable',
+        config: {
+          variable: '{{$system.genSnowflakeId}}',
+        },
+      });
+      const { execution } = (await plugin.trigger(workflow, {})) as Processor;
+      const [job] = await execution.getJobs();
+      expect(job.result).toBeTypeOf('number');
+    });
+  });
+
+  describe('date filter variables', () => {
     it('filter yesterday record', async () => {
       const filter = parse({
         updatedAt: {

@@ -35,13 +35,13 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
-function FieldDeletePlaceholder() {
+export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
-  const name = model.fieldPath;
+  const collection = props?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.props.title || model.fieldPath;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -63,9 +63,9 @@ function FieldWithoutPermissionPlaceholder() {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
-  const name = model.fieldPath;
+  const collection = model.context.collectionField?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -233,7 +233,7 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
-                if (this.hidden && this.flowEngine.flowSettings?.enabled) {
+                if (this.hidden && this.context.flowSettingsEnabled) {
                   if (this.forbidden) {
                     return <FieldWithoutPermissionPlaceholder />;
                   }
@@ -254,7 +254,7 @@ export class TableColumnModel extends DisplayItemModel {
           </FlowModelProvider>
         );
       },
-      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
+      hidden: this.hidden && !this.context.flowSettingsEnabled,
     };
   }
   onInit(options: any): void {
@@ -448,9 +448,7 @@ TableColumnModel.registerFlow({
       title: tExpr('Sortable'),
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
-        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-          ctx.model.collectionField.interface,
-        );
+        const targetInterface = ctx.model.collectionField.getInterfaceOptions();
         return !targetInterface.sortable;
       },
       defaultParams: {
