@@ -1,12 +1,12 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "2.1.0-alpha.1",
+  "version": "2.0.0-alpha.60",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@nocobase/utils": "2.1.0-alpha.1",
+    "@nocobase/utils": "2.0.0-alpha.60",
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
