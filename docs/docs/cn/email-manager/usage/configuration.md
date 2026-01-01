@@ -61,7 +61,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_48_PM.png)
 
-
+## 邮件详情区块
 
 首先在邮件消息区块的字段中开启 **启用点击打开** 功能。
 

@@ -19,6 +19,8 @@ pkg: "@nocobase/plugin-email-manager"
 
 点击 **设置** 按钮，打开浮层后点击 **Link account** 按钮，选择需要关联的邮箱类型。
 
+![](https://static-docs.nocobase.com/email-manager/Email-01-01-2026_09_00_AM.png)
+
 ![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_03_PM.png)
 
 浏览器自动打开对应邮箱的登录页面，登录账户并同意授权（不同服务商授权流程有所差异）。
