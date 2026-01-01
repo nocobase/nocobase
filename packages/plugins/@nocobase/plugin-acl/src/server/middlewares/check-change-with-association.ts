@@ -100,7 +100,7 @@ async function processAssociationChild(
   allowedRecordKeys?: Set<any>,
 ): Promise<Record<string, any> | string | number | null> {
   // Case 1: Existing record → potential update
-  if (value[recordKey]) {
+  if (value?.[recordKey]) {
     if (!updateParams) {
       // No update permission, skip
       ctx.log.debug(`No permission to update association`, { fieldPath, value, updateParams });
