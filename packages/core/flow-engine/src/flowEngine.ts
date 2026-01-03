@@ -866,12 +866,6 @@ export class FlowEngine {
    */
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    if (options?.uid) {
-      const local = this.getModel<T>(options.uid);
-      if (local) {
-        return local;
-      }
-    }
     const model = this.findModelByParentId(options.parentId, options.subKey);
     if (model) {
       return model as T;
