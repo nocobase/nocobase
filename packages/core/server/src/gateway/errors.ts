@@ -9,6 +9,7 @@
 
 import { AppSupervisor } from '../app-supervisor';
 import lodash from 'lodash';
+import Application from '../application';
 
 interface AppError {
   status: number;
@@ -24,6 +25,14 @@ interface AppErrors {
   };
 }
 
+function getMaintaining(app: Application) {
+  return app?.getMaintaining?.();
+}
+
+function getAppName(app: Application) {
+  return app?.name || 'unknown';
+}
+
 export const errors: AppErrors = {
   APP_NOT_FOUND: {
     status: 404,
@@ -34,6 +43,10 @@ export const errors: AppErrors = {
   APP_ERROR: {
     status: 503,
     message: ({ app }) => {
+      if (!app?.name) {
+        return '';
+      }
+
       const error = AppSupervisor.getInstance().appErrors[app.name];
       if (!error) {
         return '';
@@ -49,28 +62,32 @@ export const errors: AppErrors = {
     },
 
     code: ({ app }): string => {
+      if (!app?.name) {
+        return 'APP_ERROR';
+      }
+
       const error = AppSupervisor.getInstance().appErrors[app.name];
-      return error['code'] || 'APP_ERROR';
+      return error?.['code'] || 'APP_ERROR';
     },
-    command: ({ app }) => app.getMaintaining().command,
+    command: ({ app }) => getMaintaining(app)?.command,
     maintaining: true,
   },
 
   APP_STARTING: {
     status: 503,
-    message: ({ app }) => app.maintainingMessage,
+    message: ({ app }) => app?.maintainingMessage || '',
     maintaining: true,
   },
 
   APP_STOPPED: {
     status: 503,
-    message: ({ app }) => `application ${app.name} is stopped`,
+    message: ({ app }) => `application ${getAppName(app)} is stopped`,
     maintaining: true,
   },
 
   APP_INITIALIZED: {
     status: 503,
-    message: ({ app }) => `application ${app.name} is initialized, waiting for command`,
+    message: ({ app }) => `application ${getAppName(app)} is initialized, waiting for command`,
     maintaining: true,
   },
 
@@ -83,28 +100,28 @@ export const errors: AppErrors = {
   COMMAND_ERROR: {
     status: 503,
     maintaining: true,
-    message: ({ app }) => app.getMaintaining().error.message,
-    command: ({ app }) => app.getMaintaining().command,
+    message: ({ app }) => getMaintaining(app)?.error?.message || '',
+    command: ({ app }) => getMaintaining(app)?.command,
   },
 
   COMMAND_END: {
     status: 503,
     maintaining: true,
-    message: ({ app }) => `${app.getMaintaining().command.name} running end`,
-    command: ({ app }) => app.getMaintaining().command,
+    message: ({ app }) => `${getMaintaining(app)?.command?.name || 'command'} running end`,
+    command: ({ app }) => getMaintaining(app)?.command,
   },
 
   APP_COMMANDING: {
     status: 503,
     maintaining: true,
-    message: ({ app, message }) => message || app.maintainingMessage,
-    command: ({ app, command }) => command || app.getMaintaining().command,
+    message: ({ app, message }) => message || app?.maintainingMessage || '',
+    command: ({ app, command }) => command || getMaintaining(app)?.command,
   },
 
   APP_RUNNING: {
     status: 200,
     maintaining: false,
-    message: ({ message, app }) => message || `application ${app.name} is running`,
+    message: ({ message, app }) => message || `application ${getAppName(app)} is running`,
   },
 
   UNKNOWN_ERROR: {

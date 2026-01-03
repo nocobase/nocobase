@@ -11,6 +11,9 @@ import { Plugin } from '@nocobase/server';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
 import { ImportError, ImportValidationError } from './errors';
+
+export { ImportError, ImportValidationError } from './errors';
+
 export class PluginActionImportServer extends Plugin {
   beforeLoad() {
     this.app.on('afterInstall', async () => {

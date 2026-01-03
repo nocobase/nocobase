@@ -1549,7 +1549,7 @@
     "Completed": "완료됨",
     "Confirm": "확인",
     "Confirm cancel": "취소 확인",
-    "Confirm cancel description": "취소를 확인하시겠습니까?",
+    "Confirm to cancel this task?": "취소를 확인하시겠습니까?",
     "Created at": "생성일",
     "Data": "데이터",
     "Download": "다운로드",

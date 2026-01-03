@@ -329,6 +329,10 @@ export class XlsxImporter extends EventEmitter {
         );
       }
 
+      if (error.params?.rowIndex) {
+        handingRowIndex += error.params.rowIndex;
+        error.params.rowIndex = handingRowIndex;
+      }
       this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
         rowIndex: handingRowIndex,
         rowData: rows[handingRowIndex],

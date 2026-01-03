@@ -1535,7 +1535,7 @@
     "Completed": "Abgeschlossen",
     "Confirm": "Bestätigen",
     "Confirm cancel": "Abbruch bestätigen",
-    "Confirm cancel description": "Sind Sie sicher, dass Sie diese Aufgabe abbrechen möchten?",
+    "Confirm to cancel this task?": "Sind Sie sicher, dass Sie diese Aufgabe abbrechen möchten?",
     "Created at": "Erstellt am",
     "Data": "Daten",
     "Download": "Herunterladen",

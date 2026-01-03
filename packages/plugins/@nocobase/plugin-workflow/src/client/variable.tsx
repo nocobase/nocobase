@@ -28,7 +28,7 @@ import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './node
 export type VariableOption = {
   key?: string;
   value?: string;
-  label?: string;
+  label?: string | React.ReactNode;
   children?: VariableOption[] | null;
   [key: string]: any;
 };
