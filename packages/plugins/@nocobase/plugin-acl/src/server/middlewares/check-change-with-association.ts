@@ -303,6 +303,10 @@ async function processValues(
     return result;
   }
 
+  if (!values || !_.isPlainObject(values)) {
+    return values;
+  }
+
   const db: Database = ctx.database;
   const collection = db.getCollection(collectionName);
 
