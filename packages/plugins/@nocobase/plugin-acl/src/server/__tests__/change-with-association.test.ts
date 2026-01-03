@@ -1299,4 +1299,113 @@ describe('Change with association', async () => {
     const assoc32 = await db.getRepository('assoc3').findOne();
     expect(assoc32).toBeFalsy();
   });
+
+  test('create, can create associate record', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: [
+        {
+          usingActionsConfig: true,
+          name: 'test',
+          actions: [
+            {
+              name: 'create',
+              fields: ['name', 'assoc3'],
+            },
+          ],
+        },
+        {
+          usingActionsConfig: true,
+          name: 'assoc3',
+          actions: [
+            {
+              name: 'create',
+            },
+          ],
+        },
+      ],
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+    const userAgent = await agent.login(user);
+    await userAgent.resource('test').create({
+      updateAssociationValues: ['assoc3'],
+      values: {
+        name: 'test-1',
+        assoc3: {
+          assoc3_name: 'assoc3-1',
+          title: 'assoc1 title',
+        },
+      },
+    });
+    const testRecord = await db.getRepository('test').findOne();
+    expect(testRecord).toBeDefined();
+    expect(testRecord.name).toBe('test-1');
+    const assoc3 = await db.getRepository('assoc3').findOne();
+    expect(assoc3).toBeTruthy();
+  });
+
+  test('update, create associate record', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: [
+        {
+          usingActionsConfig: true,
+          name: 'test',
+          actions: [
+            {
+              name: 'create',
+              fields: ['name', 'assoc3'],
+            },
+            {
+              name: 'update',
+              fields: ['name', 'assoc3'],
+            },
+          ],
+        },
+        {
+          usingActionsConfig: true,
+          name: 'assoc3',
+          actions: [
+            {
+              name: 'create',
+            },
+          ],
+        },
+      ],
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+    const userAgent = await agent.login(user);
+    await userAgent.resource('test').create({
+      updateAssociationValues: ['assoc3'],
+      values: {
+        name: 'test-1',
+      },
+    });
+    const testRecord = await db.getRepository('test').findOne();
+    expect(testRecord).toBeDefined();
+    expect(testRecord.name).toBe('test-1');
+    const assoc3 = await db.getRepository('assoc3').findOne();
+    expect(assoc3).toBeFalsy();
+
+    await userAgent.resource('test').update({
+      filterByTk: testRecord.id,
+      updateAssociationValues: ['assoc3'],
+      values: {
+        assoc3: {
+          assoc3_name: 'assoc3-1',
+          title: 'assoc3 title',
+        },
+      },
+    });
+    const assoc32 = await db.getRepository('assoc3').findOne();
+    expect(assoc32).toBeTruthy();
+  });
 });

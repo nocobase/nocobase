@@ -12,6 +12,11 @@ import { Context, Next } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
 import _ from 'lodash';
 
+type AllowedRecordKeysResult = {
+  allowedKeys: Set<any>;
+  missingKeys: Set<any>;
+};
+
 /**
  * Pick only record key fields from given value(s).
  */
@@ -46,7 +51,7 @@ async function collectAllowedRecordKeys(
   recordKey: string,
   updateParams: any,
   target: string,
-): Promise<Set<any> | undefined> {
+): Promise<AllowedRecordKeysResult | undefined> {
   const repo = ctx.db.getRepository(target);
   if (!repo) {
     return undefined;
@@ -76,13 +81,68 @@ async function collectAllowedRecordKeys(
         allowedKeys.add(key);
       }
     }
-    return allowedKeys;
+
+    const missingKeys = new Set(keys.filter((key) => !allowedKeys.has(key)));
+    return { allowedKeys, missingKeys };
   } catch (e) {
     if (e instanceof NoPermissionError) {
-      return new Set();
+      return {
+        allowedKeys: new Set(),
+        missingKeys: new Set(keys),
+      };
     }
     throw e;
   }
+}
+
+async function collectExistingRecordKeys(
+  ctx: Context,
+  recordKey: string,
+  target: string,
+  keys: Iterable<any>,
+): Promise<Set<any>> {
+  const repo = ctx.db.getRepository(target);
+  if (!repo) {
+    return new Set();
+  }
+
+  const keyList = Array.from(keys);
+  if (!keyList.length) {
+    return new Set();
+  }
+
+  const records = await repo.find({
+    filter: {
+      [`${recordKey}.$in`]: keyList,
+    },
+  });
+
+  const existingKeys = new Set<any>();
+  for (const record of records) {
+    const key = typeof record.get === 'function' ? record.get(recordKey) : record[recordKey];
+    if (key !== undefined && key !== null) {
+      existingKeys.add(key);
+    }
+  }
+  return existingKeys;
+}
+
+async function recordExistsWithoutScope(
+  ctx: Context,
+  target: string,
+  recordKey: string,
+  keyValue: any,
+): Promise<boolean> {
+  const repo = ctx.db.getRepository(target);
+  if (!repo) {
+    return false;
+  }
+  const record = await repo.findOne({
+    filter: {
+      [recordKey]: keyValue,
+    },
+  });
+  return Boolean(record);
 }
 
 /**
@@ -98,41 +158,94 @@ async function processAssociationChild(
   target: string,
   fieldPath: string,
   allowedRecordKeys?: Set<any>,
+  existingRecordKeys?: Set<any>,
 ): Promise<Record<string, any> | string | number | null> {
+  const keyValue = value?.[recordKey];
+
+  const fallbackToCreate = async () => {
+    if (!createParams) {
+      return keyValue;
+    }
+    ctx.log.debug(`Association record missing, fallback to create`, {
+      fieldPath,
+      value,
+      target,
+    });
+    return await processValues(ctx, value, updateAssociationValues, createParams.params, target, fieldPath, []);
+  };
+
+  const tryFallbackToCreate = async (
+    reason: string,
+    knownExists?: boolean,
+  ): Promise<Record<string, any> | string | number | null | undefined> => {
+    if (!createParams) {
+      return undefined;
+    }
+    const recordExists =
+      typeof knownExists === 'boolean' ? knownExists : await recordExistsWithoutScope(ctx, target, recordKey, keyValue);
+    if (!recordExists) {
+      ctx.log.debug(reason, {
+        fieldPath,
+        value,
+        createParams,
+        updateParams,
+      });
+      return await fallbackToCreate();
+    }
+    return undefined;
+  };
+
   // Case 1: Existing record → potential update
-  if (value[recordKey]) {
+  if (keyValue !== undefined && keyValue !== null) {
     if (!updateParams) {
-      // No update permission, skip
+      // No update permission, try create
+      const created = await tryFallbackToCreate(`No permission to update association, try create not exist record`);
+      if (created !== undefined) {
+        return created;
+      }
       ctx.log.debug(`No permission to update association`, { fieldPath, value, updateParams });
-      return value[recordKey];
+      return keyValue;
     } else {
       const repo = ctx.db.getRepository(target);
       if (!repo) {
-        return value[recordKey];
+        return keyValue;
       }
       try {
         if (allowedRecordKeys) {
-          if (!allowedRecordKeys.has(value[recordKey])) {
+          if (!allowedRecordKeys.has(keyValue)) {
+            const created = await tryFallbackToCreate(
+              `No permission to update association due to scope, try create not exist record`,
+              existingRecordKeys ? existingRecordKeys.has(keyValue) : undefined,
+            );
+            if (created !== undefined) {
+              return created;
+            }
             ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
-            return value[recordKey];
+            return keyValue;
           }
         } else {
           const filter = await resolveScopeFilter(ctx, target, updateParams.params);
           const record = await repo.findOne({
             filter: {
               ...filter,
-              [recordKey]: value[recordKey],
+              [recordKey]: keyValue,
             },
           });
           if (!record) {
+            const created = await tryFallbackToCreate(
+              `No permission to update association due to scope, try create not exist record`,
+            );
+            if (created !== undefined) {
+              return created;
+            }
             ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
-            return value[recordKey];
+            return keyValue;
           }
         }
-        return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
+        return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath, []);
       } catch (e) {
         if (e instanceof NoPermissionError) {
-          return value[recordKey];
+          return keyValue;
         }
         throw e;
       }
@@ -141,7 +254,7 @@ async function processAssociationChild(
 
   // Case 2: New record → potential create
   if (createParams) {
-    return await processValues(ctx, value, updateAssociationValues, createParams.params, target, fieldPath);
+    return await processValues(ctx, value, updateAssociationValues, createParams.params, target, fieldPath, []);
   }
 
   // Case 3: Neither create nor update is allowed
@@ -265,9 +378,14 @@ async function processValues(
     if (Array.isArray(fieldValue)) {
       const processed = [];
       let allowedRecordKeys: Set<any> | undefined;
+      let existingRecordKeys: Set<any> | undefined;
 
       if (updateParams) {
-        allowedRecordKeys = await collectAllowedRecordKeys(ctx, fieldValue, recordKey, updateParams, field.target);
+        const allowedResult = await collectAllowedRecordKeys(ctx, fieldValue, recordKey, updateParams, field.target);
+        allowedRecordKeys = allowedResult?.allowedKeys;
+        if (createParams && allowedResult?.missingKeys?.size) {
+          existingRecordKeys = await collectExistingRecordKeys(ctx, recordKey, field.target, allowedResult.missingKeys);
+        }
       }
 
       for (const item of fieldValue) {
@@ -281,6 +399,7 @@ async function processValues(
           field.target,
           fieldPath,
           allowedRecordKeys,
+          existingRecordKeys,
         );
         if (r !== null && r !== undefined) {
           processed.push(r);
@@ -345,7 +464,6 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
     '',
     protectedKeys,
   );
-  console.log(processed);
   ctx.action.params.values = processed;
   await next();
 };
