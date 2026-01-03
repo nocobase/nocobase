@@ -18,6 +18,7 @@ import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
+import { countWorkflowStackEntries } from './utils/stack';
 
 type Pending = { execution: ExecutionModel; job?: JobModel; loaded?: boolean };
 
@@ -242,7 +243,17 @@ export default class Dispatcher {
     let valid = true;
     if (stack?.length > 0) {
       const limitCount = workflow.options.stackLimit || 1;
-      if (stack.length >= limitCount) {
+      const { count, hasLegacy } = countWorkflowStackEntries(stack, workflow.id);
+      let existed = count;
+      if (hasLegacy && existed < limitCount) {
+        existed = await workflow.countExecutions({
+          where: {
+            id: stack,
+          },
+          transaction: options.transaction,
+        });
+      }
+      if (existed >= limitCount) {
         this.plugin
           .getLogger(workflow.id)
           .warn(

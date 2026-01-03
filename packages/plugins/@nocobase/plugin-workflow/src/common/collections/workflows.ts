@@ -13,6 +13,8 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'workflows',
+  title: `{{t("Workflows", { ns: "${NAMESPACE}" })}}`,
+  filterTargetKey: 'id',
   shared: true,
   repository: 'WorkflowRepository',
   fields: [
