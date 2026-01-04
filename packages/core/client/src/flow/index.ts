@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import { Plugin } from '../application/Plugin';
 import { IconPicker } from '../schema-component/antd/icon-picker';
 import * as actions from './actions';
 import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
+import { commonConditionHandler, ConditionBuilder } from './components/ConditionBuilder';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
@@ -30,6 +31,35 @@ export class PluginFlowEngine extends Plugin {
       ),
     ) as Record<string, typeof FlowModel>;
     this.flowEngine.registerModels(filteredModels);
+
+    // 分页切换事件：用于只刷新子模型状态（例如 ACL），避免重跑子模型 beforeRender
+    this.flowEngine.registerEvents({
+      pageChangeFlow: {
+        title: tExpr('Page change'),
+        name: 'pageChangeFlow',
+        uiSchema: {
+          condition: {
+            type: 'object',
+            title: tExpr('Trigger condition'),
+            'x-decorator': 'FormItem',
+            'x-component': ConditionBuilder,
+          },
+        },
+        handler: commonConditionHandler,
+      },
+    });
+
+    // Action 按钮在分页切换后需要重新计算 ACL（fork 复用时尤其重要）
+    models.ActionModel?.registerFlow?.({
+      key: 'pageChangeAclRefresh',
+      on: 'pageChangeFlow',
+      steps: {
+        aclCheckRefresh: {
+          use: 'aclCheckRefresh',
+        },
+      },
+    });
+
     this.flowEngine.registerActions(actions);
     this.flowEngine.registerActions(filterFormActions);
     this.flowEngine.flowSettings.registerComponents({

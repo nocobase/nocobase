@@ -456,3 +456,16 @@ FormItemModel.registerFlow({
     },
   },
 });
+
+FormItemModel.registerFlow({
+  key: 'pageChangeAclRefresh',
+  on: 'pageChangeFlow',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
+      defaultParams: {
+        strategy: 'formItem',
+      },
+    },
+  },
+});
