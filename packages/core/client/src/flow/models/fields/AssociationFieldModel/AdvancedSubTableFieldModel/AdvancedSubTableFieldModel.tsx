@@ -699,7 +699,7 @@ AdvancedSubTableFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      __is_stored__: true,
                     };
                   }),
                 ];
