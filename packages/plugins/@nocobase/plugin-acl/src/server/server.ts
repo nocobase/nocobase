@@ -24,6 +24,7 @@ import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
 import { checkAssociationOperate } from './middlewares/check-association-operate';
+import { checkChangesWithAssociation } from './middlewares/check-change-with-association';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -129,6 +130,7 @@ export class PluginACLServer extends Plugin {
         'roles.dataSourcesCollections:*',
         'roles.dataSourceResources:*',
         'dataSourcesRolesResourcesScopes:*',
+        'dataSourcesRolesResourcesActions:*',
         'rolesResourcesScopes:*',
       ],
     });
@@ -428,17 +430,6 @@ export class PluginACLServer extends Plugin {
         ],
       });
 
-      this.app.on('afterLoad', async (app) => {
-        app.db.on('rolesUsers.beforeSave', async (model: Model) => {
-          if (!model._changed.has('roleName')) {
-            return;
-          }
-          if (model.roleName === 'root') {
-            throw new Error('No permissions');
-          }
-        });
-      });
-
       const rolesResourcesScopes = this.app.db.getRepository('dataSourcesRolesResourcesScopes');
       await rolesResourcesScopes.createMany({
         records: [
@@ -455,6 +446,17 @@ export class PluginACLServer extends Plugin {
             },
           },
         ],
+      });
+    });
+
+    this.app.on('afterStart', async (app) => {
+      app.db.on('rolesUsers.beforeSave', async (model: Model) => {
+        if (!model._changed.has('roleName')) {
+          return;
+        }
+        if (model.roleName === 'root') {
+          throw new Error('No permissions');
+        }
       });
     });
 
@@ -643,6 +645,12 @@ export class PluginACLServer extends Plugin {
       dataSource.acl.use(checkAssociationOperate, {
         before: 'core',
       });
+      if (dataSource.options.acl !== false && dataSource.options.useACL !== false) {
+        dataSource.resourceManager.registerPreActionHandler('create', checkChangesWithAssociation);
+        dataSource.resourceManager.registerPreActionHandler('firstOrCreate', checkChangesWithAssociation);
+        dataSource.resourceManager.registerPreActionHandler('updateOrCreate', checkChangesWithAssociation);
+        dataSource.resourceManager.registerPreActionHandler('update', checkChangesWithAssociation);
+      }
     });
 
     this.db.on('afterUpdateCollection', async (collection) => {

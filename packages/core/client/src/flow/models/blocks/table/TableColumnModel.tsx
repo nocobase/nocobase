@@ -63,9 +63,9 @@ function FieldWithoutPermissionPlaceholder() {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
-  const name = model.fieldPath;
+  const collection = model.context.collectionField?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -448,9 +448,7 @@ TableColumnModel.registerFlow({
       title: tExpr('Sortable'),
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
-        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-          ctx.model.collectionField.interface,
-        );
+        const targetInterface = ctx.model.collectionField.getInterfaceOptions();
         return !targetInterface.sortable;
       },
       defaultParams: {

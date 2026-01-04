@@ -32,7 +32,7 @@ export abstract class DataSource extends EventEmitter {
 
   logger: Logger;
 
-  constructor(protected options: DataSourceOptions) {
+  constructor(public options: DataSourceOptions) {
     super();
     this.init(options);
   }
@@ -126,6 +126,8 @@ export abstract class DataSource extends EventEmitter {
 
   async load(options: any = {}) {}
   async close() {}
+
+  async cleanCache() {}
 
   abstract createCollectionManager(options?: any): ICollectionManager;
 

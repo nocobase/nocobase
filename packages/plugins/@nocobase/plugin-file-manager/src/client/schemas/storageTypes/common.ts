@@ -49,7 +49,7 @@ export default {
       },
       mimetype: {
         type: 'string',
-        title: `{{t("File type (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
+        title: `{{t("File type allowed (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
         description: `{{t('Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
@@ -69,5 +69,21 @@ export default {
     'x-decorator': 'FormItem',
     'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
+  },
+  renameMode: {
+    title: `{{t("Renaming", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("Renaming strategy to avoid filename conflicts when uploading files.", { ns: "${NAMESPACE}" })}}`,
+    type: 'string',
+    'x-decorator': 'FormItem',
+    'x-component': 'Radio.Group',
+    enum: [
+      { label: `{{t("Append random ID", { ns: "${NAMESPACE}" })}}`, value: 'appendRandomID' },
+      { label: `{{t("Random string", { ns: "${NAMESPACE}" })}}`, value: 'random' },
+      {
+        label: `{{t("Keep original filename (will be overwrite if filename is existed)", { ns: "${NAMESPACE}" })}}`,
+        value: 'none',
+      },
+    ],
+    default: 'appendRandomID',
   },
 };

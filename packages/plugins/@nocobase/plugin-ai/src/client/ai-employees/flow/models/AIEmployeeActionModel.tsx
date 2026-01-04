@@ -63,6 +63,7 @@ export class AIEmployeeActionModel extends ActionModel {
 
 AIEmployeeActionModel.define({
   label: escapeT('AI employees'),
+  sort: 8000,
 });
 
 CollectionActionGroupModel.registerActionModels({

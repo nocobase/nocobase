@@ -126,7 +126,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
   useEffect(() => {
     if (map.current) {
       setTimeout(() => {
-        map.current.setZoom(zoom);
+        map.current?.setZoom(zoom);
       }, 500);
     }
   }, [zoom, map.current]);

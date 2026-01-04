@@ -119,15 +119,27 @@ export function useDrawer() {
       type: 'drawer' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => drawerRef.current?.destroy(),
+      destroy: (result?: any) => {
+        config.onClose?.();
+        drawerRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
+      },
       update: (newConfig) => drawerRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
           return;
         }
-        drawerRef.current?.destroy();
-        closeFunc?.();
-        resolvePromise?.(result);
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentDrawer.destroy(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -184,12 +196,8 @@ export function useDrawer() {
             footer={currentFooter}
             header={config.header || currentHeader}
             hidden={config.inputArgs?.hidden?.value}
-            afterClose={() => {
-              closeFunc?.();
-              config.onClose?.();
-              resolvePromise?.(config.result);
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
+            onClose={() => {
+              currentDrawer.close(config.result);
             }}
             isMobile={ctx.isMobileLayout}
           >

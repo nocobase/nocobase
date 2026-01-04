@@ -29,8 +29,8 @@ const useCollections = (collections: CollectionDataType[]) => {
         collection.fields?.map((field) => {
           const fieldInterface = fim.getFieldInterface(field.interface);
           if (fieldInterface) {
-            field.type = fieldInterface.default?.type || field.type;
-            field.uiSchema = fieldInterface.default?.uiSchema || field.uiSchema;
+            field.type = field.type || fieldInterface.default?.type;
+            field.uiSchema = field.uiSchema || fieldInterface.default?.uiSchema;
           }
           field.uiSchema = {
             ...field.uiSchema,
@@ -85,7 +85,7 @@ const useUpdateTool = (
         ...collections[collectionIndex],
         ...collection,
       };
-      saveToolArgs({ collections });
+      saveToolArgs({ ...tool.args, collections });
     },
     [tool, saveToolArgs],
   );
@@ -101,7 +101,7 @@ const useUpdateTool = (
         ...oldField,
         ...field,
       };
-      saveToolArgs({ collections });
+      saveToolArgs({ ...tool.args, collections });
     },
     [tool, saveToolArgs],
   );
@@ -119,15 +119,19 @@ export const DataModelingModal: React.FC<{
   saveToolArgs: (args: unknown) => Promise<void>;
 }> = ({ tool, saveToolArgs }) => {
   const t = useT();
-  const collections = useCollections(tool.args.collections);
+  const collectionTypeStr = typeof tool.args.collections;
+  const collections = useCollections(
+    collectionTypeStr === 'string' ? JSON.parse(tool.args.collections as unknown as string) : tool.args.collections,
+  );
   const setAdjustArgs = useChatToolsStore.use.setAdjustArgs();
   const { updateCollectionRecord, updateFieldRecord } = useUpdateTool(tool, saveToolArgs);
 
   useEffect(() => {
     setAdjustArgs({
+      ...tool.args,
       collections,
     });
-  }, [collections, setAdjustArgs]);
+  }, [tool.args, tool.args.collections, setAdjustArgs]);
 
   const items = [
     {

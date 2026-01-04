@@ -79,11 +79,6 @@
           },
           {
             "type": "custom-link",
-            "label": "Reference block",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
@@ -494,6 +489,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Templates",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

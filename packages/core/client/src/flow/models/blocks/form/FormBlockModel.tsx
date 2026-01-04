@@ -295,7 +295,7 @@ export class FormBlockModel<
     });
   }
 
-  onMount() {
+  protected onMount() {
     super.onMount();
     this.formValueRuntime?.mount({ sync: true });
     // 首次渲染触发一次事件流

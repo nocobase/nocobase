@@ -203,6 +203,7 @@
   "Button icon": "按钮图标",
   "Button settings": "按钮设置",
   "Button title": "按钮标题",
+  "Button tooltip": "按钮提示信息",
   "Button type": "按钮类型",
   "Calculation engine": "计算引擎",
   "Calendar": "日历",
@@ -564,6 +565,7 @@
   "Execute": "执行",
   "Execute JavaScript": "执行 JavaScript",
   "Exists": "存在",
+  "Exit fullscreen": "退出全屏",
   "Expand All": "展开全部",
   "Expand all": "全部展开",
   "Expand all rows by default": "默认展开所有行",
@@ -647,6 +649,7 @@
   "Formula.js supports most Microsoft Excel formula functions.": "Formula.js 支持大部分 Mircrosoft Excel 公式。",
   "Full height": "全高",
   "Full permissions": "全部权限",
+  "Fullscreen": "全屏",
   "Function": "Function",
   "Gantt": "甘特图",
   "Geek blue": "极客蓝",
@@ -1564,5 +1567,6 @@
   "File type is not supported for previewing,": "文件类型不支持预览，",
   "download it to preview": "请下载后预览",
   "Your browser does not support the video tag.": "您的浏览器不支持视频标签。",
-  "Your browser does not support the audio tag.": "您的浏览器不支持音频标签。"
+  "Your browser does not support the audio tag.": "您的浏览器不支持音频标签。",
+  "Edit select record popup": "编辑选择数据弹窗"
 }

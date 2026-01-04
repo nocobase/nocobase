@@ -19,17 +19,14 @@ import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
-
-  // 用来缓存每行的 fork，保证每行只创建一次
-  const forksRef = useRef<Record<string, any>>({});
   const rowIndex = model.context.fieldIndex;
   const resultIndex = castArray(rowIndex);
   const record = model.context.record;
   const collectionName = model.context.collectionField.name;
   const isConfigMode = !!model.context.flowSettingsEnabled;
-
   const resultValue = isConfigMode && value.length === 0 ? [{}] : value;
-
+  const resource = model.context.blockModel.resource;
+  const blockPage = resource?.getPage?.() || 0;
   return (
     resultValue.length > 0 && (
       <Card
@@ -42,26 +39,25 @@ const ArrayNester = ({ name, value = [] }: any) => {
         `}
       >
         {resultValue.map((item: any, index: number) => {
-          const key = `row_${index}`;
-          if (!forksRef.current[key]) {
-            const fork = gridModel.createFork();
-            fork.gridContainerRef = React.createRef<HTMLDivElement>();
-            fork.context.defineProperty('fieldIndex', {
-              get: () => [...resultIndex, `${collectionName}:${index}`],
-            });
-            fork.context.defineProperty('fieldKey', {
-              get: () => key,
-            });
-            fork.context.defineProperty('record', {
-              get: () => record,
-              cache: false,
-            });
-            forksRef.current[key] = fork;
-          }
+          const key = `row_${index}_${blockPage}`;
+          const fork = gridModel.createFork({}, `${key}`);
+          fork.gridContainerRef = React.createRef<HTMLDivElement>();
+          fork.context.defineProperty('fieldIndex', {
+            get: () => [...resultIndex, `${collectionName}:${index}`],
+          });
+          fork.context.defineProperty('fieldKey', {
+            get: () => key,
+          });
+          fork.context.defineProperty('record', {
+            get: () => record,
+          });
+          fork.context.defineProperty('currentObject', {
+            get: () => item,
+          });
 
           return (
             <div key={key} style={{ marginBottom: 12 }}>
-              <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
+              <FlowModelRenderer model={fork} showFlowSettings={false} />
               <Divider />
             </div>
           );

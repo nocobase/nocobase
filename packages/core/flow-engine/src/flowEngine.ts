@@ -819,10 +819,9 @@ export class FlowEngine {
     // 2) Parent/subKey lookup (common for pages/popups).
     if (parentId && subKey) {
       const found = this.findSubModelInPreviousEngines<T>(parentId, subKey);
-      if (!found) return null;
+      if (!found || found.parent.context.flowSettingsEnabled) return null;
 
       const { parent: parentFromPrev, model: modelFromPrev } = found;
-
       // Ensure the parent shell exists in current engine so findModelByParentId can work locally.
       let localParent = this.getModel<FlowModel>(parentId);
       if (!localParent) {
@@ -830,7 +829,6 @@ export class FlowEngine {
         delete (parentData as any).subModels;
         localParent = this.createModel<FlowModel>(parentData as any, extra);
       }
-
       // Create (or reuse) the sub-model instance in current engine.
       const modelData = modelFromPrev.serialize();
       const localModel = this.createModel<T>(modelData as any, extra);
@@ -854,10 +852,6 @@ export class FlowEngine {
           localParent.setSubModel(subKey, localModel as any);
         }
       }
-      if (localModel.context.flowSettingsEnabled) {
-        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
-        return null;
-      }
       return localModel;
     }
 
@@ -872,12 +866,6 @@ export class FlowEngine {
    */
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    if (options?.uid) {
-      const local = this.getModel<T>(options.uid);
-      if (local) {
-        return local;
-      }
-    }
     const model = this.findModelByParentId(options.parentId, options.subKey);
     if (model) {
       return model as T;
