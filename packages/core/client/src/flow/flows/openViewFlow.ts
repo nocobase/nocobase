@@ -23,7 +23,7 @@ export const openViewFlow = defineFlow<FlowModel>({
           return false;
         }
         if (clickToOpen === undefined) {
-          return !ctx.collectionField?.isAssociationField();
+          return !ctx.collectionField?.isAssociationField() || ctx.associationModel;
         }
         return clickToOpen === false;
       },
