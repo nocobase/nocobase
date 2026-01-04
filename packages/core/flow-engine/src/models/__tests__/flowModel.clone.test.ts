@@ -274,4 +274,143 @@ describe('FlowModel.clone', () => {
     expect(clonedHeader.uid).not.toBe((parent.subModels['header'] as FlowModel).uid);
     expect(clonedFooter.uid).not.toBe((parent.subModels['footer'] as FlowModel).uid);
   });
+
+  it('should correctly remap parentId for subModels to new parent uid', () => {
+    const parent = flowEngine.createModel({
+      uid: 'parent-uid',
+      use: 'FlowModel',
+    });
+
+    const child = parent.addSubModel('children', {
+      use: 'FlowModel',
+      props: { name: 'child' },
+    });
+
+    // Verify original relationship
+    expect(child.parentId).toBe(parent.uid);
+
+    const cloned = parent.clone();
+    const clonedChild = (cloned.subModels['children'] as FlowModel[])[0];
+
+    // Root model should not have parentId
+    expect(cloned.parentId).toBeUndefined();
+
+    // Child's parentId should be remapped to cloned parent's uid
+    expect(clonedChild.parentId).toBe(cloned.uid);
+    expect(clonedChild.parentId).not.toBe(parent.uid);
+  });
+
+  it('should correctly remap parentId in deeply nested subModels', () => {
+    const root = flowEngine.createModel({
+      uid: 'root-uid',
+      use: 'FlowModel',
+    });
+
+    const level1 = root.addSubModel('children', {
+      use: 'FlowModel',
+    });
+
+    const level2 = level1.addSubModel('children', {
+      use: 'FlowModel',
+    });
+
+    const cloned = root.clone();
+    const clonedLevel1 = (cloned.subModels['children'] as FlowModel[])[0];
+    const clonedLevel2 = (clonedLevel1.subModels['children'] as FlowModel[])[0];
+
+    // Root should not have parentId
+    expect(cloned.parentId).toBeUndefined();
+
+    // Level1's parentId should point to cloned root
+    expect(clonedLevel1.parentId).toBe(cloned.uid);
+
+    // Level2's parentId should point to cloned level1
+    expect(clonedLevel2.parentId).toBe(clonedLevel1.uid);
+  });
+
+  it('should replace uid references in props and other fields', () => {
+    const parent = flowEngine.createModel({
+      uid: 'parent-uid',
+      use: 'FlowModel',
+    });
+
+    const child = parent.addSubModel('children', {
+      use: 'FlowModel',
+      props: {
+        // Store a reference to parent uid in props
+        targetUid: 'parent-uid',
+        relatedIds: ['parent-uid'],
+        nested: { refId: 'parent-uid' },
+      },
+    });
+
+    const cloned = parent.clone();
+    const clonedChild = (cloned.subModels['children'] as FlowModel[])[0];
+
+    // Props containing old uid references should be updated to new uids
+    expect(clonedChild.props.targetUid).toBe(cloned.uid);
+    expect(clonedChild.props.relatedIds[0]).toBe(cloned.uid);
+    expect(clonedChild.props.nested.refId).toBe(cloned.uid);
+  });
+
+  it('should replace uid references in stepParams', () => {
+    const parent = flowEngine.createModel({
+      uid: 'parent-uid',
+      use: 'FlowModel',
+    });
+
+    const child = parent.addSubModel('children', {
+      use: 'FlowModel',
+      stepParams: {
+        someFlow: {
+          someStep: {
+            targetModelUid: 'parent-uid',
+          },
+        },
+      },
+    });
+
+    const cloned = parent.clone();
+    const clonedChild = (cloned.subModels['children'] as FlowModel[])[0];
+
+    // stepParams containing old uid references should be updated
+    expect(clonedChild.stepParams.someFlow.someStep.targetModelUid).toBe(cloned.uid);
+  });
+
+  it('should handle self-referencing uid in props', () => {
+    const model = flowEngine.createModel({
+      uid: 'self-uid',
+      use: 'FlowModel',
+      props: {
+        selfRef: 'self-uid',
+      },
+    });
+
+    const cloned = model.clone();
+
+    // Self-reference should be updated to new uid
+    expect(cloned.props.selfRef).toBe(cloned.uid);
+    expect(cloned.props.selfRef).not.toBe('self-uid');
+  });
+
+  it('should not replace strings that are not uids', () => {
+    const model = flowEngine.createModel({
+      uid: 'model-uid',
+      use: 'FlowModel',
+      props: {
+        title: 'Some Title',
+        description: 'This is a description',
+        count: 42,
+        enabled: true,
+      },
+    });
+
+    const cloned = model.clone();
+
+    // Non-uid strings should remain unchanged
+    expect(cloned.props.title).toBe('Some Title');
+    expect(cloned.props.description).toBe('This is a description');
+    expect(cloned.props.count).toBe(42);
+    expect(cloned.props.enabled).toBe(true);
+  });
 });
