@@ -230,29 +230,30 @@ const ArrayNester = ({
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value?.[index]?.isNew || value?.[index]?.isStored) && (
-                    <div style={{ textAlign: 'right' }}>
-                      <Tooltip title={t('Remove')}>
-                        <CloseOutlined
-                          style={{ zIndex: 1000, color: '#a8a3a3' }}
-                          onClick={() => {
-                            remove(index);
-                            const gridFork = forksRef.current[key];
-                            // 同时销毁子模型的 fork
-                            gridFork.mapSubModels('items', (item) => {
-                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                  {!disabled &&
+                    (allowDisassociation || value?.[index]?.__is_new__ || value?.[index]?.__is_stored__) && (
+                      <div style={{ textAlign: 'right' }}>
+                        <Tooltip title={t('Remove')}>
+                          <CloseOutlined
+                            style={{ zIndex: 1000, color: '#a8a3a3' }}
+                            onClick={() => {
+                              remove(index);
+                              const gridFork = forksRef.current[key];
                               // 同时销毁子模型的 fork
-                              item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
-                              item.getFork(cacheKey)?.dispose();
-                            });
-                            gridFork.dispose();
-                            // 删除 fork 缓存
-                            delete forksRef.current[key];
-                          }}
-                        />
-                      </Tooltip>
-                    </div>
-                  )}
+                              gridFork.mapSubModels('items', (item) => {
+                                const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                                // 同时销毁子模型的 fork
+                                item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                                item.getFork(cacheKey)?.dispose();
+                              });
+                              gridFork.dispose();
+                              // 删除 fork 缓存
+                              delete forksRef.current[key];
+                            }}
+                          />
+                        </Tooltip>
+                      </div>
+                    )}
                   <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
                   <Divider />
                 </div>
@@ -262,7 +263,7 @@ const ArrayNester = ({
               {allowAddNew &&
                 (allowCreate || isConfigMode) &&
                 (allowCreate ? (
-                  <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
+                  <Button type="link" onClick={() => add({ __is_new__: true })} disabled={disabled}>
                     <PlusOutlined />
                     {t('Add new')}
                   </Button>
@@ -475,7 +476,7 @@ SubFormListFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isStored: true,
+                      __is_stored__: true,
                     };
                   }),
                 ];
@@ -486,7 +487,7 @@ SubFormListFieldModel.registerFlow({
                     index ===
                       self.findIndex(
                         (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
-                      ) || row.isNew,
+                      ) || row.__is_new__,
                 );
                 ctx.model.selectedRows.value = unique;
               },
