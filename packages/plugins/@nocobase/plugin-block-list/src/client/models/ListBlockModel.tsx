@@ -83,7 +83,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           this.resource.setPageSize(pageSize);
           await this.resource.refresh();
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
-          await dispatchEventDeep(this, 'pageChangeFlow');
+          await dispatchEventDeep(this, 'paginationChange');
         },
       };
     } else {

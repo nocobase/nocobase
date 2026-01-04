@@ -303,8 +303,8 @@ DetailsItemModel.registerFlow({
 });
 
 DetailsItemModel.registerFlow({
-  key: 'pageChangeAclRefresh',
-  on: 'pageChangeFlow',
+  key: 'paginationChange',
+  on: 'paginationChange',
   steps: {
     aclCheckRefresh: {
       use: 'aclCheckRefresh',

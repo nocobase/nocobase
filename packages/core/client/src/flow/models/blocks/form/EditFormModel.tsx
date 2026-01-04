@@ -72,7 +72,7 @@ export class EditFormModel extends FormBlockModel {
       multiResource.setPage(page);
       multiResource.loading = true;
       await multiResource.refresh();
-      await dispatchEventDeep(this, 'pageChangeFlow');
+      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 

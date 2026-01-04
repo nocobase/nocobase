@@ -13,7 +13,7 @@ import type { DispatchEventOptions } from '@nocobase/flow-engine';
 /**
  * 递归向子模型（及其 forks）分发指定事件。
  * - 默认不包含自身（避免误触发当前层的其它逻辑）
- * - 用于类似分页切换等“只需要刷新子层状态”的场景（例如 `pageChangeFlow`）
+ * - 用于类似分页切换等“只需要刷新子层状态”的场景（例如 `paginationChange`）
  */
 export async function dispatchEventDeep(
   root: FlowModel,

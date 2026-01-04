@@ -24,7 +24,7 @@ describe('dispatchEventDeep', () => {
 
     TestChild.registerFlow({
       key: 'onPageChange',
-      on: 'pageChangeFlow',
+      on: 'paginationChange',
       steps: {
         mark: {
           handler(ctx) {
@@ -52,7 +52,7 @@ describe('dispatchEventDeep', () => {
     const child = root.subModels.child as unknown as TestChild;
     child.createFork({}, 'row-0');
 
-    await dispatchEventDeep(root, 'pageChangeFlow');
+    await dispatchEventDeep(root, 'paginationChange');
 
     const forkFlags = received.map((m) => Boolean((m as any)?.isFork)).sort();
     expect(forkFlags).toEqual([false, true]);

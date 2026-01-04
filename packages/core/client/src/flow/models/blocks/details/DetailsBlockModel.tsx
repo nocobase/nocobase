@@ -90,7 +90,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       multiResource.setPage(page);
       multiResource.loading = true;
       await this.refresh();
-      await dispatchEventDeep(this, 'pageChangeFlow');
+      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
