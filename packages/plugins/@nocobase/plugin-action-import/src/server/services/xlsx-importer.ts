@@ -308,6 +308,14 @@ export class XlsxImporter extends EventEmitter {
       rows.push(rowValues);
     }
 
+    const translate = (message: string) => {
+      if (options.context?.t) {
+        return options.context.t(message, { ns: 'action-import' });
+      } else {
+        return message;
+      }
+    };
+
     try {
       await this.loggerService.measureExecutedTime(
         async () =>
@@ -322,11 +330,7 @@ export class XlsxImporter extends EventEmitter {
       handingRowIndex += chunkRows.length;
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new Error(
-          `${options.context?.t('Unique constraint error, fields:', { ns: 'action-import' })} ${JSON.stringify(
-            error.fields,
-          )}`,
-        );
+        throw new Error(`${translate('Unique constraint error, fields:')} ${JSON.stringify(error.fields)}`);
       }
 
       if (error.params?.rowIndex) {
