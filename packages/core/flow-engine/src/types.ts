@@ -214,11 +214,37 @@ export type FlowEventName =
   | (string & {});
 
 /**
+ * 动态事件流的执行时机（when）。
+ *
+ * 说明：
+ * - 缺省（when 未配置）表示保持现有行为：动态事件流在全部静态流之前执行。
+ * - 当配置了 when 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 节点。
+ */
+export type FlowWhen =
+  | {
+      /** 全部静态流之后执行 */
+      anchor: 'afterAllStatic';
+    }
+  | {
+      /** 插入到某个静态流前/后（允许只选择 flow，不选择 step） */
+      anchor: 'staticFlow';
+      flowKey: string;
+      phase: 'before' | 'after';
+    }
+  | {
+      /** 插入到某个静态流的某个 step 前/后 */
+      anchor: 'staticStep';
+      flowKey: string;
+      stepKey: string;
+      phase: 'before' | 'after';
+    };
+
+/**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
-  | { eventName: FlowEventName; defaultParams?: Record<string, any> };
+  | { eventName: FlowEventName; defaultParams?: Record<string, any>; when?: FlowWhen };
 
 /**
  * 事件分发选项。

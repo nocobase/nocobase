@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ThunderboltOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { ThunderboltOutlined, DeleteOutlined, PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
   ActionDefinition,
   ActionScene,
@@ -22,13 +22,15 @@ import {
   isBeforeRenderFlow,
   observer,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
+import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select, Cascader, Segmented } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
+  const ctx = useFlowContext();
+  const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
 
   const handleClick = () => {
     const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
@@ -38,7 +40,7 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
     model.context.viewer.embed({
       type: 'embed',
       target,
-      title: 'Edit event flows',
+      title: t('Edit event flows'),
       onOpen() {
         target.style.width = '33.3%';
         target.style.maxWidth = '800px';
@@ -58,13 +60,133 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
 const EventConfigSection = observer(
   ({ flow, model, flowEngine }: { flow: FlowDefinition; model: FlowModel; flowEngine: any }) => {
     const ctx = useFlowContext();
-    const t = model.translate.bind(model);
+    const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
     const refresh = useUpdate();
 
-    const eventName = (flow.on as any)?.eventName;
+    const [timingMode, setTimingMode] = React.useState<'default' | 'afterAllStatic' | 'staticStep'>(() => {
+      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
+      if (when?.anchor === 'afterAllStatic') return 'afterAllStatic';
+      if (when?.anchor === 'staticFlow' || when?.anchor === 'staticStep') return 'staticStep';
+      return 'default';
+    });
+
+    const [draftStaticFlowKey, setDraftStaticFlowKey] = React.useState<string | undefined>(() => {
+      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
+      if (when?.anchor === 'staticFlow' && when.flowKey) {
+        return String(when.flowKey);
+      }
+      return undefined;
+    });
+
+    const [draftStaticStep, setDraftStaticStep] = React.useState<[string, string] | undefined>(() => {
+      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
+      if (when?.anchor === 'staticStep' && when.flowKey && when.stepKey) {
+        return [when.flowKey, when.stepKey];
+      }
+      return undefined;
+    });
+
+    const [draftPhase, setDraftPhase] = React.useState<'before' | 'after'>(() => {
+      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
+      if (
+        (when?.anchor === 'staticStep' || when?.anchor === 'staticFlow') &&
+        (when.phase === 'before' || when.phase === 'after')
+      ) {
+        return when.phase;
+      }
+      return 'before';
+    });
+
+    const eventName = typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName;
     const uiSchema = model.getEvent(eventName)?.uiSchema;
     const eventUiSchema = typeof uiSchema === 'function' ? uiSchema(ctx) : uiSchema;
-    const eventDefaultParams = (flow.on as any)?.defaultParams;
+    const eventDefaultParams = typeof flow.on === 'object' ? (flow.on as any)?.defaultParams : undefined;
+
+    const ensureOnObject = React.useCallback(() => {
+      if (!flow.on) {
+        flow.on = { eventName } as any;
+        return;
+      }
+      if (typeof flow.on === 'string') {
+        flow.on = { eventName: flow.on } as any;
+        return;
+      }
+    }, [eventName, flow]);
+
+    const staticFlowOptions = React.useMemo(() => {
+      if (!eventName) return [];
+      const ModelClass = model.constructor as typeof FlowModel;
+      const globalFlows = Array.from(ModelClass.globalFlowRegistry.getFlows().values());
+      const isBeforeRender = eventName === 'beforeRender';
+      const isMatch = (flow: FlowDefinition) => {
+        if (isBeforeRender) {
+          if (flow.manual === true) return false;
+          if (!flow.on) return true;
+          return typeof flow.on === 'string'
+            ? flow.on === 'beforeRender'
+            : (flow.on as any)?.eventName === 'beforeRender';
+        }
+        const on = flow.on;
+        if (!on) return false;
+        return typeof on === 'string' ? on === eventName : (on as any)?.eventName === eventName;
+      };
+      const staticFlows = globalFlows.filter(isMatch);
+
+      const buildStepLabel = (step: FlowStep) => {
+        const actionDef = step.use ? model.getAction(step.use) : undefined;
+        const raw = actionDef?.title || step.title || step.use || step.key;
+        return raw ? t(String(raw)) : step.key;
+      };
+
+      return [
+        ...staticFlows.map((f) => {
+          const children = f.mapSteps((s) => ({
+            value: s.key,
+            label: buildStepLabel(s),
+          }));
+          return {
+            value: f.key,
+            label: t(String(f.title || f.key)),
+            disabled: model.flowRegistry.hasFlow(f.key),
+            ...(children.length ? { children } : {}),
+          };
+        }),
+      ];
+    }, [eventName, model, t]);
+
+    const persistedWhen = React.useMemo(() => {
+      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
+      if (!when || typeof when !== 'object') return undefined;
+      return when as any;
+    }, [typeof flow.on === 'object' ? (flow.on as any)?.when : undefined]);
+
+    const staticAnchorValue = React.useMemo(() => {
+      if (persistedWhen?.anchor === 'staticStep' && persistedWhen.flowKey && persistedWhen.stepKey) {
+        return [persistedWhen.flowKey, persistedWhen.stepKey] as [string, string];
+      }
+      if (persistedWhen?.anchor === 'staticFlow' && persistedWhen.flowKey) {
+        return [persistedWhen.flowKey] as [string];
+      }
+      if (draftStaticStep) return draftStaticStep;
+      if (draftStaticFlowKey) return [draftStaticFlowKey] as [string];
+      return undefined;
+    }, [persistedWhen?.anchor, persistedWhen?.flowKey, persistedWhen?.stepKey, draftStaticStep, draftStaticFlowKey]);
+
+    const phaseValue = React.useMemo(() => {
+      if (
+        (persistedWhen?.anchor === 'staticStep' || persistedWhen?.anchor === 'staticFlow') &&
+        (persistedWhen.phase === 'before' || persistedWhen.phase === 'after')
+      ) {
+        return persistedWhen.phase as 'before' | 'after';
+      }
+      return draftPhase;
+    }, [persistedWhen?.anchor, persistedWhen?.phase, draftPhase]);
+
+    const anchorKind = React.useMemo<'none' | 'flow' | 'step'>(() => {
+      const v = staticAnchorValue as any[] | undefined;
+      if (!v || v.length === 0) return 'none';
+      return v.length === 1 ? 'flow' : 'step';
+    }, [staticAnchorValue]);
 
     const getEventList = () => {
       return [...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }));
@@ -116,12 +238,171 @@ const EventConfigSection = observer(
                 if (!flow.on) {
                   flow.on = { eventName: value } as any;
                 } else {
-                  (flow.on as any).eventName = value;
+                  if (typeof flow.on === 'string') {
+                    flow.on = { eventName: value } as any;
+                  } else {
+                    (flow.on as any).eventName = value;
+                    delete (flow.on as any).when;
+                  }
                 }
+                setTimingMode('default');
+                setDraftStaticFlowKey(undefined);
+                setDraftStaticStep(undefined);
+                setDraftPhase('before');
                 refresh();
               }}
               options={getEventList()}
             />
+          </div>
+
+          {/* 执行时机 */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+              <span style={{ marginInlineEnd: 6 }}>{t('Execution timing')}</span>
+              <Tooltip title={t('Default: runs before built-in flows')}>
+                <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+              </Tooltip>
+              <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
+            </div>
+            <Select
+              style={{ width: '100%' }}
+              disabled={!eventName}
+              value={timingMode}
+              onChange={(value) => {
+                const v = value as 'default' | 'afterAllStatic' | 'staticStep';
+                setTimingMode(v);
+
+                ensureOnObject();
+                if (!flow.on || typeof flow.on !== 'object') return;
+
+                if (v === 'default') {
+                  delete (flow.on as any).when;
+                  refresh();
+                  return;
+                }
+
+                if (v === 'afterAllStatic') {
+                  (flow.on as any).when = { anchor: 'afterAllStatic' };
+                  refresh();
+                  return;
+                }
+
+                // staticStep: wait for user to pick a step, keep config as draft until then
+                delete (flow.on as any).when;
+                refresh();
+              }}
+              options={[
+                { value: 'default', label: t('Default') },
+                {
+                  value: 'afterAllStatic',
+                  label: t('After built-in flows'),
+                },
+                { value: 'staticStep', label: t('Insert relative to a built-in flow or step') },
+              ]}
+            />
+
+            {timingMode === 'staticStep' && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Cascader
+                    allowClear
+                    changeOnSelect
+                    style={{ flex: 1 }}
+                    disabled={!eventName || staticFlowOptions.length === 0}
+                    placeholder={t('Select a built-in flow or step')}
+                    options={staticFlowOptions as any}
+                    value={staticAnchorValue as any}
+                    onChange={(value) => {
+                      const v = (value || []) as any[];
+                      if (v.length === 0) {
+                        setDraftStaticFlowKey(undefined);
+                        setDraftStaticStep(undefined);
+                        ensureOnObject();
+                        if (typeof flow.on === 'object') {
+                          delete (flow.on as any).when;
+                        }
+                        refresh();
+                        return;
+                      }
+                      if (v.length === 1) {
+                        const nextFlowKey = String(v[0]);
+                        setDraftStaticFlowKey(nextFlowKey);
+                        setDraftStaticStep(undefined);
+
+                        ensureOnObject();
+                        if (typeof flow.on === 'object') {
+                          (flow.on as any).when = {
+                            anchor: 'staticFlow',
+                            flowKey: nextFlowKey,
+                            phase: phaseValue,
+                          };
+                        }
+                        refresh();
+                        return;
+                      }
+                      const next: [string, string] = [String(v[0]), String(v[1])];
+                      setDraftStaticFlowKey(undefined);
+                      setDraftStaticStep(next);
+
+                      ensureOnObject();
+                      if (typeof flow.on === 'object') {
+                        (flow.on as any).when = {
+                          anchor: 'staticStep',
+                          flowKey: next[0],
+                          stepKey: next[1],
+                          phase: phaseValue,
+                        };
+                      }
+                      refresh();
+                    }}
+                  />
+                  <Segmented
+                    options={[
+                      {
+                        value: 'before',
+                        label: anchorKind === 'flow' ? t('Before this flow') : t('Before this step'),
+                      },
+                      {
+                        value: 'after',
+                        label: anchorKind === 'flow' ? t('After this flow') : t('After this step'),
+                      },
+                    ]}
+                    value={phaseValue}
+                    onChange={(value) => {
+                      const nextPhase = value as 'before' | 'after';
+                      setDraftPhase(nextPhase);
+
+                      const current = staticAnchorValue as any[] | undefined;
+                      if (!current || current.length === 0) return;
+
+                      ensureOnObject();
+                      if (typeof flow.on === 'object') {
+                        if (current.length === 1) {
+                          (flow.on as any).when = {
+                            anchor: 'staticFlow',
+                            flowKey: String(current[0]),
+                            phase: nextPhase,
+                          };
+                        } else {
+                          (flow.on as any).when = {
+                            anchor: 'staticStep',
+                            flowKey: String(current[0]),
+                            stepKey: String(current[1]),
+                            phase: nextPhase,
+                          };
+                        }
+                      }
+                      refresh();
+                    }}
+                  />
+                </div>
+                {staticFlowOptions.length === 0 && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: '#8c8c8c' }}>
+                    {t('No built-in flows for this event')}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {eventName &&
@@ -131,7 +412,10 @@ const EventConfigSection = observer(
               initialValues: eventDefaultParams,
               flowEngine,
               onFormValuesChange: (form: any) => {
-                _.set(flow, 'on.defaultParams', form.values);
+                ensureOnObject();
+                if (typeof flow.on === 'object') {
+                  (flow.on as any).defaultParams = form.values;
+                }
               },
             })}
         </div>
@@ -239,11 +523,11 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           value={flow.title}
           onChange={(e) => handleTitleChange(flow, e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          placeholder="Enter flow title"
+          placeholder={t('Enter flow title')}
         />
       </div>
       <Space onClick={(e) => e.stopPropagation()}>
-        <Tooltip title="Delete">
+        <Tooltip title={t('Delete')}>
           <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteFlow(flow)} />
         </Tooltip>
         {/* <Tooltip title="Move up">
