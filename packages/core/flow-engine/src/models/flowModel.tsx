@@ -1445,6 +1445,87 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * 复制当前模型实例为一个新的实例。
+   * 新实例及其所有子模型都会有新的 uid，且不保留 root model 的 parent 关系。
+   * 内部所有引用旧 uid 的地方（如 parentId, parentUid 等）都会被替换为对应的新 uid。
+   * @returns {FlowModel} 复制后的新模型实例
+   */
+  clone<T extends FlowModel = this>(): T {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before cloning.');
+    }
+
+    // 序列化当前实例
+    const serialized = this.serialize();
+
+    // 第一步：收集所有 uid 并建立 oldUid -> newUid 的映射
+    const uidMap = new Map<string, string>();
+
+    const collectUids = (data: Record<string, any>): void => {
+      if (data.uid && typeof data.uid === 'string') {
+        uidMap.set(data.uid, uid());
+      }
+
+      // 递归处理 subModels
+      if (data.subModels) {
+        for (const key in data.subModels) {
+          const subModel = data.subModels[key];
+          if (Array.isArray(subModel)) {
+            subModel.forEach((item) => collectUids(item));
+          } else if (subModel && typeof subModel === 'object') {
+            collectUids(subModel);
+          }
+        }
+      }
+    };
+
+    collectUids(serialized);
+
+    // 第二步：深度遍历并替换所有 uid 引用
+    const replaceUidReferences = (data: any, isRoot = false): any => {
+      if (data === null || data === undefined) {
+        return data;
+      }
+
+      // 如果是字符串，检查是否是需要替换的 uid
+      if (typeof data === 'string') {
+        return uidMap.get(data) ?? data;
+      }
+
+      // 如果是数组，递归处理每个元素
+      if (Array.isArray(data)) {
+        return data.map((item) => replaceUidReferences(item, false));
+      }
+
+      // 如果是对象，递归处理每个属性
+      if (typeof data === 'object') {
+        const result: Record<string, any> = {};
+
+        for (const key in data) {
+          if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+
+          // 只删除 root model 的 parentId
+          if (isRoot && key === 'parentId') {
+            continue;
+          }
+
+          result[key] = replaceUidReferences(data[key], false);
+        }
+
+        return result;
+      }
+
+      // 其他类型（number, boolean 等）直接返回
+      return data;
+    };
+
+    const clonedData = replaceUidReferences(serialized, true);
+
+    // 使用 flowEngine 创建新实例
+    return this.flowEngine.createModel<T>(clonedData as any);
+  }
+
+  /**
    * Opens the flow settings dialog for this flow model.
    * @param options - Configuration options for opening flow settings, excluding the model property
    * @returns A promise that resolves when the flow settings dialog is opened
