@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "1.9.32",
+  "version": "1.9.33",
   "displayName": "Data visualization",
   "displayName.ru-RU": "Визуализация данных",
   "displayName.zh-CN": "数据可视化",
