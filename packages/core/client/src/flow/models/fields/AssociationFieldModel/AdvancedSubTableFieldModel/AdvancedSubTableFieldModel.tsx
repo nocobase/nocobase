@@ -190,12 +190,12 @@ const DisplayTable = (props) => {
 
   const updateRow = useCallback(
     (updatedRecord) => {
-      setTableData((prev) => {
+      setTableData((prev = []) => {
         const pk = updatedRecord[rowKey];
         const index = prev.findIndex((item) => item[rowKey] === pk);
 
         let next;
-        if (index === -1) {
+        if (index === -1 || !pk) {
           // 没找到：作为新记录追加到最后
           next = [...prev, updatedRecord];
           const lastPage = Math.ceil(next.length / currentPageSize);
