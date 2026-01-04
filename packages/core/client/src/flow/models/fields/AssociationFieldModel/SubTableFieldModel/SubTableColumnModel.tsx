@@ -351,6 +351,11 @@ export class SubTableColumnModel<
             const namePath = fieldPath.pop();
 
             const fork: any = action.createFork({}, `${id}`);
+            fork.context.defineProperty('currentObject', {
+              get: () => {
+                return record;
+              },
+            });
             if (this.props.readPretty) {
               fork.setProps({
                 value: value,
