@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Admin Configuration",
+    "label": "Administrator Configuration",
     "items": [
       {
         "type": "custom-link",
@@ -32,11 +32,11 @@
   },
   {
     "type": "custom-link",
-    "label": "Features",
+    "label": "Feature Guide",
     "items": [
       {
         "type": "custom-link",
-        "label": "Email Center",
+        "label": "Email Management Center",
         "link": "/email-manager/usage/guide"
       },
       {
@@ -67,7 +67,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Email Todos",
+        "label": "Email To-do",
         "link": "/email-manager/advanced/todo"
       },
       {
