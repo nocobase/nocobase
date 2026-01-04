@@ -35,12 +35,12 @@ import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { FieldDeletePlaceholder } from '../../../blocks/table/TableColumnModel';
 
-function FieldWithoutPermissionPlaceholder({ targetModel }) {
+export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
   const fieldModel = targetModel;
-  const collection = fieldModel.collectionField.collection;
+  const collection = fieldModel.context.collectionField.collection;
   const dataSource = collection.dataSource;
-  const name = fieldModel.collectionField.name;
+  const name = fieldModel.context.collectionField.name;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
