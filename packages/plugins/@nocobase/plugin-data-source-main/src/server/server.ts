@@ -507,11 +507,7 @@ export class PluginDataSourceMainServer extends Plugin {
       await next();
 
       // handle collections:list
-      if (
-        ctx.action.resourceName === 'collections' &&
-        ctx.action.actionName == 'list' &&
-        ctx.action.params?.paginate == 'false'
-      ) {
+      if (ctx.action.resourceName === 'collections' && ctx.action.actionName == 'listMeta') {
         for (const collection of ctx.body) {
           if (collection.get('view')) {
             const fields = collection.fields;
