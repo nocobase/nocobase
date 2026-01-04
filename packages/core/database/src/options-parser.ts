@@ -323,11 +323,32 @@ export class OptionsParser {
     return obj;
   }
 
+  protected normalizeAppends(appends: any): string[] {
+    if (Array.isArray(appends)) {
+      return appends.filter((item): item is string => typeof item === 'string' && item.length > 0);
+    }
+
+    if (lodash.isPlainObject(appends)) {
+      return Object.values(appends).filter((item): item is string => typeof item === 'string' && item.length > 0);
+    }
+
+    if (typeof appends === 'string' && appends.length > 0) {
+      return [appends];
+    }
+
+    return [];
+  }
+
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
 
+    const appendList = this.normalizeAppends(appends);
+    if (!appendList.length) {
+      return filterParams;
+    }
+
     // sort appends by path length
-    appends = lodash.sortBy(appends, (append) => append.split('.').length);
+    const sortedAppends = lodash.sortBy(appendList, (append) => append.split('.').length);
 
     /**
      * set include params
@@ -466,7 +487,7 @@ export class OptionsParser {
     };
 
     // handle every appends
-    for (const append of appends) {
+    for (const append of sortedAppends) {
       setInclude(this.model, filterParams, append);
     }
 

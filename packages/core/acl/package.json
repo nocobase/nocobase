@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/acl",
-  "version": "2.0.0-alpha.60",
+  "version": "2.0.0-beta.2",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/resourcer": "2.0.0-alpha.60",
-    "@nocobase/utils": "2.0.0-alpha.60",
+    "@nocobase/resourcer": "2.0.0-beta.2",
+    "@nocobase/utils": "2.0.0-beta.2",
     "minimatch": "^5.1.1"
   },
   "repository": {
