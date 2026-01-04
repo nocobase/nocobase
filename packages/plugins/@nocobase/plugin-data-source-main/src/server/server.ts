@@ -509,7 +509,7 @@ export class PluginDataSourceMainServer extends Plugin {
       // handle collections:list
       if (ctx.action.resourceName === 'collections' && ctx.action.actionName == 'listMeta') {
         for (const collection of ctx.body) {
-          if (collection.get('view')) {
+          if (collection.view === true) {
             const fields = collection.fields;
             handleFieldSource(fields);
           }
