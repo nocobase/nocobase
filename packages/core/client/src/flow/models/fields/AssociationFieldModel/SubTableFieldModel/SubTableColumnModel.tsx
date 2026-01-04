@@ -362,7 +362,7 @@ export class SubTableColumnModel<
               });
               return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
             } else {
-              return this.props.aclViewDisabled && !record.isNew ? null : (
+              return this.props.aclViewDisabled && !record.__is_new__ ? null : (
                 <FormItem
                   {...this.props}
                   key={id}
@@ -372,8 +372,8 @@ export class SubTableColumnModel<
                   // initialValue={value}
                   disabled={
                     this.props.disabled ||
-                    (!record.isNew && this.props.aclDisabled) ||
-                    (record.isNew && this.props.aclCreateDisabled)
+                    (!record.__is_new__ && this.props.aclDisabled) ||
+                    (record.__is_new__ && this.props.aclCreateDisabled)
                   }
                 >
                   {fork.constructor.isLargeField ? (
@@ -386,8 +386,8 @@ export class SubTableColumnModel<
                       defaultValue={value}
                       disabled={
                         this.props.disabled ||
-                        (!record.isNew && this.props.aclDisabled) ||
-                        (record.isNew && this.props.aclCreateDisabled)
+                        (!record.__is_new__ && this.props.aclDisabled) ||
+                        (record.__is_new__ && this.props.aclCreateDisabled)
                       }
                     />
                   ) : (
