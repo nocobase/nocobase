@@ -19,7 +19,7 @@ import {
   FlowModel,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, ActionModel, BlockModel } from '@nocobase/client';
+import { CollectionBlockModel, BlockSceneEnum, ActionModel, dispatchEventDeep } from '@nocobase/client';
 import React from 'react';
 import { List, Space } from 'antd';
 import { css } from '@emotion/css';
@@ -77,11 +77,13 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           return this.translate('Total {{count}} items', { count: total });
         },
         showSizeChanger: true,
-        onChange: (page, pageSize) => {
+        onChange: async (page, pageSize) => {
           this.resource.loading = true;
           this.resource.setPage(page);
           this.resource.setPageSize(pageSize);
-          this.resource.refresh();
+          await this.resource.refresh();
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          await dispatchEventDeep(this, 'paginationChange');
         },
       };
     } else {

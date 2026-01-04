@@ -301,3 +301,13 @@ DetailsItemModel.registerFlow({
     },
   },
 });
+
+DetailsItemModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
+    },
+  },
+});

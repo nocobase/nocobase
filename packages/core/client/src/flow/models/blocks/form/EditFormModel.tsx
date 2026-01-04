@@ -24,6 +24,7 @@ import React from 'react';
 import { BlockSceneEnum } from '../../base';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
 import { submitHandler } from './submitHandler';
+import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
@@ -71,6 +72,7 @@ export class EditFormModel extends FormBlockModel {
       multiResource.setPage(page);
       multiResource.loading = true;
       await multiResource.refresh();
+      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
