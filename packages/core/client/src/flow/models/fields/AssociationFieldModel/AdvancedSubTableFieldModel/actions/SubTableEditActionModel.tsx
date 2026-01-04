@@ -99,6 +99,19 @@ export class SubTableEditActionModel extends ActionModel {
       ...this.getInputArgs(),
     });
   }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('associationName', {
+      get: () => {
+        return this.context.collectionField.target;
+      },
+    });
+    this.context.defineProperty('resource', {
+      get: () => {
+        return null;
+      },
+    });
+  }
 }
 
 SubTableEditActionModel.define({
