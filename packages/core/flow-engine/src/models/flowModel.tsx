@@ -1445,6 +1445,54 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * 复制当前模型实例为一个新的实例。
+   * 新实例及其所有子模型都会有新的 uid，且不保留 parent 关系。
+   * @returns {FlowModel} 复制后的新模型实例
+   */
+  clone<T extends FlowModel = this>(): T {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before cloning.');
+    }
+
+    // 序列化当前实例
+    const serialized = this.serialize();
+
+    // 递归替换所有 uid 为新值，并删除 parentId
+    const replaceUids = (data: Record<string, any>): Record<string, any> => {
+      const result = { ...data };
+
+      // 生成新的 uid
+      if (result.uid) {
+        result.uid = uid();
+      }
+
+      // 删除 parent 相关信息
+      delete result.parentId;
+
+      // 递归处理 subModels
+      if (result.subModels) {
+        const newSubModels: Record<string, any> = {};
+        for (const key in result.subModels) {
+          const subModel = result.subModels[key];
+          if (Array.isArray(subModel)) {
+            newSubModels[key] = subModel.map((item) => replaceUids(item));
+          } else if (subModel && typeof subModel === 'object') {
+            newSubModels[key] = replaceUids(subModel);
+          }
+        }
+        result.subModels = newSubModels;
+      }
+
+      return result;
+    };
+
+    const clonedData = replaceUids(serialized);
+
+    // 使用 flowEngine 创建新实例
+    return this.flowEngine.createModel<T>(clonedData as any);
+  }
+
+  /**
    * Opens the flow settings dialog for this flow model.
    * @param options - Configuration options for opening flow settings, excluding the model property
    * @returns A promise that resolves when the flow settings dialog is opened
