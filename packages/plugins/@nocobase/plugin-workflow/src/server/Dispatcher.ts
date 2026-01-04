@@ -241,15 +241,8 @@ export default class Dispatcher {
     const { stack } = options;
     let valid = true;
     if (stack?.length > 0) {
-      const existed = await workflow.countExecutions({
-        where: {
-          id: stack,
-        },
-        transaction: options.transaction,
-      });
-
       const limitCount = workflow.options.stackLimit || 1;
-      if (existed >= limitCount) {
+      if (stack.length >= limitCount) {
         this.plugin
           .getLogger(workflow.id)
           .warn(
@@ -351,7 +344,8 @@ export default class Dispatcher {
           this.pending.push({ execution });
         } else {
           logger.info(
-            `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
+            `instance serving? ${this.plugin.serving()}; local pending list? ${this.pending.length}; executing? ${!!this
+              .executing}; sending execution (${execution.id}) to queue`,
           );
           try {
             await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
