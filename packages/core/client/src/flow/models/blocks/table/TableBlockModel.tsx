@@ -208,7 +208,6 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   getColumns() {
-    const isConfigMode = !!this.context.flowSettingsEnabled;
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
@@ -216,7 +215,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       .concat({
         key: 'empty',
       });
-    if (isConfigMode) {
+    if (this.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',

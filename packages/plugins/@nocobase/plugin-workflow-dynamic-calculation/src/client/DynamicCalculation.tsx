@@ -19,7 +19,8 @@ import {
   defaultFieldNames,
   useWorkflowVariableOptions,
 } from '@nocobase/plugin-workflow/client';
-import { NAMESPACE, useLang } from '../locale';
+import { lang, NAMESPACE, useLang } from '../locale';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
   if (!['belongsTo', 'hasOne'].includes(field.type)) {
@@ -104,6 +105,32 @@ export default class extends Instruction {
       node,
       // eslint-disable-next-line react-hooks/rules-of-hooks
       resultTitle: useLang('Calculation result'),
+    };
+  }
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ node }): SubModelItem {
+    return {
+      key: `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'NodeValueModel',
+      createModelOptions: {
+        use: 'NodeValueModel',
+        stepParams: {
+          valueSettings: {
+            init: {
+              dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
+              defaultValue: lang('Calculation result'),
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Dynamic expression calculation", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+      },
     };
   }
 }

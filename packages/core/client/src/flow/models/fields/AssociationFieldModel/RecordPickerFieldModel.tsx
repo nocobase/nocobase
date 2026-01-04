@@ -29,6 +29,12 @@ function RemoteModelRenderer({ options, fieldModel }) {
   const { data, loading } = useRequest(
     async () => {
       const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      if (model && fieldModel) {
+        model.context.defineProperty('flowSettingsEnabled', {
+          get: () => fieldModel.context.flowSettingsEnabled,
+          cache: false,
+        });
+      }
       return model;
     },
     {

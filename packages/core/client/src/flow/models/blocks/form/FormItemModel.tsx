@@ -172,7 +172,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 }
 
 FormItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 

@@ -6006,6 +6006,7 @@
       "Saturday"
     ],
     "weekOption": "week",
-    "yearOption": "year"
+    "yearOption": "year",
+    "Display fields": "顯示欄位"
   }
 }
