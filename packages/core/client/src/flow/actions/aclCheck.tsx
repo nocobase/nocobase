@@ -26,7 +26,7 @@ export const aclCheck = defineAction({
   async handler(ctx, params) {
     const result = await ctx.aclCheck({
       dataSourceKey: ctx.dataSource?.key,
-      resourceName: ctx.associationName || ctx.collectionField?.collectionName || ctx.resourceName,
+      resourceName: ctx.collectionField?.collectionName || ctx.resourceName,
       actionName: ctx.actionName,
       fields: ctx?.collectionField && [ctx.collectionField.name],
       allowedActions: ctx.resource?.getMeta('allowedActions'),

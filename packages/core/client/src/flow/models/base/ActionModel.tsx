@@ -21,6 +21,7 @@ export function ActionWithoutPermission(props) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
+  console.log(blockModel);
   const collection = props.collection || blockModel.collection;
   const dataSource = collection.dataSource;
   const nameValue = useMemo(() => {
@@ -249,11 +250,17 @@ ActionModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
     linkageRules: {
       use: 'actionLinkageRules',
+    },
+  },
+});
+
+ActionModel.registerFlow({
+  key: 'buttonAclSettings',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
     },
   },
 });

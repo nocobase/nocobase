@@ -34,8 +34,9 @@ export class SubTableEditFormModel extends FormBlockModel {
   ];
   onInit(options: any) {
     super.onInit(options);
+
     this.context.defineProperty('resourceName', {
-      get: () => null,
+      get: () => this.context.collection.name,
     });
     const recordData = this.context.view.inputArgs.record || {};
     this.context.defineProperty('record', {

@@ -9,9 +9,9 @@
 
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { ActionModel } from '../../../../base/ActionModel';
+import { SubTableRecordAction } from './SubTableEditActionModel';
 
-export class SubTableRecordDeleteActionModel extends ActionModel {
+export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('Delete'),

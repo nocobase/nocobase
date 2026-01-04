@@ -7,18 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  tExpr,
-  observable,
-  useFlowContext,
-  FlowModel,
-  useFlowViewContext,
-  FlowModelRenderer,
-} from '@nocobase/flow-engine';
+import { tExpr, observable, useFlowContext, useFlowViewContext, FlowModelRenderer } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
+import { Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
-import { ActionModel } from '../../../../base/ActionModel';
+import { Icon } from '../../../../../../icon/Icon';
+import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModel';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
 
 function RemoteModelRenderer({ options, fieldModel }) {
@@ -82,7 +77,64 @@ export function EditFormContent({ model, scene = 'edit' }) {
   );
 }
 
-export class SubTableEditActionModel extends ActionModel {
+export class SubTableRecordAction extends ActionModel {
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('resource', {
+      get: () => {
+        return null;
+      },
+    });
+  }
+  // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    const props = this.props;
+    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    if (this.forbidden) {
+      return (
+        <ActionWithoutPermission collection={this.context.collectionField.targetCollection}>
+          <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+            {props.children || this.getTitle()}
+          </Button>
+        </ActionWithoutPermission>
+      );
+    }
+    return (
+      <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+        <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+          {props.children || this.getTitle()}
+        </Button>
+      </Tooltip>
+    );
+  }
+}
+
+SubTableRecordAction.registerFlow({
+  key: 'buttonAclSettings',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
+      async handler(ctx, params) {
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.target,
+          actionName: ctx.actionName,
+        });
+        if (!ctx.actionName) {
+          return;
+        }
+        if (!result) {
+          ctx.model.hidden = true;
+          ctx.model.forbidden = {
+            actionName: ctx.actionName,
+          };
+          ctx.exitAll();
+        }
+      },
+    },
+  },
+});
+export class SubTableEditActionModel extends SubTableRecordAction {
   selectedRows = observable.ref([]);
   defaultPopupTitle = tExpr('Edit');
   defaultProps: ButtonProps = {
@@ -101,11 +153,7 @@ export class SubTableEditActionModel extends ActionModel {
   }
   onInit(options: any): void {
     super.onInit(options);
-    this.context.defineProperty('associationName', {
-      get: () => {
-        return this.context.collectionField.target;
-      },
-    });
+
     this.context.defineProperty('resource', {
       get: () => {
         return null;
