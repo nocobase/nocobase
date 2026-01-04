@@ -62,7 +62,7 @@ export function SubTableField(props) {
   // 新增一行
   const handleAdd = () => {
     if (allowCreate !== false) {
-      const newRow = { isNew: true };
+      const newRow = { __is_new__: true };
       columns.forEach((col) => (newRow[col.dataIndex] = undefined));
       const newValue = [...(value || []), newRow];
       const lastPage = Math.ceil(newValue.length / currentPageSize);
@@ -116,7 +116,7 @@ export function SubTableField(props) {
         fixed: 'right',
         render: (v, record, index) => {
           const pageRowIdx = (currentPage - 1) * currentPageSize + index;
-          if (!allowDisassociation && !(record.isNew || record.isStored)) {
+          if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
             return;
           }
           return (
