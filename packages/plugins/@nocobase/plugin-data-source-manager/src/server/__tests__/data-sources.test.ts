@@ -15,7 +15,7 @@ describe('data source', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'data-source-manager'],
+      plugins: ['data-source-main', 'data-source-manager', 'field-sort', 'error-handler'],
     });
   });
 
