@@ -382,6 +382,12 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
     this.context.defineProperty('associationModel', {
       value: this,
     });
+    if (this.parent.context.actionName) {
+      this.context.defineProperty('actionName', {
+        get: () => 'view',
+      });
+    }
+
     // 监听表单reset
     this.context.blockModel.emitter.on('onFieldReset', () => {
       this.props.onChange([]);
@@ -587,7 +593,7 @@ AdvancedSubTableFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
           },
-          content: () => <EditFormContent model={ctx.model} scene="new" />,
+          content: () => <EditFormContent model={ctx.model} scene="create" />,
           styles: {
             content: {
               padding: 0,

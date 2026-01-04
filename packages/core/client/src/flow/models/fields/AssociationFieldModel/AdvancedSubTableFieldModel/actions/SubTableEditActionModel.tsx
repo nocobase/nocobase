@@ -9,12 +9,37 @@
 
 import { tExpr, observable, useFlowContext, useFlowViewContext, FlowModelRenderer } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
+import { capitalize } from 'lodash';
 import { Icon } from '../../../../../../icon/Icon';
-import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModel';
+import { ActionModel } from '../../../../base/ActionModel';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
+
+function FieldWithoutPermissionPlaceholder({ targetModel, children }) {
+  const t = targetModel.context.t;
+  const fieldModel = targetModel;
+  const collection = fieldModel.context.collectionField.collection;
+  const dataSource = collection.dataSource;
+  const name = fieldModel.context.collectionField.name;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const { actionName } = fieldModel.forbidden || {};
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return <Tooltip title={messageValue}>{children}</Tooltip>;
+}
 
 function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
@@ -24,7 +49,7 @@ function RemoteModelRenderer({ options, fieldModel }) {
       model.context.defineProperty('associationModel', {
         value: fieldModel.context.associationModel,
       });
-      model.scene = options.scene;
+      model.actionName = options.scene;
       return model;
     },
     {
@@ -37,11 +62,11 @@ function RemoteModelRenderer({ options, fieldModel }) {
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
-export function EditFormContent({ model, scene = 'edit' }) {
+export function EditFormContent({ model, scene = 'update' }) {
   const ctx = useFlowContext();
   const { Header, type } = ctx.view;
   model._closeView = ctx.view.close;
-  const title = scene === 'new' ? ctx.t('Add new') : ctx.t('Detail');
+  const title = scene === 'create' ? ctx.t('Add new') : ctx.t('Detail');
   return (
     <div>
       <Header
@@ -92,11 +117,11 @@ export class SubTableRecordAction extends ActionModel {
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
     if (this.forbidden) {
       return (
-        <ActionWithoutPermission collection={this.context.collectionField.targetCollection}>
-          <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+        <FieldWithoutPermissionPlaceholder targetModel={this}>
+          <Button {...props} icon={icon} style={{ opacity: '0.3' }}>
             {props.children || this.getTitle()}
           </Button>
-        </ActionWithoutPermission>
+        </FieldWithoutPermissionPlaceholder>
       );
     }
     return (
@@ -117,8 +142,9 @@ SubTableRecordAction.registerFlow({
       async handler(ctx, params) {
         const result = await ctx.aclCheck({
           dataSourceKey: ctx.dataSource?.key,
-          resourceName: ctx.collectionField?.target,
+          resourceName: ctx.collectionField?.collectionName,
           actionName: ctx.actionName,
+          fields: [ctx.collectionField.name],
         });
         if (!ctx.actionName) {
           return;

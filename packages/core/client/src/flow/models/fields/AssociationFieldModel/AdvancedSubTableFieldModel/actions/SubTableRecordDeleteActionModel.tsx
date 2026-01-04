@@ -18,7 +18,7 @@ export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
   };
 
   getAclActionName() {
-    return 'destroy';
+    return 'update';
   }
 }
 

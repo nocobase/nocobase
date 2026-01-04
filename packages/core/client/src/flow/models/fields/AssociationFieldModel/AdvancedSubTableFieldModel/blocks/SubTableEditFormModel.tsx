@@ -110,7 +110,9 @@ export class SubTableEditFormModel extends FormBlockModel {
   }
 
   getAclActionName() {
-    return 'update';
+    const model: any = this;
+    const scene = model.parent?.actionName || model.actionName;
+    return scene;
   }
 
   renderComponent() {
@@ -146,9 +148,9 @@ export class SubTableEditFormModel extends FormBlockModel {
 
 const FormLabel = () => {
   const model: any = useFlowModel();
-  const scene = model.parent?.scene || model.scene;
+  const scene = model.parent?.actionName || model.actionName;
   const t = model.context.t;
-  const title = scene === 'new' ? 'Form (Add new)' : 'Form (Edit)';
+  const title = scene === 'create' ? 'Form (Add new)' : 'Form (Edit)';
   return t(title);
 };
 SubTableEditFormModel.define({
