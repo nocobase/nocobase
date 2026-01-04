@@ -474,46 +474,57 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.resource(viewResourcer);
     this.app.actions(collectionActions);
 
-    const handleFieldSource = (fields) => {
-      for (const field of lodash.castArray(fields)) {
-        if (field.get('source')) {
-          const [collectionSource, fieldSource] = field.get('source').split('.');
-          // find original field
-          const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
+    const handleFieldSource = (fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>) => {
+      lodash.castArray(fields).forEach((field, index) => {
+        let source: string;
 
-          if (!collectionField) {
-            continue;
-          }
-
-          const newOptions = {};
-
-          // write original field options
-          lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
-
-          // merge with current field options
-          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
-            if (srcValue === null) {
-              return objValue;
-            }
-          });
-
-          // set final options
-          field.set('options', newOptions);
+        if (field && typeof field.get === 'function') {
+          source = field.get('source');
+        } else {
+          source = field?.source;
         }
-      }
+        if (!source) {
+          return;
+        }
+
+        const [collectionSource, fieldSource] = source.split('.');
+        const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
+
+        if (!collectionField) {
+          return;
+        }
+
+        const newOptions: any = {};
+
+        // 原始字段 options
+        lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
+
+        const currentValues = field && typeof (field as any).get === 'function' ? (field as any).get() : field;
+
+        lodash.mergeWith(newOptions, currentValues, (objValue, srcValue) => {
+          if (srcValue === null) {
+            return objValue;
+          }
+        });
+
+        if (field && typeof (field as any).set === 'function') {
+          field.set('options', newOptions);
+        } else {
+          fields[index] = {
+            ...field,
+            ...newOptions,
+          };
+        }
+      });
     };
 
     this.app.resourceManager.use(async function handleFieldSourceMiddleware(ctx, next) {
       await next();
 
       // handle collections:list
-      if (
-        ctx.action.resourceName === 'collections' &&
-        ctx.action.actionName == 'list' &&
-        ctx.action.params?.paginate == 'false'
-      ) {
+      if (ctx.action.resourceName === 'collections' && ctx.action.actionName == 'listMeta') {
         for (const collection of ctx.body) {
-          if (collection.get('view')) {
+          if (collection.view === true) {
             const fields = collection.fields;
             handleFieldSource(fields);
           }
