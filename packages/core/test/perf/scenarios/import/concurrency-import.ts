@@ -42,10 +42,15 @@ export function setup() {
   } while (!appList.data.every((app) => app.status === 'running'));
 
   for (const appName of appNames) {
+    let enabledPluginList = listEnabledPlugin({ token, appName });
+    let enabledPluginNames = (enabledPluginList.data ?? []).map(({ name }) => name);
+    if (enabledPluginNames.includes('action-import-pro')) {
+      continue;
+    }
+
     enablePlugins({ token, appName, pluginNames: ['action-import-pro'] });
-    let enabledPluginNames = [];
     do {
-      const enabledPluginList = listEnabledPlugin({ token, appName });
+      enabledPluginList = listEnabledPlugin({ token, appName });
       enabledPluginNames = (enabledPluginList.data ?? []).map(({ name }) => name);
       sleep(15);
     } while (!enabledPluginNames.includes('action-import-pro'));
@@ -337,7 +342,7 @@ const getTask = ({ token, appName, taskId }) => {
 export default function ({ token }) {
   const appName = appNames[vu.idInTest - 1];
   const receipt = importData({ token, appName });
-  console.log(`app id: ${appName} taskId: ${receipt.data.taskId}`);
+  console.log(`app id: ${appName} taskId: ${receipt?.data?.taskId}`);
   let status;
   do {
     const taskResp = getTask({ token, appName, taskId: receipt.data.taskId });
