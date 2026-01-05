@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
+import { lazy, Plugin, useCompile } from '@nocobase/client';
 import MobileManager from '@nocobase/plugin-mobile/client';
+import { Registry } from '@nocobase/utils/client';
 
 // import { ExecutionPage } from './ExecutionPage';
 // import { WorkflowPage } from './WorkflowPage';
@@ -18,6 +18,10 @@ const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage')
 const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
 const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
 
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { observer } from '@formily/react';
+import { Tooltip } from 'antd';
+import React from 'react';
 import { lang, NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
@@ -33,6 +37,7 @@ import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { VariableOption } from './variable';
+import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 import {
   MobileTabBarWorkflowTasksItem,
   TasksCountsProvider,
@@ -42,11 +47,6 @@ import {
   WorkflowTasks,
   WorkflowTasksMobile,
 } from './WorkflowTasks';
-import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
-import { observer } from '@formily/react';
-import { Space, Tooltip } from 'antd';
-import React from 'react';
-import { QuestionCircleOutlined } from '@ant-design/icons';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -158,7 +158,7 @@ export default class PluginWorkflowClient extends Plugin {
     const mobileManager = this.pm.get(MobileManager);
     this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
     this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
-    if (mobileManager.mobileRouter) {
+    if (mobileManager?.mobileRouter) {
       const MobileComponent = observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' });
       // mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
       //   path: '/page/workflow-tasks',

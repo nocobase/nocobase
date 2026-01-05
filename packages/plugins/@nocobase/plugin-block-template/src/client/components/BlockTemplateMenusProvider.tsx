@@ -8,23 +8,23 @@
  */
 
 import {
-  useRequest,
-  useAPIClient,
-  usePlugin,
-  registerInitializerMenusGenerator,
-  useResource,
   ISchema,
+  registerInitializerMenusGenerator,
   SchemaInitializerItemType,
+  useAPIClient,
   useCurrentUserContext,
+  usePlugin,
+  useRequest,
+  useResource,
 } from '@nocobase/client';
-import React, { createContext, useContext, useEffect } from 'react';
-import PluginBlockTemplateClient from '..';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import { useMemoizedFn } from 'ahooks';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import PluginBlockTemplateClient from '..';
+import { convertTemplateToBlock, correctIdReferences } from '../initializers/TemplateBlockInitializer';
 import { useT } from '../locale';
 import { findBlockRootSchema } from '../utils/schema';
-import { convertTemplateToBlock, correctIdReferences } from '../initializers/TemplateBlockInitializer';
-import { useMemoizedFn } from 'ahooks';
-import { useLocation } from 'react-router-dom';
 
 interface BlockTemplateContextProps {
   loading: boolean;
@@ -48,7 +48,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
   const mobilePlugin = usePlugin(PluginMobileClient);
   const blockTemplatesResource = useResource('blockTemplates');
   const t = useT();
-  const isMobile = window.location.pathname.startsWith(mobilePlugin.mobileBasename);
+  const isMobile = window.location.pathname.startsWith(mobilePlugin?.mobileBasename);
   const location = useLocation();
   const previousPathRef = React.useRef(location.pathname);
   const user = useCurrentUserContext();
