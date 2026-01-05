@@ -349,6 +349,15 @@ export class FormBlockModel<
   protected onMount() {
     super.onMount();
     this.formValueRuntime?.mount({ sync: true });
+
+    // 将“表单赋值”配置编译为运行时规则
+    try {
+      const params = this.getStepParams('formModelSettings', 'assignRules');
+      const items = (params?.value || []) as any[];
+      this.formValueRuntime?.syncAssignRules(Array.isArray(items) ? (items as any) : []);
+    } catch {
+      // ignore
+    }
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
@@ -423,6 +432,20 @@ FormBlockModel.registerFlow({
     layout: {
       use: 'layout',
       title: tExpr('Layout'),
+    },
+    assignRules: {
+      use: 'formAssignRules',
+      title: tExpr('Assign field values'),
+      afterParamsSave(ctx) {
+        // 保存后同步到运行时（若存在），以便立即生效
+        try {
+          const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
+          const items = (params?.value || []) as any[];
+          ctx.model.formValueRuntime?.syncAssignRules(Array.isArray(items) ? (items as any) : []);
+        } catch {
+          // ignore
+        }
+      },
     },
   },
 });
