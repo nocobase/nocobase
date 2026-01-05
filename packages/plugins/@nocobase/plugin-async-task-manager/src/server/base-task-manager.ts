@@ -20,12 +20,22 @@ import { randomUUID } from 'crypto';
 import { TaskType } from './task-type';
 import PluginAsyncTaskManagerServer from './plugin';
 import { Model } from '@nocobase/database';
+import { ConcurrencyMode, ConcurrencyMonitor } from './interfaces/concurrency-monitor';
+import { BaseConcurrencyMonitor } from './base-concurrency-monitor';
 
 const WORKER_JOB_ASYNC_TASK_PROCESS = 'async-task:process';
 
 type QueueMessage = {
   id: string;
 };
+
+const CONCURRENCY: number = process.env.ASYNC_TASK_MAX_CONCURRENCY
+  ? Number.parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY, 10)
+  : 3;
+
+const CONCURRENCY_MODE: ConcurrencyMode = (process.env.ASYNC_TASK_CONCURRENCY_MODE as ConcurrencyMode) ?? 'app';
+
+const PROCESS_CONCURRENCY_MONITOR: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY);
 
 export class BaseTaskManager implements AsyncTasksManager {
   private taskTypes: Map<string, TaskConstructor> = new Map();
@@ -43,13 +53,17 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private progressThrottles: Map<string, DebouncedFunc<(...args: any[]) => any>> = new Map();
 
-  concurrency: number = process.env.ASYNC_TASK_MAX_CONCURRENCY
-    ? Number.parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY, 10)
-    : 3;
+  private concurrencyMonitor: ConcurrencyMonitor;
 
-  private idle = () => {
-    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.tasks.size < this.concurrency;
-  };
+  get concurrency() {
+    return this.concurrencyMonitor.concurrency;
+  }
+
+  set concurrency(concurrency: number) {
+    this.concurrencyMonitor.concurrency = concurrency;
+  }
+
+  private idle = () => this.concurrencyMonitor.idle();
 
   private onQueueTask = async ({ id }: QueueMessage) => {
     const task = await this.prepareTask(id);
@@ -106,6 +120,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     if (task.doneAt) {
       this.progressThrottles.delete(task.id);
       this.tasks.delete(task.id);
+      this.concurrencyMonitor.reduce(task.id);
     }
 
     if (task.status === TASK_STATUS.SUCCEEDED) {
@@ -116,6 +131,7 @@ export class BaseTaskManager implements AsyncTasksManager {
   private onTaskAfterDelete = (task) => {
     this.tasks.delete(task.id);
     this.progressThrottles.delete(task.id);
+    this.concurrencyMonitor.reduce(task.id);
     const userId = task.createdById;
     if (userId) {
       this.app.emit('ws:sendToUser', {
@@ -159,6 +175,7 @@ export class BaseTaskManager implements AsyncTasksManager {
         for (const task of tasksToCleanup) {
           this.tasks.delete(task.id);
           this.progressThrottles.delete(task.id);
+          this.concurrencyMonitor.reduce(task.id);
         }
 
         await TaskRepo.destroy({
@@ -206,6 +223,7 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   setApp(app: Application): void {
     this.app = app;
+    this.concurrencyMonitor = new ConcurrencyMonitorDelegate(app, CONCURRENCY_MODE);
     const plugin = this.app.pm.get(PluginAsyncTaskManagerServer) as PluginAsyncTaskManagerServer;
 
     this.app.on('afterStart', () => {
@@ -347,6 +365,7 @@ export class BaseTaskManager implements AsyncTasksManager {
       task.setApp(this.app);
       task.onProgress = this.onTaskProgress;
       this.tasks.set(task.record.id, task);
+      this.concurrencyMonitor.increase(task.record.id);
       try {
         this.logger.debug(`Starting execution of task ${task.record.id} from queue`);
         await task.run();
@@ -354,7 +373,43 @@ export class BaseTaskManager implements AsyncTasksManager {
         this.logger.error(`Error executing task ${task.record.id} from queue: ${error.message}`);
       } finally {
         this.tasks.delete(task.record.id);
+        this.concurrencyMonitor.reduce(task.record.id);
       }
     }
+  }
+}
+
+class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
+  constructor(
+    public app: Application,
+    public mode: ConcurrencyMode,
+    private appConcurrencyMonitor: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY),
+    private processConcurrencyMonitor: ConcurrencyMonitor = PROCESS_CONCURRENCY_MONITOR,
+  ) {}
+
+  private get concurrencyMonitor(): ConcurrencyMonitor {
+    return this.mode === 'process' ? this.processConcurrencyMonitor : this.appConcurrencyMonitor;
+  }
+
+  idle(): boolean {
+    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.concurrencyMonitor.idle();
+  }
+
+  get concurrency(): number {
+    return this.concurrencyMonitor.concurrency;
+  }
+
+  set concurrency(concurrency: number) {
+    this.appConcurrencyMonitor.concurrency = concurrency;
+  }
+
+  increase(taskId: TaskId): void {
+    this.appConcurrencyMonitor.increase(taskId);
+    this.processConcurrencyMonitor.increase(taskId);
+  }
+
+  reduce(taskId: TaskId): void {
+    this.appConcurrencyMonitor.reduce(taskId);
+    this.processConcurrencyMonitor.reduce(taskId);
   }
 }
