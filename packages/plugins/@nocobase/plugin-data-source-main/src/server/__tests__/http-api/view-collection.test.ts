@@ -351,10 +351,7 @@ SELECT * FROM numbers;
       context: {},
     });
 
-    const response = await agent.resource('collections').list({
-      appends: ['fields'],
-      paginate: false,
-    });
+    const response = await agent.resource('collections').listMeta();
 
     const listResult = response.body.data.find((item) => item.name === viewName);
 
