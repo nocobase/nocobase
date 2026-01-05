@@ -9,7 +9,7 @@
 
 import { throttle, DebouncedFunc } from 'lodash';
 
-import { Application } from '@nocobase/server';
+import { Application, QueueCallbackOptions, QueueMessageOptions } from '@nocobase/server';
 import { Logger } from '@nocobase/logger';
 
 import { AsyncTasksManager, CreateTaskOptions } from './interfaces/async-task-manager';
@@ -65,9 +65,17 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private idle = () => this.concurrencyMonitor.idle();
 
-  private onQueueTask = async ({ id }: QueueMessage) => {
+  private onQueueTask = async ({ id }: QueueMessage, { queueOptions }: QueueCallbackOptions) => {
     const task = await this.prepareTask(id);
-    await this.runTask(task);
+    if (!this.concurrencyMonitor.increase(task.record.id)) {
+      this.enqueueTask(task, queueOptions);
+      return;
+    }
+    try {
+      await this.runTask(task);
+    } finally {
+      this.concurrencyMonitor.reduce(task.record.id);
+    }
   };
 
   private onTaskProgress = (item: TaskModel) => {
@@ -365,7 +373,6 @@ export class BaseTaskManager implements AsyncTasksManager {
       task.setApp(this.app);
       task.onProgress = this.onTaskProgress;
       this.tasks.set(task.record.id, task);
-      this.concurrencyMonitor.increase(task.record.id);
       try {
         this.logger.debug(`Starting execution of task ${task.record.id} from queue`);
         await task.run();
@@ -373,7 +380,6 @@ export class BaseTaskManager implements AsyncTasksManager {
         this.logger.error(`Error executing task ${task.record.id} from queue: ${error.message}`);
       } finally {
         this.tasks.delete(task.record.id);
-        this.concurrencyMonitor.reduce(task.record.id);
       }
     }
   }
@@ -403,9 +409,8 @@ class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
     this.appConcurrencyMonitor.concurrency = concurrency;
   }
 
-  increase(taskId: TaskId): void {
-    this.appConcurrencyMonitor.increase(taskId);
-    this.processConcurrencyMonitor.increase(taskId);
+  increase(taskId: TaskId): boolean {
+    return this.processConcurrencyMonitor.increase(taskId) && this.appConcurrencyMonitor.increase(taskId);
   }
 
   reduce(taskId: TaskId): void {

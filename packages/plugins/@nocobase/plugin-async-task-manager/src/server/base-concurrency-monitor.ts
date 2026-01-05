@@ -27,8 +27,12 @@ export class BaseConcurrencyMonitor implements ConcurrencyMonitor {
     this._concurrency = concurrency;
   }
 
-  increase(taskId: TaskId): void {
+  increase(taskId: TaskId): boolean {
+    if (this.taskIds.size + 1 > this.concurrency) {
+      return false;
+    }
     this.taskIds.add(taskId);
+    return true;
   }
 
   reduce(taskId: TaskId): void {
