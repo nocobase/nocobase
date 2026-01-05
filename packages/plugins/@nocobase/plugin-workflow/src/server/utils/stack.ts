@@ -17,53 +17,105 @@ function encode(workflowId: number | string, executionId: number | string) {
   return `${workflowId}${STACK_DELIMITER}${executionId}`;
 }
 
-function getWorkflowFromEntry(entry: string) {
-  const [workflowId] = entry.split(STACK_DELIMITER);
-  return workflowId;
+type ParsedEntry = {
+  workflowId?: string;
+  executionId?: string;
+};
+
+function parseStackEntry(entry: StackEntry): ParsedEntry | null {
+  if (entry == null) {
+    return null;
+  }
+
+  if (typeof entry === 'string') {
+    if (!entry) {
+      return null;
+    }
+    if (entry.includes(STACK_DELIMITER)) {
+      const [workflowId, executionId] = entry.split(STACK_DELIMITER);
+      if (!executionId) {
+        return null;
+      }
+      return { workflowId, executionId };
+    }
+    return { executionId: entry };
+  }
+
+  if (typeof entry === 'number') {
+    return { executionId: entry.toString() };
+  }
+
+  if (typeof entry === 'object') {
+    const workflowId = entry.workflowId ?? entry['workflow_id'];
+    const executionId = entry.executionId ?? entry['execution_id'] ?? entry.id;
+    if (executionId == null) {
+      return null;
+    }
+    return {
+      workflowId: workflowId != null ? String(workflowId) : undefined,
+      executionId: String(executionId),
+    };
+  }
+
+  return null;
 }
 
-function normalizeEntry(entry: StackEntry): string {
-  if (typeof entry === 'string') {
-    return entry;
+function normalizeStackEntries(entries: StackEntry[] | undefined) {
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+  let hasLegacy = false;
+
+  if (!Array.isArray(entries) || !entries.length) {
+    return { normalized, hasLegacy };
   }
-  if (typeof entry === 'number') {
-    return entry.toString();
-  }
-  if (entry && typeof entry === 'object') {
-    const workflowId = entry.workflowId ?? entry['workflow_id'];
-    const executionId = entry.executionId ?? entry.id ?? entry['execution_id'];
-    if (workflowId != null && executionId != null) {
-      return encode(workflowId, executionId);
+
+  for (const entry of entries) {
+    const parsed = parseStackEntry(entry);
+    if (!parsed?.executionId) {
+      continue;
     }
-    if (executionId != null) {
-      return executionId.toString();
+
+    if (!parsed.workflowId) {
+      hasLegacy = true;
+      if (seen.has(parsed.executionId)) {
+        continue;
+      }
+      seen.add(parsed.executionId);
+      normalized.push(parsed.executionId);
+      continue;
     }
+
+    const encoded = encode(parsed.workflowId, parsed.executionId);
+    if (seen.has(encoded)) {
+      continue;
+    }
+    seen.add(encoded);
+    normalized.push(encoded);
   }
-  return String(entry ?? '');
+
+  return { normalized, hasLegacy };
 }
 
 export function buildExecutionStack(execution: ExecutionModel): string[] {
-  const prev = (execution.stack as StackEntry[] | undefined)?.map(normalizeEntry) ?? [];
+  const { normalized } = normalizeStackEntries(execution.stack as StackEntry[] | undefined);
   const current = encode(execution.workflowId, execution.id);
-  return Array.from(new Set(prev.concat(current)));
+  if (!normalized.includes(current)) {
+    normalized.push(current);
+  }
+  return normalized;
 }
 
 export function countWorkflowStackEntries(stack: StackEntry[] | undefined, workflowId: number) {
-  if (!stack?.length) {
-    return { count: 0, hasLegacy: false };
+  const { normalized, hasLegacy } = normalizeStackEntries(stack);
+  if (!normalized.length) {
+    return { count: 0, hasLegacy };
   }
-  let count = 0;
-  let hasLegacy = false;
-  const workflowPrefix = `${workflowId}${STACK_DELIMITER}`;
 
-  for (const entry of stack) {
-    const normalized = normalizeEntry(entry);
-    if (normalized.includes(STACK_DELIMITER)) {
-      if (getWorkflowFromEntry(normalized) === String(workflowId)) {
-        count += 1;
-      }
-    } else if (normalized) {
-      hasLegacy = true;
+  const workflowPrefix = `${workflowId}${STACK_DELIMITER}`;
+  let count = 0;
+  for (const entry of normalized) {
+    if (entry.startsWith(workflowPrefix)) {
+      count += 1;
     }
   }
 
