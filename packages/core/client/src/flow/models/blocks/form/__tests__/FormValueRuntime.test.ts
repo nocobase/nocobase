@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { EventEmitter } from 'events';
+import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext } from '@nocobase/flow-engine';
 import { FormValueRuntime } from '../FormValueRuntime';
@@ -31,6 +32,9 @@ function createFieldContext(runtime: FormValueRuntime) {
   ctx.defineMethod('resolveJsonTemplate', async function (this: any, template: any) {
     if (template === '__B__') {
       return this.formValues.b;
+    }
+    if (template === '{{ ctx.someVar }}') {
+      return this.someVar;
     }
     if (template === '__DYNAMIC__') {
       const key = this.formValues.selector;
@@ -175,5 +179,205 @@ describe('FormValueRuntime (default rules)', () => {
     // y changes should update a
     await runtime.setFormValues(fieldCtx, [{ path: ['y'], value: 30 }], { source: 'user' });
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe(30));
+  });
+});
+
+describe('FormValueRuntime (form assign rules)', () => {
+  it('mode=assign keeps overriding after user change', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    // user writes to target; assign rule MUST NOT stop（可能会被规则立即回写覆盖）
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'user' }], { source: 'user' });
+
+    // dependency change triggers overwrite again
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
+  it('mode=default follows explicit semantics and stops after user change', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-2',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a2',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a2' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a2',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    // user writes to target; default mode MUST stop permanently
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'user' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('user');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['a'])).toBe('user');
+  });
+
+  it('tracks ctx var deps and updates when ctx var changes', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-ctx-deps',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const store = observable({ someVar: 'X' });
+
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('someVar', { get: () => store.someVar, cache: false });
+
+    const fieldModel: any = {
+      uid: 'field-a-ctx',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-ctx' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a-ctx',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.someVar }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    store.someVar = 'Y';
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
+  it('runs rule after target model becomes available (model:mounted)', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-mount',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-mount',
+      context: { blockModel, fieldPathArray: undefined },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-mount' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a-mount',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    // target not ready yet
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(formStub.getFieldValue(['a'])).toBeUndefined();
+
+    // model mounts later with resolved fieldPathArray
+    fieldModel.context.fieldPathArray = ['a'];
+    engineEmitter.emit('model:mounted', { model: fieldModel, uid: fieldModel.uid });
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
   });
 });

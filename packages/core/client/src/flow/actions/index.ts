@@ -29,6 +29,7 @@ export * from './aclCheck';
 export * from './pattern';
 export * from './validation';
 export * from './columnFixed';
+export * from './formAssignRules';
 export {
   fieldLinkageRules,
   subFormFieldLinkageRules,
