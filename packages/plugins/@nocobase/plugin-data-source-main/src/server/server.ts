@@ -485,33 +485,47 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.resourceManager.registerActionHandlers(collectionActions);
     this.app.resourceManager.define(mainDataSourceResource);
 
-    this.app.resource(viewResourcer);
-    this.app.actions(collectionActions);
+    const handleFieldSource = ({
+      fields,
+      isRawValue,
+      rawFields,
+    }: {
+      fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>;
+      isRawValue?: boolean;
+      rawFields?: ColumnsDescription;
+    }) => {
+      lodash.castArray(fields).forEach((field, index) => {
+        const source = isRawValue ? field.source : field.get('source');
+        if (!source) {
+          return;
+        }
 
-    const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
-      for (const field of lodash.castArray(fields)) {
-        if (field.get('source')) {
-          const [collectionSource, fieldSource] = field.get('source').split('.');
-          // find original field
-          const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
+        const [collectionSource, fieldSource] = source.split('.');
+        const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
 
-          if (!collectionField) {
-            continue;
+        if (!collectionField) {
+          return;
+        }
+
+        const newOptions: any = {};
+
+        // 原始字段 options
+        lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
+
+        const currentValues = isRawValue ? field : field.get();
+
+        lodash.mergeWith(newOptions, currentValues, (objValue, srcValue) => {
+          if (srcValue === null) {
+            return objValue;
           }
+        });
 
-          const newOptions = {};
-
-          // write original field options
-          lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
-
-          // merge with current field options
-          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
-            if (srcValue === null) {
-              return objValue;
-            }
-          });
-
-          // set final options
+        if (isRawValue) {
+          fields[index] = {
+            ...field,
+            ...newOptions,
+          };
+        } else {
           field.set('options', newOptions);
         }
         const fieldTypes = fieldTypeMap[this.db.options.dialect];
@@ -523,22 +537,18 @@ export class PluginDataSourceMainServer extends Plugin {
             field.set('possibleTypes', possibleTypes);
           }
         }
-      }
+      });
     };
 
     this.app.resourceManager.use(async function handleFieldSourceMiddleware(ctx, next) {
       await next();
 
       // handle collections:list
-      if (
-        ctx.action.resourceName === 'collections' &&
-        ctx.action.actionName == 'list' &&
-        ctx.action.params?.paginate == 'false'
-      ) {
+      if (ctx.action.resourceName === 'collections' && ctx.action.actionName == 'listMeta') {
         for (const collection of ctx.body) {
-          if (collection.get('view')) {
+          if (collection.view === true) {
             const fields = collection.fields;
-            handleFieldSource(fields);
+            handleFieldSource({ fields, isRawValue: true });
           }
         }
       }
@@ -557,11 +567,11 @@ export class PluginDataSourceMainServer extends Plugin {
             // ignore
           }
         }
-        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
+        handleFieldSource({ fields: ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields });
       }
 
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {
-        handleFieldSource(ctx.body);
+        handleFieldSource({ fields: ctx.body });
       }
     });
 
