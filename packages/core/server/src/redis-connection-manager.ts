@@ -9,9 +9,10 @@
 
 import { Logger } from '@nocobase/logger';
 import merge from 'lodash/merge';
-import { createClient, RedisClientOptions, RedisClientType } from 'redis';
+import { createClient } from 'redis';
 
-export type Redis = RedisClientType;
+type RedisClientOptions = NonNullable<Parameters<typeof createClient>[0]>;
+export type Redis = ReturnType<typeof createClient>;
 
 export interface RedisConfig extends RedisClientOptions {
   connectionString?: string;
