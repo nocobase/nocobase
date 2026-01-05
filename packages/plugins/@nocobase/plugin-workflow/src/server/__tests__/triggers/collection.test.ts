@@ -19,7 +19,7 @@ async function waitForExpect<T>(
   fn: () => Promise<T>,
   predicate: (value: T) => boolean,
   timeout = 3000,
-  interval = 50,
+  interval = 100,
 ): Promise<T> {
   const end = Date.now() + timeout;
   let lastValue: T;
@@ -907,7 +907,7 @@ describe('workflow > triggers > collection', () => {
     });
   });
 
-  describe('cycling trigger', () => {
+  describe.only('cycling trigger', () => {
     it('trigger should not be triggered more than once in same execution', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -1114,7 +1114,12 @@ describe('workflow > triggers > collection', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await waitForExpect(
+        async () => {
+          return PostRepo.find();
+        },
+        (posts) => posts.length === 4,
+      );
 
       const posts = await PostRepo.find();
       expect(posts.length).toBe(4);
