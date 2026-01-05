@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/shared",
-  "version": "2.0.0-beta.2",
+  "version": "2.0.0-beta.3",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
