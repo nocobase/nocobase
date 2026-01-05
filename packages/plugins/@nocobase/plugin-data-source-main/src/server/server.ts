@@ -488,7 +488,7 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.resource(viewResourcer);
     this.app.actions(collectionActions);
 
-    const handleFieldSource = (fields) => {
+    const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
       for (const field of lodash.castArray(fields)) {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
@@ -513,6 +513,15 @@ export class PluginDataSourceMainServer extends Plugin {
 
           // set final options
           field.set('options', newOptions);
+        }
+        const fieldTypes = fieldTypeMap[this.db.options.dialect];
+        if (rawFields && fieldTypes) {
+          const rawField = rawFields[field.get('name')];
+          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
+            const mappedType = extractTypeFromDefinition(rawField.type);
+            const possibleTypes = fieldTypes[mappedType];
+            field.set('possibleTypes', possibleTypes);
+          }
         }
       }
     };
