@@ -162,7 +162,7 @@ export const openView = defineAction({
       navigation = false;
     }
 
-    if (navigation !== false) {
+    if (navigation !== false && ctx.isNavigationEnabled !== false) {
       if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
         // 在路由跳转前注入 PendingView，统一首次 handler 阶段的 ctx.view 语义
         const pendingType = openMode;
