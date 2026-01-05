@@ -9,7 +9,7 @@
 
 import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { capitalize } from 'lodash';
+import { capitalize, debounce } from 'lodash';
 import {
   DisplayItemModel,
   DragHandler,
@@ -29,7 +29,7 @@ import {
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Input } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
@@ -74,12 +74,18 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
   const FieldModelRendererCom = (props) => {
     const { model, onChange, ...rest } = props;
-    const handelChange = (val) => {
-      others.onChange(val);
-      onChange(val);
-    };
 
-    return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
+    // debounce 防抖
+    const handleChange = useMemo(
+      () =>
+        debounce((val) => {
+          if (props.onChange) props.onChange(val);
+          if (onChange) onChange(val);
+        }, 200), // 200ms 防抖，可根据需求调整
+      [props.onChange, onChange],
+    );
+
+    return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
   };
   const handleClick = async (e) => {
     if (disabled) {
@@ -170,7 +176,15 @@ const FieldModelRendererOptimize = React.memo((props: any) => {
   }, [onChange]);
   return (
     <div onBlur={handleCommit}>
-      <MemoFieldRenderer {...rest} value={value} model={model} onChange={handleChange} />
+      <MemoFieldRenderer
+        {...rest}
+        value={value}
+        model={model}
+        onChange={handleChange}
+        onChangeComplete={() => {
+          onChange?.(pendingValueRef.current);
+        }}
+      />
     </div>
   );
 });
