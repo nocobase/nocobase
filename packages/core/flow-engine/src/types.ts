@@ -219,6 +219,8 @@ export type FlowEventName =
  * 说明：
  * - 缺省（when 未配置）表示保持现有行为：动态事件流在全部静态流之前执行。
  * - 当配置了 when 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 节点。
+ *
+ * @deprecated use `FlowEventPhase` + `flowKey`/`stepKey` instead
  */
 export type FlowWhen =
   | {
@@ -240,11 +242,37 @@ export type FlowWhen =
     };
 
 /**
+ * 动态事件流的执行时机（phase）。
+ *
+ * 说明：
+ * - 缺省（phase 未配置）表示保持现有行为：动态事件流在全部静态流之前执行（`beforeAllFlows`）。
+ * - 当配置了 phase 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 节点。
+ */
+export type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+/**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
-  | { eventName: FlowEventName; defaultParams?: Record<string, any>; when?: FlowWhen };
+  | {
+      eventName: FlowEventName;
+      defaultParams?: Record<string, any>;
+      /** 动态事件流的执行时机（默认 beforeAllFlows） */
+      phase?: FlowEventPhase;
+      /** phase 为 beforeFlow/afterFlow/beforeStep/afterStep 时使用 */
+      flowKey?: string;
+      /** phase 为 beforeStep/afterStep 时使用 */
+      stepKey?: string;
+      /** @deprecated use phase/flowKey/stepKey instead */
+      when?: FlowWhen;
+    };
 
 /**
  * 事件分发选项。

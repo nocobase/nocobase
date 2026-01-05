@@ -22,7 +22,7 @@ import {
   isBeforeRenderFlow,
   observer,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select, Cascader, Segmented } from 'antd';
+import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
@@ -63,40 +63,6 @@ const EventConfigSection = observer(
     const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
     const refresh = useUpdate();
 
-    const [timingMode, setTimingMode] = React.useState<'default' | 'afterAllStatic' | 'staticStep'>(() => {
-      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
-      if (when?.anchor === 'afterAllStatic') return 'afterAllStatic';
-      if (when?.anchor === 'staticFlow' || when?.anchor === 'staticStep') return 'staticStep';
-      return 'default';
-    });
-
-    const [draftStaticFlowKey, setDraftStaticFlowKey] = React.useState<string | undefined>(() => {
-      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
-      if (when?.anchor === 'staticFlow' && when.flowKey) {
-        return String(when.flowKey);
-      }
-      return undefined;
-    });
-
-    const [draftStaticStep, setDraftStaticStep] = React.useState<[string, string] | undefined>(() => {
-      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
-      if (when?.anchor === 'staticStep' && when.flowKey && when.stepKey) {
-        return [when.flowKey, when.stepKey];
-      }
-      return undefined;
-    });
-
-    const [draftPhase, setDraftPhase] = React.useState<'before' | 'after'>(() => {
-      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
-      if (
-        (when?.anchor === 'staticStep' || when?.anchor === 'staticFlow') &&
-        (when.phase === 'before' || when.phase === 'after')
-      ) {
-        return when.phase;
-      }
-      return 'before';
-    });
-
     const eventName = typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName;
     const uiSchema = model.getEvent(eventName)?.uiSchema;
     const eventUiSchema = typeof uiSchema === 'function' ? uiSchema(ctx) : uiSchema;
@@ -113,7 +79,65 @@ const EventConfigSection = observer(
       }
     }, [eventName, flow]);
 
-    const staticFlowOptions = React.useMemo(() => {
+    type ExecutionPhase = 'beforeAllFlows' | 'afterAllFlows' | 'beforeFlow' | 'afterFlow' | 'beforeStep' | 'afterStep';
+
+    const readTiming = React.useCallback(() => {
+      if (!flow.on || typeof flow.on !== 'object') {
+        return {
+          phase: undefined as ExecutionPhase | undefined,
+          flowKey: undefined as string | undefined,
+          stepKey: undefined as string | undefined,
+        };
+      }
+      const onObj = flow.on as any;
+      if (onObj.phase) {
+        return {
+          phase: String(onObj.phase) as ExecutionPhase,
+          flowKey: onObj.flowKey ? String(onObj.flowKey) : undefined,
+          stepKey: onObj.stepKey ? String(onObj.stepKey) : undefined,
+        };
+      }
+
+      const legacyWhen = onObj.when;
+      if (!legacyWhen || typeof legacyWhen !== 'object') {
+        return {
+          phase: undefined as ExecutionPhase | undefined,
+          flowKey: undefined as string | undefined,
+          stepKey: undefined as string | undefined,
+        };
+      }
+
+      if (legacyWhen.anchor === 'afterAllStatic') {
+        return { phase: 'afterAllFlows' as const, flowKey: undefined, stepKey: undefined };
+      }
+      if (legacyWhen.anchor === 'staticFlow') {
+        return {
+          phase: legacyWhen.phase === 'before' ? ('beforeFlow' as const) : ('afterFlow' as const),
+          flowKey: legacyWhen.flowKey ? String(legacyWhen.flowKey) : undefined,
+          stepKey: undefined,
+        };
+      }
+      if (legacyWhen.anchor === 'staticStep') {
+        return {
+          phase: legacyWhen.phase === 'before' ? ('beforeStep' as const) : ('afterStep' as const),
+          flowKey: legacyWhen.flowKey ? String(legacyWhen.flowKey) : undefined,
+          stepKey: legacyWhen.stepKey ? String(legacyWhen.stepKey) : undefined,
+        };
+      }
+
+      return {
+        phase: undefined as ExecutionPhase | undefined,
+        flowKey: undefined as string | undefined,
+        stepKey: undefined as string | undefined,
+      };
+    }, [flow]);
+
+    const timing = readTiming();
+    const phaseValue = (timing.phase ?? 'beforeAllFlows') as ExecutionPhase;
+    const flowKeyValue = timing.flowKey;
+    const stepKeyValue = timing.stepKey;
+
+    const staticFlows = React.useMemo(() => {
       if (!eventName) return [];
       const ModelClass = model.constructor as typeof FlowModel;
       const globalFlows = Array.from(ModelClass.globalFlowRegistry.getFlows().values());
@@ -132,61 +156,75 @@ const EventConfigSection = observer(
       };
       const staticFlows = globalFlows.filter(isMatch);
 
-      const buildStepLabel = (step: FlowStep) => {
-        const actionDef = step.use ? model.getAction(step.use) : undefined;
-        const raw = actionDef?.title || step.title || step.use || step.key;
-        return raw ? t(String(raw)) : step.key;
-      };
-
-      return [
-        ...staticFlows.map((f) => {
-          const children = f.mapSteps((s) => ({
-            value: s.key,
-            label: buildStepLabel(s),
-          }));
-          return {
-            value: f.key,
-            label: t(String(f.title || f.key)),
-            disabled: model.flowRegistry.hasFlow(f.key),
-            ...(children.length ? { children } : {}),
-          };
-        }),
-      ];
+      return staticFlows;
     }, [eventName, model, t]);
 
-    const persistedWhen = React.useMemo(() => {
-      const when = typeof flow.on === 'object' ? (flow.on as any)?.when : undefined;
-      if (!when || typeof when !== 'object') return undefined;
-      return when as any;
-    }, [typeof flow.on === 'object' ? (flow.on as any)?.when : undefined]);
+    const staticFlowsByKey = React.useMemo(() => new Map(staticFlows.map((f) => [f.key, f] as const)), [staticFlows]);
 
-    const staticAnchorValue = React.useMemo(() => {
-      if (persistedWhen?.anchor === 'staticStep' && persistedWhen.flowKey && persistedWhen.stepKey) {
-        return [persistedWhen.flowKey, persistedWhen.stepKey] as [string, string];
-      }
-      if (persistedWhen?.anchor === 'staticFlow' && persistedWhen.flowKey) {
-        return [persistedWhen.flowKey] as [string];
-      }
-      if (draftStaticStep) return draftStaticStep;
-      if (draftStaticFlowKey) return [draftStaticFlowKey] as [string];
-      return undefined;
-    }, [persistedWhen?.anchor, persistedWhen?.flowKey, persistedWhen?.stepKey, draftStaticStep, draftStaticFlowKey]);
+    const formatKeyWithTitle = React.useCallback(
+      (key: string, title?: any) => {
+        if (!title) return key;
+        const titleText = t(String(title));
+        return `${key} (${titleText})`;
+      },
+      [t],
+    );
 
-    const phaseValue = React.useMemo(() => {
-      if (
-        (persistedWhen?.anchor === 'staticStep' || persistedWhen?.anchor === 'staticFlow') &&
-        (persistedWhen.phase === 'before' || persistedWhen.phase === 'after')
-      ) {
-        return persistedWhen.phase as 'before' | 'after';
-      }
-      return draftPhase;
-    }, [persistedWhen?.anchor, persistedWhen?.phase, draftPhase]);
+    const flowOptions = React.useMemo(() => {
+      return staticFlows.map((f) => ({
+        value: f.key,
+        label: formatKeyWithTitle(String(f.key), f.title),
+        disabled: model.flowRegistry.hasFlow(f.key),
+      }));
+    }, [formatKeyWithTitle, model.flowRegistry, staticFlows]);
 
-    const anchorKind = React.useMemo<'none' | 'flow' | 'step'>(() => {
-      const v = staticAnchorValue as any[] | undefined;
-      if (!v || v.length === 0) return 'none';
-      return v.length === 1 ? 'flow' : 'step';
-    }, [staticAnchorValue]);
+    const stepOptions = React.useMemo(() => {
+      if (!flowKeyValue) return [];
+      const f = staticFlowsByKey.get(flowKeyValue);
+      if (!f) return [];
+      return f.mapSteps((s: FlowStep) => {
+        const actionDef = s.use ? model.getAction(s.use) : undefined;
+        const title = s.title || actionDef?.title;
+        return {
+          value: s.key,
+          label: formatKeyWithTitle(String(s.key), title),
+        };
+      });
+    }, [flowKeyValue, formatKeyWithTitle, model, staticFlowsByKey]);
+
+    const phaseTooltips: Record<ExecutionPhase, string> = React.useMemo(
+      () => ({
+        beforeAllFlows: t('Execution timing: Default (runs before built-in flows)'),
+        afterAllFlows: t('Execution timing: After all built-in flows'),
+        beforeFlow: t('Execution timing: Before a built-in flow'),
+        afterFlow: t('Execution timing: After a built-in flow'),
+        beforeStep: t('Execution timing: Before a built-in step'),
+        afterStep: t('Execution timing: After a built-in step'),
+      }),
+      [t],
+    );
+
+    const phaseOptions: Array<{ value: ExecutionPhase; label: React.ReactNode }> = React.useMemo(() => {
+      const mk = (value: ExecutionPhase, label: string) => ({
+        value,
+        label: (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span>{label}</span>
+            <Tooltip title={phaseTooltips[value]}>
+              <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+            </Tooltip>
+          </span>
+        ),
+      });
+      return [
+        mk('beforeAllFlows', t('Default')),
+        mk('afterAllFlows', t('After built-in flows')),
+        mk('beforeFlow', t('Before built-in flow')),
+        mk('afterFlow', t('After built-in flow')),
+        mk('beforeStep', t('Before built-in step')),
+        mk('afterStep', t('After built-in step')),
+      ];
+    }, [phaseTooltips, t]);
 
     const getEventList = () => {
       return [...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }));
@@ -242,13 +280,12 @@ const EventConfigSection = observer(
                     flow.on = { eventName: value } as any;
                   } else {
                     (flow.on as any).eventName = value;
+                    delete (flow.on as any).phase;
+                    delete (flow.on as any).flowKey;
+                    delete (flow.on as any).stepKey;
                     delete (flow.on as any).when;
                   }
                 }
-                setTimingMode('default');
-                setDraftStaticFlowKey(undefined);
-                setDraftStaticStep(undefined);
-                setDraftPhase('before');
                 refresh();
               }}
               options={getEventList()}
@@ -259,7 +296,7 @@ const EventConfigSection = observer(
           <div style={{ marginBottom: 16 }}>
             <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
               <span style={{ marginInlineEnd: 6 }}>{t('Execution timing')}</span>
-              <Tooltip title={t('Default: runs before built-in flows')}>
+              <Tooltip title={phaseTooltips[phaseValue]}>
                 <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
               </Tooltip>
               <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
@@ -267,137 +304,90 @@ const EventConfigSection = observer(
             <Select
               style={{ width: '100%' }}
               disabled={!eventName}
-              value={timingMode}
+              value={phaseValue}
               onChange={(value) => {
-                const v = value as 'default' | 'afterAllStatic' | 'staticStep';
-                setTimingMode(v);
-
+                const v = value as ExecutionPhase;
                 ensureOnObject();
                 if (!flow.on || typeof flow.on !== 'object') return;
+                const onObj = flow.on as any;
 
-                if (v === 'default') {
-                  delete (flow.on as any).when;
+                // phase 为默认时，清空配置以保持存储最小化
+                if (v === 'beforeAllFlows') {
+                  delete onObj.phase;
+                  delete onObj.flowKey;
+                  delete onObj.stepKey;
+                  delete onObj.when;
                   refresh();
                   return;
                 }
 
-                if (v === 'afterAllStatic') {
-                  (flow.on as any).when = { anchor: 'afterAllStatic' };
-                  refresh();
-                  return;
-                }
+                onObj.phase = v;
+                delete onObj.when; // 清理旧字段
 
-                // staticStep: wait for user to pick a step, keep config as draft until then
-                delete (flow.on as any).when;
+                if (v === 'afterAllFlows') {
+                  delete onObj.flowKey;
+                  delete onObj.stepKey;
+                } else if (v === 'beforeFlow' || v === 'afterFlow') {
+                  delete onObj.stepKey;
+                }
                 refresh();
               }}
-              options={[
-                { value: 'default', label: t('Default') },
-                {
-                  value: 'afterAllStatic',
-                  label: t('After built-in flows'),
-                },
-                { value: 'staticStep', label: t('Insert relative to a built-in flow or step') },
-              ]}
+              options={phaseOptions as any}
             />
 
-            {timingMode === 'staticStep' && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Cascader
+            {(phaseValue === 'beforeFlow' ||
+              phaseValue === 'afterFlow' ||
+              phaseValue === 'beforeStep' ||
+              phaseValue === 'afterStep') && (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Select
+                  allowClear
+                  style={{ width: '100%' }}
+                  disabled={!eventName || flowOptions.length === 0}
+                  placeholder={t('Select a built-in flow')}
+                  value={flowKeyValue}
+                  options={flowOptions as any}
+                  onChange={(value) => {
+                    ensureOnObject();
+                    if (!flow.on || typeof flow.on !== 'object') return;
+                    const onObj = flow.on as any;
+                    if (!value) {
+                      delete onObj.flowKey;
+                      delete onObj.stepKey;
+                    } else {
+                      onObj.flowKey = value;
+                      delete onObj.stepKey;
+                    }
+                    delete onObj.when;
+                    refresh();
+                  }}
+                />
+
+                {(phaseValue === 'beforeStep' || phaseValue === 'afterStep') && (
+                  <Select
                     allowClear
-                    changeOnSelect
-                    style={{ flex: 1 }}
-                    disabled={!eventName || staticFlowOptions.length === 0}
-                    placeholder={t('Select a built-in flow or step')}
-                    options={staticFlowOptions as any}
-                    value={staticAnchorValue as any}
+                    style={{ width: '100%' }}
+                    disabled={!eventName || !flowKeyValue || stepOptions.length === 0}
+                    placeholder={t('Select a built-in step')}
+                    value={stepKeyValue}
+                    options={stepOptions as any}
                     onChange={(value) => {
-                      const v = (value || []) as any[];
-                      if (v.length === 0) {
-                        setDraftStaticFlowKey(undefined);
-                        setDraftStaticStep(undefined);
-                        ensureOnObject();
-                        if (typeof flow.on === 'object') {
-                          delete (flow.on as any).when;
-                        }
-                        refresh();
-                        return;
-                      }
-                      if (v.length === 1) {
-                        const nextFlowKey = String(v[0]);
-                        setDraftStaticFlowKey(nextFlowKey);
-                        setDraftStaticStep(undefined);
-
-                        ensureOnObject();
-                        if (typeof flow.on === 'object') {
-                          (flow.on as any).when = {
-                            anchor: 'staticFlow',
-                            flowKey: nextFlowKey,
-                            phase: phaseValue,
-                          };
-                        }
-                        refresh();
-                        return;
-                      }
-                      const next: [string, string] = [String(v[0]), String(v[1])];
-                      setDraftStaticFlowKey(undefined);
-                      setDraftStaticStep(next);
-
                       ensureOnObject();
-                      if (typeof flow.on === 'object') {
-                        (flow.on as any).when = {
-                          anchor: 'staticStep',
-                          flowKey: next[0],
-                          stepKey: next[1],
-                          phase: phaseValue,
-                        };
+                      if (!flow.on || typeof flow.on !== 'object') return;
+                      const onObj = flow.on as any;
+                      if (!value) {
+                        delete onObj.stepKey;
+                      } else {
+                        onObj.stepKey = value;
                       }
+                      delete onObj.when;
                       refresh();
                     }}
                   />
-                  <Segmented
-                    options={[
-                      {
-                        value: 'before',
-                        label: anchorKind === 'flow' ? t('Before this flow') : t('Before this step'),
-                      },
-                      {
-                        value: 'after',
-                        label: anchorKind === 'flow' ? t('After this flow') : t('After this step'),
-                      },
-                    ]}
-                    value={phaseValue}
-                    onChange={(value) => {
-                      const nextPhase = value as 'before' | 'after';
-                      setDraftPhase(nextPhase);
+                )}
 
-                      const current = staticAnchorValue as any[] | undefined;
-                      if (!current || current.length === 0) return;
-
-                      ensureOnObject();
-                      if (typeof flow.on === 'object') {
-                        if (current.length === 1) {
-                          (flow.on as any).when = {
-                            anchor: 'staticFlow',
-                            flowKey: String(current[0]),
-                            phase: nextPhase,
-                          };
-                        } else {
-                          (flow.on as any).when = {
-                            anchor: 'staticStep',
-                            flowKey: String(current[0]),
-                            stepKey: String(current[1]),
-                            phase: nextPhase,
-                          };
-                        }
-                      }
-                      refresh();
-                    }}
-                  />
-                </div>
-                {staticFlowOptions.length === 0 && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: '#8c8c8c' }}>
+                {flowOptions.length === 0 && (
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#8c8c8c' }}>
                     {t('No built-in flows for this event')}
                   </div>
                 )}
@@ -429,7 +419,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const ctx = useFlowContext();
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const t = model.translate.bind(model);
+  const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
 
   // 创建新流的默认值
   const createNewFlow = (): any => ({
@@ -751,6 +741,51 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           loading={submitLoading}
           onClick={async () => {
             setSubmitLoading(true);
+            // 兼容迁移：将旧字段 on.when 写回到 on.phase/flowKey/stepKey，并做一次字段归一化
+            model.flowRegistry.mapFlows((flow) => {
+              const on = flow.on;
+              if (!on || typeof on !== 'object') return;
+              const onObj = on as any;
+
+              if (!onObj.phase && onObj.when && typeof onObj.when === 'object') {
+                const legacyWhen = onObj.when;
+                if (legacyWhen.anchor === 'afterAllStatic') {
+                  onObj.phase = 'afterAllFlows';
+                } else if (legacyWhen.anchor === 'staticFlow') {
+                  onObj.phase = legacyWhen.phase === 'before' ? 'beforeFlow' : 'afterFlow';
+                  onObj.flowKey = legacyWhen.flowKey;
+                } else if (legacyWhen.anchor === 'staticStep') {
+                  onObj.phase = legacyWhen.phase === 'before' ? 'beforeStep' : 'afterStep';
+                  onObj.flowKey = legacyWhen.flowKey;
+                  onObj.stepKey = legacyWhen.stepKey;
+                }
+              }
+
+              delete onObj.when;
+
+              const phase = onObj.phase;
+              if (!phase || phase === 'beforeAllFlows') {
+                delete onObj.phase;
+                delete onObj.flowKey;
+                delete onObj.stepKey;
+                return;
+              }
+              if (phase === 'afterAllFlows') {
+                delete onObj.flowKey;
+                delete onObj.stepKey;
+                return;
+              }
+              if (phase === 'beforeFlow' || phase === 'afterFlow') {
+                delete onObj.stepKey;
+                if (!onObj.flowKey) delete onObj.flowKey;
+                return;
+              }
+              if (phase === 'beforeStep' || phase === 'afterStep') {
+                if (!onObj.flowKey) delete onObj.flowKey;
+                if (!onObj.stepKey) delete onObj.stepKey;
+                return;
+              }
+            });
             await model.flowRegistry.save();
             // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
             const beforeRenderFlows = model.flowRegistry

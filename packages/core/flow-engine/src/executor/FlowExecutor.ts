@@ -369,7 +369,7 @@ export class FlowExecutor {
           .map((x) => x.f);
         const results: any[] = [];
 
-        // 预处理：当动态事件流配置了 when 时，将其执行移动到指定节点，并从“立即执行列表”中移除
+        // 预处理：当动态事件流配置了 on.phase（或旧字段 on.when）时，将其执行移动到指定节点，并从“立即执行列表”中移除
         const staticFlowsByKey = new Map(
           ordered
             .filter((f) => {
@@ -387,31 +387,65 @@ export class FlowExecutor {
           if (type !== 'instance') return;
 
           const on = flow.on;
-          const when = typeof on === 'object' ? (on as any)?.when : undefined;
-          if (!when || typeof when !== 'object') return;
+          const onObj = typeof on === 'object' ? (on as any) : undefined;
+          if (!onObj) return;
+
+          // 新字段优先，其次兼容旧字段 on.when（迁移期）
+          let phase: any = onObj.phase;
+          let flowKey: any = onObj.flowKey;
+          let stepKey: any = onObj.stepKey;
+          const legacyWhen = onObj.when;
+          if (!phase && legacyWhen && typeof legacyWhen === 'object') {
+            if (legacyWhen.anchor === 'afterAllStatic') {
+              phase = 'afterAllFlows';
+            } else if (legacyWhen.anchor === 'staticFlow') {
+              phase = legacyWhen.phase === 'before' ? 'beforeFlow' : 'afterFlow';
+              flowKey = legacyWhen.flowKey;
+            } else if (legacyWhen.anchor === 'staticStep') {
+              phase = legacyWhen.phase === 'before' ? 'beforeStep' : 'afterStep';
+              flowKey = legacyWhen.flowKey;
+              stepKey = legacyWhen.stepKey;
+            }
+          }
+
+          // 默认：beforeAllFlows（保持现有行为）
+          if (!phase || phase === 'beforeAllFlows') return;
 
           let whenKey: string | null = null;
-          if (when.anchor === 'afterAllStatic') {
+          if (phase === 'afterAllFlows') {
             whenKey = `event:${eventName}:end`;
-          } else if (when.anchor === 'staticFlow') {
-            const anchorFlow = staticFlowsByKey.get(when.flowKey);
-            if (anchorFlow) {
-              const phase = when.phase === 'before' ? 'start' : 'end';
-              whenKey = `event:${eventName}:flow:${when.flowKey}:${phase}`;
-            } else {
-              // 锚点不存在（flow 被删除或覆盖等）：降级到“全部静态流之后”
+          } else if (phase === 'beforeFlow' || phase === 'afterFlow') {
+            if (!flowKey) {
+              // 配置不完整：降级到“全部静态流之后”
               whenKey = `event:${eventName}:end`;
-            }
-          } else if (when.anchor === 'staticStep') {
-            const anchorFlow = staticFlowsByKey.get(when.flowKey);
-            const anchorStepExists = !!anchorFlow?.hasStep?.(when.stepKey);
-            if (anchorFlow && anchorStepExists) {
-              const phase = when.phase === 'before' ? 'start' : 'end';
-              whenKey = `event:${eventName}:flow:${when.flowKey}:step:${when.stepKey}:${phase}`;
             } else {
-              // 锚点不存在（flow/step 被删除或覆盖等）：降级到“全部静态流之后”
-              whenKey = `event:${eventName}:end`;
+              const anchorFlow = staticFlowsByKey.get(String(flowKey));
+              if (anchorFlow) {
+                const anchorPhase = phase === 'beforeFlow' ? 'start' : 'end';
+                whenKey = `event:${eventName}:flow:${String(flowKey)}:${anchorPhase}`;
+              } else {
+                // 锚点不存在（flow 被删除或覆盖等）：降级到“全部静态流之后”
+                whenKey = `event:${eventName}:end`;
+              }
             }
+          } else if (phase === 'beforeStep' || phase === 'afterStep') {
+            if (!flowKey || !stepKey) {
+              // 配置不完整：降级到“全部静态流之后”
+              whenKey = `event:${eventName}:end`;
+            } else {
+              const anchorFlow = staticFlowsByKey.get(String(flowKey));
+              const anchorStepExists = !!anchorFlow?.hasStep?.(String(stepKey));
+              if (anchorFlow && anchorStepExists) {
+                const anchorPhase = phase === 'beforeStep' ? 'start' : 'end';
+                whenKey = `event:${eventName}:flow:${String(flowKey)}:step:${String(stepKey)}:${anchorPhase}`;
+              } else {
+                // 锚点不存在（flow/step 被删除或覆盖等）：降级到“全部静态流之后”
+                whenKey = `event:${eventName}:end`;
+              }
+            }
+          } else {
+            // 未知 phase：忽略
+            return;
           }
 
           if (!whenKey) return;
