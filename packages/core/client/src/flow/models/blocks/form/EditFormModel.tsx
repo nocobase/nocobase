@@ -23,6 +23,7 @@ import { omitBy, isUndefined } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { submitHandler } from './submitHandler';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
@@ -72,6 +73,10 @@ export class EditFormModel extends FormBlockModel {
       await multiResource.refresh();
     }
   };
+
+  async submit(params: any = {}) {
+    await submitHandler(this.context, params);
+  }
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;

@@ -9,21 +9,22 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { type CreateModelOptions, FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { FormGridModel } from '@nocobase/client';
+import { type CreateModelOptions, FlowContext, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { REF_HOST_CTX_KEY } from '../constants';
 import { NAMESPACE } from '../locale';
 import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
   renderReferenceTargetPlaceholder,
+  ensureScopedEngineView,
   unlinkScopedEngine,
 } from './referenceShared';
 
 const SETTINGS_FLOW_KEY = 'referenceSettings';
 const SETTINGS_STEP_KEY = 'useTemplate';
 
-export { REF_HOST_CTX_KEY };
+/** 标记已添加 host context bridge，避免重复添加 */
+const BRIDGE_MARKER = Symbol.for('nocobase.refGridHostBridge');
 
 export type ReferenceFormGridTargetSettings = {
   /** 模板 uid（flowModelTemplates.uid） */
@@ -36,24 +37,57 @@ export type ReferenceFormGridTargetSettings = {
   targetPath?: string;
 };
 
-type ReferenceHostInfo = {
-  hostUid?: string;
-  hostUse?: string;
-  ref: {
-    templateUid: string;
-    templateName?: string;
-    targetUid: string;
-    targetPath: string;
-    mountSubKey: 'grid';
-    mode: 'reference';
-  };
-};
-
 export class ReferenceFormGridModel extends FlowModel {
   private _scopedEngine?: FlowEngine;
+  private _targetRoot?: FlowModel;
   private _targetGrid?: FlowModel;
   private _resolvedTargetUid?: string;
   private _invalidTargetUid?: string;
+
+  /**
+   * 字段模板场景下，模板内 FormItemModel/CollectionFieldModel 的 onInit 会调用 ctx.blockModel.addAppends(fieldPath)。
+   * 但模板 root 自身也是一个 CollectionBlockModel，会在未桥接宿主上下文时被识别为 blockModel，导致 appends 写到模板 root 的 resource，
+   * 从而宿主表单（如 ApplyFormModel）在刷新记录时缺少关联 appends（例如 users.roles）。
+   *
+   * 这里在目标 grid 解析完成后扫描字段路径，并把需要的 appends 同步到宿主 block（master + forks），确保关系数据可展示。
+   */
+  private _syncHostResourceAppends(host: FlowModel, targetGrid: FlowModel) {
+    if (!host['addAppends']) {
+      return;
+    }
+    const candidates = new Set<string>();
+    const addCandidate = (val: unknown) => {
+      const s = typeof val === 'string' ? val.trim() : '';
+      if (!s) return;
+      candidates.add(s);
+      const top = s.split('.')[0]?.trim();
+      if (top) candidates.add(top);
+    };
+
+    const visit = (m: FlowModel) => {
+      const init = m.getStepParams?.('fieldSettings', 'init') as
+        | { fieldPath?: string; associationPathName?: string }
+        | undefined;
+      if (init) {
+        addCandidate(init.fieldPath);
+        addCandidate(init.associationPathName);
+      }
+      const subs = m.subModels || {};
+      for (const v of Object.values(subs)) {
+        if (Array.isArray(v)) {
+          v.forEach((c) => c instanceof FlowModel && visit(c));
+        } else if (v instanceof FlowModel) {
+          visit(v);
+        }
+      }
+    };
+
+    visit(targetGrid);
+    if (candidates.size === 0) return;
+    for (const fieldPath of candidates) {
+      (host as any).addAppends?.(fieldPath);
+    }
+  }
 
   constructor(options: any) {
     super(options);
@@ -167,12 +201,100 @@ export class ReferenceFormGridModel extends FlowModel {
     return this._targetGrid.setSubModel(subKey, options);
   }
 
+  getStepParams(flowKey: string, stepKey: string): any | undefined;
+  getStepParams(flowKey: string): Record<string, any> | undefined;
+  getStepParams(): Record<string, any>;
+  getStepParams(flowKey?: string, stepKey?: string): any {
+    if (!flowKey || flowKey === SETTINGS_FLOW_KEY) {
+      return super.getStepParams(flowKey, stepKey);
+    }
+
+    if (!this._targetGrid) {
+      // 未解析完成：允许读取本地 stepParams，避免配置对话框/中间态丢值
+      return super.getStepParams(flowKey, stepKey);
+    }
+
+    if (stepKey) {
+      const fromGrid = this._targetGrid.getStepParams(flowKey, stepKey);
+      if (typeof fromGrid !== 'undefined') return fromGrid;
+      return this._targetRoot?.getStepParams?.(flowKey, stepKey);
+    }
+
+    const gridFlow = this._targetGrid.getStepParams(flowKey) as any;
+    const rootFlow = this._targetRoot?.getStepParams?.(flowKey) as any;
+    if (rootFlow && typeof rootFlow === 'object') {
+      return { ...rootFlow, ...(gridFlow || {}) };
+    }
+    return gridFlow;
+  }
+
+  setStepParams(flowKey: string, stepKey: string, params: any): void;
+  setStepParams(flowKey: string, stepParams: Record<string, any>): void;
+  setStepParams(allParams: Record<string, any>): void;
+  setStepParams(flowKeyOrAllParams: any, stepKeyOrStepsParams?: any, params?: any): void {
+    if (typeof flowKeyOrAllParams === 'string') {
+      const flowKey = flowKeyOrAllParams;
+      if (flowKey === SETTINGS_FLOW_KEY || !this._targetGrid) {
+        super.setStepParams(flowKeyOrAllParams, stepKeyOrStepsParams, params);
+        return;
+      }
+      if (typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
+        this._targetGrid.setStepParams(flowKey, stepKeyOrStepsParams, params);
+        return;
+      }
+      if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
+        this._targetGrid.setStepParams(flowKey, stepKeyOrStepsParams);
+      }
+      return;
+    }
+
+    if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
+      const allParams = flowKeyOrAllParams as Record<string, any>;
+      const localAll: Record<string, any> = {};
+      const delegatedAll: Record<string, any> = {};
+      for (const [fk, steps] of Object.entries(allParams)) {
+        if (fk === SETTINGS_FLOW_KEY || !this._targetGrid) {
+          localAll[fk] = steps;
+        } else {
+          delegatedAll[fk] = steps;
+        }
+      }
+      if (Object.keys(localAll).length > 0) {
+        super.setStepParams(localAll);
+      }
+      if (Object.keys(delegatedAll).length > 0 && this._targetGrid) {
+        this._targetGrid.setStepParams(delegatedAll);
+      }
+    }
+  }
+
+  async saveStepParams() {
+    // 如果目标尚未解析，先触发解析
+    if (!this._targetGrid) {
+      await this.dispatchEvent('beforeRender');
+    }
+    // 将本地非 settings 参数刷新到目标 grid
+    if (this._targetGrid && this.stepParams) {
+      for (const [flowKey, steps] of Object.entries(this.stepParams)) {
+        if (flowKey === SETTINGS_FLOW_KEY || typeof steps !== 'object' || steps === null) continue;
+        this._targetGrid.setStepParams(flowKey, steps as Record<string, any>);
+        delete (this.stepParams as Record<string, any>)[flowKey];
+      }
+    }
+    const res = await super.saveStepParams();
+    if (this._targetGrid) {
+      await this._targetGrid.saveStepParams();
+    }
+    return res;
+  }
+
   public async onDispatchEventStart(eventName: string): Promise<void> {
     if (eventName !== 'beforeRender') return;
 
     const settings = this._getTargetSettings();
     if (!settings) {
       this._syncHostExtraTitle(undefined);
+      this._targetRoot = undefined;
       this._targetGrid = undefined;
       this._resolvedTargetUid = undefined;
       this._invalidTargetUid = undefined;
@@ -195,6 +317,8 @@ export class ReferenceFormGridModel extends FlowModel {
     }
 
     const engine = this._ensureScopedEngine();
+    const host = this.parent as FlowModel | undefined;
+    ensureScopedEngineView(engine, (host?.context as any) || (this.context as any));
     const targetUid = settings.targetUid;
     const prevTargetGrid = this._targetGrid;
     const prevResolvedTargetUid = this._resolvedTargetUid;
@@ -205,12 +329,12 @@ export class ReferenceFormGridModel extends FlowModel {
     // 在“模板引用”切换的中间态（例如模型树刚替换、上下文尚未稳定）下，
     // 可能出现首次解析不到目标（短暂返回 null/undefined）。这里做一次轻量重试，
     // 避免界面闪现 “Target block is invalid” 占位。
-    const tryResolveTargetGrid = async (): Promise<FlowModel | undefined> => {
+    const tryResolveTargetGrid = async (): Promise<{ root: FlowModel; grid: FlowModel } | undefined> => {
       const root = await engine.loadModel<FlowModel>({ uid: targetUid });
       if (!root) return undefined;
 
-      const host = this.parent as FlowModel | undefined;
-      const hostInfo: ReferenceHostInfo = {
+      root.setParent(host);
+      const hostInfo = {
         hostUid: host?.uid,
         hostUse: host?.use,
         ref: {
@@ -224,23 +348,43 @@ export class ReferenceFormGridModel extends FlowModel {
       };
       root.context.defineProperty(REF_HOST_CTX_KEY, { value: hostInfo });
 
-      const fragment = _.get(root as any, targetPath);
-      const gridModel =
-        fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
-      return gridModel || undefined;
+      const fragment = root.subModels?.grid;
+      let gridModel: FlowModel | undefined;
+      if (fragment instanceof FlowModel) {
+        gridModel = fragment;
+      }
+      // 将宿主区块上下文注入到被引用的 grid：
+      // - Details 区块字段渲染依赖 ctx.record/resource/blockModel 等（定义在宿主 block context 上）；
+      // - 但同时要保留 scoped engine（ctx.engine）指向，避免丢失实例/缓存隔离。
+      // 注意：使用 Symbol 标记避免重复添加 delegate（beforeRender 可能多次触发）
+      const contextWithMarker = gridModel?.context as (FlowContext & { [BRIDGE_MARKER]?: boolean }) | undefined;
+      if (gridModel && host?.context && !contextWithMarker?.[BRIDGE_MARKER]) {
+        const bridge = new FlowContext();
+        bridge.defineProperty('engine', { value: engine });
+        bridge.addDelegate(host.context);
+        gridModel.context.addDelegate(bridge);
+        (gridModel.context as FlowContext & { [BRIDGE_MARKER]?: boolean })[BRIDGE_MARKER] = true;
+      }
+      if (!gridModel) return undefined;
+      // 同步模板字段需要的关联 appends 到宿主 block 的 resource（避免 users.roles 等关系字段为空）
+      if (host) {
+        this._syncHostResourceAppends(host, gridModel);
+      }
+      return { root, grid: gridModel };
     };
 
-    let gridModel = await tryResolveTargetGrid();
-    if (!gridModel) {
+    let resolved = await tryResolveTargetGrid();
+    if (!resolved) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       const latest = this._getTargetSettings();
       if (latest?.targetUid !== targetUid) {
         return;
       }
-      gridModel = await tryResolveTargetGrid();
+      resolved = await tryResolveTargetGrid();
     }
 
-    if (!gridModel) {
+    if (!resolved) {
+      this._targetRoot = undefined;
       this._targetGrid = undefined;
       this._resolvedTargetUid = undefined;
       this._invalidTargetUid = targetUid;
@@ -250,10 +394,12 @@ export class ReferenceFormGridModel extends FlowModel {
       return;
     }
 
-    this._targetGrid = gridModel;
+    this._targetRoot = resolved.root;
+    this._targetGrid = resolved.grid;
     this._resolvedTargetUid = targetUid;
     this._invalidTargetUid = undefined;
-    if (prevTargetGrid !== gridModel || prevResolvedTargetUid !== targetUid || prevInvalidTargetUid) {
+
+    if (prevTargetGrid !== resolved.grid || prevResolvedTargetUid !== targetUid || prevInvalidTargetUid) {
       this.rerender();
     }
   }

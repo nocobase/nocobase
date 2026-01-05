@@ -8,13 +8,13 @@
  */
 
 import { DownOutlined, SettingOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
 import { Alert, Button, Dropdown, Space } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { shouldHideStepInSettings } from '../../../../utils';
 import { ActionDefinition } from '../../../../types';
+import { observer } from '../../../../reactive';
 
 // 支持两种使用方式的接口定义
 interface ModelProvidedProps {

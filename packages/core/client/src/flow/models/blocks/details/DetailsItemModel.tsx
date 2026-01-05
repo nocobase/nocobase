@@ -107,12 +107,20 @@ export class DetailsItemModel extends DisplayItemModel<{
 
   onInit(options: any) {
     super.onInit(options);
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return 'view';
+      },
+      cache: false,
+    });
   }
 
   renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
     const record = this.context.record;
+    const currentObject = this.context.currentObject;
+
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
       idx != null
@@ -123,6 +131,10 @@ export class DetailsItemModel extends DisplayItemModel<{
             });
             fork.context.defineProperty('record', {
               get: () => record,
+              cache: false,
+            });
+            fork.context.defineProperty('currentObject', {
+              get: () => currentObject,
               cache: false,
             });
             if (this.context.pattern) {
@@ -236,7 +248,7 @@ DetailsItemModel.registerFlow({
       use: 'titleField',
       title: tExpr('Title field'),
       beforeParamsSave: async (ctx, params, previousParams) => {
-        if (!ctx.collectionField.isAssociationField()) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
         }
         if (params.label !== previousParams.label) {
@@ -261,7 +273,7 @@ DetailsItemModel.registerFlow({
         }
       },
       async handler(ctx: any, params) {
-        if (ctx.model.subModels.field.disableTitleField) {
+        if (!ctx.collectionField || ctx.model.subModels.field.disableTitleField) {
           return;
         }
         ctx.model.setProps({

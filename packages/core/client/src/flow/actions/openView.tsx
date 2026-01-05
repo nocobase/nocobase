@@ -11,6 +11,7 @@ import { defineAction, tExpr, FlowModelContext, FlowModel } from '@nocobase/flow
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
+import _ from 'lodash';
 
 /**
  * 弹窗打开动作（openView）配置
@@ -198,7 +199,7 @@ export const openView = defineAction({
     if (params?.uid && params.uid !== ctx.model.uid) {
       // 外部弹窗（uid 指向其它 PopupActionModel）：
       // - 路由模式下，URL 的 viewId 应以“发起该弹窗的按钮/动作模型 uid”为准，保证刷新后可还原原始触发上下文；
-      // - 由 FlowRoute 第二阶段（带 inputArgs.navigation）重新打开时，需要把 closeRef/updateRef/onOpen 等透传给目标弹窗，否则无法正确维护视图栈。
+      // - 由 FlowRoute 第二阶段（带 inputArgs.navigation）重新打开时，需要把 destroyRef/updateRef/onOpen 等透传给目标弹窗，否则无法正确维护视图栈。
       await ctx.openView(params.uid, {
         ...inputArgs,
         ...(params || {}),
@@ -263,6 +264,7 @@ export const openView = defineAction({
       typeof inputArgs.preventClose !== 'undefined' ? !!inputArgs.preventClose : !!params.preventClose;
 
     const finalInputArgs: Record<string, unknown> = {
+      viewUid: ctx.model.uid,
       ...ctx.inputArgs,
       ...inputArgs,
       dataSourceKey: runtimeDataSourceKey,
@@ -270,21 +272,23 @@ export const openView = defineAction({
       associationName: runtimeAssociationName,
       tabUid: mergedTabUid,
       openerUids,
+      pageActive: true, // 打开一个弹窗时，页面肯定是激活的
     };
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = mergedFilterByTk;
     finalInputArgs.sourceId = mergedSourceId;
     await ctx.viewer.open({
       type: openMode,
-      inputArgs: finalInputArgs,
+      triggerByRouter: finalInputArgs.triggerByRouter,
+      inputArgs: _.omit(finalInputArgs, 'triggerByRouter'),
       preventClose: runtimePreventClose,
       destroyOnClose: true,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[openMode][size],
       content: (currentView) => {
-        if (ctx.inputArgs.closeRef) {
-          ctx.inputArgs.closeRef.current = currentView.close;
+        if (ctx.inputArgs.destroyRef) {
+          ctx.inputArgs.destroyRef.current = currentView.destroy;
         }
         if (ctx.inputArgs.updateRef) {
           ctx.inputArgs.updateRef.current = currentView.update;
@@ -303,6 +307,12 @@ export const openView = defineAction({
 
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
+              });
+              pageModel.context.defineProperty('flowSettingsEnabled', {
+                get: () => {
+                  return ctx.flowSettingsEnabled;
+                },
+                cache: false,
               });
               // 统一视图上下文：无论内部还是外部弹窗，页面内的 ctx.view 都指向“当前视图”
               // 这样在路由模式下，外部弹窗（通过 ctx.openView 触发）与内部弹窗拥有一致的 ctx.view 行为
@@ -345,15 +355,9 @@ export const openView = defineAction({
         },
       },
       onClose: () => {
-        const nav = ctx.inputArgs?.navigation || ctx.view?.navigation;
         if (pageModelUid) {
           const pageModel = pageModelRef || ctx.model.flowEngine.getModel(pageModelUid);
           pageModel?.invalidateFlowCache('beforeRender', true);
-        }
-        if (navigation !== false) {
-          if (nav?.back) {
-            nav.back();
-          }
         }
       },
       onOpen: ctx.inputArgs.onOpen,

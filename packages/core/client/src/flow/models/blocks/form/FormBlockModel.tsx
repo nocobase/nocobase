@@ -31,6 +31,15 @@ type DefaultCollectionBlockModelStructure = {
 };
 
 type CustomFormBlockModelClassesEnum = {};
+
+const GRID_DELEGATED_STEP_KEYS: Record<string, Set<string>> = {
+  formModelSettings: new Set(['layout']),
+  eventSettings: new Set(['linkageRules']),
+};
+
+function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
+  return !!GRID_DELEGATED_STEP_KEYS[flowKey]?.has(stepKey);
+}
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
@@ -64,6 +73,114 @@ export class FormBlockModel<
 
   setFieldValue(fieldName: string, value: any) {
     this.form.setFieldValue(fieldName, value);
+  }
+
+  public async onDispatchEventStart(eventName: string, options?: any, inputArgs?: Record<string, any>): Promise<void> {
+    if (eventName === 'beforeRender') {
+      const grid = this.subModels.grid;
+      if (grid) {
+        await grid.dispatchEvent('beforeRender', inputArgs, { useCache: options?.useCache });
+      }
+    }
+    await super.onDispatchEventStart?.(eventName, options, inputArgs);
+  }
+
+  getStepParams(flowKey: string, stepKey: string): any | undefined;
+  getStepParams(flowKey: string): Record<string, any> | undefined;
+  getStepParams(): Record<string, any>;
+  getStepParams(flowKey?: string, stepKey?: string): any {
+    const grid = this.subModels.grid;
+
+    if (flowKey && stepKey && isGridDelegatedStep(flowKey, stepKey) && grid) {
+      const fromGrid = grid.getStepParams(flowKey, stepKey);
+      if (typeof fromGrid !== 'undefined') {
+        return fromGrid;
+      }
+      return super.getStepParams(flowKey, stepKey);
+    }
+
+    if (flowKey && !stepKey && GRID_DELEGATED_STEP_KEYS[flowKey] && grid) {
+      const base = (super.getStepParams(flowKey) || {}) as Record<string, any>;
+      const fromGrid = (grid.getStepParams(flowKey) || {}) as Record<string, any>;
+      for (const k of GRID_DELEGATED_STEP_KEYS[flowKey]) {
+        if (Object.prototype.hasOwnProperty.call(fromGrid, k) && typeof fromGrid[k] !== 'undefined') {
+          base[k] = fromGrid[k];
+        }
+      }
+      return base;
+    }
+
+    return super.getStepParams(flowKey, stepKey);
+  }
+
+  setStepParams(flowKey: string, stepKey: string, params: any): void;
+  setStepParams(flowKey: string, stepParams: Record<string, any>): void;
+  setStepParams(allParams: Record<string, any>): void;
+  setStepParams(flowKeyOrAllParams: any, stepKeyOrStepsParams?: any, params?: any): void {
+    const grid = this.subModels.grid;
+
+    // 分离单个 flow 的 steps：委托部分直接写入 grid，返回本地部分
+    const splitFlowSteps = (flowKey: string, stepsParams: Record<string, any>): Record<string, any> => {
+      const delegatedKeys = GRID_DELEGATED_STEP_KEYS[flowKey];
+      if (!delegatedKeys || !grid) return stepsParams;
+      const localSteps: Record<string, any> = {};
+      for (const [k, v] of Object.entries(stepsParams)) {
+        if (delegatedKeys.has(k)) {
+          grid.setStepParams(flowKey, k, v);
+        } else {
+          localSteps[k] = v;
+        }
+      }
+      return localSteps;
+    };
+
+    // 形式1: (flowKey, stepKey, params)
+    if (typeof flowKeyOrAllParams === 'string' && typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
+      if (isGridDelegatedStep(flowKeyOrAllParams, stepKeyOrStepsParams) && grid) {
+        grid.setStepParams(flowKeyOrAllParams, stepKeyOrStepsParams, params);
+      } else {
+        super.setStepParams(flowKeyOrAllParams, stepKeyOrStepsParams, params);
+      }
+      return;
+    }
+
+    // 形式2: (flowKey, stepsParams)
+    if (
+      typeof flowKeyOrAllParams === 'string' &&
+      typeof stepKeyOrStepsParams === 'object' &&
+      stepKeyOrStepsParams !== null
+    ) {
+      const localSteps = splitFlowSteps(flowKeyOrAllParams, stepKeyOrStepsParams);
+      if (Object.keys(localSteps).length > 0) {
+        super.setStepParams(flowKeyOrAllParams, localSteps);
+      }
+      return;
+    }
+
+    // 形式3: (allParams)
+    if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
+      const localAll: Record<string, any> = {};
+      for (const [flowKey, steps] of Object.entries(flowKeyOrAllParams)) {
+        if (typeof steps !== 'object' || steps === null) {
+          localAll[flowKey] = steps;
+          continue;
+        }
+        const localSteps = splitFlowSteps(flowKey, steps as Record<string, any>);
+        if (Object.keys(localSteps).length > 0) {
+          localAll[flowKey] = localSteps;
+        }
+      }
+      if (Object.keys(localAll).length > 0) {
+        super.setStepParams(localAll);
+      }
+    }
+  }
+
+  async saveStepParams() {
+    const res = await super.saveStepParams();
+    const grid = this.subModels.grid;
+    await grid?.saveStepParams();
+    return res;
   }
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {
@@ -140,7 +257,7 @@ export class FormBlockModel<
     });
   }
 
-  onMount() {
+  protected onMount() {
     super.onMount();
     // 首次渲染触发一次事件流
     setTimeout(() => {

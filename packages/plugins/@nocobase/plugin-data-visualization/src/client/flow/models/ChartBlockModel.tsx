@@ -13,7 +13,7 @@ import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button } from 'antd';
 import { useT, tStr } from '../../locale';
-import { convertDatasetFormats, sleep, debugLog } from '../utils';
+import { convertDatasetFormats, normalizeEChartsOption, sleep, debugLog } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
 import { DaraButton } from '../components/DaraButton';
@@ -236,6 +236,9 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       console.error('applyChartOptions runjs error:', error);
       return;
     }
+
+    normalizeEChartsOption(value);
+
     this.setProps({
       chart: {
         ...this.props.chart,

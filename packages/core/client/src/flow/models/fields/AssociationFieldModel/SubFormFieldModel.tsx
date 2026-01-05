@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
+import { ActionWithoutPermission } from '../../base/ActionModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -35,6 +36,11 @@ class FormAssociationFieldModel extends AssociationFieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
+    if (this.parent.context.actionName === 'update') {
+      this.context.defineProperty('actionName', {
+        get: () => 'view',
+      });
+    }
   }
 }
 export const ObjectNester = (props) => {
@@ -70,6 +76,13 @@ export const ObjectNester = (props) => {
       });
     }
   }, [props.disabled, grid]);
+  useEffect(() => {
+    grid.context.defineProperty('currentObject', {
+      get: () => {
+        return props.value;
+      },
+    });
+  }, [props.value]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -148,9 +161,11 @@ const ArrayNester = ({
   allowSelectExistingRecord,
   onSelectExitRecordClick,
   allowDisassociation,
+  allowCreate,
 }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
@@ -186,7 +201,7 @@ const ArrayNester = ({
                 });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldKey', {
-                  get: () => key,
+                  get: () => fieldIndex,
                 });
                 forksRef.current[key] = fork;
               }
@@ -212,49 +227,58 @@ const ArrayNester = ({
                 ),
                 serverOnlyWhenContextParams: true,
               });
-
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value[index]?.isNew) && (
-                    <div style={{ textAlign: 'right' }}>
-                      <Tooltip title={t('Remove')}>
-                        <CloseOutlined
-                          style={{ zIndex: 1000, color: '#a8a3a3' }}
-                          onClick={() => {
-                            remove(index);
-                            const gridFork = forksRef.current[key];
-                            // 同时销毁子模型的 fork
-                            gridFork.mapSubModels('items', (item) => {
-                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                  {!disabled &&
+                    (allowDisassociation || value?.[index]?.__is_new__ || value?.[index]?.__is_stored__) && (
+                      <div style={{ textAlign: 'right' }}>
+                        <Tooltip title={t('Remove')}>
+                          <CloseOutlined
+                            style={{ zIndex: 1000, color: '#a8a3a3' }}
+                            onClick={() => {
+                              remove(index);
+                              const gridFork = forksRef.current[key];
                               // 同时销毁子模型的 fork
-                              item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
-                              item.getFork(cacheKey)?.dispose();
-                            });
-                            gridFork.dispose();
-                            // 删除 fork 缓存
-                            delete forksRef.current[key];
-                          }}
-                        />
-                      </Tooltip>
-                    </div>
-                  )}
+                              gridFork.mapSubModels('items', (item) => {
+                                const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                                // 同时销毁子模型的 fork
+                                item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                                item.getFork(cacheKey)?.dispose();
+                              });
+                              gridFork.dispose();
+                              // 删除 fork 缓存
+                              delete forksRef.current[key];
+                            }}
+                          />
+                        </Tooltip>
+                      </div>
+                    )}
                   <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
                   <Divider />
                 </div>
               );
             })}
             <Space>
-              {allowAddNew && (
-                <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
-                  <PlusOutlined />
-                  {t('Add new')}
-                </Button>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick()} style={{ marginTop: 8 }}>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={() => add({ __is_new__: true })} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button type="link" onClick={() => onSelectExitRecordClick()} disabled={disabled}>
                   <ZoomInOutlined /> {t('Select record')}
-                </a>
+                </Button>
               )}
             </Space>
           </>
@@ -452,7 +476,7 @@ SubFormListFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      __is_stored__: true,
                     };
                   }),
                 ];
@@ -461,7 +485,9 @@ SubFormListFieldModel.registerFlow({
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===
-                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.__is_new__,
                 );
                 ctx.model.selectedRows.value = unique;
               },

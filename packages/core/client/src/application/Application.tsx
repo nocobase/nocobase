@@ -200,7 +200,14 @@ export class Application {
     this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
-    this.apiClient = options.apiClient instanceof APIClient ? options.apiClient : new APIClient(options.apiClient);
+    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
+    this.apiClient =
+      options.apiClient instanceof APIClient
+        ? options.apiClient
+        : new APIClient({
+            ...options.apiClient,
+            appName: this.options.name || getSubAppName(options.publicPath),
+          });
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager(options.router, this);
@@ -223,7 +230,6 @@ export class Application {
     this.ws.app = this;
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
-    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
     });

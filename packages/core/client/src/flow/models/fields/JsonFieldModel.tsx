@@ -6,10 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { largeField, EditableItemModel } from '@nocobase/flow-engine';
+import { largeField, EditableItemModel, observer } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import { cx, css } from '@emotion/css';
-import { observer } from '@formily/react';
 import JSON5 from 'json5';
 import React, { useState, useEffect, useRef } from 'react';
 import { FieldModel } from '../base';

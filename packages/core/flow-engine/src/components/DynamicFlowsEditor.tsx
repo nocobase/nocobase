@@ -7,16 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
-import type { FormInstance } from 'antd';
-import { Button, Collapse, Empty, Form, Input, Modal, Select, Space, Tabs } from 'antd';
 import React from 'react';
-import { FlowDefinition } from '../FlowDefinition';
-import { FlowModel } from '../models';
-import { FlowDefinitionOptions } from '../types';
-
-const Panel = Collapse.Panel;
 
 /**
  * 动态流编辑器（纯组件）

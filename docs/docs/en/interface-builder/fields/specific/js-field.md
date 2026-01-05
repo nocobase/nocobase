@@ -58,7 +58,7 @@ The JS Field script editor supports syntax highlighting, error hints, and built-
 
 You can also generate code with the AI Employee:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
 
 ## Common Usage
 

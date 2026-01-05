@@ -35,9 +35,9 @@ features:
         details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
         link: /notification-manager
         showOnHome: true
-      - title: 多空间
-        details: 创建多个逻辑隔离的业务空间，支持多租户场景。
-        link: /multi-space
+      - title: 多应用和多空间
+        details: 创建多个物理隔离的应用实例或者逻辑隔离的业务空间，支持多租户场景。
+        link: /multi-app/multi-app/
         showOnHome: true
       - title: 集成
         details: 与外部系统、第三方服务和各种数据源无缝连接，扩展 NocoBase 的功能。

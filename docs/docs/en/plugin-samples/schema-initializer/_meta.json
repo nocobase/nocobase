@@ -1,0 +1,60 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introduction",
+        "link": "/plugin-samples/schema-initializer"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Adding Items to Existing Initializer",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Add Simple Block",
+        "link": "/plugin-samples/schema-initializer/block-simple"
+      },
+      {
+        "type": "custom-link",
+        "label": "Add Data Block",
+        "link": "/plugin-samples/schema-initializer/block-data"
+      },
+      {
+        "type": "custom-link",
+        "label": "Add Data Block with Modal",
+        "link": "/plugin-samples/schema-initializer/block-data-modal"
+      },
+      {
+        "type": "custom-link",
+        "label": "Add Simple Action",
+        "link": "/plugin-samples/schema-initializer/action-simple"
+      },
+      {
+        "type": "custom-link",
+        "label": "Add Modal Action",
+        "link": "/plugin-samples/schema-initializer/action-modal"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Creating New Initializer",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Configure Fields",
+        "link": "/plugin-samples/schema-initializer/configure-fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configure Actions",
+        "link": "/plugin-samples/schema-initializer/configure-actions"
+      }
+    ]
+  }
+]

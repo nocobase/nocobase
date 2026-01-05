@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { MobileTabBarItem } from '@nocobase/plugin-mobile/client';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';

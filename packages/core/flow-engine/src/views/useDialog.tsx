@@ -90,15 +90,27 @@ export function useDialog() {
       type: 'dialog' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => dialogRef.current?.destroy(),
+      destroy: (result?: any) => {
+        config.onClose?.();
+        dialogRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
+      },
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
           return;
         }
-        dialogRef.current?.destroy();
-        closeFunc?.();
-        resolvePromise?.(result);
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentDialog.destroy(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -150,18 +162,13 @@ export function useDialog() {
         return (
           <DialogComponent
             className="nb-dialog-overflow-hidden"
-            key={`dialog-${uuid}`}
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
             {...config}
             footer={currentFooter}
             header={currentHeader}
-            afterClose={() => {
-              closeFunc?.();
-              config.onClose?.();
-              resolvePromise?.(config.result);
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
+            onCancel={() => {
+              currentDialog.close(config.result);
             }}
           >
             {content}
@@ -173,8 +180,9 @@ export function useDialog() {
       },
     );
 
+    const key = config?.inputArgs?.viewUid || `page-${uuid}`;
     const dialog = (
-      <FlowEngineProvider engine={scopedEngine}>
+      <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DialogWithContext />
         </FlowViewContextProvider>

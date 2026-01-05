@@ -13,7 +13,12 @@ import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } f
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { useDataSourceManager, useCompile } from '@nocobase/client';
-import { getFieldOptions, getCollectionOptions, getFormatterOptionsByField } from './QueryBuilder.service';
+import {
+  getFieldOptions,
+  getCollectionOptions,
+  getFormatterOptionsByField,
+  buildOrderFieldOptions,
+} from './QueryBuilder.service';
 import { appendColon, debugLog } from '../utils';
 import AntdFilterSelector from '../components/AntdFilterSelector';
 
@@ -45,6 +50,14 @@ export const QueryBuilder = React.forwardRef<
   const compile = useCompile();
   const collectionOptions = React.useMemo(() => getCollectionOptions(dm, compile), [dm, compile]);
   const fieldOptions = React.useMemo(() => getFieldOptions(dm, compile, collectionPath), [dm, compile, collectionPath]);
+
+  const measuresValue = Form.useWatch('measures', form);
+  const dimensionsValue = Form.useWatch('dimensions', form);
+
+  const orderFieldOptions = React.useMemo(
+    () => buildOrderFieldOptions(fieldOptions, dimensionsValue, measuresValue),
+    [dimensionsValue, measuresValue, fieldOptions],
+  );
 
   // 切换集合后，清理依赖旧集合的字段配置
   const onCollectionChange = (val: any) => {
@@ -251,7 +264,7 @@ export const QueryBuilder = React.forwardRef<
                         <Cascader
                           placeholder={t('Select Field')}
                           fieldNames={{ label: 'title', value: 'name', children: 'children' }}
-                          options={fieldOptions}
+                          options={orderFieldOptions}
                           style={{ minWidth: 114 }}
                         />
                       </Form.Item>

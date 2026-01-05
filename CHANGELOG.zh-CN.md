@@ -5,6 +5,61 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.33](https://github.com/nocobase/nocobase/compare/v1.9.32...v1.9.33) - 2026-01-04
+
+### 🎉 新特性
+
+- **[client]** 应用进入维护状态时支持显示插件自定义的应用维护状态组件 ([#8252](https://github.com/nocobase/nocobase/pull/8252)) by @cgyrock
+
+- **[文件管理器]** 存储支持配置文件重命名方式 ([#8231](https://github.com/nocobase/nocobase/pull/8231)) by @JAVA-LW
+
+- **[文件存储：S3 (Pro)]** 为 S3 Pro 存储器增加重命名模式选项 by @mytharcher
+
+### 🚀 优化
+
+- **[迁移管理]** 优化迁移检查、迁移 SQL 下载、迁移日志格式及迁移执行过程的可视化体验 by @cgyrock
+
+### 🐛 修复
+
+- **[database]**
+  - 查找多对多关系数据时，带上 through scope 条件 ([#8277](https://github.com/nocobase/nocobase/pull/8277)) by @2013xile
+
+  - 修复对象类型的 `appends` 参数处理，并且提升参数解析的 `arrayLimit` 上限 ([#8328](https://github.com/nocobase/nocobase/pull/8328)) by @mytharcher
+
+- **[client]** 修复人工节点表单中多对多数据选择器的表单区块菜单报错的问题 ([#8282](https://github.com/nocobase/nocobase/pull/8282)) by @mytharcher
+
+- **[异步任务管理器]** 修复取消后台任务的提示语言 ([#8245](https://github.com/nocobase/nocobase/pull/8245)) by @mytharcher
+
+- **[文件管理器]** 修复上传文件到 AWS S3 大于 5MB 时报错的问题 ([#8275](https://github.com/nocobase/nocobase/pull/8275)) by @mytharcher
+
+- **[工作流]** 修复“外部数据源”刷新后绑定的数据表事件失效的问题 ([#8207](https://github.com/nocobase/nocobase/pull/8207)) by @cgyrock
+
+- **[数据表：树]** 批量创建树表节点后，更新路径表 ([#8267](https://github.com/nocobase/nocobase/pull/8267)) by @2013xile
+
+- **[数据源：外部 PostgreSQL]** 修复“外部数据源”刷新后绑定的数据表事件失效的问题 by @cgyrock
+
+- **[数据源：外部 Oracle]** 修复“外部数据源”刷新后绑定的数据表事件失效的问题 by @cgyrock
+
+## [v1.9.32](https://github.com/nocobase/nocobase/compare/v1.9.31...v1.9.32) - 2025-12-24
+
+### 🎉 新特性
+
+- **[工作流]** 为工作流增加新的系统变量，包括“应用实例 ID”和“生成雪花 ID” ([#8223](https://github.com/nocobase/nocobase/pull/8223)) by @mytharcher
+
+### 🐛 修复
+
+- **[client]** 修复展示关联字段懒加载时因无限循环导致的栈溢出问题 ([#8262](https://github.com/nocobase/nocobase/pull/8262)) by @zhangzhonghe
+
+- **[操作：导入记录]** 修复导入操作遇到错误时，消息中的行索引总是显示为 1 的问题 ([#8244](https://github.com/nocobase/nocobase/pull/8244)) by @mytharcher
+
+- **[工作流：人工处理节点]** 修复取消已删除工作流的执行计划时报错的问题 ([#8258](https://github.com/nocobase/nocobase/pull/8258)) by @mytharcher
+
+- **[数据表字段：自动编码]** 修复运行 field-sequence 插件的 repair 命令时遇到当前环境不存在的 collection 时报错的问题 ([#8251](https://github.com/nocobase/nocobase/pull/8251)) by @cgyrock
+
+- **[操作：导入记录 Pro]** 修复导入的重复字段检查逻辑，唯一字段为 null 时将报错 by @mytharcher
+
+- **[工作流：审批]** 修复重复回滚同一事务的问题 by @mytharcher
+
 ## [v1.9.31](https://github.com/nocobase/nocobase/compare/v1.9.30...v1.9.31) - 2025-12-22
 
 ### 🚀 优化

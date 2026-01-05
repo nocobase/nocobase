@@ -35,9 +35,9 @@ features:
         details: Configure notification channels such as email, SMS, and in-app messages to enable automated message delivery.
         link: /notification-manager
         showOnHome: true
-      - title: Multi-workspace
-        details: Create multiple logically isolated business workspaces to support multi-tenant scenarios.
-        link: /multi-space
+      - title: Multi-app and Multi-workspace
+        details: Create multiple physically isolated application instances or logically isolated business workspaces to support multi-tenant scenarios.
+        link: /multi-app/multi-app
         showOnHome: true
       - title: Integration
         details: Seamlessly connect with external systems, third-party services, and various data sources to extend NocoBase's functionality.

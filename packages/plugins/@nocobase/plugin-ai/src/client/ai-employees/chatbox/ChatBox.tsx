@@ -29,7 +29,7 @@ import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { dialogController } from '../stores/dialog-controller';
 import { CodeHistory } from '../ai-coding/CodeHistory';
 import { isEngineer } from '../built-in/utils';

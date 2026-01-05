@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.33](https://github.com/nocobase/nocobase/compare/v1.9.32...v1.9.33) - 2026-01-04
+
+### 🎉 New Features
+
+- **[client]** Support plugin-defined maintenance components when the app enters maintenance status ([#8252](https://github.com/nocobase/nocobase/pull/8252)) by @cgyrock
+
+- **[File manager]** Support file renaming method configuration ([#8231](https://github.com/nocobase/nocobase/pull/8231)) by @JAVA-LW
+
+- **[File storage: S3(Pro)]** Add rename mode option for S3 Pro storage by @mytharcher
+
+### 🚀 Improvements
+
+- **[Migration manager]** Improved migration checks, SQL download support, log formatting, and execution process visibility by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[database]**
+  - Include through scope when querying m2m relationships ([#8277](https://github.com/nocobase/nocobase/pull/8277)) by @2013xile
+
+  - Fix object `appends` in `OptionsParser`, and increase `arrayLimit` for parameters ([#8328](https://github.com/nocobase/nocobase/pull/8328)) by @mytharcher
+
+- **[client]** Fix the issue where error thrown in in filter form block settings of m2m field ([#8282](https://github.com/nocobase/nocobase/pull/8282)) by @mytharcher
+
+- **[Async task manager]** Fix language of canceling background task ([#8245](https://github.com/nocobase/nocobase/pull/8245)) by @mytharcher
+
+- **[File manager]** Fix the issue where error thrown when upload file larger than 5MB to AWS S3 ([#8275](https://github.com/nocobase/nocobase/pull/8275)) by @mytharcher
+
+- **[Workflow]** Fixed database events becoming invalid after refreshing the external data source ([#8207](https://github.com/nocobase/nocobase/pull/8207)) by @cgyrock
+
+- **[Collection: Tree]** Update paths after bulk creating tree collection nodes ([#8267](https://github.com/nocobase/nocobase/pull/8267)) by @2013xile
+
+- **[Data source: External PostgreSQL]** Fixed database events becoming invalid after refreshing the external data source by @cgyrock
+
+- **[Data source: External Oracle]** Fixed database events becoming invalid after refreshing the external data source by @cgyrock
+
+## [v1.9.32](https://github.com/nocobase/nocobase/compare/v1.9.31...v1.9.32) - 2025-12-24
+
+### 🎉 New Features
+
+- **[Workflow]** Add new system variables in workflow, including `instanceId` and `genSnowflakeId()` ([#8223](https://github.com/nocobase/nocobase/pull/8223)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix stack overflow caused by infinite loop in display association fields lazy loading ([#8262](https://github.com/nocobase/nocobase/pull/8262)) by @zhangzhonghe
+
+- **[Action: Import records]** Fix the issue where row index in error message is always 1 when error thrown in import action ([#8244](https://github.com/nocobase/nocobase/pull/8244)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix the issue where error thrown when cancel execution of deleted workflow ([#8258](https://github.com/nocobase/nocobase/pull/8258)) by @mytharcher
+
+- **[Collection field: Sequence]** Fixed an error when the field-sequence repair command encounters a non-existent collection in the current environment. ([#8251](https://github.com/nocobase/nocobase/pull/8251)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix unique check logic which will throw error when the value of unique field is null by @mytharcher
+
+- **[Workflow: Approval]** Fix duplicated rollback of same transaction by @mytharcher
+
 ## [v1.9.31](https://github.com/nocobase/nocobase/compare/v1.9.30...v1.9.31) - 2025-12-22
 
 ### 🚀 Improvements

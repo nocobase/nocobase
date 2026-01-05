@@ -11,6 +11,7 @@ import { Context } from '@nocobase/actions';
 import { ToolOptions } from '../manager/tool-manager';
 import { z } from 'zod';
 import PluginAIServer from '../plugin';
+import { truncateLongStrings, MAX_QUERY_LIMIT, normalizeLimitOffset, buildPagedToolResult } from './utils';
 
 const ArgSchema = z.object({
   datasource: z.string().describe('{{t("Data source key")}}'),
@@ -76,8 +77,8 @@ const example3: QueryObject = { age: { $lt: 50 } };
     .describe(
       '{{t("Sort field names. By default, they are in ascending order. A minus sign before the field name indicates descending order")}}',
     ),
-  offset: z.number().describe('{{t("Offset of records to be queried")}}'),
-  limit: z.number().describe('{{t("Maximum number of records to be queried")}}'),
+  offset: z.number().optional().describe('{{t("Offset of records to be queried")}}'),
+  limit: z.number().optional().describe('{{t("Maximum number of records to be queried")}}'),
 });
 
 type ArgType = z.infer<typeof ArgSchema>;
@@ -89,10 +90,30 @@ export const dataSourceQuery: ToolOptions = {
   schema: ArgSchema,
   invoke: async (ctx: Context, args: ArgType) => {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-    const content = await plugin.aiContextDatasourceManager.query(ctx as Context, args as any);
+
+    // 限制单次查询数量
+    const { limit, offset } = normalizeLimitOffset(args, { defaultLimit: 50, maxLimit: MAX_QUERY_LIMIT });
+
+    const content = await plugin.aiContextDatasourceManager.query(ctx, {
+      ...args,
+      limit,
+      offset,
+    } as any);
+
+    // 截断长字符串字段
+    const records = truncateLongStrings(content?.records || []);
+    const total = content?.total || 0;
+
+    // 构造结果，包含分页提示供 LLM 理解
+    const result: any = buildPagedToolResult({ total, offset, limit, records });
+
+    if (result.hasMore) {
+      result.note = `Showing ${result.returned} of ${result.total} records. To fetch more, call this tool again with offset:${result.nextOffset}`;
+    }
+
     return {
       status: 'success',
-      content: JSON.stringify(content),
+      content: JSON.stringify(result),
     };
   },
 };
@@ -105,9 +126,7 @@ export const dataSourceCounting: ToolOptions = {
   schema: ArgSchema,
   invoke: async (ctx: Context, args: ArgType) => {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-    args.offset = 0;
-    args.limit = 1;
-    const content = await plugin.aiContextDatasourceManager.query(ctx as Context, args as any);
+    const content = await plugin.aiContextDatasourceManager.query(ctx, { ...args, offset: 0, limit: 1 } as any);
     return {
       status: 'success',
       content: String(content?.total ?? 0),

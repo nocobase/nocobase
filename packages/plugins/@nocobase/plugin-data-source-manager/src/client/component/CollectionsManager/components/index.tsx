@@ -9,6 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
+import { castArray } from 'lodash';
 import { observer, useForm, useField } from '@formily/react';
 import { useParams } from 'react-router-dom';
 import { useRecord, useCompile, useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
@@ -158,11 +159,15 @@ export const TargetKey = observer(
     field.required = true;
     useEffect(() => {
       if (target) {
+        const filterTargetKey = castArray(getCollection(target, dataSourceKey).filterTargetKey);
         setOptions(
           getCollection(target, dataSourceKey)
             .fields?.filter((v) => {
               if (v.primaryKey || v.unique) {
                 return true;
+              }
+              if (filterTargetKey.length === 1) {
+                return filterTargetKey[0] === v.name;
               }
               return type === 'hasMany' && supportTypes.includes(v.type);
             })
@@ -183,6 +188,7 @@ export const TargetKey = observer(
           onDropdownVisibleChange={async (open) => {
             const { target, type } = form.values;
             if (target && open) {
+              const filterTargetKey = castArray(getCollection(target, dataSourceKey).filterTargetKey);
               const { data } = await api.request({
                 url: `dataSourcesCollections/${dataSourceKey}.${target}/fields:list`,
                 params: {
@@ -198,6 +204,9 @@ export const TargetKey = observer(
                   ?.filter((v) => {
                     if (v.primaryKey || v.unique) {
                       return true;
+                    }
+                    if (filterTargetKey.length === 1) {
+                      return filterTargetKey[0] === v.name;
                     }
                     return type === 'hasMany' && supportTypes.includes(v.type);
                   })
