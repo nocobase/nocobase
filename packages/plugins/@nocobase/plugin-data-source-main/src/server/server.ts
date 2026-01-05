@@ -485,55 +485,85 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.resourceManager.registerActionHandlers(collectionActions);
     this.app.resourceManager.define(mainDataSourceResource);
 
-    const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
-      for (const field of lodash.castArray(fields)) {
-        if (field.get('source')) {
-          const [collectionSource, fieldSource] = field.get('source').split('.');
-          // find original field
-          const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
+    const handleFieldSource = (
+      fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>,
+      rawFields?: ColumnsDescription,
+    ) => {
+      lodash.castArray(fields).forEach((field, index) => {
+        let source: string;
 
-          if (!collectionField) {
-            continue;
-          }
-
-          const newOptions = {};
-
-          // write original field options
-          lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
-
-          // merge with current field options
-          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
-            if (srcValue === null) {
-              return objValue;
-            }
-          });
-
-          // set final options
-          field.set('options', newOptions);
+        if (field && typeof field.get === 'function') {
+          source = field.get('source');
+        } else {
+          source = field?.source;
         }
+
+        if (!source) {
+          return;
+        }
+
+        const [collectionSource, fieldSource] = source.split('.');
+        const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
+
+        if (!collectionField) {
+          return;
+        }
+
+        const newOptions: any = {};
+
+        // 原始字段 options
+        lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
+
+        const currentValues = field && typeof (field as any).get === 'function' ? (field as any).get() : field;
+
+        lodash.mergeWith(newOptions, currentValues, (objValue, srcValue) => {
+          if (srcValue === null) {
+            return objValue;
+          }
+        });
+
+        if (field && typeof (field as any).set === 'function') {
+          field.set('options', newOptions);
+        } else {
+          fields[index] = {
+            ...field,
+            ...newOptions,
+          };
+        }
+
+        // Handle rawFields and fieldTypes from HEAD version
         const fieldTypes = fieldTypeMap[this.db.options.dialect];
         if (rawFields && fieldTypes) {
-          const rawField = rawFields[field.get('name')];
-          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
-            const mappedType = extractTypeFromDefinition(rawField.type);
-            const possibleTypes = fieldTypes[mappedType];
-            field.set('possibleTypes', possibleTypes);
+          const fieldName =
+            field && typeof (field as any).get === 'function' ? (field as any).get('name') : field?.name;
+          const rawField = rawFields[fieldName];
+          if (rawField) {
+            const interfaceValue =
+              field && typeof (field as any).get === 'function' ? (field as any).get('interface') : field?.interface;
+            if (!PRESET_FIELDS_INTERFACES.includes(interfaceValue)) {
+              const mappedType = extractTypeFromDefinition(rawField.type);
+              const possibleTypes = fieldTypes[mappedType];
+              if (field && typeof (field as any).set === 'function') {
+                field.set('possibleTypes', possibleTypes);
+              } else {
+                fields[index] = {
+                  ...fields[index],
+                  possibleTypes,
+                };
+              }
+            }
           }
         }
-      }
+      });
     };
 
     this.app.resourceManager.use(async function handleFieldSourceMiddleware(ctx, next) {
       await next();
 
       // handle collections:list
-      if (
-        ctx.action.resourceName === 'collections' &&
-        ctx.action.actionName == 'list' &&
-        ctx.action.params?.paginate == 'false'
-      ) {
+      if (ctx.action.resourceName === 'collections' && ctx.action.actionName == 'listMeta') {
         for (const collection of ctx.body) {
-          if (collection.get('view')) {
+          if (collection.view === true) {
             const fields = collection.fields;
             handleFieldSource(fields);
           }
