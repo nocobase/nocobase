@@ -46,7 +46,7 @@ type DepCollector = {
   wildcard: boolean;
 };
 
-type RuleDeps = Set<string> | 'wildcard';
+type RuleDeps = Set<string>;
 
 type RuleState = {
   deps: RuleDeps;
@@ -64,6 +64,17 @@ type RuntimeRule = {
   getValue: () => any;
   getCondition?: () => any;
   getContext: () => any;
+};
+
+type AssignMode = 'default' | 'assign';
+
+export type FormAssignRuleItem = {
+  key?: string;
+  enable?: boolean;
+  field?: string;
+  mode?: AssignMode;
+  condition?: any;
+  value?: any;
 };
 
 function isPlainObjectValue(v: any) {
@@ -184,6 +195,7 @@ export class FormValueRuntime {
   private readonly explicitSet = new Set<string>();
   private readonly lastDefaultValueByPathKey = new Map<string, any>();
   private readonly rules = new Map<string, { rule: RuntimeRule; state: RuleState }>();
+  private readonly assignRuleIdsByFieldUid = new Map<string, Set<string>>();
   private readonly pendingRuleIds = new Set<string>();
   private readonly ruleDebounceUntilById = new Map<string, number>();
   private readonly ruleDebounceTimersById = new Map<string, any>();
@@ -217,6 +229,85 @@ export class FormValueRuntime {
     this.model = options.model;
     this.getForm = options.getForm;
     this.formValuesProxy = this.createFormValuesProxy([], undefined);
+  }
+
+  /**
+   * 同步“表单赋值”配置到运行时规则引擎。
+   *
+   * - mode=default → source=default（遵循 explicit/空值覆盖语义）
+   * - mode=assign  → source=system（不受 explicit 影响，依赖变化时持续生效）
+   */
+  syncAssignRules(items: FormAssignRuleItem[]) {
+    if (this.disposed) return;
+    const raw = Array.isArray(items) ? items : [];
+    const next = raw.map((it, index) => ({
+      ...it,
+      key: it?.key ? String(it.key) : `idx:${index}`,
+    }));
+    const prefix = 'form-assign:';
+
+    this.assignRuleIdsByFieldUid.clear();
+
+    const nextIds = new Set<string>();
+    for (const it of next) {
+      nextIds.add(`${prefix}${String(it.key)}`);
+    }
+
+    // 移除已不存在的规则
+    for (const id of Array.from(this.rules.keys())) {
+      if (!id.startsWith(prefix)) continue;
+      if (nextIds.has(id)) continue;
+      this.removeRule(id);
+    }
+
+    // 重新注册（保持实现简单：配置变化时直接替换）
+    let order = 0;
+    for (const it of next) {
+      const id = `${prefix}${String(it.key)}`;
+      const mode: AssignMode = it?.mode === 'default' ? 'default' : 'assign';
+      const source: ValueSource = mode === 'default' ? 'default' : 'system';
+      const enabled = it?.enable !== false;
+      const fieldUid = it?.field ? String(it.field) : '';
+
+      if (fieldUid) {
+        const set = this.assignRuleIdsByFieldUid.get(fieldUid) || new Set<string>();
+        set.add(id);
+        this.assignRuleIdsByFieldUid.set(fieldUid, set);
+      }
+
+      // 若已存在则替换，避免残留旧 deps/binding
+      if (this.rules.has(id)) {
+        this.removeRule(id);
+      }
+
+      order += 1;
+      const rule: RuntimeRule = {
+        id,
+        source,
+        priority: 10 + order,
+        debounceMs: 0,
+        getEnabled: () => {
+          if (!enabled) return false;
+          if (!fieldUid) return false;
+          const fieldModel = this.model?.context?.engine?.getModel?.(fieldUid);
+          return !!fieldModel && !!this.getModelTargetNamePath(fieldModel);
+        },
+        getTarget: () => {
+          const fieldModel = this.model?.context?.engine?.getModel?.(fieldUid);
+          return this.getModelTargetNamePath(fieldModel) || [];
+        },
+        getValue: () => it?.value,
+        getCondition: () => it?.condition,
+        getContext: () => this.model?.context,
+      };
+
+      this.rules.set(id, {
+        rule,
+        state: { deps: new Set(), depDisposers: [], runSeq: 0 },
+      });
+
+      this.scheduleRule(id);
+    }
   }
 
   get formValues() {
@@ -274,9 +365,11 @@ export class FormValueRuntime {
     if (!this.mountedListener && !this.unmountedListener) {
       this.mountedListener = ({ model }: any) => {
         this.tryRegisterDefaultRuleInstance(model);
+        this.tryScheduleAssignRulesOnModelChange(model);
       };
       this.unmountedListener = ({ model }: any) => {
         this.tryUnregisterDefaultRuleInstance(model);
+        this.tryScheduleAssignRulesOnModelChange(model);
       };
 
       engineEmitter.on('model:mounted', this.mountedListener);
@@ -313,6 +406,7 @@ export class FormValueRuntime {
     }
     this.rules.clear();
     this.pendingRuleIds.clear();
+    this.assignRuleIdsByFieldUid.clear();
 
     for (const binding of this.observableBindings.values()) {
       binding.dispose();
@@ -719,21 +813,32 @@ export class FormValueRuntime {
   private recordDep(namePath: NamePath, collector: DepCollector | undefined) {
     if (!collector) return;
     for (const k of buildAncestorKeys(namePath)) {
-      collector.deps.add(k);
+      collector.deps.add(`fv:${k}`);
     }
   }
 
   private collectStaticDepsFromTemplateValue(value: any, collector: DepCollector) {
     try {
       const usage = extractUsedVariablePaths(value as any) || {};
-      const paths = usage.formValues || [];
-      for (const subPath of paths) {
-        if (!subPath) {
-          collector.wildcard = true;
-          continue;
+      for (const [varName, rawPaths] of Object.entries(usage)) {
+        const paths = Array.isArray(rawPaths) ? rawPaths : [];
+        // NOTE: extractUsedVariablePaths 在 `{{ ctx.foo }}` 场景下会生成空数组，表示顶层变量被使用
+        const normalized = paths.length ? paths : [''];
+
+        for (const subPath of normalized) {
+          if (varName === 'formValues') {
+            if (!subPath) {
+              collector.wildcard = true;
+              continue;
+            }
+            const segs = parsePathString(String(subPath)).filter((seg) => typeof seg !== 'object') as NamePath;
+            this.recordDep(segs, collector);
+            continue;
+          }
+
+          const key = subPath ? `ctx:${varName}:${String(subPath)}` : `ctx:${varName}`;
+          collector.deps.add(key);
         }
-        const segs = parsePathString(String(subPath)).filter((seg) => typeof seg !== 'object') as NamePath;
-        this.recordDep(segs, collector);
       }
     } catch {
       // ignore
@@ -972,6 +1077,23 @@ export class FormValueRuntime {
     this.scheduleRule(id);
   }
 
+  private tryScheduleAssignRulesOnModelChange(model: any) {
+    if (this.disposed) return;
+    if (!this.isModelInThisForm(model)) return;
+
+    const uid = model?.uid ? String(model.uid) : '';
+    if (!uid) return;
+
+    const ids = this.assignRuleIdsByFieldUid.get(uid);
+    if (!ids || ids.size === 0) return;
+
+    // 当字段模型挂载/卸载时，重新触发一次规则计算：
+    // - 解决同步 assignRules 时目标字段尚未 ready（fieldPathArray 未注入）导致永远不运行的问题
+    for (const id of ids) {
+      this.scheduleRule(id);
+    }
+  }
+
   private tryUnregisterDefaultRuleInstance(model: any) {
     if (this.disposed) return;
     if (!this.isModelInThisForm(model)) return;
@@ -1181,6 +1303,9 @@ export class FormValueRuntime {
 
     const collector: DepCollector = { deps: new Set(), wildcard: false };
     // 静态路径提取：覆盖“服务端解析但前端不触达 formValues 子路径”的场景
+    if (rule.getCondition) {
+      this.collectStaticDepsFromTemplateValue(rule.getCondition(), collector);
+    }
     this.collectStaticDepsFromTemplateValue(rule.getValue(), collector);
     // 规则可用性依赖 target 当前值（空/等于上次默认值）
     this.recordDep(targetNamePath, collector);
@@ -1189,9 +1314,21 @@ export class FormValueRuntime {
 
     if (rule.getCondition) {
       const cond = rule.getCondition();
-      if (cond && !this.evaluateCondition(evalCtx, cond)) {
+      let resolvedCond = cond;
+      if (cond) {
+        try {
+          resolvedCond = await evalCtx?.resolveJsonTemplate?.(cond);
+        } catch {
+          resolvedCond = cond;
+        }
+      }
+      if (seq !== state.runSeq) return;
+      if (cond && !this.evaluateCondition(evalCtx, resolvedCond)) {
         if (seq !== state.runSeq) return;
-        const nextDeps: RuleDeps = collector.wildcard ? 'wildcard' : collector.deps;
+        const nextDeps: RuleDeps = new Set(collector.deps);
+        if (collector.wildcard) {
+          nextDeps.add('fv:*');
+        }
         this.updateRuleDeps(rule, state, nextDeps);
         return;
       }
@@ -1203,14 +1340,20 @@ export class FormValueRuntime {
       resolved = await evalCtx?.resolveJsonTemplate?.(rawValue);
     } catch (error) {
       if (seq !== state.runSeq) return;
-      const nextDeps: RuleDeps = collector.wildcard ? 'wildcard' : collector.deps;
+      const nextDeps: RuleDeps = new Set(collector.deps);
+      if (collector.wildcard) {
+        nextDeps.add('fv:*');
+      }
       this.updateRuleDeps(rule, state, nextDeps);
       return;
     }
 
     if (seq !== state.runSeq) return;
 
-    const nextDeps: RuleDeps = collector.wildcard ? 'wildcard' : collector.deps;
+    const nextDeps: RuleDeps = new Set(collector.deps);
+    if (collector.wildcard) {
+      nextDeps.add('fv:*');
+    }
     this.updateRuleDeps(rule, state, nextDeps);
 
     if (rule.source === 'default') {
@@ -1269,19 +1412,60 @@ export class FormValueRuntime {
     state.depDisposers = [];
     state.deps = deps;
 
-    if (deps === 'wildcard') {
+    if (deps.has('fv:*')) {
       const disposer = reaction(
         () => this.changeTick.value,
         () => this.scheduleRule(rule.id),
       );
       state.depDisposers.push(disposer);
-      return;
     }
 
+    const baseCtx: any = (() => {
+      try {
+        return rule.getContext();
+      } catch {
+        return undefined;
+      }
+    })();
+
     for (const depKey of deps) {
-      const depPath = pathKeyToNamePath(depKey);
+      if (depKey === 'fv:*') {
+        continue;
+      }
+      // backward compat: treat unknown keys as formValues deps
+      if (!depKey.startsWith('fv:') && !depKey.startsWith('ctx:')) {
+        const depPath = pathKeyToNamePath(depKey);
+        const disposer = reaction(
+          () => getIn(this.valuesMirror, depPath),
+          () => this.scheduleRule(rule.id),
+        );
+        state.depDisposers.push(disposer);
+        continue;
+      }
+
+      if (depKey.startsWith('fv:')) {
+        const inner = depKey.slice('fv:'.length);
+        const depPath = pathKeyToNamePath(inner);
+        const disposer = reaction(
+          () => getIn(this.valuesMirror, depPath),
+          () => this.scheduleRule(rule.id),
+        );
+        state.depDisposers.push(disposer);
+        continue;
+      }
+
+      // ctx deps: ctx:<varName>[:<subPath>]
+      const rest = depKey.slice('ctx:'.length);
+      const sep = rest.indexOf(':');
+      const varName = sep >= 0 ? rest.slice(0, sep) : rest;
+      const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
+
+      const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
       const disposer = reaction(
-        () => getIn(this.valuesMirror, depPath),
+        () => {
+          const root = baseCtx ? baseCtx[varName] : undefined;
+          return depPath.length ? getIn(root, depPath) : root;
+        },
         () => this.scheduleRule(rule.id),
       );
       state.depDisposers.push(disposer);
