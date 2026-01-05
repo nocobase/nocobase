@@ -479,7 +479,7 @@ export class PluginDataSourceMainServer extends Plugin {
       isRawValue,
     }: {
       fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>;
-      isRawValue: boolean;
+      isRawValue?: boolean;
     }) => {
       lodash.castArray(fields).forEach((field, index) => {
         const source = isRawValue ? field.source : field.get('source');
