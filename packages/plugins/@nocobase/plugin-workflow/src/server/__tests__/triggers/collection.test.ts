@@ -907,7 +907,7 @@ describe('workflow > triggers > collection', () => {
     });
   });
 
-  describe.only('cycling trigger', () => {
+  describe('cycling trigger', () => {
     it('trigger should not be triggered more than once in same execution', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
