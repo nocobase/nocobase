@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, tExpr } from '@nocobase/flow-engine';
+import { FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '../application/Plugin';
 import { IconPicker } from '../schema-component/antd/icon-picker';
 import * as actions from './actions';
 import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
-import { commonConditionHandler, ConditionBuilder } from './components/ConditionBuilder';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
@@ -31,7 +30,6 @@ export class PluginFlowEngine extends Plugin {
       ),
     ) as Record<string, typeof FlowModel>;
     this.flowEngine.registerModels(filteredModels);
-
     this.flowEngine.registerActions(actions);
     this.flowEngine.registerActions(filterFormActions);
     this.flowEngine.flowSettings.registerComponents({
