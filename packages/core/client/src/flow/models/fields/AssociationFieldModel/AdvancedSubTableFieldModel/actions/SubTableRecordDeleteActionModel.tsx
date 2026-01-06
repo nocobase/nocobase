@@ -25,7 +25,26 @@ export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
 SubTableRecordDeleteActionModel.define({
   label: tExpr('Delete'),
 });
-
+SubTableRecordDeleteActionModel.registerFlow({
+  key: 'subTableRemoveActionSettings',
+  steps: {
+    disableProps: {
+      async handler(ctx, params) {
+        const { allowDisassociation } = ctx.associationModel.props;
+        const record = ctx.record;
+        if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
+          ctx.model.setProps({
+            disabled: true,
+          });
+        } else {
+          ctx.model.setProps({
+            disabled: false,
+          });
+        }
+      },
+    },
+  },
+});
 SubTableRecordDeleteActionModel.registerFlow({
   key: 'deleteSettings',
   title: tExpr('Delete settings'),

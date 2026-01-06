@@ -197,7 +197,7 @@ const DisplayTable = (props) => {
         let next;
         if (index === -1 || !pk) {
           // 没找到：作为新记录追加到最后
-          next = [...prev, updatedRecord];
+          next = [...prev, { ...updatedRecord, __is_new__: true }];
           const lastPage = Math.ceil(next.length / currentPageSize);
           setCurrentPage(lastPage);
         } else {
