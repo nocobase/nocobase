@@ -61,6 +61,7 @@ import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesT
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -93,13 +94,19 @@ export const useAllAccessDesktopRoutes = () => {
 };
 
 const RoutesRequestProvider: FC = ({ children }) => {
+  const ctx = useFlowEngineContext();
   const mountedRef = useRef(false);
-  const { data, refresh, loading } = useRequest<{
-    data: any;
-  }>({
-    url: `/desktopRoutes:listAccessible`,
-    params: { tree: true, sort: 'sort' },
-  });
+  const { data, refresh, loading } = useRequest<any>(
+    {
+      url: `/desktopRoutes:listAccessible`,
+      params: { tree: true, sort: 'sort' },
+    },
+    {
+      onSuccess(data) {
+        ctx.routeRepository.setRoutes(data?.data || emptyArray);
+      },
+    },
+  );
 
   const allAccessRoutesValue = useMemo(() => {
     return {
