@@ -25,6 +25,8 @@ export const MobileDatePicker = (props) => {
     disabled,
     dateOnly,
     utc,
+    minDate: min,
+    maxDate: max,
     ...rest
   } = props;
   const [visible, setVisible] = useState(false);
@@ -54,6 +56,10 @@ export const MobileDatePicker = (props) => {
         return data;
     }
   }, []);
+  // Convert dayjs min/max to native Date for Antd Mobile Picker
+  const minDate = min ? (min as any).toDate() : new Date(1950, 0, 1);
+  const maxDate = max ? (max as any).toDate() : new Date(2050, 11, 31);
+
   return (
     <>
       <div onClick={() => !disabled && setVisible(true)}>
@@ -78,8 +84,8 @@ export const MobileDatePicker = (props) => {
         }}
         precision={showTime && picker === 'date' ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
         renderLabel={labelRenderer}
-        min={new Date(1950, 0, 1)}
-        max={new Date(2050, 11, 31)}
+        min={minDate}
+        max={maxDate}
         onConfirm={(val) => {
           handleConfirm(val);
         }}
