@@ -851,4 +851,329 @@ describe('sort action', () => {
       });
     });
   });
+
+  describe('Robust move with duplicate sort values', () => {
+    beforeEach(async () => {
+      api.db.collection({
+        name: 'items',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'sort', name: 'sort' },
+        ],
+      });
+      await api.db.sync();
+      const Items = api.db.getCollection('items');
+
+      // Create items with sequential sort values
+      for (let i = 1; i <= 7; i++) {
+        await Items.repository.create({
+          values: { name: `item${i}` },
+        });
+      }
+    });
+
+    afterEach(async () => {
+      return api.destroy();
+    });
+
+    it('should handle move when target has duplicate sort values', async () => {
+      const Items = api.db.getCollection('items');
+
+      // Manually corrupt the database to have duplicate sort values
+      // This simulates the bug scenario from the user's screenshot
+      await Items.repository.update({
+        filterByTk: 2,
+        values: { sort: 2 },
+        silent: true,
+      });
+      await Items.repository.update({
+        filterByTk: 3,
+        values: { sort: 4 },
+        silent: true,
+      });
+      await Items.repository.update({
+        filterByTk: 4,
+        values: { sort: 4 },
+        silent: true,
+      });
+      await Items.repository.update({
+        filterByTk: 5,
+        values: { sort: 4 },
+        silent: true,
+      });
+      await Items.repository.update({
+        filterByTk: 6,
+        values: { sort: 3 },
+        silent: true,
+      });
+
+      // State: ID 1->1, 2->2, 3->4, 4->4, 5->4, 6->3, 7->4
+      // Move ID 6 (sort=3) before ID 5 (sort=4)
+      await api.agent().resource('items').move({
+        sourceId: 6,
+        targetId: 5,
+        method: 'insertBefore',
+      });
+
+      const response = await api
+        .agent()
+        .resource('items')
+        .list({
+          sort: ['sort'],
+        });
+
+      // After move, sort values should be sequential 1,2,3,4,5,6,7
+      const items = response.body.data;
+      expect(items.length).toBe(7);
+
+      // Check all sort values are unique
+      const sortValues = items.map((item) => item.sort);
+      const uniqueSortValues = new Set(sortValues);
+      expect(uniqueSortValues.size).toBe(7);
+
+      // Check sort values are sequential
+      expect(sortValues).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    });
+
+    it('should move item correctly after restoration', async () => {
+      const Items = api.db.getCollection('items');
+
+      // Move item 3 to after item 1
+      await api.agent().resource('items').move({
+        sourceId: 3,
+        targetId: 1,
+        method: 'insertAfter',
+      });
+
+      let response = await api
+        .agent()
+        .resource('items')
+        .list({
+          sort: ['sort'],
+        });
+
+      expect(response.body.data.map((i) => i.name)).toEqual([
+        'item1',
+        'item3',
+        'item2',
+        'item4',
+        'item5',
+        'item6',
+        'item7',
+      ]);
+
+      // Move item 3 to after item 5
+      await api.agent().resource('items').move({
+        sourceId: 3,
+        targetId: 5,
+        method: 'insertAfter',
+      });
+
+      response = await api
+        .agent()
+        .resource('items')
+        .list({
+          sort: ['sort'],
+        });
+
+      expect(response.body.data.map((i) => i.name)).toEqual([
+        'item1',
+        'item2',
+        'item4',
+        'item5',
+        'item3',
+        'item6',
+        'item7',
+      ]);
+
+      // Verify all sort values are still unique and sequential
+      const sortValues = response.body.data.map((i) => i.sort);
+      const uniqueSortValues = new Set(sortValues);
+      expect(uniqueSortValues.size).toBe(7);
+      expect(sortValues).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    });
+
+    it('should move item to beginning correctly', async () => {
+      const Items = api.db.getCollection('items');
+
+      // Move last item to the beginning
+      await api.agent().resource('items').move({
+        sourceId: 7,
+        targetId: 1,
+        method: 'insertBefore',
+      });
+
+      const response = await api
+        .agent()
+        .resource('items')
+        .list({
+          sort: ['sort'],
+        });
+
+      expect(response.body.data.map((i) => i.name)).toEqual([
+        'item7',
+        'item1',
+        'item2',
+        'item3',
+        'item4',
+        'item5',
+        'item6',
+      ]);
+
+      const sortValues = response.body.data.map((i) => i.sort);
+      expect(sortValues).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    });
+
+    it('should move item to end correctly', async () => {
+      const Items = api.db.getCollection('items');
+
+      // Move first item to the end
+      await api.agent().resource('items').move({
+        sourceId: 1,
+        targetId: 7,
+        method: 'insertAfter',
+      });
+
+      const response = await api
+        .agent()
+        .resource('items')
+        .list({
+          sort: ['sort'],
+        });
+
+      expect(response.body.data.map((i) => i.name)).toEqual([
+        'item2',
+        'item3',
+        'item4',
+        'item5',
+        'item6',
+        'item7',
+        'item1',
+      ]);
+
+      const sortValues = response.body.data.map((i) => i.sort);
+      expect(sortValues).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    });
+
+    it('should handle rapid consecutive moves', async () => {
+      const Items = api.db.getCollection('items');
+
+      // Move items rapidly to test atomic operations
+      await Promise.all([
+        api.agent().resource('items').move({
+          sourceId: 2,
+          targetId: 4,
+          method: 'insertBefore',
+        }),
+        api.agent().resource('items').move({
+          sourceId: 6,
+          targetId: 1,
+          method: 'insertAfter',
+        }),
+      ]);
+
+      const response = await api
+        .agent()
+        .resource('items')
+        .list({
+          sort: ['sort'],
+        });
+
+      const items = response.body.data;
+      const sortValues = items.map((i) => i.sort);
+
+      // All sort values should still be unique and sequential
+      const uniqueSortValues = new Set(sortValues);
+      expect(uniqueSortValues.size).toBe(7);
+      expect(sortValues.every((v, i) => v === i + 1)).toBe(true);
+    });
+  });
+
+  describe('Sort validation and rebuild', () => {
+    beforeEach(async () => {
+      api.db.collection({
+        name: 'articles',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'sort', name: 'sort' },
+        ],
+      });
+      await api.db.sync();
+    });
+
+    afterEach(async () => {
+      return api.destroy();
+    });
+
+    it('should validate and detect duplicate sort values', async () => {
+      const Articles = api.db.getCollection('articles');
+
+      // Create items
+      for (let i = 0; i < 5; i++) {
+        await Articles.repository.create({
+          values: { title: `article${i}` },
+        });
+      }
+
+      // Corrupt by duplicating sort values
+      await Articles.repository.update({
+        filterByTk: 2,
+        values: { sort: 1 },
+        silent: true,
+      });
+
+      // Get the SortableCollection instance to validate
+      const sortField = Articles.getField('sort');
+      const SortableCollection = require('../action').SortableCollection;
+      const sortable = new SortableCollection(Articles);
+
+      const issues = await sortable.validateSort();
+
+      expect(issues).toBeDefined();
+      expect(issues?.hasDuplicates).toBe(true);
+      expect(issues?.duplicates.length).toBeGreaterThan(0);
+    });
+
+    it('should rebuild sort values to sequential order', async () => {
+      const Articles = api.db.getCollection('articles');
+
+      // Create items
+      for (let i = 0; i < 5; i++) {
+        await Articles.repository.create({
+          values: { title: `article${i}` },
+        });
+      }
+
+      // Corrupt the sort values
+      await Articles.model.update(
+        { sort: 99 },
+        {
+          where: { id: 2 },
+          silent: true,
+        },
+      );
+      await Articles.model.update(
+        { sort: 99 },
+        {
+          where: { id: 3 },
+          silent: true,
+        },
+      );
+
+      // Rebuild
+      const SortableCollection = require('../action').SortableCollection;
+      const sortable = new SortableCollection(Articles);
+      const result = await sortable.rebuildSort();
+
+      expect(result.success).toBe(true);
+      expect(result.recordsFixed).toBe(5);
+
+      // Verify all sort values are now sequential
+      const articles = await Articles.repository.find({
+        sort: ['sort'],
+      });
+      const sortValues = articles.map((a) => a.sort);
+      expect(sortValues).toEqual([1, 2, 3, 4, 5]);
+    });
+  });
 });
