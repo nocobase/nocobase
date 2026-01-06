@@ -150,6 +150,34 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
     expect(calls).toEqual(['dynamic', 'static-a', 'static-b']);
   });
 
+  test("phase='afterStep': instance flow runs after the target static step", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'afterStep', flowKey: 'S', stepKey: 'a' },
+      steps: {
+        d: { handler: async () => void calls.push('dynamic') } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a', 'dynamic', 'static-b']);
+  });
+
   test("phase='beforeFlow' missing flow: falls back to afterAllFlows", async () => {
     const engine = new FlowEngine();
     class M extends FlowModel {}

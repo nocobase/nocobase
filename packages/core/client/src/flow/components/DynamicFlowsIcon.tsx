@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ThunderboltOutlined, DeleteOutlined, PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { ThunderboltOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   ActionDefinition,
   ActionScene,
@@ -22,7 +22,7 @@ import {
   isBeforeRenderFlow,
   observer,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
+import { Collapse, Input, Button, Space, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
@@ -157,18 +157,6 @@ const EventConfigSection = observer(
       });
     }, [flowKeyValue, formatKeyWithTitle, model, staticFlowsByKey]);
 
-    const phaseTooltips: Record<ExecutionPhase, string> = React.useMemo(
-      () => ({
-        beforeAllFlows: t('Execution timing: Before all flows'),
-        afterAllFlows: t('Execution timing: After all built-in flows'),
-        beforeFlow: t('Execution timing: Before a built-in flow'),
-        afterFlow: t('Execution timing: After a built-in flow'),
-        beforeStep: t('Execution timing: Before a built-in flow step'),
-        afterStep: t('Execution timing: After a built-in flow step'),
-      }),
-      [t],
-    );
-
     const phaseOptions: Array<{ value: ExecutionPhase; label: string }> = React.useMemo(
       () => [
         { value: 'beforeAllFlows', label: t('Before all flows') },
@@ -259,9 +247,6 @@ const EventConfigSection = observer(
           <div style={{ marginBottom: 16 }}>
             <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
               <span style={{ marginInlineEnd: 6 }}>{t('Execution timing')}</span>
-              <Tooltip title={phaseTooltips[phaseValue]}>
-                <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
-              </Tooltip>
               <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
             </div>
             <Select
@@ -500,9 +485,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
         />
       </div>
       <Space onClick={(e) => e.stopPropagation()}>
-        <Tooltip title={t('Delete')}>
-          <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteFlow(flow)} />
-        </Tooltip>
+        <Button
+          type="text"
+          size="small"
+          icon={<DeleteOutlined />}
+          aria-label={t('Delete')}
+          onClick={() => handleDeleteFlow(flow)}
+        />
         {/* <Tooltip title="Move up">
           <Button
             type="text"
@@ -611,14 +600,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                           {t(actionDef.title)}
                           <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                         </span>
-                        <Tooltip title={t('Delete step')}>
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDeleteStep(step)}
-                          />
-                        </Tooltip>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          aria-label={t('Delete step')}
+                          onClick={() => handleDeleteStep(step)}
+                        />
                       </div>
                       <div>
                         {React.createElement(
