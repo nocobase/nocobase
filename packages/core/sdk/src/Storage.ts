@@ -83,7 +83,7 @@ export class SessionStorage extends LocalStorage {
     public baseStoragePrefix: string = '',
     public shareToken: boolean = false,
   ) {
-    super(storagePrefix, baseStoragePrefix);
+    super(storagePrefix, baseStoragePrefix, shareToken);
     this.items = window.sessionStorage;
   }
 }
