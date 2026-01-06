@@ -135,7 +135,7 @@ export class APIClient {
     return new MemoryStorage();
   }
 
-  private initStorage(storage?: any, storageType = 'localStorage') {
+  private initStorage(storage?: any, storageType: 'localStorage' | 'sessionStorage' | 'memory' = 'localStorage') {
     if (storage) {
       this.storage = new storage(this);
       return;
