@@ -341,11 +341,11 @@ export class PluginClientServer extends Plugin {
 
         // 将权限检查与用户提供的 filter 合并
         const result = await desktopRoutesRepository.findOne({
+          ...ctx.action.params,
           filter: {
             ...filter,
             id: ids,
           },
-          ...ctx.action.params,
         });
 
         ctx.body = result;
