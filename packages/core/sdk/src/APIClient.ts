@@ -107,7 +107,7 @@ export class APIClient {
         shareToken = false,
         ...others
       } = options || {};
-      this.shareToken = shareToken || false;
+      this.shareToken = shareToken;
       this.baseStoragePrefix = storagePrefix;
       this.storagePrefix = appName ? `${storagePrefix}${appName.toUpperCase()}_` : storagePrefix;
       this.axios = axios.create(others);
@@ -140,15 +140,7 @@ export class APIClient {
       this.storage = new storage(this);
       return;
     }
-    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
-      this.storage = new LocalStorage(this.storagePrefix, this.baseStoragePrefix);
-      return;
-    }
-    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
-      this.storage = new SessionStorage(this.storagePrefix, this.baseStoragePrefix);
-      return;
-    }
-    this.storage = new MemoryStorage();
+    this.storage = this.createStorage(storageType);
   }
 
   interceptors() {
