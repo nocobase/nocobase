@@ -90,45 +90,10 @@ const EventConfigSection = observer(
         };
       }
       const onObj = flow.on as any;
-      if (onObj.phase) {
-        return {
-          phase: String(onObj.phase) as ExecutionPhase,
-          flowKey: onObj.flowKey ? String(onObj.flowKey) : undefined,
-          stepKey: onObj.stepKey ? String(onObj.stepKey) : undefined,
-        };
-      }
-
-      const legacyWhen = onObj.when;
-      if (!legacyWhen || typeof legacyWhen !== 'object') {
-        return {
-          phase: undefined as ExecutionPhase | undefined,
-          flowKey: undefined as string | undefined,
-          stepKey: undefined as string | undefined,
-        };
-      }
-
-      if (legacyWhen.anchor === 'afterAllStatic') {
-        return { phase: 'afterAllFlows' as const, flowKey: undefined, stepKey: undefined };
-      }
-      if (legacyWhen.anchor === 'staticFlow') {
-        return {
-          phase: legacyWhen.phase === 'before' ? ('beforeFlow' as const) : ('afterFlow' as const),
-          flowKey: legacyWhen.flowKey ? String(legacyWhen.flowKey) : undefined,
-          stepKey: undefined,
-        };
-      }
-      if (legacyWhen.anchor === 'staticStep') {
-        return {
-          phase: legacyWhen.phase === 'before' ? ('beforeStep' as const) : ('afterStep' as const),
-          flowKey: legacyWhen.flowKey ? String(legacyWhen.flowKey) : undefined,
-          stepKey: legacyWhen.stepKey ? String(legacyWhen.stepKey) : undefined,
-        };
-      }
-
       return {
-        phase: undefined as ExecutionPhase | undefined,
-        flowKey: undefined as string | undefined,
-        stepKey: undefined as string | undefined,
+        phase: onObj.phase ? (String(onObj.phase) as ExecutionPhase) : undefined,
+        flowKey: onObj.flowKey ? String(onObj.flowKey) : undefined,
+        stepKey: onObj.stepKey ? String(onObj.stepKey) : undefined,
       };
     }, [flow]);
 
@@ -194,37 +159,36 @@ const EventConfigSection = observer(
 
     const phaseTooltips: Record<ExecutionPhase, string> = React.useMemo(
       () => ({
-        beforeAllFlows: t('Execution timing: Default (runs before built-in flows)'),
+        beforeAllFlows: t('Execution timing: Before all flows'),
         afterAllFlows: t('Execution timing: After all built-in flows'),
         beforeFlow: t('Execution timing: Before a built-in flow'),
         afterFlow: t('Execution timing: After a built-in flow'),
-        beforeStep: t('Execution timing: Before a built-in step'),
-        afterStep: t('Execution timing: After a built-in step'),
+        beforeStep: t('Execution timing: Before a built-in flow step'),
+        afterStep: t('Execution timing: After a built-in flow step'),
       }),
       [t],
     );
 
-    const phaseOptions: Array<{ value: ExecutionPhase; label: React.ReactNode }> = React.useMemo(() => {
-      const mk = (value: ExecutionPhase, label: string) => ({
-        value,
-        label: (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <span>{label}</span>
-            <Tooltip title={phaseTooltips[value]}>
-              <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
-            </Tooltip>
-          </span>
-        ),
-      });
-      return [
-        mk('beforeAllFlows', t('Default')),
-        mk('afterAllFlows', t('After built-in flows')),
-        mk('beforeFlow', t('Before built-in flow')),
-        mk('afterFlow', t('After built-in flow')),
-        mk('beforeStep', t('Before built-in step')),
-        mk('afterStep', t('After built-in step')),
-      ];
-    }, [phaseTooltips, t]);
+    const phaseOptions: Array<{ value: ExecutionPhase; label: string }> = React.useMemo(
+      () => [
+        { value: 'beforeAllFlows', label: t('Before all flows') },
+        { value: 'afterAllFlows', label: t('After built-in flows') },
+        { value: 'beforeFlow', label: t('Before built-in flow') },
+        { value: 'afterFlow', label: t('After built-in flow') },
+        { value: 'beforeStep', label: t('Before built-in flow step') },
+        { value: 'afterStep', label: t('After built-in flow step') },
+      ],
+      [t],
+    );
+
+    const requireFlowKey =
+      phaseValue === 'beforeFlow' ||
+      phaseValue === 'afterFlow' ||
+      phaseValue === 'beforeStep' ||
+      phaseValue === 'afterStep';
+    const requireStepKey = phaseValue === 'beforeStep' || phaseValue === 'afterStep';
+    const flowKeyMissing = requireFlowKey && !flowKeyValue;
+    const stepKeyMissing = requireStepKey && !!flowKeyValue && !stepKeyValue;
 
     const getEventList = () => {
       return [...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }));
@@ -283,7 +247,6 @@ const EventConfigSection = observer(
                     delete (flow.on as any).phase;
                     delete (flow.on as any).flowKey;
                     delete (flow.on as any).stepKey;
-                    delete (flow.on as any).when;
                   }
                 }
                 refresh();
@@ -316,13 +279,11 @@ const EventConfigSection = observer(
                   delete onObj.phase;
                   delete onObj.flowKey;
                   delete onObj.stepKey;
-                  delete onObj.when;
                   refresh();
                   return;
                 }
 
                 onObj.phase = v;
-                delete onObj.when; // 清理旧字段
 
                 if (v === 'afterAllFlows') {
                   delete onObj.flowKey;
@@ -339,51 +300,73 @@ const EventConfigSection = observer(
               phaseValue === 'afterFlow' ||
               phaseValue === 'beforeStep' ||
               phaseValue === 'afterStep') && (
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <Select
-                  allowClear
-                  style={{ width: '100%' }}
-                  disabled={!eventName || flowOptions.length === 0}
-                  placeholder={t('Select a built-in flow')}
-                  value={flowKeyValue}
-                  options={flowOptions as any}
-                  onChange={(value) => {
-                    ensureOnObject();
-                    if (!flow.on || typeof flow.on !== 'object') return;
-                    const onObj = flow.on as any;
-                    if (!value) {
-                      delete onObj.flowKey;
-                      delete onObj.stepKey;
-                    } else {
-                      onObj.flowKey = value;
-                      delete onObj.stepKey;
-                    }
-                    delete onObj.when;
-                    refresh();
-                  }}
-                />
-
-                {(phaseValue === 'beforeStep' || phaseValue === 'afterStep') && (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <div style={{ marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+                    {t('Built-in flow')}
+                    {requireFlowKey && <span style={{ marginInlineStart: 4, color: '#ff4d4f' }}>*</span>}
+                    <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
+                  </div>
                   <Select
-                    allowClear
                     style={{ width: '100%' }}
-                    disabled={!eventName || !flowKeyValue || stepOptions.length === 0}
-                    placeholder={t('Select a built-in step')}
-                    value={stepKeyValue}
-                    options={stepOptions as any}
+                    disabled={!eventName || flowOptions.length === 0}
+                    placeholder={t('Select a built-in flow')}
+                    value={flowKeyValue}
+                    status={flowKeyMissing ? 'error' : undefined}
+                    options={flowOptions as any}
                     onChange={(value) => {
                       ensureOnObject();
                       if (!flow.on || typeof flow.on !== 'object') return;
                       const onObj = flow.on as any;
                       if (!value) {
+                        delete onObj.flowKey;
                         delete onObj.stepKey;
                       } else {
-                        onObj.stepKey = value;
+                        onObj.flowKey = value;
+                        delete onObj.stepKey;
                       }
-                      delete onObj.when;
                       refresh();
                     }}
                   />
+                  {flowKeyMissing && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: '#ff4d4f' }}>
+                      {t('Please select a built-in flow')}
+                    </div>
+                  )}
+                </div>
+
+                {(phaseValue === 'beforeStep' || phaseValue === 'afterStep') && (
+                  <div>
+                    <div style={{ marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+                      {t('Built-in flow step')}
+                      {requireStepKey && <span style={{ marginInlineStart: 4, color: '#ff4d4f' }}>*</span>}
+                      <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
+                    </div>
+                    <Select
+                      style={{ width: '100%' }}
+                      disabled={!eventName || !flowKeyValue || stepOptions.length === 0}
+                      placeholder={t('Select a built-in flow step')}
+                      value={stepKeyValue}
+                      status={stepKeyMissing ? 'error' : undefined}
+                      options={stepOptions as any}
+                      onChange={(value) => {
+                        ensureOnObject();
+                        if (!flow.on || typeof flow.on !== 'object') return;
+                        const onObj = flow.on as any;
+                        if (!value) {
+                          delete onObj.stepKey;
+                        } else {
+                          onObj.stepKey = value;
+                        }
+                        refresh();
+                      }}
+                    />
+                    {stepKeyMissing && (
+                      <div style={{ marginTop: 4, fontSize: 12, color: '#ff4d4f' }}>
+                        {t('Please select a built-in flow step')}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {flowOptions.length === 0 && (
@@ -741,27 +724,11 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           loading={submitLoading}
           onClick={async () => {
             setSubmitLoading(true);
-            // 兼容迁移：将旧字段 on.when 写回到 on.phase/flowKey/stepKey，并做一次字段归一化
+            // 归一化：保证仅存储当前 phase 需要的字段
             model.flowRegistry.mapFlows((flow) => {
               const on = flow.on;
               if (!on || typeof on !== 'object') return;
               const onObj = on as any;
-
-              if (!onObj.phase && onObj.when && typeof onObj.when === 'object') {
-                const legacyWhen = onObj.when;
-                if (legacyWhen.anchor === 'afterAllStatic') {
-                  onObj.phase = 'afterAllFlows';
-                } else if (legacyWhen.anchor === 'staticFlow') {
-                  onObj.phase = legacyWhen.phase === 'before' ? 'beforeFlow' : 'afterFlow';
-                  onObj.flowKey = legacyWhen.flowKey;
-                } else if (legacyWhen.anchor === 'staticStep') {
-                  onObj.phase = legacyWhen.phase === 'before' ? 'beforeStep' : 'afterStep';
-                  onObj.flowKey = legacyWhen.flowKey;
-                  onObj.stepKey = legacyWhen.stepKey;
-                }
-              }
-
-              delete onObj.when;
 
               const phase = onObj.phase;
               if (!phase || phase === 'beforeAllFlows') {
@@ -786,6 +753,38 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                 return;
               }
             });
+
+            const invalid = model.flowRegistry
+              .mapFlows((flow) => {
+                const on = flow.on;
+                if (!on || typeof on !== 'object') return;
+                const { phase, flowKey, stepKey } = on as any;
+                if (!phase || phase === 'beforeAllFlows' || phase === 'afterAllFlows') return;
+                if (
+                  (phase === 'beforeFlow' ||
+                    phase === 'afterFlow' ||
+                    phase === 'beforeStep' ||
+                    phase === 'afterStep') &&
+                  !flowKey
+                ) {
+                  return { type: 'flowKey' as const };
+                }
+                if ((phase === 'beforeStep' || phase === 'afterStep') && !stepKey) {
+                  return { type: 'stepKey' as const };
+                }
+              })
+              .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
+
+            if (invalid) {
+              const msg =
+                invalid.type === 'flowKey'
+                  ? t('Please select a built-in flow')
+                  : t('Please select a built-in flow step');
+              model.context?.message?.error?.(msg);
+              setSubmitLoading(false);
+              return;
+            }
+
             await model.flowRegistry.save();
             // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
             const beforeRenderFlows = model.flowRegistry

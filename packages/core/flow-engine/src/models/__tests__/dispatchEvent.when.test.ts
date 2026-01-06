@@ -66,33 +66,6 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
     expect(calls).toEqual(['static-a', 'dynamic']);
   });
 
-  test("legacy on.when.anchor='afterAllStatic' still works (compat)", async () => {
-    const engine = new FlowEngine();
-    class M extends FlowModel {}
-    engine.registerModels({ M });
-
-    const calls: string[] = [];
-
-    M.registerFlow({
-      key: 'S',
-      on: { eventName: 'go' },
-      steps: {
-        a: { handler: async () => void calls.push('static-a') } as any,
-      },
-    });
-
-    const model = engine.createModel({ use: 'M' });
-    model.registerFlow('D', {
-      on: { eventName: 'go', when: { anchor: 'afterAllStatic' } },
-      steps: {
-        d: { handler: async () => void calls.push('dynamic') } as any,
-      },
-    });
-
-    await model.dispatchEvent('go');
-    expect(calls).toEqual(['static-a', 'dynamic']);
-  });
-
   test("phase='beforeFlow': instance flow runs before the target static flow", async () => {
     const engine = new FlowEngine();
     class M extends FlowModel {}

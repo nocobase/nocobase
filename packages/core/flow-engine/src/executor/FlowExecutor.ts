@@ -369,7 +369,7 @@ export class FlowExecutor {
           .map((x) => x.f);
         const results: any[] = [];
 
-        // 预处理：当动态事件流配置了 on.phase（或旧字段 on.when）时，将其执行移动到指定节点，并从“立即执行列表”中移除
+        // 预处理：当动态事件流配置了 on.phase 时，将其执行移动到指定节点，并从“立即执行列表”中移除
         const staticFlowsByKey = new Map(
           ordered
             .filter((f) => {
@@ -390,23 +390,9 @@ export class FlowExecutor {
           const onObj = typeof on === 'object' ? (on as any) : undefined;
           if (!onObj) return;
 
-          // 新字段优先，其次兼容旧字段 on.when（迁移期）
-          let phase: any = onObj.phase;
-          let flowKey: any = onObj.flowKey;
-          let stepKey: any = onObj.stepKey;
-          const legacyWhen = onObj.when;
-          if (!phase && legacyWhen && typeof legacyWhen === 'object') {
-            if (legacyWhen.anchor === 'afterAllStatic') {
-              phase = 'afterAllFlows';
-            } else if (legacyWhen.anchor === 'staticFlow') {
-              phase = legacyWhen.phase === 'before' ? 'beforeFlow' : 'afterFlow';
-              flowKey = legacyWhen.flowKey;
-            } else if (legacyWhen.anchor === 'staticStep') {
-              phase = legacyWhen.phase === 'before' ? 'beforeStep' : 'afterStep';
-              flowKey = legacyWhen.flowKey;
-              stepKey = legacyWhen.stepKey;
-            }
-          }
+          const phase: any = onObj.phase;
+          const flowKey: any = onObj.flowKey;
+          const stepKey: any = onObj.stepKey;
 
           // 默认：beforeAllFlows（保持现有行为）
           if (!phase || phase === 'beforeAllFlows') return;
