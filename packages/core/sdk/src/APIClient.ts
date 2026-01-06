@@ -36,6 +36,8 @@ interface ExtendedOptions {
   storageClass?: any;
   storagePrefix?: string;
   appName?: string;
+  // 共享 token
+  shareToken?: boolean;
 }
 
 export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
@@ -47,6 +49,7 @@ export class APIClient {
   storage: BaseStorage;
   storagePrefix = 'NOCOBASE_';
   baseStoragePrefix = 'NOCOBASE_';
+  shareToken = false;
 
   toErrMessages(error) {
     if (typeof document !== 'undefined' && typeof error?.response?.data === 'string') {
@@ -95,7 +98,16 @@ export class APIClient {
     if (typeof options === 'function') {
       this.axios = options;
     } else {
-      const { appName, authClass, storageType, storageClass, storagePrefix = 'NOCOBASE_', ...others } = options || {};
+      const {
+        appName,
+        authClass,
+        storageType,
+        storageClass,
+        storagePrefix = 'NOCOBASE_',
+        shareToken = false,
+        ...others
+      } = options || {};
+      this.shareToken = shareToken;
       this.baseStoragePrefix = storagePrefix;
       this.storagePrefix = appName ? `${storagePrefix}${appName.toUpperCase()}_` : storagePrefix;
       this.axios = axios.create(others);
@@ -115,28 +127,20 @@ export class APIClient {
 
   createStorage(storageType: 'localStorage' | 'sessionStorage' | 'memory') {
     if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
-      return new LocalStorage(this.storagePrefix, this.baseStoragePrefix);
+      return new LocalStorage(this.storagePrefix, this.baseStoragePrefix, this.shareToken);
     }
     if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
-      return new SessionStorage(this.storagePrefix, this.baseStoragePrefix);
+      return new SessionStorage(this.storagePrefix, this.baseStoragePrefix, this.shareToken);
     }
     return new MemoryStorage();
   }
 
-  private initStorage(storage?: any, storageType = 'localStorage') {
+  private initStorage(storage?: any, storageType: 'localStorage' | 'sessionStorage' | 'memory' = 'localStorage') {
     if (storage) {
       this.storage = new storage(this);
       return;
     }
-    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
-      this.storage = new LocalStorage(this.storagePrefix, this.baseStoragePrefix);
-      return;
-    }
-    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
-      this.storage = new SessionStorage(this.storagePrefix, this.baseStoragePrefix);
-      return;
-    }
-    this.storage = new MemoryStorage();
+    this.storage = this.createStorage(storageType);
   }
 
   interceptors() {
