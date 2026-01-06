@@ -12,7 +12,7 @@ import { Table, Form, Space, Button } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
-import React, { useEffect, useMemo, useState, startTransition } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 export function SubTableField(props) {
@@ -30,12 +30,16 @@ export function SubTableField(props) {
     pageSize,
     allowCreate, //acl
     isConfigMode,
+    resetPage,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   useEffect(() => {
     setCurrentPageSize(pageSize);
   }, [pageSize]);
+  useEffect(() => {
+    resetPage && setCurrentPage(1);
+  }, [resetPage]);
 
   // 前端分页
   const pagination = useMemo(() => {
@@ -73,10 +77,7 @@ export function SubTableField(props) {
 
     const newValue = [...(value || []), newRow];
     setCurrentPage(Math.ceil(newValue.length / currentPageSize));
-
-    startTransition(() => {
-      onChange?.(newValue);
-    });
+    onChange?.(newValue);
   };
 
   // 删除行
@@ -140,10 +141,18 @@ export function SubTableField(props) {
       },
     ])
     .filter(Boolean);
+
+  const pagedValue = useMemo(() => {
+    if (!value?.length) return [];
+
+    const start = (currentPage - 1) * currentPageSize;
+    console.log(value.slice(start, start + currentPageSize), start, currentPageSize, currentPage);
+    return value.slice(start, start + currentPageSize);
+  }, [value, currentPage, currentPageSize]);
   return (
     <Form.Item>
       <Table
-        dataSource={value}
+        dataSource={pagedValue}
         columns={editableColumns}
         rowKey={(row, idx) => idx}
         tableLayout="fixed"
