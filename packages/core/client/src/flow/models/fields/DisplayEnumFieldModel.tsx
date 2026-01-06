@@ -26,7 +26,7 @@ interface Option {
 function getCurrentOptions(value: any | any[], options: any[] = [], fieldNames: FieldNames): Option[] {
   const values = Array.isArray(value) ? value : [value];
   return values.map((val) => {
-    const found = options.find((opt) => opt[fieldNames.value] == val);
+    const found = options?.find?.((opt) => opt[fieldNames.value] == val);
     return (
       found ?? {
         value: val,

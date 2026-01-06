@@ -33,7 +33,7 @@ export class AssociationFieldGroupModel extends FlowModel {
                 {
                   key: `${fPath}-children-collectionField`,
                   // @ts-ignore
-                  label: this.context.t('Display fields'),
+                  label: ctx.t('Display fields'),
                   type: 'group',
                   children: field.targetCollection
                     .getFields()
