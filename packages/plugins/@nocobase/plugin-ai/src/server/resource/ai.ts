@@ -67,7 +67,10 @@ const aiResource: ResourceOptions = {
         const res = await provider.listModels();
         if (res.errMsg) {
           ctx.log.error(res.errMsg);
-          ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
+          ctx.throw(
+            res.code || 500,
+            `${ctx.t('Get models list failed, you can enter a model name manually.')} ${res.errMsg}`,
+          );
         }
         ctx.body = res.models || [];
       }
@@ -92,7 +95,10 @@ const aiResource: ResourceOptions = {
       const res = await providerClient.listModels();
       if (res.errMsg) {
         ctx.log.error(res.errMsg);
-        ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
+        ctx.throw(
+          res.code || 500,
+          `${ctx.t('Get models list failed, you can enter a model name manually.')} ${res.errMsg}`,
+        );
       }
       const models = res.models || [];
       if (model) {
