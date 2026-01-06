@@ -87,6 +87,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       name: '$nForm',
       ctx: formValue,
       collectionName: name,
+      dataSource: collectionFieldRef.current.dataSourceKey,
     };
     const variableString = `{{ $nForm.${schemaName} }}`;
 
