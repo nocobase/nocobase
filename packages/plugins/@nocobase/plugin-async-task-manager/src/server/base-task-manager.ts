@@ -406,15 +406,14 @@ class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
   }
 
   set concurrency(concurrency: number) {
-    this.appConcurrencyMonitor.concurrency = concurrency;
+    this.concurrencyMonitor.concurrency = concurrency;
   }
 
   increase(taskId: TaskId): boolean {
-    return this.processConcurrencyMonitor.increase(taskId) && this.appConcurrencyMonitor.increase(taskId);
+    return this.concurrencyMonitor.increase(taskId);
   }
 
   reduce(taskId: TaskId): void {
-    this.appConcurrencyMonitor.reduce(taskId);
-    this.processConcurrencyMonitor.reduce(taskId);
+    this.concurrencyMonitor.reduce(taskId);
   }
 }
