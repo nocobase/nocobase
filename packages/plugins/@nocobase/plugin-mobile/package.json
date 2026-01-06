@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "2.0.0-alpha.61",
+  "version": "2.0.0-alpha.62",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
