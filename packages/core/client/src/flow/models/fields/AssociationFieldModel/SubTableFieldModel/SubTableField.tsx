@@ -12,7 +12,7 @@ import { Table, Form, Space, Button } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, startTransition } from 'react';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 export function SubTableField(props) {
@@ -61,14 +61,22 @@ export function SubTableField(props) {
 
   // 新增一行
   const handleAdd = () => {
-    if (allowCreate !== false) {
-      const newRow = { __is_new__: true };
-      columns.forEach((col) => (newRow[col.dataIndex] = undefined));
-      const newValue = [...(value || []), newRow];
-      const lastPage = Math.ceil(newValue.length / currentPageSize);
-      setCurrentPage(lastPage);
-      onChange?.([...(value || []), newRow]);
-    }
+    if (allowCreate === false) return;
+
+    const newRow = {
+      __is_new__: true,
+    };
+
+    columns.forEach((col) => {
+      newRow[col.dataIndex] = undefined;
+    });
+
+    const newValue = [...(value || []), newRow];
+    setCurrentPage(Math.ceil(newValue.length / currentPageSize));
+
+    startTransition(() => {
+      onChange?.(newValue);
+    });
   };
 
   // 删除行
