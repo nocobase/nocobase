@@ -21,6 +21,7 @@ import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
+import { bedrockProviderOptions } from './llm-providers/bedrock';
 import {
   AIEmployeeShortcutListModel,
   AIEmployeeShortcutModel,
@@ -140,6 +141,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    this.aiManager.registerLLMProvider('bedrock', bedrockProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
