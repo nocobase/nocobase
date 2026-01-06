@@ -75,13 +75,12 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   const FieldModelRendererCom = (props) => {
     const { model, onChange, ...rest } = props;
 
-    // debounce 防抖
     const handleChange = useMemo(
       () =>
         debounce((val) => {
           if (props.onChange) props.onChange(val);
           if (onChange) onChange(val);
-        }, 200), // 200ms 防抖，可根据需求调整
+        }, 200),
       [props.onChange, onChange],
     );
 
