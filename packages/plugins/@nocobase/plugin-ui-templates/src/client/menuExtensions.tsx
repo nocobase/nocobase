@@ -961,7 +961,7 @@ export function registerMenuExtensions() {
   BlockModel.registerExtraMenuItems({
     group: 'common-actions',
     sort: -10,
-    matcher: (model) => !isReferenceTarget(model),
+    matcher: (model) => !isReferenceTarget(model) && model?.use !== 'ApplyTaskCardDetailsModel',
     items: async (model: FlowModel, t) => {
       const pluginT = getPluginT(model);
       const items: MenuItem[] = [];
