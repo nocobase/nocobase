@@ -32,8 +32,8 @@
 
 在`Model settings`标签页中，我们可以配置 AI 员工的模型设置：
 
-- 选择我们在 LLM 服务管理中创建的 LLM 服务；
-- 输入我们要使用的大模型的名称
+- 选择 LLM 服务；
+- 选择要使用的大模型。推荐（已验证）：**gemini-2.5**、**deepseek-chat**、**qwen3-max**。
 
 ![20251021231727](https://static-docs.nocobase.com/20251021231727.png)
 

@@ -300,6 +300,203 @@ describe('Change with association', async () => {
     });
   });
 
+  test('allow associate one exist record key', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'create',
+            fields: ['name', 'assoc3'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    await db.getRepository('assoc3').create({
+      values: {
+        assoc3_name: 'assoc3-1',
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'create',
+      params: {
+        values: {
+          name: 'test-1',
+          assoc3: 'assoc3-1',
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      assoc3: 'assoc3-1',
+    });
+  });
+
+  test('allow associate one exist record key, update', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'update',
+            fields: ['name', 'assoc3'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    await db.getRepository('assoc3').create({
+      values: {
+        assoc3_name: 'assoc3-1',
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'update',
+      params: {
+        values: {
+          name: 'test-1',
+          assoc3: 'assoc3-1',
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      assoc3: 'assoc3-1',
+    });
+  });
+
+  test('disallow associate not exist record key', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'create',
+            fields: ['name', 'assoc3'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'create',
+      params: {
+        values: {
+          name: 'test-1',
+          assoc3: 'assoc3-1',
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+    });
+  });
+
+  test('allow associate many exist record key', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'create',
+            fields: ['name', 'assoc1'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'create',
+      params: {
+        values: {
+          name: 'test-1',
+          assoc1: ['assoc1-1'],
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      assoc1: ['assoc1-1'],
+    });
+  });
+
   test('allow create association, nested disallow associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
       values: [

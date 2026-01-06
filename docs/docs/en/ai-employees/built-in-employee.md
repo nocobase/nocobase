@@ -136,7 +136,7 @@ Summon `Dex` on the form page to open the chat window.
 
 ![20251022155316](https://static-docs.nocobase.com/20251022155316.png)
 
-Click `Add work context` in the input box and select `Pick block`. The page enters the block selection state.
+Click `Add work context` in the input box and select `Pick Block`. The page enters the Block selection state.
 
 ![20251022155414](https://static-docs.nocobase.com/20251022155414.png)
 
