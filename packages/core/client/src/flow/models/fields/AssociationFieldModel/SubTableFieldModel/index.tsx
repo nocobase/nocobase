@@ -103,8 +103,15 @@ export class SubTableFieldModel extends AssociationFieldModel {
       },
     };
     const isConfigMode = !!this.context.flowSettingsEnabled;
-
-    return <SubTableField {...this.props} columns={columns} components={components} isConfigMode={isConfigMode} />;
+    return (
+      <SubTableField
+        {...this.props}
+        columns={columns}
+        components={components}
+        isConfigMode={isConfigMode}
+        filterTargetKey={this.collection.filterTargetKey}
+      />
+    );
   }
   onInit(options: any): void {
     super.onInit(options);

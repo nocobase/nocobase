@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
+import { getRowKey } from '../../../blocks/table/utils';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -31,6 +32,7 @@ export function SubTableField(props) {
     allowCreate, //acl
     isConfigMode,
     resetPage,
+    filterTargetKey = 'id',
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -142,9 +144,9 @@ export function SubTableField(props) {
         },
       ])
       .filter(Boolean);
-  }, [columns]);
+  }, [columns, currentPage, currentPageSize]);
 
-  const pagedValue = useMemo(() => {
+  const pagedDataSource = useMemo(() => {
     if (!value?.length) return [];
 
     const start = (currentPage - 1) * currentPageSize;
@@ -153,9 +155,9 @@ export function SubTableField(props) {
   return (
     <Form.Item>
       <Table
-        dataSource={pagedValue}
+        dataSource={pagedDataSource}
         columns={editableColumns}
-        rowKey={(row, idx) => idx}
+        rowKey={(record) => getRowKey(record, filterTargetKey)}
         tableLayout="fixed"
         scroll={{ x: 'max-content' }}
         pagination={pagination}
