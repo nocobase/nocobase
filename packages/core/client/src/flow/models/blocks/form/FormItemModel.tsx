@@ -221,7 +221,7 @@ FormItemModel.registerFlow({
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
-        if (!ctx.collectionField) {
+        if (!ctx.collectionField || !ctx.blockModel) {
           return;
         }
         const blockActionName = ctx.blockModel.context.actionName;
