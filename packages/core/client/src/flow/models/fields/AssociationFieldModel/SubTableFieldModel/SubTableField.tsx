@@ -96,57 +96,58 @@ export function SubTableField(props) {
   };
 
   // 渲染可编辑单元格
-  const editableColumns = columns
-    .map((col) => ({
-      ...col,
-      render: (text, record, rowIdx) => {
-        const pageRowIdx = (currentPage - 1) * currentPageSize + rowIdx;
-        if (!col.render) {
-          return;
-        }
-        return col?.render({
-          record,
-          rowIdx: pageRowIdx,
-          id: `field-${col.dataIndex}-${rowIdx}`,
-          value: text,
-          onChange: (value) => {
-            handleCellChange(rowIdx, col.dataIndex, value?.target?.value || value);
-          },
-          ['aria-describedby']: `field-${col.dataIndex}-${rowIdx}`,
-        });
-      },
-    }))
-    .concat([
-      !disabled && {
-        title: '',
-        key: 'delete',
-        width: 50,
-        align: 'center',
-        fixed: 'right',
-        render: (v, record, index) => {
-          const pageRowIdx = (currentPage - 1) * currentPageSize + index;
-          if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
+  const editableColumns = useMemo(() => {
+    return columns
+      .map((col) => ({
+        ...col,
+        render: (text, record, rowIdx) => {
+          const pageRowIdx = (currentPage - 1) * currentPageSize + rowIdx;
+          if (!col.render) {
             return;
           }
-          return (
-            <div
-              onClick={() => {
-                handleDelete(pageRowIdx);
-              }}
-            >
-              <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
-            </div>
-          );
+          return col?.render({
+            record,
+            rowIdx: pageRowIdx,
+            id: `field-${col.dataIndex}-${rowIdx}`,
+            value: text,
+            onChange: (value) => {
+              handleCellChange(rowIdx, col.dataIndex, value?.target?.value || value);
+            },
+            ['aria-describedby']: `field-${col.dataIndex}-${rowIdx}`,
+          });
         },
-      },
-    ])
-    .filter(Boolean);
+      }))
+      .concat([
+        !disabled && {
+          title: '',
+          key: 'delete',
+          width: 50,
+          align: 'center',
+          fixed: 'right',
+          render: (v, record, index) => {
+            const pageRowIdx = (currentPage - 1) * currentPageSize + index;
+            if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
+              return;
+            }
+            return (
+              <div
+                onClick={() => {
+                  handleDelete(pageRowIdx);
+                }}
+              >
+                <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
+              </div>
+            );
+          },
+        },
+      ])
+      .filter(Boolean);
+  }, [columns]);
 
   const pagedValue = useMemo(() => {
     if (!value?.length) return [];
 
     const start = (currentPage - 1) * currentPageSize;
-    console.log(value.slice(start, start + currentPageSize), start, currentPageSize, currentPage);
     return value.slice(start, start + currentPageSize);
   }, [value, currentPage, currentPageSize]);
   return (
