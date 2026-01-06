@@ -28,6 +28,9 @@ export class BaseConcurrencyMonitor implements ConcurrencyMonitor {
   }
 
   increase(taskId: TaskId): boolean {
+    if (this.taskIds.has(taskId)) {
+      return true;
+    }
     if (this.taskIds.size + 1 > this.concurrency) {
       return false;
     }

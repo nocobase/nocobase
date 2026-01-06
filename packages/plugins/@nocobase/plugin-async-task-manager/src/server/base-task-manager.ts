@@ -9,7 +9,7 @@
 
 import { throttle, DebouncedFunc } from 'lodash';
 
-import { Application, QueueCallbackOptions, QueueMessageOptions } from '@nocobase/server';
+import { Application, QueueCallbackOptions } from '@nocobase/server';
 import { Logger } from '@nocobase/logger';
 
 import { AsyncTasksManager, CreateTaskOptions } from './interfaces/async-task-manager';
@@ -53,7 +53,7 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private progressThrottles: Map<string, DebouncedFunc<(...args: any[]) => any>> = new Map();
 
-  private concurrencyMonitor: ConcurrencyMonitor;
+  private concurrencyMonitor: ConcurrencyMonitor = new ConcurrencyMonitorDelegate();
 
   get concurrency() {
     return this.concurrencyMonitor.concurrency;
@@ -63,7 +63,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     this.concurrencyMonitor.concurrency = concurrency;
   }
 
-  private idle = () => this.concurrencyMonitor.idle();
+  private idle = () => this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.concurrencyMonitor.idle();
 
   private onQueueTask = async ({ id }: QueueMessage, { queueOptions }: QueueCallbackOptions) => {
     const task = await this.prepareTask(id);
@@ -231,7 +231,6 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   setApp(app: Application): void {
     this.app = app;
-    this.concurrencyMonitor = new ConcurrencyMonitorDelegate(app, CONCURRENCY_MODE);
     const plugin = this.app.pm.get(PluginAsyncTaskManagerServer) as PluginAsyncTaskManagerServer;
 
     this.app.on('afterStart', () => {
@@ -385,10 +384,9 @@ export class BaseTaskManager implements AsyncTasksManager {
   }
 }
 
-class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
+export class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
   constructor(
-    public app: Application,
-    public mode: ConcurrencyMode,
+    private mode: ConcurrencyMode = CONCURRENCY_MODE,
     private appConcurrencyMonitor: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY),
     private processConcurrencyMonitor: ConcurrencyMonitor = PROCESS_CONCURRENCY_MONITOR,
   ) {}
@@ -398,7 +396,7 @@ class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
   }
 
   idle(): boolean {
-    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.concurrencyMonitor.idle();
+    return this.concurrencyMonitor.idle();
   }
 
   get concurrency(): number {
