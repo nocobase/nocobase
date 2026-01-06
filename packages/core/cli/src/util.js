@@ -297,6 +297,7 @@ function buildIndexHtml(force = false) {
   const data = fs.readFileSync(tpl, 'utf-8');
   const replacedData = data
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
     .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
@@ -360,6 +361,7 @@ exports.initEnv = function initEnv() {
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
     API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
+    API_CLIENT_SHARE_TOKEN: 'false',
     API_CLIENT_STORAGE_TYPE: 'localStorage',
     // DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',

@@ -32,6 +32,7 @@ export default defineConfig({
         window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
         window['__nocobase_api_client_storage_prefix__'] = '{{env.API_CLIENT_STORAGE_PREFIX}}';
         window['__nocobase_api_client_storage_type__'] = '{{env.API_CLIENT_STORAGE_TYPE}}';
+        window['__nocobase_api_client_share_token__'] = {{env.API_CLIENT_SHARE_TOKEN}};
         window['__nocobase_ws_url__'] = '{{env.WS_URL}}';
         window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';
       `,
