@@ -45,6 +45,7 @@ export class LocalStorage extends BaseStorage {
   constructor(
     public storagePrefix: string,
     public baseStoragePrefix: string = '',
+    public shareToken: boolean = false,
   ) {
     super();
     this.items = window.localStorage;
@@ -55,19 +56,23 @@ export class LocalStorage extends BaseStorage {
   }
 
   getItem(key: string) {
-    const value = this.items.getItem(this.toUpperCase(this.storagePrefix, key));
-    if (key === 'token' && this.baseStoragePrefix) {
-      return value || this.items.getItem(this.toUpperCase(this.baseStoragePrefix, key));
+    if (this.shareToken && key === 'token' && this.baseStoragePrefix) {
+      return this.items.getItem(this.toUpperCase(this.baseStoragePrefix, key));
     }
-    return value;
+    return this.items.getItem(this.toUpperCase(this.storagePrefix, key));
   }
 
   setItem(key: string, value: string) {
-    console.log('setItem', this.toUpperCase(this.storagePrefix, key), value);
+    if (this.shareToken && key === 'token' && this.baseStoragePrefix) {
+      return this.items.setItem(this.toUpperCase(this.baseStoragePrefix, key), value);
+    }
     return this.items.setItem(this.toUpperCase(this.storagePrefix, key), value);
   }
 
   removeItem(key: string) {
+    if (this.shareToken && key === 'token' && this.baseStoragePrefix) {
+      return this.items.removeItem(this.toUpperCase(this.baseStoragePrefix, key));
+    }
     return this.items.removeItem(this.toUpperCase(this.storagePrefix, key));
   }
 }
@@ -76,6 +81,7 @@ export class SessionStorage extends LocalStorage {
   constructor(
     public storagePrefix: string,
     public baseStoragePrefix: string = '',
+    public shareToken: boolean = false,
   ) {
     super(storagePrefix, baseStoragePrefix);
     this.items = window.sessionStorage;
