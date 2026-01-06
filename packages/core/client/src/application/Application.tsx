@@ -53,6 +53,7 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
+import { RouteRepository } from './RouteRepository';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -308,6 +309,9 @@ export class Application {
     this.use(OpenModeProvider);
     this.flowEngine.context.defineProperty('app', {
       value: this,
+    });
+    this.flowEngine.context.defineProperty('routeRepository', {
+      value: new RouteRepository(this.flowEngine.context),
     });
     this.flowEngine.context.defineProperty('appInfo', {
       get: async () => {
