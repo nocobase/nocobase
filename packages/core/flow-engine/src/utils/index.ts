@@ -65,6 +65,8 @@ export { createSafeDocument, createSafeWindow, createSafeNavigator } from './saf
 
 // RunJS 代码兼容预处理（{{ }}）与 JSX 编译
 export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';
+// RunJS value helpers
+export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';
 
 // Ephemeral context helper（用于临时注入属性/方法，避免污染父级 ctx）
 export { createEphemeralContext } from './createEphemeralContext';

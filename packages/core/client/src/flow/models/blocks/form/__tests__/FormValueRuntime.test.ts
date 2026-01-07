@@ -12,7 +12,7 @@ import { waitFor } from '@testing-library/react';
 import { EventEmitter } from 'events';
 import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
-import { FlowContext } from '@nocobase/flow-engine';
+import { FlowContext, JSRunner } from '@nocobase/flow-engine';
 import { FormValueRuntime } from '../FormValueRuntime';
 
 function createFormStub(initialValues: any = {}) {
@@ -29,6 +29,10 @@ function createFormStub(initialValues: any = {}) {
 function createFieldContext(runtime: FormValueRuntime) {
   const ctx: any = new FlowContext();
   ctx.defineProperty('formValues', { get: () => runtime.formValues, cache: false });
+  ctx.defineMethod('runjs', async function (this: any, code: string, variables?: Record<string, any>, options?: any) {
+    const runner = new JSRunner({ globals: { ctx: this, ...(variables || {}) }, timeoutMs: options?.timeoutMs });
+    return runner.run(code);
+  });
   ctx.defineMethod('resolveJsonTemplate', async function (this: any, template: any) {
     if (template === '__B__') {
       return this.formValues.b;
@@ -183,6 +187,143 @@ describe('FormValueRuntime (default rules)', () => {
 });
 
 describe('FormValueRuntime (form assign rules)', () => {
+  it('supports RunJSValue and updates on formValues dependency change', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-runjs-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-runjs-1',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-runjs-1' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a-runjs-1',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: { code: 'return ctx.formValues.b', version: 'v1' },
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
+  it('supports RunJSValue and tracks ctx var deps from code', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-runjs-ctx',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const store = observable({ someVar: 'X' });
+
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('someVar', { get: () => store.someVar, cache: false });
+
+    const fieldModel: any = {
+      uid: 'field-a-runjs-ctx',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-runjs-ctx' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a-runjs-ctx',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: { code: 'return ctx.someVar', version: 'v1' },
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    store.someVar = 'Y';
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
+  it('does not write when RunJS execution fails', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ a: 'INIT' });
+
+    const blockModel: any = {
+      uid: 'form-assign-runjs-error',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-runjs-error',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-runjs-error' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        field: 'field-a-runjs-error',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: { code: 'throw new Error("bad")', version: 'v1' },
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(formStub.getFieldValue(['a'])).toBe('INIT');
+  });
+
   it('mode=assign keeps overriding after user change', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
