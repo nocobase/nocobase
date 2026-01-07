@@ -221,6 +221,9 @@ export class AIEmployee {
       if (gathered?.response_metadata) {
         values.metadata.response_metadata = gathered.response_metadata;
       }
+      if (gathered?.additional_kwargs) {
+        values.metadata.additional_kwargs = gathered.additional_kwargs;
+      }
 
       const aiMessage = await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
         if (messageId) {
