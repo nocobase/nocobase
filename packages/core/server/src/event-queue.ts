@@ -303,7 +303,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         id,
         retried,
         signal: AbortSignal.timeout(timeout),
-        queueOptions: { timeout, maxRetries, retried },
+        queueOptions: message.options,
       }))()
       .then(() => {
         logger.debug(`memory queue (${channel}) consumed message (${id})`);
