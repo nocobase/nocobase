@@ -147,11 +147,14 @@ export default {
           const distExists = await fse.exists(dist);
           if (distExists) {
             const fsState = await fse.stat(distExists ? dist : pkgPath);
-            t = `&t=${fsState.mtime.getTime()}`;
+            t = `?t=${fsState.mtime.getTime()}`;
           }
-          const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${item.packageName}/${PLUGIN_CLIENT_ENTRY_FILE}?version=${item.version}${t}`;
+          const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${item.packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
+          const { name, packageName, options } = item.toJSON();
           arr.push({
-            ...item.toJSON(),
+            name,
+            packageName,
+            options,
             url,
           });
         }
