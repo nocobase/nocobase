@@ -107,6 +107,9 @@ export class SubTableEditFormModel extends FormBlockModel {
 
   async onMount() {
     super.onMount();
+    this.context.defineProperty('parentBlockModel', {
+      value: this.parent.context.blockModel,
+    });
   }
 
   getAclActionName() {

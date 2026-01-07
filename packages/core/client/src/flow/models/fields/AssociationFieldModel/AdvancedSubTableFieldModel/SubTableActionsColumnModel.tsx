@@ -41,7 +41,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         `}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
-          const fork = action.createFork({}, `${record.__index || index}`);
+          const fork = action.createFork({}, `${record.__index__ || index}`);
           if (fork.hidden && !isConfigMode) {
             return;
           }
@@ -70,7 +70,7 @@ const Columns = observer<any>(({ record, model, index }) => {
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
+            get: () => record.__index__ || index,
           });
           return (
             <Droppable model={action} key={action.uid}>

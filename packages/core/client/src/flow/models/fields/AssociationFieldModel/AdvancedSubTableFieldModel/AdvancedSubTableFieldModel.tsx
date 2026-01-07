@@ -192,12 +192,16 @@ const DisplayTable = (props) => {
     (updatedRecord) => {
       setTableData((prev = []) => {
         const pk = updatedRecord[rowKey];
-        const index = prev.findIndex((item) => item[rowKey] === pk);
-
+        let index = -1;
+        if (updatedRecord.__is_new__) {
+          index = prev.findIndex((item) => item.__index__ === updatedRecord.__index__);
+        } else if (pk) {
+          index = prev.findIndex((item) => item[rowKey] === pk);
+        }
         let next;
-        if (index === -1 || !pk) {
+        if (index === -1) {
           // 没找到：作为新记录追加到最后
-          next = [...prev, { ...updatedRecord, __is_new__: true }];
+          next = [...prev, { ...updatedRecord, __is_new__: true, __index__: prev.length }];
           const lastPage = Math.ceil(next.length / currentPageSize);
           setCurrentPage(lastPage);
         } else {
@@ -219,9 +223,13 @@ const DisplayTable = (props) => {
   const removeRow = useCallback(
     (recordOrPk) => {
       const pk = typeof recordOrPk === 'object' ? recordOrPk[rowKey] : recordOrPk;
-
+      let index = -1;
       setTableData((prev) => {
-        const index = prev.findIndex((item) => item[rowKey] === pk);
+        if (recordOrPk.__is_new__) {
+          index = prev.findIndex((item) => item.__index__ === recordOrPk.__index__);
+        } else {
+          index = prev.findIndex((item) => item[rowKey] === pk);
+        }
         if (index === -1) return prev;
 
         // 只删除一行，其它行引用不变
@@ -426,11 +434,9 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
   }
 
   getBaseColumns() {
-    console.log(this);
     const baseColumns = this.mapSubModels('subTableColumns', (column: any) => column.getColumnProps()).filter((v) => {
       return !v?.hidden;
     });
-    console.log(baseColumns);
     return baseColumns;
   }
 

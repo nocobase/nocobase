@@ -49,6 +49,10 @@ function RemoteModelRenderer({ options, fieldModel }) {
       model.context.defineProperty('associationModel', {
         value: fieldModel.context.associationModel,
       });
+      model.context.defineProperty('blockModel', {
+        value: fieldModel.context.blockModel,
+      });
+
       model.actionName = options.scene;
       return model;
     },
@@ -185,6 +189,7 @@ export class SubTableEditActionModel extends SubTableRecordAction {
         return null;
       },
     });
+    console.log(this.context.blockModel);
   }
 }
 
