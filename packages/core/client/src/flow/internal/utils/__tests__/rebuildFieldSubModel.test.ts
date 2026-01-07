@@ -36,6 +36,7 @@ describe('rebuildFieldSubModel', () => {
   });
 
   test('rebuilds field with same uid and updates binding use', async () => {
+    const staleClickHandler = () => null;
     const parent = engine.createModel<DummyParentModel>({
       use: DummyParentModel,
       uid: 'parent-1',
@@ -43,7 +44,7 @@ describe('rebuildFieldSubModel', () => {
         field: {
           use: FieldModel,
           uid: 'field-1',
-          props: { foo: 'bar' },
+          props: { foo: 'bar', onClick: staleClickHandler },
           stepParams: {
             fieldBinding: { use: 'FieldModel' },
             fieldSettings: { init: { initKey: true } },
@@ -67,6 +68,7 @@ describe('rebuildFieldSubModel', () => {
     expect(rebuilt.uid).toBe('field-1');
     expect(getFieldBindingUse(rebuilt)).toBe('DummyTargetFieldModel');
     expect(rebuilt.props).toMatchObject({ foo: 'bar', added: 'yes', pattern: 'readPretty' });
+    expect((rebuilt.props as any).onClick).toBeUndefined();
 
     expect(dispatchSpy).toHaveBeenCalledWith('beforeRender', undefined, { useCache: false });
     dispatchSpy.mockRestore();

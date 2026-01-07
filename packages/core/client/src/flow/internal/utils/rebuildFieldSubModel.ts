@@ -57,6 +57,10 @@ export async function rebuildFieldSubModel({
   const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
   const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
 
+  const carriedProps = Object.fromEntries(
+    Object.entries(fieldModel?.props || {}).filter(([, value]) => typeof value !== 'function'),
+  ) as Record<string, unknown>;
+
   const nextStepParams: FieldStepParams = {
     ...prevStepParams,
     fieldBinding: { ...prevStepParams.fieldBinding, use: targetUse },
@@ -75,7 +79,8 @@ export async function rebuildFieldSubModel({
   const subModel = parentModel.setSubModel('field', {
     uid: fieldUid,
     use: FieldModel,
-    props: { ...(fieldModel?.props || {}), ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
+    // NOTE: 字段切换组件时保留可序列化 props，但不要透传旧模型的运行时函数（如 onClick），避免残留事件导致行为异常。
+    props: { ...carriedProps, ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
     stepParams: nextStepParams as StepParams,
     // Preserve existing subModels (e.g. SubTable columns) so switching field component back and forth
     // does not require a full page refresh to restore the UI.
