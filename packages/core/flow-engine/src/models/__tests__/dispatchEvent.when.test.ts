@@ -267,3 +267,90 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
     expect(calls).toEqual(['dynamic-0', 'dynamic-5', 'static-a']);
   });
 });
+
+describe('dispatchEvent static flow phase (scheduleModelOperation integration)', () => {
+  test("phase='beforeFlow': static flow runs before the target static flow", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+      },
+    });
+
+    M.registerFlow({
+      key: 'P',
+      on: { eventName: 'go', phase: 'beforeFlow', flowKey: 'S' },
+      steps: {
+        p: { handler: async () => void calls.push('phase') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['phase', 'static-a']);
+  });
+
+  test("phase='afterStep': static flow runs after the target static step", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+
+    M.registerFlow({
+      key: 'P',
+      on: { eventName: 'go', phase: 'afterStep', flowKey: 'S', stepKey: 'a' },
+      steps: {
+        p: { handler: async () => void calls.push('phase') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a', 'phase', 'static-b']);
+  });
+
+  test("phase='afterAllFlows': static flow runs after static flows", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+      },
+    });
+
+    M.registerFlow({
+      key: 'P',
+      on: { eventName: 'go', phase: 'afterAllFlows' },
+      steps: {
+        p: { handler: async () => void calls.push('phase') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a', 'phase']);
+  });
+});

@@ -214,11 +214,12 @@ export type FlowEventName =
   | (string & {});
 
 /**
- * 动态事件流的执行时机（phase）。
+ * 事件流的执行时机（phase）。
  *
  * 说明：
- * - 缺省（phase 未配置）表示保持现有行为：动态事件流在全部静态流之前执行（`beforeAllFlows`）。
- * - 当配置了 phase 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 节点。
+ * - 缺省（phase 未配置）表示保持现有行为；
+ * - 当配置了 phase 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 锚点；
+ * - phase 同时适用于动态事件流（实例级）与静态流（内置）。
  */
 export type FlowEventPhase =
   | 'beforeAllFlows'

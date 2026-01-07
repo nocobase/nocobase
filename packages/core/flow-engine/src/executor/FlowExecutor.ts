@@ -369,7 +369,7 @@ export class FlowExecutor {
           .map((x) => x.f);
         const results: any[] = [];
 
-        // 预处理：当动态事件流配置了 on.phase 时，将其执行移动到指定节点，并从“立即执行列表”中移除
+        // 预处理：当事件流配置了 on.phase 时，将其执行移动到指定节点，并从“立即执行列表”中移除
         const staticFlowsByKey = new Map(
           ordered
             .filter((f) => {
@@ -382,10 +382,6 @@ export class FlowExecutor {
         const scheduled = new Set<string>();
         const scheduleGroups = new Map<string, Array<{ flow: any; order: number }>>();
         ordered.forEach((flow, indexInOrdered) => {
-          const reg = flow['flowRegistry'] as any;
-          const type = reg?.constructor?._type as 'instance' | 'global' | undefined;
-          if (type !== 'instance') return;
-
           const on = flow.on;
           const onObj = typeof on === 'object' ? (on as any) : undefined;
           if (!onObj) return;
