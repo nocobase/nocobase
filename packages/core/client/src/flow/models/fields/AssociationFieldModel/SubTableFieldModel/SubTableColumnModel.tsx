@@ -236,8 +236,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
               showLabel={false}
               disabled={
                 parent.props.disabled ||
-                (!record.__is_new__ && parent.props.aclDisabled) ||
-                (record.__is_new__ && parent.props.aclCreateDisabled)
+                (!record?.__is_new__ && parent.props.aclDisabled) ||
+                (record?.__is_new__ && parent.props.aclCreateDisabled)
               }
             >
               {fork.constructor.isLargeField ? (
@@ -250,8 +250,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   defaultValue={value}
                   disabled={
                     parent.props.disabled ||
-                    (!record.__is_new__ && parent.props.aclDisabled) ||
-                    (record.__is_new__ && parent.props.aclCreateDisabled)
+                    (!record?.__is_new__ && parent.props.aclDisabled) ||
+                    (record?.__is_new__ && parent.props.aclCreateDisabled)
                   }
                 />
               ) : (
