@@ -398,7 +398,7 @@ SubModelTemplateImporterModel.define({
     }
 
     // ApplyTaskCardDetailsModel 不支持区块/字段模板相关入口
-    if (blockModel.use === 'ApplyTaskCardDetailsModel') {
+    if (blockModel.use === 'ApplyTaskCardDetailsModel' || blockModel.use === 'ApprovalTaskCardDetailsModel') {
       return true;
     }
     if (blockModel instanceof FilterFormBlockModel) {
