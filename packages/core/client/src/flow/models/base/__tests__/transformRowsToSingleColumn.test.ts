@@ -11,18 +11,11 @@ import { describe, it, expect } from 'vitest';
 import { transformRowsToSingleColumn } from '../GridModel';
 import { EMPTY_COLUMN_UID } from '@nocobase/flow-engine';
 
-/** Helper to build rows */
-function buildRows(structure: string[][][]): Record<string, string[][]> {
-  const obj: Record<string, string[][]> = {};
-  structure.forEach((row, i) => {
-    obj[`row_${i}`] = row;
-  });
-  return obj;
-}
+const buildRows = (structure: string[][][]): string[][][] => structure;
 
 describe('transformRowsToSingleColumn', () => {
-  it('should return empty object when rows empty', () => {
-    expect(transformRowsToSingleColumn({})).toEqual({});
+  it('should return empty array when rows empty', () => {
+    expect(transformRowsToSingleColumn([])).toEqual([]);
   });
 
   it('should flatten columns into separate single-column rows preserving order', () => {
@@ -31,28 +24,32 @@ describe('transformRowsToSingleColumn', () => {
       [['d'], ['e']],
     ]);
     const result = transformRowsToSingleColumn(rows);
-    const all = Object.values(result).map((r) => r[0]);
-    expect(all).toEqual([['a'], ['b', 'c'], ['d'], ['e']]);
+    expect(result).toEqual([[['a']], [['b', 'c']], [['d']], [['e']]]);
   });
 
   it('should skip columns that only contain EMPTY_COLUMN_UID', () => {
     const rows = buildRows([[[EMPTY_COLUMN_UID], ['a']]]);
     const result = transformRowsToSingleColumn(rows);
-    const all = Object.values(result).map((r) => r[0]);
-    expect(all).toEqual([['a']]);
+    expect(result).toEqual([[['a']]]);
   });
 
   it('should filter out EMPTY_COLUMN_UID inside mixed columns', () => {
     const rows = buildRows([[['a', EMPTY_COLUMN_UID, 'b']]]);
     const result = transformRowsToSingleColumn(rows);
-    const all = Object.values(result).map((r) => r[0]);
-    expect(all).toEqual([['a', 'b']]);
+    expect(result).toEqual([[['a', 'b']]]);
+  });
+
+  it('should accept legacy object rows input', () => {
+    const legacyRows = {
+      row1: [['a'], ['b']],
+    };
+    const result = transformRowsToSingleColumn(legacyRows);
+    expect(result).toEqual([[['a']], [['b']]]);
   });
 
   it('should allow custom emptyColumnUid option', () => {
     const rows = buildRows([[['x'], ['y', '__EMPTY__']]]);
     const result = transformRowsToSingleColumn(rows, { emptyColumnUid: '__EMPTY__' });
-    const all = Object.values(result).map((r) => r[0]);
-    expect(all).toEqual([['x'], ['y']]);
+    expect(result).toEqual([[['x']], [['y']]]);
   });
 });
