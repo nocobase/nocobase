@@ -31,6 +31,9 @@ describe('GridModel.mergeRowsWithItems', () => {
       engine.createModel({ use: 'FlowModel', uid: 'a' }),
       engine.createModel({ use: 'FlowModel', uid: 'b' }),
       engine.createModel({ use: 'FlowModel', uid: 'c' }),
+      engine.createModel({ use: 'FlowModel', uid: 'd' }),
+      engine.createModel({ use: 'FlowModel', uid: 'e' }),
+      engine.createModel({ use: 'FlowModel', uid: 'f' }),
     ];
     (model as any).subModels = { items };
 
@@ -38,10 +41,13 @@ describe('GridModel.mergeRowsWithItems', () => {
 
     const rowsValues = Object.values(merged);
 
-    expect(rowsValues.length).toBe(3);
+    expect(rowsValues.length).toBe(6);
     expect(rowsValues[0]).toEqual([['a']]);
     expect(rowsValues[1]).toEqual([['b']]);
     expect(rowsValues[2]).toEqual([['c']]);
+    expect(rowsValues[3]).toEqual([['d']]);
+    expect(rowsValues[4]).toEqual([['e']]);
+    expect(rowsValues[5]).toEqual([['f']]);
   });
 
   it('correctly filters non-existent items from existing rows', () => {
