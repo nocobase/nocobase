@@ -314,6 +314,13 @@ const DisplayTable = (props) => {
         .ant-table-column-sorters .ant-table-column-title {
           overflow: visible;
         }
+        .ant-table-footer {
+          padding: 0;
+          button {
+            margin-top: 4px !important;
+            margin-bottom: 4px;
+          }
+        }
       `}
       components={{
         header: {
