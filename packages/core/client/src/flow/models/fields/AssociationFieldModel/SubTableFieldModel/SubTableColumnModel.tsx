@@ -369,6 +369,7 @@ export class SubTableColumnModel<
               sort: 1,
             },
           ]}
+          enabled={this.context.flowSettingsEnabled}
         >
           <div
             className={css`

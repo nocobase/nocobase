@@ -65,7 +65,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
 
   getColumns() {
     const { enableIndexColumn } = this.props;
-    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
       Boolean,
@@ -85,7 +84,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         ...baseColumns.concat({
           key: '_empty',
         }),
-        isConfigMode && {
+        this.context.flowSettingsEnabled && {
           key: 'addColumn',
           fixed: 'right',
           width: 100,

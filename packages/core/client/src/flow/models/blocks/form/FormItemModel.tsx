@@ -172,7 +172,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 }
 
 FormItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 
@@ -221,7 +221,7 @@ FormItemModel.registerFlow({
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
-        if (!ctx.collectionField) {
+        if (!ctx.collectionField || !ctx.blockModel) {
           return;
         }
         const blockActionName = ctx.blockModel.context.actionName;
