@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createCollectionContextMeta } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
 import React, { createContext, useContext, useMemo } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useApp, useAppSpin } from '../application';
@@ -19,7 +19,18 @@ export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
 export const useCurrentUserContext = () => {
-  return useContext(CurrentUserContext);
+  const flowEngine = useFlowEngine();
+  const contextValue = useContext(CurrentUserContext);
+
+  if (!contextValue && flowEngine) {
+    return {
+      data: {
+        data: flowEngine.context.user,
+      },
+    } as any;
+  }
+
+  return contextValue;
 };
 
 export const useIsLoggedIn = () => {
