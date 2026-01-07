@@ -1,7 +1,5 @@
 # Installation Guide
 
-> **Backup files and SQL files are being prepared and will be available soon. Stay tuned!**
-
 > The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
 
 To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
@@ -9,10 +7,10 @@ To help you quickly and smoothly deploy the Ticketing Solution to your own NocoB
 Before you begin, please ensure:
 
 - You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0 or above**
+- NocoBase version **2.0.0-beta.5 or above**
 - You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: nocobase_ticket_system.nbdata - For Method 1 (Coming soon)
-  - **SQL file**: nocobase_ticket_system.zip - For Method 2 (Coming soon)
+  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
+  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
 
 **Important Notes**:
 - This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.

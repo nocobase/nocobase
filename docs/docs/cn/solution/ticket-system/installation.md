@@ -1,7 +1,5 @@
 # 如何安装
 
-> **备份文件和 SQL 文件正在完善中，马上上线，敬请期待！**
-
 > 当前版本采用**备份还原**的形式进行部署。在后续版本中，我们可能会更换为**增量迁移**的形式，以便于将解决方案集成到您已有的系统中。
 
 为了让您能够快速、顺畅地将工单方案部署到您自己的 NocoBase 环境中，我们提供了两种还原方式。请根据您的用户版本和技术背景选择最适合您的一种。
@@ -9,10 +7,10 @@
 在开始之前，请确保：
 
 - 您已经有了一个基础的 NocoBase 运行环境。关于主系统的安装，请参考更详细的[官方安装文档](https://docs-cn.nocobase.com/welcome/getting-started/installation)。
-- NocoBase 版本 **2.0.0 及以上**
+- NocoBase 版本 **2.0.0-beta.5 及以上**
 - 您已经下载了工单系统的相应文件：
-  - **备份文件**：nocobase_ticket_system.nbdata - 适用于方法一（正在完善中，马上上线）
-  - **SQL文件**：nocobase_ticket_system.zip - 适用于方法二（正在完善中，马上上线）
+  - **备份文件**：[nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - 适用于方法一
+  - **SQL文件**：[nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - 适用于方法二
 
 **重要说明**：
 - 本方案基于 **PostgreSQL 16** 数据库制作，请确保您的环境使用 PostgreSQL 16。
