@@ -147,7 +147,7 @@ const AddFieldColumn = ({ model }) => {
   return (
     <AddSubModelButton
       model={model}
-      subModelKey={'columns'}
+      subModelKey={'subTableColumns'}
       subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
       keepDropdownOpen
     >
@@ -426,10 +426,11 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
   }
 
   getBaseColumns() {
-    const baseColumns = this.mapSubModels('columns', (column: any) => column.getColumnProps()).filter((v) => {
+    console.log(this);
+    const baseColumns = this.mapSubModels('subTableColumns', (column: any) => column.getColumnProps()).filter((v) => {
       return !v?.hidden;
     });
-
+    console.log(baseColumns);
     return baseColumns;
   }
 
@@ -452,7 +453,7 @@ AdvancedSubTableFieldModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsBeforeRenderFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('subTableColumns');
       },
     },
     // quickEdit: {
