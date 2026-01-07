@@ -8,7 +8,6 @@
  */
 
 import { DragCancelEvent, DragEndEvent, DragMoveEvent, DragStartEvent } from '@dnd-kit/core';
-import { uid } from '@formily/shared';
 import {
   DndProvider,
   DragHandler,
@@ -22,6 +21,10 @@ import {
   buildLayoutSnapshot,
   getSlotKey,
   GridLayoutData,
+  GridRows,
+  GridSizes,
+  normalizeGridRows,
+  normalizeGridSizes,
   LayoutSlot,
   Rect,
   resolveDropIntent,
@@ -113,6 +116,22 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return this._memoItemFlowSettings;
   }
 
+  private getRows(): GridRows {
+    return normalizeGridRows((this.props as any)?.rows);
+  }
+
+  private getSizes(rowCount?: number): GridSizes {
+    return normalizeGridSizes((this.props as any)?.sizes, rowCount ?? this.getRows().length);
+  }
+
+  private getLayoutFromProps(): GridLayoutData {
+    const rows = this.getRows();
+    return {
+      rows,
+      sizes: this.getSizes(rows.length),
+    };
+  }
+
   onMount(): void {
     super.onMount();
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
@@ -121,15 +140,13 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       }
       this.resetRows(true);
 
-      // 在 sizes 中新加一行
-      // 1. 获取当前 modelUid 所在的位置
-      const position = findModelUidPosition(model.uid, this.props.rows || {});
-      // 2. 根据位置，在 sizes 中添加一行
+      const rows = this.getRows();
+      const position = findModelUidPosition(model.uid, rows);
       if (position) {
-        const newSizes = _.cloneDeep(this.props.sizes || {});
-        newSizes[position.rowId] = [24]; // 默认新行宽度为 24
+        const newSizes = _.cloneDeep(this.getSizes(rows.length));
+        newSizes[position.rowIndex] = [24];
         this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
-          rows: this.props.rows || {},
+          rows,
           sizes: newSizes,
         });
 
@@ -138,26 +155,19 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     });
     this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
       const modelUid = model.uid;
-
-      // 1. 获取当前 modelUid 所在的位置
-      const position = findModelUidPosition(modelUid, this.props.rows || {});
-
-      // 2. 重置 rows
+      const position = findModelUidPosition(modelUid, this.getRows());
       this.resetRows(true);
 
-      // 3. 根据位置清空 sizes 中对应的值
       if (position) {
-        const rows = this.props.rows || {};
-        const newSizes = _.cloneDeep(this.props.sizes || {});
+        const rows = this.getRows();
+        const newSizes = _.cloneDeep(this.getSizes(rows.length));
 
-        // 如果列变空了，移除该列
-        if (rows[position.rowId]?.[position.columnIndex] === undefined) {
-          newSizes[position.rowId]?.splice(position.columnIndex, 1);
+        if (!rows[position.rowIndex]?.[position.columnIndex]) {
+          newSizes[position.rowIndex]?.splice(position.columnIndex, 1);
         }
 
-        // 如果行变空了，移除该行
-        if (rows[position.rowId] === undefined) {
-          delete newSizes[position.rowId];
+        if (!rows[position.rowIndex]) {
+          newSizes.splice(position.rowIndex, 1);
         }
 
         this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
@@ -179,15 +189,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     });
 
     this.emitter.on('onResizeLeft', ({ resizeDistance, model }) => {
-      const position = findModelUidPosition(model.uid, this.props.rows || {});
+      const position = findModelUidPosition(model.uid, this.getRows());
+      if (!position) {
+        return;
+      }
       const gridContainerWidth = this.gridContainerRef.current?.clientWidth || 0;
       const { newRows, newSizes, moveDistance } = recalculateGridSizes({
         position,
         direction: 'left',
         resizeDistance,
         prevMoveDistance: this.prevMoveDistance,
-        oldRows: this.props.rows || {},
-        oldSizes: this.props.sizes || {},
+        oldRows: this.getRows(),
+        oldSizes: this.getSizes(),
         gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
@@ -196,15 +209,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       this.setProps('sizes', newSizes);
     });
     this.emitter.on('onResizeRight', ({ resizeDistance, model }) => {
-      const position = findModelUidPosition(model.uid, this.props.rows || {});
+      const position = findModelUidPosition(model.uid, this.getRows());
+      if (!position) {
+        return;
+      }
       const gridContainerWidth = this.gridContainerRef.current?.clientWidth || 0;
       const { newRows, newSizes, moveDistance } = recalculateGridSizes({
         position,
         direction: 'right',
         resizeDistance,
         prevMoveDistance: this.prevMoveDistance,
-        oldRows: this.props.rows || {},
-        oldSizes: this.props.sizes || {},
+        oldRows: this.getRows(),
+        oldSizes: this.getSizes(),
         gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
@@ -220,8 +236,8 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   }
 
   saveGridLayout(layout?: GridLayoutData) {
-    const rows = layout?.rows ?? this.props.rows ?? {};
-    const sizes = layout?.sizes ?? this.props.sizes ?? {};
+    const rows = normalizeGridRows(layout?.rows ?? this.props.rows);
+    const sizes = normalizeGridSizes(layout?.sizes ?? this.props.sizes, rows.length);
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
       rows,
       sizes,
@@ -229,52 +245,51 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.saveStepParams();
   }
 
-  mergeRowsWithItems(rows: Record<string, string[][]>) {
+  mergeRowsWithItems(rows: GridRows | Record<string, string[][]>) {
     const items = this.subModels.items || [];
     if (!items || items.length === 0) {
-      return {}; // 如果没有 items，直接返回原始 rows
+      return normalizeGridRows(rows);
     }
-    // 1. 收集所有 items 里的 uid
+
     const allUids = new Set(items.map((item) => item.uid));
-    allUids.add(EMPTY_COLUMN_UID); // 确保空白列的 UID 也被包含
+    allUids.add(EMPTY_COLUMN_UID);
 
-    // 2. 收集 rows 里已用到的 uid
     const usedUids = new Set<string>();
-    const newRows: Record<string, string[][]> = {};
+    const normalizedRows = normalizeGridRows(rows);
+    const newRows: GridRows = [];
 
-    // 3. 过滤 rows 里不存在于 items 的 uid
-    for (const [rowKey, cells] of Object.entries(rows)) {
+    normalizedRows.forEach((cells) => {
       const filteredCells = cells
         .map((cell) => _.castArray(cell).filter((uid) => allUids.has(uid)))
         .filter((cell) => cell.length > 0);
+
       if (filteredCells.length > 0) {
-        newRows[rowKey] = filteredCells;
+        newRows.push(filteredCells);
         filteredCells.forEach((cell) => cell.forEach((uid) => usedUids.add(uid)));
       }
-    }
+    });
 
-    // 4. 只把不在 rows 里的 item.uid 作为新行加到 rows 后面
-    const allRowUids = new Set<string>();
-    Object.values(newRows).forEach((cells) => cells.forEach((cell) => cell.forEach((uid) => allRowUids.add(uid))));
-    for (const item of items) {
-      if (!allRowUids.has(item.uid)) {
-        newRows[uid()] = [[item.uid]];
+    items.forEach((item) => {
+      if (!usedUids.has(item.uid)) {
+        newRows.push([[item.uid]]);
       }
-    }
+    });
 
     return newRows;
   }
 
   resetRows(syncProps = false) {
     const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
-    const mergedRows = this.mergeRowsWithItems(params.rows || {});
+    const mergedRows = this.mergeRowsWithItems(params.rows || []);
+    const sizes = normalizeGridSizes(params.sizes, mergedRows.length);
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
       rows: mergedRows,
-      sizes: params.sizes || {},
+      sizes,
     });
 
     if (syncProps) {
       this.setProps('rows', mergedRows);
+      this.setProps('sizes', sizes);
     }
   }
 
@@ -419,7 +434,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       slot,
       sourceUid: this.dragState.sourceUid,
       layout: this.dragState.snapshot,
-      generateRowId: uid,
     });
 
     this.dragState.previewLayout = {
@@ -447,11 +461,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   handleDragStart(event: DragStartEvent) {
     const sourceUid = event.active.id as string;
+    const layout = this.getLayoutFromProps();
     this.dragState = {
       sourceUid,
       snapshot: {
-        rows: _.cloneDeep(this.props.rows || {}),
-        sizes: _.cloneDeep(this.props.sizes || {}),
+        rows: _.cloneDeep(layout.rows),
+        sizes: _.cloneDeep(layout.sizes),
       },
       slots: [],
       containerRect: { top: 0, left: 0, width: 0, height: 0 },
@@ -526,15 +541,11 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
    * - 运行态仅在判断为“整列/整行都不可见”时做过滤，不写回 props/stepParams，布局元数据保持不变。
    */
   private getVisibleLayout() {
-    const rawRows = (this.props.rows || {}) as Record<string, string[][]>;
-    const rawSizes = (this.props.sizes || {}) as Record<string, number[]>;
+    const { rows: rawRows, sizes: rawSizes } = this.getLayoutFromProps();
 
-    const baseRows: Record<string, string[][]> = this.context.isMobileLayout
-      ? transformRowsToSingleColumn(rawRows)
-      : rawRows;
-    const baseSizes: Record<string, number[]> = this.context.isMobileLayout ? {} : rawSizes;
+    const baseRows: GridRows = this.context.isMobileLayout ? transformRowsToSingleColumn(rawRows) : rawRows;
+    const baseSizes: GridSizes = this.context.isMobileLayout ? [] : rawSizes;
 
-    // 配置态：不做任何过滤，保持完整布局
     if (this.context.flowSettingsEnabled) {
       return { rows: baseRows, sizes: baseSizes };
     }
@@ -546,21 +557,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
     const modelByUid = new Map(items.map((m: FlowModel) => [m.uid, m]));
 
-    const rows: Record<string, string[][]> = {};
-    const sizes: Record<string, number[]> = {};
+    const rows: GridRows = [];
+    const sizes: GridSizes = [];
 
-    Object.entries(baseRows).forEach(([rowKey, cells]) => {
-      const rowCells = cells;
-      const rowSizes = baseSizes[rowKey] || [];
+    baseRows.forEach((cells, rowIndex) => {
+      const rowSizes = baseSizes[rowIndex] || [];
       const keptCells: string[][] = [];
       const keptSizes: number[] = [];
 
-      rowCells.forEach((cell, idx) => {
-        // 只要当前单元格中存在“未显式 hidden 的模型”，就认为该列可见
+      cells.forEach((cell, idx) => {
         const hasVisibleItem = cell.some((uid) => {
           if (uid === EMPTY_COLUMN_UID) return false;
           const model = modelByUid.get(uid);
-          // model 不存在时视为可见，避免误删；只有明确 hidden === true 的才视为不可见
           return !model || !model.hidden;
         });
 
@@ -570,12 +578,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         }
       });
 
-      // 如果该行至少有一列存在可见 block，则保留该行
       if (keptCells.length > 0) {
-        rows[rowKey] = keptCells;
-        if (keptSizes.length > 0) {
-          sizes[rowKey] = keptSizes;
-        }
+        rows.push(keptCells);
+        sizes.push(keptSizes.length > 0 ? keptSizes : []);
       }
     });
 
@@ -584,7 +589,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   render() {
     const { rows, sizes } = this.getVisibleLayout();
-    const hasAnyVisibleRow = Object.keys(rows || {}).length > 0;
+    const hasAnyVisibleRow = rows.length > 0;
 
     return (
       <>
@@ -695,9 +700,10 @@ GridModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        const mergedRows = ctx.model.mergeRowsWithItems(params.rows || {});
+        const mergedRows = ctx.model.mergeRowsWithItems(params.rows || []);
+        const sizes = normalizeGridSizes(params.sizes, mergedRows.length);
         ctx.model.setProps('rows', mergedRows);
-        ctx.model.setProps('sizes', params.sizes || {});
+        ctx.model.setProps('sizes', sizes);
       },
     },
   },
@@ -706,22 +712,22 @@ GridModel.registerFlow({
 /**
  * 将多列栅格 rows 转换为移动端单列 rows。
  * 遍历原 rows 的行与列顺序，把每个原列（过滤空白列后）变成一个新行（仅一列）。
- * 行 key 使用 uid() 生成，保持插入顺序即可。
+ * 行顺序直接根据原 rows 的遍历顺序生成。
  * @param rows 原始多列 rows
  * @returns 单列 rows
  */
 export function transformRowsToSingleColumn(
-  rows: Record<string, string[][]>,
+  rows: GridRows | Record<string, string[][]>,
   options?: { emptyColumnUid?: string },
-): Record<string, string[][]> {
+): GridRows {
   const emptyColumnUid = options?.emptyColumnUid ?? EMPTY_COLUMN_UID;
-  const singleColumnRows: Record<string, string[][]> = {};
-  Object.keys(rows).forEach((rowId) => {
-    const columns = rows[rowId];
+  const sourceRows = normalizeGridRows(rows);
+  const singleColumnRows: GridRows = [];
+  sourceRows.forEach((columns) => {
     columns.forEach((column) => {
       const filtered = column.filter((id) => id !== emptyColumnUid);
       if (filtered.length > 0) {
-        singleColumnRows[uid()] = [filtered];
+        singleColumnRows.push([filtered]);
       }
     });
   });
@@ -740,15 +746,15 @@ export function recalculateGridSizes({
   columnCount = 24,
 }: {
   position: {
-    rowId: string;
+    rowIndex: number;
     columnIndex: number;
     itemIndex: number;
-  };
+  } | null;
   direction: 'left' | 'right' | 'bottom' | 'corner';
   resizeDistance: number;
   prevMoveDistance: number;
-  oldSizes: Record<string, number[]>;
-  oldRows: Record<string, string[][]>;
+  oldSizes: GridSizes;
+  oldRows: GridRows;
   gridContainerWidth: number;
   // 栅格间隔
   gutter?: number;
@@ -756,9 +762,17 @@ export function recalculateGridSizes({
   // 默认是 24 列
   columnCount?: number;
 }) {
-  const newRows = _.cloneDeep(oldRows);
-  const newSizes = _.cloneDeep(oldSizes);
-  const currentRowSizes = newSizes[position.rowId] || [];
+  if (!position) {
+    return {
+      newRows: normalizeGridRows(oldRows),
+      newSizes: normalizeGridSizes(oldSizes),
+      moveDistance: prevMoveDistance,
+    };
+  }
+
+  const newRows = _.cloneDeep(normalizeGridRows(oldRows));
+  const newSizes = _.cloneDeep(normalizeGridSizes(oldSizes, newRows.length));
+  const currentRowSizes = newSizes[position.rowIndex] || [];
   const totalGutter = gutter * (currentRowSizes.length - 1);
 
   // 当前移动的距离占总宽度的多少份
@@ -768,9 +782,9 @@ export function recalculateGridSizes({
     return { newRows, newSizes, moveDistance: currentMoveDistance };
   }
 
-  newSizes[position.rowId] ??= [columnCount];
+  newSizes[position.rowIndex] ??= [columnCount];
 
-  const rowSizes = newSizes[position.rowId];
+  const rowSizes = newSizes[position.rowIndex];
   let delta = currentMoveDistance - prevMoveDistance;
   const hasLeftNeighbor = direction === 'left' && position.columnIndex > 0;
   const hasRightNeighbor = direction === 'right' && position.columnIndex < rowSizes.length - 1;
@@ -790,14 +804,12 @@ export function recalculateGridSizes({
     }
   }
 
-  newSizes[position.rowId][position.columnIndex] += delta;
+  newSizes[position.rowIndex][position.columnIndex] += delta;
 
   if (direction === 'left' && position.columnIndex > 0) {
-    // 如果是左侧拖动，左侧的列宽度需要相应的减少或增加
-    newSizes[position.rowId][position.columnIndex - 1] -= delta;
+    newSizes[position.rowIndex][position.columnIndex - 1] -= delta;
 
-    // 如果左侧列的宽度为 0，且是一个空白列，则需要删除该列
-    if (newSizes[position.rowId][position.columnIndex - 1] === 0) {
+    if (newSizes[position.rowIndex][position.columnIndex - 1] === 0) {
       removeEmptyColumnFromRow({
         rows: newRows,
         sizes: newSizes,
@@ -809,8 +821,8 @@ export function recalculateGridSizes({
 
   // 如果最左侧的列宽度小于其初始的宽度，则需要添加一个空白列，用于显示空白
   if (direction === 'left' && position.columnIndex === 0) {
-    const otherColumnSize = newSizes[position.rowId].slice(1).reduce((a, b) => a + b, 0);
-    const currentColumnSize = newSizes[position.rowId][0];
+    const otherColumnSize = newSizes[position.rowIndex].slice(1).reduce((a, b) => a + b, 0);
+    const currentColumnSize = newSizes[position.rowIndex][0];
 
     if (currentColumnSize < columnCount - otherColumnSize) {
       addEmptyColumnToRow({
@@ -822,12 +834,10 @@ export function recalculateGridSizes({
     }
   }
 
-  if (direction === 'right' && position.columnIndex < newSizes[position.rowId].length - 1) {
-    // 如果是右侧拖动，右侧的列宽度需要相应的减少或增加
-    newSizes[position.rowId][position.columnIndex + 1] -= delta;
+  if (direction === 'right' && position.columnIndex < newSizes[position.rowIndex].length - 1) {
+    newSizes[position.rowIndex][position.columnIndex + 1] -= delta;
 
-    // 如果右侧列的宽度为 0，且是一个空白列，则需要删除该列
-    if (newSizes[position.rowId][position.columnIndex + 1] === 0) {
+    if (newSizes[position.rowIndex][position.columnIndex + 1] === 0) {
       removeEmptyColumnFromRow({
         rows: newRows,
         sizes: newSizes,
@@ -838,9 +848,9 @@ export function recalculateGridSizes({
   }
 
   // 如果最右侧的列宽度小于其初始的宽度，则需要添加一个空白列，用于显示空白
-  if (direction === 'right' && position.columnIndex === newSizes[position.rowId].length - 1) {
-    const otherColumnSize = newSizes[position.rowId].slice(0, -1).reduce((a, b) => a + b, 0);
-    const currentColumnSize = newSizes[position.rowId][position.columnIndex];
+  if (direction === 'right' && position.columnIndex === newSizes[position.rowIndex].length - 1) {
+    const otherColumnSize = newSizes[position.rowIndex].slice(0, -1).reduce((a, b) => a + b, 0);
+    const currentColumnSize = newSizes[position.rowIndex][position.columnIndex];
 
     if (currentColumnSize < columnCount - otherColumnSize) {
       addEmptyColumnToRow({
@@ -862,16 +872,16 @@ function addEmptyColumnToRow({
   position,
   direction,
 }: {
-  rows: Record<string, string[][]>;
-  sizes: Record<string, number[]>;
+  rows: GridRows;
+  sizes: GridSizes;
   position: {
-    rowId: string;
+    rowIndex: number;
     columnIndex: number;
   };
   direction: 'left' | 'right';
 }) {
-  const currentRow = rows[position.rowId] || [];
-  const currentRowSizes = sizes[position.rowId] || [];
+  const currentRow = rows[position.rowIndex] || [];
+  const currentRowSizes = sizes[position.rowIndex] || [];
 
   if (direction === 'left') {
     const leftColumn = currentRow[position.columnIndex - 1];
@@ -901,16 +911,16 @@ function removeEmptyColumnFromRow({
   position,
   direction,
 }: {
-  rows: Record<string, string[][]>;
-  sizes: Record<string, number[]>;
+  rows: GridRows;
+  sizes: GridSizes;
   position: {
-    rowId: string;
+    rowIndex: number;
     columnIndex: number;
   };
   direction: 'left' | 'right';
 }) {
-  const currentRow = rows[position.rowId] || [];
-  const currentRowSizes = sizes[position.rowId] || [];
+  const currentRow = rows[position.rowIndex] || [];
+  const currentRowSizes = sizes[position.rowIndex] || [];
 
   if (direction === 'left') {
     const leftColumn = currentRow[position.columnIndex - 1];

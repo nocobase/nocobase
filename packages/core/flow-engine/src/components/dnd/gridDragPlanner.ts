@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
 import _ from 'lodash';
 
 /** 栅格系统常量 */
@@ -43,14 +42,42 @@ export interface Point {
   y: number;
 }
 
+export type GridRows = string[][][];
+export type GridSizes = number[][];
+export type LegacyGridRows = Record<string, string[][]>;
+export type LegacyGridSizes = Record<string, number[]>;
+
 export interface GridLayoutData {
-  rows: Record<string, string[][]>;
-  sizes: Record<string, number[]>;
+  rows: GridRows;
+  sizes: GridSizes;
 }
+
+export const normalizeGridRows = (rows?: GridRows | LegacyGridRows | null): GridRows => {
+  if (Array.isArray(rows)) {
+    return rows.map((row) => row.map((col) => [...col]));
+  }
+  if (rows && typeof rows === 'object') {
+    return Object.values(rows).map((row) => row.map((col) => [...col]));
+  }
+  return [];
+};
+
+export const normalizeGridSizes = (sizes?: GridSizes | LegacyGridSizes | null, rowCount?: number): GridSizes => {
+  if (Array.isArray(sizes)) {
+    return sizes.map((row) => (Array.isArray(row) ? [...row] : []));
+  }
+  if (sizes && typeof sizes === 'object') {
+    return Object.values(sizes).map((row) => [...row]);
+  }
+  if (typeof rowCount === 'number') {
+    return Array.from({ length: rowCount }, () => []);
+  }
+  return [];
+};
 
 export interface ColumnSlot {
   type: 'column';
-  rowId: string;
+  rowId: number;
   columnIndex: number;
   insertIndex: number;
   position: 'before' | 'after';
@@ -59,7 +86,7 @@ export interface ColumnSlot {
 
 export interface ColumnEdgeSlot {
   type: 'column-edge';
-  rowId: string;
+  rowId: number;
   columnIndex: number;
   direction: 'left' | 'right';
   rect: Rect;
@@ -67,7 +94,7 @@ export interface ColumnEdgeSlot {
 
 export interface RowGapSlot {
   type: 'row-gap';
-  targetRowId: string;
+  targetRowId: number;
   position: 'above' | 'below';
   rect: Rect;
 }
@@ -79,7 +106,7 @@ export interface EmptyRowSlot {
 
 export interface EmptyColumnSlot {
   type: 'empty-column';
-  rowId: string;
+  rowId: number;
   columnIndex: number;
   rect: Rect;
 }
@@ -272,8 +299,8 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
   }
 
   rowElements.forEach((rowElement, rowIndex) => {
-    const rowId = rowElement.dataset.gridRowId;
-    if (!rowId) {
+    const rowId = Number(rowElement.dataset.gridRowId ?? rowIndex);
+    if (Number.isNaN(rowId)) {
       return;
     }
     const rowRect = toRect(rowElement.getBoundingClientRect());
@@ -427,13 +454,14 @@ export const resolveDropIntent = (point: Point, slots: LayoutSlot[]): LayoutSlot
   return closest;
 };
 
-const findUidPosition = (rows: Record<string, string[][]>, uidValue: string) => {
-  for (const [rowId, columns] of Object.entries(rows)) {
+const findUidPosition = (rows: GridRows, uidValue: string) => {
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const columns = rows[rowIndex] || [];
     for (let columnIndex = 0; columnIndex < columns.length; columnIndex += 1) {
       const column = columns[columnIndex];
       const itemIndex = column.indexOf(uidValue);
       if (itemIndex !== -1) {
-        return { rowId, columnIndex, itemIndex };
+        return { rowIndex, columnIndex, itemIndex };
       }
     }
   }
@@ -446,8 +474,8 @@ const removeItemFromLayout = (layout: GridLayoutData, uidValue: string) => {
     return;
   }
 
-  const { rowId, columnIndex, itemIndex } = position;
-  const columns = layout.rows[rowId];
+  const { rowIndex, columnIndex, itemIndex } = position;
+  const columns = layout.rows[rowIndex];
   const column = columns?.[columnIndex];
   if (!column) {
     return;
@@ -457,18 +485,18 @@ const removeItemFromLayout = (layout: GridLayoutData, uidValue: string) => {
 
   if (column.length === 0) {
     columns.splice(columnIndex, 1);
-    if (layout.sizes[rowId]) {
-      layout.sizes[rowId].splice(columnIndex, 1);
+    if (layout.sizes[rowIndex]) {
+      layout.sizes[rowIndex].splice(columnIndex, 1);
     }
   }
 
   if (columns.length === 0) {
-    delete layout.rows[rowId];
-    delete layout.sizes[rowId];
+    layout.rows.splice(rowIndex, 1);
+    layout.sizes.splice(rowIndex, 1);
     return;
   }
 
-  normalizeRowSizes(rowId, layout);
+  normalizeRowSizes(rowIndex, layout);
 };
 
 const toIntSizes = (weights: number[], count: number): number[] => {
@@ -517,46 +545,29 @@ const toIntSizes = (weights: number[], count: number): number[] => {
   return floors;
 };
 
-const normalizeRowSizes = (rowId: string, layout: GridLayoutData) => {
-  const columns = layout.rows[rowId];
+const normalizeRowSizes = (rowIndex: number, layout: GridLayoutData) => {
+  const columns = layout.rows[rowIndex];
   if (!columns || columns.length === 0) {
-    delete layout.sizes[rowId];
+    layout.sizes[rowIndex] = [];
     return;
   }
 
-  const current = layout.sizes[rowId] || new Array(columns.length).fill(DEFAULT_GRID_COLUMNS / columns.length);
+  const current = layout.sizes[rowIndex] || new Array(columns.length).fill(DEFAULT_GRID_COLUMNS / columns.length);
   const weights =
     current.length === columns.length ? current : new Array(columns.length).fill(DEFAULT_GRID_COLUMNS / columns.length);
-  layout.sizes[rowId] = toIntSizes(weights, columns.length);
+  layout.sizes[rowIndex] = toIntSizes(weights, columns.length);
 };
 
 const insertRow = (
-  rows: Record<string, string[][]>,
-  referenceRowId: string,
-  newRowId: string,
+  rows: GridRows,
+  sizes: GridSizes,
+  referenceRowIndex: number,
   position: 'before' | 'after',
   value: string[][],
-): Record<string, string[][]> => {
-  const entries = Object.entries(rows);
-  const result: Record<string, string[][]> = {};
-  let inserted = false;
-  entries.forEach(([rowId, rowValue]) => {
-    if (!inserted && position === 'before' && rowId === referenceRowId) {
-      result[newRowId] = value;
-      inserted = true;
-    }
-    result[rowId] = rowValue;
-    if (!inserted && position === 'after' && rowId === referenceRowId) {
-      result[newRowId] = value;
-      inserted = true;
-    }
-  });
-
-  if (!inserted) {
-    result[newRowId] = value;
-  }
-
-  return result;
+) => {
+  const insertIndex = position === 'before' ? referenceRowIndex : referenceRowIndex + 1;
+  rows.splice(insertIndex, 0, value);
+  sizes.splice(insertIndex, 0, [DEFAULT_GRID_COLUMNS]);
 };
 
 const distributeSizesWithNewColumn = (
@@ -590,65 +601,53 @@ export const simulateLayoutForSlot = ({
   generateRowId,
 }: SimulateLayoutOptions): GridLayoutData => {
   const cloned: GridLayoutData = {
-    rows: _.cloneDeep(layout.rows),
-    sizes: _.cloneDeep(layout.sizes),
+    rows: _.cloneDeep(normalizeGridRows(layout.rows)),
+    sizes: _.cloneDeep(normalizeGridSizes(layout.sizes)),
   };
 
   removeItemFromLayout(cloned, sourceUid);
 
-  const createRowId = generateRowId ?? uid;
-
   switch (slot.type) {
     case 'column': {
-      const columns = cloned.rows[slot.rowId] || [];
-      if (!cloned.rows[slot.rowId]) {
-        cloned.rows[slot.rowId] = columns;
-      }
-      if (!columns[slot.columnIndex]) {
-        columns[slot.columnIndex] = [];
-      }
-      const targetColumn = columns[slot.columnIndex];
+      cloned.rows[slot.rowId] ??= [];
+      cloned.rows[slot.rowId][slot.columnIndex] ??= [];
+      const targetColumn = cloned.rows[slot.rowId][slot.columnIndex];
       targetColumn.splice(slot.insertIndex, 0, sourceUid);
       normalizeRowSizes(slot.rowId, cloned);
       break;
     }
     case 'empty-column': {
-      const columns = cloned.rows[slot.rowId] || [];
-      if (!cloned.rows[slot.rowId]) {
-        cloned.rows[slot.rowId] = columns;
-      }
-      if (!columns[slot.columnIndex]) {
-        columns[slot.columnIndex] = [];
-      }
-      columns[slot.columnIndex] = [sourceUid];
+      cloned.rows[slot.rowId] ??= [];
+      cloned.rows[slot.rowId][slot.columnIndex] = [sourceUid];
       normalizeRowSizes(slot.rowId, cloned);
       break;
     }
     case 'column-edge': {
-      const columns = cloned.rows[slot.rowId] || [];
-      if (!cloned.rows[slot.rowId]) {
-        cloned.rows[slot.rowId] = columns;
-      }
+      cloned.rows[slot.rowId] ??= [];
       const insertIndex = slot.direction === 'left' ? slot.columnIndex : slot.columnIndex + 1;
-      columns.splice(insertIndex, 0, [sourceUid]);
-      cloned.sizes[slot.rowId] = distributeSizesWithNewColumn(cloned.sizes[slot.rowId], insertIndex, columns.length);
+      cloned.rows[slot.rowId].splice(insertIndex, 0, [sourceUid]);
+      cloned.sizes[slot.rowId] = distributeSizesWithNewColumn(
+        cloned.sizes[slot.rowId],
+        insertIndex,
+        cloned.rows[slot.rowId].length,
+      );
       normalizeRowSizes(slot.rowId, cloned);
       break;
     }
     case 'row-gap': {
-      const newRowId = createRowId();
+      if (!cloned.rows.length) {
+        cloned.rows = [[[sourceUid]]];
+        cloned.sizes = [[DEFAULT_GRID_COLUMNS]];
+        break;
+      }
+      const targetIndex = Math.max(0, Math.min(slot.targetRowId, cloned.rows.length - 1));
       const rowPosition: 'before' | 'after' = slot.position === 'above' ? 'before' : 'after';
-      cloned.rows = insertRow(cloned.rows, slot.targetRowId, newRowId, rowPosition, [[sourceUid]]);
-      cloned.sizes[newRowId] = [DEFAULT_GRID_COLUMNS];
+      insertRow(cloned.rows, cloned.sizes, targetIndex, rowPosition, [[sourceUid]]);
       break;
     }
     case 'empty-row': {
-      const newRowId = createRowId();
-      cloned.rows = {
-        ...cloned.rows,
-        [newRowId]: [[sourceUid]],
-      };
-      cloned.sizes[newRowId] = [DEFAULT_GRID_COLUMNS];
+      cloned.rows.push([[sourceUid]]);
+      cloned.sizes.push([DEFAULT_GRID_COLUMNS]);
       break;
     }
     default:

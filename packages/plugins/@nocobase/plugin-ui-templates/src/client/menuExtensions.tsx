@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Button, Form, Input, Modal, Radio, Space, Tooltip, Typography } from 'antd';
 import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
-import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
+import { FlowModel, createBlockScopedEngine, normalizeGridRows, normalizeGridSizes } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr, getPluginT } from './locale';
@@ -185,26 +185,16 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
             arr.forEach((m, i) => (m.sortIndex = i));
 
             const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-            if (gridParams?.rows && typeof gridParams.rows === 'object') {
-              const newRows = _.cloneDeep(gridParams.rows);
-              for (const rowId of Object.keys(newRows)) {
-                const columns = newRows[rowId];
-                if (Array.isArray(columns)) {
-                  for (let ci = 0; ci < columns.length; ci++) {
-                    const col = columns[ci];
-                    if (Array.isArray(col)) {
-                      for (let ii = 0; ii < col.length; ii++) {
-                        if (col[ii] === model.uid) {
-                          col[ii] = newModel.uid;
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
-              parent.setProps('rows', newRows);
-            }
+            const newRows = normalizeGridRows(gridParams.rows);
+            const newSizes = normalizeGridSizes(gridParams.sizes, newRows.length);
+            newRows.forEach((columns, rowIndex) => {
+              columns.forEach((col, colIndex) => {
+                newRows[rowIndex][colIndex] = col.map((id) => (id === model.uid ? newModel.uid : id));
+              });
+            });
+            parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: newSizes });
+            parent.setProps('rows', newRows);
+            parent.setProps('sizes', newSizes);
             newModel.sortIndex = insertIndex;
             await newModel.afterAddAsSubModel();
           } else {
