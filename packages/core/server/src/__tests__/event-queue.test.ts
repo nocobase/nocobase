@@ -317,6 +317,44 @@ describe('memory queue adapter', () => {
     });
   });
 
+  describe('async idle handling', () => {
+    test('should respect async idle locking before consuming more messages', async () => {
+      const processed: number[] = [];
+      let busy = false;
+      let concurrent = 0;
+      let maxConcurrent = 0;
+
+      await app.eventQueue.subscribe('async-idle', {
+        idle: async () => {
+          await sleep(10);
+          if (busy) {
+            return false;
+          }
+          busy = true;
+          return true;
+        },
+        concurrency: 1,
+        process: async (message) => {
+          concurrent += 1;
+          maxConcurrent = Math.max(maxConcurrent, concurrent);
+          await sleep(50);
+          processed.push(message);
+          concurrent -= 1;
+          busy = false;
+        },
+      });
+
+      await app.eventQueue.connect();
+      await app.eventQueue.publish('async-idle', 1);
+      await app.eventQueue.publish('async-idle', 2);
+      await app.eventQueue.publish('async-idle', 3);
+
+      await sleep(400);
+      expect(processed).toEqual([1, 2, 3]);
+      expect(maxConcurrent).toBe(1);
+    });
+  });
+
   describe('storage', () => {
     test('graceful shutdown, will create storage', async () => {
       const mockListener = vi.fn();
