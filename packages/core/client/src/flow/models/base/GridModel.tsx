@@ -238,31 +238,26 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     const allUids = new Set(items.map((item) => item.uid));
     allUids.add(EMPTY_COLUMN_UID); // 确保空白列的 UID 也被包含
 
-    // 2. 优先保留 rows 里的结构和顺序
+    // 2. 收集 rows 里已用到的 uid
+    const usedUids = new Set<string>();
     const newRows: Record<string, string[][]> = {};
-    const processedItemUids = new Set<string>();
 
+    // 3. 过滤 rows 里不存在于 items 的 uid
     for (const [rowKey, cells] of Object.entries(rows)) {
       const filteredCells = cells
         .map((cell) => _.castArray(cell).filter((uid) => allUids.has(uid)))
         .filter((cell) => cell.length > 0);
-
       if (filteredCells.length > 0) {
         newRows[rowKey] = filteredCells;
-        // 标记这些 uid 已处理
-        filteredCells.forEach((cell) => {
-          cell.forEach((uid) => {
-            if (uid !== EMPTY_COLUMN_UID) {
-              processedItemUids.add(uid);
-            }
-          });
-        });
+        filteredCells.forEach((cell) => cell.forEach((uid) => usedUids.add(uid)));
       }
     }
 
-    // 3. 将未出现（新）的 items 追加到后面
+    // 4. 只把不在 rows 里的 item.uid 作为新行加到 rows 后面
+    const allRowUids = new Set<string>();
+    Object.values(newRows).forEach((cells) => cells.forEach((cell) => cell.forEach((uid) => allRowUids.add(uid))));
     for (const item of items) {
-      if (!processedItemUids.has(item.uid)) {
+      if (!allRowUids.has(item.uid)) {
         newRows[uid()] = [[item.uid]];
       }
     }
@@ -701,7 +696,6 @@ GridModel.registerFlow({
       },
       async handler(ctx, params) {
         const mergedRows = ctx.model.mergeRowsWithItems(params.rows || {});
-        console.log('[NocoBase][GridModel][grid flow] handler called', { params, mergedRows });
         ctx.model.setProps('rows', mergedRows);
         ctx.model.setProps('sizes', params.sizes || {});
       },
