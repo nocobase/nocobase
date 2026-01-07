@@ -38,7 +38,7 @@ export class BaseConcurrencyMonitor implements ConcurrencyMonitor {
     return true;
   }
 
-  reduce(taskId: TaskId): void {
+  decrease(taskId: TaskId): void {
     this.taskIds.delete(taskId);
   }
 }

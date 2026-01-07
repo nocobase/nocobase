@@ -18,5 +18,5 @@ export interface ConcurrencyMonitor {
 
   increase(taskId: TaskId): boolean;
 
-  reduce(taskId: TaskId): void;
+  decrease(taskId: TaskId): void;
 }

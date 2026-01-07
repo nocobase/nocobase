@@ -74,7 +74,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     try {
       await this.runTask(task);
     } finally {
-      this.concurrencyMonitor.reduce(task.record.id);
+      this.concurrencyMonitor.decrease(task.record.id);
     }
   };
 
@@ -128,7 +128,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     if (task.doneAt) {
       this.progressThrottles.delete(task.id);
       this.tasks.delete(task.id);
-      this.concurrencyMonitor.reduce(task.id);
+      this.concurrencyMonitor.decrease(task.id);
     }
 
     if (task.status === TASK_STATUS.SUCCEEDED) {
@@ -139,7 +139,7 @@ export class BaseTaskManager implements AsyncTasksManager {
   private onTaskAfterDelete = (task) => {
     this.tasks.delete(task.id);
     this.progressThrottles.delete(task.id);
-    this.concurrencyMonitor.reduce(task.id);
+    this.concurrencyMonitor.decrease(task.id);
     const userId = task.createdById;
     if (userId) {
       this.app.emit('ws:sendToUser', {
@@ -183,7 +183,7 @@ export class BaseTaskManager implements AsyncTasksManager {
         for (const task of tasksToCleanup) {
           this.tasks.delete(task.id);
           this.progressThrottles.delete(task.id);
-          this.concurrencyMonitor.reduce(task.id);
+          this.concurrencyMonitor.decrease(task.id);
         }
 
         await TaskRepo.destroy({
@@ -411,7 +411,7 @@ export class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
     return this.concurrencyMonitor.increase(taskId);
   }
 
-  reduce(taskId: TaskId): void {
-    this.concurrencyMonitor.reduce(taskId);
+  decrease(taskId: TaskId): void {
+    this.concurrencyMonitor.decrease(taskId);
   }
 }

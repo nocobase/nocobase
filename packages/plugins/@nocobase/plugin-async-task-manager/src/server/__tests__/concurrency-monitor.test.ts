@@ -87,23 +87,23 @@ describe('concurrency monitor', () => {
     });
   });
 
-  describe('monitor.reduce', () => {
-    it('should reduce running tasks count and change idle state', async () => {
+  describe('monitor.decrease', () => {
+    it('should decrease running tasks count and change idle state', async () => {
       const CONCURRENCY = 1;
       const concurrencyMonitor: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY);
       concurrencyMonitor.increase('task1');
       expect(concurrencyMonitor.idle()).toBeFalsy();
-      concurrencyMonitor.reduce('task1');
+      concurrencyMonitor.decrease('task1');
       expect(concurrencyMonitor.idle()).toBeTruthy();
     });
 
-    it('should reduce running tasks count and change increase checking', async () => {
+    it('should decrease running tasks count and change increase checking', async () => {
       const CONCURRENCY = 1;
       const concurrencyMonitor: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY);
       concurrencyMonitor.increase('task1');
       const result1 = concurrencyMonitor.increase('task2');
       expect(result1).toBeFalsy();
-      concurrencyMonitor.reduce('task1');
+      concurrencyMonitor.decrease('task1');
       const result2 = concurrencyMonitor.increase('task2');
       expect(result2).toBeTruthy();
     });
