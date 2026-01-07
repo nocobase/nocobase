@@ -416,7 +416,7 @@ export class SubTableColumnModel<
       // render: this.renderItem(),
       hidden: this.hidden && !this.context.flowSettingsEnabled,
       render: (value) => {
-        const { record, rowIndex: index } = value;
+        const { record, rowIndex: index } = value || {};
         return (
           <FlowModelProvider model={this}>
             <ErrorBoundary FallbackComponent={FlowErrorFallback}>
@@ -448,7 +448,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record } = props;
+      const { value, id, rowIdx, record } = props || {};
       return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} />;
     };
   }
