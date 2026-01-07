@@ -17,7 +17,7 @@ import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import { NoPermissionError } from './errors/no-permission-error';
-import FixedParamsManager, { Merger } from './fixed-params-manager';
+import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
@@ -456,6 +456,10 @@ export class ACL extends EventEmitter {
     };
 
     await compose(this.middlewares.nodes)(ctx, async () => {});
+  }
+
+  addGeneralFixedParams(merger: GeneralMerger) {
+    this.fixedParamsManager.addGeneralParams(merger);
   }
 
   addFixedParams(resource: string, action: string, merger: Merger) {
