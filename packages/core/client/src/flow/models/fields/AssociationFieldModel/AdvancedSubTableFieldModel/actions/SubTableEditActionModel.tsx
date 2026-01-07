@@ -66,7 +66,7 @@ export function EditFormContent({ model, scene = 'update' }) {
   const ctx = useFlowContext();
   const { Header, type } = ctx.view;
   model._closeView = ctx.view.close;
-  const title = scene === 'create' ? ctx.t('Add new') : ctx.t('Detail');
+  const title = scene === 'create' ? ctx.t('Add new') : ctx.t('Edit');
   return (
     <div>
       <Header
