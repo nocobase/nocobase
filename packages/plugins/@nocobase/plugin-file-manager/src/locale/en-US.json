@@ -1,4 +1,5 @@
 {
+  "Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.": "Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.",
   "Access base URL": "Access base URL",
   "Aliyun OSS": "Aliyun OSS",
   "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".",
@@ -36,6 +37,7 @@
   "Region": "Region",
   "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".",
   "Renaming strategy to avoid filename conflicts when uploading files.": "Renaming strategy to avoid filename conflicts when uploading files.",
+  "Request options": "Request options",
   "See more": "See more",
   "Size": "Size",
   "Storage": "Storage",
