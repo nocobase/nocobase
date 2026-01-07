@@ -2,7 +2,6 @@
  * defaultShowCode: true
  * title: on.phase（执行时机）
  */
-import { define, observable } from '@formily/reactive';
 import { Application, Plugin } from '@nocobase/client';
 import { defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Space, Typography } from 'antd';
@@ -17,21 +16,17 @@ const stepLog = (label: string) => ({
 });
 
 class ExecutionTimingDemoModel extends FlowModel {
-  logs: string[] = [];
-
-  constructor(options: any) {
-    super(options);
-    define(this, {
-      logs: observable,
-    });
+  get logs(): string[] {
+    const v = (this.props as any)?.logs;
+    return Array.isArray(v) ? v : [];
   }
 
   clearLogs() {
-    this.logs.splice(0, this.logs.length);
+    this.setProps({ logs: [] });
   }
 
   appendLog(line: string) {
-    this.logs.push(line);
+    this.setProps({ logs: [...this.logs, line] });
   }
 
   async runOnce() {
@@ -44,8 +39,7 @@ class ExecutionTimingDemoModel extends FlowModel {
       <div style={{ padding: 16 }}>
         <Typography.Title level={4}>事件流执行时机：on.phase / flowKey / stepKey</Typography.Title>
         <Typography.Paragraph>
-          <code>flow.on</code> 除了声明 <code>eventName</code> 外，还支持用 <code>phase</code> 把某条事件流插入到内置静态流的指定位置。
-          这里全部使用 <code>Model.registerFlow</code> 注册静态流来演示执行顺序。
+          <code>flow.on</code> 除了声明 <code>eventName</code> 外，还支持用 <code>phase</code> 把某个 flow 插入到 其它 flow 的指定阶段执行。
         </Typography.Paragraph>
 
         <Space>
@@ -183,4 +177,3 @@ const app = new Application({
 });
 
 export default app.getRootComponent();
-
