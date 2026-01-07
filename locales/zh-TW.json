@@ -4209,7 +4209,7 @@
     "Will be executed in the background as a queued task.": "Will be executed in the background as a queued task.",
     "Workflow": "Workflow",
     "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",
-    "Workflow is not exists": "Workflow is not exists",
+    "Workflow of execution is not existed": "Workflow of execution is not existed",
     "Workflow tasks": "Workflow tasks",
     "Workflow todos": "Workflow todos",
     "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).",

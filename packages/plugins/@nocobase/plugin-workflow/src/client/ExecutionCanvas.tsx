@@ -299,6 +299,10 @@ export function ExecutionCanvas() {
     });
   }, [data?.data]);
 
+  const onBack = useCallback(() => {
+    history.back();
+  }, []);
+
   if (!data?.data) {
     if (loading) {
       return <Spin />;
@@ -306,7 +310,8 @@ export function ExecutionCanvas() {
     return <Result status="404" title="Not found" />;
   }
 
-  const { jobs = [], workflow: { nodes = [], revisions = [], ...workflow } = {}, ...execution } = data?.data ?? {};
+  const { jobs = [], workflow, ...execution } = data?.data ?? {};
+  const { nodes = [] } = workflow || {};
 
   linkNodes(nodes);
   attachJobs(nodes, jobs);
@@ -315,7 +320,7 @@ export function ExecutionCanvas() {
 
   const statusOption = ExecutionStatusOptionsMap[execution.status];
 
-  return (
+  return workflow ? (
     <FlowContext.Provider
       value={{
         workflow: workflow.type ? workflow : null,
@@ -354,5 +359,12 @@ export function ExecutionCanvas() {
       <CanvasContent entry={entry} />
       <JobModal />
     </FlowContext.Provider>
+  ) : (
+    <Result
+      status="404"
+      title={lang('Not found')}
+      subTitle={lang('Workflow of execution is not existed')}
+      extra={<Button onClick={onBack}>{lang('Go back')}</Button>}
+    />
   );
 }
