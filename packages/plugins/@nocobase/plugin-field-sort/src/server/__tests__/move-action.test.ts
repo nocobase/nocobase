@@ -10,6 +10,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { Collection, Database } from '@nocobase/database';
 import { waitSecond } from '@nocobase/test';
+import { SortableCollection } from '../action';
 
 import Plugin from '..';
 
@@ -1123,8 +1124,6 @@ describe('sort action', () => {
       });
 
       // Get the SortableCollection instance to validate
-      const sortField = Articles.getField('sort');
-      const SortableCollection = require('../action').SortableCollection;
       const sortable = new SortableCollection(Articles);
 
       const issues = await sortable.validateSort();
@@ -1161,7 +1160,6 @@ describe('sort action', () => {
       );
 
       // Rebuild
-      const SortableCollection = require('../action').SortableCollection;
       const sortable = new SortableCollection(Articles);
       const result = await sortable.rebuildSort();
 

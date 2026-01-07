@@ -44,10 +44,15 @@ export async function move(ctx: Context, next) {
 
   const sortableCollection = new SortableCollection(repository.collection, sortField);
 
+  const moveOptions: MoveOptions = {};
+  if (method === 'insertAfter') {
+    moveOptions.insertAfter = true;
+  } else if (method === 'insertBefore') {
+    moveOptions.insertAfter = false;
+  }
+
   if (sourceId && targetId) {
-    await sortableCollection.move(sourceId, targetId, {
-      insertAfter: method === 'insertAfter',
-    });
+    await sortableCollection.move(sourceId, targetId, moveOptions);
   }
 
   // change scope
@@ -70,6 +75,7 @@ interface SortPosition {
 
 interface MoveOptions {
   insertAfter?: boolean;
+  scopeChanged?: boolean;
 }
 
 export class SortableCollection {
@@ -110,6 +116,8 @@ export class SortableCollection {
     let sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
     const targetInstance = await this.collection.repository.findByTargetKey(targetInstanceId);
 
+    const scopeChanged = !!(this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey));
+
     if (this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey)) {
       [sourceInstance] = await this.collection.repository.update({
         filterByTk: sourceInstanceId,
@@ -119,7 +127,10 @@ export class SortableCollection {
       });
     }
 
-    await this.sameScopeMove(sourceInstance, targetInstance, options);
+    await this.sameScopeMove(sourceInstance, targetInstance, {
+      ...options,
+      scopeChanged,
+    });
   }
 
   async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
@@ -203,22 +214,36 @@ export class SortableCollection {
 
     // 3. Reorder: remove source and insert at target position
     const [sourceRecord] = allRecords.splice(sourceIndex, 1);
-    const insertIndex = options.insertAfter ? targetIndex + (sourceIndex > targetIndex ? 0 : 1) : targetIndex;
+
+    // Default strategy: if source has smaller sort value than target, place after target.
+    // When scope changes, default to insert before target unless explicitly overridden.
+    const moveDown = sourceIndex < targetIndex;
+    const sourceSort = sourceInstance.get(fieldName);
+    const targetSort = targetInstance.get(fieldName);
+    const insertAfter = options.insertAfter ?? (options.scopeChanged ? false : sourceSort < targetSort);
+
+    let insertIndex: number;
+    if (insertAfter) {
+      insertIndex = moveDown ? targetIndex : targetIndex + 1;
+    } else {
+      insertIndex = moveDown ? targetIndex - 1 : targetIndex;
+    }
+
     allRecords.splice(insertIndex, 0, sourceRecord);
 
     // 4. Update sort values atomically
     // Use a transaction to ensure consistency
-    const updates = allRecords.map((record: SortRecord, index: number) => {
-      return this.collection.repository.update({
+    for (let index = 0; index < allRecords.length; index++) {
+      const record = allRecords[index];
+      // Sequential updates avoid SQLite locks during concurrent writes
+      await this.collection.repository.update({
         filterByTk: isMultiKey ? pick(record, filterKey as string[]) : record[filterKey as string],
         values: {
           [fieldName]: index + 1, // sort values start from 1
         },
         silent: true,
       });
-    });
-
-    await Promise.all(updates);
+    }
   }
 
   /**
@@ -296,17 +321,16 @@ export class SortableCollection {
     });
 
     // Update with sequential sort values
-    const updates = records.map((record: SortRecord, index: number) => {
-      return this.collection.repository.update({
+    for (let index = 0; index < records.length; index++) {
+      const record = records[index];
+      await this.collection.repository.update({
         filterByTk: isMultiKey ? pick(record, filterKey) : record[filterKey as string],
         values: {
           [fieldName]: index + 1,
         },
         silent: true,
       });
-    });
-
-    await Promise.all(updates);
+    }
 
     return {
       success: true,
