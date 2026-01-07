@@ -533,7 +533,7 @@ AdvancedSubTableFieldModel.registerFlow({
   sort: 300,
   steps: {
     openView: {
-      title: tExpr('Edit Add new popup'),
+      title: tExpr('Edit add new popup'),
       hideInSettings(ctx) {
         const allowAddNew = ctx.model.getStepParams?.('advanceSubTableAssociation', 'allowAddNew')?.allowAddNew;
         return allowAddNew === false;
