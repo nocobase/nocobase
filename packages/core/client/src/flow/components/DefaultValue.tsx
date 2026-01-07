@@ -20,6 +20,9 @@ import {
   VariableTag,
   isVariableExpression,
   parseValueToPath,
+  isRunJSValue,
+  normalizeRunJSValue,
+  type RunJSValue,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -33,6 +36,7 @@ import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
+import { CodeEditor } from './code-editor';
 
 interface Props {
   value: any;
@@ -512,6 +516,31 @@ export const DefaultValue = connect((props: Props) => {
     }
     return NullValuePlaceholder;
   }, [flowContext]);
+
+  const RunJSComponent = useMemo(() => {
+    const C: React.FC<any> = (inputProps) => {
+      const current: RunJSValue = isRunJSValue(inputProps?.value)
+        ? normalizeRunJSValue(inputProps.value)
+        : { code: '', version: 'v1' };
+
+      const tip = flowContext.t?.('Use return to output value') ?? 'Use return to output value';
+      const placeholderText = `// ${tip}\nreturn ...`;
+
+      return (
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <CodeEditor
+            value={current.code}
+            onChange={(code) => inputProps?.onChange?.({ ...current, code })}
+            height="200px"
+            enableLinter={true}
+            placeholder={placeholderText}
+            scene="formValue"
+          />
+        </div>
+      );
+    };
+    return C;
+  }, [flowContext]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       let base: MetaTreeNode[] = [];
@@ -537,10 +566,17 @@ export const DefaultValue = connect((props: Props) => {
           paths: ['null'],
           render: NullComponent,
         },
+        {
+          title: flowContext.t?.('RunJS') ?? 'RunJS',
+          name: 'runjs',
+          type: 'object',
+          paths: ['runjs'],
+          render: RunJSComponent,
+        },
         ...base,
       ];
     };
-  }, [propMetaTree, flowContext, InputComponent, NullComponent]);
+  }, [propMetaTree, flowContext, InputComponent, NullComponent, RunJSComponent]);
 
   // Ensure temp field is editable. Do not override value/onChange here to avoid racing with VariableInput
   React.useEffect(() => {
@@ -560,16 +596,19 @@ export const DefaultValue = connect((props: Props) => {
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return InputComponent;
           if (firstPath === 'null') return NullComponent;
+          if (firstPath === 'runjs') return RunJSComponent;
           return VariableTag;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}

@@ -10,7 +10,16 @@
 import { isObservable, observable, observe, reaction, toJS } from '@formily/reactive';
 import type { FormInstance } from 'antd';
 import { evaluateConditions, removeInvalidFilterItems } from '@nocobase/utils/client';
-import { extractUsedVariablePaths, FlowContext } from '@nocobase/flow-engine';
+import {
+  createSafeDocument,
+  createSafeNavigator,
+  createSafeWindow,
+  extractUsedVariablePaths,
+  extractUsedVariablePathsFromRunJS,
+  FlowContext,
+  isRunJSValue,
+  normalizeRunJSValue,
+} from '@nocobase/flow-engine';
 import _ from 'lodash';
 
 export type NamePath = Array<string | number>;
@@ -845,6 +854,34 @@ export class FormValueRuntime {
     }
   }
 
+  private collectStaticDepsFromRunJSValue(value: any, collector: DepCollector) {
+    if (!isRunJSValue(value)) return;
+    try {
+      const usage = extractUsedVariablePathsFromRunJS(value.code) || {};
+      for (const [varName, rawPaths] of Object.entries(usage)) {
+        const paths = Array.isArray(rawPaths) ? rawPaths : [];
+        const normalized = paths.length ? paths : [''];
+
+        for (const subPath of normalized) {
+          if (varName === 'formValues') {
+            if (!subPath) {
+              collector.wildcard = true;
+              continue;
+            }
+            const segs = parsePathString(String(subPath)).filter((seg) => typeof seg !== 'object') as NamePath;
+            this.recordDep(segs, collector);
+            continue;
+          }
+
+          const key = subPath ? `ctx:${varName}:${String(subPath)}` : `ctx:${varName}`;
+          collector.deps.add(key);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   private resolveNamePath(callerCtx: any, path: string | NamePath): NamePath {
     const resolved = this.tryResolveNamePath(callerCtx, path);
     if (!resolved) {
@@ -1260,6 +1297,8 @@ export class FormValueRuntime {
     const rawTarget = rule.getTarget();
     const targetNamePath = this.tryResolveNamePath(baseCtx, rawTarget as any);
     const targetKey = targetNamePath ? namePathToPathKey(targetNamePath) : null;
+    const rawValue = rule.getValue();
+    const isRunJS = isRunJSValue(rawValue);
 
     const clearDeps = () => {
       state.depDisposers.forEach((d) => d());
@@ -1306,7 +1345,11 @@ export class FormValueRuntime {
     if (rule.getCondition) {
       this.collectStaticDepsFromTemplateValue(rule.getCondition(), collector);
     }
-    this.collectStaticDepsFromTemplateValue(rule.getValue(), collector);
+    if (isRunJS) {
+      this.collectStaticDepsFromRunJSValue(rawValue, collector);
+    } else {
+      this.collectStaticDepsFromTemplateValue(rawValue, collector);
+    }
     // 规则可用性依赖 target 当前值（空/等于上次默认值）
     this.recordDep(targetNamePath, collector);
 
@@ -1335,17 +1378,59 @@ export class FormValueRuntime {
     }
 
     let resolved: any;
-    try {
-      const rawValue = rule.getValue();
-      resolved = await evalCtx?.resolveJsonTemplate?.(rawValue);
-    } catch (error) {
-      if (seq !== state.runSeq) return;
-      const nextDeps: RuleDeps = new Set(collector.deps);
-      if (collector.wildcard) {
-        nextDeps.add('fv:*');
+    if (isRunJS) {
+      try {
+        const { code, version } = normalizeRunJSValue(rawValue);
+        const globals: Record<string, any> = {};
+        try {
+          const navigator = createSafeNavigator();
+          globals.navigator = navigator;
+          try {
+            globals.window = createSafeWindow({ navigator });
+          } catch {
+            // ignore when window is not available
+          }
+          try {
+            globals.document = createSafeDocument();
+          } catch {
+            // ignore when document is not available
+          }
+        } catch {
+          // ignore
+        }
+
+        const ret = await evalCtx?.runjs?.(code, globals, { version });
+        if (!ret?.success) {
+          if (seq !== state.runSeq) return;
+          const nextDeps: RuleDeps = new Set(collector.deps);
+          if (collector.wildcard) {
+            nextDeps.add('fv:*');
+          }
+          this.updateRuleDeps(rule, state, nextDeps);
+          return;
+        }
+        resolved = ret.value;
+      } catch (error) {
+        if (seq !== state.runSeq) return;
+        const nextDeps: RuleDeps = new Set(collector.deps);
+        if (collector.wildcard) {
+          nextDeps.add('fv:*');
+        }
+        this.updateRuleDeps(rule, state, nextDeps);
+        return;
       }
-      this.updateRuleDeps(rule, state, nextDeps);
-      return;
+    } else {
+      try {
+        resolved = await evalCtx?.resolveJsonTemplate?.(rawValue);
+      } catch (error) {
+        if (seq !== state.runSeq) return;
+        const nextDeps: RuleDeps = new Set(collector.deps);
+        if (collector.wildcard) {
+          nextDeps.add('fv:*');
+        }
+        this.updateRuleDeps(rule, state, nextDeps);
+        return;
+      }
     }
 
     if (seq !== state.runSeq) return;

@@ -15,10 +15,14 @@ import {
   tExpr,
   isVariableExpression,
   parseValueToPath,
+  isRunJSValue,
+  normalizeRunJSValue,
+  type RunJSValue,
   useFlowContext,
   EditableItemModel,
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
+import { CodeEditor } from './code-editor';
 
 interface Props {
   fieldUid: string;
@@ -188,6 +192,31 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     return N;
   }, [flowCtx]);
 
+  const RunJSComponent = React.useMemo(() => {
+    const C: React.FC<any> = (inputProps) => {
+      const current: RunJSValue = isRunJSValue(inputProps?.value)
+        ? normalizeRunJSValue(inputProps.value)
+        : { code: '', version: 'v1' };
+
+      const tip = flowCtx.t?.('Use return to output value') ?? 'Use return to output value';
+      const placeholderText = `// ${tip}\nreturn ...`;
+
+      return (
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <CodeEditor
+            value={current.code}
+            onChange={(code) => inputProps?.onChange?.({ ...current, code })}
+            height="200px"
+            enableLinter
+            placeholder={placeholderText}
+            scene="formValue"
+          />
+        </div>
+      );
+    };
+    return C;
+  }, [flowCtx]);
+
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
     return async () => {
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
@@ -200,10 +229,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
           render: ConstantValueEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+        { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
         ...base,
       ];
     };
-  }, [flowCtx, ConstantValueEditor, NullComponent]);
+  }, [flowCtx, ConstantValueEditor, NullComponent, RunJSComponent]);
 
   if (!itemModel || !fieldPath) {
     // 不可用占位
@@ -222,16 +252,19 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantValueEditor as any;
           if (firstPath === 'null') return NullComponent as any;
+          if (firstPath === 'runjs') return RunJSComponent as any;
           return undefined as any;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}
