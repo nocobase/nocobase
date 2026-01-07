@@ -8,6 +8,7 @@
  */
 
 import lodash from 'lodash';
+import { IncomingMessage, ServerResponse } from 'http';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from '../application';
@@ -542,6 +543,26 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   getApps() {
     return this.processAdapter.getApps();
+  }
+
+  async proxyWeb(appName: string, req: IncomingMessage, res: ServerResponse) {
+    if (process.env.APP_MODE !== 'supervisor') {
+      return false;
+    }
+    if (typeof this.discoveryAdapter.proxyWeb !== 'function') {
+      return false;
+    }
+    return this.discoveryAdapter.proxyWeb(appName, req, res);
+  }
+
+  async proxyWs(req: IncomingMessage, socket: any, head: Buffer) {
+    if (process.env.APP_MODE !== 'supervisor') {
+      return false;
+    }
+    if (typeof this.discoveryAdapter.proxyWs !== 'function') {
+      return false;
+    }
+    return this.discoveryAdapter.proxyWs(req, socket, head);
   }
 
   async registerEnvironment(mainApp: Application) {

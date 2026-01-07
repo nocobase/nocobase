@@ -10,6 +10,7 @@
 import { IDatabaseOptions, Transaction, Transactionable } from '@nocobase/database';
 import type Application from '../application';
 import type { AppSupervisor } from './index';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 /**
  * Options accepted by discovery adapter when loading an application.
@@ -71,6 +72,7 @@ export type AppModelOptions = {
 export type AppModel = {
   name: string;
   cname?: string;
+  environment?: string;
   environments?: string[];
   options: AppModelOptions;
 };
@@ -132,6 +134,9 @@ export interface AppDiscoveryAdapter {
   getEnvironment?(environmentName: string): Promise<EnvironmentInfo | null>;
   heartbeatEnvironment?(): Promise<void>;
   getBootstrapLock?(appName: string): Promise<BootstrapLock | null> | BootstrapLock | null;
+
+  proxyWeb?(appName: string, req: IncomingMessage, res: ServerResponse): Promise<boolean>;
+  proxyWs?(req: IncomingMessage, socket: any, head: Buffer): Promise<boolean>;
 
   dispose?(): Promise<void>;
 }
