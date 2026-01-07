@@ -14,6 +14,7 @@ import { FieldModel } from '../../../models/base/FieldModel';
 import { rebuildFieldSubModel, getFieldBindingUse } from '../rebuildFieldSubModel';
 
 class DummyTargetFieldModel extends FieldModel {}
+class DummyColumnModel extends FlowModel {}
 
 class DummyParentModel extends FlowModel<{ subModels: { field?: FieldModel } }> {
   getFieldSettingsInitParams() {
@@ -29,6 +30,7 @@ describe('rebuildFieldSubModel', () => {
     engine.registerModels({
       FieldModel,
       DummyTargetFieldModel,
+      DummyColumnModel,
       DummyParentModel,
     });
   });
@@ -68,5 +70,38 @@ describe('rebuildFieldSubModel', () => {
 
     expect(dispatchSpy).toHaveBeenCalledWith('beforeRender', undefined, { useCache: false });
     dispatchSpy.mockRestore();
+  });
+
+  test('preserves previous field subModels during rebuild', async () => {
+    const parent = engine.createModel<DummyParentModel>({
+      use: DummyParentModel,
+      uid: 'parent-2',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-2',
+          stepParams: {
+            fieldBinding: { use: 'FieldModel' },
+            fieldSettings: { init: { initKey: true } },
+          },
+          subModels: {
+            columns: [
+              { use: DummyColumnModel, uid: 'col-1', sortIndex: 0 },
+              { use: DummyColumnModel, uid: 'col-2', sortIndex: 1 },
+            ],
+          },
+        },
+      },
+    });
+
+    await rebuildFieldSubModel({
+      parentModel: parent,
+      targetUse: 'DummyTargetFieldModel',
+    });
+
+    const rebuilt = parent.subModels.field as DummyTargetFieldModel;
+    const cols = rebuilt.subModels?.['columns'] as any[];
+    expect(Array.isArray(cols)).toBe(true);
+    expect(cols.map((c) => c.uid)).toEqual(['col-1', 'col-2']);
   });
 });

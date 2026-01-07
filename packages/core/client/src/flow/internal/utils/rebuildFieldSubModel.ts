@@ -53,6 +53,7 @@ export async function rebuildFieldSubModel({
 }: RebuildOptions) {
   const fieldModel = parentModel.subModels['field'];
   const fieldUid = fieldModel?.uid;
+  const prevSubModels = fieldModel?.serialize?.()?.subModels;
   const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
   const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
 
@@ -76,6 +77,9 @@ export async function rebuildFieldSubModel({
     use: FieldModel,
     props: { ...(fieldModel?.props || {}), ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
     stepParams: nextStepParams as StepParams,
+    // Preserve existing subModels (e.g. SubTable columns) so switching field component back and forth
+    // does not require a full page refresh to restore the UI.
+    subModels: prevSubModels,
   });
 
   await subModel.dispatchEvent('beforeRender', undefined, { useCache: false });
