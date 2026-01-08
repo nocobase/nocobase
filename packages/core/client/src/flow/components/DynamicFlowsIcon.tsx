@@ -747,6 +747,25 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           loading={submitLoading}
           onClick={async () => {
             setSubmitLoading(true);
+            const invalid = model.flowRegistry
+              .mapFlows((flow) => {
+                if (!isFlowOnObject(flow.on)) return;
+                normalizeFlowOnPhase(flow.on);
+                const invalidType = validateFlowOnPhase(flow.on);
+                if (!invalidType) return;
+                return { type: invalidType };
+              })
+              .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
+
+            if (invalid) {
+              const msg =
+                invalid.type === 'flowKey'
+                  ? t('Please select a built-in flow')
+                  : t('Please select a built-in flow step');
+              model.context?.message?.error?.(msg);
+              setSubmitLoading(false);
+              return;
+            }
             await model.flowRegistry.save();
             // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
             const beforeRenderFlows = model.flowRegistry
