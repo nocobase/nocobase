@@ -158,7 +158,7 @@ export class DetailsItemModel extends DisplayItemModel<{
 }
 
 DetailsItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 
@@ -298,6 +298,16 @@ DetailsItemModel.registerFlow({
           (ctx.model.subModels.field as any).disableTitleField
         );
       },
+    },
+  },
+});
+
+DetailsItemModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
     },
   },
 });
