@@ -32,6 +32,22 @@ import { adjustColumnOrder } from '../../../blocks/table/utils';
 import { EditFormContent } from './actions/SubTableEditActionModel';
 import { QuickEditFormModel } from '../../../blocks/form/QuickEditFormModel';
 
+function getRowKey(row, filterTargetKey) {
+  if (!filterTargetKey) return null;
+
+  // 多 key（联合唯一）
+  if (Array.isArray(filterTargetKey)) {
+    const values = filterTargetKey.map((k) => row?.[k]);
+    // 只要有一个不存在，就认为是“新增记录”
+    if (values.some((v) => v == null)) return null;
+    return values.join('__');
+  }
+
+  // 单 key
+  const value = row?.[filterTargetKey];
+  return value == null ? null : String(value);
+}
+
 const HeaderWrapperComponent = React.memo((props) => {
   const engine = useFlowEngine();
 
@@ -235,11 +251,11 @@ const DisplayTable = (props) => {
         // 只删除一行，其它行引用不变
         const next = prev.slice();
         next.splice(index, 1);
-        onChange(next);
+        onChange?.(next);
         return next;
       });
     },
-    [rowKey],
+    [rowKey, onChange],
   );
 
   useEffect(() => {
@@ -708,6 +724,7 @@ AdvancedSubTableFieldModel.registerFlow({
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
                 const prev = ctx.model.props.value || [];
+                const keyField = ctx.collection.filterTargetKey;
                 const merged = [
                   ...prev,
                   ...selectedRows.map((v) => {
@@ -717,14 +734,21 @@ AdvancedSubTableFieldModel.registerFlow({
                     };
                   }),
                 ];
+                const map = new Map();
+                const result = [];
 
-                // 去重，防止同一个值重复
-                const unique = merged.filter(
-                  (row, index, self) =>
-                    index ===
-                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
-                );
-                ctx.model.selectedRows.value = unique;
+                for (const row of merged) {
+                  const rowKey = getRowKey(row, keyField);
+                  if (rowKey == null) {
+                    result.push(row);
+                    continue;
+                  }
+                  if (!map.has(rowKey)) {
+                    map.set(rowKey, row);
+                    result.push(row);
+                  }
+                }
+                ctx.model.selectedRows.value = result;
               },
             },
           },
