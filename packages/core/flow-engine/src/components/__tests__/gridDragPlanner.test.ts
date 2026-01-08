@@ -19,9 +19,14 @@ import {
 
 const rect = { top: 0, left: 0, width: 100, height: 100 };
 
-const createLayout = (rows: Record<string, string[][]>, sizes: Record<string, number[]>): GridLayoutData => ({
+const createLayout = (
+  rows: Record<string, string[][]>,
+  sizes: Record<string, number[]>,
+  rowOrder?: string[],
+): GridLayoutData => ({
   rows,
   sizes,
+  rowOrder,
 });
 
 describe('getSlotKey', () => {
@@ -275,6 +280,7 @@ describe('simulateLayoutForSlot', () => {
         rowA: [24],
         rowB: [24],
       },
+      ['rowA', 'rowB'],
     );
 
     const slot: LayoutSlot = {
@@ -373,6 +379,7 @@ describe('simulateLayoutForSlot', () => {
         rowA: [24],
         rowB: [24],
       },
+      ['rowA', 'rowB'],
     );
 
     const slot: LayoutSlot = {
@@ -390,6 +397,82 @@ describe('simulateLayoutForSlot', () => {
     });
 
     expect(Object.keys(result.rows)).toEqual(['rowA', 'row-inserted', 'rowB']);
+  });
+
+  it('maintains rowOrder and inserts new row before target when provided', () => {
+    const layout = createLayout(
+      {
+        rowA: [['a']],
+        rowB: [['b']],
+      },
+      {
+        rowA: [24],
+        rowB: [24],
+      },
+      ['rowA', 'rowB'],
+    );
+
+    const slot: LayoutSlot = {
+      type: 'row-gap',
+      targetRowId: 'rowB',
+      position: 'above',
+      rect,
+    };
+
+    const result = simulateLayoutForSlot({
+      slot,
+      sourceUid: 'c',
+      layout,
+      generateRowId: () => 'row-new',
+    });
+
+    expect(result.rowOrder).toEqual(['rowA', 'row-new', 'rowB']);
+    expect(result.rows).toEqual({
+      rowA: [['a']],
+      'row-new': [['c']],
+      rowB: [['b']],
+    });
+    expect(result.sizes).toEqual({
+      rowA: [24],
+      'row-new': [24],
+      rowB: [24],
+    });
+  });
+
+  it('derives rowOrder from rows when missing and removes empty rows from order', () => {
+    const layout = createLayout(
+      {
+        row1: [['a']],
+        row2: [['b']],
+        row3: [['c']],
+      },
+      {
+        row1: [24],
+        row2: [24],
+        row3: [24],
+      },
+    );
+
+    const slot: LayoutSlot = {
+      type: 'column',
+      rowId: 'row1',
+      columnIndex: 0,
+      insertIndex: 0,
+      position: 'before',
+      rect,
+    };
+
+    const result = simulateLayoutForSlot({ slot, sourceUid: 'b', layout });
+
+    expect(result.rowOrder).toEqual(['row1', 'row3']);
+    expect(result.rows).toEqual({
+      row1: [['b', 'a']],
+      row3: [['c']],
+    });
+    expect(result.sizes).toEqual({
+      row1: [24],
+      row3: [24],
+    });
   });
 
   it('handles empty-column slot by replacing empty column', () => {
