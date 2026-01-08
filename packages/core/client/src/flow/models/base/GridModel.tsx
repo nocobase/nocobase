@@ -494,6 +494,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.dragState.previewLayout = {
       rows: _.cloneDeep(preview.rows),
       sizes: _.cloneDeep(preview.sizes),
+      rowOrder: _.cloneDeep(preview.rowOrder),
     };
 
     const container = this.gridContainerRef.current;
