@@ -35,7 +35,9 @@ class PackageUrls {
         const fsState = await fse.stat(distExists ? dist : pkgPath);
         t = `?t=${fsState.mtime.getTime()}`;
       }
-      const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
+      const url = `${process.env.APP_SERVER_BASE_URL || process.env.APP_BASE_URL}${
+        process.env.PLUGIN_STATICS_PATH
+      }${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
       return url;
     }
   }
