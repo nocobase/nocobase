@@ -23,6 +23,9 @@ import {
   isRunJSValue,
   normalizeRunJSValue,
   type RunJSValue,
+  createSafeDocument,
+  createSafeNavigator,
+  createSafeWindow,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -187,6 +190,35 @@ export const DefaultValue = connect((props: Props) => {
   const resolveMaybeVariable = React.useCallback(
     async (rawVal: any) => {
       let out = rawVal;
+      // RunJS default: execute and use the computed result for preview/backfill
+      if (isRunJSValue(out)) {
+        try {
+          const { code, version } = normalizeRunJSValue(out);
+          const globals: Record<string, any> = {};
+          try {
+            const navigator = createSafeNavigator();
+            globals.navigator = navigator;
+            try {
+              globals.window = createSafeWindow({ navigator });
+            } catch {
+              // ignore
+            }
+            try {
+              globals.document = createSafeDocument();
+            } catch {
+              // ignore
+            }
+          } catch {
+            // ignore
+          }
+
+          const ret = await model?.context?.runjs?.(code, globals, { version });
+          out = ret?.success ? ret.value : undefined;
+        } catch {
+          out = undefined;
+        }
+        return out;
+      }
       if (isVariableExpression(out)) {
         const resolved = await model?.context?.resolveJsonTemplate?.(out);
         if (typeof resolved !== 'undefined') out = resolved;

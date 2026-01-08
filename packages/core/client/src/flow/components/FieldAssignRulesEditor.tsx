@@ -9,11 +9,11 @@
 
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { FilterGroupType } from '@nocobase/utils/client';
-import { Button, Collapse, Empty, Select, Space, Switch } from 'antd';
+import type { FilterGroupType } from '@nocobase/utils/client';
+import { Button, Collapse, Empty, Select, Space, Switch, Tooltip } from 'antd';
 import React from 'react';
 import { ConditionBuilder } from './ConditionBuilder';
-import { FieldAssignEditor } from './FieldAssignEditor';
+import { FieldAssignValueInput } from './FieldAssignValueInput';
 
 export type AssignMode = 'default' | 'assign';
 
@@ -85,7 +85,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         key: uid(),
         enable: true,
         mode: fixedMode || defaultMode,
-        condition: { logic: '$and', items: [] },
+        condition: { logic: '$and', items: [] } as any,
         field: undefined,
         value: undefined,
       },
@@ -98,92 +98,181 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     return item?.mode === 'default' ? 'default' : 'assign';
   };
 
+  const getFieldLabel = (fieldUid?: string) => {
+    if (!fieldUid) return undefined;
+    return (fieldOptions as any[])?.find((o) => String(o?.value) === String(fieldUid))?.label;
+  };
+
+  const renderPanelHeader = (item: FieldAssignRuleItem, index: number) => {
+    const mode = getEffectiveMode(item);
+    const modeText = mode === 'default' ? t('Default value') : t('Assign value');
+    const fieldLabel = getFieldLabel(item.field);
+    const title = fieldLabel ? String(fieldLabel) : t('Please select field');
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <div
+          style={{
+            flex: 1,
+            marginRight: 16,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} title={title}>
+            {title}
+          </div>
+          <div style={{ opacity: 0.65, fontSize: 12, whiteSpace: 'nowrap' }}>{modeText}</div>
+        </div>
+        <Space onClick={(e) => e.stopPropagation()}>
+          <Tooltip title={t('Delete')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => removeItem(index)}
+              aria-label={t('Delete')}
+            />
+          </Tooltip>
+          <Tooltip title={t('Move up')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<ArrowUpOutlined />}
+              onClick={() => moveItem(index, 'up')}
+              disabled={index === 0}
+              aria-label={t('Move up')}
+            />
+          </Tooltip>
+          <Tooltip title={t('Move down')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<ArrowDownOutlined />}
+              onClick={() => moveItem(index, 'down')}
+              disabled={index === value.length - 1}
+              aria-label={t('Move down')}
+            />
+          </Tooltip>
+          {showEnable && (
+            <Switch
+              size="small"
+              checked={item.enable !== false}
+              onChange={(checked) => patchItem(index, { enable: checked })}
+              checkedChildren={t('Enable')}
+              unCheckedChildren={t('Disable')}
+            />
+          )}
+        </Space>
+      </div>
+    );
+  };
+
+  const collapseItems = value.map((item, index) => {
+    const mode = getEffectiveMode(item);
+    return {
+      key: item.key || String(index),
+      label: renderPanelHeader(item, index),
+      styles: {
+        header: {
+          display: 'flex',
+          alignItems: 'center',
+        },
+      },
+      children: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Field')}</div>
+            <Select
+              value={item.field}
+              placeholder={t('Please select field')}
+              style={{ width: '100%' }}
+              options={fieldOptions}
+              showSearch
+              // @ts-ignore
+              filterOption={(input, option) =>
+                String(option?.label ?? '')
+                  .toLowerCase()
+                  .includes(String(input ?? '').toLowerCase())
+              }
+              allowClear
+              onChange={(fieldUid) => {
+                const changed = fieldUid !== item.field;
+                patchItem(index, {
+                  field: fieldUid,
+                  value: changed ? undefined : item.value,
+                });
+              }}
+            />
+          </div>
+
+          {(showValueEditorWhenNoField || !!item.field) && (
+            <div>
+              <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Value')}</div>
+              <FieldAssignValueInput
+                key={item.field || 'no-field'}
+                fieldUid={item.field || ''}
+                value={item.value}
+                onChange={(v) => patchItem(index, { value: v })}
+              />
+            </div>
+          )}
+
+          {!fixedMode && (
+            <div>
+              <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Assignment mode')}</div>
+              <Select
+                value={mode}
+                style={{ width: '100%' }}
+                options={[
+                  { label: t('Default value'), value: 'default' },
+                  { label: t('Assign value'), value: 'assign' },
+                ]}
+                onChange={(nextMode) => patchItem(index, { mode: nextMode })}
+              />
+            </div>
+          )}
+
+          {showCondition && (
+            <div>
+              <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Condition')}</div>
+              <ConditionBuilder
+                value={(item.condition || ({ logic: '$and', items: [] } as any)) as any}
+                onChange={(condition) => patchItem(index, { condition })}
+              />
+            </div>
+          )}
+        </div>
+      ),
+    };
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {value.length ? (
         <Collapse
+          items={collapseItems as any}
           size="small"
-          items={value.map((it, index) => {
-            const mode = getEffectiveMode(it);
-            const fieldLabel = (fieldOptions as any[])?.find((o) => o?.value === it.field)?.label;
-            const title = fieldLabel ? String(fieldLabel) : t('Please select field');
-            return {
-              key: it.key || String(index),
-              label: (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {showEnable && (
-                    <Switch
-                      checked={it.enable !== false}
-                      onChange={(checked) => patchItem(index, { enable: checked })}
-                      size="small"
-                    />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
-                  <div style={{ opacity: 0.65, fontSize: 12 }}>
-                    {mode === 'default' ? t('Default value') : t('Assign value')}
-                  </div>
-                </div>
-              ),
-              children: (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <FieldAssignEditor
-                    t={t}
-                    fieldOptions={fieldOptions}
-                    field={it.field}
-                    value={it.value}
-                    fieldLabel={t('Field')}
-                    valueLabel={t('Value')}
-                    showValueEditorWhenNoField={showValueEditorWhenNoField}
-                    onFieldChange={(fieldUid) => {
-                      const changed = fieldUid !== it.field;
-                      patchItem(index, {
-                        field: fieldUid,
-                        value: changed ? undefined : it.value,
-                      });
-                    }}
-                    onValueChange={(v) => patchItem(index, { value: v })}
-                  />
-
-                  {!fixedMode && (
-                    <div>
-                      <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Assignment mode')}</div>
-                      <Select
-                        value={mode}
-                        style={{ width: '100%' }}
-                        options={[
-                          { label: t('Default value'), value: 'default' },
-                          { label: t('Assign value'), value: 'assign' },
-                        ]}
-                        onChange={(nextMode) => patchItem(index, { mode: nextMode })}
-                      />
-                    </div>
-                  )}
-
-                  {showCondition && (
-                    <div>
-                      <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Condition')}</div>
-                      <ConditionBuilder
-                        value={(it.condition || { logic: '$and', items: [] }) as any}
-                        onChange={(condition) => patchItem(index, { condition })}
-                      />
-                    </div>
-                  )}
-
-                  <Space>
-                    <Button icon={<ArrowUpOutlined />} onClick={() => moveItem(index, 'up')} />
-                    <Button icon={<ArrowDownOutlined />} onClick={() => moveItem(index, 'down')} />
-                    <Button danger icon={<DeleteOutlined />} onClick={() => removeItem(index)} />
-                  </Space>
-                </div>
-              ),
-            };
-          })}
+          style={{ marginBottom: 8 }}
+          defaultActiveKey={value.length > 0 ? [value[0].key] : []}
+          accordion
         />
       ) : (
-        <Empty description={t('No data')} />
+        <div
+          style={{
+            border: '1px dashed #d9d9d9',
+            borderRadius: 6,
+            backgroundColor: '#fafafa',
+            marginBottom: 8,
+          }}
+        >
+          <Empty description={t('No data')} style={{ margin: '20px 0' }} />
+        </div>
       )}
 
-      <Button type="dashed" block icon={<PlusOutlined />} onClick={addItem}>
+      <Button type="dashed" icon={<PlusOutlined />} onClick={addItem} style={{ width: '100%' }}>
         {t('Add')}
       </Button>
     </div>
