@@ -292,7 +292,7 @@ export function FormComponent({
   return (
     <Form
       form={model.form}
-      initialValues={initialValues || model.context.record}
+      initialValues={model.context.record || initialValues}
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {

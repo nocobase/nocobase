@@ -126,11 +126,7 @@ export class SubTableEditFormModel extends FormBlockModel {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
     return (
-      <FormComponent
-        model={this}
-        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
-        initialValues={{ ...this.resource.getData(), ...this.context.record }}
-      >
+      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <Space wrap>
@@ -175,10 +171,7 @@ SubTableEditFormModel.registerFlow({
           ctx.resource.setFilterByTk(pk);
           // 编辑表单需要监听refresh事件来加载现有数据
           ctx.resource.on('refresh', async () => {
-            const currentRecord = {
-              ...ctx.resource.getData(),
-              ...ctx.record,
-            };
+            const currentRecord = _.merge({}, ctx.resource.getData(), ctx.record);
             if (!currentRecord) {
               return;
             }
