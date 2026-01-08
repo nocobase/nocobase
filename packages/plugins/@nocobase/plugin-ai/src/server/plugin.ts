@@ -38,6 +38,7 @@ import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { ollamaProviderOptions } from './llm-providers/ollama';
+import { bedrockProviderOptions } from './llm-providers/bedrock';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
@@ -99,6 +100,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    this.aiManager.registerLLMProvider('bedrock', bedrockProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
   }
 
