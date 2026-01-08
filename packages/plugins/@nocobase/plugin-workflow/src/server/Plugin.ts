@@ -314,6 +314,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
+      instance_id: this.app.instanceId,
     });
   }
 
