@@ -253,6 +253,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.environmentUrl;
   }
 
+  get environmentProxyUrl() {
+    return this.discoveryAdapter.environmentProxyUrl;
+  }
+
   getProcessAdapter() {
     return this.processAdapter;
   }
@@ -572,6 +576,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     const registered = await this.discoveryAdapter.registerEnvironment({
       name: this.environmentName,
       url: this.environmentUrl || '',
+      proxyUrl: this.environmentProxyUrl || this.environmentUrl || '',
       appVersion: mainApp.getPackageVersion(),
       lastHeartbeatAt: Date.now(),
     });

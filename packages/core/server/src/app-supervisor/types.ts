@@ -53,6 +53,7 @@ export type AppStatus =
 export type EnvironmentInfo = {
   name: string;
   url?: string;
+  proxyUrl?: string;
   available?: boolean;
   appVersion?: string;
   lastHeartbeatAt?: number;
@@ -101,6 +102,7 @@ export interface AppDiscoveryAdapter {
   readonly name: string;
   readonly environmentName?: string;
   readonly environmentUrl?: string;
+  readonly environmentProxyUrl?: string;
   readonly appStatus?: Record<string, AppStatus>;
   readonly lastSeenAt?: Map<string, number>;
 
