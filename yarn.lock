@@ -5559,10 +5559,10 @@
   dependencies:
     "@langchain/openai" "^0.5.5"
 
-"@langchain/google-genai@^0.2.16":
-  version "0.2.16"
-  resolved "https://registry.npmjs.org/@langchain/google-genai/-/google-genai-0.2.16.tgz#652cec6186b3bd1cb15ef2d68352ddd34feb3767"
-  integrity sha512-7xgQfZtn4EcKL7HYV7c5ZZUTjzjY0eh1Ex2570uwEBIUlyP5GFYeRe7gizx6965DYu6rktkXRMHaU0CuOXxAXQ==
+"@langchain/google-genai@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.npmmirror.com/@langchain/google-genai/-/google-genai-1.0.3.tgz#ea0bc15fd46a01e9b68dabdc5aba042b9f1026ae"
+  integrity sha512-ZN3f6SPFZI3FMjJ1C0y5A/lWlZ/x+A9RoIKg1PNYdX6bEu7/BR7oz0dYYI2+YGl3TRp1u75e3SzzL0MxmfWfDA==
   dependencies:
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
