@@ -17,13 +17,13 @@ import PluginManager from '../plugin-manager';
 
 class PackageUrls {
   static items = {};
-  static async get(packageName: string, version?: string) {
+  static async get(packageName: string) {
     if (!this.items[packageName]) {
-      this.items[packageName] = await this.fetch(packageName, version);
+      this.items[packageName] = await this.fetch(packageName);
     }
     return this.items[packageName];
   }
-  static async fetch(packageName: string, version?: string) {
+  static async fetch(packageName: string) {
     const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
     const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
     const r = await fse.exists(pkgPath);
@@ -33,9 +33,9 @@ class PackageUrls {
       const distExists = await fse.exists(dist);
       if (distExists) {
         const fsState = await fse.stat(distExists ? dist : pkgPath);
-        t = `&t=${fsState.mtime.getTime()}`;
+        t = `?t=${fsState.mtime.getTime()}`;
       }
-      const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}?version=${version}${t}`;
+      const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
       return url;
     }
   }
@@ -166,10 +166,13 @@ export default {
         });
         const arr = [];
         for (const item of items) {
-          const url = await PackageUrls.get(item.packageName, item.version);
+          const url = await PackageUrls.get(item.packageName);
+          const { name, packageName, options } = item.toJSON();
           if (url) {
             arr.push({
-              ...item.toJSON(),
+              name,
+              packageName,
+              options,
               url,
             });
           }
