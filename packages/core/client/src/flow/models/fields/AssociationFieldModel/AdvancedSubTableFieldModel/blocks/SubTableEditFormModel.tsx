@@ -15,6 +15,8 @@ import {
   FlowModelRenderer,
   MemoFlowModelRenderer,
   useFlowModel,
+  FlowModelContext,
+  SingleRecordResource,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { Space } from 'antd';
@@ -44,6 +46,11 @@ export class SubTableEditFormModel extends FormBlockModel {
     });
   }
 
+  createResource(_ctx: FlowModelContext, params: any) {
+    const resource = this.context.createResource(SingleRecordResource);
+    resource.isNewRecord = false;
+    return resource;
+  }
   _defaultCustomModelClasses = {
     FormActionGroupModel: 'SubTableFormActionGroupModel',
     FormItemModel: 'FormItemModel',
@@ -107,9 +114,6 @@ export class SubTableEditFormModel extends FormBlockModel {
 
   async onMount() {
     super.onMount();
-    this.context.defineProperty('parentBlockModel', {
-      value: this.parent.context.blockModel,
-    });
   }
 
   getAclActionName() {
@@ -122,7 +126,11 @@ export class SubTableEditFormModel extends FormBlockModel {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
     return (
-      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+      <FormComponent
+        model={this}
+        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
+        initialValues={{ ...this.resource.getData(), ...this.context.record }}
+      >
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <Space wrap>
@@ -156,6 +164,33 @@ const FormLabel = () => {
   const title = scene === 'create' ? 'Form (Add new)' : 'Form (Edit)';
   return t(title);
 };
+
+SubTableEditFormModel.registerFlow({
+  key: 'init',
+  steps: {
+    init: {
+      handler(ctx, params) {
+        const pk = ctx.record[ctx.collection.filterTargetKey];
+        if (!ctx.record.__is_new__ && pk) {
+          ctx.resource.setFilterByTk(pk);
+          // 编辑表单需要监听refresh事件来加载现有数据
+          ctx.resource.on('refresh', async () => {
+            const currentRecord = {
+              ...ctx.resource.getData(),
+              ...ctx.record,
+            };
+            if (!currentRecord) {
+              return;
+            }
+            ctx.form && ctx.form.setFieldsValue(currentRecord);
+          });
+        } else {
+          ctx.resource.isNewRecord = true;
+        }
+      },
+    },
+  },
+});
 SubTableEditFormModel.define({
   label: <FormLabel />,
   searchable: true,

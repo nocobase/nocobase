@@ -59,10 +59,18 @@ StFormSubmitActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.blockModel;
         const subTableModel = blockModel.context.associationModel;
+        const parentResource = subTableModel.context.resource;
+        const currentResource = blockModel.resource;
+        const updateAssociations = currentResource.getUpdateAssociationValues();
+        const associationName = subTableModel.context.collectionField.name;
         try {
           await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue(true);
           subTableModel.updateRow(values);
+          const newUpdateAssociations = updateAssociations.map((v) => {
+            return `${associationName}.${v}`;
+          });
+          parentResource.addUpdateAssociationValues(newUpdateAssociations);
         } catch (error) {
           return;
         }
