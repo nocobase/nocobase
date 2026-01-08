@@ -106,7 +106,16 @@ export abstract class LLMProvider {
       });
       return { models: res?.data.data };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      const status = e.response?.status || 500;
+      const data = e.response?.data;
+      const errorMsg =
+        data?.error?.message ||
+        data?.message ||
+        (typeof data?.error === 'string' ? data.error : undefined) ||
+        (typeof data === 'string' ? data : undefined) ||
+        e.response?.statusText ||
+        e.message;
+      return { code: status, errMsg: errorMsg };
     }
   }
 
