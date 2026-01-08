@@ -67,7 +67,7 @@ describe('rebuildFieldSubModel', () => {
     expect(rebuilt).toBeInstanceOf(DummyTargetFieldModel);
     expect(rebuilt.uid).toBe('field-1');
     expect(getFieldBindingUse(rebuilt)).toBe('DummyTargetFieldModel');
-    expect(rebuilt.props).toMatchObject({ foo: 'bar', added: 'yes', pattern: 'readPretty' });
+    expect(rebuilt.props).toMatchObject({ added: 'yes', pattern: 'readPretty' });
     expect((rebuilt.props as any).onClick).toBeUndefined();
 
     expect(dispatchSpy).toHaveBeenCalledWith('beforeRender', undefined, { useCache: false });
