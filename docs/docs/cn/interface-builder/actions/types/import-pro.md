@@ -34,6 +34,26 @@ pkg: "@nocobase/plugin-action-import-pro"
 
 导入结束后，可在导入任务中查看导入结果。
 
+#### 关于并发
+
+如果想要限制异步任务并发执行时对系统资源的占用，可以使用下面几个环境变量来控制
+
+- `ASYNC_TASK_MAX_CONCURRENCY` 
+
+限制异步任务并发执行数量，默认值为3
+
+- `ASYNC_TASK_CONCURRENCY_MODE` 
+
+指定并发执行限制模式，可选值为 `app` 和 `process` ，默认为 `app` 。
+
+该环境变量值设为 `app` 时，限制每个子应用最大可并发执行异步任务数为 `ASYNC_TASK_MAX_CONCURRENCY` 指定值。
+
+该环境变量值设为 `process` 时，限制进程中所有子应用并发执行任务数之和不能超过 `ASYNC_TASK_MAX_CONCURRENCY` 指定值。
+
+- `ASYNC_TASK_WORKER_MAX_OLD` 和 `ASYNC_TASK_WORKER_MAX_YOUNG`
+
+限制执行异步任务的worker线程可分配的最大老年代堆内存（Mb）和新生代堆内存（Mb）
+
 #### 关于性能
 
 为了评估大规模数据导入的性能表现，我们在不同场景、字段类型及触发配置下进行对比测试（具体在不同服务器、数据库配置下可能会有差异，仅供参考）：
