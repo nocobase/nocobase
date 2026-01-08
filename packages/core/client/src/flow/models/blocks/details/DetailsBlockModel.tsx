@@ -216,6 +216,29 @@ DetailsBlockModel.registerFlow({
   },
 });
 
+DetailsBlockModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    blockLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+    fieldslinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'detailsFieldLinkageRules',
+        flowKey: 'detailsSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+  },
+});
+
 DetailsBlockModel.define({
   label: tExpr('Details'),
   searchable: true,
