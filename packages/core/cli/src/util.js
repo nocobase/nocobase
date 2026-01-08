@@ -295,7 +295,7 @@ function buildIndexHtml(force = false) {
     fs.copyFileSync(file, tpl);
   }
   const data = fs.readFileSync(tpl, 'utf-8');
-  const replacedData = data
+  let replacedData = data
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
     .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
@@ -304,6 +304,12 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+
+  if (process.env.APP_BASE_URL) {
+    replacedData = replacedData
+      .replace(/src="\//g, `src="${process.env.APP_BASE_URL}/`)
+      .replace(/href="\//g, `href="${process.env.APP_BASE_URL}/`);
+  }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
 
