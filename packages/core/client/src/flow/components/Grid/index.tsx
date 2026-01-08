@@ -20,16 +20,16 @@ interface DragOverlayRect {
 }
 
 interface GridProps {
-  readonly rows: string[][][];
-  readonly sizes?: number[][];
+  readonly rows: Record<string, string[][]>;
+  readonly sizes?: Record<string, number[]>;
   readonly renderItem: (uid: string) => React.ReactNode;
   readonly rowGap?: number;
   readonly colGap?: number;
   readonly dragOverlayRect?: DragOverlayRect | null;
 }
 
-export function Grid({ rows, sizes = [], renderItem, rowGap = 16, colGap = 16, dragOverlayRect }: GridProps) {
-  if (!rows?.length) {
+export function Grid({ rows, sizes = {}, renderItem, rowGap = 16, colGap = 16, dragOverlayRect }: GridProps) {
+  if (Object.keys(rows || {}).length === 0) {
     return (
       <div style={{ position: 'relative' }} data-grid-empty-container>
         {dragOverlayRect && <GridDragOverlay rect={dragOverlayRect} />}
@@ -40,9 +40,9 @@ export function Grid({ rows, sizes = [], renderItem, rowGap = 16, colGap = 16, d
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: rowGap }}>
       {dragOverlayRect && <GridDragOverlay rect={dragOverlayRect} />}
-      {rows.map((cells, rowIndex) => {
+      {Object.entries(rows).map(([rowKey, cells]) => {
         const colCount = cells.length;
-        const rowSizes = sizes[rowIndex] || [];
+        const rowSizes = sizes[rowKey] || [];
         const hasAnySize = rowSizes.some((v) => v != null && v !== undefined);
 
         // 计算每个 cell 的 span
@@ -58,11 +58,11 @@ export function Grid({ rows, sizes = [], renderItem, rowGap = 16, colGap = 16, d
         });
 
         return (
-          <Row key={rowIndex} gutter={colGap} data-grid-row-id={rowIndex}>
+          <Row key={rowKey} gutter={colGap} data-grid-row-id={rowKey}>
             {cells.map((cell, cellIdx) => (
               <GridColumn
-                key={`${rowIndex}:${cell.join('|') || 'empty'}`}
-                rowKey={rowIndex}
+                key={`${rowKey}:${cell.join('|') || 'empty'}`}
+                rowKey={rowKey}
                 columnIndex={cellIdx}
                 span={spans[cellIdx]}
                 rowGap={rowGap}
@@ -78,7 +78,7 @@ export function Grid({ rows, sizes = [], renderItem, rowGap = 16, colGap = 16, d
 }
 
 interface GridColumnProps {
-  readonly rowKey: number;
+  readonly rowKey: string;
   readonly columnIndex: number;
   readonly span: number;
   readonly rowGap: number;

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { escapeT, normalizeGridRows, normalizeGridSizes, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import { escapeT, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -734,16 +734,26 @@ ReferenceBlockModel.registerFlow({
 
             // 替换 Grid rows 中的 uid，保持原位置
             const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-            const newRows = normalizeGridRows(gridParams.rows);
-            const newSizes = normalizeGridSizes(gridParams.sizes, newRows.length);
-            newRows.forEach((columns, rowIndex) => {
-              columns.forEach((col, colIndex) => {
-                newRows[rowIndex][colIndex] = col.map((id) => (id === oldModel.uid ? newModel.uid : id));
-              });
-            });
-            parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: newSizes });
-            parent.setProps('rows', newRows);
-            parent.setProps('sizes', newSizes);
+            if (gridParams?.rows && typeof gridParams.rows === 'object') {
+              const newRows = _.cloneDeep(gridParams.rows);
+              for (const rowId of Object.keys(newRows)) {
+                const columns = newRows[rowId];
+                if (Array.isArray(columns)) {
+                  for (let ci = 0; ci < columns.length; ci++) {
+                    const col = columns[ci];
+                    if (Array.isArray(col)) {
+                      for (let ii = 0; ii < col.length; ii++) {
+                        if (col[ii] === oldModel.uid) {
+                          col[ii] = newModel.uid;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+              parent.setProps('rows', newRows);
+            }
             await (newModel as any).afterAddAsSubModel?.();
           } else {
             parent.setSubModel(subKey, newModel);

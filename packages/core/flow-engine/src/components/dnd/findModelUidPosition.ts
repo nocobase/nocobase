@@ -7,22 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { GridRows, LegacyGridRows, normalizeGridRows } from './gridDragPlanner';
+export const findModelUidPosition = (uid: string, rows: Record<string, string[][]>) => {
+  // 找到 sourceUid 和 targetUid 的位置
+  let result: { rowId: string; columnIndex: number; itemIndex: number } | null = null;
 
-export const findModelUidPosition = (uid: string, rows: GridRows | LegacyGridRows) => {
-  const normalizedRows = normalizeGridRows(rows);
-
-  for (let rowIndex = 0; rowIndex < normalizedRows.length; rowIndex += 1) {
-    const columns = normalizedRows[rowIndex] || [];
-    for (let columnIndex = 0; columnIndex < columns.length; columnIndex += 1) {
+  for (const [rowId, columns] of Object.entries(rows)) {
+    for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
       const column = columns[columnIndex];
-      for (let itemIndex = 0; itemIndex < column.length; itemIndex += 1) {
+      for (let itemIndex = 0; itemIndex < column.length; itemIndex++) {
         if (column[itemIndex] === uid) {
-          return { rowIndex, columnIndex, itemIndex } as const;
+          result = { rowId, columnIndex, itemIndex };
         }
       }
     }
   }
 
-  return null;
+  return result;
 };
