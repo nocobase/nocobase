@@ -179,6 +179,29 @@ EditFormModel.registerFlow({
   },
 });
 
+EditFormModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    blockLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+    fieldsLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'fieldLinkageRules',
+        flowKey: 'eventSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+  },
+});
+
 EditFormModel.define({
   label: tExpr('Form (Edit)'),
   searchable: true,

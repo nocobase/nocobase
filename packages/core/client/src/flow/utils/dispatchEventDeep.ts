@@ -12,8 +12,7 @@ import type { DispatchEventOptions } from '@nocobase/flow-engine';
 
 /**
  * 递归向子模型（及其 forks）分发指定事件。
- * - 默认不包含自身（避免误触发当前层的其它逻辑）
- * - 用于类似分页切换等“只需要刷新子层状态”的场景（例如 `paginationChange`）
+ * - 默认包含自身（用于类似分页切换等“整棵树状态刷新”的场景，例如 `paginationChange`）
  */
 export async function dispatchEventDeep(
   root: FlowModel,
@@ -22,7 +21,7 @@ export async function dispatchEventDeep(
   options?: { debounce?: boolean } & DispatchEventOptions,
   deepOptions?: { includeSelf?: boolean; includeForks?: boolean },
 ): Promise<void> {
-  const includeSelf = deepOptions?.includeSelf ?? false;
+  const includeSelf = deepOptions?.includeSelf ?? true;
   const includeForks = deepOptions?.includeForks ?? true;
 
   const visited = new Set<FlowModel>();

@@ -12,6 +12,7 @@ import { Tag } from 'antd';
 import React from 'react';
 import { castArray } from 'lodash';
 import { ClickableFieldModel } from './ClickableFieldModel';
+import { Icon } from '../../../icon';
 
 interface FieldNames {
   value: string;
@@ -26,7 +27,7 @@ interface Option {
 function getCurrentOptions(value: any | any[], options: any[] = [], fieldNames: FieldNames): Option[] {
   const values = Array.isArray(value) ? value : [value];
   return values.map((val) => {
-    const found = options.find((opt) => opt[fieldNames.value] == val);
+    const found = options?.find?.((opt) => opt[fieldNames.value] == val);
     return (
       found ?? {
         value: val,
@@ -55,7 +56,7 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
       return null;
     }
     return currentOptions.map((option) => (
-      <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
+      <Tag key={option[fieldNames.value]} color={option[fieldNames.color]} icon={<Icon type={option['icon']} />}>
         {this.translate(option[fieldNames.label])}
       </Tag>
     ));

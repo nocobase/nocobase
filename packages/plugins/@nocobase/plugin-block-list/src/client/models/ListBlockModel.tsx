@@ -295,6 +295,21 @@ ListBlockModel.registerFlow({
   },
 });
 
+ListBlockModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    linkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+  },
+});
+
 ListBlockModel.define({
   label: tExpr('List'),
   group: tExpr('Content'),

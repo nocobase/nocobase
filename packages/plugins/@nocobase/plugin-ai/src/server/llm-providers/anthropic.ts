@@ -54,9 +54,6 @@ export class AnthropicProvider extends LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
       const res = await axios.get(`${baseURL}/models`, {
         headers: {
           'x-api-key': apiKey,
@@ -67,7 +64,9 @@ export class AnthropicProvider extends LLMProvider {
         models: res?.data?.data,
       };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      const status = e.response?.status || 500;
+      const errorMsg = e.response?.data?.error?.message || e.message;
+      return { code: status, errMsg: `Anthropic API Error: ${errorMsg}` };
     }
   }
 

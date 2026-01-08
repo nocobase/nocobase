@@ -180,17 +180,3 @@ export const getTemplates = async (ctx: Context, next: Next) => {
   ctx.body = Object.values(templates).map((template) => template[locale]);
   await next();
 };
-
-export const getBuiltInDefault = async (ctx: Context, next: Next) => {
-  const { filterByTk } = ctx.action.params || {};
-  if (!filterByTk) {
-    ctx.throw(400);
-  }
-  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-  const builtInManager = plugin.builtInManager;
-  const locale = ctx.getCurrentLocale();
-  const temp = { username: filterByTk } as AIEmployee;
-  builtInManager.setupBuiltInInfo(locale, temp);
-  ctx.body = { about: temp.about };
-  await next();
-};
