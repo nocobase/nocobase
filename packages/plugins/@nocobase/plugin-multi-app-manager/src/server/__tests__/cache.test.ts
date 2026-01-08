@@ -9,12 +9,14 @@
 
 import { createMockServer, MockServer, MockServerOptions, sleep } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
+import { PluginMultiAppManagerServer } from '../server';
 
 describe('cache', async () => {
   let app: MockServer;
   let agent: any;
 
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
     const options: MockServerOptions = {
       plugins: ['multi-app-manager', 'field-sort'],
     };

@@ -39,6 +39,7 @@ describe('application', () => {
       acl: false,
       dataWrapping: false,
       registerActions: false,
+      skipSupervisor: true,
     });
 
     app.resourcer.registerActionHandlers({
