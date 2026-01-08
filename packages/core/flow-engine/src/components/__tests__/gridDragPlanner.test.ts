@@ -321,6 +321,33 @@ describe('simulateLayoutForSlot', () => {
     expect(result.sizes['row-new']).toEqual([24]);
   });
 
+  it('removes empty source row when moving item into empty container slot', () => {
+    const layout = createLayout(
+      {
+        rowA: [['block-x']],
+      },
+      {
+        rowA: [24],
+      },
+    );
+
+    const slot: LayoutSlot = {
+      type: 'empty-row',
+      rect,
+    };
+
+    const result = simulateLayoutForSlot({
+      slot,
+      sourceUid: 'block-x',
+      layout,
+      generateRowId: () => 'row-new',
+    });
+
+    expect(result.rows['row-new']).toEqual([['block-x']]);
+    expect(result.rows.rowA).toBeUndefined();
+    expect(result.sizes.rowA).toBeUndefined();
+  });
+
   it('handles column slot with after position', () => {
     const layout = createLayout(
       {
@@ -397,6 +424,36 @@ describe('simulateLayoutForSlot', () => {
     });
 
     expect(Object.keys(result.rows)).toEqual(['rowA', 'row-inserted', 'rowB']);
+  });
+
+  it('inserts row into rowOrder when dropping below target row', () => {
+    const layout = createLayout(
+      {
+        rowA: [['a']],
+        rowB: [['b']],
+      },
+      {
+        rowA: [24],
+        rowB: [24],
+      },
+      ['rowA', 'rowB'],
+    );
+
+    const slot: LayoutSlot = {
+      type: 'row-gap',
+      targetRowId: 'rowA',
+      position: 'below',
+      rect,
+    };
+
+    const result = simulateLayoutForSlot({
+      slot,
+      sourceUid: 'c',
+      layout,
+      generateRowId: () => 'row-new',
+    });
+
+    expect(result.rowOrder).toEqual(['rowA', 'row-new', 'rowB']);
   });
 
   it('maintains rowOrder and inserts new row before target when provided', () => {
