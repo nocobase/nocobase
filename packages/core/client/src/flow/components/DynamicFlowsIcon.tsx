@@ -24,7 +24,7 @@ import {
   isBeforeRenderFlow,
   observer,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Empty, Dropdown, Select, Tooltip } from 'antd';
+import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
@@ -33,6 +33,12 @@ type FlowOnObject = Exclude<FlowDefinition['on'], string | undefined>;
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
   return !!on && typeof on === 'object';
+}
+
+function getFlowOnEventName(on: FlowDefinition['on']): string | undefined {
+  if (!on) return;
+  if (typeof on === 'string') return on;
+  if (isFlowOnObject(on)) return on.eventName;
 }
 
 function normalizeFlowOnPhase(onObj: FlowOnObject) {
@@ -82,7 +88,6 @@ function validateFlowOnPhase(onObj: FlowOnObject): 'flowKey' | 'stepKey' | undef
 
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
-  const ctx = useFlowContext<FlowEngineContext>();
   const t = model.translate.bind(model);
 
   const handleClick = () => {
@@ -109,74 +114,106 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   return <ThunderboltOutlined style={{ cursor: 'pointer' }} onClick={handleClick} />;
 };
 
+const styles: Record<string, React.CSSProperties> = {
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottom: '1px solid #f0f0f0',
+  },
+  sectionMarker: {
+    width: '4px',
+    height: '16px',
+    borderRadius: '2px',
+    marginRight: 8,
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: 14,
+    fontWeight: 500,
+    color: '#262626',
+  },
+  fieldLabel: {
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: 500,
+    color: '#262626',
+  },
+  requiredMark: {
+    marginInlineStart: 4,
+    color: '#ff4d4f',
+  },
+  colon: {
+    marginInlineStart: 2,
+    marginInlineEnd: 8,
+  },
+};
+
+const SectionHeader = ({ color, children }: { color: string; children: React.ReactNode }) => {
+  return (
+    <div style={styles.sectionHeader}>
+      <div style={{ ...styles.sectionMarker, backgroundColor: color }} />
+      <h4 style={styles.sectionTitle}>{children}</h4>
+    </div>
+  );
+};
+
+const FieldLabel = ({
+  children,
+  required,
+  style,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+  style?: React.CSSProperties;
+}) => {
+  return (
+    <div style={{ ...styles.fieldLabel, ...style }}>
+      {children}
+      {required && <span style={styles.requiredMark}>*</span>}
+      <span style={styles.colon}>:</span>
+    </div>
+  );
+};
+
 // 事件配置组件 - 独立的 observer 组件确保响应式更新
 const EventConfigSection = observer(
   ({ flow, model, flowEngine }: { flow: FlowDefinition; model: FlowModel; flowEngine: any }) => {
     const ctx = useFlowContext<FlowEngineContext>();
-    const t = ctx?.t?.bind(ctx) || model.translate.bind(model);
+    const t = model.translate.bind(model);
     const refresh = useUpdate();
 
-    const eventName = typeof flow.on === 'string' ? flow.on : isFlowOnObject(flow.on) ? flow.on.eventName : undefined;
+    const eventName = getFlowOnEventName(flow.on);
+    const onObj = isFlowOnObject(flow.on) ? flow.on : undefined;
     const uiSchema = eventName ? model.getEvent(eventName)?.uiSchema : undefined;
     const eventUiSchema = typeof uiSchema === 'function' ? uiSchema(ctx) : uiSchema;
-    const eventDefaultParams = isFlowOnObject(flow.on) ? flow.on.defaultParams : undefined;
+    const eventDefaultParams = onObj?.defaultParams;
 
     const ensureOnObject = React.useCallback(() => {
-      if (!flow.on) {
-        if (!eventName) return;
-        flow.on = { eventName };
-        return flow.on;
-      }
-      if (typeof flow.on === 'string') {
-        flow.on = { eventName: flow.on };
-        return flow.on;
-      }
-      return flow.on;
+      if (isFlowOnObject(flow.on)) return flow.on;
+      if (!eventName) return;
+      const next = { eventName } as FlowOnObject;
+      flow.on = next;
+      return next;
     }, [eventName, flow]);
 
-    type ExecutionPhase = FlowEventPhase;
-
-    const readTiming = React.useCallback(() => {
-      if (!isFlowOnObject(flow.on)) {
-        return {
-          phase: undefined as ExecutionPhase | undefined,
-          flowKey: undefined as string | undefined,
-          stepKey: undefined as string | undefined,
-        };
-      }
-      const onObj = flow.on;
-      return {
-        phase: onObj.phase ? (String(onObj.phase) as ExecutionPhase) : undefined,
-        flowKey: onObj.flowKey ? String(onObj.flowKey) : undefined,
-        stepKey: onObj.stepKey ? String(onObj.stepKey) : undefined,
-      };
-    }, [flow]);
-
-    const timing = readTiming();
-    const phaseValue = (timing.phase ?? 'beforeAllFlows') as ExecutionPhase;
-    const flowKeyValue = timing.flowKey;
-    const stepKeyValue = timing.stepKey;
+    const phaseValue: FlowEventPhase = onObj?.phase ? (String(onObj.phase) as FlowEventPhase) : 'beforeAllFlows';
+    const flowKeyValue = onObj?.flowKey ? String(onObj.flowKey) : undefined;
+    const stepKeyValue = onObj?.stepKey ? String(onObj.stepKey) : undefined;
 
     const staticFlows = React.useMemo(() => {
       if (!eventName) return [];
       const ModelClass = model.constructor as typeof FlowModel;
       const globalFlows = Array.from(ModelClass.globalFlowRegistry.getFlows().values());
-      const isBeforeRender = eventName === 'beforeRender';
-      const isMatch = (flow: FlowDefinition) => {
-        if (isBeforeRender) {
-          if (flow.manual === true) return false;
-          if (!flow.on) return true;
-          return typeof flow.on === 'string'
-            ? flow.on === 'beforeRender'
-            : (flow.on as any)?.eventName === 'beforeRender';
+      return globalFlows.filter((f) => {
+        if (eventName === 'beforeRender') {
+          if (f.manual === true) return false;
+          if (!f.on) return true;
+          return getFlowOnEventName(f.on) === 'beforeRender';
         }
-        const on = flow.on;
-        if (!on) return false;
-        return typeof on === 'string' ? on === eventName : (on as any)?.eventName === eventName;
-      };
-      const staticFlows = globalFlows.filter(isMatch);
-
-      return staticFlows;
+        return getFlowOnEventName(f.on) === eventName;
+      });
     }, [eventName, model]);
 
     const staticFlowsByKey = React.useMemo(() => new Map(staticFlows.map((f) => [f.key, f] as const)), [staticFlows]);
@@ -212,7 +249,7 @@ const EventConfigSection = observer(
       });
     }, [flowKeyValue, formatKeyWithTitle, model, staticFlowsByKey]);
 
-    const phaseOptions: Array<{ value: ExecutionPhase; label: string }> = React.useMemo(
+    const phaseOptions: Array<{ value: FlowEventPhase; label: string }> = React.useMemo(
       () => [
         { value: 'beforeAllFlows', label: t('Before all flows') },
         { value: 'afterAllFlows', label: t('After built-in flows') },
@@ -224,112 +261,63 @@ const EventConfigSection = observer(
       [t],
     );
 
-    const requireFlowKey =
-      phaseValue === 'beforeFlow' ||
-      phaseValue === 'afterFlow' ||
-      phaseValue === 'beforeStep' ||
-      phaseValue === 'afterStep';
-    const requireStepKey = phaseValue === 'beforeStep' || phaseValue === 'afterStep';
-    const flowKeyMissing = requireFlowKey && !flowKeyValue;
-    const stepKeyMissing = requireStepKey && !!flowKeyValue && !stepKeyValue;
+    const requireFlowKey = ['beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'].includes(phaseValue);
+    const requireStepKey = ['beforeStep', 'afterStep'].includes(phaseValue);
+    const invalidType = onObj ? validateFlowOnPhase(onObj) : undefined;
+    const flowKeyMissing = invalidType === 'flowKey';
+    const stepKeyMissing = invalidType === 'stepKey';
 
-    const getEventList = () => {
-      return [...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }));
+    const setEventName = (value: string) => {
+      const next = (isFlowOnObject(flow.on) ? flow.on : { eventName: value }) as FlowOnObject;
+      flow.on = next;
+      next.eventName = value;
+      delete next.phase;
+      delete next.flowKey;
+      delete next.stepKey;
+      refresh();
     };
 
     return (
       <div style={{ marginBottom: 32 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: 16,
-            paddingBottom: 8,
-            borderBottom: '1px solid #f0f0f0',
-          }}
-        >
-          <div
-            style={{
-              width: '4px',
-              height: '16px',
-              backgroundColor: '#1890ff',
-              borderRadius: '2px',
-              marginRight: 8,
-            }}
-          ></div>
-          <h4
-            style={{
-              margin: 0,
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#262626',
-            }}
-          >
-            {t('Event')}
-          </h4>
-        </div>
+        <SectionHeader color="#1890ff">{t('Event')}</SectionHeader>
         <div style={{ paddingLeft: 12 }}>
           {/* 触发事件 */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
-              {t('Trigger event')}
-              <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
-            </div>
+            <FieldLabel>{t('Trigger event')}</FieldLabel>
             <Select
               placeholder={t('Select trigger event')}
               style={{ width: '100%' }}
               value={eventName}
               onChange={(value) => {
-                if (!flow.on) {
-                  flow.on = { eventName: value } as any;
-                } else {
-                  if (typeof flow.on === 'string') {
-                    flow.on = { eventName: value } as any;
-                  } else {
-                    (flow.on as any).eventName = value;
-                    delete (flow.on as any).phase;
-                    delete (flow.on as any).flowKey;
-                    delete (flow.on as any).stepKey;
-                  }
-                }
-                refresh();
+                setEventName(value);
               }}
-              options={getEventList()}
+              options={[...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }))}
             />
           </div>
 
           {/* 执行时机 */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
-              <span style={{ marginInlineEnd: 6 }}>{t('Execution timing')}</span>
-              <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
-            </div>
+            <FieldLabel>{t('Execution timing')}</FieldLabel>
             <Select
               style={{ width: '100%' }}
               disabled={!eventName}
               value={phaseValue}
               onChange={(value) => {
-                const v = value as ExecutionPhase;
                 const onObj = ensureOnObject();
-                if (!onObj || typeof onObj !== 'object') return;
-                onObj.phase = v;
-                normalizeFlowOnPhase(onObj as FlowOnObject);
+                if (!onObj) return;
+                onObj.phase = value as FlowEventPhase;
+                normalizeFlowOnPhase(onObj);
                 refresh();
               }}
               options={phaseOptions as any}
             />
 
-            {(phaseValue === 'beforeFlow' ||
-              phaseValue === 'afterFlow' ||
-              phaseValue === 'beforeStep' ||
-              phaseValue === 'afterStep') && (
+            {requireFlowKey && (
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
-                  <div style={{ marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+                  <FieldLabel required={requireFlowKey} style={{ marginBottom: 6 }}>
                     {t('Built-in flow')}
-                    {requireFlowKey && <span style={{ marginInlineStart: 4, color: '#ff4d4f' }}>*</span>}
-                    <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
-                  </div>
+                  </FieldLabel>
                   <Select
                     style={{ width: '100%' }}
                     disabled={!eventName || flowOptions.length === 0}
@@ -338,9 +326,8 @@ const EventConfigSection = observer(
                     status={flowKeyMissing ? 'error' : undefined}
                     options={flowOptions as any}
                     onChange={(value) => {
-                      ensureOnObject();
-                      if (!isFlowOnObject(flow.on)) return;
-                      const onObj = flow.on;
+                      const onObj = ensureOnObject();
+                      if (!onObj) return;
                       if (!value) {
                         delete onObj.flowKey;
                         delete onObj.stepKey;
@@ -358,13 +345,11 @@ const EventConfigSection = observer(
                   )}
                 </div>
 
-                {(phaseValue === 'beforeStep' || phaseValue === 'afterStep') && (
+                {requireStepKey && (
                   <div>
-                    <div style={{ marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+                    <FieldLabel required={requireStepKey} style={{ marginBottom: 6 }}>
                       {t('Built-in flow step')}
-                      {requireStepKey && <span style={{ marginInlineStart: 4, color: '#ff4d4f' }}>*</span>}
-                      <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
-                    </div>
+                    </FieldLabel>
                     <Select
                       style={{ width: '100%' }}
                       disabled={!eventName || !flowKeyValue || stepOptions.length === 0}
@@ -373,9 +358,8 @@ const EventConfigSection = observer(
                       status={stepKeyMissing ? 'error' : undefined}
                       options={stepOptions as any}
                       onChange={(value) => {
-                        ensureOnObject();
-                        if (!isFlowOnObject(flow.on)) return;
-                        const onObj = flow.on;
+                        const onObj = ensureOnObject();
+                        if (!onObj) return;
                         if (!value) {
                           delete onObj.stepKey;
                         } else {
@@ -408,10 +392,9 @@ const EventConfigSection = observer(
               initialValues: eventDefaultParams,
               flowEngine,
               onFormValuesChange: (form: any) => {
-                ensureOnObject();
-                if (isFlowOnObject(flow.on)) {
-                  flow.on.defaultParams = form.values;
-                }
+                const onObj = ensureOnObject();
+                if (!onObj) return;
+                onObj.defaultParams = form.values;
               },
             })}
         </div>
@@ -425,17 +408,14 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const t = ctx?.t?.bind(ctx) || model.translate.bind(model);
-
-  // 创建新流的默认值
-  const createNewFlow = (): any => ({
-    title: t('Event flow'),
-    steps: {},
-  });
+  const t = model.translate.bind(model);
 
   // 添加新流
   const handleAddFlow = () => {
-    model.flowRegistry.addFlow(uid(), createNewFlow());
+    model.flowRegistry.addFlow(uid(), {
+      title: t('Event flow'),
+      steps: {},
+    });
   };
 
   // 删除流
@@ -443,44 +423,10 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
     flow.remove();
   };
 
-  // 上移流
-  // const handleMoveUp = (index: number) => {
-  //   if (index > 0) {
-  //     const flow = flows[index];
-  //     flows.splice(index, 1);
-  //     flows.splice(index - 1, 0, flow);
-  //   }
-  // };
-
-  // 下移流
-  // const handleMoveDown = (index: number) => {
-  //   if (index < flows.length - 1) {
-  //     const flow = flows[index];
-  //     flows.splice(index, 1);
-  //     flows.splice(index + 1, 0, flow);
-  //   }
-  // };
-
-  // 复制流
-  // const handleCopyFlow = (index: number) => {
-  //   const originalFlow = flows[index];
-  //   const newFlow: any = {
-  //     ...originalFlow,
-  //     key: uid(),
-  //     title: `${originalFlow.title} (Copy)`,
-  //   };
-  //   flows.splice(index + 1, 0, newFlow);
-  // };
-
   // 更新流标题
   const handleTitleChange = (flow: FlowDefinition, title: string) => {
     flow.title = title;
   };
-
-  // 切换流启用状态
-  // const handleToggleEnable = (index: number, enable: boolean) => {
-  //   flows[index].enable = enable;
-  // };
 
   // 获取可用的动作类型
   const getActionList = () => {
@@ -512,7 +458,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   };
 
   // 生成折叠面板的自定义标题
-  const renderPanelHeader = (flow) => (
+  const renderPanelHeader = (flow: FlowDefinition) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
       <div style={{ flex: 1, marginRight: 16 }}>
         <Input
@@ -526,34 +472,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
         <Tooltip title="Delete">
           <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteFlow(flow)} />
         </Tooltip>
-        {/* <Tooltip title="Move up">
-          <Button
-            type="text"
-            size="small"
-            icon={<ArrowUpOutlined />}
-            onClick={() => handleMoveUp(index)}
-            disabled={index === 0}
-          />
-        </Tooltip>
-        <Tooltip title="Move down">
-          <Button
-            type="text"
-            size="small"
-            icon={<ArrowDownOutlined />}
-            onClick={() => handleMoveDown(index)}
-            disabled={index === flows.length - 1}
-          />
-        </Tooltip>
-        <Tooltip title="Copy">
-          <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => handleCopyFlow(index)} />
-        </Tooltip>
-        <Switch
-          size="small"
-          checked={flow.enable}
-          onChange={(checked) => handleToggleEnable(index, checked)}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
-        /> */}
       </Space>
     </div>
   );
@@ -576,35 +494,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
 
           {/* 步骤部分 */}
           <div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: 16,
-                paddingBottom: 8,
-                borderBottom: '1px solid #f0f0f0',
-              }}
-            >
-              <div
-                style={{
-                  width: '4px',
-                  height: '16px',
-                  backgroundColor: '#52c41a',
-                  borderRadius: '2px',
-                  marginRight: 8,
-                }}
-              ></div>
-              <h4
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: '#262626',
-                }}
-              >
-                {t('Steps')}
-              </h4>
-            </div>
+            <SectionHeader color="#52c41a">{t('Steps')}</SectionHeader>
             <div style={{ paddingLeft: 12 }}>
               {/* 渲染已有的步骤 */}
               <div style={{ marginBottom: 16 }}>

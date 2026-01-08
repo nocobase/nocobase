@@ -22,6 +22,15 @@ import type { ScheduledCancel } from '../scheduler/ModelOperationScheduler';
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
 
+  private async emitModelEventIf(
+    eventName: string | undefined,
+    topic: string,
+    payload: Record<string, any>,
+  ): Promise<void> {
+    if (!eventName) return;
+    await this.engine.emitter.emitAsync(`model:event:${eventName}:${topic}`, payload);
+  }
+
   /** Cache wrapper for applyFlow cache lifecycle */
   private async withApplyFlowCache<T>(cacheKey: string | null, executor: () => Promise<T>): Promise<T> {
     if (!cacheKey || !this.engine) return await executor();
@@ -106,15 +115,15 @@ export class FlowExecutor {
     setupRuntimeContextSteps(flowContext, stepDefs, model, flowKey);
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
-    if (eventName) {
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:start`, {
-        uid: model.uid,
-        model,
-        runId: flowContext.runId,
-        inputArgs,
-        flowKey,
-      });
-    }
+    const flowEventBasePayload = {
+      uid: model.uid,
+      model,
+      runId: flowContext.runId,
+      inputArgs,
+      flowKey,
+    };
+
+    await this.emitModelEventIf(eventName, `flow:${flowKey}:start`, flowEventBasePayload);
 
     for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
       // Resolve handler and params
@@ -174,16 +183,10 @@ export class FlowExecutor {
           continue;
         }
 
-        if (eventName) {
-          await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:step:${stepKey}:start`, {
-            uid: model.uid,
-            model,
-            runId: flowContext.runId,
-            inputArgs,
-            flowKey,
-            stepKey,
-          });
-        }
+        await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:start`, {
+          ...flowEventBasePayload,
+          stepKey,
+        });
         const currentStepResult = handler(runtimeCtx, combinedParams);
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
@@ -191,83 +194,47 @@ export class FlowExecutor {
         // Store step result and update context
         stepResults[stepKey] = lastResult;
         stepsRuntime[stepKey].result = stepResults[stepKey];
-        if (eventName) {
-          await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:step:${stepKey}:end`, {
-            uid: model.uid,
-            model,
-            runId: flowContext.runId,
-            inputArgs,
-            result: lastResult,
-            flowKey,
-            stepKey,
-          });
-        }
+        await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
+          ...flowEventBasePayload,
+          result: lastResult,
+          stepKey,
+        });
       } catch (error) {
-        if (eventName && !(error instanceof FlowExitException) && !(error instanceof FlowExitAllException)) {
-          await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:step:${stepKey}:error`, {
-            uid: model.uid,
-            model,
-            runId: flowContext.runId,
-            inputArgs,
+        if (!(error instanceof FlowExitException) && !(error instanceof FlowExitAllException)) {
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:error`, {
+            ...flowEventBasePayload,
             error,
-            flowKey,
             stepKey,
           });
         }
         if (error instanceof FlowExitException) {
           flowContext.logger.info(`[FlowEngine] ${error.message}`);
-          if (eventName) {
-            await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:step:${stepKey}:end`, {
-              uid: model.uid,
-              model,
-              runId: flowContext.runId,
-              inputArgs,
-              flowKey,
-              stepKey,
-            });
-            await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:end`, {
-              uid: model.uid,
-              model,
-              runId: flowContext.runId,
-              inputArgs,
-              result: stepResults,
-              flowKey,
-            });
-          }
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
+            ...flowEventBasePayload,
+            stepKey,
+          });
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
+            ...flowEventBasePayload,
+            result: stepResults,
+          });
           return Promise.resolve(stepResults);
         }
         if (error instanceof FlowExitAllException) {
           flowContext.logger.info(`[FlowEngine] ${error.message}`);
-          if (eventName) {
-            await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:step:${stepKey}:end`, {
-              uid: model.uid,
-              model,
-              runId: flowContext.runId,
-              inputArgs,
-              flowKey,
-              stepKey,
-            });
-            await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:end`, {
-              uid: model.uid,
-              model,
-              runId: flowContext.runId,
-              inputArgs,
-              result: error,
-              flowKey,
-            });
-          }
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
+            ...flowEventBasePayload,
+            stepKey,
+          });
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
+            ...flowEventBasePayload,
+            result: error,
+          });
           return Promise.resolve(error);
         }
-        if (eventName) {
-          await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:error`, {
-            uid: model.uid,
-            model,
-            runId: flowContext.runId,
-            inputArgs,
-            error,
-            flowKey,
-          });
-        }
+        await this.emitModelEventIf(eventName, `flow:${flowKey}:error`, {
+          ...flowEventBasePayload,
+          error,
+        });
         flowContext.logger.error(
           { err: error },
           `BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`,
@@ -275,16 +242,10 @@ export class FlowExecutor {
         return Promise.reject(error);
       }
     }
-    if (eventName) {
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:flow:${flowKey}:end`, {
-        uid: model.uid,
-        model,
-        runId: flowContext.runId,
-        inputArgs,
-        result: stepResults,
-        flowKey,
-      });
-    }
+    await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
+      ...flowEventBasePayload,
+      result: stepResults,
+    });
     return Promise.resolve(stepResults);
   }
 
@@ -308,14 +269,15 @@ export class FlowExecutor {
 
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
+    const eventBasePayload = {
+      uid: model.uid,
+      model,
+      runId,
+      inputArgs,
+    };
 
     try {
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
-        uid: model.uid,
-        model,
-        runId,
-        inputArgs,
-      });
+      await this.emitModelEventIf(eventName, 'start', eventBasePayload);
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -518,11 +480,8 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
-        uid: model.uid,
-        model,
-        runId,
-        inputArgs,
+      await this.emitModelEventIf(eventName, 'end', {
+        ...eventBasePayload,
         result,
       });
       return result;
@@ -537,11 +496,8 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
-        uid: model.uid,
-        model,
-        runId,
-        inputArgs,
+      await this.emitModelEventIf(eventName, 'error', {
+        ...eventBasePayload,
         error,
       });
       if (throwOnError) throw error;
