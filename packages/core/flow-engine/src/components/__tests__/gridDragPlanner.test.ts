@@ -19,7 +19,7 @@ import {
 
 const rect = { top: 0, left: 0, width: 100, height: 100 };
 
-const createLayout = (rows: string[][][], sizes: number[][]): GridLayoutData => ({
+const createLayout = (rows: Record<string, string[][]>, sizes: Record<string, number[]>): GridLayoutData => ({
   rows,
   sizes,
 });
@@ -28,7 +28,7 @@ describe('getSlotKey', () => {
   it('should generate unique key for column slot', () => {
     const slot: LayoutSlot = {
       type: 'column',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 0,
       insertIndex: 1,
       position: 'before',
@@ -36,32 +36,32 @@ describe('getSlotKey', () => {
     };
 
     const key = getSlotKey(slot);
-    expect(key).toBe('column:1:0:1:before');
+    expect(key).toBe('column:row1:0:1:before');
   });
 
   it('should generate unique key for column-edge slot', () => {
     const slot: LayoutSlot = {
       type: 'column-edge',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 2,
       direction: 'left',
       rect,
     };
 
     const key = getSlotKey(slot);
-    expect(key).toBe('column-edge:1:2:left');
+    expect(key).toBe('column-edge:row1:2:left');
   });
 
   it('should generate unique key for row-gap slot', () => {
     const slot: LayoutSlot = {
       type: 'row-gap',
-      targetRowId: 2,
+      targetRowId: 'row2',
       position: 'above',
       rect,
     };
 
     const key = getSlotKey(slot);
-    expect(key).toBe('row-gap:2:above');
+    expect(key).toBe('row-gap:row2:above');
   });
 
   it('should generate unique key for empty-row slot', () => {
@@ -77,13 +77,13 @@ describe('getSlotKey', () => {
   it('should generate unique key for empty-column slot', () => {
     const slot: LayoutSlot = {
       type: 'empty-column',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 0,
       rect,
     };
 
     const key = getSlotKey(slot);
-    expect(key).toBe('empty-column:1:0');
+    expect(key).toBe('empty-column:row1:0');
   });
 });
 
@@ -92,7 +92,7 @@ describe('resolveDropIntent', () => {
     const slots: LayoutSlot[] = [
       {
         type: 'column',
-        rowId: 1,
+        rowId: 'row1',
         columnIndex: 0,
         insertIndex: 0,
         position: 'before',
@@ -109,7 +109,7 @@ describe('resolveDropIntent', () => {
   it('should return the slot that contains the point', () => {
     const targetSlot: LayoutSlot = {
       type: 'column',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 0,
       insertIndex: 0,
       position: 'before',
@@ -119,14 +119,14 @@ describe('resolveDropIntent', () => {
     const slots: LayoutSlot[] = [
       {
         type: 'row-gap',
-        targetRowId: 0,
+        targetRowId: 'row0',
         position: 'above',
         rect: { top: 50, left: 100, width: 50, height: 20 },
       },
       targetSlot,
       {
         type: 'column-edge',
-        rowId: 1,
+        rowId: 'row1',
         columnIndex: 1,
         direction: 'right',
         rect: { top: 100, left: 200, width: 20, height: 50 },
@@ -146,7 +146,7 @@ describe('resolveDropIntent', () => {
 
     const secondSlot: LayoutSlot = {
       type: 'column',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 0,
       insertIndex: 0,
       position: 'before',
@@ -164,7 +164,7 @@ describe('resolveDropIntent', () => {
   it('should handle empty-column slot correctly', () => {
     const emptyColumnSlot: LayoutSlot = {
       type: 'empty-column',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 0,
       rect: { top: 100, left: 100, width: 100, height: 200 },
     };
@@ -186,7 +186,7 @@ describe('resolveDropIntent', () => {
   it('should find closest slot when point is outside', () => {
     const slot1: LayoutSlot = {
       type: 'column',
-      rowId: 1,
+      rowId: 'row1',
       columnIndex: 0,
       insertIndex: 0,
       position: 'before',
@@ -195,7 +195,7 @@ describe('resolveDropIntent', () => {
 
     const slot2: LayoutSlot = {
       type: 'column',
-      rowId: 2,
+      rowId: 'row2',
       columnIndex: 0,
       insertIndex: 0,
       position: 'before',
@@ -213,11 +213,18 @@ describe('resolveDropIntent', () => {
 
 describe('simulateLayoutForSlot', () => {
   it('removes source from original position before inserting into column slot', () => {
-    const layout = createLayout([[['block-1', 'block-2']]], [[24]]);
+    const layout = createLayout(
+      {
+        rowA: [['block-1', 'block-2']],
+      },
+      {
+        rowA: [24],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 0,
       insertIndex: 0,
       position: 'before',
@@ -226,16 +233,23 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'block-2', layout });
 
-    expect(result.rows[0]).toEqual([['block-2', 'block-1']]);
-    expect(layout.rows[0]).toEqual([['block-1', 'block-2']]);
+    expect(result.rows.rowA).toEqual([['block-2', 'block-1']]);
+    expect(layout.rows.rowA).toEqual([['block-1', 'block-2']]);
   });
 
   it('inserts new column when dropping on column edge and redistributes sizes', () => {
-    const layout = createLayout([[['a'], ['b']]], [[12, 12]]);
+    const layout = createLayout(
+      {
+        rowA: [['a'], ['b']],
+      },
+      {
+        rowA: [12, 12],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column-edge',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 0,
       direction: 'left',
       rect,
@@ -243,20 +257,29 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'c', layout });
 
-    expect(result.rows[0].length).toBe(3);
-    expect(result.rows[0][0]).toEqual(['c']);
-    expect(result.rows[0][1]).toEqual(['a']);
-    expect(result.rows[0][2]).toEqual(['b']);
-    expect(result.sizes[0].length).toBe(3);
-    expect(result.sizes[0].reduce((sum, value) => sum + value, 0)).toBe(24);
+    expect(result.rows.rowA.length).toBe(3);
+    expect(result.rows.rowA[0]).toEqual(['c']);
+    expect(result.rows.rowA[1]).toEqual(['a']);
+    expect(result.rows.rowA[2]).toEqual(['b']);
+    expect(result.sizes.rowA.length).toBe(3);
+    expect(result.sizes.rowA.reduce((sum, value) => sum + value, 0)).toBe(24);
   });
 
   it('creates a new row above target row when dropping on row-gap slot', () => {
-    const layout = createLayout([[['a']], [['b']]], [[24], [24]]);
+    const layout = createLayout(
+      {
+        rowA: [['a']],
+        rowB: [['b']],
+      },
+      {
+        rowA: [24],
+        rowB: [24],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'row-gap',
-      targetRowId: 1,
+      targetRowId: 'rowB',
       position: 'above',
       rect,
     };
@@ -268,15 +291,13 @@ describe('simulateLayoutForSlot', () => {
       generateRowId: () => 'row-inserted',
     });
 
-    expect(result.rows.length).toBe(3);
-    expect(result.rows[0]).toEqual([['a']]);
-    expect(result.rows[1]).toEqual([['c']]);
-    expect(result.rows[2]).toEqual([['b']]);
-    expect(result.sizes[1]).toEqual([24]);
+    expect(Object.keys(result.rows)).toEqual(['rowA', 'row-inserted', 'rowB']);
+    expect(result.rows['row-inserted']).toEqual([['c']]);
+    expect(result.sizes['row-inserted']).toEqual([24]);
   });
 
   it('creates a new row when dropping into empty container slot', () => {
-    const layout = createLayout([], []);
+    const layout = createLayout({}, {});
 
     const slot: LayoutSlot = {
       type: 'empty-row',
@@ -290,16 +311,23 @@ describe('simulateLayoutForSlot', () => {
       generateRowId: () => 'row-new',
     });
 
-    expect(result.rows[0]).toEqual([['block-x']]);
-    expect(result.sizes[0]).toEqual([24]);
+    expect(result.rows['row-new']).toEqual([['block-x']]);
+    expect(result.sizes['row-new']).toEqual([24]);
   });
 
   it('handles column slot with after position', () => {
-    const layout = createLayout([[['block-1', 'block-2']]], [[24]]);
+    const layout = createLayout(
+      {
+        rowA: [['block-1', 'block-2']],
+      },
+      {
+        rowA: [24],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 0,
       insertIndex: 1,
       position: 'after',
@@ -308,15 +336,22 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'block-3', layout });
 
-    expect(result.rows[0]).toEqual([['block-1', 'block-3', 'block-2']]);
+    expect(result.rows.rowA).toEqual([['block-1', 'block-3', 'block-2']]);
   });
 
   it('handles column-edge slot on the right', () => {
-    const layout = createLayout([[['a'], ['b']]], [[12, 12]]);
+    const layout = createLayout(
+      {
+        rowA: [['a'], ['b']],
+      },
+      {
+        rowA: [12, 12],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column-edge',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 1,
       direction: 'right',
       rect,
@@ -324,16 +359,25 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'c', layout });
 
-    expect(result.rows[0].length).toBe(3);
-    expect(result.rows[0][2]).toEqual(['c']);
+    expect(result.rows.rowA.length).toBe(3);
+    expect(result.rows.rowA[2]).toEqual(['c']);
   });
 
   it('handles row-gap slot below position', () => {
-    const layout = createLayout([[['a']], [['b']]], [[24], [24]]);
+    const layout = createLayout(
+      {
+        rowA: [['a']],
+        rowB: [['b']],
+      },
+      {
+        rowA: [24],
+        rowB: [24],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'row-gap',
-      targetRowId: 0,
+      targetRowId: 'rowA',
       position: 'below',
       rect,
     };
@@ -345,31 +389,47 @@ describe('simulateLayoutForSlot', () => {
       generateRowId: () => 'row-inserted',
     });
 
-    expect(result.rows.length).toBe(3);
+    expect(Object.keys(result.rows)).toEqual(['rowA', 'row-inserted', 'rowB']);
   });
 
   it('handles empty-column slot by replacing empty column', () => {
-    const layout = createLayout([[['EMPTY_COLUMN'], ['block-b']]], [[12, 12]]);
+    const layout = createLayout(
+      {
+        rowA: [['EMPTY_COLUMN'], ['block-b']],
+      },
+      {
+        rowA: [12, 12],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'empty-column',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 0,
       rect,
     };
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'new-block', layout });
 
-    expect(result.rows[0][0]).toEqual(['new-block']);
-    expect(result.rows[0][1]).toEqual(['block-b']);
+    expect(result.rows.rowA[0]).toEqual(['new-block']);
+    expect(result.rows.rowA[1]).toEqual(['block-b']);
   });
 
   it('removes source from multiple locations', () => {
-    const layout = createLayout([[['block-1', 'block-2']], [['block-3', 'block-4']]], [[24], [24]]);
+    const layout = createLayout(
+      {
+        rowA: [['block-1', 'block-2']],
+        rowB: [['block-3', 'block-4']],
+      },
+      {
+        rowA: [24],
+        rowB: [24],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 0,
       insertIndex: 0,
       position: 'before',
@@ -378,16 +438,23 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'block-3', layout });
 
-    expect(result.rows[0][0]).toContain('block-3');
-    expect(result.rows[1][0]).not.toContain('block-3');
+    expect(result.rows.rowA[0]).toContain('block-3');
+    expect(result.rows.rowB[0]).not.toContain('block-3');
   });
 
   it('preserves column sizes when inserting into existing column', () => {
-    const layout = createLayout([[['a'], ['b'], ['c']]], [[8, 8, 8]]);
+    const layout = createLayout(
+      {
+        rowA: [['a'], ['b'], ['c']],
+      },
+      {
+        rowA: [8, 8, 8],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 1,
       insertIndex: 0,
       position: 'before',
@@ -396,15 +463,22 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'd', layout });
 
-    expect(result.sizes[0]).toEqual([8, 8, 8]);
+    expect(result.sizes.rowA).toEqual([8, 8, 8]);
   });
 
   it('redistributes sizes proportionally when adding new column via edge', () => {
-    const layout = createLayout([[['a'], ['b'], ['c']]], [[6, 12, 6]]);
+    const layout = createLayout(
+      {
+        rowA: [['a'], ['b'], ['c']],
+      },
+      {
+        rowA: [6, 12, 6],
+      },
+    );
 
     const slot: LayoutSlot = {
       type: 'column-edge',
-      rowId: 0,
+      rowId: 'rowA',
       columnIndex: 1,
       direction: 'right',
       rect,
@@ -412,9 +486,9 @@ describe('simulateLayoutForSlot', () => {
 
     const result = simulateLayoutForSlot({ slot, sourceUid: 'd', layout });
 
-    expect(result.rows[0].length).toBe(4);
-    expect(result.sizes[0].length).toBe(4);
-    const total = result.sizes[0].reduce((sum, size) => sum + size, 0);
+    expect(result.rows.rowA.length).toBe(4);
+    expect(result.sizes.rowA.length).toBe(4);
+    const total = result.sizes.rowA.reduce((sum, size) => sum + size, 0);
     expect(total).toBe(24);
   });
 });

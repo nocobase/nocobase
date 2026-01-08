@@ -19,7 +19,7 @@ describe('GridModel.mergeRowsWithItems', () => {
     engine.registerModels({ GridModel });
   });
 
-  it('generates rows in item order when rows is an empty array', () => {
+  it('generates rows in item order when rows is empty', () => {
     const model = engine.createModel<GridModel>({
       use: 'GridModel',
       uid: 'grid-1',
@@ -37,19 +37,20 @@ describe('GridModel.mergeRowsWithItems', () => {
     ];
     (model as any).subModels = { items };
 
-    const merged = model.mergeRowsWithItems([]);
+    const merged = model.mergeRowsWithItems({});
 
-    expect(Array.isArray(merged)).toBe(true);
-    expect(merged.length).toBe(6);
-    expect(merged[0]).toEqual([['a']]);
-    expect(merged[1]).toEqual([['b']]);
-    expect(merged[2]).toEqual([['c']]);
-    expect(merged[3]).toEqual([['d']]);
-    expect(merged[4]).toEqual([['e']]);
-    expect(merged[5]).toEqual([['f']]);
+    const rowsValues = Object.values(merged);
+
+    expect(rowsValues.length).toBe(6);
+    expect(rowsValues[0]).toEqual([['a']]);
+    expect(rowsValues[1]).toEqual([['b']]);
+    expect(rowsValues[2]).toEqual([['c']]);
+    expect(rowsValues[3]).toEqual([['d']]);
+    expect(rowsValues[4]).toEqual([['e']]);
+    expect(rowsValues[5]).toEqual([['f']]);
   });
 
-  it('filters non-existent items from legacy object rows and keeps order', () => {
+  it('correctly filters non-existent items from existing rows', () => {
     const model = engine.createModel<GridModel>({
       use: 'GridModel',
       uid: 'grid-2',
@@ -67,10 +68,15 @@ describe('GridModel.mergeRowsWithItems', () => {
 
     const merged = model.mergeRowsWithItems(existingRows);
 
-    expect(merged).toEqual([[['a']]]);
+    const keys = Object.keys(merged);
+    expect(keys).toContain('r1');
+    expect(keys).not.toContain('r2');
+
+    expect(merged['r1']).toEqual([['a']]);
+    expect(merged['r2']).toBeUndefined();
   });
 
-  it('preserves existing row order even when items order differs', () => {
+  it('reorders rows based on items order when rows exist but are in different order', () => {
     const model = engine.createModel<GridModel>({
       use: 'GridModel',
       uid: 'grid-reorder',
@@ -85,11 +91,17 @@ describe('GridModel.mergeRowsWithItems', () => {
     (model as any).subModels = { items };
 
     // 现有 rows 是 a 在前，b 在后
-    const existingRows = [[['a']], [['b']]];
+    const existingRows = {
+      r1: [['a']],
+      r2: [['b']],
+    };
 
     const merged = model.mergeRowsWithItems(existingRows);
+    const rowsValues = Object.values(merged);
 
-    expect(merged[0]).toEqual([['a']]);
-    expect(merged[1]).toEqual([['b']]);
+    // 我们期望 merged 后的顺序应该跟随 existingRows (a, b)
+    // 即便 items 顺序是 (b, a)
+    expect(rowsValues[0]).toEqual([['a']]);
+    expect(rowsValues[1]).toEqual([['b']]);
   });
 });

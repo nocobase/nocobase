@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { recalculateGridSizes } from '../GridModel';
 
-const basePosition = { rowIndex: 0, itemIndex: 0 } as const;
+const basePosition = { rowId: 'row1', itemIndex: 0 } as const;
 
 describe('recalculateGridSizes', () => {
   it('caps edge expansion so row width never exceeds columnCount', () => {
@@ -19,15 +19,15 @@ describe('recalculateGridSizes', () => {
       direction: 'right',
       resizeDistance: 60,
       prevMoveDistance: 0,
-      oldSizes: [[10, 10]],
-      oldRows: [[['a'], ['b']]],
+      oldSizes: { row1: [10, 10] },
+      oldRows: { row1: [['a'], ['b']] },
       gridContainerWidth: 240,
       gutter: 0,
       columnCount: 24,
     });
 
     expect(moveDistance).toBe(4);
-    expect(newSizes[0]).toEqual([10, 14]);
+    expect(newSizes.row1).toEqual([10, 14]);
   });
 
   it('stops expanding when there is no remaining width', () => {
@@ -36,14 +36,14 @@ describe('recalculateGridSizes', () => {
       direction: 'left',
       resizeDistance: 30,
       prevMoveDistance: 0,
-      oldSizes: [[24]],
-      oldRows: [[['a']]],
+      oldSizes: { row1: [24] },
+      oldRows: { row1: [['a']] },
       gridContainerWidth: 240,
       gutter: 0,
       columnCount: 24,
     });
 
     expect(moveDistance).toBe(0);
-    expect(newSizes[0]).toEqual([24]);
+    expect(newSizes.row1).toEqual([24]);
   });
 });
