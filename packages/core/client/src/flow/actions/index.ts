@@ -30,6 +30,7 @@ export * from './aclCheckRefresh';
 export * from './pattern';
 export * from './validation';
 export * from './columnFixed';
+export * from './linkageRulesRefresh';
 export {
   fieldLinkageRules,
   subFormFieldLinkageRules,
