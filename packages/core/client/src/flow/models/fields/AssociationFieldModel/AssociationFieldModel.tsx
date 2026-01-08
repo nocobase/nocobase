@@ -20,9 +20,15 @@ AssociationFieldModel.registerFlow({
     init: {
       async handler(ctx, params) {
         if ((ctx.model as any).updateAssociation) {
-          const currentBlock = ctx.model.context.blockModel;
+          const currentBlock = ctx.model.context.parentBlockModel || ctx.model.context.blockModel;
           const resource = currentBlock.context.resource as SingleRecordResource;
-          resource.addUpdateAssociationValues((ctx.model.parent as FormItemModel).fieldPath);
+          if (ctx.model.context.parentBlockModel) {
+            const path = `${ctx.model.parent.context.prefixFieldPath}.${ctx.fieldPath}`;
+            console.log(path);
+            resource.addUpdateAssociationValues(path);
+          } else {
+            resource.addUpdateAssociationValues((ctx.model.parent as FormItemModel).fieldPath);
+          }
         }
       },
     },

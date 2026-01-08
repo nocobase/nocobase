@@ -52,7 +52,9 @@ function RemoteModelRenderer({ options, fieldModel }) {
       model.context.defineProperty('blockModel', {
         value: fieldModel.context.blockModel,
       });
-
+      model.context.defineProperty('prefixFieldPath', {
+        value: fieldModel.context.prefixFieldPath,
+      });
       model.actionName = options.scene;
       return model;
     },
