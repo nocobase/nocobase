@@ -221,6 +221,9 @@ export class AIEmployee {
       if (gathered?.response_metadata) {
         values.metadata.response_metadata = gathered.response_metadata;
       }
+      if (gathered?.additional_kwargs) {
+        values.metadata.additional_kwargs = gathered.additional_kwargs;
+      }
 
       const aiMessage = await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
         if (messageId) {
@@ -335,7 +338,7 @@ export class AIEmployee {
       },
     });
 
-    let systemMessage = await parseVariables(this.ctx, this.employee.about);
+    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt);
     const dataSourceMessage = this.getEmployeeDataSourceContext();
     if (dataSourceMessage) {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
@@ -367,7 +370,7 @@ export class AIEmployee {
     return getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
-        about: this.employee.about,
+        about: this.employee.about ?? this.employee.defaultPrompt,
       },
       task: {
         background,
