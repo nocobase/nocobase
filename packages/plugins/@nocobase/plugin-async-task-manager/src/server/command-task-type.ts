@@ -9,9 +9,25 @@
 
 import { CancelError } from './interfaces/async-task-manager';
 import process from 'node:process';
-import { Worker } from 'worker_threads';
+import { Worker, ResourceLimits } from 'worker_threads';
 import path from 'path';
 import { TaskType } from './task-type';
+
+const getResourceLimitsFromEnv = (): ResourceLimits => {
+  let resourceLimitsUndefined = true;
+  const resourceLimits: ResourceLimits = {};
+  if (process.env.ASYNC_TASK_WORKER_MAX_OLD) {
+    resourceLimits.maxOldGenerationSizeMb = Number.parseInt(process.env.ASYNC_TASK_WORKER_MAX_OLD, 10);
+    resourceLimitsUndefined = false;
+  }
+  if (process.env.ASYNC_TASK_WORKER_MAX_YOUNG) {
+    resourceLimits.maxYoungGenerationSizeMb = Number.parseInt(process.env.ASYNC_TASK_WORKER_MAX_YOUNG, 10);
+    resourceLimitsUndefined = false;
+  }
+  return resourceLimitsUndefined ? undefined : resourceLimits;
+};
+
+const RESOURCE_LIMITS = getResourceLimitsFromEnv();
 
 export function parseArgv(list: string[]) {
   const argv: any = {};
@@ -87,6 +103,7 @@ export class CommandTaskType extends TaskType {
             WORKER_MODE: '-',
             ...(parsedArgv.app && parsedArgv.app !== 'main' ? { STARTUP_SUBAPP: parsedArgv.app } : {}),
           },
+          resourceLimits: RESOURCE_LIMITS,
         });
 
         this.workerThread = worker;
