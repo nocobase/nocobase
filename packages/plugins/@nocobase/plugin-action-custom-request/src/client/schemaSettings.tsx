@@ -153,7 +153,7 @@ export function AfterSuccess() {
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
               'x-reactions': {
-                dependencies: ['actionAfterSuccess', 'redirectTo'],
+                dependencies: ['actionAfterSuccess'],
                 fulfill: {
                   state: {
                     visible: '{{$deps[0] === "redirect"}}',
