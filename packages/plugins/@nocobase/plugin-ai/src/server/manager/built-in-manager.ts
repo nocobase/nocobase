@@ -60,7 +60,8 @@ export class BuiltInManager {
     aiEmployee.position = position;
     aiEmployee.bio = bio;
     aiEmployee.greeting = greeting;
-    aiEmployee.about = aiEmployee.about ?? about;
+    aiEmployee.defaultPrompt = about; // 内置 AI 员工默认系统提示词
+    // 不再修改 aiEmployee.about，保持字段语义简单明确，上层按需使用
 
     const builtInSkills = builtInEmployeeInfo.skillSettings?.skills ?? [];
     const skillSettings: { skills?: { name: string; autoCall?: boolean }[] } = aiEmployee.skillSettings ?? {};
@@ -93,7 +94,7 @@ export class BuiltInManager {
         if (!p) {
           continue;
         }
-        const { nickname, avatar, position, bio, greeting, about } = p;
+        const { nickname, avatar, position, bio, greeting } = p;
         await aiEmployeesRepo.create({
           values: {
             username,
@@ -102,7 +103,7 @@ export class BuiltInManager {
             avatar,
             bio,
             greeting,
-            about,
+            about: null,
             skillSettings,
             enableKnowledgeBase: false,
             knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
