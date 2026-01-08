@@ -54,6 +54,13 @@ export async function rebuildFieldSubModel({
   const fieldModel = parentModel.subModels['field'];
   const fieldUid = fieldModel?.uid;
   const prevSubModels = fieldModel?.serialize?.()?.subModels;
+  // RecordPickerFieldModel 的子model提前创建会报错
+  for (const key in prevSubModels) {
+    const subModel = prevSubModels[key];
+    if (subModel.delegateToParent === false) {
+      delete prevSubModels[key];
+    }
+  }
   const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
   const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
 
