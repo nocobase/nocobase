@@ -306,9 +306,10 @@ function buildIndexHtml(force = false) {
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
 
   if (process.env.APP_BASE_URL) {
+    const appBaseUrl = process.env.APP_BASE_URL.replace(/\/+$/, '');
     replacedData = replacedData
-      .replace(/src="\//g, `src="${process.env.APP_BASE_URL}/`)
-      .replace(/href="\//g, `href="${process.env.APP_BASE_URL}/`);
+      .replace(/src="\//g, `src="${appBaseUrl}/`)
+      .replace(/href="\//g, `href="${appBaseUrl}/`);
   }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
