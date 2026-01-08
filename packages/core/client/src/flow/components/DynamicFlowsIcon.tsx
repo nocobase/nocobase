@@ -24,7 +24,7 @@ import {
   isBeforeRenderFlow,
   observer,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Empty, Dropdown, Select } from 'antd';
+import { Collapse, Input, Button, Space, Empty, Dropdown, Select, Tooltip } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
@@ -83,7 +83,7 @@ function validateFlowOnPhase(onObj: FlowOnObject): 'flowKey' | 'stepKey' | undef
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
   const ctx = useFlowContext<FlowEngineContext>();
-  const t = ctx?.t?.bind(ctx) || model.translate.bind(model);
+  const t = model.translate.bind(model);
 
   const handleClick = () => {
     const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
@@ -523,13 +523,9 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
         />
       </div>
       <Space onClick={(e) => e.stopPropagation()}>
-        <Button
-          type="text"
-          size="small"
-          icon={<DeleteOutlined />}
-          aria-label={t('Delete')}
-          onClick={() => handleDeleteFlow(flow)}
-        />
+        <Tooltip title="Delete">
+          <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteFlow(flow)} />
+        </Tooltip>
         {/* <Tooltip title="Move up">
           <Button
             type="text"
@@ -638,13 +634,14 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                           {t(actionDef.title)}
                           <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                         </span>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<DeleteOutlined />}
-                          aria-label={t('Delete step')}
-                          onClick={() => handleDeleteStep(step)}
-                        />
+                        <Tooltip title={t('Delete step')}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleDeleteStep(step)}
+                          />
+                        </Tooltip>
                       </div>
                       <div>
                         {React.createElement(
@@ -750,26 +747,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           loading={submitLoading}
           onClick={async () => {
             setSubmitLoading(true);
-            const invalid = model.flowRegistry
-              .mapFlows((flow) => {
-                if (!isFlowOnObject(flow.on)) return;
-                normalizeFlowOnPhase(flow.on);
-                const invalidType = validateFlowOnPhase(flow.on);
-                if (!invalidType) return;
-                return { type: invalidType as const };
-              })
-              .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
-
-            if (invalid) {
-              const msg =
-                invalid.type === 'flowKey'
-                  ? t('Please select a built-in flow')
-                  : t('Please select a built-in flow step');
-              model.context?.message?.error?.(msg);
-              setSubmitLoading(false);
-              return;
-            }
-
             await model.flowRegistry.save();
             // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
             const beforeRenderFlows = model.flowRegistry
