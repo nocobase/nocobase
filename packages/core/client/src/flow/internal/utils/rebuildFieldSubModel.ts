@@ -69,13 +69,13 @@ export async function rebuildFieldSubModel({
 
   if (fieldUid) {
     fieldModel?.invalidateFlowCache('beforeRender', true);
-    engine.removeModel(fieldUid);
+    engine.removeModelWithSubModels(fieldUid);
   }
 
   const subModel = parentModel.setSubModel('field', {
     uid: fieldUid,
     use: FieldModel,
-    props: { ...(fieldModel?.props || {}), ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
+    props: { ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
     stepParams: nextStepParams as StepParams,
     // Preserve existing subModels (e.g. SubTable columns) so switching field component back and forth
     // does not require a full page refresh to restore the UI.
