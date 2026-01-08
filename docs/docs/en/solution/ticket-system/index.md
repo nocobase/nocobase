@@ -1,5 +1,7 @@
 # Ticketing Solution Overview
 
+> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+
 ## 1. Background (Why)
 
 ### Industry/Role/Management Problems Solved
@@ -162,3 +164,14 @@ In this solution, AI employees can:
 ### How to Install and Use
 
 Use migration management to migrate and integrate various partial applications into other applications.
+
+---
+
+## 8. Roadmap (Continuously Updated)
+
+- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
+- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
+- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
+- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
+- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
+- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
