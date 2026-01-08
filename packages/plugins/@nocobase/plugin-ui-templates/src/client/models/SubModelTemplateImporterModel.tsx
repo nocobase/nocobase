@@ -393,6 +393,14 @@ SubModelTemplateImporterModel.define({
   hide: (ctx: FlowModelContext) => {
     // FilterForm 里暂不支持字段模板入口（避免误创建临时模型）
     const blockModel = findBlockModel(ctx.model);
+    if (!blockModel) {
+      return true;
+    }
+
+    // ApplyTaskCardDetailsModel 不支持区块/字段模板相关入口
+    if (blockModel.use === 'ApplyTaskCardDetailsModel' || blockModel.use === 'ApprovalTaskCardDetailsModel') {
+      return true;
+    }
     if (blockModel instanceof FilterFormBlockModel) {
       return true;
     }

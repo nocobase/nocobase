@@ -815,6 +815,9 @@ export class CollectionField {
         if (typeof v !== 'object') {
           return v;
         }
+        if (v.value === null || v.value === undefined) {
+          return v;
+        }
         return {
           ...v,
           value: Number(v.value),
