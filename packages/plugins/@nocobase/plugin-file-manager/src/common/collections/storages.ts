@@ -84,5 +84,10 @@ export default {
       name: 'paranoid',
       defaultValue: false,
     },
+    {
+      type: 'json',
+      name: 'settings',
+      defaultValue: {},
+    },
   ],
 };
