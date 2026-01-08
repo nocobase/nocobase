@@ -11,6 +11,9 @@ import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionGroupModel, ActionModel } from '../../../../base';
 
+function matchPath(paths: string[], key: string) {
+  return paths.find((p) => p === key || p.endsWith(`.${key}`)) ?? key;
+}
 export class StFormSubmitActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     title: tExpr('Submit'),
@@ -63,12 +66,14 @@ StFormSubmitActionModel.registerFlow({
         const currentResource = blockModel.resource;
         const updateAssociations = currentResource.getUpdateAssociationValues();
         const associationName = subTableModel.context.collectionField.name;
+        const parentUpdateAssociations = parentResource.getUpdateAssociationValues();
+        const prefixPath = matchPath(parentUpdateAssociations, associationName);
         try {
           await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue(true);
           subTableModel.updateRow(values);
           const newUpdateAssociations = updateAssociations.map((v) => {
-            return `${associationName}.${v}`;
+            return `${prefixPath}.${v}`;
           });
           parentResource.addUpdateAssociationValues(newUpdateAssociations);
         } catch (error) {
