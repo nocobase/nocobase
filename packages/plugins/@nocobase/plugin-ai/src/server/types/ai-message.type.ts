@@ -42,6 +42,8 @@ export type AIMessageMetadata = {
   model: string;
   provider: string;
   usage_metadata?: any;
+  response_metadata?: any;
+  additional_kwargs?: Record<string, unknown>;
   toolCall?: AIToolCall;
   autoCallTools?: string[];
   autoCall?: boolean;
