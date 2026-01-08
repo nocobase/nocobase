@@ -8,15 +8,12 @@
  */
 
 import { defineAction, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
-import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import React from 'react';
-import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
+import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 
 const FormAssignRulesUI = observer((props: { value?: FieldAssignRuleItem[]; onChange?: (value: any) => void }) => {
   const ctx = useFlowContext();
   const t = ctx.model.translate.bind(ctx.model);
-
-  const onChange = props.onChange;
 
   const fieldOptions = React.useMemo(() => {
     try {
@@ -35,7 +32,7 @@ const FormAssignRulesUI = observer((props: { value?: FieldAssignRuleItem[]; onCh
       t={t}
       fieldOptions={fieldOptions}
       value={props.value as any}
-      onChange={onChange as any}
+      onChange={props.onChange as any}
       showValueEditorWhenNoField
     />
   );
@@ -57,13 +54,7 @@ export const formAssignRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler(ctx, params) {
-    const items = (params?.value || []) as FieldAssignRuleItem[];
-    // 将配置同步到运行时规则引擎（若存在），使其在预览/运行态立刻生效
-    try {
-      (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(items);
-    } catch {
-      // ignore
-    }
+  handler() {
+    // UI-only action; persistence is handled by flow settings.
   },
 });

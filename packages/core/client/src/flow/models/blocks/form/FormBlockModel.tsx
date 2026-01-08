@@ -298,12 +298,11 @@ export class FormBlockModel<
   protected onMount() {
     super.onMount();
     this.formValueRuntime?.mount({ sync: true });
-
     // 将“表单赋值”配置编译为运行时规则
     try {
       const params = this.getStepParams('formModelSettings', 'assignRules');
       const items = (params?.value || []) as any[];
-      this.formValueRuntime?.syncAssignRules(Array.isArray(items) ? (items as any) : []);
+      this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
     } catch {
       // ignore
     }
@@ -389,7 +388,7 @@ FormBlockModel.registerFlow({
         try {
           const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
           const items = (params?.value || []) as any[];
-          ctx.model.formValueRuntime?.syncAssignRules(Array.isArray(items) ? (items as any) : []);
+          (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
         } catch {
           // ignore
         }
