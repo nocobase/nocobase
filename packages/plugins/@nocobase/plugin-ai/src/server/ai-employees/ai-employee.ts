@@ -335,7 +335,7 @@ export class AIEmployee {
       },
     });
 
-    let systemMessage = await parseVariables(this.ctx, this.employee.about);
+    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt);
     const dataSourceMessage = this.getEmployeeDataSourceContext();
     if (dataSourceMessage) {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
@@ -367,7 +367,7 @@ export class AIEmployee {
     return getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
-        about: this.employee.about,
+        about: this.employee.about ?? this.employee.defaultPrompt,
       },
       task: {
         background,
