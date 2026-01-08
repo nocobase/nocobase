@@ -12,6 +12,8 @@ import { ThunderboltOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/i
 import {
   ActionDefinition,
   ActionScene,
+  FlowEngineContext,
+  FlowEventPhase,
   FlowModel,
   StepDefinition,
   untracked,
@@ -27,10 +29,61 @@ import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 
+type FlowOnObject = Exclude<FlowDefinition['on'], string | undefined>;
+
+function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
+  return !!on && typeof on === 'object';
+}
+
+function normalizeFlowOnPhase(onObj: FlowOnObject) {
+  const phase = onObj.phase;
+
+  if (!phase || phase === 'beforeAllFlows') {
+    delete onObj.phase;
+    delete onObj.flowKey;
+    delete onObj.stepKey;
+    return;
+  }
+
+  if (phase === 'afterAllFlows') {
+    delete onObj.flowKey;
+    delete onObj.stepKey;
+    return;
+  }
+
+  if (phase === 'beforeFlow' || phase === 'afterFlow') {
+    delete onObj.stepKey;
+    if (!onObj.flowKey) delete onObj.flowKey;
+    return;
+  }
+
+  if (phase === 'beforeStep' || phase === 'afterStep') {
+    if (!onObj.flowKey) delete onObj.flowKey;
+    if (!onObj.stepKey) delete onObj.stepKey;
+    return;
+  }
+}
+
+function validateFlowOnPhase(onObj: FlowOnObject): 'flowKey' | 'stepKey' | undefined {
+  const phase = onObj.phase;
+  if (!phase || phase === 'beforeAllFlows' || phase === 'afterAllFlows') return;
+
+  if (
+    (phase === 'beforeFlow' || phase === 'afterFlow' || phase === 'beforeStep' || phase === 'afterStep') &&
+    !onObj.flowKey
+  ) {
+    return 'flowKey';
+  }
+
+  if ((phase === 'beforeStep' || phase === 'afterStep') && !onObj.stepKey) {
+    return 'stepKey';
+  }
+}
+
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
-  const ctx = useFlowContext();
-  const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
+  const ctx = useFlowContext<FlowEngineContext>();
+  const t = ctx?.t?.bind(ctx) || model.translate.bind(model);
 
   const handleClick = () => {
     const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
@@ -59,37 +112,39 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
 // 事件配置组件 - 独立的 observer 组件确保响应式更新
 const EventConfigSection = observer(
   ({ flow, model, flowEngine }: { flow: FlowDefinition; model: FlowModel; flowEngine: any }) => {
-    const ctx = useFlowContext();
-    const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
+    const ctx = useFlowContext<FlowEngineContext>();
+    const t = ctx?.t?.bind(ctx) || model.translate.bind(model);
     const refresh = useUpdate();
 
-    const eventName = typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName;
-    const uiSchema = model.getEvent(eventName)?.uiSchema;
+    const eventName = typeof flow.on === 'string' ? flow.on : isFlowOnObject(flow.on) ? flow.on.eventName : undefined;
+    const uiSchema = eventName ? model.getEvent(eventName)?.uiSchema : undefined;
     const eventUiSchema = typeof uiSchema === 'function' ? uiSchema(ctx) : uiSchema;
-    const eventDefaultParams = typeof flow.on === 'object' ? (flow.on as any)?.defaultParams : undefined;
+    const eventDefaultParams = isFlowOnObject(flow.on) ? flow.on.defaultParams : undefined;
 
     const ensureOnObject = React.useCallback(() => {
       if (!flow.on) {
-        flow.on = { eventName } as any;
-        return;
+        if (!eventName) return;
+        flow.on = { eventName };
+        return flow.on;
       }
       if (typeof flow.on === 'string') {
-        flow.on = { eventName: flow.on } as any;
-        return;
+        flow.on = { eventName: flow.on };
+        return flow.on;
       }
+      return flow.on;
     }, [eventName, flow]);
 
-    type ExecutionPhase = 'beforeAllFlows' | 'afterAllFlows' | 'beforeFlow' | 'afterFlow' | 'beforeStep' | 'afterStep';
+    type ExecutionPhase = FlowEventPhase;
 
     const readTiming = React.useCallback(() => {
-      if (!flow.on || typeof flow.on !== 'object') {
+      if (!isFlowOnObject(flow.on)) {
         return {
           phase: undefined as ExecutionPhase | undefined,
           flowKey: undefined as string | undefined,
           stepKey: undefined as string | undefined,
         };
       }
-      const onObj = flow.on as any;
+      const onObj = flow.on;
       return {
         phase: onObj.phase ? (String(onObj.phase) as ExecutionPhase) : undefined,
         flowKey: onObj.flowKey ? String(onObj.flowKey) : undefined,
@@ -122,7 +177,7 @@ const EventConfigSection = observer(
       const staticFlows = globalFlows.filter(isMatch);
 
       return staticFlows;
-    }, [eventName, model, t]);
+    }, [eventName, model]);
 
     const staticFlowsByKey = React.useMemo(() => new Map(staticFlows.map((f) => [f.key, f] as const)), [staticFlows]);
 
@@ -255,27 +310,10 @@ const EventConfigSection = observer(
               value={phaseValue}
               onChange={(value) => {
                 const v = value as ExecutionPhase;
-                ensureOnObject();
-                if (!flow.on || typeof flow.on !== 'object') return;
-                const onObj = flow.on as any;
-
-                // phase 为默认时，清空配置以保持存储最小化
-                if (v === 'beforeAllFlows') {
-                  delete onObj.phase;
-                  delete onObj.flowKey;
-                  delete onObj.stepKey;
-                  refresh();
-                  return;
-                }
-
+                const onObj = ensureOnObject();
+                if (!onObj || typeof onObj !== 'object') return;
                 onObj.phase = v;
-
-                if (v === 'afterAllFlows') {
-                  delete onObj.flowKey;
-                  delete onObj.stepKey;
-                } else if (v === 'beforeFlow' || v === 'afterFlow') {
-                  delete onObj.stepKey;
-                }
+                normalizeFlowOnPhase(onObj as FlowOnObject);
                 refresh();
               }}
               options={phaseOptions as any}
@@ -301,8 +339,8 @@ const EventConfigSection = observer(
                     options={flowOptions as any}
                     onChange={(value) => {
                       ensureOnObject();
-                      if (!flow.on || typeof flow.on !== 'object') return;
-                      const onObj = flow.on as any;
+                      if (!isFlowOnObject(flow.on)) return;
+                      const onObj = flow.on;
                       if (!value) {
                         delete onObj.flowKey;
                         delete onObj.stepKey;
@@ -336,8 +374,8 @@ const EventConfigSection = observer(
                       options={stepOptions as any}
                       onChange={(value) => {
                         ensureOnObject();
-                        if (!flow.on || typeof flow.on !== 'object') return;
-                        const onObj = flow.on as any;
+                        if (!isFlowOnObject(flow.on)) return;
+                        const onObj = flow.on;
                         if (!value) {
                           delete onObj.stepKey;
                         } else {
@@ -371,8 +409,8 @@ const EventConfigSection = observer(
               flowEngine,
               onFormValuesChange: (form: any) => {
                 ensureOnObject();
-                if (typeof flow.on === 'object') {
-                  (flow.on as any).defaultParams = form.values;
+                if (isFlowOnObject(flow.on)) {
+                  flow.on.defaultParams = form.values;
                 }
               },
             })}
@@ -384,10 +422,10 @@ const EventConfigSection = observer(
 
 const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const { model } = props;
-  const ctx = useFlowContext();
+  const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const t = (ctx as any)?.t?.bind(ctx) || model.translate.bind(model);
+  const t = ctx?.t?.bind(ctx) || model.translate.bind(model);
 
   // 创建新流的默认值
   const createNewFlow = (): any => ({
@@ -712,54 +750,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           loading={submitLoading}
           onClick={async () => {
             setSubmitLoading(true);
-            // 归一化：保证仅存储当前 phase 需要的字段
-            model.flowRegistry.mapFlows((flow) => {
-              const on = flow.on;
-              if (!on || typeof on !== 'object') return;
-              const onObj = on as any;
-
-              const phase = onObj.phase;
-              if (!phase || phase === 'beforeAllFlows') {
-                delete onObj.phase;
-                delete onObj.flowKey;
-                delete onObj.stepKey;
-                return;
-              }
-              if (phase === 'afterAllFlows') {
-                delete onObj.flowKey;
-                delete onObj.stepKey;
-                return;
-              }
-              if (phase === 'beforeFlow' || phase === 'afterFlow') {
-                delete onObj.stepKey;
-                if (!onObj.flowKey) delete onObj.flowKey;
-                return;
-              }
-              if (phase === 'beforeStep' || phase === 'afterStep') {
-                if (!onObj.flowKey) delete onObj.flowKey;
-                if (!onObj.stepKey) delete onObj.stepKey;
-                return;
-              }
-            });
-
             const invalid = model.flowRegistry
               .mapFlows((flow) => {
-                const on = flow.on;
-                if (!on || typeof on !== 'object') return;
-                const { phase, flowKey, stepKey } = on as any;
-                if (!phase || phase === 'beforeAllFlows' || phase === 'afterAllFlows') return;
-                if (
-                  (phase === 'beforeFlow' ||
-                    phase === 'afterFlow' ||
-                    phase === 'beforeStep' ||
-                    phase === 'afterStep') &&
-                  !flowKey
-                ) {
-                  return { type: 'flowKey' as const };
-                }
-                if ((phase === 'beforeStep' || phase === 'afterStep') && !stepKey) {
-                  return { type: 'stepKey' as const };
-                }
+                if (!isFlowOnObject(flow.on)) return;
+                normalizeFlowOnPhase(flow.on);
+                const invalidType = validateFlowOnPhase(flow.on);
+                if (!invalidType) return;
+                return { type: invalidType as const };
               })
               .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
 
