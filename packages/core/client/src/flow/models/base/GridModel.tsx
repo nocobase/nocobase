@@ -106,6 +106,57 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   ];
   private dragState?: DragState;
   private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
+  protected deriveRowOrder(rows: Record<string, string[][]>, provided?: string[]) {
+    const order: string[] = [];
+    const used = new Set<string>();
+
+    (provided || Object.keys(rows)).forEach((rowId) => {
+      if (rows[rowId] && !used.has(rowId)) {
+        order.push(rowId);
+        used.add(rowId);
+      }
+    });
+
+    Object.keys(rows).forEach((rowId) => {
+      if (!used.has(rowId)) {
+        order.push(rowId);
+        used.add(rowId);
+      }
+    });
+
+    return order;
+  }
+
+  normalizeRowsWithOrder(rows: Record<string, string[][]>, provided?: string[]) {
+    const rowOrder = this.deriveRowOrder(rows, provided);
+    const ordered: Record<string, string[][]> = {};
+    rowOrder.forEach((rowId) => {
+      if (rows[rowId]) {
+        ordered[rowId] = rows[rowId];
+      }
+    });
+    Object.keys(rows).forEach((rowId) => {
+      if (!ordered[rowId]) {
+        ordered[rowId] = rows[rowId];
+      }
+    });
+    return { rows: ordered, rowOrder };
+  }
+
+  orderSizesByRowOrder(sizes: Record<string, number[]>, rowOrder: string[]) {
+    const ordered: Record<string, number[]> = {};
+    rowOrder.forEach((rowId) => {
+      if (sizes[rowId]) {
+        ordered[rowId] = sizes[rowId];
+      }
+    });
+    Object.keys(sizes).forEach((rowId) => {
+      if (!ordered[rowId]) {
+        ordered[rowId] = sizes[rowId];
+      }
+    });
+    return ordered;
+  }
   private getItemFlowSettings(): Exclude<FlowModelRendererProps['showFlowSettings'], boolean> {
     if (!this._memoItemFlowSettings) {
       this._memoItemFlowSettings = { showBackground: false, showDragHandle: true, ...this.itemFlowSettings };
@@ -128,12 +179,16 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       if (position) {
         const newSizes = _.cloneDeep(this.props.sizes || {});
         newSizes[position.rowId] = [24]; // 默认新行宽度为 24
+        const { rowOrder } = this.normalizeRowsWithOrder(this.props.rows || {}, this.props.rowOrder);
+        const orderedSizes = this.orderSizesByRowOrder(newSizes, rowOrder);
         this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
           rows: this.props.rows || {},
-          sizes: newSizes,
+          sizes: orderedSizes,
+          rowOrder,
         });
 
-        this.setProps('sizes', newSizes);
+        this.setProps('sizes', orderedSizes);
+        this.setProps('rowOrder', rowOrder);
       }
     });
     this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
@@ -160,12 +215,17 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
           delete newSizes[position.rowId];
         }
 
+        const { rowOrder } = this.normalizeRowsWithOrder(rows, this.props.rowOrder);
+        const orderedSizes = this.orderSizesByRowOrder(newSizes, rowOrder);
+
         this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
           rows,
-          sizes: newSizes,
+          sizes: orderedSizes,
+          rowOrder,
         });
 
-        this.setProps('sizes', newSizes);
+        this.setProps('sizes', orderedSizes);
+        this.setProps('rowOrder', rowOrder);
       }
 
       // 删除筛选配置
@@ -220,12 +280,16 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   }
 
   saveGridLayout(layout?: GridLayoutData) {
-    const rows = layout?.rows ?? this.props.rows ?? {};
-    const sizes = layout?.sizes ?? this.props.sizes ?? {};
+    const sourceRows = layout?.rows ?? this.props.rows ?? {};
+    const sourceRowOrder = layout?.rowOrder ?? this.props.rowOrder;
+    const { rows, rowOrder } = this.normalizeRowsWithOrder(sourceRows, sourceRowOrder);
+    const sizes = this.orderSizesByRowOrder(layout?.sizes ?? this.props.sizes ?? {}, rowOrder);
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
       rows,
       sizes,
+      rowOrder,
     });
+    this.setProps('rowOrder', rowOrder);
     this.saveStepParams();
   }
 
@@ -268,13 +332,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   resetRows(syncProps = false) {
     const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
     const mergedRows = this.mergeRowsWithItems(params.rows || {});
+    const { rows, rowOrder } = this.normalizeRowsWithOrder(mergedRows, params.rowOrder);
+    const sizes = this.orderSizesByRowOrder(params.sizes || {}, rowOrder);
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
-      rows: mergedRows,
-      sizes: params.sizes || {},
+      rows,
+      sizes,
+      rowOrder,
     });
 
     if (syncProps) {
-      this.setProps('rows', mergedRows);
+      this.setProps('rows', rows);
+      this.setProps('sizes', sizes);
+      this.setProps('rowOrder', rowOrder);
     }
   }
 
@@ -425,6 +494,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.dragState.previewLayout = {
       rows: _.cloneDeep(preview.rows),
       sizes: _.cloneDeep(preview.sizes),
+      rowOrder: _.cloneDeep(preview.rowOrder),
     };
 
     const container = this.gridContainerRef.current;
@@ -447,11 +517,14 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   handleDragStart(event: DragStartEvent) {
     const sourceUid = event.active.id as string;
+    const { rows, rowOrder } = this.normalizeRowsWithOrder(this.props.rows || {}, this.props.rowOrder);
+    const sizes = this.orderSizesByRowOrder(this.props.sizes || {}, rowOrder);
     this.dragState = {
       sourceUid,
       snapshot: {
-        rows: _.cloneDeep(this.props.rows || {}),
-        sizes: _.cloneDeep(this.props.sizes || {}),
+        rows: _.cloneDeep(rows),
+        sizes: _.cloneDeep(sizes),
+        rowOrder,
       },
       slots: [],
       containerRect: { top: 0, left: 0, width: 0, height: 0 },
@@ -506,6 +579,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     if (previewLayout) {
       this.setProps('rows', _.cloneDeep(previewLayout.rows));
       this.setProps('sizes', _.cloneDeep(previewLayout.sizes));
+      if (previewLayout.rowOrder) {
+        this.setProps('rowOrder', _.cloneDeep(previewLayout.rowOrder));
+      }
       this.saveGridLayout(previewLayout);
     }
 
@@ -534,9 +610,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       : rawRows;
     const baseSizes: Record<string, number[]> = this.context.isMobileLayout ? {} : rawSizes;
 
+    const { rows: orderedBaseRows, rowOrder } = this.normalizeRowsWithOrder(baseRows, this.props.rowOrder);
+    const orderedBaseSizes = this.orderSizesByRowOrder(baseSizes, rowOrder);
+
     // 配置态：不做任何过滤，保持完整布局
     if (this.context.flowSettingsEnabled) {
-      return { rows: baseRows, sizes: baseSizes };
+      return { rows: orderedBaseRows, sizes: orderedBaseSizes };
     }
 
     const items = this.subModels?.items || [];
@@ -549,9 +628,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     const rows: Record<string, string[][]> = {};
     const sizes: Record<string, number[]> = {};
 
-    Object.entries(baseRows).forEach(([rowKey, cells]) => {
-      const rowCells = cells;
-      const rowSizes = baseSizes[rowKey] || [];
+    rowOrder.forEach((rowKey) => {
+      const rowCells = orderedBaseRows[rowKey];
+      const rowSizes = orderedBaseSizes[rowKey] || [];
       const keptCells: string[][] = [];
       const keptSizes: number[] = [];
 
@@ -696,8 +775,11 @@ GridModel.registerFlow({
       },
       async handler(ctx, params) {
         const mergedRows = ctx.model.mergeRowsWithItems(params.rows || {});
-        ctx.model.setProps('rows', mergedRows);
-        ctx.model.setProps('sizes', params.sizes || {});
+        const { rows, rowOrder } = (ctx.model as GridModel).normalizeRowsWithOrder(mergedRows, params.rowOrder);
+        const sizes = (ctx.model as GridModel).orderSizesByRowOrder(params.sizes || {}, rowOrder);
+        ctx.model.setProps('rows', rows);
+        ctx.model.setProps('sizes', sizes);
+        ctx.model.setProps('rowOrder', rowOrder);
       },
     },
   },
