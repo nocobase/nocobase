@@ -62,7 +62,6 @@ StFormSubmitActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.blockModel;
         const subTableModel = blockModel.context.associationModel;
-        console.log(subTableModel);
         const parentResource = subTableModel.context.resource;
         const currentResource = blockModel.resource;
         const updateAssociations = currentResource.getUpdateAssociationValues();
