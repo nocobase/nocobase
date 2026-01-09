@@ -296,7 +296,7 @@ function buildIndexHtml(force = false) {
   }
   const data = fs.readFileSync(tpl, 'utf-8');
   let replacedData = data
-    .replace(/\{\{env.APP_BASE_URL\}\}/g, process.env.APP_BASE_URL || '')
+    .replace(/\{\{env.CDN_BASE_URL\}\}/g, process.env.CDN_BASE_URL)
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
     .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
@@ -306,9 +306,11 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
 
-  if (process.env.APP_BASE_URL) {
-    const appBaseUrl = process.env.APP_BASE_URL.replace(/\/+$/, '');
-    replacedData = replacedData.replace(/src="\//g, `src="${appBaseUrl}/`).replace(/href="\//g, `href="${appBaseUrl}/`);
+  if (process.env.CDN_BASE_URL) {
+    const appBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+    const appPublicPath = process.env.APP_PUBLIC_PATH.replace(/\/+$/, '');
+    const re = new RegExp(`src="${appPublicPath}/`, 'g');
+    replacedData = replacedData.replace(re, `src="${appBaseUrl}/`).replace(/href="\//g, `href="${appBaseUrl}/`);
   }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
@@ -392,6 +394,7 @@ exports.initEnv = function initEnv() {
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
     APP_BASE_URL: '',
+    CDN_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
     WATCH_FILE: resolve(process.cwd(), 'storage/app.watch.ts'),
   };
@@ -445,6 +448,10 @@ exports.initEnv = function initEnv() {
   if (!process.env.__env_modified__ && process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
     process.env.API_BASE_URL = process.env.APP_SERVER_BASE_URL + process.env.API_BASE_PATH;
     process.env.__env_modified__ = true;
+  }
+
+  if (!process.env.CDN_BASE_URL && process.env.APP_PUBLIC_PATH !== '/') {
+    process.env.CDN_BASE_URL = process.env.APP_PUBLIC_PATH;
   }
 
   if (!process.env.TZ) {
