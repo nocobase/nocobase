@@ -24,7 +24,7 @@ import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
-import { FormValueRuntime } from './FormValueRuntime';
+import { FormValueRuntime } from './value-runtime';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;

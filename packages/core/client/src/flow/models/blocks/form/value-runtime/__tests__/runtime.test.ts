@@ -13,7 +13,7 @@ import { EventEmitter } from 'events';
 import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
-import { FormValueRuntime } from '../FormValueRuntime';
+import { FormValueRuntime } from '..';
 
 function createFormStub(initialValues: any = {}) {
   const store: any = JSON.parse(JSON.stringify(initialValues || {}));
