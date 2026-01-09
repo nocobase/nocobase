@@ -152,6 +152,9 @@ export class AuthManager {
   }
 
   private getDefaultJWTSecret(): Buffer | string {
+    if (process.env.UNSAFE_USE_DEFAULT_JWT_SECRET === 'true') {
+      return process.env.APP_KEY;
+    }
     const jwtSecretPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'jwt_secret.dat');
     const jwtSecretExists = fs.existsSync(jwtSecretPath);
     if (jwtSecretExists) {

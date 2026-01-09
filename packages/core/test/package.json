@@ -62,6 +62,7 @@
     "@vitest/coverage-istanbul": "^1.5.0",
     "@vitest/coverage-v8": "^1.5.0",
     "axios-mock-adapter": "1.22.0",
+    "exceljs": "^4.4.0",
     "jsdom": "^25.0.1",
     "jsdom-worker": "^0.3.0",
     "mariadb": "^2.5.6",
@@ -73,8 +74,7 @@
     "vite": "^5.0.0",
     "vitest": "^1.5.0",
     "vitest-dom": "^0.1.1",
-    "ws": "^8.13.0",
-    "exceljs": "^4.4.0"
+    "ws": "^8.13.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }
