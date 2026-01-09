@@ -407,7 +407,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {
-    return null;
+    throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
   }
 
   refresh() {
