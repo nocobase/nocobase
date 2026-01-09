@@ -20,11 +20,12 @@ import {
   useFlowModel,
 } from '@nocobase/flow-engine';
 import { Table, Button, Space } from 'antd';
+import { uid } from '@formily/shared';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { AssociationFieldModel } from '../AssociationFieldModel';
@@ -181,17 +182,16 @@ const DisplayTable = (props) => {
     baseColumns,
     enableIndexColumn = true,
     model,
-    onChange,
     allowAddNew,
     allowSelectExistingRecord,
     disabled,
     onAddRecordClick,
     onSelectExitRecordClick,
+    resetPage,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const { t } = useTranslation();
-  const rowKey = collection.filterTargetKey;
 
   // 表格内部数据
   const [tableData, setTableData] = useState(value);
@@ -204,74 +204,10 @@ const DisplayTable = (props) => {
     setCurrentPageSize(pageSize);
   }, [pageSize]);
 
-  const updateRow = useCallback(
-    (updatedRecord) => {
-      setTableData((prev = []) => {
-        const pk = updatedRecord[rowKey];
-        let index = -1;
-        if (updatedRecord.__is_new__) {
-          index = prev.findIndex((item) => item.__index__ === updatedRecord.__index__);
-        } else if (pk) {
-          index = prev.findIndex((item) => item[rowKey] === pk);
-        }
-        let next;
-        if (index === -1) {
-          // 没找到：作为新记录追加到最后
-          next = [...prev, { ...updatedRecord, __is_new__: true, __index__: prev.length }];
-          const lastPage = Math.ceil(next.length / currentPageSize);
-          setCurrentPage(lastPage);
-        } else {
-          // 找到：更新原有记录
-          next = [...prev];
-          next[index] = {
-            ...prev[index],
-            ...updatedRecord,
-          };
-        }
-
-        onChange?.(next);
-        return next;
-      });
-    },
-    [rowKey, onChange, setCurrentPage, currentPageSize],
-  );
-
-  const removeRow = useCallback(
-    (recordOrPk) => {
-      const pk = typeof recordOrPk === 'object' ? recordOrPk[rowKey] : recordOrPk;
-      let index = -1;
-      setTableData((prev) => {
-        if (recordOrPk.__is_new__) {
-          index = prev.findIndex((item) => item.__index__ === recordOrPk.__index__);
-        } else {
-          index = prev.findIndex((item) => item[rowKey] === pk);
-        }
-        if (index === -1) return prev;
-
-        // 只删除一行，其它行引用不变
-        const next = prev.slice();
-        next.splice(index, 1);
-        onChange?.(next);
-        return next;
-      });
-    },
-    [rowKey, onChange],
-  );
-
   useEffect(() => {
-    model.updateRow = updateRow;
-    model.removeRow = removeRow;
-    return () => {
-      if (model.updateRow === updateRow) {
-        delete model.updateRow;
-      }
-      if (model.removeRow === removeRow) {
-        delete model.removeRow;
-      }
-    };
-  }, [model, updateRow, removeRow]);
+    resetPage && setCurrentPage(1);
+  }, [resetPage]);
 
-  // 前端分页
   const pagination = useMemo(() => {
     return {
       current: currentPage, // 当前页码
@@ -364,7 +300,11 @@ const DisplayTable = (props) => {
         >
           <Space size={'middle'}>
             {!disabled && allowAddNew !== false && (
-              <Button type="link" onClick={onAddRecordClick} style={{ marginTop: 8 }}>
+              <Button
+                type="link"
+                onClick={() => onAddRecordClick(setCurrentPage, currentPageSize)}
+                style={{ marginTop: 8 }}
+              >
                 <PlusOutlined /> {t('Add new')}
               </Button>
             )}
@@ -410,9 +350,7 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
         return this.context.fieldPath;
       },
     });
-    this.context.defineProperty('associationModel', {
-      value: this,
-    });
+
     if (this.parent.context.actionName) {
       this.context.defineProperty('actionName', {
         get: () => 'view',
@@ -423,17 +361,30 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
     this.context.blockModel.emitter.on('onFieldReset', () => {
       this.props.onChange([]);
     });
-    this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
-      this.setCurrentPage = setCurrentPage;
-      this.currentPageSize = currentPageSize;
-      this.dispatchEvent('openSelectRecordView', {
-        setCurrentPage,
-        currentPageSize,
+  }
+
+  async onDispatchEventStart(eventName: string) {
+    if (eventName === 'beforeRender') {
+      this.context.defineProperty('associationModel', {
+        value: this,
       });
-    };
-    this.onAddRecordClick = () => {
-      this.dispatchEvent('openAddRecordView', {});
-    };
+      this.onAddRecordClick = (setCurrentPage, currentPageSize) => {
+        this.setCurrentPage = setCurrentPage;
+        this.currentPageSize = currentPageSize;
+        this.dispatchEvent('openAddRecordView', {
+          setCurrentPage,
+          currentPageSize,
+        });
+      };
+      this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
+        this.setCurrentPage = setCurrentPage;
+        this.currentPageSize = currentPageSize;
+        this.dispatchEvent('openSelectRecordView', {
+          setCurrentPage,
+          currentPageSize,
+        });
+      };
+    }
   }
 
   set onSelectExitRecordClick(fn) {
@@ -449,10 +400,12 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
     await this.dispatchEvent('beforeRender');
   }
 
-  getBaseColumns() {
-    const baseColumns = this.mapSubModels('subTableColumns', (column: any) => column.getColumnProps()).filter((v) => {
-      return !v?.hidden;
-    });
+  getBaseColumns(model) {
+    const baseColumns = model
+      .mapSubModels('subTableColumns', (column: any) => column.getColumnProps(model))
+      .filter((v) => {
+        return !v?.hidden;
+      });
     return baseColumns;
   }
 
@@ -464,7 +417,7 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
 
   public render() {
     return (
-      <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns()} model={this} />
+      <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns(this)} model={this} />
     );
   }
 }
@@ -763,6 +716,86 @@ AdvancedSubTableFieldModel.registerFlow({
               padding: 0,
             },
           },
+        });
+      },
+    },
+  },
+});
+
+AdvancedSubTableFieldModel.registerFlow({
+  key: 'AdvancedSubTableUpdateRowSettings',
+  on: 'updateRow',
+  steps: {
+    updateRow: {
+      async handler(ctx, params) {
+        const updatedRecord = ctx.inputArgs.updatedRecord;
+        const prev = ctx.model.props?.value || [];
+        const rowKey = ctx.collection.filterTargetKey;
+        const pk = updatedRecord[rowKey];
+
+        let index = -1;
+        if (updatedRecord.__is_new__) {
+          index = prev.findIndex((item) => item.__index__ === updatedRecord.__index__);
+        } else if (pk) {
+          index = prev.findIndex((item) => item[rowKey] === pk);
+        }
+
+        let next;
+        if (index === -1) {
+          next = [...prev, { ...updatedRecord, __is_new__: true, __index__: prev.length }];
+        } else {
+          next = [...prev];
+          next[index] = {
+            ...prev[index],
+            ...updatedRecord,
+          };
+        }
+
+        ctx.model.props.onChange(next);
+        const lastPage = Math.ceil(next.length / ctx.model.currentPageSize);
+        ctx.model.setCurrentPage(lastPage);
+      },
+    },
+  },
+});
+
+AdvancedSubTableFieldModel.registerFlow({
+  key: 'AdvancedSubTableRemoveRowSettings',
+  on: 'removeRow',
+  steps: {
+    removeRow: {
+      async handler(ctx, params) {
+        const recordOrPk = ctx.inputArgs.removeRecord;
+        const rowKey = ctx.collection.filterTargetKey;
+        const prev = ctx.model.props?.value || [];
+        const pk = typeof recordOrPk === 'object' ? recordOrPk[rowKey] : recordOrPk;
+        let index = -1;
+
+        if (recordOrPk.__is_new__) {
+          index = prev.findIndex((item) => item.__index__ === recordOrPk.__index__);
+        } else {
+          index = prev.findIndex((item) => item[rowKey] === pk);
+        }
+        if (index === -1) return prev;
+
+        // 只删除一行，其它行引用不变
+        const next = prev.slice();
+        next.splice(index, 1);
+        ctx.model.props.onChange(next);
+      },
+    },
+  },
+});
+
+// 分页切换后重置page
+AdvancedSubTableFieldModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    pageRefresh: {
+      handler(ctx, params) {
+        ctx.model.setProps({
+          resetPage: uid(),
         });
       },
     },

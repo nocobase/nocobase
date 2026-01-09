@@ -30,7 +30,7 @@ SubTableRecordDeleteActionModel.registerFlow({
   steps: {
     disableProps: {
       async handler(ctx, params) {
-        const { allowDisassociation } = ctx.associationModel.props;
+        const { allowDisassociation } = ctx.associationModel?.props || {};
         const record = ctx.record;
         if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
           ctx.model.setProps({
@@ -61,7 +61,9 @@ SubTableRecordDeleteActionModel.registerFlow({
     delete: {
       async handler(ctx, params) {
         const subTableModel = ctx.model.parent.context.associationModel;
-        subTableModel.removeRow(ctx.record);
+        subTableModel.dispatchEvent('removeRow', {
+          removeRecord: ctx.record,
+        });
       },
     },
   },

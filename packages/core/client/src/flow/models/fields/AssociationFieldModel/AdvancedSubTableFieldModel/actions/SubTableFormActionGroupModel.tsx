@@ -62,6 +62,7 @@ StFormSubmitActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.blockModel;
         const subTableModel = blockModel.context.associationModel;
+        console.log(subTableModel);
         const parentResource = subTableModel.context.resource;
         const currentResource = blockModel.resource;
         const updateAssociations = currentResource.getUpdateAssociationValues();
@@ -71,7 +72,9 @@ StFormSubmitActionModel.registerFlow({
         try {
           await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue(true);
-          subTableModel.updateRow(values);
+          subTableModel.dispatchEvent('updateRow', {
+            updatedRecord: values,
+          });
           const newUpdateAssociations = updateAssociations.map((v) => {
             return `${prefixPath}.${v}`;
           });

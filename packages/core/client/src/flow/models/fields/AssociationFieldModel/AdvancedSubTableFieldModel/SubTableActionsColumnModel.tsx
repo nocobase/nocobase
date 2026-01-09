@@ -72,6 +72,9 @@ const Columns = observer<any>(({ record, model, index }) => {
           fork.context.defineProperty('recordIndex', {
             get: () => record.__index__ || index,
           });
+          fork.context.defineProperty('associationModel', {
+            value: model._subTableModel,
+          });
           return (
             <Droppable model={action} key={action.uid}>
               <FlowModelRenderer
@@ -113,11 +116,13 @@ const AddActionToolbarComponent = ({ model }) => {
 };
 
 export class SubTableActionsColumnModel extends TableCustomColumnModel {
+  _subTableModel;
   async afterAddAsSubModel() {
     await this.dispatchEvent('beforeRender');
   }
 
-  getColumnProps() {
+  getColumnProps(model) {
+    this._subTableModel = model;
     // 非配置态且列被标记为隐藏时，直接返回 null，从表格列中移除整列
     if (this.hidden && !this.flowEngine.flowSettings?.enabled) {
       return null;

@@ -103,14 +103,6 @@ export function EditFormContent({ model, scene = 'update' }) {
 }
 
 export class SubTableRecordAction extends ActionModel {
-  onInit(options: any): void {
-    super.onInit(options);
-    this.context.defineProperty('resource', {
-      get: () => {
-        return null;
-      },
-    });
-  }
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
     const props = this.props;
@@ -171,21 +163,15 @@ export class SubTableEditActionModel extends SubTableRecordAction {
     return 'update';
   }
 
-  onClick(event) {
-    this.dispatchEvent('openView', {
-      event,
-      ...this.getInputArgs(),
-    });
-  }
-  onInit(options: any): void {
-    super.onInit(options);
-
-    this.context.defineProperty('resource', {
-      get: () => {
-        return null;
-      },
-    });
-    console.log(this.context.blockModel);
+  async onDispatchEventStart(eventName: string) {
+    if (eventName === 'beforeRender') {
+      this.onClick = (event) => {
+        this.dispatchEvent('openView', {
+          event,
+          ...this.getInputArgs(),
+        });
+      };
+    }
   }
 }
 
