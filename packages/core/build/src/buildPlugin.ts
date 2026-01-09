@@ -627,7 +627,7 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                 module.source = {
                   source: `
 __webpack_require__.p = (function() {
-  var publicPath = window['__nocobase_public_path__'] || '/';
+  var publicPath = window['__webpack_public_path__'] || '/';
   // 确保路径以 / 结尾
   if (!publicPath.endsWith('/')) {
     publicPath += '/';
