@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "1.9.34",
+  "version": "1.9.35",
   "displayName": "File manager",
   "displayName.ru-RU": "Менеджер файлов",
   "displayName.zh-CN": "文件管理器",
