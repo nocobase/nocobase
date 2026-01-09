@@ -13,7 +13,7 @@ import { FieldAssignValueInput } from './FieldAssignValueInput';
 
 export interface FieldAssignEditorProps {
   t: (key: string) => string;
-  fieldOptions: Array<{ label: string; value: string }> | any[];
+  fieldOptions: Array<{ label: string; value: string }>;
   field?: string;
   onFieldChange: (fieldUid?: string) => void;
   value: any;
@@ -53,11 +53,10 @@ export const FieldAssignEditor: React.FC<FieldAssignEditorProps> = (props) => {
           style={{ width: '100%' }}
           options={fieldOptions}
           showSearch
-          // @ts-ignore
           filterOption={(input, option) =>
             String(option?.label ?? '')
               .toLowerCase()
-              .includes(String(input ?? '').toLowerCase())
+              .includes(input.toLowerCase())
           }
           allowClear
           onChange={(next) => onFieldChange?.(next)}
