@@ -27,7 +27,7 @@ export default defineConfig({
           window['__nocobase_dev_public_path__'] = "/";
         `
         : `
-        window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
+        window['__webpack_public_path__'] = '{{env.CDN_BASE_URL}}';
         window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
         window['__nocobase_api_client_storage_prefix__'] = '{{env.API_CLIENT_STORAGE_PREFIX}}';
