@@ -252,11 +252,9 @@ export class FormBlockModel<
       get: () => this.getCurrentRecord(),
       cache: false,
     });
-    if (this.context.resource) {
-      this.context.resource.on('saved', () => {
-        this.dispatchEvent('formSubmitSuccess', {});
-      });
-    }
+    this.context.resource.on('saved', () => {
+      this.dispatchEvent('formSubmitSuccess', {});
+    });
   }
 
   protected onMount() {
