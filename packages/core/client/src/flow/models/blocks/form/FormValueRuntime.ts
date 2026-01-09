@@ -17,6 +17,7 @@ import {
   extractUsedVariablePaths,
   extractUsedVariablePathsFromRunJS,
   FlowContext,
+  FlowModel,
   isRunJSValue,
   normalizeRunJSValue,
 } from '@nocobase/flow-engine';
@@ -86,45 +87,16 @@ export type FormAssignRuleItem = {
   value?: any;
 };
 
-function isPlainObjectValue(v: any) {
-  return _.isPlainObject(v);
-}
-
 export function isEmptyValue(v: any): boolean {
   if (v === undefined || v === null) return true;
   if (typeof v === 'string') return v.length === 0;
   if (Array.isArray(v)) return v.length === 0;
-  if (isPlainObjectValue(v)) return Object.keys(v).length === 0;
+  if (_.isPlainObject(v)) return Object.keys(v).length === 0;
   return false;
 }
 
-function getIn(obj: any, path: NamePath) {
-  let cur = obj;
-  for (const seg of path) {
-    if (cur == null) return undefined;
-    cur = cur[seg as any];
-  }
-  return cur;
-}
-
-function setIn(obj: any, path: NamePath, value: any) {
-  if (!path.length) return;
-  let cur = obj;
-  for (let i = 0; i < path.length - 1; i++) {
-    const seg = path[i];
-    const next = path[i + 1];
-    if (cur[seg as any] == null || typeof cur[seg as any] !== 'object') {
-      cur[seg as any] = typeof next === 'number' ? [] : {};
-    }
-    cur = cur[seg as any];
-  }
-  cur[path[path.length - 1] as any] = value;
-}
-
-type PlaceholderSeg = { placeholder: string };
-
-function parsePathString(path: string): Array<string | number | PlaceholderSeg> {
-  const segs: Array<string | number | PlaceholderSeg> = [];
+function parsePathString(path: string): Array<string | number | { placeholder: string }> {
+  const segs: Array<string | number | { placeholder: string }> = [];
   let i = 0;
   const len = path.length;
   const readIdent = () => {
@@ -196,8 +168,12 @@ type ObservableBinding = {
   dispose: () => void;
 };
 
+type FormBlockModel = FlowModel & {
+  getAclActionName?: () => string;
+};
+
 export class FormValueRuntime {
-  private readonly model: any;
+  private readonly model: FormBlockModel;
   private readonly getForm: () => FormInstance;
 
   private readonly valuesMirror = observable({});
@@ -207,7 +183,7 @@ export class FormValueRuntime {
   private readonly assignRuleIdsByFieldUid = new Map<string, Set<string>>();
   private readonly pendingRuleIds = new Set<string>();
   private readonly ruleDebounceUntilById = new Map<string, number>();
-  private readonly ruleDebounceTimersById = new Map<string, any>();
+  private readonly ruleDebounceTimersById = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly observableBindings = new Map<string, ObservableBinding>();
   private readonly changeTick = observable.ref(0);
   private readonly txWriteCounts = new Map<string, Map<string, number>>();
@@ -227,14 +203,14 @@ export class FormValueRuntime {
   private readonly defaultRuleIdsByMasterUid = new Map<string, Set<string>>();
   private readonly defaultRuleMasterDisposers = new Map<string, () => void>();
 
-  private mountedListener?: (payload: any) => void;
-  private unmountedListener?: (payload: any) => void;
+  private mountedListener?: (payload: { model: FlowModel }) => void;
+  private unmountedListener?: (payload: { model: FlowModel }) => void;
 
   private patchedForm?: FormInstance;
   private originalFormSetFieldValue?: (namePath: any, value: any) => void;
   private originalFormSetFieldsValue?: (values: any) => void;
 
-  constructor(options: { model: any; getForm: () => FormInstance }) {
+  constructor(options: { model: FormBlockModel; getForm: () => FormInstance }) {
     this.model = options.model;
     this.getForm = options.getForm;
     this.formValuesProxy = this.createFormValuesProxy([], undefined);
@@ -321,62 +297,37 @@ export class FormValueRuntime {
 
   get formValues() {
     if (!this.disposed) {
-      const form = this.getForm?.();
-      if (form) {
-        this.patchFormMethods(form);
-      }
+      this.patchFormMethods(this.getForm());
     }
     return this.formValuesProxy;
   }
 
   getFormValuesSnapshot() {
     if (!this.disposed) {
-      const formForPatch = this.getForm?.();
-      if (formForPatch) {
-        this.patchFormMethods(formForPatch);
-      }
+      const form = this.getForm();
+      this.patchFormMethods(form);
     }
-    const form = this.getForm?.();
-    if (form?.getFieldsValue) {
-      try {
-        return form.getFieldsValue(true);
-      } catch {
-        return toJS(this.valuesMirror);
-      }
-    }
-    return toJS(this.valuesMirror);
+    return this.getForm().getFieldsValue(true);
   }
 
   private getFormValueAtPath(namePath: NamePath) {
-    const form = this.getForm?.();
-    if (form?.getFieldValue) {
-      try {
-        return form.getFieldValue(namePath as any);
-      } catch {
-        // ignore
-      }
-    }
-    const snapshot = this.getFormValuesSnapshot();
-    return getIn(snapshot, namePath);
+    return this.getForm().getFieldValue(namePath);
   }
 
   mount(options?: { sync?: boolean }) {
     if (this.disposed) return;
 
-    const form = this.getForm?.();
-    if (form) {
-      this.patchFormMethods(form);
-    }
+    this.patchFormMethods(this.getForm());
 
     const engineEmitter = this.model?.flowEngine?.emitter;
     if (!engineEmitter) return;
 
     if (!this.mountedListener && !this.unmountedListener) {
-      this.mountedListener = ({ model }: any) => {
+      this.mountedListener = ({ model }: { model: FlowModel }) => {
         this.tryRegisterDefaultRuleInstance(model);
         this.tryScheduleAssignRulesOnModelChange(model);
       };
-      this.unmountedListener = ({ model }: any) => {
+      this.unmountedListener = ({ model }: { model: FlowModel }) => {
         this.tryUnregisterDefaultRuleInstance(model);
         this.tryScheduleAssignRulesOnModelChange(model);
       };
@@ -440,10 +391,10 @@ export class FormValueRuntime {
     return this.suppressFormCallbackDepth > 0;
   }
 
-  handleFormFieldsChange(changedFields: Array<{ name?: any }>) {
+  handleFormFieldsChange(changedFields: Array<{ name?: NamePath | string | number; touched?: boolean }>) {
     if (this.disposed) return;
-    const form = this.getForm?.();
-    if (!form?.getFieldValue) {
+    const form = this.getForm();
+    if (!form.getFieldValue) {
       return;
     }
 
@@ -457,9 +408,9 @@ export class FormValueRuntime {
           : null;
       if (!namePath?.length) continue;
       const nextValue = form.getFieldValue(namePath as any);
-      const prevValue = getIn(this.valuesMirror, namePath);
+      const prevValue = _.get(this.valuesMirror, namePath);
       if (_.isEqual(nextValue, prevValue)) continue;
-      setIn(this.valuesMirror, namePath, nextValue);
+      _.set(this.valuesMirror, namePath, nextValue);
       changedPaths.push(namePath);
     }
 
@@ -470,9 +421,7 @@ export class FormValueRuntime {
       return;
     }
 
-    const isUser =
-      Array.isArray(changedFields) &&
-      changedFields.some((f: any) => f && typeof f === 'object' && 'touched' in f && f.touched === true);
+    const isUser = changedFields.some((f) => f?.touched === true);
     const source: ValueSource = isUser ? 'user' : 'system';
 
     // 用于给 onValuesChange 提供更精确的 changedPaths/source（避免仅靠 changedValues 的 top-level key）
@@ -509,10 +458,10 @@ export class FormValueRuntime {
     let hasMirrorChange = false;
     for (const p of changedPaths) {
       if (!p?.length) continue;
-      const nextValue = getIn(snapshot, p);
-      const prevValue = getIn(this.valuesMirror, p);
+      const nextValue = _.get(snapshot, p);
+      const prevValue = _.get(this.valuesMirror, p);
       if (_.isEqual(prevValue, nextValue)) continue;
-      setIn(this.valuesMirror, p, nextValue);
+      _.set(this.valuesMirror, p, nextValue);
       hasMirrorChange = true;
     }
     if (hasMirrorChange) {
@@ -642,7 +591,7 @@ export class FormValueRuntime {
       try {
         for (const { namePath, value } of filteredToWrite) {
           form.setFieldValue?.(namePath, value);
-          setIn(this.valuesMirror, namePath, value);
+          _.set(this.valuesMirror, namePath, value);
           changedPaths.push(namePath);
         }
         this.bumpChangeTick();
@@ -701,13 +650,13 @@ export class FormValueRuntime {
     const form = this.getForm?.();
     if (!form) return;
 
-    const prevValue = getIn(this.valuesMirror, namePath);
+    const prevValue = _.get(this.valuesMirror, namePath);
     if (_.isEqual(prevValue, nextValue)) return;
 
     this.suppressFormCallbackDepth++;
     try {
       form.setFieldValue?.(namePath, nextValue);
-      setIn(this.valuesMirror, namePath, nextValue);
+      _.set(this.valuesMirror, namePath, nextValue);
       this.bumpChangeTick();
     } finally {
       this.suppressFormCallbackDepth--;
@@ -739,7 +688,7 @@ export class FormValueRuntime {
 
   private createFormValuesProxy(basePath: NamePath, collector?: DepCollector): any {
     const runtime = this;
-    const getTarget = () => (basePath.length ? getIn(runtime.valuesMirror, basePath) : runtime.valuesMirror);
+    const getTarget = () => (basePath.length ? _.get(runtime.valuesMirror, basePath) : runtime.valuesMirror);
     const target = getTarget();
     const proxyTarget =
       target && (typeof target === 'object' || typeof target === 'function') ? target : Array.isArray(target) ? [] : {};
@@ -793,7 +742,7 @@ export class FormValueRuntime {
         if (typeof finalVal === 'undefined') {
           const fetched = runtime.getFormValueAtPath(nextPath);
           if (!_.isEqual(fetched, finalVal)) {
-            setIn(runtime.valuesMirror, nextPath, fetched);
+            _.set(runtime.valuesMirror, nextPath, fetched);
             finalVal = fetched;
           }
         }
@@ -1053,7 +1002,7 @@ export class FormValueRuntime {
     }
   }
 
-  private tryRegisterDefaultRuleInstance(model: any) {
+  private tryRegisterDefaultRuleInstance(model: FlowModel) {
     if (this.disposed) return;
     if (!this.isModelInThisForm(model)) return;
     if (!model || typeof model !== 'object') return;
@@ -1114,7 +1063,7 @@ export class FormValueRuntime {
     this.scheduleRule(id);
   }
 
-  private tryScheduleAssignRulesOnModelChange(model: any) {
+  private tryScheduleAssignRulesOnModelChange(model: FlowModel) {
     if (this.disposed) return;
     if (!this.isModelInThisForm(model)) return;
 
@@ -1131,7 +1080,7 @@ export class FormValueRuntime {
     }
   }
 
-  private tryUnregisterDefaultRuleInstance(model: any) {
+  private tryUnregisterDefaultRuleInstance(model: FlowModel) {
     if (this.disposed) return;
     if (!this.isModelInThisForm(model)) return;
     const id = this.getDefaultRuleId(model);
@@ -1521,7 +1470,7 @@ export class FormValueRuntime {
       if (!depKey.startsWith('fv:') && !depKey.startsWith('ctx:')) {
         const depPath = pathKeyToNamePath(depKey);
         const disposer = reaction(
-          () => getIn(this.valuesMirror, depPath),
+          () => _.get(this.valuesMirror, depPath),
           () => this.scheduleRule(rule.id),
         );
         state.depDisposers.push(disposer);
@@ -1532,7 +1481,7 @@ export class FormValueRuntime {
         const inner = depKey.slice('fv:'.length);
         const depPath = pathKeyToNamePath(inner);
         const disposer = reaction(
-          () => getIn(this.valuesMirror, depPath),
+          () => _.get(this.valuesMirror, depPath),
           () => this.scheduleRule(rule.id),
         );
         state.depDisposers.push(disposer);
@@ -1549,7 +1498,7 @@ export class FormValueRuntime {
       const disposer = reaction(
         () => {
           const root = baseCtx ? baseCtx[varName] : undefined;
-          return depPath.length ? getIn(root, depPath) : root;
+          return depPath.length ? _.get(root, depPath) : root;
         },
         () => this.scheduleRule(rule.id),
       );
@@ -1557,13 +1506,13 @@ export class FormValueRuntime {
     }
   }
 
-  private getDefaultRuleId(model: any) {
-    const forkId = model?.isFork ? String(model?.forkId ?? 'fork') : 'master';
+  private getDefaultRuleId(model: FlowModel) {
+    const forkId = model?.['isFork'] ? String(model?.['forkId'] ?? 'fork') : 'master';
     const uid = model?.uid ? String(model.uid) : String(model);
     return `default:${uid}:${forkId}`;
   }
 
-  private getModelTargetNamePath(model: any): NamePath | null {
+  private getModelTargetNamePath(model: FlowModel): NamePath | null {
     const fp = model?.context?.fieldPathArray;
     if (Array.isArray(fp) && fp.length) return fp as NamePath;
 
@@ -1576,7 +1525,7 @@ export class FormValueRuntime {
     return null;
   }
 
-  private isModelInThisForm(model: any) {
+  private isModelInThisForm(model: FlowModel) {
     const block = model?.context?.blockModel;
     if (!block) return false;
     return String(block.uid) === String(this.model.uid);
