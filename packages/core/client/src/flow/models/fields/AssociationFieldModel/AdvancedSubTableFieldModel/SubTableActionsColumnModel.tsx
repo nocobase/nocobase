@@ -27,7 +27,7 @@ import { ActionModel } from '../../../base/ActionModel';
 import { TableCustomColumnModel } from '../../../blocks/table/TableCustomColumnModel';
 import { TableBlockModel } from '../../../blocks/table/TableBlockModel';
 
-const Columns = observer<any>(({ record, model, index }) => {
+const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
   const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
   return (
     <DndProvider>
@@ -75,7 +75,7 @@ const Columns = observer<any>(({ record, model, index }) => {
             get: () => record.__index__ || index,
           });
           fork.context.defineProperty('associationModel', {
-            value: model._subTableModel,
+            value: _subTableModel,
           });
           return (
             <Droppable model={action} key={action.uid}>
@@ -190,7 +190,7 @@ export class SubTableActionsColumnModel extends TableCustomColumnModel {
           }
         `}
       >
-        <Columns record={record} model={this} index={index} />
+        <Columns record={record} model={this} index={index} _subTableModel={this._subTableModel} />
       </div>
     );
   }

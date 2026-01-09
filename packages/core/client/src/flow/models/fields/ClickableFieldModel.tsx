@@ -14,7 +14,7 @@ import React from 'react';
 import { EllipsisWithTooltip } from '../../components';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
-import { AdvancedSubTableFieldModel } from '../fields/AssociationFieldModel/AdvancedSubTableFieldModel';
+import { EditFormModel } from '../blocks/form/EditFormModel';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
@@ -262,7 +262,7 @@ ClickableFieldModel.registerFlow({
       title: tExpr('Enable click-to-open'),
       uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
-        if (ctx.associationModel instanceof AdvancedSubTableFieldModel) {
+        if (ctx.model.parent.subKey === 'subTableColumns') {
           return {
             clickToOpen: false,
           };
@@ -272,7 +272,7 @@ ClickableFieldModel.registerFlow({
         };
       },
       hideInSettings(ctx) {
-        return ctx.associationModel instanceof AdvancedSubTableFieldModel;
+        return ctx.model.parent.subKey === 'subTableColumns';
       },
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });

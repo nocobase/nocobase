@@ -8,6 +8,7 @@
  */
 
 import { defineFlow, tExpr, FlowModel, FlowModelContext, CollectionField } from '@nocobase/flow-engine';
+import { EditFormModel } from '../models/blocks/form/';
 
 export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
@@ -23,7 +24,7 @@ export const openViewFlow = defineFlow<FlowModel>({
           return false;
         }
         if (clickToOpen === undefined) {
-          return !ctx.collectionField?.isAssociationField() || ctx.associationModel;
+          return !ctx.collectionField?.isAssociationField() || ctx.model.parent.subKey === 'subTableColumns';
         }
         return clickToOpen === false;
       },

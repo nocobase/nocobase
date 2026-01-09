@@ -20,6 +20,23 @@ export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
   getAclActionName() {
     return 'update';
   }
+
+  async onDispatchEventStart(eventName: string) {
+    if (eventName === 'beforeRender') {
+      this.onClick = (event) => {
+        this.dispatchEvent(
+          'click',
+          {
+            event,
+            ...this.getInputArgs(),
+          },
+          {
+            debounce: true,
+          },
+        );
+      };
+    }
+  }
 }
 
 SubTableRecordDeleteActionModel.define({
@@ -60,7 +77,7 @@ SubTableRecordDeleteActionModel.registerFlow({
     },
     delete: {
       async handler(ctx, params) {
-        const subTableModel = (ctx.model.parent as any)._subTableModel;
+        const subTableModel = ctx.model.context.associationModel;
         subTableModel.dispatchEvent('removeRow', {
           removeRecord: ctx.record,
         });

@@ -492,7 +492,6 @@ AdvancedSubTableFieldModel.registerFlow({
       },
       beforeParamsSave(ctx, params, previousParams) {
         if (params.allowDisassociation !== previousParams.allowDisassociation) {
-          console.log(ctx.model);
           ctx.model.rerender();
         }
       },
