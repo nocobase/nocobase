@@ -309,8 +309,9 @@ function buildIndexHtml(force = false) {
   if (process.env.CDN_BASE_URL) {
     const appBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
     const appPublicPath = process.env.APP_PUBLIC_PATH.replace(/\/+$/, '');
-    const re = new RegExp(`src="${appPublicPath}/`, 'g');
-    replacedData = replacedData.replace(re, `src="${appBaseUrl}/`).replace(/href="\//g, `href="${appBaseUrl}/`);
+    const re1 = new RegExp(`src="${appPublicPath}/`, 'g');
+    const re2 = new RegExp(`src="${appPublicPath}/`, 'g');
+    replacedData = replacedData.replace(re1, `src="${appBaseUrl}/`).replace(re2, `href="${appBaseUrl}/`);
   }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
