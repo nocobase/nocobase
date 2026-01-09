@@ -60,7 +60,7 @@ SubTableRecordDeleteActionModel.registerFlow({
     },
     delete: {
       async handler(ctx, params) {
-        const subTableModel = ctx.model.parent.context.associationModel;
+        const subTableModel = (ctx.model.parent as any)._subTableModel;
         subTableModel.dispatchEvent('removeRow', {
           removeRecord: ctx.record,
         });

@@ -490,6 +490,12 @@ AdvancedSubTableFieldModel.registerFlow({
           allowDisassociation: params.allowDisassociation,
         });
       },
+      beforeParamsSave(ctx, params, previousParams) {
+        if (params.allowDisassociation !== previousParams.allowDisassociation) {
+          console.log(ctx.model);
+          ctx.model.rerender();
+        }
+      },
     },
     allowSelectExistingRecord: {
       title: tExpr('Enable select action'),
@@ -770,7 +776,6 @@ AdvancedSubTableFieldModel.registerFlow({
         const prev = ctx.model.props?.value || [];
         const pk = typeof recordOrPk === 'object' ? recordOrPk[rowKey] : recordOrPk;
         let index = -1;
-
         if (recordOrPk.__is_new__) {
           index = prev.findIndex((item) => item.__index__ === recordOrPk.__index__);
         } else {

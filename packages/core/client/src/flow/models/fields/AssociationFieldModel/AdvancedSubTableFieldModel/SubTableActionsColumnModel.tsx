@@ -41,7 +41,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         `}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
-          const fork = action.createFork({}, `${record.__index__ || index}`);
+          const fork = action.createFork({});
           if (fork.hidden && !isConfigMode) {
             return;
           }
@@ -61,7 +61,9 @@ const Columns = observer<any>(({ record, model, index }) => {
             },
           );
           fork.context.defineProperty('record', {
-            get: () => record,
+            get: () => {
+              return record;
+            },
             cache: false,
             resolveOnServer: createRecordResolveOnServerWithLocal(
               () => (fork.context as any).collection,
