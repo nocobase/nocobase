@@ -191,6 +191,7 @@ class AIChatConversationImpl implements AIChatConversation {
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
+        additional_kwargs: msg.metadata?.additional_kwargs,
       });
     }
 

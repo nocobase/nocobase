@@ -86,10 +86,6 @@ export const useCreateActionProps = () => {
     type: 'primary',
     async onClick() {
       const values = form.values;
-      if (!values?.about) {
-        message.warning(t('Please complete role setting before submitting'));
-        return;
-      }
       const modelSettings = values?.modelSettings;
       if (!modelSettings?.llmService || !modelSettings?.model) {
         message.warning(t('Please complete model setting before submitting'));
@@ -122,11 +118,15 @@ export const useEditActionProps = () => {
   return {
     type: 'primary',
     async onClick() {
-      const values = form.values;
-      if (!values?.about) {
-        message.warning(t('Please complete persona before submitting'));
-        return;
+      const values = { ...form.values };
+      // Handle built-in AI employee about mode
+      // _aboutMode is set by SystemPrompt component for built-in employees
+      if (values._aboutMode === 'system') {
+        values.about = null;
       }
+      // Remove temporary field before submitting
+      delete values._aboutMode;
+
       const modelSettings = values?.modelSettings;
       if (!modelSettings?.llmService || !modelSettings?.model) {
         message.warning(t('Please complete model settings before submitting'));

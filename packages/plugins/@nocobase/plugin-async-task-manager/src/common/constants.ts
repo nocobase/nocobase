@@ -44,7 +44,7 @@ export const TASK_STATUS_OPTIONS = {
   },
   [TASK_STATUS.CANCELED]: {
     value: TASK_STATUS.CANCELED,
-    label: `{{t('Canceled', { ns: '${NAMESPACE}' })}}`,
+    label: `{{t('Cancelled', { ns: '${NAMESPACE}' })}}`,
     color: 'warning',
     icon: 'StopOutlined',
   },
