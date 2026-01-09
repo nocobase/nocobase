@@ -11,7 +11,6 @@ import actions, { Context, Next } from '@nocobase/actions';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
-import { SkillSettings } from '../../client/ai-employees/admin/SkillSettings';
 import _ from 'lodash';
 
 export const list = async (ctx: Context, next: Next) => {
