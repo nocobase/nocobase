@@ -37,6 +37,29 @@ After executing an import, the process will run in a separate background thread 
 
 After the import is complete, you can view the results in the import tasks.
 
+#### About Concurrency
+
+To limit system resource usage when asynchronous tasks are executed concurrently, you can control concurrency and resource allocation using the following environment variables:
+
+- `ASYNC_TASK_MAX_CONCURRENCY` 
+
+Limits the number of asynchronous tasks that can run concurrently.
+Default value: 3.
+
+- `ASYNC_TASK_CONCURRENCY_MODE` 
+
+Specifies the concurrency control mode.
+Available values: `app`, `process`.
+Default value: `app`.
+- When set to `app`, the maximum number of asynchronous tasks that can run concurrently per sub-application is limited to the value specified by `ASYNC_TASK_MAX_CONCURRENCY`.
+- When set to `process`, the total number of concurrent asynchronous tasks across all sub-applications within the same process must not exceed the value specified by `ASYNC_TASK_MAX_CONCURRENCY`.
+
+- `ASYNC_TASK_WORKER_MAX_OLD` and `ASYNC_TASK_WORKER_MAX_YOUNG`
+
+Limit the maximum heap memory that worker threads executing asynchronous tasks can allocate:
+- Old generation heap memory (MB): `ASYNC_TASK_WORKER_MAX_OLD`
+- Young generation heap memory (MB): `ASYNC_TASK_WORKER_MAX_YOUNG`
+
 #### About Performance
 
 To evaluate the performance of large-scale data imports, we conducted comparative tests under different scenarios, field types, and trigger configurations (results may vary depending on server and database configurations and are for reference only):

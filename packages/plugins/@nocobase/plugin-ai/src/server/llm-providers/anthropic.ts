@@ -20,16 +20,44 @@ export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
 
   get baseURL() {
-    return 'https://api.anthropic.com/v1/';
+    return 'https://api.anthropic.com';
   }
 
   createModel() {
     const { apiKey, baseURL } = this.serviceOptions || {};
-    const { model } = this.modelOptions || {};
+    const sanitizedModelOptions = { ...(this.modelOptions || {}) };
+    const model = sanitizedModelOptions.model;
+
+    // 新模型要求 处理参数冲突
+    const hasTemperature =
+      sanitizedModelOptions.temperature !== undefined && sanitizedModelOptions.temperature !== null;
+    const hasTopP =
+      (sanitizedModelOptions.topP !== undefined && sanitizedModelOptions.topP !== null) ||
+      (sanitizedModelOptions.top_p !== undefined && sanitizedModelOptions.top_p !== null);
+
+    if (hasTemperature) {
+      delete sanitizedModelOptions.topP;
+      delete sanitizedModelOptions.top_p;
+      delete sanitizedModelOptions.topK;
+      delete sanitizedModelOptions.top_k;
+    } else if (hasTopP) {
+      delete sanitizedModelOptions.temperature;
+      delete sanitizedModelOptions.topK;
+      delete sanitizedModelOptions.top_k;
+    } else {
+      delete sanitizedModelOptions.topK;
+      delete sanitizedModelOptions.top_k;
+    }
+
+    for (const key of ['topP', 'top_p', 'topK', 'top_k']) {
+      if (sanitizedModelOptions[key] === -1) {
+        delete sanitizedModelOptions[key];
+      }
+    }
 
     return new ChatAnthropic({
       apiKey,
-      ...this.modelOptions,
+      ...sanitizedModelOptions,
       model,
       anthropicApiUrl: baseURL || this.baseURL,
       verbose: false,
@@ -54,10 +82,7 @@ export class AnthropicProvider extends LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
-      const res = await axios.get(`${baseURL}/models`, {
+      const res = await axios.get(`${baseURL}/v1/models`, {
         headers: {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
@@ -67,7 +92,9 @@ export class AnthropicProvider extends LLMProvider {
         models: res?.data?.data,
       };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      const status = e.response?.status || 500;
+      const errorMsg = e.response?.data?.error?.message || e.message;
+      return { code: status, errMsg: `Anthropic API Error: ${errorMsg}` };
     }
   }
 

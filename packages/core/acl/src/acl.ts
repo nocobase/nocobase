@@ -21,7 +21,7 @@ import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
-interface CanResult {
+export interface CanResult {
   role: string;
   resource: string;
   action: string;
