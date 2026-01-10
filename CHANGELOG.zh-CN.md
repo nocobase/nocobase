@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.36](https://github.com/nocobase/nocobase/compare/v1.9.35...v1.9.36) - 2026-01-10
+
+### 🚀 优化
+
+- **[client]** 通过改为使用 webkit 原生 CSS 展示文本省略号，优化插件管理器列表渲染性能 ([#8391](https://github.com/nocobase/nocobase/pull/8391)) by @mytharcher
+
+### 🐛 修复
+
+- **[文件管理器]** 修复上传至 S3 存储引擎的文件 URL 生成错误的问题 ([#8392](https://github.com/nocobase/nocobase/pull/8392)) by @mytharcher
+
+- **[文件存储：S3 (Pro)]** 修复文件重命名模式不起作用的问题 by @mytharcher
+
+- **[工作流：审批]** 修复由于缺失 `ValueBlock.Result` 组件注入导致的值区块内容不展示的问题 by @mytharcher
+
 ## [v1.9.35](https://github.com/nocobase/nocobase/compare/v1.9.34...v1.9.35) - 2026-01-09
 
 ### 🚀 优化
