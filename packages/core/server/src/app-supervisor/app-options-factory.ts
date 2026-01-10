@@ -43,7 +43,7 @@ export const appOptionsFactory = (appName: string, mainApp: Application, options
   ) {
     rawDatabaseOptions.schema = appName;
     dbConnType = 'new_schema';
-  } else {
+  } else if (options?.dbConnType !== 'new_schema') {
     rawDatabaseOptions.database = appName;
   }
 

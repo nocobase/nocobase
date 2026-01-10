@@ -369,9 +369,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     const appOptions = appModel.options || {};
     let options = appOptions;
     if (mainApp) {
-      const defaultAppOptions = this.appOptionsFactory(appName, mainApp);
+      const defaultAppOptions = this.appOptionsFactory(appName, mainApp, appOptions);
       // Some legacy app options factories do not accept options parameter
-      // Thus, we need to merge manually here
+      // Thus, we need to merge manually here again
       options = {
         ...lodash.merge({}, defaultAppOptions, appOptions),
         name: appName,
