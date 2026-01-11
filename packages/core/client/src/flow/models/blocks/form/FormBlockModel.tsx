@@ -25,6 +25,7 @@ import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
 import { FormValueRuntime } from './value-runtime';
+import { clearLegacyDefaultValuesFromFormModel } from './legacyDefaultValueMigration';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -223,6 +224,16 @@ export class FormBlockModel<
   }
 
   async saveStepParams() {
+    const shouldSaveSubModels = (this as any).__saveStepParamsWithSubModels === true;
+    if (shouldSaveSubModels) {
+      try {
+        // full save (including subModels) to persist migrated field-level settings cleanup
+        return await this.save();
+      } finally {
+        delete (this as any).__saveStepParamsWithSubModels;
+      }
+    }
+
     const res = await super.saveStepParams();
     const grid = this.subModels.grid;
     await grid?.saveStepParams();
@@ -294,14 +305,10 @@ export class FormBlockModel<
   protected onMount() {
     super.onMount();
     this.formValueRuntime?.mount({ sync: true });
-    // 将“表单赋值”配置编译为运行时规则
-    try {
-      const params = this.getStepParams('formModelSettings', 'assignRules');
-      const items = (params?.value || []) as any[];
-      this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
-    } catch {
-      // ignore
-    }
+    // 将"表单赋值"配置编译为运行时规则
+    const params = this.getStepParams('formModelSettings', 'assignRules');
+    const items = (params?.value || []) as any[];
+    this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
@@ -379,15 +386,21 @@ FormBlockModel.registerFlow({
     assignRules: {
       use: 'formAssignRules',
       title: tExpr('Assign field values'),
+      beforeParamsSave(ctx) {
+        // 迁移：保存表单级规则后，移除字段级默认值配置（editItemSettings/formItemSettings.initialValue）
+        // 字段级默认值会在 UI 打开时自动合并到本步骤表单值中，因此此处仅做清理即可。
+        const cleared = clearLegacyDefaultValuesFromFormModel(ctx.model);
+        if (Array.isArray(cleared) && cleared.length) {
+          // FlowModelRepository({ onlyStepParams: true }) 不会写入 subModels，
+          // 此处标记后在 saveStepParams 中触发一次全量保存以持久化清理结果。
+          (ctx.model as any).__saveStepParamsWithSubModels = true;
+        }
+      },
       afterParamsSave(ctx) {
         // 保存后同步到运行时（若存在），以便立即生效
-        try {
-          const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
-          const items = (params?.value || []) as any[];
-          (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
-        } catch {
-          // ignore
-        }
+        const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
+        const items = (params?.value || []) as any[];
+        (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
       },
     },
   },
