@@ -352,6 +352,8 @@ FilterFormItemModel.registerFlow({
     },
     initialValue: {
       title: tExpr('Default value'),
+      // 默认值已统一到筛选表单级“默认值”配置，此处仅保留旧配置兼容读取（隐藏入口）
+      hideInSettings: true,
       uiSchema: (ctx) => {
         return {
           defaultValue: {
