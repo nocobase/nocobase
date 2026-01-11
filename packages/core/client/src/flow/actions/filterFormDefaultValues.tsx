@@ -12,11 +12,11 @@ import { isEqual } from 'lodash';
 import React from 'react';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import {
-  collectLegacyDefaultValueRulesFromFormModel,
+  collectLegacyDefaultValueRulesFromFilterFormModel,
   mergeAssignRulesWithLegacyDefaults,
-} from '../models/blocks/form/legacyDefaultValueMigration';
+} from '../models/blocks/filter-form/legacyDefaultValueMigration';
 
-const FormAssignRulesUI = observer(
+const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
@@ -29,9 +29,9 @@ const FormAssignRulesUI = observer(
       }));
     }, [ctx.model]);
 
-    // 兼容：将字段级默认值（editItemSettings/formItemSettings.initialValue）合并到表单级 assignRules 里展示
+    // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示
     const mergedValue = React.useMemo(() => {
-      const legacyDefaults = collectLegacyDefaultValueRulesFromFormModel(ctx.model);
+      const legacyDefaults = collectLegacyDefaultValueRulesFromFilterFormModel(ctx.model);
       return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
     }, [ctx.model, props.value]);
 
@@ -52,22 +52,24 @@ const FormAssignRulesUI = observer(
         fieldOptions={fieldOptions}
         value={mergedValue}
         onChange={props.onChange}
+        fixedMode="default"
+        showCondition={false}
         showValueEditorWhenNoField
       />
     );
   },
 );
 
-export const formAssignRules = defineAction({
-  name: 'formAssignRules',
-  title: tExpr('Assign field values'),
+export const filterFormDefaultValues = defineAction({
+  name: 'filterFormDefaultValues',
+  title: tExpr('Default value'),
   useRawParams: true,
   uiMode: 'embed',
   uiSchema() {
     return {
       value: {
         type: 'array',
-        'x-component': FormAssignRulesUI,
+        'x-component': FilterFormDefaultValuesUI,
       },
     };
   },
