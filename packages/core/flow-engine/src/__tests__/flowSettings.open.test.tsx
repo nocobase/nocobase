@@ -12,6 +12,7 @@ import { screen } from '@testing-library/react';
 import { FlowSettings } from '../flowSettings';
 import { FlowModel } from '../models';
 import { FlowEngine } from '../flowEngine';
+import { GLOBAL_EMBED_CONTAINER_ID } from '../views';
 
 // We will stub viewer directly on model.context in tests
 
@@ -1087,18 +1088,18 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Create mock DOM element for embed target
     const mockTarget = document.createElement('div');
-    mockTarget.id = 'nocobase-embed-container';
+    mockTarget.id = GLOBAL_EMBED_CONTAINER_ID;
     mockTarget.style.width = 'auto';
     mockTarget.style.maxWidth = 'none';
     document.body.appendChild(mockTarget);
 
     // Mock querySelector to return our mock element
-    const originalQuerySelector = document.querySelector;
-    document.querySelector = vi.fn((selector) => {
-      if (selector === '#nocobase-embed-container') {
+    const originalQuerySelector = document.querySelector.bind(document);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+      if (selector === `#${GLOBAL_EMBED_CONTAINER_ID}`) {
         return mockTarget;
       }
-      return originalQuerySelector.call(document, selector);
+      return originalQuerySelector(selector);
     });
 
     const M = model.constructor as any;
@@ -1164,7 +1165,61 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Cleanup
     document.body.removeChild(mockTarget);
-    document.querySelector = originalQuerySelector;
+    querySelectorSpy.mockRestore();
+  });
+
+  it('does not clear embed target DOM before opening (avoids portal unmount errors)', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const model = new FlowModel({ uid: 'm-embed-no-clear', flowEngine: engine });
+
+    const mockTarget = document.createElement('div');
+    mockTarget.id = GLOBAL_EMBED_CONTAINER_ID;
+    mockTarget.innerHTML = '<div data-testid="existing">Existing</div>';
+    document.body.appendChild(mockTarget);
+
+    const originalQuerySelector = document.querySelector.bind(document);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+      if (selector === `#${GLOBAL_EMBED_CONTAINER_ID}`) {
+        return mockTarget;
+      }
+      return originalQuerySelector(selector);
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'embedNoClearFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const embed = vi.fn((opts: any) => {
+      // The existing DOM should not be wiped out before opening the embed view.
+      expect(mockTarget.querySelector('[data-testid="existing"]')).toBeTruthy();
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { embed } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'embedNoClearFlow',
+      stepKey: 'step',
+      uiMode: 'embed',
+    } as any);
+
+    expect(embed).toHaveBeenCalledTimes(1);
+    expect(mockTarget.querySelector('[data-testid="existing"]')).toBeTruthy();
+
+    document.body.removeChild(mockTarget);
+    querySelectorSpy.mockRestore();
   });
 
   it('uses embed uiMode with default props when target element exists', async () => {
@@ -1174,16 +1229,16 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Create mock DOM element for embed target
     const mockTarget = document.createElement('div');
-    mockTarget.id = 'nocobase-embed-container';
+    mockTarget.id = GLOBAL_EMBED_CONTAINER_ID;
     document.body.appendChild(mockTarget);
 
     // Mock querySelector
-    const originalQuerySelector = document.querySelector;
-    document.querySelector = vi.fn((selector) => {
-      if (selector === '#nocobase-embed-container') {
+    const originalQuerySelector = document.querySelector.bind(document);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+      if (selector === `#${GLOBAL_EMBED_CONTAINER_ID}`) {
         return mockTarget;
       }
-      return originalQuerySelector.call(document, selector);
+      return originalQuerySelector(selector);
     });
 
     const M = model.constructor as any;
@@ -1223,7 +1278,7 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Cleanup
     document.body.removeChild(mockTarget);
-    document.querySelector = originalQuerySelector;
+    querySelectorSpy.mockRestore();
   });
 
   it('handles embed uiMode when target element is not found', async () => {
@@ -1232,8 +1287,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const model = new FlowModel({ uid: 'm-embed-no-target', flowEngine: engine });
 
     // Mock querySelector to return null (target not found)
-    const originalQuerySelector = document.querySelector;
-    document.querySelector = vi.fn(() => null);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockReturnValue(null);
 
     const M = model.constructor as any;
     M.registerFlow({
@@ -1266,7 +1320,7 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(embed).toHaveBeenCalledTimes(1);
 
     // Restore querySelector
-    document.querySelector = originalQuerySelector;
+    querySelectorSpy.mockRestore();
   });
 
   it('handles error in function-based step uiMode gracefully', async () => {
