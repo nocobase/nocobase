@@ -43,7 +43,7 @@ async function copyPluginClients(pluginsBaseDir, namespace, target) {
       const pluginPath = resolve(pluginsDir, pluginName);
       const pluginDistClient = resolve(pluginPath, 'dist/client');
       if (await fs.exists(pluginDistClient)) {
-        const pluginTarget = resolve(target, 'storage/plugins', namespace, pluginName, 'dist/client');
+        const pluginTarget = resolve(target, 'static/plugins', namespace, pluginName, 'dist/client');
         await fs.mkdir(resolve(pluginTarget, '..'), { recursive: true });
         await fs.copy(pluginDistClient, pluginTarget, { recursive: true });
         console.log(chalk.green(`Copied ${namespace}/${pluginName} client files`));
