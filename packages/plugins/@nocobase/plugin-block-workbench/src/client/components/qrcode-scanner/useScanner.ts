@@ -23,7 +23,7 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
 export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
   const app = useApp();
   const mobileManager = app.pm.get(PluginMobileClient) as PluginMobileClient;
-  const mobileRouter = mobileManager.mobileRouter;
+  const mobileRouter = mobileManager?.mobileRouter;
   const appRouter = app.router;
 
   const rawBasename = mobileRouter?.router ? mobileRouter?.basename : appRouter.basename;

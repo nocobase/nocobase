@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
-import { MobilePage } from '@nocobase/plugin-mobile/client';
-import { useParams } from 'react-router-dom';
 import { useRequest } from '@nocobase/client';
+import { MobilePage } from '@nocobase/plugin-mobile/client';
 import { Spin } from 'antd';
+import React, { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { BlockTemplateInfoContext } from './BlockTemplateInfoContext';
 
 export const BlockTemplateMobilePage = () => {
@@ -36,6 +36,10 @@ export const BlockTemplateMobilePage = () => {
       }
     };
   }, []);
+
+  if (!MobilePage) {
+    return null;
+  }
 
   if (loading) {
     return <Spin />;

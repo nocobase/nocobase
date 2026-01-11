@@ -50,7 +50,7 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
   const { isMobileLayout } = useMobileLayout();
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
 
-  if (isMobileLayout) {
+  if (isMobileLayout && MobilePopup) {
     return (
       <>
         <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
