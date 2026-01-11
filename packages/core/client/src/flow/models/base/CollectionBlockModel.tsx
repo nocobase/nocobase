@@ -383,6 +383,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       get: () => {
         const params = this.getResourceSettingsInitParams();
         const resource = this.createResource(this.context, params);
+        if (!resource) {
+          return;
+        }
         // resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
@@ -535,6 +538,9 @@ CollectionBlockModel.registerFlow({
         const filterManager: FilterManager = ctx.model.context.filterManager;
         if (filterManager) {
           filterManager.bindToTarget(ctx.model.uid);
+        }
+        if (!ctx.model.resource) {
+          return;
         }
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;

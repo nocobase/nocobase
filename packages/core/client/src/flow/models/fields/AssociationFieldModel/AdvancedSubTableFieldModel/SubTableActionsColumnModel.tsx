@@ -9,6 +9,7 @@
 
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { observer } from '@formily/reactive-react';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
@@ -19,16 +20,15 @@ import {
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
-  observer,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel } from '../../base';
-import { TableCustomColumnModel } from './TableCustomColumnModel';
-import { FormBlockModel } from '../form/FormBlockModel';
+import { ActionModel } from '../../../base/ActionModel';
+import { TableCustomColumnModel } from '../../../blocks/table/TableCustomColumnModel';
+import { TableBlockModel } from '../../../blocks/table/TableBlockModel';
 
-const Columns = observer<any>(({ record, model, index }) => {
-  const isConfigMode = !!model.context.flowSettingsEnabled;
+const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
+  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
   return (
     <DndProvider>
       <Space
@@ -41,7 +41,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         `}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
-          const fork = action.createFork({}, `${record.__index || index}`);
+          const fork = action.createFork({});
           if (fork.hidden && !isConfigMode) {
             return;
           }
@@ -61,7 +61,9 @@ const Columns = observer<any>(({ record, model, index }) => {
             },
           );
           fork.context.defineProperty('record', {
-            get: () => record,
+            get: () => {
+              return record;
+            },
             cache: false,
             resolveOnServer: createRecordResolveOnServerWithLocal(
               () => (fork.context as any).collection,
@@ -70,7 +72,10 @@ const Columns = observer<any>(({ record, model, index }) => {
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
+            get: () => record.__index__ || index,
+          });
+          fork.context.defineProperty('associationModel', {
+            value: _subTableModel,
           });
           return (
             <Droppable model={action} key={action.uid}>
@@ -78,7 +83,7 @@ const Columns = observer<any>(({ record, model, index }) => {
                 showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
                 key={fork.uid}
                 model={fork}
-                inputArgs={record}
+                inputArgs={{ record, allowDisassociation: _subTableModel.props.allowDisassociation }}
                 fallback={<Skeleton.Button size="small" />}
                 extraToolbarItems={[
                   {
@@ -101,10 +106,10 @@ const AddActionToolbarComponent = ({ model }) => {
     <AddSubModelButton
       key="table-row-actions-add"
       model={model}
-      subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
+      subModelBaseClass={model.context.getModelClassName('SubTableActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
-        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
       }}
     >
       <PlusOutlined />
@@ -112,14 +117,16 @@ const AddActionToolbarComponent = ({ model }) => {
   );
 };
 
-export class TableActionsColumnModel extends TableCustomColumnModel {
+export class SubTableActionsColumnModel extends TableCustomColumnModel {
+  _subTableModel;
   async afterAddAsSubModel() {
     await this.dispatchEvent('beforeRender');
   }
 
-  getColumnProps() {
+  getColumnProps(model) {
+    this._subTableModel = model;
     // 非配置态且列被标记为隐藏时，直接返回 null，从表格列中移除整列
-    if (this.hidden && !this.context.flowSettingsEnabled) {
+    if (this.hidden && !this.flowEngine.flowSettings?.enabled) {
       return null;
     }
     const titleContent = (
@@ -179,17 +186,17 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
           overflow: hidden;
           transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
           &:hover {
-            overflow: ${this.context.flowSettingsEnabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
+            overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
           }
         `}
       >
-        <Columns record={record} model={this} index={index} />
+        <Columns record={record} model={this} index={index} _subTableModel={this._subTableModel} />
       </div>
     );
   }
 }
 
-TableActionsColumnModel.define({
+SubTableActionsColumnModel.define({
   label: '{{t("Actions")}}',
   createModelOptions: {
     stepParams: {
@@ -201,6 +208,6 @@ TableActionsColumnModel.define({
     },
   },
   hide(ctx) {
-    return ctx.blockModel instanceof FormBlockModel;
+    return ctx.blockModel instanceof TableBlockModel;
   },
 });
