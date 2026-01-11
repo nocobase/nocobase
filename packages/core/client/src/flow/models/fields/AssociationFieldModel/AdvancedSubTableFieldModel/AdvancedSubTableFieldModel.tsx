@@ -356,11 +356,6 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
         get: () => 'view',
       });
     }
-
-    // 监听表单reset
-    this.context.blockModel.emitter.on('onFieldReset', () => {
-      this.props.onChange([]);
-    });
   }
 
   async onDispatchEventStart(eventName: string) {
@@ -384,6 +379,10 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
           currentPageSize,
         });
       };
+      // 监听表单reset
+      this.context.blockModel.emitter.on('onFieldReset', () => {
+        this.props?.onChange([]);
+      });
     }
   }
 
