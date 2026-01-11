@@ -14,6 +14,11 @@ import {
   useFlowSettingsContext,
   SingleRecordResource,
   MultiRecordResource,
+  createSafeDocument,
+  createSafeNavigator,
+  createSafeWindow,
+  isRunJSValue,
+  normalizeRunJSValue,
 } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
@@ -200,7 +205,36 @@ UpdateRecordActionModel.registerFlow({
         const savedConfirm = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'confirm');
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
-        const assignedValues = params?.assignedValues || {};
+
+        const rawAssignedValues = params?.assignedValues || {};
+        const assignedValues: Record<string, any> = {};
+        if (rawAssignedValues && typeof rawAssignedValues === 'object') {
+          for (const [field, raw] of Object.entries(rawAssignedValues)) {
+            if (typeof raw === 'undefined' || raw === '') continue;
+
+            if (isRunJSValue(raw)) {
+              const { code, version } = normalizeRunJSValue(raw);
+              if (!code?.trim()) continue;
+              const globals: Record<string, any> = {};
+              const navigator = createSafeNavigator();
+              globals.navigator = navigator;
+              globals.window = createSafeWindow({ navigator });
+              globals.document = createSafeDocument();
+              const ret = await ctx.runjs(code, globals, { version });
+              if (!ret?.success) {
+                ctx.message.error(ctx.t('RunJS execution failed'));
+                return;
+              }
+              if (typeof ret.value !== 'undefined') {
+                assignedValues[field] = ret.value;
+              }
+              continue;
+            }
+
+            assignedValues[field] = raw;
+          }
+        }
+
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
           return;
