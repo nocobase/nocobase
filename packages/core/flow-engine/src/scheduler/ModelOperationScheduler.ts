@@ -36,6 +36,8 @@ export interface LifecycleEvent {
   error?: any;
   inputArgs?: Record<string, any>;
   result?: any;
+  flowKey?: string;
+  stepKey?: string;
 }
 
 type ScheduledItem = {
@@ -162,37 +164,37 @@ export class ModelOperationScheduler {
     const emitter = this.engine.emitter;
     if (!emitter || typeof emitter.on !== 'function') return;
 
-    const onCreated = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: 'created' });
+    const onCreated = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: 'created' });
     };
     emitter.on('model:created', onCreated);
     this.unbindHandlers.push(() => emitter.off('model:created', onCreated));
 
-    const onMounted = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: 'mounted' });
+    const onMounted = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: 'mounted' });
     };
     emitter.on('model:mounted', onMounted);
     this.unbindHandlers.push(() => emitter.off('model:mounted', onMounted));
 
-    const onGenericBeforeStart = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:start' });
+    const onGenericBeforeStart = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:start' });
     };
     emitter.on('model:event:beforeRender:start', onGenericBeforeStart);
     this.unbindHandlers.push(() => emitter.off('model:event:beforeRender:start', onGenericBeforeStart));
 
-    const onGenericBeforeEnd = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:end' });
+    const onGenericBeforeEnd = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:end' });
     };
     emitter.on('model:event:beforeRender:end', onGenericBeforeEnd);
     this.unbindHandlers.push(() => emitter.off('model:event:beforeRender:end', onGenericBeforeEnd));
 
-    const onUnmounted = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: 'unmounted' });
+    const onUnmounted = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: 'unmounted' });
     };
     emitter.on('model:unmounted', onUnmounted);
     this.unbindHandlers.push(() => emitter.off('model:unmounted', onUnmounted));
 
-    const onDestroyed = (e: LifecycleEvent) => {
+    const onDestroyed = async (e: LifecycleEvent) => {
       const targetBucket = this.itemsByTargetUid.get(e.uid);
       const event = { ...e, type: 'destroyed' as const };
       if (targetBucket && targetBucket.size) {
@@ -201,7 +203,7 @@ export class ModelOperationScheduler {
           const it = this.itemsById.get(id);
           if (!it) continue;
           if (this.shouldTrigger(it.options.when, event)) {
-            void this.tryExecuteOnce(id, event);
+            await this.tryExecuteOnce(id, event);
           } else {
             this.internalCancel(id);
           }
@@ -220,14 +222,14 @@ export class ModelOperationScheduler {
     if (this.subscribedEventNames.has(name)) return;
     this.subscribedEventNames.add(name);
     const emitter = this.engine.emitter;
-    const onStart = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:start` as const });
+    const onStart = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:start` as LifecycleType });
     };
-    const onEnd = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:end` as const });
+    const onEnd = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:end` as LifecycleType });
     };
-    const onError = (e: LifecycleEvent) => {
-      this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:error` as const });
+    const onError = async (e: LifecycleEvent) => {
+      await this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:error` as LifecycleType });
     };
     emitter.on(`model:event:${name}:start`, onStart);
     emitter.on(`model:event:${name}:end`, onEnd);
@@ -239,12 +241,12 @@ export class ModelOperationScheduler {
 
   private parseEventWhen(when?: ScheduleWhen): { name: string; phase: 'start' | 'end' | 'error' } | null {
     if (!when || typeof when !== 'string') return null;
-    const m = /^event:([^:]+):(start|end|error)$/.exec(when);
+    const m = /^event:(.+):(start|end|error)$/.exec(when);
     if (!m) return null;
     return { name: m[1], phase: m[2] as 'start' | 'end' | 'error' };
   }
 
-  private processLifecycleEvent(targetUid: string, event: LifecycleEvent) {
+  private async processLifecycleEvent(targetUid: string, event: LifecycleEvent) {
     const targetBucket = this.itemsByTargetUid.get(targetUid);
     if (!targetBucket || targetBucket.size === 0) return;
     const ids = Array.from(targetBucket.keys());
@@ -253,7 +255,7 @@ export class ModelOperationScheduler {
       if (!item) continue;
       const should = this.shouldTrigger(item.options.when, event);
       if (!should) continue;
-      void this.tryExecuteOnce(id, event);
+      await this.tryExecuteOnce(id, event);
     }
   }
 

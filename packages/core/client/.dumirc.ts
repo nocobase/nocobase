@@ -157,6 +157,10 @@ export default defineConfig({
               link: '/examples/flow-models/lifecycle',
             },
             {
+              title: 'scheduleModelOperation',
+              link: '/examples/flow-models/schedule-model-operation',
+            },
+            {
               title: 'hidden 属性演示',
               link: '/examples/flow-model-hidden',
             },
