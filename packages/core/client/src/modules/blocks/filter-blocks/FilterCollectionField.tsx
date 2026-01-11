@@ -84,9 +84,7 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
       field.validator = concatSchema;
     }
-    if (fieldSchema['x-disabled'] === true) {
-      field.disabled = true;
-    }
+    field.disabled = fieldSchema['x-disabled'] === true;
     if (fieldSchema['x-read-pretty'] === true) {
       field.readPretty = true;
     }
