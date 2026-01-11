@@ -88,7 +88,7 @@ async function uploadDirectoryToOSS(client, localDir, ossPrefix = '') {
       const ossKey = ossPrefix ? `${ossPrefix}/${file}` : file;
       try {
         await client.put(ossKey, filePath);
-        console.log(chalk.green(`Uploaded: ${ossKey}`));
+        // console.log(chalk.green(`Uploaded: ${ossKey}`));
         uploadedCount++;
       } catch (error) {
         console.error(chalk.red(`Failed to upload ${ossKey}:`), error.message);
