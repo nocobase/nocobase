@@ -684,5 +684,60 @@ describe('workflow > actions > workflows', () => {
       expect(w2.categories.length).toBe(categories.length);
       expect(w2.key).not.toBe(w1.key);
     });
+
+    it('duplicate with node has duplicate config', async () => {
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+        },
+      });
+
+      const workflowPlugin = app.pm.get(Plugin) as Plugin;
+      workflowPlugin.instructions.register('duplicateNode', {
+        run() {
+          return {
+            status: 1,
+          };
+        },
+        duplicateConfig(node) {
+          return {
+            ...node.config,
+            a: 1,
+          };
+        },
+      });
+
+      const n1 = await w1.createNode({
+        type: 'duplicateNode',
+        config: {
+          a: 0,
+          b: 1,
+        },
+      });
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+      });
+
+      expect(status).toBe(200);
+
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['nodes'],
+      });
+
+      const n2 = w2.nodes.find((n) => n.key === n1.key);
+      expect(n2.config).toEqual({
+        a: 1,
+        b: 1,
+      });
+    });
   });
 });
