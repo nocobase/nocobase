@@ -47,7 +47,10 @@ SubTableRecordDeleteActionModel.registerFlow({
   steps: {
     disableProps: {
       async handler(ctx, params) {
-        const { allowDisassociation } = ctx.associationModel?.props || {};
+        const allowDisassociation = ctx.model.context.associationModel.getStepParams?.(
+          'advanceSubTableAssociation',
+          'allowDisassociation',
+        )?.allowDisassociation;
         const record = ctx.record;
         if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
           ctx.model.setProps({
@@ -81,6 +84,18 @@ SubTableRecordDeleteActionModel.registerFlow({
         subTableModel.dispatchEvent('removeRow', {
           removeRecord: ctx.record,
         });
+      },
+    },
+  },
+});
+
+SubTableRecordDeleteActionModel.registerFlow({
+  key: 'enableRemoveChange',
+  on: 'enableRemoveChange',
+  steps: {
+    pageRefresh: {
+      handler(ctx, params) {
+        console.log(ctx, 999999);
       },
     },
   },

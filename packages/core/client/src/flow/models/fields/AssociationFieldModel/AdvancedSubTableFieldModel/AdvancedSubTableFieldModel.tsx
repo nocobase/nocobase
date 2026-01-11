@@ -489,11 +489,6 @@ AdvancedSubTableFieldModel.registerFlow({
           allowDisassociation: params.allowDisassociation,
         });
       },
-      beforeParamsSave(ctx, params, previousParams) {
-        if (params.allowDisassociation !== previousParams.allowDisassociation) {
-          ctx.model.rerender();
-        }
-      },
     },
     allowSelectExistingRecord: {
       title: tExpr('Enable select action'),

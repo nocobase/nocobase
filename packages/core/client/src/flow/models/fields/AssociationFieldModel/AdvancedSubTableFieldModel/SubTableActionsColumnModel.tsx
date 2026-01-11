@@ -83,7 +83,7 @@ const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
                 showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
                 key={fork.uid}
                 model={fork}
-                inputArgs={record}
+                inputArgs={{ record, allowDisassociation: _subTableModel.props.allowDisassociation }}
                 fallback={<Skeleton.Button size="small" />}
                 extraToolbarItems={[
                   {
