@@ -23,7 +23,7 @@
     "@ant-design/x": "^1.1.0",
     "@dicebear/core": "^9.2.3",
     "@dicebear/notionists": "^9.2.3",
-    "@langchain/anthropic": "^0.3.23",
+    "@langchain/anthropic": "^0.3.34",
     "@langchain/core": "^0.3.61",
     "@langchain/deepseek": "^0.0.2",
     "@langchain/google-genai": "^1.0.3",
@@ -43,6 +43,9 @@
     "remark-gfm": "^4.0.1",
     "use-context-selector": "^2.0.0",
     "zustand": "^5.0.6"
+  },
+  "scripts": {
+    "postinstall": "patch -N --batch -p1 -i patches/@langchain+anthropic+0.3.34.patch || true; rm -f node_modules/@langchain/anthropic/dist/chat_models.*.rej"
   },
   "keywords": [
     "AI"

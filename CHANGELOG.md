@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.36](https://github.com/nocobase/nocobase/compare/v1.9.35...v1.9.36) - 2026-01-10
+
+### 🚀 Improvements
+
+- **[client]** Improve plugin manager list render performance by changing to native webkit css for text ellipsis ([#8391](https://github.com/nocobase/nocobase/pull/8391)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[File manager]** Fix the issue where file URL generated incorrectly for files uploaded to S3 storage ([#8392](https://github.com/nocobase/nocobase/pull/8392)) by @mytharcher
+
+- **[File storage: S3(Pro)]** Fix the issue where file renaming mode not works by @mytharcher
+
+- **[Workflow: Approval]** Fix value block not displays caused by missing `ValueBlock.Result` component by @mytharcher
+
+## [v1.9.35](https://github.com/nocobase/nocobase/compare/v1.9.34...v1.9.35) - 2026-01-09
+
+### 🚀 Improvements
+
+- **[Workflow: Approval]** Simplify parameters in query, and improve performance by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Webhook]** Fix the issue where 404 error thrown when post to webhook URL in sub-app by @mytharcher
+
 ## [v1.9.34](https://github.com/nocobase/nocobase/compare/v1.9.33...v1.9.34) - 2026-01-09
 
 ### 🚀 Improvements
