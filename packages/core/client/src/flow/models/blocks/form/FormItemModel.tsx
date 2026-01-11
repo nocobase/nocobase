@@ -339,6 +339,8 @@ FormItemModel.registerFlow({
     },
     initialValue: {
       title: tExpr('Default value'),
+      // 默认值已统一到表单级“字段赋值/默认值”配置，此处仅保留旧配置兼容读取（隐藏入口）
+      hideInSettings: true,
       uiSchema: (ctx) => {
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;
