@@ -66,6 +66,7 @@
   "This is likely a NocoBase internals bug. Please open an issue at": "这可能是 NocoBase 内部错误。请在以下地址提交问题",
   "This step has no configurable parameters": "此步骤没有可配置的参数",
   "This variable is not available": "此变量不可用",
+  "Use return to output value": "使用 return 返回最终值",
   "Try again": "重试",
   "UID copied to clipboard": "UID 已复制到剪贴板",
   "createModelOptions must specify use property": "createModelOptions 必须指定 \"use\" 属性",

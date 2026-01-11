@@ -11,9 +11,14 @@ import { SettingOutlined } from '@ant-design/icons';
 import { FormButtonGroup } from '@formily/antd-v5';
 import {
   AddSubModelButton,
+  createSafeDocument,
+  createSafeNavigator,
+  createSafeWindow,
   DndProvider,
   DragHandler,
   Droppable,
+  isRunJSValue,
+  normalizeRunJSValue,
   tExpr,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -23,8 +28,10 @@ import React from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BlockSceneEnum, FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
+import { isEmptyValue } from '../form/value-runtime/utils';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
+import { clearLegacyDefaultValuesFromFilterFormModel } from './legacyDefaultValueMigration';
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -55,6 +62,20 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineProperty('form', { get: () => form, cache: false });
   }
 
+  async saveStepParams() {
+    const shouldSaveSubModels = (this as any).__saveStepParamsWithSubModels === true;
+    if (shouldSaveSubModels) {
+      try {
+        // full save (including subModels) to persist migrated field-level settings cleanup
+        return await this.save();
+      } finally {
+        delete (this as any).__saveStepParamsWithSubModels;
+      }
+    }
+
+    return await super.saveStepParams();
+  }
+
   addAppends() {}
 
   onInit(options) {
@@ -77,6 +98,9 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       value: this.subModels.grid,
     });
 
+    // 应用表单级默认值（不会覆盖非空值）
+    void this.applyFormDefaultValues().then(() => this.context.refreshTargets?.());
+
     // 监听页面区块删除，自动清理已失效的筛选字段
     const blockGridModel = this.context.blockGridModel;
     if (blockGridModel?.emitter) {
@@ -92,6 +116,64 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   onUnmount() {
     this.removeTargetBlockListener?.();
     super.onUnmount();
+  }
+
+  async applyFormDefaultValues(options?: { force?: boolean }) {
+    const form = this.form;
+    if (!form) return;
+
+    const force = options?.force === true;
+    const params = this.getStepParams?.('formFilterBlockModelSettings', 'defaultValues');
+    const rules = (params?.value || []) as any[];
+    if (!Array.isArray(rules) || rules.length === 0) return;
+
+    const items = this.subModels?.grid?.subModels?.items ?? [];
+    const list: any[] = Array.isArray(items) ? items : [];
+
+    const resolveValue = async (raw: any) => {
+      // RunJS support
+      if (isRunJSValue(raw)) {
+        const { code, version } = normalizeRunJSValue(raw);
+        const globals: Record<string, any> = {};
+        const navigator = createSafeNavigator();
+        globals.navigator = navigator;
+        globals.window = createSafeWindow({ navigator });
+        globals.document = createSafeDocument();
+
+        const ret = await (this.context as any).runjs?.(code, globals, { version });
+        return ret?.success ? ret.value : undefined;
+      }
+
+      return await (this.context as any).resolveJsonTemplate?.(raw);
+    };
+
+    for (const rule of rules) {
+      if (!rule || typeof rule !== 'object') continue;
+      if (rule.enable === false) continue;
+      if (rule.mode && String(rule.mode) !== 'default') continue;
+
+      const fieldUid = rule.field ? String(rule.field) : '';
+      if (!fieldUid) continue;
+
+      const itemModel = list.find((m) => String(m?.uid) === fieldUid);
+      if (!itemModel) continue;
+
+      const props = typeof itemModel.getProps === 'function' ? itemModel.getProps() : itemModel.props;
+      const name = props?.name ?? (itemModel.fieldPath ? `${itemModel.fieldPath}_${itemModel.uid}` : undefined);
+      if (!name) continue;
+
+      const current = (form as any).getFieldValue?.(name);
+      if (!force && !isEmptyValue(current)) continue;
+
+      const resolved = await resolveValue(rule.value);
+      if (typeof resolved === 'undefined') continue;
+
+      if (typeof (form as any).setFieldValue === 'function') {
+        (form as any).setFieldValue(name, resolved);
+      } else {
+        (form as any).setFieldsValue?.({ [String(name)]: resolved });
+      }
+    }
   }
 
   private async handleTargetBlockRemoved(targetUid: string) {
@@ -199,6 +281,23 @@ FilterFormBlockModel.registerFlow({
     layout: {
       use: 'layout',
       title: tExpr('Layout'),
+    },
+    defaultValues: {
+      use: 'filterFormDefaultValues',
+      title: tExpr('Default value'),
+      beforeParamsSave(ctx) {
+        // 迁移：保存表单级默认值后，移除字段级默认值配置（filterFormItemSettings.initialValue）
+        const cleared = clearLegacyDefaultValuesFromFilterFormModel(ctx.model);
+        if (Array.isArray(cleared) && cleared.length) {
+          // FlowModelRepository({ onlyStepParams: true }) 不会写入 subModels，
+          // 此处标记后在 saveStepParams 中触发一次全量保存以持久化清理结果。
+          (ctx.model as any).__saveStepParamsWithSubModels = true;
+        }
+      },
+      afterParamsSave(ctx) {
+        // 保存后立即回填默认值（用于配置态预览），并触发一次筛选刷新
+        void ctx.model?.applyFormDefaultValues?.({ force: true }).then(() => ctx.model?.context?.refreshTargets?.());
+      },
     },
   },
 });

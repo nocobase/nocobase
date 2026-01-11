@@ -8,7 +8,17 @@
  */
 
 import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
-import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  FlowModelRenderer,
+  createSafeDocument,
+  createSafeNavigator,
+  createSafeWindow,
+  isRunJSValue,
+  normalizeRunJSValue,
+  tExpr,
+  useFlowEngine,
+  useFlowSettingsContext,
+} from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import React, { useEffect, useRef } from 'react';
 import { NAMESPACE } from './locale';
@@ -172,7 +182,35 @@ BulkUpdateActionModel.registerFlow({
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
 
-        const assignedValues = params?.assignedValues || {};
+        const rawAssignedValues = params?.assignedValues || {};
+        const assignedValues: Record<string, any> = {};
+        if (rawAssignedValues && typeof rawAssignedValues === 'object') {
+          for (const [field, raw] of Object.entries(rawAssignedValues)) {
+            if (typeof raw === 'undefined' || raw === '') continue;
+
+            if (isRunJSValue(raw)) {
+              const { code, version } = normalizeRunJSValue(raw);
+              if (!code?.trim()) continue;
+              const globals: Record<string, any> = {};
+              const navigator = createSafeNavigator();
+              globals.navigator = navigator;
+              globals.window = createSafeWindow({ navigator });
+              globals.document = createSafeDocument();
+              const ret = await ctx.runjs(code, globals, { version });
+              if (!ret?.success) {
+                ctx.message.error(ctx.t('RunJS execution failed'));
+                return;
+              }
+              if (typeof ret.value !== 'undefined') {
+                assignedValues[field] = ret.value;
+              }
+              continue;
+            }
+
+            assignedValues[field] = raw;
+          }
+        }
+
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
           return;
@@ -186,7 +224,6 @@ BulkUpdateActionModel.registerFlow({
         const mode = updateModeParams?.value || 'selected';
         if (mode === 'selected') {
           const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
-          console.log(ctx.blockModel?.resource?.getSelectedRows?.());
           if (!rows.length) {
             ctx.message.error(ctx.t('Please select the records to be updated'));
             return;

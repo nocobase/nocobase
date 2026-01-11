@@ -62,6 +62,7 @@
   "This is likely a NocoBase internals bug. Please open an issue at": "This is likely a NocoBase internals bug. Please open an issue at",
   "This step has no configurable parameters": "This step has no configurable parameters",
   "This variable is not available": "This variable is not available",
+  "Use return to output value": "Use return to output value",
   "Try again": "Try again",
   "Template created": "Template created",
   "Template description": "Template description",

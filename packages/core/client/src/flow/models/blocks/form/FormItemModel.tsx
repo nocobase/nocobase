@@ -149,6 +149,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
           })()
         : fieldModel;
     const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
+    const { initialValue, ...mergedPropsWithoutInitial } = mergedProps as any;
     const fieldPath = buildDynamicName(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
@@ -156,7 +157,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     const record = this.context.currentObject || this.context.record;
     return (
       <FormItem
-        {...mergedProps}
+        {...mergedPropsWithoutInitial}
         name={fieldPath}
         validateFirst={true}
         disabled={
@@ -338,6 +339,8 @@ FormItemModel.registerFlow({
     },
     initialValue: {
       title: tExpr('Default value'),
+      // 默认值已统一到表单级“字段赋值/默认值”配置，此处仅保留旧配置兼容读取（隐藏入口）
+      hideInSettings: true,
       uiSchema: (ctx) => {
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;

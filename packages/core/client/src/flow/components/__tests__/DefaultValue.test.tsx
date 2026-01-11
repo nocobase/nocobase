@@ -401,6 +401,57 @@ describe('DefaultValue component', () => {
     expect(formStub.getFieldValue('nickname')).toBe('userInput');
   });
 
+  it('runjs default value: backfill uses computed result instead of object', async () => {
+    const formStub = createFormStub();
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'nickname', value: '', onChange: vi.fn(), metaTree: simpleMetaTree },
+      subModels: { field: { use: 'InputFieldModel' } },
+    });
+    host.context.defineProperty('form', { value: formStub });
+    host.context.defineProperty('collectionField', { value: { interface: 'input', type: 'string' } });
+    host.context.defineMethod('runjs', async (code: string) => {
+      try {
+        // eslint-disable-next-line no-new-func
+        const fn = new Function(code);
+        return { success: true, value: fn() };
+      } catch (e) {
+        return { success: false, error: e };
+      }
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(
+      () => {
+        expect(host['__dvSetStepParamsPatched']).toBe(true);
+      },
+      { timeout: 2000 },
+    );
+
+    await act(async () => {
+      await host.setStepParams('formItemSettings', 'initialValue', {
+        defaultValue: { code: "return 'test';", version: 'v1' },
+      });
+    });
+
+    await waitFor(
+      () => {
+        expect(formStub.getFieldValue('nickname')).toBe('test');
+      },
+      { timeout: 1000 },
+    );
+  });
+
   it('variable resolution: supports resolveJsonTemplate and ctx-based path fallback', async () => {
     // 第一步：验证 ctx 回退路径解析 -> 'Bob'
     const formStub1 = createFormStub();

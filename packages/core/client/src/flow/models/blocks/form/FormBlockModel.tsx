@@ -24,6 +24,8 @@ import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
+import { FormValueRuntime } from './value-runtime';
+import { clearLegacyDefaultValuesFromFormModel } from './legacyDefaultValueMigration';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -43,6 +45,8 @@ function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
+  formValueRuntime?: FormValueRuntime;
+
   get form() {
     return this.context.form as FormInstance;
   }
@@ -68,10 +72,24 @@ export class FormBlockModel<
   }
 
   setFieldsValue(values: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValues === 'function') {
+      void ctx.setFormValues(values, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form values via ctx.setFormValues', error);
+      });
+      return;
+    }
     this.form.setFieldsValue(values);
   }
 
   setFieldValue(fieldName: string, value: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValue === 'function') {
+      void ctx.setFormValue(fieldName, value, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form value via ctx.setFormValue', error);
+      });
+      return;
+    }
     this.form.setFieldValue(fieldName, value);
   }
 
@@ -177,6 +195,16 @@ export class FormBlockModel<
   }
 
   async saveStepParams() {
+    const shouldSaveSubModels = (this as any).__saveStepParamsWithSubModels === true;
+    if (shouldSaveSubModels) {
+      try {
+        // full save (including subModels) to persist migrated field-level settings cleanup
+        return await this.save();
+      } finally {
+        delete (this as any).__saveStepParamsWithSubModels;
+      }
+    }
+
     const res = await super.saveStepParams();
     const grid = this.subModels.grid;
     await grid?.saveStepParams();
@@ -229,20 +257,41 @@ export class FormBlockModel<
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form });
+
+    if (!this.formValueRuntime) {
+      this.formValueRuntime = new FormValueRuntime({
+        model: this,
+        getForm: () => this.context.form,
+      });
+    }
+    const runtime = this.formValueRuntime;
+    runtime.mount();
     // 增强：为 formValues 提供基于“已选关联值”的服务端解析锚点
     const formValuesMeta: PropertyMetaFactory = this.createFormValuesMetaFactory();
 
     this.context.defineProperty('formValues', {
       get: () => {
-        return this.context.form.getFieldsValue();
+        return runtime.formValues;
       },
       cache: false,
       meta: formValuesMeta,
       resolveOnServer: createAssociationSubpathResolver(
         () => this.collection,
-        () => this.form.getFieldsValue(),
+        () => runtime.getFormValuesSnapshot(),
       ),
       serverOnlyWhenContextParams: true,
+    });
+
+    this.context.defineMethod('getFormValues', function () {
+      return runtime.getFormValuesSnapshot();
+    });
+
+    this.context.defineMethod('setFormValues', function (patch, options) {
+      return runtime.setFormValues(this, patch, options);
+    });
+
+    this.context.defineMethod('setFormValue', function (path, value, options) {
+      return runtime.setFormValues(this, [{ path, value }], options);
     });
   }
 
@@ -259,10 +308,21 @@ export class FormBlockModel<
 
   protected onMount() {
     super.onMount();
+    this.formValueRuntime?.mount({ sync: true });
+    // 将"表单赋值"配置编译为运行时规则
+    const params = this.getStepParams('formModelSettings', 'assignRules');
+    const items = (params?.value || []) as any[];
+    this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
     }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
+  }
+
+  onUnmount() {
+    this.formValueRuntime?.dispose();
+    this.formValueRuntime = undefined;
+    super.onUnmount();
   }
 
   getCurrentRecord() {
@@ -293,7 +353,18 @@ export function FormComponent({
       initialValues={model.context.record || initialValues}
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onFieldsChange={(changedFields) => {
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormFieldsChange(changedFields as any);
+        }
+      }}
       onValuesChange={(changedValues, allValues) => {
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormValuesChange(changedValues, allValues);
+          return;
+        }
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
@@ -315,6 +386,26 @@ FormBlockModel.registerFlow({
     layout: {
       use: 'layout',
       title: tExpr('Layout'),
+    },
+    assignRules: {
+      use: 'formAssignRules',
+      title: tExpr('Assign field values'),
+      beforeParamsSave(ctx) {
+        // 迁移：保存表单级规则后，移除字段级默认值配置（editItemSettings/formItemSettings.initialValue）
+        // 字段级默认值会在 UI 打开时自动合并到本步骤表单值中，因此此处仅做清理即可。
+        const cleared = clearLegacyDefaultValuesFromFormModel(ctx.model);
+        if (Array.isArray(cleared) && cleared.length) {
+          // FlowModelRepository({ onlyStepParams: true }) 不会写入 subModels，
+          // 此处标记后在 saveStepParams 中触发一次全量保存以持久化清理结果。
+          (ctx.model as any).__saveStepParamsWithSubModels = true;
+        }
+      },
+      afterParamsSave(ctx) {
+        // 保存后同步到运行时（若存在），以便立即生效
+        const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
+        const items = (params?.value || []) as any[];
+        (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
+      },
     },
   },
 });

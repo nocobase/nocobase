@@ -15,10 +15,14 @@ import {
   tExpr,
   isVariableExpression,
   parseValueToPath,
+  isRunJSValue,
+  normalizeRunJSValue,
+  type RunJSValue,
   useFlowContext,
   EditableItemModel,
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
+import { CodeEditor } from './code-editor';
 
 interface Props {
   fieldUid: string;
@@ -37,17 +41,21 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
 
   // 在当前表单网格中定位到选中的字段模型（FormItemModel 实例）
   const itemModel = React.useMemo(() => {
-    try {
-      const items = flowCtx.model?.subModels?.grid?.subModels?.items || [];
-      return items.find((m: any) => m?.uid === fieldUid);
-    } catch (e) {
-      return undefined;
-    }
+    const items = flowCtx.model?.subModels?.grid?.subModels?.items || [];
+    return items.find((m: any) => m?.uid === fieldUid);
   }, [flowCtx, fieldUid]);
 
   // 解析 collection/field 基础信息
-  const { collection, dataSource, blockModel } = itemModel?.context || {};
+  const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = itemModel?.context || {};
   const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
+  const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
+  const collection =
+    ctxCollection ||
+    (init?.dataSourceKey && init?.collectionName
+      ? dataSourceManager?.getCollection?.(init.dataSourceKey, init.collectionName)
+      : undefined);
+  const dataSource =
+    ctxDataSource || (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined);
   const fieldPath: string | undefined = init?.fieldPath;
   const fieldName = fieldPath?.split('.').slice(-1)[0];
 
@@ -56,20 +64,21 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
   React.useEffect(() => {
     if (!itemModel || !collection || !fieldPath) return;
     const engine = itemModel?.context?.engine || flowCtx.model?.context?.engine;
-    const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
+
+    const fields = typeof collection.getFields === 'function' ? collection.getFields() || [] : [];
     const f = fields.find((x: any) => x?.name === fieldName);
     const binding = EditableItemModel.getDefaultBindingByField(itemModel?.context, f);
-    if (!binding) {
-      return;
-    }
-    const fieldModelUse = binding.modelName;
+    const fieldModelUse: string | undefined = binding?.modelName;
+
+    const effectiveFieldModelUse: string | undefined = fieldModelUse || itemModel?.subModels?.field?.use;
+    if (!effectiveFieldModelUse) return;
 
     const created = engine?.createModel?.({
       use: 'VariableFieldFormModel',
       subModels: {
         fields: [
           {
-            use: fieldModelUse,
+            use: effectiveFieldModelUse,
             stepParams: {
               fieldSettings: {
                 init: {
@@ -91,7 +100,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     // 注入上下文（集合/数据源/字段/区块/资源）
     created.context?.defineProperty?.('collection', { value: collection });
     if (dataSource) created.context?.defineProperty?.('dataSource', { value: dataSource });
-    const cf = typeof collection?.getField === 'function' ? collection.getField(fieldName) : undefined;
+    const cf = typeof collection.getField === 'function' && fieldName ? collection.getField(fieldName) : undefined;
     if (cf) created.context?.defineProperty?.('collectionField', { value: cf });
     if (blockModel) created.context?.defineProperty?.('blockModel', { value: blockModel });
     if (created.context) {
@@ -134,7 +143,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       created.subModels.fields.forEach?.((m) => m.remove());
       created.remove();
     };
-  }, [itemModel, collection, dataSource, blockModel, fieldPath, fieldName, flowCtx]);
+  }, [itemModel, collection, dataSource, blockModel, fieldPath, fieldName, flowCtx, placeholder]);
 
   // 同步 value/onChange 到临时根与字段模型
   React.useEffect(() => {
@@ -172,20 +181,57 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
           onChange: (ev: any) => inputProps?.onChange?.(normalize(ev)),
         });
       }, [inputProps]);
-      return tempRoot ? (
+
+      if (!tempRoot) {
+        return (
+          <Input
+            value={inputProps?.value}
+            onChange={(e) => inputProps?.onChange?.((e as any)?.target?.value)}
+            placeholder={placeholder}
+            style={{ width: '100%' }}
+          />
+        );
+      }
+
+      return (
         <div style={{ flex: 1, minWidth: 0 }}>
           <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
         </div>
-      ) : null;
+      );
     };
     return C;
-  }, [tempRoot]);
+  }, [placeholder, tempRoot]);
 
   const NullComponent = React.useMemo(() => {
     const N: React.FC = () => (
       <Input placeholder={`<${flowCtx.t?.('Null') ?? 'Null'}>`} readOnly style={{ width: '100%' }} />
     );
     return N;
+  }, [flowCtx]);
+
+  const RunJSComponent = React.useMemo(() => {
+    const C: React.FC<any> = (inputProps) => {
+      const current: RunJSValue = isRunJSValue(inputProps?.value)
+        ? normalizeRunJSValue(inputProps.value)
+        : { code: '', version: 'v1' };
+
+      const tip = flowCtx.t?.('Use return to output value') ?? 'Use return to output value';
+      const placeholderText = `// ${tip}\nreturn ...`;
+
+      return (
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <CodeEditor
+            value={current.code}
+            onChange={(code) => inputProps?.onChange?.({ ...current, code })}
+            height="200px"
+            enableLinter
+            placeholder={placeholderText}
+            scene="formValue"
+          />
+        </div>
+      );
+    };
+    return C;
   }, [flowCtx]);
 
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
@@ -200,10 +246,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
           render: ConstantValueEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+        { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
         ...base,
       ];
     };
-  }, [flowCtx, ConstantValueEditor, NullComponent]);
+  }, [flowCtx, ConstantValueEditor, NullComponent, RunJSComponent]);
 
   if (!itemModel || !fieldPath) {
     // 不可用占位
@@ -222,16 +269,19 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantValueEditor as any;
           if (firstPath === 'null') return NullComponent as any;
+          if (firstPath === 'runjs') return RunJSComponent as any;
           return undefined as any;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}

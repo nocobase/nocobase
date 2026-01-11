@@ -17,6 +17,9 @@ import {
   tExpr,
   isVariableExpression,
   parseValueToPath,
+  isRunJSValue,
+  normalizeRunJSValue,
+  type RunJSValue,
   EditableItemModel,
   jioToJoiSchema,
 } from '@nocobase/flow-engine';
@@ -26,6 +29,7 @@ import { EditFormModel } from '../form/EditFormModel';
 import { FieldValidation } from '../../../../collection-manager';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
+import { CodeEditor } from '../../../components/code-editor';
 
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
@@ -215,21 +219,47 @@ export class AssignFormItemModel extends FormItemModel {
 
       const NullComponent: React.FC = () => <Input placeholder={'<Null>'} readOnly style={{ width: '100%' }} />;
 
+      const RunJSComponent: React.FC<any> = (inputProps: any) => {
+        const current: RunJSValue = isRunJSValue(inputProps?.value)
+          ? normalizeRunJSValue(inputProps.value)
+          : { code: '', version: 'v1' };
+
+        const placeholderText = `// ${
+          this.context.t?.('Use return to output value') ?? 'Use return to output value'
+        }\nreturn ...`;
+
+        return (
+          <div style={{ width: '100%' }}>
+            <CodeEditor
+              value={current.code}
+              onChange={(code) => inputProps?.onChange?.({ ...current, code })}
+              height="200px"
+              enableLinter
+              placeholder={placeholderText}
+              scene="formValue"
+            />
+          </div>
+        );
+      };
+
       const converters = {
         renderInputComponent: (meta: any) => {
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantValueEditor as any;
           if (firstPath === 'null') return NullComponent as any;
+          if (firstPath === 'runjs') return RunJSComponent as any;
           return undefined;
         },
         resolveValueFromPath: (item: any) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
           return undefined;
         },
         resolvePathFromValue: (currentValue: any) => {
           if (currentValue === null) return ['null'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       } as any;
@@ -247,6 +277,7 @@ export class AssignFormItemModel extends FormItemModel {
             render: ConstantValueEditor,
           },
           { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+          { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
           ...base,
         ];
       };
