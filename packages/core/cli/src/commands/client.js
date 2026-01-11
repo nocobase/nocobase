@@ -9,10 +9,8 @@
 
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { run, isDev } = require('../util');
 const fs = require('fs-extra');
 const { resolve } = require('path');
-const Client = require('ali-oss');
 
 /**
  * 复制主应用客户端文件
@@ -139,6 +137,8 @@ module.exports = (cli) => {
         );
         process.exit(1);
       }
+
+      const Client = require('ali-oss');
 
       const client = new Client({
         accessKeyId: process.env.CDN_ALI_OSS_ACCESS_KEY_ID,
