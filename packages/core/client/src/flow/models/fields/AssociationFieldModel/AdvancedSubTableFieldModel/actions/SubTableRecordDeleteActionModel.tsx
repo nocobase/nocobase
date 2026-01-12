@@ -55,7 +55,7 @@ SubTableRecordDeleteActionModel.registerFlow({
           'allowDisassociation',
         )?.allowDisassociation;
         const record = ctx.record;
-        if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
+        if (allowDisassociation === false && !(record.__is_new__ || record.__is_stored__)) {
           ctx.model.setProps({
             disabled: true,
           });
