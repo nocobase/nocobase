@@ -38,3 +38,4 @@ vitest.config.mts.timestamp-*
 .claude/
 python/
 git-repos.json
+CLAUDE.md
