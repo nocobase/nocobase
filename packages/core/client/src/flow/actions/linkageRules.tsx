@@ -30,9 +30,11 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import _ from 'lodash';
 import { SubFormFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
+import { findFormItemModelByFieldPath, getCollectionFromModel } from '../internal/utils/modelUtils';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -165,6 +167,7 @@ function buildAbsoluteFieldPathArray(
 function normalizeAssignRuleItemsFromLinkageParams(
   raw: any,
   legacy: { mode: 'default' | 'assign'; valueKey: 'assignValue' | 'initialValue' },
+  resolveTargetPath?: (legacyFieldUid: string) => string | undefined,
 ): FieldAssignRuleItem[] {
   if (Array.isArray(raw)) {
     return raw as any;
@@ -176,11 +179,13 @@ function normalizeAssignRuleItemsFromLinkageParams(
   const legacyField = (raw as any)?.field;
   const legacyValue = (raw as any)?.[legacy.valueKey];
   if (legacyField) {
+    const targetPath = resolveTargetPath?.(String(legacyField));
+    if (!targetPath) return [];
     return [
       {
         key: 'legacy',
         enable: true,
-        field: legacyField,
+        targetPath,
         mode: legacy.mode,
         condition: { logic: '$and', items: [] },
         value: legacyValue,
@@ -652,14 +657,35 @@ export const linkageAssignField = defineAction({
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFields(ctx);
-
-        const normalized = normalizeAssignRuleItemsFromLinkageParams(value, {
-          mode: 'assign',
-          valueKey: 'assignValue',
+        const fieldOptions = collectFieldAssignCascaderOptions({
+          formBlockModel: ctx.model,
+          t,
+          maxFormItemDepth: 1,
+          includeAssociationSubfields: false,
         });
 
-        return <FieldAssignRulesEditor t={t} fieldOptions={fieldOptions} value={normalized} onChange={onChange} />;
+        const normalized = normalizeAssignRuleItemsFromLinkageParams(
+          value,
+          {
+            mode: 'assign',
+            valueKey: 'assignValue',
+          },
+          (legacyFieldUid) => {
+            const m: any = ctx.engine?.getModel?.(legacyFieldUid);
+            const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
+            return fp ? String(fp) : undefined;
+          },
+        );
+
+        return (
+          <FieldAssignRulesEditor
+            t={t}
+            fieldOptions={fieldOptions}
+            rootCollection={getCollectionFromModel(ctx.model)}
+            value={normalized}
+            onChange={onChange}
+          />
+        );
       },
     },
   },
@@ -672,19 +698,17 @@ export const linkageAssignField = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-
       for (const it of items) {
         if (it?.enable === false) continue;
-        const fieldUid = it?.field ? String(it.field) : '';
-        if (!fieldUid) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
 
         const condition = it?.condition;
         if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
           continue;
         }
 
-        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+        const fieldModel = findFormItemModelByFieldPath(ctx.model, targetPath);
         if (!fieldModel) continue;
 
         const collectionField = (fieldModel as any)?.collectionField;
@@ -723,14 +747,35 @@ export const subFormLinkageAssignField = defineAction({
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFieldsByForkModel(ctx);
-
-        const normalized = normalizeAssignRuleItemsFromLinkageParams(value, {
-          mode: 'assign',
-          valueKey: 'assignValue',
+        const fieldOptions = collectFieldAssignCascaderOptions({
+          formBlockModel: ctx.model,
+          t,
+          maxFormItemDepth: 1,
+          includeAssociationSubfields: false,
         });
 
-        return <FieldAssignRulesEditor t={t} fieldOptions={fieldOptions} value={normalized} onChange={onChange} />;
+        const normalized = normalizeAssignRuleItemsFromLinkageParams(
+          value,
+          {
+            mode: 'assign',
+            valueKey: 'assignValue',
+          },
+          (legacyFieldUid) => {
+            const m: any = ctx.engine?.getModel?.(legacyFieldUid);
+            const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
+            return fp ? String(fp) : undefined;
+          },
+        );
+
+        return (
+          <FieldAssignRulesEditor
+            t={t}
+            fieldOptions={fieldOptions}
+            rootCollection={getCollectionFromModel(ctx.model)}
+            value={normalized}
+            onChange={onChange}
+          />
+        );
       },
     },
   },
@@ -746,7 +791,9 @@ export const subFormLinkageAssignField = defineAction({
 
       for (const it of items) {
         if (it?.enable === false) continue;
-        const fieldUid = it?.field ? String(it.field) : '';
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        const itemModel = targetPath ? findFormItemModelByFieldPath(ctx.model, targetPath) : null;
+        const fieldUid = itemModel?.uid ? String(itemModel.uid) : '';
         if (!fieldUid) continue;
 
         const condition = it?.condition;
@@ -820,17 +867,31 @@ export const setFieldsDefaultValue = defineAction({
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFields(ctx);
-
-        const normalized = normalizeAssignRuleItemsFromLinkageParams(value, {
-          mode: 'default',
-          valueKey: 'initialValue',
+        const fieldOptions = collectFieldAssignCascaderOptions({
+          formBlockModel: ctx.model,
+          t,
+          maxFormItemDepth: 1,
+          includeAssociationSubfields: false,
         });
+
+        const normalized = normalizeAssignRuleItemsFromLinkageParams(
+          value,
+          {
+            mode: 'default',
+            valueKey: 'initialValue',
+          },
+          (legacyFieldUid) => {
+            const m: any = ctx.engine?.getModel?.(legacyFieldUid);
+            const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
+            return fp ? String(fp) : undefined;
+          },
+        );
 
         return (
           <FieldAssignRulesEditor
             t={t}
             fieldOptions={fieldOptions}
+            rootCollection={getCollectionFromModel(ctx.model)}
             value={normalized}
             onChange={onChange}
             fixedMode="default"
@@ -848,19 +909,17 @@ export const setFieldsDefaultValue = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-
       for (const it of items) {
         if (it?.enable === false) continue;
-        const fieldUid = it?.field ? String(it.field) : '';
-        if (!fieldUid) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
 
         const condition = it?.condition;
         if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
           continue;
         }
 
-        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+        const fieldModel = findFormItemModelByFieldPath(ctx.model, targetPath);
         if (!fieldModel) continue;
 
         const collectionField = (fieldModel as any)?.collectionField;

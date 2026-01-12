@@ -14,8 +14,9 @@ import { FieldAssignValueInput } from './FieldAssignValueInput';
 export interface FieldAssignEditorProps {
   t: (key: string) => string;
   fieldOptions: Array<{ label: string; value: string }>;
+  /** 赋值目标路径（例如 `title` / `user.name`） */
   field?: string;
-  onFieldChange: (fieldUid?: string) => void;
+  onFieldChange: (targetPath?: string) => void;
   value: any;
   onValueChange: (value: any) => void;
   fieldLabel?: React.ReactNode;
@@ -68,7 +69,7 @@ export const FieldAssignEditor: React.FC<FieldAssignEditorProps> = (props) => {
           <div style={{ marginBottom: 4, fontSize: 14 }}>{valueLabel ?? t('Assign value')}</div>
           <FieldAssignValueInput
             key={field || 'no-field'}
-            fieldUid={field || ''}
+            targetPath={field || ''}
             value={value}
             onChange={onValueChange}
           />
