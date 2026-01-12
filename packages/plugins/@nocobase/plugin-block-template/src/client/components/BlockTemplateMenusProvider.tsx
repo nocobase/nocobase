@@ -12,12 +12,12 @@ import {
   registerInitializerMenusGenerator,
   SchemaInitializerItemType,
   useAPIClient,
+  useApp,
   useCurrentUserContext,
   usePlugin,
   useRequest,
   useResource,
 } from '@nocobase/client';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { useMemoizedFn } from 'ahooks';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -44,8 +44,9 @@ export const useBlockTemplateMenus = () => {
 
 export const BlockTemplateMenusProvider = ({ children }) => {
   const api = useAPIClient();
+  const app = useApp();
   const plugin = usePlugin(PluginBlockTemplateClient);
-  const mobilePlugin = usePlugin(PluginMobileClient);
+  const mobilePlugin = app.pm.get('mobile') as any;
   const blockTemplatesResource = useResource('blockTemplates');
   const t = useT();
   const isMobile = window.location.pathname.startsWith(mobilePlugin?.mobileBasename);

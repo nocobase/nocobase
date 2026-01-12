@@ -8,16 +8,11 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
 import NotificationManager from '@nocobase/plugin-notification-manager/client';
 import { tval } from '@nocobase/utils/client';
 import { NAMESPACE } from '../locale';
 import { ContentConfigForm } from './components/ContentConfigForm';
 import { MessageConfigForm } from './components/MessageConfigForm';
-import { MobileChannelPage } from './components/mobile/ChannelPage';
-import { MobileMessagePage } from './components/mobile/MessagePage';
-import { messageSchemaInitializerItem } from './components/mobile/messageSchemaInitializerItem';
-import { MobileTabBarMessageItem } from './components/mobile/MobileTabBarMessageItem';
 import { MessageManagerProvider } from './MessageManagerProvider';
 import { setAPIClient } from './utils';
 export class PluginNotificationInAppClient extends Plugin {
@@ -43,14 +38,20 @@ export class PluginNotificationInAppClient extends Plugin {
         deletable: true,
       },
     });
-    const mobileManager = this.pm.get(MobileManager);
-    this.app.schemaInitializerManager.addItem(
-      'mobile:tab-bar',
-      'notification-in-app-message',
-      messageSchemaInitializerItem,
-    );
-    this.app.addComponents({ MobileTabBarMessageItem: MobileTabBarMessageItem });
+    const mobileManager = this.pm.get('mobile') as any;
     if (mobileManager?.mobileRouter) {
+      // 动态导入移动端组件，只有在移动端插件启用时才加载
+      const { MobileChannelPage } = await import('./components/mobile/ChannelPage');
+      const { MobileMessagePage } = await import('./components/mobile/MessagePage');
+      const { messageSchemaInitializerItem } = await import('./components/mobile/messageSchemaInitializerItem');
+      const { MobileTabBarMessageItem } = await import('./components/mobile/MobileTabBarMessageItem');
+
+      this.app.schemaInitializerManager.addItem(
+        'mobile:tab-bar',
+        'notification-in-app-message',
+        messageSchemaInitializerItem,
+      );
+      this.app.addComponents({ MobileTabBarMessageItem: MobileTabBarMessageItem });
       mobileManager.mobileRouter.add('mobile.page.in-app-message', {
         path: '/page/in-app-message',
       });

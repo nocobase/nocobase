@@ -48,8 +48,6 @@ import WorkflowPlugin, {
   useFlowContext,
   usePopupRecordContext,
 } from '@nocobase/plugin-workflow/client';
-
-import { useMobilePage } from '@nocobase/plugin-mobile/client';
 import { TASK_STATUS, TASK_TYPE_MANUAL, TaskStatusOptionsMap } from '../common/constants';
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
@@ -428,11 +426,10 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const { isMobileLayout } = useMobileLayout();
-  const mobilePage = useMobilePage?.();
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
-  const isMobile = Boolean(mobilePage || isMobileLayout);
+  const isMobile = isMobileLayout;
   return status ? (
     <Space
       className={css`

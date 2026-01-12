@@ -8,7 +8,6 @@
  */
 
 import { lazy, Plugin, useCompile } from '@nocobase/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
 import { Registry } from '@nocobase/utils/client';
 
 // import { ExecutionPage } from './ExecutionPage';
@@ -155,7 +154,7 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowTasks,
     });
 
-    const mobileManager = this.pm.get(MobileManager);
+    const mobileManager = this.pm.get('mobile') as any;
     this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
     this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
     if (mobileManager?.mobileRouter) {
