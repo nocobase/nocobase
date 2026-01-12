@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- */
-
 import { connect } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -40,6 +36,7 @@ import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { CodeEditor } from './code-editor';
+import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
 
 interface Props {
   value: any;
@@ -235,12 +232,7 @@ export const DefaultValue = connect((props: Props) => {
   // 构建动态 NamePath（兼容数组子表单的行索引）
   const buildDynamicName = React.useCallback(
     (nameParts: (string | number)[], fieldIndex?: string[]): (string | number)[] => {
-      if (!fieldIndex?.length) return nameParts;
-      const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
-      const idx = Number(indexStr);
-      const lastIndex = nameParts.findIndex((p) => String(p) === lastField);
-      if (lastIndex === -1) return nameParts;
-      return [idx, ...nameParts.slice(lastIndex + 1)];
+      return buildDynamicNamePath(nameParts, fieldIndex);
     },
     [],
   );
