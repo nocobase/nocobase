@@ -113,6 +113,7 @@ const InnerInbox = (props) => {
       },
       duration: detail.options.duration,
     });
+    unreadMsgsCountObs.value = (unreadMsgsCountObs.value ?? 0) + 1;
   }, []);
 
   const onMessageUpdated = useCallback(({ detail }: CustomEvent) => {
