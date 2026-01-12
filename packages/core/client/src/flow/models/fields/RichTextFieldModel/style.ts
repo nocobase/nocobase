@@ -9,7 +9,6 @@
 
 import { css } from '@emotion/css';
 import { theme } from 'antd';
-import end from 'packages/plugins/@nocobase/plugin-workflow/src/client/nodes/end';
 
 export const useRichTextStyles = () => {
   const { token } = theme.useToken();

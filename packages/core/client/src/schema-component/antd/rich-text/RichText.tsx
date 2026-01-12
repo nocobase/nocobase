@@ -51,8 +51,6 @@ export const RichText = connect(
       }
     `;
 
-    return wrapSSR(<div>234234</div>);
-
     return wrapSSR(
       <ReactQuill
         className={classNames(componentCls, hashId, quillDisabled, {
