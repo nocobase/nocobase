@@ -12,13 +12,16 @@ import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { lazy } from '../../../../lazy-helper';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
+import { registerSmartBreak } from './registerSmartBreak';
+import { registerFontSize } from './registerFontSize';
+import { registerImageResize } from './registerImageResize';
 
 const ReactQuill = lazy(async () => {
   const Quill = (await import('quill')).default;
 
-  const Size = Quill.import('formats/size');
-  Size.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
-  Quill.register(Size, true);
+  registerFontSize(Quill);
+  registerSmartBreak(Quill);
+  registerImageResize(Quill);
 
   return import('react-quill');
 });
@@ -37,6 +40,26 @@ export const RichTextField = (props) => {
       [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }, 'link'],
       ['clean', 'image'],
     ],
+    imageResize: {
+      modules: ['Resize', 'DisplaySize'],
+    },
+    // clipboard: {
+    //   matchers: [['BR', lineBreakMatcher]],
+    //   matchVisual: false,
+    // },
+    // keyboard: {
+    //   bindings: {
+    //     break: {
+    //       key: 13,
+    //       handler: handleEnter,
+    //     },
+    //     linebreak: {
+    //       key: 13,
+    //       shiftKey: true,
+    //       handler: handleLinebreak,
+    //     },
+    //   },
+    // },
   };
   const formats = [
     'header',
