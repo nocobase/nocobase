@@ -66,7 +66,18 @@ const HeaderWrapperComponent = React.memo((props) => {
 });
 
 const RenderCell = observer<any>((props) => {
-  const { className, title, editable, width, record, recordIndex, dataIndex, children, ...restProps } = props;
+  const {
+    className,
+    title,
+    editable,
+    width,
+    record,
+    recordIndex,
+    dataIndex,
+    children,
+    model: columnModel,
+    ...restProps
+  } = props;
   const ref = useRef(null);
   const model: any = useFlowModel();
   if (editable) {
@@ -103,6 +114,7 @@ const RenderCell = observer<any>((props) => {
             e.preventDefault();
             e.stopPropagation();
             // 阻止事件冒泡，避免触发行选中
+
             try {
               await QuickEditFormModel.open({
                 flowEngine: model.flowEngine,
@@ -111,7 +123,7 @@ const RenderCell = observer<any>((props) => {
                 collectionName: model.collection.name,
                 fieldPath: dataIndex,
                 record: record,
-                fieldProps: { ...model.props, ...model.subModels.field.props },
+                fieldProps: { ...columnModel.props, ...columnModel.subModels.field.props },
                 onOk: (values) => {
                   record[dataIndex] = values[dataIndex];
                   // 仅重渲染单元格
