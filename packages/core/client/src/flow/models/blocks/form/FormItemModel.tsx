@@ -23,6 +23,7 @@ import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
 import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
+import { buildDynamicNamePath } from './dynamicNamePath';
 
 const interfacesOfUnsupportedDefaultValue = [
   'o2o',
@@ -38,27 +39,6 @@ const interfacesOfUnsupportedDefaultValue = [
   'sequence',
   'formula',
 ];
-
-function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
-  if (!fieldIndex?.length) {
-    return nameParts;
-  }
-
-  // 取最后一个索引
-  const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
-  const idx = Number(indexStr);
-
-  // 找到 lastField 在 nameParts 的位置
-  const lastIndex = nameParts.indexOf(lastField);
-
-  if (lastIndex === -1) {
-    // 找不到对应字段，直接返回原始 nameParts
-    return nameParts;
-  }
-
-  // 结果 = [索引, ...lastField 后面的字段]
-  return [idx, ...nameParts.slice(lastIndex + 1)];
-}
 
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
@@ -150,7 +130,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         : fieldModel;
     const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
     const { initialValue, ...mergedPropsWithoutInitial } = mergedProps as any;
-    const fieldPath = buildDynamicName(this.props.name, idx);
+    const fieldPath = buildDynamicNamePath(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
