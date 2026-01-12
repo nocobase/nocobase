@@ -4258,7 +4258,7 @@
     "Will be executed in the background as a queued task.": "Will be executed in the background as a queued task.",
     "Workflow": "워크플로우",
     "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "워크플로우가 실행되었습니다. 결과 상태는 <1>{{statusText}}</1><2>실행 보기</2>",
-    "Workflow is not exists": "Workflow is not exists",
+    "Workflow of execution is not existed": "Workflow of execution is not existed",
     "Workflow tasks": "Workflow tasks",
     "Workflow todos": "워크플로우 할 일",
     "Workflow will be triggered after saving succeeded.": "저장 성공 후 워크플로우가 트리거됩니다.",

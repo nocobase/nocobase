@@ -28,10 +28,12 @@ function normalizeAssociationValue(
     return value;
   }
   if (Array.isArray(value)) {
-    const result = value.map((v) => v[recordKey]).filter((v) => v !== null && v !== undefined);
+    const result = value
+      .map((v) => (typeof v === 'number' || typeof v === 'string' ? v : v[recordKey]))
+      .filter((v) => v !== null && v !== undefined);
     return result.length > 0 ? result : undefined;
   } else {
-    return value[recordKey];
+    return typeof value === 'number' || typeof value === 'string' ? value : value[recordKey];
   }
 }
 
@@ -52,7 +54,7 @@ async function collectAllowedRecordKeys(
   updateParams: any,
   target: string,
 ): Promise<AllowedRecordKeysResult | undefined> {
-  const repo = ctx.db.getRepository(target);
+  const repo = ctx.database.getRepository(target);
   if (!repo) {
     return undefined;
   }
@@ -101,7 +103,7 @@ async function collectExistingRecordKeys(
   target: string,
   keys: Iterable<any>,
 ): Promise<Set<any>> {
-  const repo = ctx.db.getRepository(target);
+  const repo = ctx.database.getRepository(target);
   if (!repo) {
     return new Set();
   }
@@ -133,7 +135,7 @@ async function recordExistsWithoutScope(
   recordKey: string,
   keyValue: any,
 ): Promise<boolean> {
-  const repo = ctx.db.getRepository(target);
+  const repo = ctx.database.getRepository(target);
   if (!repo) {
     return false;
   }
@@ -206,8 +208,9 @@ async function processAssociationChild(
       ctx.log.debug(`No permission to update association`, { fieldPath, value, updateParams });
       return keyValue;
     } else {
-      const repo = ctx.db.getRepository(target);
+      const repo = ctx.database.getRepository(target);
       if (!repo) {
+        ctx.log.debug(`Repository not found for association target`, { fieldPath, target });
         return keyValue;
       }
       try {

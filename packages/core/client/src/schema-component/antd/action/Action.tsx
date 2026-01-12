@@ -513,6 +513,7 @@ const RenderButton = ({
 
       const resultTitle = await getVariableValue(t(confirm?.title, { title: compile(fieldSchema.title) }), scopes);
       const resultContent = await getVariableValue(t(confirm?.content, { title: compile(fieldSchema.title) }), scopes);
+      console.log(resultTitle, resultContent);
       if (!disabled && aclCtx) {
         const onOk = () => {
           if (onClick) {
@@ -539,7 +540,9 @@ const RenderButton = ({
           }
         };
         if (confirm?.enable !== false && confirm?.content) {
-          await form?.submit?.();
+          if (!fieldSchema['x-action-settings'].skipValidator) {
+            await form?.submit?.();
+          }
           modal.confirm({
             title: t(resultTitle, { title: confirmTitle || title || field?.title }),
             content: t(resultContent, { title: confirmTitle || title || field?.title }),
