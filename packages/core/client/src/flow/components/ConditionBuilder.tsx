@@ -7,19 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useFlowContext } from '@nocobase/flow-engine';
+import { observer, useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterGroup, LinkageFilterItem } from './filter';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 
 export const ConditionBuilder = observer(
-  (props: { value: FilterGroupType; onChange: (value: FilterGroupType) => void }) => {
+  (props: { value: FilterGroupType; onChange: (value: FilterGroupType) => void; extraMetaTree?: MetaTreeNode[] }) => {
     const ctx = useFlowContext();
 
     return (
       <FilterGroup
         value={props.value || { logic: '$and', items: [] }}
-        FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
+        FilterItem={(itemProps) => (
+          <LinkageFilterItem model={ctx.model} value={itemProps.value} extraMetaTree={props.extraMetaTree} />
+        )}
         onChange={props.onChange}
       />
     );

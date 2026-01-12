@@ -92,16 +92,17 @@ export function collectLegacyDefaultValueRules(formModel: any, extractor: Legacy
   const result: FieldAssignRuleItem[] = [];
 
   for (const item of list) {
-    const fieldUid = item?.uid ? String(item.uid) : '';
-    if (!fieldUid) continue;
+    const fieldPath = item?.getStepParams?.('fieldSettings', 'init')?.fieldPath || item?.fieldPath;
+    const targetPath = fieldPath ? String(fieldPath) : '';
+    if (!targetPath) continue;
 
     const legacyValue = extractor(item);
     if (typeof legacyValue === 'undefined') continue;
 
     result.push({
-      key: `legacy-default:${fieldUid}`,
+      key: `legacy-default:${targetPath}`,
       enable: true,
-      field: fieldUid,
+      targetPath,
       mode: 'default',
       condition: createEmptyCondition(),
       value: legacyValue,
@@ -121,21 +122,21 @@ export function mergeAssignRulesWithLegacyDefaults(
 
   const existingDefaultFields = new Set(
     base
-      .filter((it) => it && typeof it === 'object' && it.mode === 'default' && it.field)
-      .map((it) => String(it.field)),
+      .filter((it) => it && typeof it === 'object' && it.mode === 'default' && it.targetPath)
+      .map((it) => String(it.targetPath)),
   );
   const existingKeys = new Set(base.map((it) => String(it.key ?? '')));
 
   const toAdd: FieldAssignRuleItem[] = [];
   for (const it of legacy) {
-    const field = it.field ? String(it.field) : '';
-    if (!field) continue;
-    if (existingDefaultFields.has(field)) continue;
+    const targetPath = it.targetPath ? String(it.targetPath) : '';
+    if (!targetPath) continue;
+    if (existingDefaultFields.has(targetPath)) continue;
 
     const next: FieldAssignRuleItem = { ...it };
     const k = String(next.key ?? '');
     if (k && existingKeys.has(k)) {
-      next.key = `${k}:${field}`;
+      next.key = `${k}:${targetPath}`;
     }
     toAdd.push(next);
   }

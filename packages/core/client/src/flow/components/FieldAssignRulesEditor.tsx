@@ -10,17 +10,31 @@
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import type { FilterGroupType } from '@nocobase/utils/client';
-import { Button, Collapse, Empty, Select, Space, Switch, Tooltip } from 'antd';
+import { Button, Cascader, Collapse, Empty, Select, Space, Switch, Tooltip } from 'antd';
+import type { CascaderProps, CollapseProps } from 'antd';
 import React from 'react';
 import { ConditionBuilder } from './ConditionBuilder';
 import { FieldAssignValueInput } from './FieldAssignValueInput';
+import type { FieldAssignCascaderOption } from './fieldAssignOptions';
+import type { MetaTreeNode } from '@nocobase/flow-engine';
+import { isToManyAssociationField } from '../internal/utils/modelUtils';
 
 export type AssignMode = 'default' | 'assign';
+
+type CollectionFieldLike = {
+  name?: unknown;
+  title?: unknown;
+  type?: unknown;
+  interface?: unknown;
+  targetCollection?: any;
+  isAssociationField?: () => boolean;
+};
 
 export interface FieldAssignRuleItem {
   key: string;
   enable?: boolean;
-  field?: string;
+  /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
+  targetPath?: string;
   mode?: AssignMode;
   condition?: FilterGroupType;
   value?: any;
@@ -28,7 +42,9 @@ export interface FieldAssignRuleItem {
 
 export interface FieldAssignRulesEditorProps {
   t: (key: string) => string;
-  fieldOptions: Array<{ label: any; value: string }> | any[];
+  fieldOptions: FieldAssignCascaderOption[] | any[];
+  /** 根集合（用于构建“上级对象/属性”变量树） */
+  rootCollection?: any;
   value?: FieldAssignRuleItem[];
   onChange?: (value: FieldAssignRuleItem[]) => void;
 
@@ -48,6 +64,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   const {
     t,
     fieldOptions,
+    rootCollection,
     value: rawValue,
     onChange,
     defaultMode = 'assign',
@@ -58,6 +75,123 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   } = props;
 
   const value = Array.isArray(rawValue) ? rawValue : [];
+  const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
+    Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
+  );
+
+  React.useEffect(() => {
+    setCascaderOptions(Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : []);
+  }, [fieldOptions]);
+
+  const buildCollectionMetaTreeNodes = React.useCallback(
+    (collection: any, basePaths: string[], visited: Set<any>): MetaTreeNode[] => {
+      if (!collection?.getFields) return [];
+      if (visited.has(collection)) return [];
+      const nextVisited = new Set(visited);
+      nextVisited.add(collection);
+
+      const fields = (typeof collection.getFields === 'function' ? collection.getFields() : []) || [];
+      const nodes: MetaTreeNode[] = [];
+      for (const rawField of fields) {
+        if (!rawField) continue;
+        const f = rawField as CollectionFieldLike;
+        const fieldInterface = typeof f.interface === 'string' ? f.interface : undefined;
+        if (!fieldInterface) continue;
+        if (fieldInterface === 'formula') continue;
+
+        const name = String(f.name || '');
+        if (!name) continue;
+        const title = t(typeof f.title === 'string' ? f.title : name);
+        const node: MetaTreeNode = {
+          name,
+          title,
+          type: String(f.type || 'string'),
+          interface: fieldInterface,
+          paths: [...basePaths, name],
+        };
+
+        const isAssoc = !!f.isAssociationField?.();
+        const isToMany = isToManyAssociationField(f);
+        if (isAssoc && !isToMany && f.targetCollection) {
+          node.children = async () =>
+            buildCollectionMetaTreeNodes(f.targetCollection, [...basePaths, name], nextVisited);
+        }
+
+        nodes.push(node);
+      }
+
+      return nodes;
+    },
+    [t],
+  );
+
+  const buildCurrentObjectMetaTree = React.useCallback(
+    (targetPath?: string): MetaTreeNode[] | undefined => {
+      if (!rootCollection?.getField) return undefined;
+      const segs = parseTargetPathToSegments(targetPath);
+      if (!segs.length) return undefined;
+
+      // levels: root -> ... -> current object collection (target field's owner object)
+      const levels: Array<{ collection: any; toMany: boolean; viaLabel?: string }> = [
+        { collection: rootCollection, toMany: false, viaLabel: undefined },
+      ];
+      let current = rootCollection;
+      for (let i = 0; i < segs.length - 1; i++) {
+        const seg = segs[i];
+        const field = current?.getField?.(seg);
+        if (!field?.isAssociationField?.()) break;
+        const toMany = isToManyAssociationField(field);
+        const nextCollection = field?.targetCollection;
+        if (!nextCollection) break;
+        const viaLabel = t(
+          typeof (field as CollectionFieldLike).title === 'string' ? (field as CollectionFieldLike).title : seg,
+        );
+        levels.push({ collection: nextCollection, toMany, viaLabel });
+        current = nextCollection;
+      }
+
+      const buildObjectNode = (idx: number, basePaths: string[], nodeName: string, titleKey: string): MetaTreeNode => {
+        const level = levels[idx] || levels[0];
+        const children: MetaTreeNode[] = [];
+
+        if (level.toMany) {
+          children.push({
+            title: t('Index'),
+            name: 'index',
+            type: 'number',
+            paths: [...basePaths, 'index'],
+          });
+        }
+
+        children.push({
+          title: t('Properties'),
+          name: 'attributes',
+          type: 'object',
+          paths: [...basePaths, 'attributes'],
+          children: async () => buildCollectionMetaTreeNodes(level.collection, [...basePaths, 'attributes'], new Set()),
+        });
+
+        if (idx > 0) {
+          // 直接把上级对象节点作为子节点，避免出现 “Parent object / Parent object” 的重复层级
+          children.push(buildObjectNode(idx - 1, [...basePaths, 'parent'], 'parent', 'Parent object'));
+        }
+
+        const viaLabel = idx > 0 ? level?.viaLabel : undefined;
+        const titleWithSuffix = viaLabel ? `${t(titleKey)}（${viaLabel}）` : t(titleKey);
+
+        return {
+          title: titleWithSuffix,
+          name: nodeName,
+          type: 'object',
+          paths: basePaths,
+          children,
+        };
+      };
+
+      return [buildObjectNode(levels.length - 1, ['current'], 'current', 'Current object')];
+    },
+    [buildCollectionMetaTreeNodes, rootCollection, t],
+  );
 
   const patchItem = (index: number, patch: Partial<FieldAssignRuleItem>) => {
     const next = value.map((it, i) => (i === index ? { ...it, ...patch } : it));
@@ -85,8 +219,8 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         key: uid(),
         enable: true,
         mode: fixedMode || defaultMode,
-        condition: { logic: '$and', items: [] } as any,
-        field: undefined,
+        condition: { logic: '$and', items: [] },
+        targetPath: undefined,
         value: undefined,
       },
     ];
@@ -98,15 +232,168 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     return item?.mode === 'default' ? 'default' : 'assign';
   };
 
-  const getFieldLabel = (fieldUid?: string) => {
-    if (!fieldUid) return undefined;
-    return (fieldOptions as any[])?.find((o) => String(o?.value) === String(fieldUid))?.label;
+  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
+    const raw = String(targetPath || '');
+    if (!raw) return [];
+    return raw
+      .split('.')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, []);
+
+  const getFieldLabel = (targetPath?: string) => {
+    const segs = parseTargetPathToSegments(targetPath);
+    if (!segs.length) return undefined;
+    if (!rootCollection?.getField) {
+      return segs.join(' / ');
+    }
+
+    const labels: string[] = [];
+    let collection = rootCollection;
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i];
+      const field = collection?.getField?.(seg);
+      if (!field) {
+        labels.push(seg);
+        continue;
+      }
+      labels.push(
+        t(typeof (field as CollectionFieldLike).title === 'string' ? (field as CollectionFieldLike).title : seg),
+      );
+      if (field?.isAssociationField?.() && field?.targetCollection) {
+        collection = field.targetCollection;
+      }
+    }
+    return labels.filter(Boolean).join(' / ');
   };
+
+  const resolveTargetCollectionBySegments = React.useCallback(
+    (segments: string[]): any | null => {
+      if (!rootCollection?.getField) return null;
+      let collection = rootCollection;
+      for (const seg of segments) {
+        const field = collection?.getField?.(seg);
+        if (!field?.isAssociationField?.() || !field?.targetCollection) {
+          return null;
+        }
+        collection = field.targetCollection;
+      }
+      return collection || null;
+    },
+    [rootCollection],
+  );
+
+  const buildChildrenFromCollection = React.useCallback(
+    (collection: any): FieldAssignCascaderOption[] => {
+      const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
+      const out: FieldAssignCascaderOption[] = [];
+      for (const rawField of fields) {
+        if (!rawField) continue;
+        const f = rawField as CollectionFieldLike;
+        const fieldInterface = typeof f.interface === 'string' ? f.interface : undefined;
+        if (!fieldInterface) continue;
+        if (fieldInterface === 'formula') continue;
+
+        const name = String(f.name || '');
+        if (!name) continue;
+
+        const title = t(typeof f.title === 'string' ? f.title : name);
+        const isAssoc = !!f.isAssociationField?.();
+        const hasTarget = !!f.targetCollection;
+        out.push({
+          label: title,
+          value: name,
+          isLeaf: !(isAssoc && hasTarget),
+        });
+      }
+      return out;
+    },
+    [t],
+  );
+
+  const loadCascaderData = React.useCallback<NonNullable<CascaderProps<FieldAssignCascaderOption>['loadData']>>(
+    async (selectedOptions?: FieldAssignCascaderOption[]) => {
+      const opts = selectedOptions || [];
+      const target = opts[opts.length - 1];
+      if (!target) return;
+      if (target.children && Array.isArray(target.children) && target.children.length) return;
+      if (target.isLeaf) return;
+
+      const segments = opts.map((o) => String(o?.value)).filter(Boolean);
+      const targetCollection = resolveTargetCollectionBySegments(segments);
+      if (!targetCollection) {
+        target.isLeaf = true;
+        setCascaderOptions((prev) => [...prev]);
+        return;
+      }
+
+      const children = buildChildrenFromCollection(targetCollection);
+      if (!children.length) {
+        target.isLeaf = true;
+      } else {
+        target.children = children;
+      }
+      setCascaderOptions((prev) => [...prev]);
+    },
+    [buildChildrenFromCollection, resolveTargetCollectionBySegments],
+  );
+
+  const preloadCascaderPath = React.useCallback(
+    async (segments: string[]) => {
+      if (!segments.length) return;
+      let options = cascaderOptions;
+      const selected: FieldAssignCascaderOption[] = [];
+      for (let i = 0; i < segments.length - 1; i++) {
+        const seg = String(segments[i]);
+        const hit = options.find((o) => String(o?.value) === seg);
+        if (!hit) return;
+        selected.push(hit);
+        if (hit.children?.length) {
+          options = hit.children;
+          continue;
+        }
+        if (hit.isLeaf) return;
+        await loadCascaderData(selected);
+        options = hit.children || [];
+      }
+    },
+    [cascaderOptions, loadCascaderData],
+  );
+
+  const selectedTargetPaths = React.useMemo(() => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const it of value) {
+      const targetPath = it?.targetPath ? String(it.targetPath) : '';
+      if (!targetPath) continue;
+      if (seen.has(targetPath)) continue;
+      seen.add(targetPath);
+      out.push(targetPath);
+    }
+    return out;
+  }, [value]);
+
+  // 预加载已选路径：确保编辑已保存的规则时，Cascader 能显示完整 label 路径。
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      for (const targetPath of selectedTargetPaths) {
+        if (cancelled) return;
+        const segs = parseTargetPathToSegments(targetPath);
+        if (!segs.length) continue;
+        await preloadCascaderPath(segs);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [parseTargetPathToSegments, preloadCascaderPath, selectedTargetPaths]);
 
   const renderPanelHeader = (item: FieldAssignRuleItem, index: number) => {
     const mode = getEffectiveMode(item);
     const modeText = mode === 'default' ? t('Default value') : t('Assign value');
-    const fieldLabel = getFieldLabel(item.field);
+    const fieldLabel = getFieldLabel(item.targetPath);
     const title = fieldLabel ? String(fieldLabel) : t('Please select field');
 
     return (
@@ -170,8 +457,9 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     );
   };
 
-  const collapseItems = value.map((item, index) => {
+  const collapseItems: CollapseProps['items'] = value.map((item, index) => {
     const mode = getEffectiveMode(item);
+    const extraMetaTree = buildCurrentObjectMetaTree(item.targetPath);
     return {
       key: item.key || String(index),
       label: renderPanelHeader(item, index),
@@ -185,35 +473,43 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Field')}</div>
-            <Select
-              value={item.field}
+            <Cascader
+              value={parseTargetPathToSegments(item.targetPath)}
               placeholder={t('Please select field')}
               style={{ width: '100%' }}
-              options={fieldOptions}
-              showSearch
-              // @ts-ignore
-              filterOption={(input, option) =>
-                String(option?.label ?? '')
-                  .toLowerCase()
-                  .includes(String(input ?? '').toLowerCase())
-              }
+              options={cascaderOptions}
+              loadData={loadCascaderData}
+              changeOnSelect
+              showSearch={{
+                filter: (inputValue, path) => {
+                  const kw = String(inputValue || '').toLowerCase();
+                  if (!kw) return true;
+                  return (path || []).some((o) =>
+                    String(o?.label ?? '')
+                      .toLowerCase()
+                      .includes(kw),
+                  );
+                },
+              }}
               allowClear
-              onChange={(fieldUid) => {
-                const changed = fieldUid !== item.field;
+              onChange={(segments) => {
+                const arr = Array.isArray(segments) ? segments.map((s) => String(s)).filter(Boolean) : [];
+                const targetPath = arr.length ? arr.join('.') : undefined;
+                const changed = targetPath !== item.targetPath;
                 patchItem(index, {
-                  field: fieldUid,
+                  targetPath,
                   value: changed ? undefined : item.value,
                 });
               }}
             />
           </div>
 
-          {(showValueEditorWhenNoField || !!item.field) && (
+          {(showValueEditorWhenNoField || !!item.targetPath) && (
             <div>
               <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Value')}</div>
               <FieldAssignValueInput
-                key={item.field || 'no-field'}
-                fieldUid={item.field || ''}
+                key={item.targetPath || 'no-field'}
+                targetPath={item.targetPath || ''}
                 value={item.value}
                 onChange={(v) => patchItem(index, { value: v })}
               />
@@ -239,8 +535,9 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
             <div>
               <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Condition')}</div>
               <ConditionBuilder
-                value={(item.condition || ({ logic: '$and', items: [] } as any)) as any}
+                value={item.condition || { logic: '$and', items: [] }}
                 onChange={(condition) => patchItem(index, { condition })}
+                extraMetaTree={extraMetaTree}
               />
             </div>
           )}
@@ -253,7 +550,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {value.length ? (
         <Collapse
-          items={collapseItems as any}
+          items={collapseItems}
           size="small"
           style={{ marginBottom: 8 }}
           defaultActiveKey={value.length > 0 ? [value[0].key] : []}

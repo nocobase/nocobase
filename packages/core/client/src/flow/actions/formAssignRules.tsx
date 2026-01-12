@@ -11,6 +11,8 @@ import { defineAction, observer, tExpr, useFlowContext } from '@nocobase/flow-en
 import { isEqual } from 'lodash';
 import React from 'react';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
+import { getCollectionFromModel } from '../internal/utils/modelUtils';
 import {
   collectLegacyDefaultValueRulesFromFormModel,
   mergeAssignRulesWithLegacyDefaults,
@@ -22,11 +24,7 @@ const FormAssignRulesUI = observer(
     const t = ctx.model.translate.bind(ctx.model);
 
     const fieldOptions = React.useMemo(() => {
-      const items = ctx.model?.subModels?.grid?.subModels?.items || [];
-      return items.map((model: any) => ({
-        label: model.props?.label || model.props?.name,
-        value: model.uid,
-      }));
+      return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
     }, [ctx.model]);
 
     // 兼容：将字段级默认值（editItemSettings/formItemSettings.initialValue）合并到表单级 assignRules 里展示
@@ -50,6 +48,7 @@ const FormAssignRulesUI = observer(
       <FieldAssignRulesEditor
         t={t}
         fieldOptions={fieldOptions}
+        rootCollection={getCollectionFromModel(ctx.model)}
         value={mergedValue}
         onChange={props.onChange}
         showValueEditorWhenNoField
