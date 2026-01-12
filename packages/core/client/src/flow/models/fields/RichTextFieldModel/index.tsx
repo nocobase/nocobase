@@ -13,15 +13,34 @@ import { lazy } from '../../../../lazy-helper';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
 
-const ReactQuill = lazy(() => import('react-quill'));
+const ReactQuill = lazy(async () => {
+  const Quill = (await import('quill')).default;
+
+  const Size = Quill.import('formats/size');
+  Size.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
+  Quill.register(Size, true);
+
+  return import('react-quill');
+});
 
 export const RichTextField = (props) => {
   const richTextClass = useRichTextStyles();
   const modules = {
-    toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
+    toolbar: [
+      [
+        { header: [1, 2, 3, false] },
+        {
+          size: ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'],
+        },
+      ],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }, 'link'],
+      ['clean', 'image'],
+    ],
   };
   const formats = [
     'header',
+    'size',
     'bold',
     'italic',
     'underline',
@@ -34,6 +53,7 @@ export const RichTextField = (props) => {
     'image',
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
+
   return (
     <ReactQuill
       className={richTextClass}
