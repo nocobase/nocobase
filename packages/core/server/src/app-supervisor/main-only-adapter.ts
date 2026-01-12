@@ -100,6 +100,17 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     await this.app.runCommand('destroy');
   }
 
+  async upgradeApp(appName: string) {
+    if (appName !== 'main') {
+      this.supervisor.logger.warn(`only main app is supported`, { method: 'upgrade' });
+      return;
+    }
+    if (!this.app) {
+      return;
+    }
+    await this.app.runCommand('upgrade');
+  }
+
   async removeAllApps() {
     return this.removeApp('main');
   }

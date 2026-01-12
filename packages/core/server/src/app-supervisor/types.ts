@@ -126,6 +126,7 @@ export interface AppDiscoveryAdapter {
 
   addAutoStartApps?(environmentName: string, appName: string[]): Promise<void>;
   getAutoStartApps?(environmentName: string): Promise<string[]>;
+  removeAutoStartApps?(environmentName: string, appNames: string[]): Promise<void>;
   addAppModel?(appModel: AppModel): Promise<void>;
   getAppModel?(appName: string): Promise<AppModel>;
   removeAppModel?(appName: string): Promise<void>;

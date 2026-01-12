@@ -481,18 +481,25 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppNameByCName(cname);
   }
 
-  async addAutoStartApps(environmentName: string, appName: string[]) {
+  async addAutoStartApps(environmentName: string, appNames: string[]) {
     if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
       return;
     }
-    return this.discoveryAdapter.addAutoStartApps(environmentName, appName);
+    return this.discoveryAdapter.addAutoStartApps(environmentName, appNames);
   }
 
-  async getAutoStartApps(environmentName?: string) {
+  async getAutoStartApps() {
     if (typeof this.discoveryAdapter.getAutoStartApps === 'function') {
-      return this.discoveryAdapter.getAutoStartApps(environmentName);
+      return this.discoveryAdapter.getAutoStartApps(this.environmentName);
     }
     return [];
+  }
+
+  async removeAutoStartApps(environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+      return;
+    }
+    return this.discoveryAdapter.removeAutoStartApps(environmentName, appNames);
   }
 
   addApp(app: Application) {
