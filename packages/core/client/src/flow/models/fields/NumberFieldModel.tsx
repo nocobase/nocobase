@@ -27,7 +27,7 @@ function toSafeNumber(value) {
 }
 
 export const InputNumberField = (props: AntdInputNumberProps) => {
-  const { onChange, ...others } = props;
+  const { onChange, value, ...others } = props;
   const handleChange = (v) => {
     if (Number.isNaN(v)) {
       onChange(null);
@@ -35,10 +35,19 @@ export const InputNumberField = (props: AntdInputNumberProps) => {
       onChange(toSafeNumber(v));
     }
   };
-  let inputNumberProps = {
-    onChange: handleChange,
-    ...others,
+  const handelCompositionEnd = (v) => {
+    if (Number.isNaN(v) || typeof v === 'object') {
+      props.onCompositionEnd(undefined);
+    } else {
+      props.onCompositionEnd(v);
+    }
   };
+  let inputNumberProps = {
+    ...others,
+    onChange: handleChange,
+    onCompositionEnd: handelCompositionEnd,
+  };
+
   if (others['formatStyle']) {
     inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
   }
