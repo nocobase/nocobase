@@ -14,7 +14,7 @@ import _ from 'lodash';
 import { evaluateCondition } from './conditions';
 import { createFormValuesProxy } from './deps';
 import { createFormPatcher } from './form-patch';
-import { buildAncestorKeys, namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
+import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
 import { RuleEngine } from './rules';
 import type { FormAssignRuleItem, FormValuesChangePayload, NamePath, Patch, SetOptions, ValueSource } from './types';
 import { createTxId, MAX_WRITES_PER_PATH_PER_TX } from './utils';
@@ -68,6 +68,7 @@ export class FormValueRuntime {
       getBlockModelUid: () => String(this.model?.uid),
       getActionName: () => this.model?.getAclActionName?.() ?? this.model?.context?.actionName,
       getBlockContext: () => this.model?.context,
+      getEngine: () => this.model?.context?.engine,
       getEngineModel: (uid) => this.model?.context?.engine?.getModel?.(uid) ?? null,
       isDisposed: () => this.disposed,
       valuesMirror: this.valuesMirror,
@@ -487,54 +488,58 @@ export class FormValueRuntime {
   private tryResolveNamePath(callerCtx: any, path: string | NamePath): NamePath | null {
     const segs = Array.isArray(path) ? [...path] : parsePathString(path);
 
-    const indexByFieldName = this.buildIndexByFieldName(callerCtx);
-
-    const resolved: NamePath = [];
-    for (let i = 0; i < segs.length; i++) {
-      const seg = segs[i] as any;
-      if (typeof seg === 'object' && seg && 'placeholder' in seg) {
-        const prev = resolved[resolved.length - 1];
-        const owner = typeof prev === 'string' ? prev : undefined;
-        const idx = owner ? indexByFieldName[owner] : undefined;
-        if (typeof idx !== 'number') {
-          return null;
-        }
-        resolved.push(idx);
-        continue;
-      }
-      resolved.push(seg);
-    }
-
-    if (Object.keys(indexByFieldName).length) {
-      const inserted: NamePath = [];
-      for (let i = 0; i < resolved.length; i++) {
-        const seg = resolved[i];
-        inserted.push(seg);
-        if (typeof seg !== 'string') continue;
-        const idx = indexByFieldName[seg];
-        if (typeof idx !== 'number') continue;
-        const next = resolved[i + 1];
-        if (typeof next === 'number') continue;
-        inserted.push(idx);
-      }
-      return inserted;
-    }
-
-    return resolved;
-  }
-
-  private buildIndexByFieldName(callerCtx: any): Record<string, number> {
-    const out: Record<string, number> = {};
+    // fieldIndex 形如 ["products:0", "products:2"]，顺序对应从外到内的嵌套层级；
+    // 不能用 { [name]: index } 映射，否则同名数组字段会被覆盖（导致多层嵌套默认值/赋值失效）。
     const fieldIndex = callerCtx?.model?.context?.fieldIndex ?? callerCtx?.fieldIndex;
-    const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
-    for (const it of arr) {
+    const fieldIndexArr = Array.isArray(fieldIndex) ? fieldIndex : [];
+    const entries: Array<{ name: string; index: number }> = [];
+    for (const it of fieldIndexArr) {
       if (typeof it !== 'string') continue;
       const [k, v] = it.split(':');
       const n = Number(v);
       if (!k || Number.isNaN(n)) continue;
-      out[k] = n;
+      entries.push({ name: k, index: n });
     }
-    return out;
+
+    const resolved: NamePath = [];
+    let idxPtr = 0;
+
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i] as any;
+
+      // 显式占位符：xxx[placeholder] → 使用当前上下文同层级的 index
+      if (typeof seg === 'object' && seg && 'placeholder' in seg) {
+        const prev = resolved[resolved.length - 1];
+        const owner = typeof prev === 'string' ? prev : undefined;
+        if (!owner) return null;
+
+        while (idxPtr < entries.length && entries[idxPtr].name !== owner) idxPtr++;
+        if (idxPtr >= entries.length) return null;
+
+        resolved.push(entries[idxPtr].index);
+        idxPtr++;
+        continue;
+      }
+
+      // 普通段
+      resolved.push(seg);
+
+      // 自动补齐对多 index：products.id → products[ctxIndex].id
+      if (typeof seg === 'string' && idxPtr < entries.length && entries[idxPtr].name === seg) {
+        const next = segs[i + 1] as any;
+        if (typeof next === 'number') {
+          // 已显式指定 index（products[0]），仍需消耗一个 entries 以保持嵌套层级对齐
+          idxPtr++;
+        } else if (typeof next === 'object' && next && 'placeholder' in next) {
+          // 由占位符分支负责插入 index，这里不消耗
+        } else {
+          resolved.push(entries[idxPtr].index);
+          idxPtr++;
+        }
+      }
+    }
+
+    return resolved;
   }
 
   private bumpChangeTick() {
@@ -571,9 +576,25 @@ export class FormValueRuntime {
 
   private findExplicitHit(pathKey: string): string | null {
     if (this.explicitSet.has(pathKey)) return pathKey;
-    const keys = buildAncestorKeys(pathKeyToNamePath(pathKey));
-    for (const k of keys) {
-      if (this.explicitSet.has(k)) return k;
+    const namePath = pathKeyToNamePath(pathKey);
+    const prefix: NamePath = [];
+
+    // 规则：默认值（source=default）仅应被“同一路径”或“对象父级”显式写入所阻止。
+    // 对于数组型父级（如 `users`），在用户“添加行/增删项”等操作时经常会被标记为 explicit，
+    // 但这不应导致行内字段（如 `users[0].name`）的默认值永久失效。
+    //
+    // 因此：当某个前缀在完整路径上紧跟的是数字索引（数组容器），则忽略该前缀的 explicit 命中。
+    for (let i = 0; i < namePath.length; i++) {
+      prefix.push(namePath[i]);
+      const key = namePathToPathKey(prefix as any);
+      if (!this.explicitSet.has(key)) continue;
+
+      const nextSeg = namePath[i + 1];
+      if (typeof nextSeg === 'number') {
+        // ignore array container explicit hit (e.g. explicit `users` shouldn't block `users[0].name` defaults)
+        continue;
+      }
+      return key;
     }
     return null;
   }
