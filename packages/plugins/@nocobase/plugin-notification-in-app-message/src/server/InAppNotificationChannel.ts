@@ -27,9 +27,8 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     const models = Array.isArray(model) ? model : [model];
     for (const m of models) {
       const userId = m.userId;
-      this.app.emit('ws:sendToTag', {
-        tagKey: 'userId',
-        tagValue: userId,
+      this.app.emit('ws:sendToUser', {
+        userId,
         message: {
           type: 'in-app-message:created',
           payload: m.toJSON(),
@@ -42,9 +41,8 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     const models = Array.isArray(model) ? model : [model];
     for (const m of models) {
       const userId = m.userId;
-      this.app.emit('ws:sendToTag', {
-        tagKey: 'userId',
-        tagValue: userId,
+      this.app.emit('ws:sendToUser', {
+        userId,
         message: {
           type: 'in-app-message:updated',
           payload: m.toJSON(),
