@@ -608,7 +608,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Enable tree table'),
       uiMode: { type: 'switch', key: 'treeTable' },
       hideInSettings(ctx) {
-        if (ctx.model.collection.template !== 'tree') {
+        if ((ctx.model.collection.template !== 'tree' || ctx.model, ctx.view?.inputArgs.scene === 'select')) {
           return true;
         }
       },
@@ -626,7 +626,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Expand all rows by default'),
       uiMode: { type: 'switch', key: 'defaultExpandAllRows' },
       hideInSettings(ctx) {
-        if (ctx.model.collection.template !== 'tree') {
+        if ((ctx.model.collection.template !== 'tree' || ctx.model, ctx.view?.inputArgs.scene === 'select')) {
           return true;
         }
       },
