@@ -25,6 +25,7 @@ import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
 import { FormValueRuntime } from './value-runtime';
+import { collectUpdateAssociationValuesFromAssignRules } from './assignRulesUpdateAssociationValues';
 import { clearLegacyDefaultValuesFromFormModel } from './legacyDefaultValueMigration';
 
 type DefaultCollectionBlockModelStructure = {
@@ -309,6 +310,13 @@ export class FormBlockModel<
     const params = this.getStepParams('formModelSettings', 'assignRules');
     const items = (params?.value || []) as any[];
     this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
+
+    // 若规则目标包含关联字段的嵌套属性（如 user.name），自动补全 updateAssociationValues 以启用后端 nested update
+    const resource: any = (this.context as any)?.resource;
+    const updateAssociationValues = collectUpdateAssociationValuesFromAssignRules(items, this.collection);
+    if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
+      resource.addUpdateAssociationValues(updateAssociationValues);
+    }
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
@@ -401,6 +409,16 @@ FormBlockModel.registerFlow({
         const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
         const items = (params?.value || []) as any[];
         (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
+
+        // 保存后同步补全 updateAssociationValues（避免 nested 字段在后端被 sanitize 掉）
+        const resource: any = (ctx.model as any)?.context?.resource;
+        const updateAssociationValues = collectUpdateAssociationValuesFromAssignRules(
+          items,
+          (ctx.model as any)?.collection,
+        );
+        if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
+          resource.addUpdateAssociationValues(updateAssociationValues);
+        }
       },
     },
   },
