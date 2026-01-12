@@ -40,7 +40,8 @@ export type AssignMode = 'default' | 'assign';
 export type FormAssignRuleItem = {
   key?: string;
   enable?: boolean;
-  field?: string;
+  /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
+  targetPath?: string;
   mode?: AssignMode;
   condition?: any;
   value?: any;
