@@ -24,63 +24,69 @@ export const registerSmartBreak = (Quill) => {
   Quill.register(SmartBreak, true);
 };
 
-// function lineBreakMatcher() {
-//   const Delta = Quill.import('delta');
-//   const newDelta = new Delta();
-//   newDelta.insert({ break: '' });
-//   return newDelta;
-// }
+export function lineBreakMatcher(node, delta) {
+  const Quill = (window as any).Quill;
+  if (!Quill) return delta;
+  const Delta = Quill.import('delta');
+  const newDelta = new Delta();
+  newDelta.insert({ break: '' });
+  return newDelta;
+}
 
-// function handleLinebreak(range, context) {
-//   const { quill } = this;
-//   const currentLeaf = quill.getLeaf(range.index)[0];
-//   const nextLeaf = quill.getLeaf(range.index + 1)[0];
-//   // @ts-ignore
-//   const sources = Quill.sources || {};
+export function handleLinebreak(range, context) {
+  // @ts-ignore
+  const { quill } = this;
+  const Quill = quill.constructor;
+  const Parchment = Quill.import('parchment');
+  const currentLeaf = quill.getLeaf(range.index)[0];
+  const nextLeaf = quill.getLeaf(range.index + 1)[0];
+  quill.insertEmbed(range.index, 'break', true, 'user');
 
-//   quill.insertEmbed(range.index, 'break', true, sources.USER);
+  if (nextLeaf === null || currentLeaf.parent !== nextLeaf.parent) {
+    quill.insertEmbed(range.index, 'break', true, 'user');
+  }
+  quill.setSelection(range.index + 1, 'silent');
 
-//   if (nextLeaf === null || currentLeaf.parent !== nextLeaf.parent) {
-//     quill.insertEmbed(range.index, 'break', true, sources.USER);
-//   }
-//   quill.setSelection(range.index + 1, sources.SILENT);
+  Object.keys(context.format).forEach((name) => {
+    if (Parchment.query(name, Parchment.Scope.BLOCK)) return;
+    if (Array.isArray(context.format[name])) return;
+    if (name === 'link') return;
+    quill.format(name, context.format[name], 'user');
+  });
+  return false;
+}
 
-//   Object.keys(context.format).forEach((name) => {
-//     if (Parchment.query(name, Parchment.Scope.BLOCK)) return;
-//     if (Array.isArray(context.format[name])) return;
-//     if (name === 'link') return;
-//     quill.format(name, context.format[name], sources.USER);
-//   });
-// }
+export function handleEnter(range, context) {
+  // @ts-ignore
+  const { quill } = this;
+  const Quill = quill.constructor;
+  const Parchment = Quill.import('parchment');
 
-// function handleEnter(range, context) {
-//   const { quill } = this;
-//   // @ts-ignore
-//   const sources = Quill.sources || {};
+  if (range.length > 0) {
+    quill.scroll.deleteAt(range.index, range.length);
+  }
+  const lineFormats = Object.keys(context.format).reduce((acc, format) => {
+    if (Parchment.query(format, Parchment.Scope.BLOCK) && !Array.isArray(context.format[format])) {
+      acc[format] = context.format[format];
+    }
+    return acc;
+  }, {});
 
-//   if (range.length > 0) {
-//     quill.scroll.deleteAt(range.index, range.length);
-//   }
-//   const lineFormats = Object.keys(context.format).reduce((acc, format) => {
-//     if (Parchment.query(format, Parchment.Scope.BLOCK) && !Array.isArray(context.format[format])) {
-//       acc[format] = context.format[format];
-//     }
-//     return acc;
-//   }, {});
+  const previousChar = quill.getText(range.index - 1, 1);
 
-//   const previousChar = quill.getText(range.index - 1, 1);
+  quill.insertText(range.index, '\n', lineFormats, 'user');
 
-//   quill.insertText(range.index, '\n', lineFormats, sources.USER);
+  if (previousChar == '' || (previousChar == '\n' && !(context.offset > 0 && context.prefix.length === 0))) {
+    quill.setSelection(range.index + 2, 'silent');
+  } else {
+    quill.setSelection(range.index + 1, 'silent');
+  }
+  Object.keys(context.format).forEach((name) => {
+    if (lineFormats[name] != null) return;
+    if (Array.isArray(context.format[name])) return;
+    if (name === 'link') return;
+    quill.format(name, context.format[name], 'user');
+  });
 
-//   if (previousChar == '' || (previousChar == '\n' && !(context.offset > 0 && context.prefix.length === 0))) {
-//     quill.setSelection(range.index + 2, sources.SILENT);
-//   } else {
-//     quill.setSelection(range.index + 1, sources.SILENT);
-//   }
-//   Object.keys(context.format).forEach((name) => {
-//     if (lineFormats[name] != null) return;
-//     if (Array.isArray(context.format[name])) return;
-//     if (name === 'link') return;
-//     quill.format(name, context.format[name], sources.USER);
-//   });
-// }
+  return false;
+}

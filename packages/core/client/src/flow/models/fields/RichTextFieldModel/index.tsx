@@ -12,7 +12,7 @@ import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { lazy } from '../../../../lazy-helper';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
-import { registerSmartBreak } from './registerSmartBreak';
+import { registerSmartBreak, lineBreakMatcher, handleEnter, handleLinebreak } from './registerSmartBreak';
 import { registerFontSize } from './registerFontSize';
 import { registerImageResize } from './registerImageResize';
 
@@ -43,23 +43,23 @@ export const RichTextField = (props) => {
     imageResize: {
       modules: ['Resize', 'DisplaySize'],
     },
-    // clipboard: {
-    //   matchers: [['BR', lineBreakMatcher]],
-    //   matchVisual: false,
-    // },
-    // keyboard: {
-    //   bindings: {
-    //     break: {
-    //       key: 13,
-    //       handler: handleEnter,
-    //     },
-    //     linebreak: {
-    //       key: 13,
-    //       shiftKey: true,
-    //       handler: handleLinebreak,
-    //     },
-    //   },
-    // },
+    clipboard: {
+      matchers: [['BR', lineBreakMatcher]],
+      matchVisual: false,
+    },
+    keyboard: {
+      bindings: {
+        handleEnter: {
+          key: 13,
+          handler: handleEnter,
+        },
+        handleLinebreak: {
+          key: 13,
+          shiftKey: true,
+          handler: handleLinebreak,
+        },
+      },
+    },
   };
   const formats = [
     'header',
@@ -74,6 +74,7 @@ export const RichTextField = (props) => {
     'indent',
     'link',
     'image',
+    'break',
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
 

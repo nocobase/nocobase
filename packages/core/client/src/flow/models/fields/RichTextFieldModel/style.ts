@@ -9,6 +9,7 @@
 
 import { css } from '@emotion/css';
 import { theme } from 'antd';
+import end from 'packages/plugins/@nocobase/plugin-workflow/src/client/nodes/end';
 
 export const useRichTextStyles = () => {
   const { token } = theme.useToken();
@@ -486,6 +487,9 @@ export const useRichTextStyles = () => {
       border: `1px solid ${token.colorBorder}`,
       borderBottomLeftRadius: '2px',
       borderBottomRightRadius: '2px',
+    },
+    '.ql-container p': {
+      marginBlockEnd: '1em',
     },
   });
 };
