@@ -47,6 +47,9 @@ SubTableRecordDeleteActionModel.registerFlow({
   steps: {
     disableProps: {
       async handler(ctx, params) {
+        if (!ctx.model.context.associationModel) {
+          return;
+        }
         const allowDisassociation = ctx.model.context.associationModel.getStepParams?.(
           'advanceSubTableAssociation',
           'allowDisassociation',
