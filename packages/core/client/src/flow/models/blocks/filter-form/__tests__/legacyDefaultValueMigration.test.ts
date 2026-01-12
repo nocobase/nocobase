@@ -38,11 +38,17 @@ describe('filter-form legacyDefaultValueMigration', () => {
     const field1 = createMockFieldModel({
       uid: 'f1',
       props: { initialValue: 'a' },
-      stepParams: { filterFormItemSettings: { initialValue: { defaultValue: 'a' } } },
+      stepParams: {
+        fieldSettings: { init: { fieldPath: 'f1' } },
+        filterFormItemSettings: { initialValue: { defaultValue: 'a' } },
+      },
     });
     const field2 = createMockFieldModel({
       uid: 'f2',
-      stepParams: { filterFormItemSettings: { initialValue: { defaultValue: 'b' } } },
+      stepParams: {
+        fieldSettings: { init: { fieldPath: 'f2' } },
+        filterFormItemSettings: { initialValue: { defaultValue: 'b' } },
+      },
     });
     const field3 = createMockFieldModel({ uid: 'f3', props: { other: 1 } });
 
@@ -51,27 +57,27 @@ describe('filter-form legacyDefaultValueMigration', () => {
     const rules = collectLegacyDefaultValueRulesFromFilterFormModel(filterFormModel);
     expect(rules).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ field: 'f1', mode: 'default', value: 'a' }),
-        expect.objectContaining({ field: 'f2', mode: 'default', value: 'b' }),
+        expect.objectContaining({ targetPath: 'f1', mode: 'default', value: 'a' }),
+        expect.objectContaining({ targetPath: 'f2', mode: 'default', value: 'b' }),
       ]),
     );
-    expect(rules.find((r: any) => r.field === 'f3')).toBeUndefined();
+    expect(rules.find((r: any) => r.targetPath === 'f3')).toBeUndefined();
   });
 
   it('merges legacy defaults without duplicating existing default rules', () => {
     const legacy = [
-      { key: 'legacy-default:f1', field: 'f1', mode: 'default', value: 1 },
-      { key: 'legacy-default:f2', field: 'f2', mode: 'default', value: 2 },
+      { key: 'legacy-default:f1', targetPath: 'f1', mode: 'default', value: 1 },
+      { key: 'legacy-default:f2', targetPath: 'f2', mode: 'default', value: 2 },
     ] as any[];
 
     const existing = [
-      { key: 'k-1', field: 'f2', mode: 'default', value: 999 },
-      { key: 'k-2', field: 'f3', mode: 'assign', value: 'x' },
+      { key: 'k-1', targetPath: 'f2', mode: 'default', value: 999 },
+      { key: 'k-2', targetPath: 'f3', mode: 'assign', value: 'x' },
     ] as any[];
 
     const merged = mergeAssignRulesWithLegacyDefaults(existing as any, legacy as any);
-    expect(merged.find((r: any) => r.field === 'f2' && r.mode === 'default')?.value).toBe(999);
-    expect(merged.some((r: any) => r.field === 'f1' && r.mode === 'default' && r.value === 1)).toBe(true);
+    expect(merged.find((r: any) => r.targetPath === 'f2' && r.mode === 'default')?.value).toBe(999);
+    expect(merged.some((r: any) => r.targetPath === 'f1' && r.mode === 'default' && r.value === 1)).toBe(true);
   });
 
   it('clears filterFormItemSettings.initialValue configs from filter form items', () => {

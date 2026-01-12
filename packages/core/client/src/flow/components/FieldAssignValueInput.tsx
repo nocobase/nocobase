@@ -18,56 +18,177 @@ import {
   isRunJSValue,
   normalizeRunJSValue,
   type RunJSValue,
+  type CollectionField,
   useFlowContext,
   EditableItemModel,
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
+import {
+  findFormItemModelByFieldPath,
+  getCollectionFromModel,
+  isToManyAssociationField,
+} from '../internal/utils/modelUtils';
 import { CodeEditor } from './code-editor';
 
 interface Props {
-  fieldUid: string;
+  /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
+  targetPath: string;
   value: any;
   onChange: (value: any) => void;
   placeholder?: string;
 }
+
+type ResolvedFieldContext = {
+  itemModel: any | null;
+  collection: any | null;
+  dataSource: any | null;
+  blockModel: any;
+  fieldPath: string | null;
+  fieldName: string | null;
+  collectionField: CollectionField | null;
+};
 
 /**
  * 根据所选字段渲染对应的赋值编辑器：
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
  * - 支持变量引用，并提供 Constant / Null 两种快捷项
  */
-export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChange, placeholder }) => {
+export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onChange, placeholder }) => {
   const flowCtx = useFlowContext();
+  const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
+    if (!eventOrValue || typeof eventOrValue !== 'object') return eventOrValue;
+    if (!('target' in eventOrValue)) return eventOrValue;
+    const target = (eventOrValue as { target?: unknown }).target;
+    if (!target || typeof target !== 'object') return eventOrValue;
+    if (!('value' in target)) return eventOrValue;
+    return (target as { value?: unknown }).value;
+  }, []);
 
-  // 在当前表单网格中定位到选中的字段模型（FormItemModel 实例）
+  // 优先：表单上已配置的字段（含子表单/子表单列表的子字段）
   const itemModel = React.useMemo(() => {
-    const items = flowCtx.model?.subModels?.grid?.subModels?.items || [];
-    return items.find((m: any) => m?.uid === fieldUid);
-  }, [flowCtx, fieldUid]);
+    if (!targetPath) return null;
+    return findFormItemModelByFieldPath(flowCtx.model, targetPath);
+  }, [flowCtx.model, targetPath]);
 
-  // 解析 collection/field 基础信息
-  const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = itemModel?.context || {};
-  const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
-  const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
-  const collection =
-    ctxCollection ||
-    (init?.dataSourceKey && init?.collectionName
-      ? dataSourceManager?.getCollection?.(init.dataSourceKey, init.collectionName)
-      : undefined);
-  const dataSource =
-    ctxDataSource || (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined);
-  const fieldPath: string | undefined = init?.fieldPath;
-  const fieldName = fieldPath?.split('.').slice(-1)[0];
+  // 兜底：表单上未配置但来自关联字段 target collection 的嵌套属性（如 `user.name`）
+  const resolveNestedAssociationField = React.useCallback(
+    (
+      rootCollection: any,
+      path: string,
+    ): { collection: any; fieldName: string; collectionField?: CollectionField } | null => {
+      if (!rootCollection || typeof path !== 'string' || !path.includes('.')) return null;
+      const segs = path.split('.').filter(Boolean);
+      if (segs.length < 2) return null;
+
+      let cur = rootCollection;
+      for (let i = 0; i < segs.length; i++) {
+        const seg = segs[i];
+        const isLast = i === segs.length - 1;
+        const cf = typeof cur?.getField === 'function' ? (cur.getField(seg) as CollectionField | undefined) : undefined;
+        if (!cf) return null;
+        if (isLast) {
+          return { collection: cur, fieldName: seg, collectionField: cf };
+        }
+        if (!cf?.isAssociationField?.() || !cf?.targetCollection) {
+          return null;
+        }
+        cur = cf.targetCollection;
+      }
+      return null;
+    },
+    [],
+  );
+
+  const resolved = React.useMemo<ResolvedFieldContext>(() => {
+    // 1) 来自表单配置的字段：直接使用 itemModel 上下文
+    if (itemModel) {
+      const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = itemModel?.context || {};
+      const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
+      const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
+      const collection =
+        ctxCollection ||
+        (init?.dataSourceKey && init?.collectionName
+          ? dataSourceManager?.getCollection?.(init.dataSourceKey, init.collectionName)
+          : undefined);
+      const dataSource =
+        ctxDataSource || (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined);
+      const fieldPath: string | undefined = init?.fieldPath;
+      const fieldName = fieldPath?.split('.').slice(-1)[0];
+      const cf = fieldName ? (collection?.getField?.(fieldName) as CollectionField | undefined) : undefined;
+      return {
+        itemModel,
+        collection: collection || null,
+        dataSource: dataSource || null,
+        blockModel,
+        fieldPath: fieldPath || null,
+        fieldName: fieldName || null,
+        collectionField: cf || null,
+      };
+    }
+
+    // 2) 嵌套语义：根据 targetPath 在集合上解析（例如 user.name / user.profile.name）
+    const rootCollection = getCollectionFromModel(flowCtx.model);
+    const blockModel = flowCtx.model?.context?.blockModel || flowCtx.model;
+    const empty: ResolvedFieldContext = {
+      itemModel: null,
+      collection: null,
+      dataSource: null,
+      blockModel,
+      fieldPath: null,
+      fieldName: null,
+      collectionField: null,
+    };
+    const nested = resolveNestedAssociationField(rootCollection, targetPath);
+    if (!nested) return empty;
+    const collection = nested.collection;
+    const fieldName = nested.fieldName;
+    const dataSourceManager = flowCtx.model?.context?.dataSourceManager;
+    const dataSource =
+      (collection?.dataSourceKey ? dataSourceManager?.getDataSource?.(collection.dataSourceKey) : undefined) || null;
+    return {
+      ...empty,
+      collection,
+      dataSource,
+      blockModel,
+      fieldPath: fieldName,
+      fieldName,
+      collectionField: nested.collectionField || null,
+    };
+  }, [flowCtx.model, itemModel, resolveNestedAssociationField, targetPath]);
+
+  const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
+
+  const isArrayValueField = React.useMemo(() => {
+    if (isToManyAssociationField(cf)) return true;
+
+    // 部分字段组件（如 Cascader / CascadeSelectList）期望 array 值；若 uiSchema 明确声明为 array，则视为 array 值字段
+    const schemaType = cf?.uiSchema?.type;
+    if (schemaType === 'array') return true;
+
+    return false;
+  }, [cf]);
+
+  const coerceEmptyValueForRenderer = React.useCallback(
+    (v: any) => {
+      // VariableInput 会把 undefined/null 统一传成空字符串，这会导致 array 值组件（如 DynamicCascadeList）崩溃。
+      if (isArrayValueField && (v == null || v === '')) return [];
+      return v;
+    },
+    [isArrayValueField],
+  );
 
   // 生成临时根模型 + 子字段模型
   const [tempRoot, setTempRoot] = React.useState<any>(null);
   React.useEffect(() => {
-    if (!itemModel || !collection || !fieldPath) return;
-    const engine = itemModel?.context?.engine || flowCtx.model?.context?.engine;
+    if (!collection || !fieldPath || !fieldName) return;
+    const engine = resolved?.itemModel?.context?.engine || flowCtx.model?.context?.engine;
 
     const fields = typeof collection.getFields === 'function' ? collection.getFields() || [] : [];
     const f = fields.find((x: any) => x?.name === fieldName);
-    const binding = EditableItemModel.getDefaultBindingByField(itemModel?.context, f);
+    const binding = EditableItemModel.getDefaultBindingByField(
+      resolved?.itemModel?.context || flowCtx.model?.context,
+      f,
+    );
     const fieldModelUse: string | undefined = binding?.modelName;
 
     const effectiveFieldModelUse: string | undefined = fieldModelUse || itemModel?.subModels?.field?.use;
@@ -100,7 +221,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     // 注入上下文（集合/数据源/字段/区块/资源）
     created.context?.defineProperty?.('collection', { value: collection });
     if (dataSource) created.context?.defineProperty?.('dataSource', { value: dataSource });
-    const cf = typeof collection.getField === 'function' && fieldName ? collection.getField(fieldName) : undefined;
     if (cf) created.context?.defineProperty?.('collectionField', { value: cf });
     if (blockModel) created.context?.defineProperty?.('blockModel', { value: blockModel });
     if (created.context) {
@@ -113,15 +233,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
 
     // 字段模型基础属性设定
     const fm = created?.subModels?.fields?.[0];
-    const relType = cf?.type;
-    const relInterface = cf?.interface;
-    const multiple =
-      relType === 'belongsToMany' ||
-      relType === 'hasMany' ||
-      relType === 'belongsToArray' ||
-      relInterface === 'm2m' ||
-      relInterface === 'o2m' ||
-      relInterface === 'mbm';
+    const multiple = isToManyAssociationField(cf);
     fm?.setProps?.({
       disabled: false,
       readPretty: false,
@@ -135,7 +247,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     if (!fm?.props?.fieldNames && cf?.targetCollection) {
       const targetCol = cf.targetCollection;
       const valueKey = cf?.targetKey || targetCol?.filterTargetKey || 'id';
-      fm?.setProps?.({ fieldNames: { label: (targetCol as any)?.titleField, value: valueKey } });
+      const labelKey =
+        typeof (targetCol as { titleField?: unknown } | null | undefined)?.titleField === 'string'
+          ? (targetCol as { titleField?: string }).titleField
+          : undefined;
+      fm?.setProps?.({ fieldNames: { label: labelKey, value: valueKey } });
     }
 
     setTempRoot(created);
@@ -143,42 +259,36 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       created.subModels.fields.forEach?.((m) => m.remove());
       created.remove();
     };
-  }, [itemModel, collection, dataSource, blockModel, fieldPath, fieldName, flowCtx, placeholder]);
+  }, [collection, dataSource, blockModel, fieldPath, fieldName, flowCtx, placeholder, resolved, cf, itemModel]);
 
   // 同步 value/onChange 到临时根与字段模型
   React.useEffect(() => {
     if (!tempRoot) return;
-    const normalize = (eventOrValue: any) =>
-      eventOrValue && typeof eventOrValue === 'object' && 'target' in eventOrValue
-        ? (eventOrValue as any).target?.value
-        : eventOrValue;
     tempRoot.setProps?.({
       value,
-      onChange: (ev: any) => onChange?.(normalize(ev)),
+      onChange: (ev: any) => onChange?.(normalizeEventValue(ev)),
     });
     const fm = tempRoot?.subModels?.fields?.[0];
     fm?.setProps?.({
       value,
-      onChange: (ev: any) => onChange?.(normalize(ev)),
+      onChange: (ev: any) => onChange?.(normalizeEventValue(ev)),
     });
-  }, [tempRoot, value, onChange]);
+  }, [tempRoot, value, onChange, normalizeEventValue]);
 
   // 常量/空值的两个占位渲染器
   const ConstantValueEditor = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => {
       React.useEffect(() => {
-        const normalize = (eventOrValue: any) =>
-          eventOrValue && typeof eventOrValue === 'object' && 'target' in eventOrValue
-            ? (eventOrValue as any).target?.value
-            : eventOrValue;
+        const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
         tempRoot?.setProps?.({
           ...inputProps,
-          onChange: (ev: any) => inputProps?.onChange?.(normalize(ev)),
+          value: coercedValue,
+          onChange: (ev: any) => inputProps?.onChange?.(normalizeEventValue(ev)),
         });
         const fm = tempRoot?.subModels?.fields?.[0];
         fm?.setProps?.({
-          value: inputProps?.value,
-          onChange: (ev: any) => inputProps?.onChange?.(normalize(ev)),
+          value: coercedValue,
+          onChange: (ev: any) => inputProps?.onChange?.(normalizeEventValue(ev)),
         });
       }, [inputProps]);
 
@@ -186,7 +296,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
         return (
           <Input
             value={inputProps?.value}
-            onChange={(e) => inputProps?.onChange?.((e as any)?.target?.value)}
+            onChange={(e) => inputProps?.onChange?.(normalizeEventValue(e))}
             placeholder={placeholder}
             style={{ width: '100%' }}
           />
@@ -200,7 +310,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       );
     };
     return C;
-  }, [placeholder, tempRoot]);
+  }, [placeholder, tempRoot, coerceEmptyValueForRenderer, normalizeEventValue]);
 
   const NullComponent = React.useMemo(() => {
     const N: React.FC = () => (
@@ -252,7 +362,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     };
   }, [flowCtx, ConstantValueEditor, NullComponent, RunJSComponent]);
 
-  if (!itemModel || !fieldPath) {
+  if (!fieldPath) {
     // 不可用占位
     return <Input disabled placeholder={flowCtx.t?.('Please select a field') ?? 'Please select a field'} />;
   }
@@ -267,10 +377,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       converters={{
         renderInputComponent: (meta) => {
           const firstPath = meta?.paths?.[0];
-          if (firstPath === 'constant') return ConstantValueEditor as any;
-          if (firstPath === 'null') return NullComponent as any;
-          if (firstPath === 'runjs') return RunJSComponent as any;
-          return undefined as any;
+          if (firstPath === 'constant') return ConstantValueEditor;
+          if (firstPath === 'null') return NullComponent;
+          if (firstPath === 'runjs') return RunJSComponent;
+          return null;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
