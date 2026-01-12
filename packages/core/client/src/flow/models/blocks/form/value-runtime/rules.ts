@@ -23,6 +23,7 @@ import { collectStaticDepsFromRunJSValue, collectStaticDepsFromTemplateValue, De
 import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
 import type { FormAssignRuleItem, NamePath, Patch, SetOptions, ValueSource } from './types';
 import { createTxId, isEmptyValue } from './utils';
+import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
 
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
@@ -58,6 +59,7 @@ export type RuleEngineOptions = {
   getBlockModelUid: () => string;
   getActionName: () => string | undefined;
   getBlockContext: () => any;
+  getEngine: () => any;
   getEngineModel: (uid: string) => FlowModel | null;
   isDisposed: () => boolean;
   valuesMirror: any;
@@ -76,7 +78,12 @@ export class RuleEngine {
   private readonly options: RuleEngineOptions;
 
   private readonly rules = new Map<string, { rule: RuntimeRule; state: RuleState }>();
-  private readonly assignRuleIdsByFieldUid = new Map<string, Set<string>>();
+  private readonly assignTemplatesByTargetPath = new Map<
+    string,
+    Array<FormAssignRuleItem & { __key: string; __order: number }>
+  >();
+  /** 当前表单中“已配置到 UI 的字段（FormItemModel）”的 targetPath 集合，用于避免对 row grid 重复注册规则 */
+  private readonly formItemTargetPaths = new Set<string>();
   private readonly pendingRuleIds = new Set<string>();
   private readonly ruleDebounceUntilById = new Map<string, number>();
   private readonly ruleDebounceTimersById = new Map<string, ReturnType<typeof setTimeout>>();
@@ -92,13 +99,129 @@ export class RuleEngine {
     this.options = options;
   }
 
+  private getCollectionFromContext(baseCtx: any): any | undefined {
+    return baseCtx?.collection ?? baseCtx?.model?.context?.collection;
+  }
+
+  private getRootCollection(): any | undefined {
+    const blockCtx = this.options.getBlockContext();
+    return this.getCollectionFromContext(blockCtx);
+  }
+
+  private shouldCreateBlockLevelAssignRule(targetPath: string): boolean {
+    const blockCtx = this.options.getBlockContext();
+    let collection = this.getCollectionFromContext(blockCtx);
+    if (!collection?.getField) return true;
+
+    const segs = parsePathString(targetPath).filter((seg) => typeof seg !== 'object') as NamePath;
+    if (segs.length <= 1) return true;
+
+    for (let i = 0; i < segs.length - 1; i++) {
+      const seg = segs[i];
+      if (typeof seg !== 'string') continue;
+
+      const field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+
+      // 对多关联：若后续没有显式 index，则 block 级无法确定要写入哪一行，必须等 row fork 上下文
+      if (isToManyAssociationField(field)) {
+        const next = segs[i + 1];
+        if (typeof next !== 'number') {
+          return false;
+        }
+        // 已显式指定 index（如 users[0].nickname）：跳过 index 段继续解析
+        i += 1;
+      }
+
+      collection = field?.targetCollection;
+      if (!collection?.getField) break;
+    }
+
+    return true;
+  }
+
+  /**
+   * 对关联字段嵌套属性（如 user.name / user.profile.name）：
+   * - 依赖应包含关联对象本身（user / user.profile），否则当关联对象从 null -> {id} 时，user.name 仍为 undefined，无法触发 rule re-run。
+   * - 写入前需校验关联对象已存在，避免隐式创建关联对象。
+   */
+  private collectAssociationPrefixPaths(baseCtx: any, targetNamePath: NamePath): NamePath[] {
+    const out: NamePath[] = [];
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    if (!collection?.getField) return out;
+
+    const prefix: NamePath = [];
+    for (let i = 0; i < targetNamePath.length - 1; i++) {
+      const seg = targetNamePath[i];
+      if (typeof seg !== 'string') break;
+
+      const field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+
+      prefix.push(seg);
+
+      // 对多关联：需要将 index 一并纳入 prefix（如 users[0]），否则无法检查/追踪行内的关联对象
+      if (isToManyAssociationField(field)) {
+        const next = targetNamePath[i + 1];
+        if (typeof next !== 'number') break;
+        prefix.push(next);
+        i += 1;
+      }
+
+      out.push([...prefix]);
+      collection = (field as any)?.targetCollection;
+      if (!collection?.getField) break;
+    }
+
+    return out;
+  }
+
+  private shouldSkipToManyAssociationWriteWithoutIndex(baseCtx: any, targetNamePath: NamePath): boolean {
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    if (!collection?.getField) return false;
+
+    for (let i = 0; i < targetNamePath.length - 1; i++) {
+      const seg = targetNamePath[i];
+      if (typeof seg !== 'string') continue;
+
+      const field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+
+      if (isToManyAssociationField(field)) {
+        const next = targetNamePath[i + 1];
+        if (typeof next !== 'number') {
+          return true;
+        }
+        i += 1;
+      }
+
+      collection = field?.targetCollection;
+      if (!collection?.getField) break;
+    }
+
+    return false;
+  }
+
+  private shouldSkipAssociationNestedWrite(baseCtx: any, targetNamePath: NamePath): boolean {
+    const prefixes = this.collectAssociationPrefixPaths(baseCtx, targetNamePath);
+    if (!prefixes.length) return false;
+
+    for (const p of prefixes) {
+      const v = this.options.getFormValueAtPath(p);
+      if (v == null) return true;
+      if (typeof v !== 'object') return true;
+    }
+
+    return false;
+  }
+
   dispose() {
     for (const { state } of this.rules.values()) {
       state.depDisposers.forEach((d) => d());
     }
     this.rules.clear();
     this.pendingRuleIds.clear();
-    this.assignRuleIdsByFieldUid.clear();
+    this.assignTemplatesByTargetPath.clear();
 
     for (const disposer of this.defaultRuleMasterDisposers.values()) {
       disposer();
@@ -123,84 +246,98 @@ export class RuleEngine {
   syncAssignRules(items: FormAssignRuleItem[]) {
     if (this.options.isDisposed()) return;
     const raw = Array.isArray(items) ? items : [];
-    const next = raw.map((it, index) => ({
-      ...it,
-      key: it?.key ? String(it.key) : `idx:${index}`,
+    const next = raw.map((item, index) => ({
+      ...item,
+      key: item?.key ? String(item.key) : `idx:${index}`,
     }));
     const prefix = 'form-assign:';
 
-    this.assignRuleIdsByFieldUid.clear();
-
-    const nextIds = new Set<string>();
-    for (const it of next) {
-      nextIds.add(`${prefix}${String(it.key)}`);
-    }
-
-    // 移除已不存在的规则
+    // 1) 清理旧的 assign 规则实例（含 block 级与 fork 级）
     for (const id of Array.from(this.rules.keys())) {
       if (!id.startsWith(prefix)) continue;
-      if (nextIds.has(id)) continue;
       this.removeRule(id);
     }
+    this.assignTemplatesByTargetPath.clear();
+    this.formItemTargetPaths.clear();
 
-    // 重新注册（保持实现简单：配置变化时直接替换）
+    // 2) 归一化模板：按 targetPath 分组，后续在 model:mounted 时按实例注册
     let order = 0;
-    for (const it of next) {
-      const id = `${prefix}${String(it.key)}`;
-      const mode: AssignMode = it?.mode === 'default' ? 'default' : 'assign';
-      const source: ValueSource = mode === 'default' ? 'default' : 'system';
-      const enabled = it?.enable !== false;
-      const fieldUid = it?.field ? String(it.field) : '';
-
-      if (fieldUid) {
-        const set = this.assignRuleIdsByFieldUid.get(fieldUid) || new Set<string>();
-        set.add(id);
-        this.assignRuleIdsByFieldUid.set(fieldUid, set);
-      }
-
-      // 若已存在则替换，避免残留旧 deps/binding
-      if (this.rules.has(id)) {
-        this.removeRule(id);
-      }
-
+    for (const item of next) {
+      const targetPath = item?.targetPath ? String(item.targetPath) : '';
+      if (!targetPath) continue;
+      const arr = this.assignTemplatesByTargetPath.get(targetPath) || [];
       order += 1;
-      const rule: RuntimeRule = {
-        id,
-        source,
-        priority: 10 + order,
-        debounceMs: 0,
-        getEnabled: () => {
-          if (!enabled) return false;
-          if (!fieldUid) return false;
-          const fieldModel = this.options.getEngineModel(fieldUid);
-          return !!fieldModel && !!this.getModelTargetNamePath(fieldModel);
-        },
-        getTarget: () => {
-          const fieldModel = this.options.getEngineModel(fieldUid);
-          return this.getModelTargetNamePath(fieldModel) || [];
-        },
-        getValue: () => it?.value,
-        getCondition: () => it?.condition,
-        getContext: () => this.options.getBlockContext(),
-      };
+      arr.push({ ...(item as any), __key: String(item.key), __order: order });
+      this.assignTemplatesByTargetPath.set(targetPath, arr);
+    }
 
-      this.rules.set(id, {
-        rule,
-        state: { deps: new Set(), depDisposers: [], runSeq: 0 },
+    // 3) 为当前已存在的模型实例创建 rule（含 fork）；对“无对应字段模型”的模板创建 block 级 rule
+    const engine = this.options.getEngine();
+    const matchedTargetPaths = new Set<string>();
+    if (engine?.forEachModel) {
+      // 3.1) 记录当前表单中已配置字段（FormItemModel）的 targetPath，避免在 row grid 上重复注册
+      engine.forEachModel((model: FlowModel) => {
+        if (!this.isModelInThisForm(model)) return;
+        if (!(model as any)?.subModels?.field) return;
+        const p = this.getModelTargetPath(model);
+        if (p) this.formItemTargetPaths.add(p);
       });
 
-      this.scheduleRule(id);
+      const visit = (model: FlowModel) => {
+        this.tryRegisterAssignRuleInstancesForModel(model, matchedTargetPaths);
+
+        // fork models（例如子表单行内 item fork / 字段 fork）不会被注册到 FlowEngine.modelInstances，
+        // 因此不会出现在 engine.forEachModel 中；需要从 master.forks 中补齐，确保保存后 syncAssignRules 也能覆盖已挂载的子表单行。
+        const forks: any = (model as any)?.forks;
+        if (forks && typeof forks.forEach === 'function') {
+          forks.forEach((fork: any) => {
+            if (!fork || (fork as any)?.disposed) return;
+            this.tryRegisterAssignRuleInstancesForModel(fork as any, matchedTargetPaths);
+          });
+        }
+      };
+      engine.forEachModel((model: FlowModel) => {
+        visit(model);
+      });
+    }
+
+    // block 级（嵌套属性等）：当当前 form 内没有任何模型命中该 targetPath 时，使用 blockContext 运行
+    for (const [targetPath, templates] of this.assignTemplatesByTargetPath.entries()) {
+      if (matchedTargetPaths.has(targetPath)) continue;
+      if (!this.shouldCreateBlockLevelAssignRule(targetPath)) continue;
+      for (const template of templates) {
+        const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
+        const source: ValueSource = mode === 'default' ? 'default' : 'system';
+        const enabled = template?.enable !== false;
+        const id = `${prefix}${template.__key}:block`;
+        if (this.rules.has(id)) this.removeRule(id);
+
+        const rule: RuntimeRule = {
+          id,
+          source,
+          priority: 10 + (template.__order || 0),
+          debounceMs: 0,
+          getEnabled: () => enabled && !!targetPath,
+          getTarget: () => targetPath,
+          getValue: () => template?.value,
+          getCondition: () => template?.condition,
+          getContext: () => this.options.getBlockContext(),
+        };
+
+        this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0 } });
+        this.scheduleRule(id);
+      }
     }
   }
 
   onModelMounted(model: FlowModel) {
     this.tryRegisterDefaultRuleInstance(model);
-    this.tryScheduleAssignRulesOnModelChange(model);
+    this.tryRegisterAssignRuleInstancesForModel(model);
   }
 
   onModelUnmounted(model: FlowModel) {
     this.tryUnregisterDefaultRuleInstance(model);
-    this.tryScheduleAssignRulesOnModelChange(model);
+    this.tryUnregisterAssignRuleInstancesForModel(model);
   }
 
   private isModelInThisForm(model: FlowModel) {
@@ -226,15 +363,6 @@ export class RuleEngine {
       return name.includes('.') ? (name.split('.') as any) : ([name] as any);
     }
     return null;
-  }
-
-  private isEditMode() {
-    try {
-      const actionName = this.options.getActionName();
-      return actionName && actionName !== 'create';
-    } catch {
-      return false;
-    }
   }
 
   private tryRegisterDefaultRuleInstance(model: FlowModel) {
@@ -298,20 +426,226 @@ export class RuleEngine {
     this.scheduleRule(id);
   }
 
-  private tryScheduleAssignRulesOnModelChange(model: FlowModel) {
+  private getModelTargetPath(model: FlowModel): string | null {
+    try {
+      const init = (model as any)?.getStepParams?.('fieldSettings', 'init');
+      const fp = init?.fieldPath;
+      if (fp) return String(fp);
+    } catch {
+      // ignore
+    }
+    const fp2 = (model as any)?.fieldPath;
+    if (fp2) return String(fp2);
+
+    const np = this.getModelTargetNamePath(model);
+    if (np?.length) {
+      const normalized = np.filter((seg) => typeof seg === 'string').join('.');
+      return normalized || null;
+    }
+    return null;
+  }
+
+  private getAssignRuleInstanceId(templateKey: string, model: FlowModel) {
+    const forkId = model?.['isFork'] ? String(model?.['forkId'] ?? 'fork') : 'master';
+    const uid = model?.uid ? String(model.uid) : String(model);
+    return `form-assign:${templateKey}:${uid}:${forkId}`;
+  }
+
+  private getDeepestFieldIndexKey(baseCtx: any): string | null {
+    const fieldIndex = baseCtx?.model?.context?.fieldIndex ?? baseCtx?.fieldIndex;
+    const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
+    if (!arr.length) return null;
+    const last = arr[arr.length - 1];
+    if (typeof last !== 'string') return null;
+    const [k, v] = last.split(':');
+    if (!k) return null;
+    const n = Number(v);
+    if (Number.isNaN(n)) return null;
+    return k;
+  }
+
+  private getDeepestToManyAssociationKey(targetPath: string): string | null {
+    const rootCollection = this.getRootCollection();
+    if (!rootCollection?.getField) return null;
+
+    const segs = parsePathString(String(targetPath || '')).filter((seg) => typeof seg !== 'object') as NamePath;
+    if (segs.length < 2) return null;
+
+    let collection = rootCollection;
+    let deepest: string | null = null;
+
+    for (let i = 0; i < segs.length - 1; i++) {
+      const seg = segs[i];
+      if (typeof seg !== 'string') continue;
+      const field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+
+      const toMany = isToManyAssociationField(field);
+      if (toMany) deepest = seg;
+
+      // 对多关联：若包含显式 index（如 users[0]），跳过 index 段；否则按字段名继续
+      if (toMany) {
+        const next = segs[i + 1];
+        if (typeof next === 'number') {
+          i += 1;
+        }
+      }
+
+      collection = field?.targetCollection;
+      if (!collection?.getField) break;
+    }
+
+    return deepest;
+  }
+
+  private isRowGridModel(model: FlowModel): boolean {
+    // grid fork（SubFormList 内每行一个 grid fork）：有 subModels.items，但没有 subModels.field
+    if (!model || typeof model !== 'object') return false;
+    if ((model as any)?.subModels?.field) return false;
+    if (!(model as any)?.subModels?.items) return false;
+
+    const baseCtx: any = (model as any)?.context;
+    const rowKey = this.getDeepestFieldIndexKey(baseCtx);
+    return !!rowKey;
+  }
+
+  private tryRegisterAssignRuleInstancesForModel(model: FlowModel, matchedTargetPaths?: Set<string>) {
     if (this.options.isDisposed()) return;
     if (!this.isModelInThisForm(model)) return;
 
-    const uid = model?.uid ? String(model.uid) : '';
-    if (!uid) return;
+    const register = (
+      targetPathForRule: string,
+      ruleTemplates: Array<FormAssignRuleItem & { __key: string; __order: number }>,
+    ) => {
+      if (!ruleTemplates || ruleTemplates.length === 0) return;
+      matchedTargetPaths?.add(targetPathForRule);
 
-    const ids = this.assignRuleIdsByFieldUid.get(uid);
-    if (!ids || ids.size === 0) return;
+      for (const template of ruleTemplates) {
+        const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
+        const source: ValueSource = mode === 'default' ? 'default' : 'system';
+        const enabled = template?.enable !== false;
+        const id = this.getAssignRuleInstanceId(template.__key, model);
 
-    // 当字段模型挂载/卸载时，重新触发一次规则计算：
-    // - 解决同步 assignRules 时目标字段尚未 ready（fieldPathArray 未注入）导致永远不运行的问题
-    for (const id of ids) {
-      this.scheduleRule(id);
+        // 若已存在则替换，避免残留旧 deps/binding
+        if (this.rules.has(id)) {
+          this.removeRule(id);
+        }
+
+        const rule: RuntimeRule = {
+          id,
+          source,
+          priority: 10 + (template.__order || 0),
+          debounceMs: 0,
+          getEnabled: () => enabled && !!targetPathForRule,
+          getTarget: () => targetPathForRule,
+          getValue: () => template?.value,
+          getCondition: () => template?.condition,
+          getContext: () => model?.context,
+        };
+
+        this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0 } });
+        this.scheduleRule(id);
+      }
+    };
+
+    // A) row grid：支持对子表单/子表单列表中“未配置到 UI 的属性字段”赋值。
+    //    当 targetPath 穿过对多关联（例如 users.age / users.user.name）且不存在对应 FormItemModel 时，
+    //    将规则挂载到 row grid 的上下文上运行，以便自动插入数组 index 并按行评估条件。
+    if (this.isRowGridModel(model)) {
+      const baseCtx: any = (model as any)?.context;
+      const rowKey = this.getDeepestFieldIndexKey(baseCtx);
+      if (rowKey) {
+        for (const [templateTargetPath, templates] of this.assignTemplatesByTargetPath.entries()) {
+          // 已配置到 UI 的字段（存在 FormItemModel）仍由字段实例处理，避免重复运行
+          if (this.formItemTargetPaths.has(templateTargetPath)) continue;
+
+          const anchor = this.getDeepestToManyAssociationKey(templateTargetPath);
+          if (!anchor || anchor !== rowKey) continue;
+
+          register(templateTargetPath, templates);
+        }
+      }
+      return;
+    }
+
+    // B) FormItemModel（及其 fork）：常规字段赋值
+    if (!(model as any)?.subModels?.field) return;
+
+    const targetPath = this.getModelTargetPath(model);
+    if (!targetPath) return;
+
+    // 1) 精确命中：表单上存在对应字段模型
+    const exactTemplates = this.assignTemplatesByTargetPath.get(targetPath) || [];
+    if (exactTemplates.length) {
+      register(targetPath, exactTemplates);
+    }
+
+    // 2) 嵌套属性：当当前字段为对一关联（record picker 等）时，将其子属性赋值规则挂载到该字段实例上运行（包括对多子表单行内的对一关联）
+    const fieldModel: any = (model as any)?.subModels?.field;
+    const collectionField: any = fieldModel?.context?.collectionField;
+    const isAssoc = !!collectionField?.isAssociationField?.();
+    const isToMany = isToManyAssociationField(collectionField);
+    if (isAssoc && !isToMany) {
+      const prefix = `${targetPath}.`;
+      for (const [templateTargetPath, templates] of this.assignTemplatesByTargetPath.entries()) {
+        if (!templateTargetPath || typeof templateTargetPath !== 'string') continue;
+        if (!templateTargetPath.startsWith(prefix)) continue;
+        register(templateTargetPath, templates);
+      }
+    }
+  }
+
+  private tryUnregisterAssignRuleInstancesForModel(model: FlowModel) {
+    if (this.options.isDisposed()) return;
+    if (!this.isModelInThisForm(model)) return;
+
+    const unregister = (templates: Array<FormAssignRuleItem & { __key: string }>) => {
+      for (const template of templates || []) {
+        const id = this.getAssignRuleInstanceId(template.__key, model);
+        if (!this.rules.has(id)) continue;
+        this.removeRule(id);
+      }
+    };
+
+    // A) row grid：清理挂载到 row grid 上的“未配置字段”规则
+    if (this.isRowGridModel(model)) {
+      const baseCtx: any = (model as any)?.context;
+      const rowKey = this.getDeepestFieldIndexKey(baseCtx);
+      if (!rowKey) return;
+
+      for (const [templateTargetPath, templates] of this.assignTemplatesByTargetPath.entries()) {
+        if (this.formItemTargetPaths.has(templateTargetPath)) continue;
+        const anchor = this.getDeepestToManyAssociationKey(templateTargetPath);
+        if (!anchor || anchor !== rowKey) continue;
+        unregister(templates);
+      }
+      return;
+    }
+
+    // B) FormItemModel（及其 fork）：常规字段赋值
+    if (!(model as any)?.subModels?.field) return;
+
+    const targetPath = this.getModelTargetPath(model);
+    if (!targetPath) return;
+
+    // 1) 精确命中：按当前字段 targetPath 清理
+    const exactTemplates = this.assignTemplatesByTargetPath.get(targetPath) || [];
+    if (exactTemplates.length) {
+      unregister(exactTemplates);
+    }
+
+    // 2) 嵌套属性：对一关联字段会挂载子属性规则到自身实例，卸载时需要一并清理
+    const fieldModel: any = (model as any)?.subModels?.field;
+    const collectionField: any = fieldModel?.context?.collectionField;
+    const isAssoc = !!collectionField?.isAssociationField?.();
+    const isToMany = isToManyAssociationField(collectionField);
+    if (isAssoc && !isToMany) {
+      const prefix = `${targetPath}.`;
+      for (const [templateTargetPath, templates] of this.assignTemplatesByTargetPath.entries()) {
+        if (!templateTargetPath || typeof templateTargetPath !== 'string') continue;
+        if (!templateTargetPath.startsWith(prefix)) continue;
+        unregister(templates);
+      }
     }
   }
 
@@ -469,7 +803,7 @@ export class RuleEngine {
     const seq = state.runSeq;
 
     const ruleContext = this.prepareRuleContext(rule);
-    const { targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
+    const { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
 
     // Check if rule should be skipped
     if (!this.shouldRunRule(rule, targetNamePath, targetKey)) {
@@ -507,6 +841,16 @@ export class RuleEngine {
       if (!shouldApply) return;
     }
 
+    // 关联字段嵌套属性：关联对象为空/非对象时跳过，避免隐式创建
+    if (this.shouldSkipAssociationNestedWrite(baseCtx, targetNamePath!)) {
+      return;
+    }
+
+    // 对多关联的子属性：缺少 index 时跳过，避免把数组字段写成对象，导致 Form.List add 报错
+    if (this.shouldSkipToManyAssociationWriteWithoutIndex(baseCtx, targetNamePath!)) {
+      return;
+    }
+
     await this.options.setFormValues(evalCtx, [{ path: targetNamePath, value: resolved }], {
       source: rule.source,
       txId: this.currentRuleTxId || undefined,
@@ -539,7 +883,6 @@ export class RuleEngine {
 
   private shouldRunRule(rule: RuntimeRule, targetNamePath: NamePath | null, targetKey: string | null): boolean {
     if (!rule.getEnabled()) return false;
-    if (rule.source === 'default' && this.isEditMode()) return false;
     if (!targetNamePath || !targetKey) return false;
     if (rule.source === 'default' && this.options.findExplicitHit(targetKey)) return false;
     return true;
@@ -564,9 +907,13 @@ export class RuleEngine {
     // 规则可用性依赖 target 当前值（空/等于上次默认值）
     if (targetNamePath) {
       recordDep(targetNamePath, collector);
+      // 关联字段嵌套属性：额外依赖关联对象本身，确保从 null -> {id} 时可触发重新计算
+      for (const p of this.collectAssociationPrefixPaths(baseCtx, targetNamePath)) {
+        recordDep(p, collector);
+      }
     }
 
-    const evalCtx = this.createRuleEvaluationContext(baseCtx, collector);
+    const evalCtx = this.createRuleEvaluationContext(baseCtx, collector, targetNamePath);
     return { collector, evalCtx, rawValue, isRunJS };
   }
 
@@ -719,7 +1066,7 @@ export class RuleEngine {
     return canOverwrite;
   }
 
-  private createRuleEvaluationContext(baseCtx: any, collector: DepCollector) {
+  private createRuleEvaluationContext(baseCtx: any, collector: DepCollector, targetNamePath: NamePath | null) {
     const trackingFormValues = this.options.createTrackingFormValues(collector);
     const ctx: any = new (FlowContext as any)();
     try {
@@ -738,7 +1085,86 @@ export class RuleEngine {
     } else {
       ctx.defineProperty('formValues', { get: () => trackingFormValues, cache: false });
     }
+
+    // “当前对象”链：用于多层级关系字段条件
+    // 语义：ctx.current -> { index?, attributes, parent? }，其中：
+    // - index：仅当当前对象位于对多关联行内时存在（0-based）
+    // - attributes：当前对象的属性（来自 formValues 的对应切片，支持无限嵌套属性访问）
+    // - parent：上级对象（同结构，可链式 parent.parent...）
+    let currentCached: any;
+    let currentCachedReady = false;
+    ctx.defineProperty('current', {
+      get: () => {
+        if (!currentCachedReady) {
+          currentCached = this.buildCurrentObjectChainValue(baseCtx, trackingFormValues, targetNamePath);
+          currentCachedReady = true;
+        }
+        return currentCached;
+      },
+      cache: false,
+    });
     return ctx;
+  }
+
+  private buildCurrentObjectChainValue(baseCtx: any, trackingFormValues: any, targetNamePath: NamePath | null) {
+    const rootCollection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    const defaultRoot = {
+      index: undefined as number | undefined,
+      attributes: trackingFormValues,
+      parent: undefined as any,
+    };
+    if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) {
+      return defaultRoot;
+    }
+
+    if (!rootCollection?.getField) {
+      return defaultRoot;
+    }
+
+    const assocEntries: Array<{ path: NamePath; toMany: boolean }> = [];
+    const prefix: NamePath = [];
+    let collection = rootCollection;
+
+    for (let i = 0; i < targetNamePath.length - 1; i++) {
+      const seg = targetNamePath[i];
+      if (typeof seg !== 'string') break;
+
+      const field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+
+      const toMany = isToManyAssociationField(field);
+      prefix.push(seg);
+
+      if (toMany) {
+        const next = targetNamePath[i + 1];
+        if (typeof next !== 'number') break;
+        prefix.push(next);
+        i += 1;
+      }
+
+      const targetCollection = field?.targetCollection;
+      if (!targetCollection) break;
+
+      assocEntries.push({ path: [...prefix], toMany });
+      collection = targetCollection;
+    }
+
+    const build = (idx: number): any => {
+      if (idx < 0) return defaultRoot;
+      const assocEntry = assocEntries[idx];
+      const attributes = _.get(trackingFormValues, assocEntry.path);
+      const lastSeg = assocEntry.path[assocEntry.path.length - 1];
+      const index = assocEntry.toMany && typeof lastSeg === 'number' ? lastSeg : undefined;
+      return { index, attributes, parent: build(idx - 1) };
+    };
+
+    return assocEntries.length ? build(assocEntries.length - 1) : defaultRoot;
+  }
+
+  private getFieldIndexSignature(baseCtx: any): string {
+    const fieldIndex = baseCtx?.model?.context?.fieldIndex ?? baseCtx?.fieldIndex;
+    const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
+    return arr.filter((it) => typeof it === 'string').join('|');
   }
 
   private updateRuleDeps(rule: RuntimeRule, state: RuleState, deps: RuleDeps) {
@@ -793,6 +1219,16 @@ export class RuleEngine {
       const sep = rest.indexOf(':');
       const varName = sep >= 0 ? rest.slice(0, sep) : rest;
       const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
+
+      // 特殊变量：current 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parent/index 链依赖 fieldIndex。
+      if (varName === 'current') {
+        const disposer = reaction(
+          () => this.getFieldIndexSignature(baseCtx),
+          () => this.scheduleRule(rule.id),
+        );
+        state.depDisposers.push(disposer);
+        continue;
+      }
 
       const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
       const disposer = reaction(
