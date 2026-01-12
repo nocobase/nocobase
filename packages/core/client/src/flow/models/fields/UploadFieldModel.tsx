@@ -599,7 +599,7 @@ UploadFieldModel.registerFlow({
               },
             },
           },
-          content: () => <RecordPickerContent model={ctx.model} />,
+          content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
           styles: {
             content: {
               padding: 0,
