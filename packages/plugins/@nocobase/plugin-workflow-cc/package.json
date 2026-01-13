@@ -15,8 +15,6 @@
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
-    "@nocobase/flow-engine": "2.x",
-    "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/plugin-ui-schema-storage": "2.x",
     "@nocobase/plugin-users": "2.x",
     "@nocobase/plugin-workflow": "2.x",
