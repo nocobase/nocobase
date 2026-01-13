@@ -42,7 +42,7 @@ const commonProperties: Pick<LLMProviderMeta, 'supportedModel' | 'models'> = {
 export const openaiResponsesProviderOptions: LLMProviderMeta = {
   ...commonProperties,
   embedding,
-  title: 'OpenAI(responses)',
+  title: 'OpenAI',
   provider: OpenAIResponsesProvider,
 };
 

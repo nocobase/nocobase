@@ -14,6 +14,8 @@ import { Collection } from './collection';
 import { Database } from './database';
 import FilterParser from './filter-parser';
 import { Appends, Except, FindOptions } from './repository';
+import qs from 'qs';
+import { BelongsToArrayAssociation } from './belongs-to-array/belongs-to-array-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -356,7 +358,7 @@ export class OptionsParser {
      * @param queryParams
      * @param append
      */
-    const setInclude = (model: ModelStatic<any>, queryParams: any, append: string) => {
+    const setInclude = (model: ModelStatic<any>, queryParams: any, append: string, parentAs?: string) => {
       const appendWithOptions = this.parseAppendWithOptions(append);
 
       append = appendWithOptions.name;
@@ -425,10 +427,21 @@ export class OptionsParser {
       // if association not exist, create it
       if (existIncludeIndex == -1) {
         // association not exists
-        queryParams['include'].push({
+        const association = associations[appendAssociation];
+        if (!association) {
+          throw new Error(`association ${appendAssociation} in ${model.name} not found`);
+        }
+        let includeOptions = {
           association: appendAssociation,
           options: appendWithOptions.options || {},
-        });
+        };
+        if (association.associationType === 'BelongsToArray') {
+          includeOptions = {
+            ...includeOptions,
+            ...(association as any as BelongsToArrayAssociation).generateInclude(parentAs),
+          };
+        }
+        queryParams['include'].push(includeOptions);
 
         existIncludeIndex = queryParams['include'].length - 1;
       }
@@ -478,11 +491,8 @@ export class OptionsParser {
           nextAppend += appendWithOptions.raw;
         }
 
-        setInclude(
-          model.associations[queryParams['include'][existIncludeIndex].association].target,
-          queryParams['include'][existIncludeIndex],
-          nextAppend,
-        );
+        const association = model.associations[queryParams['include'][existIncludeIndex].association];
+        setInclude(association.target, queryParams['include'][existIncludeIndex], nextAppend, association.as);
       }
     };
 
