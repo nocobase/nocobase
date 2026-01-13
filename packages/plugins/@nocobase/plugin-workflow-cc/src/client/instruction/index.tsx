@@ -132,7 +132,7 @@ export default class extends Instruction {
         {
           fulfill: {
             state: {
-              visible: `{{!!$form.values.ccDetail || !$form.disabled}}`,
+              visible: `{{!$form.disabled}}`,
             },
           },
         },

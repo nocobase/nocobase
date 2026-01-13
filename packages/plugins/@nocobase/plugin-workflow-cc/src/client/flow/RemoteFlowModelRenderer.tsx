@@ -46,7 +46,8 @@ export function RemoteFlowModelRenderer({
       }
     };
     run();
-  }, [flowEngine, uid, viewCtx, onModelLoaded, enableUIConfiguration, mapModel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowEngine, uid, viewCtx, enableUIConfiguration]);
 
   return <FlowModelRenderer model={model} hideRemoveInSettings showFlowSettings={false} useCache={useCache} />;
 }
