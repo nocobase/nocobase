@@ -184,7 +184,7 @@ BulkUpdateActionModel.registerFlow({
         const assignedValues: Record<string, any> = {};
         if (rawAssignedValues && typeof rawAssignedValues === 'object') {
           for (const [field, raw] of Object.entries(rawAssignedValues)) {
-            if (typeof raw === 'undefined' || raw === '') continue;
+            if (typeof raw === 'undefined') continue;
 
             if (isRunJSValue(raw)) {
               const { code, version } = normalizeRunJSValue(raw);

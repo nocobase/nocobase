@@ -197,7 +197,7 @@ function normalizeAssignRuleItemsFromLinkageParams(
   return [];
 }
 
-function createLegacyTargetPathResolver(ctx: { engine?: any }) {
+function createLegacyTargetPathResolver(ctx: FlowContext) {
   return (legacyFieldUid: string) => {
     try {
       const m: any = ctx.engine?.getModel?.(legacyFieldUid);

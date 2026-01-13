@@ -21,6 +21,7 @@ import {
   type CollectionField,
   useFlowContext,
   EditableItemModel,
+  FlowModelContext,
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import {
@@ -54,7 +55,7 @@ type ResolvedFieldContext = {
  * - 支持变量引用，并提供 Constant / Null 两种快捷项
  */
 export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onChange, placeholder }) => {
-  const flowCtx = useFlowContext();
+  const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
     if (!eventOrValue || typeof eventOrValue !== 'object') return eventOrValue;
     if (!('target' in eventOrValue)) return eventOrValue;
@@ -102,7 +103,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
   const resolved = React.useMemo<ResolvedFieldContext>(() => {
     // 1) 来自表单配置的字段：直接使用 itemModel 上下文
     if (itemModel) {
-      const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = itemModel?.context || {};
+      const ctx = itemModel.context;
+      const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = ctx;
       const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
       const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
       const collection =
@@ -127,8 +129,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     }
 
     // 2) 嵌套语义：根据 targetPath 在集合上解析（例如 user.name / user.profile.name）
-    const rootCollection = getCollectionFromModel(flowCtx.model);
-    const blockModel = flowCtx.model?.context?.blockModel || flowCtx.model;
+    const rootCollection = getCollectionFromModel((flowCtx as any).model);
+    const blockModel = (flowCtx as any).model?.context?.blockModel || (flowCtx as any).model;
     const empty: ResolvedFieldContext = {
       itemModel: null,
       collection: null,
@@ -181,7 +183,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
   const [tempRoot, setTempRoot] = React.useState<any>(null);
   React.useEffect(() => {
     if (!collection || !fieldPath || !fieldName) return;
-    const engine = resolved?.itemModel?.context?.engine || flowCtx.model?.context?.engine;
+    const engine = resolved?.itemModel?.context?.engine || (flowCtx as any).model?.context?.engine;
 
     const fields = typeof collection.getFields === 'function' ? collection.getFields() || [] : [];
     const f = fields.find((x: any) => x?.name === fieldName);
@@ -191,7 +193,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     );
     const fieldModelUse: string | undefined = binding?.modelName;
 
-    const effectiveFieldModelUse: string | undefined = fieldModelUse || itemModel?.subModels?.field?.use;
+    const subField = itemModel?.subModels?.field;
+    const subFieldUse = subField && !Array.isArray(subField) ? subField.use : undefined;
+    const effectiveFieldModelUse: string | undefined = fieldModelUse || subFieldUse;
     if (!effectiveFieldModelUse) return;
 
     const created = engine?.createModel?.({
