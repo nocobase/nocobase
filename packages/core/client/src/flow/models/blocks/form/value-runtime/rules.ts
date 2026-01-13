@@ -1037,7 +1037,7 @@ export class RuleEngine {
 
   private createRuleEvaluationContext(baseCtx: any, collector: DepCollector, targetNamePath: NamePath | null) {
     const trackingFormValues = this.options.createTrackingFormValues(collector);
-    const ctx: any = new (FlowContext as any)();
+    const ctx: any = new FlowContext();
     try {
       ctx.delegate(baseCtx);
     } catch {

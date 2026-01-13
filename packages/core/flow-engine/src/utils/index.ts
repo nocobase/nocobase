@@ -72,6 +72,9 @@ export {
 // RunJS value helpers
 export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';
 
+// RunJS helpers
+export { resolveRunJSObjectValues } from './resolveRunJSObjectValues';
+
 // Ephemeral context helper（用于临时注入属性/方法，避免污染父级 ctx）
 export { createEphemeralContext } from './createEphemeralContext';
 

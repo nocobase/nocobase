@@ -18,8 +18,6 @@ import {
   isVariableExpression,
   parseValueToPath,
   isRunJSValue,
-  normalizeRunJSValue,
-  type RunJSValue,
   EditableItemModel,
   jioToJoiSchema,
 } from '@nocobase/flow-engine';
@@ -29,7 +27,7 @@ import { EditFormModel } from '../form/EditFormModel';
 import { FieldValidation } from '../../../../collection-manager';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
-import { CodeEditor } from '../../../components/code-editor';
+import { RunJSValueEditor } from '../../../components/RunJSValueEditor';
 
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
@@ -220,25 +218,13 @@ export class AssignFormItemModel extends FormItemModel {
       const NullComponent: React.FC = () => <Input placeholder={'<Null>'} readOnly style={{ width: '100%' }} />;
 
       const RunJSComponent: React.FC<any> = (inputProps: any) => {
-        const current: RunJSValue = isRunJSValue(inputProps?.value)
-          ? normalizeRunJSValue(inputProps.value)
-          : { code: '', version: 'v1' };
-
-        const placeholderText = `// ${
-          this.context.t?.('Use return to output value') ?? 'Use return to output value'
-        }\nreturn ...`;
-
         return (
-          <div style={{ width: '100%' }}>
-            <CodeEditor
-              value={current.code}
-              onChange={(code) => inputProps?.onChange?.({ ...current, code })}
-              height="200px"
-              enableLinter
-              placeholder={placeholderText}
-              scene="formValue"
-            />
-          </div>
+          <RunJSValueEditor
+            t={this.context.t}
+            value={inputProps?.value}
+            onChange={inputProps?.onChange}
+            containerStyle={{ width: '100%' }}
+          />
         );
       };
 
@@ -254,7 +240,7 @@ export class AssignFormItemModel extends FormItemModel {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' };
           return undefined;
         },
         resolvePathFromValue: (currentValue: any) => {
