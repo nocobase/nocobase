@@ -189,7 +189,7 @@ function SchemaContent({ value, onChange }) {
   );
 }
 
-export function SchemaConfig({ value, onChange }) {
+export function SchemaConfig() {
   return (
     <SchemaComponent
       components={{
