@@ -493,7 +493,9 @@ export function CCTaskCardConfigButton() {
     });
 
     if (model?.uid) {
-      model.context.addDelegate(viewCtx);
+      if (viewCtx) {
+        model.context.addDelegate(viewCtx);
+      }
       model.context.defineProperty('flowSettingsEnabled', {
         get: () => !form.disabled,
       });
