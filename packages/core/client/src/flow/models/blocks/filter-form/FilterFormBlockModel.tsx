@@ -30,6 +30,8 @@ import { isEmptyValue } from '../form/value-runtime/utils';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
 import { clearLegacyDefaultValuesFromFilterFormModel } from './legacyDefaultValueMigration';
+import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils';
+import { FormItemModel } from '../form';
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -125,16 +127,6 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     const rules = (params?.value || []) as any[];
     if (!Array.isArray(rules) || rules.length === 0) return;
 
-    const items = this.subModels?.grid?.subModels?.items ?? [];
-    const list: any[] = Array.isArray(items) ? items : [];
-    const itemByUid = new Map<string, any>();
-    for (const item of list) {
-      const uid = item?.uid;
-      if (uid) {
-        itemByUid.set(String(uid), item);
-      }
-    }
-
     const resolveValue = async (raw: any) => {
       // RunJS support
       if (isRunJSValue(raw)) {
@@ -151,10 +143,12 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       if (rule.enable === false) continue;
       if (rule.mode && String(rule.mode) !== 'default') continue;
 
-      const fieldUid = rule.field ? String(rule.field) : '';
-      if (!fieldUid) continue;
+      const targetPath = rule.targetPath ? String(rule.targetPath).trim() : '';
+      const fieldUid = rule.field ? String(rule.field).trim() : '';
 
-      const itemModel = itemByUid.get(fieldUid);
+      const itemModel: FormItemModel =
+        (targetPath ? findFormItemModelByFieldPath(this, targetPath) : null) ??
+        (fieldUid ? this.context?.engine?.getModel?.(fieldUid) : null);
       if (!itemModel) continue;
 
       const props = typeof itemModel.getProps === 'function' ? itemModel.getProps() : itemModel.props;
