@@ -399,6 +399,31 @@ export const useRichTextStyles = () => {
     ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='48px']::before": {
       content: "'48px'",
     },
+    /* 编辑器中实际应用的字号样式 */
+    '.ql-snow .ql-editor .ql-size-12px': {
+      fontSize: '12px',
+    },
+    '.ql-snow .ql-editor .ql-size-14px': {
+      fontSize: '14px',
+    },
+    '.ql-snow .ql-editor .ql-size-16px': {
+      fontSize: '16px',
+    },
+    '.ql-snow .ql-editor .ql-size-18px': {
+      fontSize: '18px',
+    },
+    '.ql-snow .ql-editor .ql-size-20px': {
+      fontSize: '20px',
+    },
+    '.ql-snow .ql-editor .ql-size-24px': {
+      fontSize: '24px',
+    },
+    '.ql-snow .ql-editor .ql-size-32px': {
+      fontSize: '32px',
+    },
+    '.ql-snow .ql-editor .ql-size-48px': {
+      fontSize: '48px',
+    },
     '.ql-snow .ql-color-picker.ql-background .ql-picker-item': {
       backgroundColor: '#fff',
     },

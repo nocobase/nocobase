@@ -21,7 +21,7 @@ const ReactQuill = lazy(async () => {
 
   registerFontSize(Quill);
   registerSmartBreak(Quill);
-  // registerImageResize(Quill);
+  registerImageResize(Quill);
 
   return import('react-quill');
 });
@@ -40,9 +40,12 @@ export const RichTextField = (props) => {
       [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }, 'link'],
       ['clean', 'image'],
     ],
-    // imageResize: {
-    //   modules: ['Resize', 'DisplaySize'],
-    // },
+    // 测试环境下忽略 imageResize 注册，避免报错
+    ...(process.env.NODE_ENV !== 'test' && {
+      imageResize: {
+        modules: ['Resize', 'DisplaySize'],
+      },
+    }),
     clipboard: {
       matchers: [['BR', lineBreakMatcher]],
       matchVisual: false,
