@@ -20,6 +20,10 @@ import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
 import React from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import {
+  markSaveStepParamsWithSubModels,
+  saveStepParamsWithSubModelsIfNeeded,
+} from '../../../internal/utils/saveStepParamsWithSubModels';
 import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
@@ -226,20 +230,12 @@ export class FormBlockModel<
   }
 
   async saveStepParams() {
-    const shouldSaveSubModels = (this as any).__saveStepParamsWithSubModels === true;
-    if (shouldSaveSubModels) {
-      try {
-        // full save (including subModels) to persist migrated field-level settings cleanup
-        return await this.save();
-      } finally {
-        delete (this as any).__saveStepParamsWithSubModels;
-      }
-    }
-
-    const res = await super.saveStepParams();
-    const grid = this.subModels.grid;
-    await grid?.saveStepParams();
-    return res;
+    return await saveStepParamsWithSubModelsIfNeeded(this, async () => {
+      const res = await super.saveStepParams();
+      const grid = this.subModels.grid;
+      await grid?.saveStepParams();
+      return res;
+    });
   }
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {
@@ -457,7 +453,7 @@ FormBlockModel.registerFlow({
         if (Array.isArray(cleared) && cleared.length) {
           // FlowModelRepository({ onlyStepParams: true }) 不会写入 subModels，
           // 此处标记后在 saveStepParams 中触发一次全量保存以持久化清理结果。
-          (ctx.model as any).__saveStepParamsWithSubModels = true;
+          markSaveStepParamsWithSubModels(ctx.model);
         }
       },
       afterParamsSave(ctx) {

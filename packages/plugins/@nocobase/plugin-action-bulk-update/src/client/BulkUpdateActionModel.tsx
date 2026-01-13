@@ -10,9 +10,7 @@
 import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
 import {
   FlowModelRenderer,
-  isRunJSValue,
-  normalizeRunJSValue,
-  runjsWithSafeGlobals,
+  resolveRunJSObjectValues,
   tExpr,
   useFlowEngine,
   useFlowSettingsContext,
@@ -180,28 +178,13 @@ BulkUpdateActionModel.registerFlow({
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
 
-        const rawAssignedValues = params?.assignedValues || {};
-        const assignedValues: Record<string, any> = {};
-        if (rawAssignedValues && typeof rawAssignedValues === 'object') {
-          for (const [field, raw] of Object.entries(rawAssignedValues)) {
-            if (typeof raw === 'undefined') continue;
-
-            if (isRunJSValue(raw)) {
-              const { code, version } = normalizeRunJSValue(raw);
-              if (!code?.trim()) continue;
-              const ret = await runjsWithSafeGlobals(ctx, code, { version });
-              if (!ret?.success) {
-                ctx.message.error(ctx.t('RunJS execution failed'));
-                return;
-              }
-              if (typeof ret.value !== 'undefined') {
-                assignedValues[field] = ret.value;
-              }
-              continue;
-            }
-
-            assignedValues[field] = raw;
-          }
+        let assignedValues: Record<string, any> = {};
+        try {
+          assignedValues = await resolveRunJSObjectValues(ctx, params?.assignedValues);
+        } catch (error) {
+          console.error('[BulkUpdateAction] RunJS execution failed', error);
+          ctx.message.error(ctx.t('RunJS execution failed'));
+          return;
         }
 
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
