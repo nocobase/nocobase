@@ -350,3 +350,55 @@ export function createSafeNavigator(extra?: Record<string, any>) {
     },
   );
 }
+
+/**
+ * Create a safe globals object for RunJS execution.
+ *
+ * - Always tries to provide `navigator`
+ * - Best-effort provides `window` and `document` in browser environments
+ * - Never throws (so callers can decide how to handle missing globals)
+ */
+export function createSafeRunJSGlobals(extraGlobals?: Record<string, any>): Record<string, any> {
+  const globals: Record<string, any> = {};
+
+  try {
+    const navigator = createSafeNavigator();
+    globals.navigator = navigator;
+    try {
+      globals.window = createSafeWindow({ navigator });
+    } catch {
+      // ignore when window is not available (e.g. SSR/tests)
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    globals.document = createSafeDocument();
+  } catch {
+    // ignore when document is not available (e.g. SSR/tests)
+  }
+
+  return extraGlobals ? { ...globals, ...extraGlobals } : globals;
+}
+
+/**
+ * Execute RunJS with safe globals (window/document/navigator).
+ *
+ * Keeps `this` binding by calling `ctx.runjs(...)` instead of passing bare function references.
+ */
+export async function runjsWithSafeGlobals(
+  ctx: unknown,
+  code: string,
+  options?: any,
+  extraGlobals?: Record<string, any>,
+): Promise<any> {
+  if (!ctx || (typeof ctx !== 'object' && typeof ctx !== 'function')) return undefined;
+  const runjs = (ctx as { runjs?: unknown }).runjs;
+  if (typeof runjs !== 'function') return undefined;
+  return (ctx as { runjs: (code: string, variables?: Record<string, any>, options?: any) => Promise<any> }).runjs(
+    code,
+    createSafeRunJSGlobals(extraGlobals),
+    options,
+  );
+}

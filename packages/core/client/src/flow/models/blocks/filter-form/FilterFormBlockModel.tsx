@@ -11,14 +11,12 @@ import { SettingOutlined } from '@ant-design/icons';
 import { FormButtonGroup } from '@formily/antd-v5';
 import {
   AddSubModelButton,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   DndProvider,
   DragHandler,
   Droppable,
   isRunJSValue,
   normalizeRunJSValue,
+  runjsWithSafeGlobals,
   tExpr,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -129,18 +127,19 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
     const items = this.subModels?.grid?.subModels?.items ?? [];
     const list: any[] = Array.isArray(items) ? items : [];
+    const itemByUid = new Map<string, any>();
+    for (const item of list) {
+      const uid = item?.uid;
+      if (uid) {
+        itemByUid.set(String(uid), item);
+      }
+    }
 
     const resolveValue = async (raw: any) => {
       // RunJS support
       if (isRunJSValue(raw)) {
         const { code, version } = normalizeRunJSValue(raw);
-        const globals: Record<string, any> = {};
-        const navigator = createSafeNavigator();
-        globals.navigator = navigator;
-        globals.window = createSafeWindow({ navigator });
-        globals.document = createSafeDocument();
-
-        const ret = await (this.context as any).runjs?.(code, globals, { version });
+        const ret = await runjsWithSafeGlobals(this.context, code, { version });
         return ret?.success ? ret.value : undefined;
       }
 
@@ -155,7 +154,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       const fieldUid = rule.field ? String(rule.field) : '';
       if (!fieldUid) continue;
 
-      const itemModel = list.find((m) => String(m?.uid) === fieldUid);
+      const itemModel = itemByUid.get(fieldUid);
       if (!itemModel) continue;
 
       const props = typeof itemModel.getProps === 'function' ? itemModel.getProps() : itemModel.props;

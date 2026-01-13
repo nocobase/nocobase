@@ -10,11 +10,9 @@
 import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
 import {
   FlowModelRenderer,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   isRunJSValue,
   normalizeRunJSValue,
+  runjsWithSafeGlobals,
   tExpr,
   useFlowEngine,
   useFlowSettingsContext,
@@ -191,12 +189,7 @@ BulkUpdateActionModel.registerFlow({
             if (isRunJSValue(raw)) {
               const { code, version } = normalizeRunJSValue(raw);
               if (!code?.trim()) continue;
-              const globals: Record<string, any> = {};
-              const navigator = createSafeNavigator();
-              globals.navigator = navigator;
-              globals.window = createSafeWindow({ navigator });
-              globals.document = createSafeDocument();
-              const ret = await ctx.runjs(code, globals, { version });
+              const ret = await runjsWithSafeGlobals(ctx, code, { version });
               if (!ret?.success) {
                 ctx.message.error(ctx.t('RunJS execution failed'));
                 return;

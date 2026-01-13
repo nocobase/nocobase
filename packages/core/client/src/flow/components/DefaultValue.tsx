@@ -19,9 +19,7 @@ import {
   isRunJSValue,
   normalizeRunJSValue,
   type RunJSValue,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
+  runjsWithSafeGlobals,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -191,25 +189,7 @@ export const DefaultValue = connect((props: Props) => {
       if (isRunJSValue(out)) {
         try {
           const { code, version } = normalizeRunJSValue(out);
-          const globals: Record<string, any> = {};
-          try {
-            const navigator = createSafeNavigator();
-            globals.navigator = navigator;
-            try {
-              globals.window = createSafeWindow({ navigator });
-            } catch {
-              // ignore
-            }
-            try {
-              globals.document = createSafeDocument();
-            } catch {
-              // ignore
-            }
-          } catch {
-            // ignore
-          }
-
-          const ret = await model?.context?.runjs?.(code, globals, { version });
+          const ret = await runjsWithSafeGlobals(model?.context, code, { version });
           out = ret?.success ? ret.value : undefined;
         } catch {
           out = undefined;
