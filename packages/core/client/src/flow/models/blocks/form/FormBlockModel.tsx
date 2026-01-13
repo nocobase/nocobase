@@ -40,7 +40,7 @@ type DefaultCollectionBlockModelStructure = {
 type CustomFormBlockModelClassesEnum = {};
 
 const GRID_DELEGATED_STEP_KEYS: Record<string, Set<string>> = {
-  formModelSettings: new Set(['layout']),
+  formModelSettings: new Set(['layout', 'assignRules']),
   eventSettings: new Set(['linkageRules']),
 };
 
