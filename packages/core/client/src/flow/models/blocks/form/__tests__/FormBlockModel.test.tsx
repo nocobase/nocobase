@@ -301,7 +301,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(flows.has('eventSettings')).toBe(true);
   });
 
-  it('delegates layout/linkageRules stepParams to grid model', async () => {
+  it('delegates layout/assignRules/linkageRules stepParams to grid model', async () => {
     const model = await setupFormModel();
     const engine = model.flowEngine as FlowEngine;
 
@@ -330,18 +330,23 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
       labelWrap: false,
       colon: false,
     };
+    const assignRulesParams = { value: [{ key: 'a1', targetPath: 'title', value: 'hello' }] };
     model.setStepParams('formModelSettings', 'layout', layoutParams);
+    model.setStepParams('formModelSettings', 'assignRules', assignRulesParams);
     model.setStepParams('eventSettings', 'linkageRules', { value: [{ key: 'r1' }] });
 
     expect(grid.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(grid.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(grid.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
 
     // model reads delegated params from grid first
     expect(model.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(model.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(model.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
 
     // model no longer stores these params locally
     expect((model.stepParams as any)?.formModelSettings?.layout).toBeUndefined();
+    expect((model.stepParams as any)?.formModelSettings?.assignRules).toBeUndefined();
     expect((model.stepParams as any)?.eventSettings?.linkageRules).toBeUndefined();
 
     await model.saveStepParams();
