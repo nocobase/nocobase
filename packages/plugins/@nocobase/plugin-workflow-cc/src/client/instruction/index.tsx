@@ -35,7 +35,7 @@ import {
 import { NAMESPACE } from '../../common/constants';
 // import NotificationFieldset from '../NotificationFieldset';
 // import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
-import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
+import { SchemaConfig, SchemaConfigButton, CcInterfaceConfig, CcTaskCardConfigButton } from './SchemaConfig';
 
 export default class extends Instruction {
   title = `{{t("CC", { ns: "${NAMESPACE}" })}}`;
@@ -112,7 +112,37 @@ export default class extends Instruction {
           'x-component': 'SchemaConfig',
         },
       },
-      required: true,
+      'x-reactions': [
+        {
+          fulfill: {
+            state: {
+              visible: `{{!$form.values.ccUid}}`,
+              required: `{{!$form.values.ccUid}}`,
+            },
+          },
+        },
+      ],
+    },
+    ccUid: {
+      type: 'void',
+      title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'CcInterfaceConfig',
+      'x-reactions': [
+        {
+          fulfill: {
+            state: {
+              visible: `{{!!$form.values.ccDetail || !$form.disabled}}`,
+            },
+          },
+        },
+      ],
+    },
+    taskCardUid: {
+      type: 'string',
+      title: `{{t("Task card", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'CcTaskCardConfigButton',
     },
     title: {
       type: 'string',
