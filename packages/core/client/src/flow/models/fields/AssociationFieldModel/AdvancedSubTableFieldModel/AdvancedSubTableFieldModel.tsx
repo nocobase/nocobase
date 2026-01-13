@@ -32,6 +32,7 @@ import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
 import { EditFormContent } from './actions/SubTableEditActionModel';
 import { QuickEditFormModel } from '../../../blocks/form/QuickEditFormModel';
+import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 function getRowKey(row, filterTargetKey) {
   if (!filterTargetKey) return null;
@@ -200,11 +201,13 @@ const DisplayTable = (props) => {
     onAddRecordClick,
     onSelectExitRecordClick,
     resetPage,
+    allowCreate,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const { t } = useTranslation();
-
+  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
+  console.log(disabled);
   // 表格内部数据
   const [tableData, setTableData] = useState(value);
 
@@ -237,8 +240,6 @@ const DisplayTable = (props) => {
   }, [currentPage, currentPageSize, tableData]);
 
   const columns = useMemo(() => {
-    const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
-
     const cols = adjustColumnOrder(
       [
         enableIndexColumn && {
@@ -266,7 +267,7 @@ const DisplayTable = (props) => {
     }
 
     return cols;
-  }, [baseColumns, enableIndexColumn, currentPage, currentPageSize, model.flowEngine?.flowSettings?.enabled, model]);
+  }, [baseColumns, enableIndexColumn, currentPage, currentPageSize, isConfigMode, model]);
   return (
     <Table
       tableLayout="fixed"
@@ -311,20 +312,30 @@ const DisplayTable = (props) => {
           }}
         >
           <Space size={'middle'}>
-            {!disabled && allowAddNew !== false && (
+            {allowAddNew &&
+              (allowCreate || isConfigMode) &&
+              (allowCreate ? (
+                <Button
+                  type="link"
+                  onClick={() => onAddRecordClick(setCurrentPage, currentPageSize)}
+                  disabled={disabled}
+                >
+                  <PlusOutlined />
+                  {t('Add new')}
+                </Button>
+              ) : (
+                <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                  <Button type="link" disabled>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                </ActionWithoutPermission>
+              ))}
+            {allowSelectExistingRecord && (
               <Button
                 type="link"
-                onClick={() => onAddRecordClick(setCurrentPage, currentPageSize)}
-                style={{ marginTop: 8 }}
-              >
-                <PlusOutlined /> {t('Add new')}
-              </Button>
-            )}
-            {!disabled && allowSelectExistingRecord && (
-              <Button
-                type="link"
+                disabled={disabled}
                 onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}
-                style={{ marginTop: 8 }}
               >
                 <ZoomInOutlined /> {t('Select record')}
               </Button>
