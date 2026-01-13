@@ -11,12 +11,22 @@ import { Registry } from '@nocobase/utils';
 
 import { Evaluator } from '../utils';
 import mathjs from '../utils/mathjs';
-import formulajs from '../utils/formulajs';
+import { createFormulaEvaluator } from '../utils/formulajs';
 import string from '../utils/string';
 
 export { Evaluator, evaluate, appendArrayColumn } from '../utils';
 
 export const evaluators = new Registry<Evaluator>();
+
+const formulajs = createFormulaEvaluator({
+  lockdownOptions: {
+    consoleTaming: 'unsafe',
+    errorTaming: 'unsafe',
+    overrideTaming: 'moderate',
+    stackFiltering: 'verbose',
+  },
+  blockedIdentifiers: ['process', 'require', 'module', 'exports', '__filename', '__dirname', 'Buffer'],
+});
 
 evaluators.register('math.js', mathjs);
 evaluators.register('formula.js', formulajs);

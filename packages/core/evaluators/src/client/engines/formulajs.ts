@@ -7,7 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import formulajs from '../../utils/formulajs';
+import { createFormulaEvaluator } from '../../utils/formulajs';
+
+const blockedIdentifiers = [
+  'window',
+  'document',
+  'parent',
+  'top',
+  'frames',
+  'navigator',
+  'location',
+  'localStorage',
+  'sessionStorage',
+];
+
+const formulajs = createFormulaEvaluator({
+  lockdownOptions: {
+    consoleTaming: 'unsafe',
+    errorTaming: 'unsafe',
+    overrideTaming: 'moderate',
+    stackFiltering: 'concise',
+  },
+  blockedIdentifiers,
+});
 
 export default {
   label: 'Formula.js',
