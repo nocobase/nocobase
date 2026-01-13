@@ -18,6 +18,7 @@
 
 import React from 'react';
 import { ArrayItems } from '@formily/antd-v5';
+import { uid } from '@formily/shared';
 import _ from 'lodash';
 import { EyeOutlined } from '@ant-design/icons';
 
@@ -115,7 +116,7 @@ export default class extends Instruction {
         {
           fulfill: {
             state: {
-              visible: `{{!!$form.disabled && !!$form.values.ccDetail }}`,
+              visible: `{{!$form.values.ccUid}}`,
               required: `{{!$form.values.ccUid}}`,
             },
           },
@@ -131,7 +132,7 @@ export default class extends Instruction {
         {
           fulfill: {
             state: {
-              visible: `{{!$form.values.ccDetail || !$form.disabled}}`,
+              visible: `{{!$form.disabled}}`,
             },
           },
         },
@@ -157,7 +158,9 @@ export default class extends Instruction {
     },
   };
   createDefaultConfig() {
-    return {};
+    return {
+      ccDetail: uid(),
+    };
   }
   scope = {
     useNodeContext,
