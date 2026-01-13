@@ -10,7 +10,6 @@
 import { isValidFilter, uid } from '@nocobase/utils';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
-import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
 import { TASK_STATUS } from '../common/constants';
 
 async function getUsers(config, { db, transaction }): Promise<number[]> {
@@ -81,37 +80,16 @@ export default class CCInstruction extends Instruction {
 
   async duplicateConfig(node, { transaction }) {
     const uiSchemaRepo = this.workflow.app.db.getRepository('uiSchemas') as UiSchemaRepository;
-    let nextConfig = { ...node.config };
-    if (node.config.ccDetail) {
-      const result = await uiSchemaRepo.duplicate(node.config.ccDetail, {
-        transaction,
-      });
-
-      nextConfig.ccDetail = result?.['x-uid'] ?? uid();
+    if (!node.config.ccDetail) {
+      return node.config;
     }
+    const result = await uiSchemaRepo.duplicate(node.config.ccDetail, {
+      transaction,
+    });
 
-    if (node.config.ccUid) {
-      const repository = this.workflow.app.db.getRepository('flowModels') as FlowModelRepository;
-      const duplicated = await repository.duplicate(node.config.ccUid, { transaction });
-      if (duplicated) {
-        nextConfig = {
-          ...nextConfig,
-          ccUid: duplicated.uid,
-        };
-      }
-    }
-
-    if (node.config.taskCardUid) {
-      const repository = this.workflow.app.db.getRepository('flowModels') as FlowModelRepository;
-      const duplicated = await repository.duplicate(node.config.taskCardUid, { transaction });
-      if (duplicated) {
-        nextConfig = {
-          ...nextConfig,
-          taskCardUid: duplicated.uid,
-        };
-      }
-    }
-
-    return nextConfig;
+    return {
+      ...node.config,
+      ccDetail: result?.['x-uid'] ?? uid(),
+    };
   }
 }

@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { ISchema, observer, useForm } from '@formily/react';
-import { Button, Dropdown, Modal, Spin, Typography } from 'antd';
+import { Button, Spin, Typography } from 'antd';
 
 import {
   ActionContextProvider,
@@ -20,7 +20,6 @@ import {
   SchemaComponentProvider,
   SchemaInitializer,
   SchemaInitializerItemType,
-  parseCollectionName,
   useActionContext,
   useAPIClient,
   usePlugin,
@@ -35,18 +34,8 @@ import PluginWorkflowClient, {
   useTrigger,
   useWorkflowExecuted,
 } from '@nocobase/plugin-workflow/client';
-import {
-  FlowModel,
-  FlowModelRenderer,
-  useFlowEngine,
-  useFlowEngineContext,
-  useFlowViewContext,
-} from '@nocobase/flow-engine';
-import { DeleteOutlined, DownOutlined, SettingOutlined } from '@ant-design/icons';
 import { NAMESPACE } from '../../common/constants';
 import { lang, usePluginTranslation } from '../locale';
-
-const ConfigChangedContext = React.createContext<any>({});
 
 function useTriggerInitializers(): SchemaInitializerItemType | null {
   const { workflow } = useFlowContext();
@@ -220,270 +209,7 @@ export function SchemaConfig({ value, onChange }) {
   );
 }
 
-function CcFlowModelConfigContent({ form, valueKey, modelUse, stepParams }) {
-  const flowEngine = useFlowEngine();
-  const viewCtx = useFlowViewContext();
-  const { data: model, loading } = useRequest(
-    async () => {
-      const model: FlowModel = await flowEngine.loadOrCreateModel({
-        async: true,
-        uid: form.values[valueKey],
-        subType: 'object',
-        use: modelUse,
-        stepParams,
-      });
-
-      if (model?.uid) {
-        model.context.addDelegate(viewCtx);
-        model.context.defineProperty('flowSettingsEnabled', {
-          get: () => !form.disabled,
-        });
-        form.setValuesIn(valueKey, model.uid);
-      }
-
-      return model;
-    },
-    {
-      refreshDeps: [form.values[valueKey], form.disabled],
-    },
-  );
-
-  if (loading) {
-    return <Spin />;
-  }
-
-  return <FlowModelRenderer model={model as FlowModel} hideRemoveInSettings showFlowSettings={false} />;
-}
-
-function CcFlowModelConfigButton({ valueKey, modelUse, title, stepParams }) {
-  const { setFormValueChanged } = useActionContext();
-  const ctx = useFlowEngineContext();
-  const { t, viewer, themeToken } = ctx;
-  const form = useForm();
-  const flowContext = useFlowContext();
-  const [dataSourceName, collectionName] = flowContext?.workflow?.config?.collection
-    ? parseCollectionName(flowContext.workflow.config.collection)
-    : [null, null];
-
-  const open = () => {
-    viewer.open({
-      type: 'dialog',
-      width: 800,
-      closable: true,
-      title: t(title, { ns: NAMESPACE }),
-      inputArgs: {
-        flowContext,
-      },
-      styles: {
-        body: {
-          padding: 0,
-          backgroundColor: 'var(--nb-box-bg)',
-        },
-        content: {
-          padding: 0,
-        },
-        header: {
-          padding: `${themeToken.padding}px ${themeToken.paddingLG}px`,
-          marginBottom: 0,
-        },
-      },
-      content: (
-        <CcFlowModelConfigContent
-          form={form}
-          valueKey={valueKey}
-          modelUse={modelUse}
-          stepParams={
-            stepParams || {
-              CcChildPageSettings: {
-                init: {
-                  dataSourceKey: dataSourceName,
-                  collectionName,
-                },
-              },
-            }
-          }
-        />
-      ),
-    });
-    if (!form.values[valueKey]) {
-      setFormValueChanged?.(true);
-    }
-  };
-
-  return (
-    <Button type="primary" onClick={open} disabled={false} icon={<SettingOutlined />}>
-      {t(title, { ns: NAMESPACE })}
-    </Button>
-  );
-}
-
-export function CcTaskCardConfigButton() {
-  const flowContext = useFlowContext();
-  const [dataSourceName, collectionName] = flowContext?.workflow?.config?.collection
-    ? parseCollectionName(flowContext.workflow.config.collection)
-    : [null, null];
-  return (
-    <CcFlowModelConfigButton
-      valueKey="taskCardUid"
-      modelUse="CcTaskCardDetailsModel"
-      title="Task card"
-      stepParams={{
-        cardSettings: {
-          titleDescription: {
-            title: flowContext.workflow?.title,
-          },
-        },
-        detailsSettings: {
-          refresh: {},
-          layout: {},
-        },
-        CcChildPageSettings: {
-          init: {
-            dataSourceKey: dataSourceName,
-            collectionName,
-          },
-        },
-      }}
-    />
-  );
-}
-
-export function CcInterfaceConfig() {
-  const form = useForm();
-  const ctx = useFlowEngineContext();
-  const flowContext = useFlowContext();
-  const { setFormValueChanged } = useActionContext();
-  const [v1Visible, setV1Visible] = useState(false);
-  const { t, viewer, themeToken } = ctx;
-  const api = useAPIClient();
-  const [dataSourceName, collectionName] = parseCollectionName(flowContext.workflow.config.collection);
-
-  const openV2 = ({ needConfirm } = {} as any) => {
-    const doOpen = () => {
-      viewer.open({
-        type: 'dialog',
-        width: 800,
-        closable: true,
-        title: t('User interface', { ns: NAMESPACE }),
-        inputArgs: {
-          flowContext,
-        },
-        styles: {
-          body: {
-            padding: 0,
-            backgroundColor: 'var(--nb-box-bg)',
-          },
-          content: {
-            padding: 0,
-          },
-          header: {
-            padding: `${themeToken.padding}px ${themeToken.paddingLG}px`,
-            marginBottom: 0,
-          },
-        },
-        content: (
-          <CcFlowModelConfigContent
-            form={form}
-            valueKey="ccUid"
-            modelUse="CcChildPageModel"
-            stepParams={{
-              CcChildPageSettings: {
-                init: {
-                  dataSourceKey: dataSourceName,
-                  collectionName,
-                },
-              },
-            }}
-          />
-        ),
-      });
-      if (!form.values.ccUid) {
-        setFormValueChanged?.(true);
-      }
-    };
-
-    if (form.values.ccDetail && needConfirm) {
-      Modal.confirm({
-        title: t('Configure v2 UI', { ns: NAMESPACE }),
-        content: t(
-          'Before using the v2 UI, you must delete the existing v1 UI. Are you sure you want to delete the v1 UI?',
-          { ns: NAMESPACE },
-        ),
-        onOk: async () => {
-          await deleteV1();
-          doOpen();
-        },
-      });
-      return;
-    }
-
-    doOpen();
-  };
-
-  const deleteV1 = async () => {
-    try {
-      if (form.values.ccDetail) {
-        await api.request({ url: `uiSchemas:remove/${form.values.ccDetail}`, method: 'POST' });
-      }
-      form.setValuesIn('ccDetail', null);
-      setFormValueChanged?.(true);
-    } catch (err) {
-      console.error('Failed to delete v1 configuration:', err);
-    }
-  };
-
-  const items = [
-    {
-      key: 'v1',
-      label: (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 120 }}>
-          <span style={{ flex: 1 }}>{lang('v1 (Legacy)')}</span>
-          {form.values.ccDetail && (
-            <DeleteOutlined
-              onClick={(e) => {
-                e.stopPropagation();
-                Modal.confirm({
-                  title: t('Delete v1 configuration', { ns: NAMESPACE }),
-                  onOk: deleteV1,
-                });
-              }}
-              style={{ color: '#999', marginLeft: 8 }}
-            />
-          )}
-        </div>
-      ),
-      onClick: () => setV1Visible(true),
-    },
-    {
-      key: 'v2',
-      label: lang('v2'),
-      onClick: () => openV2({ needConfirm: true }),
-    },
-  ];
-
-  if (form.values.ccDetail) {
-    return (
-      <ConfigChangedContext.Provider value={{ setFormValueChanged }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Dropdown menu={{ items }} trigger={['hover']}>
-            <Button type="primary" icon={<SettingOutlined />}>
-              {lang('Go to configure')} <DownOutlined />
-            </Button>
-          </Dropdown>
-        </div>
-        <ActionContextProvider value={{ visible: v1Visible, setVisible: setV1Visible, formValueChanged: false }}>
-          <SchemaConfig />
-        </ActionContextProvider>
-      </ConfigChangedContext.Provider>
-    );
-  }
-
-  return (
-    <Button icon={<SettingOutlined />} type="primary" onClick={() => openV2({ needConfirm: false })} disabled={false}>
-      {lang('Go to configure')}
-    </Button>
-  );
-}
+const ConfigChangedContext = React.createContext<any>({});
 
 const ForceReadHint = observer(() => {
   const { initialValues, values } = useForm();

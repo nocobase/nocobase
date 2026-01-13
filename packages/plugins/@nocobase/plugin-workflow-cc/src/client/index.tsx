@@ -17,8 +17,6 @@ import {
   useSchemaToolbar,
 } from '@nocobase/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
-import { CcChildPageModel } from './flow/models/CcChildPageModel';
-import { CcTaskCardDetailsModel } from './flow/models/CcTaskCardDetailsModel';
 import CCInstruction from './instruction';
 import { addBlockButton } from './instruction/SchemaConfig';
 import ccCollection from '../common/collections/workflowCcTasks';
@@ -32,11 +30,6 @@ function WorkflowCCProvider(props) {
 export class PluginWorkflowCCClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
-    this.flowEngine?.registerModels({
-      CcChildPageModel,
-      CcTaskCardDetailsModel,
-    });
-
     this.app.addProvider(WorkflowCCProvider);
 
     const workflow = this.app.pm.get(PluginWorkflowClient);
