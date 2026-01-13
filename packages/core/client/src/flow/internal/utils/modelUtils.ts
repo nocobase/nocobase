@@ -8,6 +8,7 @@
  */
 
 import type { FlowModel } from '@nocobase/flow-engine';
+import { FormItemModel } from '../../models';
 
 export interface CollectionLike {
   getField?: (name: string) => unknown;
@@ -43,22 +44,41 @@ export function getCollectionFromModel(model: unknown): CollectionLike | undefin
   return m.collection || m.context?.collection || undefined;
 }
 
-function getFormItemFieldPath(model: unknown): string | undefined {
-  if (!model || typeof model !== 'object') return undefined;
-  const record = model as Record<string, unknown>;
-  const direct = record.fieldPath;
-  if (typeof direct === 'string' && direct) return direct;
+function normalizePath(val: unknown): string {
+  return typeof val === 'string' ? val.trim() : '';
+}
 
-  const getStepParams = record.getStepParams;
-  if (typeof getStepParams === 'function') {
-    const init = (getStepParams as (flowKey: string, stepKey: string) => unknown)('fieldSettings', 'init');
-    if (init && typeof init === 'object') {
-      const fp = (init as { fieldPath?: unknown }).fieldPath;
-      if (typeof fp === 'string' && fp) return fp;
+function getFormItemFieldPathCandidates(model: unknown): string[] {
+  if (!model || typeof model !== 'object') return [];
+  const record = model as Record<string, unknown>;
+
+  const init =
+    typeof record.getStepParams === 'function'
+      ? (record.getStepParams as (flowKey: string, stepKey: string) => unknown)('fieldSettings', 'init')
+      : undefined;
+  const initObj = init && typeof init === 'object' ? (init as Record<string, unknown>) : undefined;
+
+  const rawFieldPath = (initObj?.fieldPath as unknown) ?? record.fieldPath;
+  const rawAssocPath = (initObj?.associationPathName as unknown) ?? record.associationPathName;
+
+  const fieldPath = normalizePath(rawFieldPath);
+  const assocPath = normalizePath(rawAssocPath);
+
+  const paths = new Set<string>();
+  if (fieldPath) {
+    paths.add(fieldPath);
+  }
+  if (assocPath) {
+    if (!fieldPath) {
+      paths.add(assocPath);
+    } else if (fieldPath.startsWith(`${assocPath}.`)) {
+      paths.add(fieldPath);
+    } else {
+      paths.add(`${assocPath}.${fieldPath}`);
     }
   }
 
-  return undefined;
+  return Array.from(paths);
 }
 
 function getSubModelItems(model: unknown): unknown[] {
@@ -88,17 +108,18 @@ function getChildFormItems(formItemModel: unknown): unknown[] {
 
 /**
  * Find a configured FormItemModel by its `fieldSettings.init.fieldPath` (or `fieldPath`) in the current form grid,
- * including nested subform items.
+ * including nested subform items. Also supports combined path matching when a model stores
+ * `associationPathName + fieldPath` separately (e.g. wrapper field children builders).
  */
-export function findFormItemModelByFieldPath(root: unknown, targetPath: string): FlowModel | null {
-  if (!targetPath) return null;
+export function findFormItemModelByFieldPath(root: unknown, targetPath: string): FormItemModel | null {
+  const normalizedTargetPath = normalizePath(targetPath);
+  if (!normalizedTargetPath) return null;
 
-  const walk = (items: unknown[]): FlowModel | null => {
+  const walk = (items: unknown[]): FormItemModel | null => {
     if (!Array.isArray(items)) return null;
     for (const it of items) {
-      const fp = getFormItemFieldPath(it);
-      if (fp && String(fp) === String(targetPath)) return it as FlowModel;
-
+      const candidates = getFormItemFieldPathCandidates(it);
+      if (candidates.some((p) => p === normalizedTargetPath)) return it as FormItemModel;
       const hit = walk(getChildFormItems(it));
       if (hit) return hit;
     }
