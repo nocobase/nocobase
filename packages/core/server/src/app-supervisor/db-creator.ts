@@ -97,9 +97,13 @@ export const createDatabase: AppDbCreator = async ({ app }) => {
   }
 
   if (['postgres', 'kingbase'].includes(dialect)) {
-    return withPgClient({ host, port, user: username, password, database: dialect }, (client) =>
-      client.query(`CREATE DATABASE "${database}"`),
-    );
+    return withPgClient({ host, port, user: username, password, database: dialect }, async (client) => {
+      const exists = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [database]);
+
+      if (exists.rowCount === 0) {
+        await client.query(`CREATE DATABASE "${database}"`);
+      }
+    });
   }
 };
 
