@@ -8,7 +8,6 @@
  */
 
 import lodash from 'lodash';
-import qs from 'qs';
 import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
