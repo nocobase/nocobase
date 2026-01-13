@@ -71,6 +71,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       },
       cdn,
       minHeight: 200,
+      mode: 'wysiwyg',
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
