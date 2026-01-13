@@ -197,6 +197,19 @@ function normalizeAssignRuleItemsFromLinkageParams(
   return [];
 }
 
+function createLegacyTargetPathResolver(ctx: { engine?: any }) {
+  return (legacyFieldUid: string) => {
+    try {
+      const m: any = ctx.engine?.getModel?.(legacyFieldUid);
+      const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
+      return fp ? String(fp) : undefined;
+    } catch (error) {
+      console.warn(`Failed to resolve legacy field uid ${legacyFieldUid}:`, error);
+      return undefined;
+    }
+  };
+}
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: tExpr('Set block state'),
@@ -670,11 +683,7 @@ export const linkageAssignField = defineAction({
             mode: 'assign',
             valueKey: 'assignValue',
           },
-          (legacyFieldUid) => {
-            const m: any = ctx.engine?.getModel?.(legacyFieldUid);
-            const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
-            return fp ? String(fp) : undefined;
-          },
+          createLegacyTargetPathResolver(ctx),
         );
 
         return (
@@ -690,7 +699,11 @@ export const linkageAssignField = defineAction({
     },
   },
   handler: (ctx, { value, setProps }) => {
-    const items = normalizeAssignRuleItemsFromLinkageParams(value, { mode: 'assign', valueKey: 'assignValue' });
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'assign', valueKey: 'assignValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
     if (!items.length) return;
     try {
       const evaluator = (path: any, operator: string, right: any) => {
@@ -760,11 +773,7 @@ export const subFormLinkageAssignField = defineAction({
             mode: 'assign',
             valueKey: 'assignValue',
           },
-          (legacyFieldUid) => {
-            const m: any = ctx.engine?.getModel?.(legacyFieldUid);
-            const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
-            return fp ? String(fp) : undefined;
-          },
+          createLegacyTargetPathResolver(ctx),
         );
 
         return (
@@ -781,7 +790,11 @@ export const subFormLinkageAssignField = defineAction({
   },
   handler: (ctx, { value, setProps }) => {
     // 字段赋值处理逻辑
-    const items = normalizeAssignRuleItemsFromLinkageParams(value, { mode: 'assign', valueKey: 'assignValue' });
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'assign', valueKey: 'assignValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
     if (!items.length) return;
     try {
       const evaluator = (path: any, operator: string, right: any) => {
@@ -880,11 +893,7 @@ export const setFieldsDefaultValue = defineAction({
             mode: 'default',
             valueKey: 'initialValue',
           },
-          (legacyFieldUid) => {
-            const m: any = ctx.engine?.getModel?.(legacyFieldUid);
-            const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
-            return fp ? String(fp) : undefined;
-          },
+          createLegacyTargetPathResolver(ctx),
         );
 
         return (
@@ -901,7 +910,11 @@ export const setFieldsDefaultValue = defineAction({
     },
   },
   handler: (ctx, { value, setProps }) => {
-    const items = normalizeAssignRuleItemsFromLinkageParams(value, { mode: 'default', valueKey: 'initialValue' });
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'default', valueKey: 'initialValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
     if (!items.length) return;
     try {
       const evaluator = (path: any, operator: string, right: any) => {
