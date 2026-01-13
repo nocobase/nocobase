@@ -18,7 +18,6 @@ import {
   parseValueToPath,
   isRunJSValue,
   normalizeRunJSValue,
-  type RunJSValue,
   runjsWithSafeGlobals,
   useFlowContext,
   extractPropertyPath,
@@ -33,7 +32,7 @@ import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
-import { CodeEditor } from './code-editor';
+import { RunJSValueEditor } from './RunJSValueEditor';
 import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
 
 interface Props {
@@ -522,27 +521,9 @@ export const DefaultValue = connect((props: Props) => {
   }, [flowContext]);
 
   const RunJSComponent = useMemo(() => {
-    const C: React.FC<any> = (inputProps) => {
-      const current: RunJSValue = isRunJSValue(inputProps?.value)
-        ? normalizeRunJSValue(inputProps.value)
-        : { code: '', version: 'v1' };
-
-      const tip = flowContext.t?.('Use return to output value') ?? 'Use return to output value';
-      const placeholderText = `// ${tip}\nreturn ...`;
-
-      return (
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <CodeEditor
-            value={current.code}
-            onChange={(code) => inputProps?.onChange?.({ ...current, code })}
-            height="200px"
-            enableLinter={true}
-            placeholder={placeholderText}
-            scene="formValue"
-          />
-        </div>
-      );
-    };
+    const C: React.FC<any> = (inputProps) => (
+      <RunJSValueEditor t={flowContext.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+    );
     return C;
   }, [flowContext]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
@@ -607,7 +588,7 @@ export const DefaultValue = connect((props: Props) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {

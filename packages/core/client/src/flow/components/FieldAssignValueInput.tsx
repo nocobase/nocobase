@@ -16,8 +16,6 @@ import {
   isVariableExpression,
   parseValueToPath,
   isRunJSValue,
-  normalizeRunJSValue,
-  type RunJSValue,
   type CollectionField,
   useFlowContext,
   EditableItemModel,
@@ -29,7 +27,7 @@ import {
   getCollectionFromModel,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
-import { CodeEditor } from './code-editor';
+import { RunJSValueEditor } from './RunJSValueEditor';
 
 interface Props {
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
@@ -324,27 +322,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
   }, [flowCtx]);
 
   const RunJSComponent = React.useMemo(() => {
-    const C: React.FC<any> = (inputProps) => {
-      const current: RunJSValue = isRunJSValue(inputProps?.value)
-        ? normalizeRunJSValue(inputProps.value)
-        : { code: '', version: 'v1' };
-
-      const tip = flowCtx.t?.('Use return to output value') ?? 'Use return to output value';
-      const placeholderText = `// ${tip}\nreturn ...`;
-
-      return (
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <CodeEditor
-            value={current.code}
-            onChange={(code) => inputProps?.onChange?.({ ...current, code })}
-            height="200px"
-            enableLinter
-            placeholder={placeholderText}
-            scene="formValue"
-          />
-        </div>
-      );
-    };
+    const C: React.FC<any> = (inputProps) => (
+      <RunJSValueEditor t={flowCtx.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+    );
     return C;
   }, [flowCtx]);
 
@@ -390,7 +370,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v1' } as RunJSValue;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {

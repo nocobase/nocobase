@@ -24,6 +24,10 @@ import {
 import { Form } from 'antd';
 import React from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import {
+  markSaveStepParamsWithSubModels,
+  saveStepParamsWithSubModelsIfNeeded,
+} from '../../../internal/utils/saveStepParamsWithSubModels';
 import { BlockSceneEnum, FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
 import { isEmptyValue } from '../form/value-runtime/utils';
@@ -63,17 +67,9 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   }
 
   async saveStepParams() {
-    const shouldSaveSubModels = (this as any).__saveStepParamsWithSubModels === true;
-    if (shouldSaveSubModels) {
-      try {
-        // full save (including subModels) to persist migrated field-level settings cleanup
-        return await this.save();
-      } finally {
-        delete (this as any).__saveStepParamsWithSubModels;
-      }
-    }
-
-    return await super.saveStepParams();
+    return await saveStepParamsWithSubModelsIfNeeded(this, async () => {
+      return await super.saveStepParams();
+    });
   }
 
   addAppends() {}
@@ -284,7 +280,7 @@ FilterFormBlockModel.registerFlow({
         if (Array.isArray(cleared) && cleared.length) {
           // FlowModelRepository({ onlyStepParams: true }) 不会写入 subModels，
           // 此处标记后在 saveStepParams 中触发一次全量保存以持久化清理结果。
-          (ctx.model as any).__saveStepParamsWithSubModels = true;
+          markSaveStepParamsWithSubModels(ctx.model);
         }
       },
       afterParamsSave(ctx) {
