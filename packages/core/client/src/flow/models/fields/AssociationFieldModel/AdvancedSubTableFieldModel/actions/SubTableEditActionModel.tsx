@@ -14,7 +14,7 @@ import { Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
 import { capitalize } from 'lodash';
 import { Icon } from '../../../../../../icon/Icon';
-import { ActionModel } from '../../../../base/ActionModel';
+import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModel';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
 
 function FieldWithoutPermissionPlaceholder({ targetModel, children }) {
@@ -153,6 +153,27 @@ SubTableRecordAction.registerFlow({
   },
 });
 export class SubTableEditActionModel extends SubTableRecordAction {
+  // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    const props = this.props;
+    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    if (this.forbidden) {
+      return (
+        <ActionWithoutPermission collection={this.context.collectionField.targetCollection}>
+          <Button {...props} icon={icon} style={{ opacity: '0.3' }}>
+            {props.children || this.getTitle()}
+          </Button>
+        </ActionWithoutPermission>
+      );
+    }
+    return (
+      <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+        <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+          {props.children || this.getTitle()}
+        </Button>
+      </Tooltip>
+    );
+  }
   selectedRows = observable.ref([]);
   defaultPopupTitle = tExpr('Edit');
   defaultProps: ButtonProps = {
@@ -174,6 +195,28 @@ export class SubTableEditActionModel extends SubTableRecordAction {
     }
   }
 }
+
+SubTableEditActionModel.registerFlow({
+  key: 'buttonAclSettings',
+  steps: {
+    aclCheck: {
+      async handler(ctx, params) {
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.target,
+          actionName: ctx.actionName,
+        });
+        if (!result && !ctx.record.__is_new__) {
+          ctx.model.hidden = true;
+          ctx.model.forbidden = {
+            actionName: ctx.actionName,
+          };
+          ctx.exitAll();
+        }
+      },
+    },
+  },
+});
 
 SubTableEditActionModel.define({
   label: tExpr('Edit'),

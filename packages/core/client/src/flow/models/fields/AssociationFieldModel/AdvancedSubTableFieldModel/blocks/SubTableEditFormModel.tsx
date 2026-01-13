@@ -116,12 +116,6 @@ export class SubTableEditFormModel extends FormBlockModel {
     super.onMount();
   }
 
-  getAclActionName() {
-    const model: any = this;
-    const scene = model.parent?.actionName || model.actionName;
-    return scene;
-  }
-
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;

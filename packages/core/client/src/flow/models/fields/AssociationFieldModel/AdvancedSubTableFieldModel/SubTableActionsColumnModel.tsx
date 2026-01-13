@@ -28,7 +28,6 @@ import { TableCustomColumnModel } from '../../../blocks/table/TableCustomColumnM
 import { TableBlockModel } from '../../../blocks/table/TableBlockModel';
 
 const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
-  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
   return (
     <DndProvider>
       <Space
@@ -42,9 +41,6 @@ const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
           const fork = action.createFork({});
-          if (fork.hidden && !isConfigMode) {
-            return;
-          }
           // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
           fork.invalidateFlowCache('beforeRender');
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
