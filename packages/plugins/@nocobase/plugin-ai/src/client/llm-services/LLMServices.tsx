@@ -22,7 +22,7 @@ import {
 } from '@nocobase/client';
 import React, { useContext, useMemo, useState } from 'react';
 import { useT } from '../locale';
-import { Button, Dropdown, App, Tag } from 'antd';
+import { Button, Divider, Dropdown, App, Tag, theme } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
@@ -128,28 +128,56 @@ const useEditActionProps = () => {
 };
 const AddNew = () => {
   const t = useT();
+  const { token } = theme.useToken();
   const [visible, setVisible] = useState(false);
   const [provider, setProvider] = useState('');
   const providers = useLLMProviders();
-  const items = providers.map((item) => ({
-    ...item,
-    label: (
-      <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 35 }}>
-          <span>{item.label}</span>
-          <div>
-            {item.supportedModel.map((item) => (
-              <Tag key={item}>{item}</Tag>
-            ))}
+
+  const providerHints: Record<string, string> = {
+    anthropic: 'Claude',
+    'google-genai': 'Gemini',
+    openai: 'GPT',
+    'openai-completions': 'GPT (Completions, Legacy)',
+    dashscope: 'Qwen',
+    deepseek: 'DeepSeek',
+    ollama: 'Local models',
+  };
+
+  const items = providers.map((item, index) => {
+    const hint = providerHints[item.value];
+    return {
+      ...item,
+      label: (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {index > 0 && <Divider style={{ margin: '4px 0' }} />}
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+            <span>{item.label}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{hint}</div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {item.supportedModel.map((item) => (
+                <Tag
+                  key={item}
+                  style={{
+                    color: token.colorTextTertiary,
+                    backgroundColor: token.colorFillTertiary,
+                    borderColor: token.colorBorderSecondary,
+                  }}
+                >
+                  {item}
+                </Tag>
+              ))}
+            </div>
           </div>
         </div>
-      </>
-    ),
-    onClick: () => {
-      setVisible(true);
-      setProvider(item.value);
-    },
-  }));
+      ),
+      onClick: () => {
+        setVisible(true);
+        setProvider(item.value);
+      },
+    };
+  });
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
@@ -161,7 +189,7 @@ const AddNew = () => {
         </Dropdown>
         <SchemaComponent
           components={{ LLMTestFlight }}
-          scope={{ setProvider, useCreateFormProps }}
+          scope={{ setProvider, useCreateFormProps, providers }}
           schema={createLLMSchema}
         />
       </LLMProviderContext.Provider>

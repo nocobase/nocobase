@@ -32,7 +32,7 @@ First, in the `Profile` tab, we can configure the basic information of the AI Em
 In the `Model settings` tab, we can configure the Model settings for the AI Employee:
 
 - Select the LLM Service.
-- Select the Model you want to use. Recommended (tested): **gemini-2.5**, **deepseek-chat**, **qwen3-max**.
+- Select the Model you want to use. Recommended (tested): **gemini-3**, **deepseek-chat**, **qwen3-max**.
 
 ![20251021231727](https://static-docs.nocobase.com/20251021231727.png)
 

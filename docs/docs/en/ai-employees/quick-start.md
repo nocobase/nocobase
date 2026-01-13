@@ -12,7 +12,7 @@ AI Employees are built into NocoBase (`@nocobase/plugin-ai`), ready to use out o
 
 Before using AI Employees, you need to connect to an online LLM Service.
 
-NocoBase currently supports mainstream online LLM Services such as OpenAI, Gemini, Claude, DeepSeek, Qwen (Aliyun), etc. Recommended models (tested): **gemini-2.5**, **deepseek-chat**, **qwen3-max**.
+NocoBase currently supports mainstream online LLM Services such as OpenAI, Gemini, Claude, DeepSeek, Qwen (Aliyun), etc. Recommended models (tested): **gemini-3**, **deepseek-chat**, **qwen3-max**.
 
 In addition to online LLM Services, NocoBase also supports connecting to Ollama local models.
 
@@ -29,7 +29,7 @@ In addition to online LLM Services, NocoBase also supports connecting to Ollama 
 NocoBase comes with several built-in AI Employees out of the box, covering common scenarios.
 1.  Go to **System Settings** -> **AI Employees** list page.
 2.  Find the **AI Employee** you need, for example **Viz (Insight Analyst)**.
-3.  Click **Edit**, in **Model Settings**, select the LLM Service and Model configured earlier. Recommended: **gemini-2.5**, **deepseek-chat**, **qwen3-max**.
+3.  Click **Edit**, in **Model Settings**, select the LLM Service and Model configured earlier. Recommended: **gemini-3**, **deepseek-chat**, **qwen3-max**.
 4.  In the **Profile** tab, click the **Enabled** switch.
 5.  Click **Submit** at the bottom to save and take effect.
 
