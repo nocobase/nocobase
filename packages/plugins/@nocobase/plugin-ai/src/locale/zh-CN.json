@@ -22,6 +22,7 @@
   "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "可以在 AI 员工定义的基础上追加的 system prompt，用于补充指令",
   "Applied": "已应用",
   "Apply to editor": "应用到编辑器",
+  "Base URL is optional, leave blank to use default (recommended)": "非必填（推荐留空，使用默认）",
   "Are you sure delete this datasource?": "确定要删除此数据源吗？",
   "Asc": "升序",
   "Auto skill description": "当允许自动使用技能时，AI 员工将在必要时自动调用工具，否则AI 员工会将工具调用参数返回到对话中，供用户确认后手动调用。",

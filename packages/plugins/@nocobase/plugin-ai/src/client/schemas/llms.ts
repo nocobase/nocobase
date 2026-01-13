@@ -21,7 +21,8 @@ export const createLLMSchema = {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("Provider") }}',
-          'x-component': 'Input',
+          'x-component': 'Select',
+          enum: '{{ providers }}',
           'x-pattern': 'readPretty',
         },
         name: {
@@ -29,6 +30,7 @@ export const createLLMSchema = {
           'x-decorator': 'FormItem',
           title: '{{ t("UID") }}',
           'x-component': 'Input',
+          'x-pattern': 'readPretty',
         },
         title: {
           type: 'string',
