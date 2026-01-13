@@ -467,14 +467,14 @@ export function CCInterfaceConfig({ children }) {
 }
 
 // V2: Task Card Drawer Content
-function CCTaskCardDrawerContent({ field, formDisabled, workflow }) {
+function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow }) {
   const flowEngine = useFlowEngine();
   const viewCtx = useFlowViewContext();
   const { data: model, loading } = useRequest(
     async () => {
       const model: FlowModel = await flowEngine.loadOrCreateModel({
         async: true,
-        uid: field.value,
+        uid,
         subType: 'object',
         use: 'CCTaskCardDetailsModel',
         subModels: {
@@ -509,13 +509,15 @@ function CCTaskCardDrawerContent({ field, formDisabled, workflow }) {
           get: () => workflow,
           cache: false,
         });
-        field.setValue(model.uid);
+        if (!uid) {
+          onUidChange?.(model.uid);
+        }
       }
 
       return model;
     },
     {
-      refreshDeps: [field.value, formDisabled],
+      refreshDeps: [uid, formDisabled],
     },
   );
 
@@ -529,12 +531,21 @@ function CCTaskCardDrawerContent({ field, formDisabled, workflow }) {
 // V2: Task Card Config Button
 export function CCTaskCardConfigButton() {
   const form = useForm();
-  const field = useField();
   const ctx = useFlowEngineContext();
   const flowContext = useFlowContext();
   const { setFormValueChanged } = useActionContext();
   const themeToken = ctx.themeToken;
   const t = ctx.t;
+
+  const taskCardUid = form.values.taskCardUid;
+
+  const onUidChange = useCallback(
+    (uid: string) => {
+      form.setValuesIn('taskCardUid', uid);
+      setFormValueChanged?.(true);
+    },
+    [form, setFormValueChanged],
+  );
 
   const openConfig = useCallback(() => {
     ctx.viewer.open({
@@ -555,13 +566,16 @@ export function CCTaskCardConfigButton() {
           marginBottom: 0,
         },
       },
-      content: <CCTaskCardDrawerContent field={field} formDisabled={form.disabled} workflow={flowContext.workflow} />,
+      content: (
+        <CCTaskCardDrawerContent
+          uid={taskCardUid}
+          onUidChange={onUidChange}
+          formDisabled={form.disabled}
+          workflow={flowContext.workflow}
+        />
+      ),
     });
-
-    if (!field.value) {
-      setFormValueChanged?.(true);
-    }
-  }, [ctx, field, form.disabled, flowContext.workflow, setFormValueChanged, t, themeToken]);
+  }, [ctx, taskCardUid, form.disabled, flowContext.workflow, onUidChange, t, themeToken]);
 
   return (
     <Button icon={<SettingOutlined />} type="primary" onClick={openConfig} disabled={false}>
