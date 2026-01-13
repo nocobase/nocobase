@@ -31,7 +31,8 @@
     "async": "^3.2.6",
     "rollup": "4.24.0",
     "semver": "^7.7.1",
-    "@opentelemetry/resources": "1.19.0"
+    "@opentelemetry/resources": "1.19.0",
+    "@langchain/core": "0.3.39"
   },
   "dependencies": {
     "pm2": "^6.0.5",
