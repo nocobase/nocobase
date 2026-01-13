@@ -14,11 +14,9 @@ import {
   useFlowSettingsContext,
   SingleRecordResource,
   MultiRecordResource,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   isRunJSValue,
   normalizeRunJSValue,
+  runjsWithSafeGlobals,
 } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
@@ -215,12 +213,7 @@ UpdateRecordActionModel.registerFlow({
             if (isRunJSValue(raw)) {
               const { code, version } = normalizeRunJSValue(raw);
               if (!code?.trim()) continue;
-              const globals: Record<string, any> = {};
-              const navigator = createSafeNavigator();
-              globals.navigator = navigator;
-              globals.window = createSafeWindow({ navigator });
-              globals.document = createSafeDocument();
-              const ret = await ctx.runjs(code, globals, { version });
+              const ret = await runjsWithSafeGlobals(ctx, code, { version });
               if (!ret?.success) {
                 ctx.message.error(ctx.t('RunJS execution failed'));
                 return;

@@ -8,15 +8,7 @@
  */
 
 import { isObservable, reaction, toJS } from '@formily/reactive';
-import {
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
-  FlowContext,
-  FlowModel,
-  isRunJSValue,
-  normalizeRunJSValue,
-} from '@nocobase/flow-engine';
+import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { evaluateCondition } from './conditions';
 import { collectStaticDepsFromRunJSValue, collectStaticDepsFromTemplateValue, DepCollector, recordDep } from './deps';
@@ -967,9 +959,7 @@ export class RuleEngine {
   ): Promise<any> {
     try {
       const { code, version } = normalizeRunJSValue(rawValue);
-      const globals = this.createSafeGlobals();
-
-      const ret = await evalCtx?.runjs?.(code, globals, { version });
+      const ret = await runjsWithSafeGlobals(evalCtx, code, { version });
       if (!ret?.success) {
         if (seq !== state.runSeq) return SKIP_RULE_VALUE;
         this.commitRuleDeps(rule, state, collector);
@@ -998,27 +988,6 @@ export class RuleEngine {
       this.commitRuleDeps(rule, state, collector);
       return SKIP_RULE_VALUE;
     }
-  }
-
-  private createSafeGlobals(): Record<string, any> {
-    const globals: Record<string, any> = {};
-    try {
-      const navigator = createSafeNavigator();
-      globals.navigator = navigator;
-      try {
-        globals.window = createSafeWindow({ navigator });
-      } catch {
-        // ignore when window is not available
-      }
-      try {
-        globals.document = createSafeDocument();
-      } catch {
-        // ignore when document is not available
-      }
-    } catch {
-      // ignore
-    }
-    return globals;
   }
 
   private commitRuleDeps(rule: RuntimeRule, state: RuleState, collector: DepCollector) {
