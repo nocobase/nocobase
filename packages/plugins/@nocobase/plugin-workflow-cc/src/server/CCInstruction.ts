@@ -82,39 +82,34 @@ export default class CCInstruction extends Instruction {
   async duplicateConfig(node, { transaction }) {
     const uiSchemaRepo = this.workflow.app.db.getRepository('uiSchemas') as UiSchemaRepository;
     let nextConfig = { ...node.config };
+    if (node.config.ccDetail) {
+      const result = await uiSchemaRepo.duplicate(node.config.ccDetail, {
+        transaction,
+      });
 
-    try {
-      if (node.config.ccDetail) {
-        const result = await uiSchemaRepo.duplicate(node.config.ccDetail, {
-          transaction,
-        });
-        nextConfig.ccDetail = result?.['x-uid'] ?? uid();
-      }
+      nextConfig.ccDetail = result?.['x-uid'] ?? uid();
+    }
 
-      if (node.config.ccUid) {
-        const repository = this.workflow.app.db.getRepository('flowModels') as FlowModelRepository;
-        const duplicated = await repository.duplicate(node.config.ccUid, { transaction });
-        if (duplicated) {
-          nextConfig = {
-            ...nextConfig,
-            ccUid: duplicated.uid,
-          };
-        }
+    if (node.config.ccUid) {
+      const repository = this.workflow.app.db.getRepository('flowModels') as FlowModelRepository;
+      const duplicated = await repository.duplicate(node.config.ccUid, { transaction });
+      if (duplicated) {
+        nextConfig = {
+          ...nextConfig,
+          ccUid: duplicated.uid,
+        };
       }
+    }
 
-      if (node.config.taskCardUid) {
-        const repository = this.workflow.app.db.getRepository('flowModels') as FlowModelRepository;
-        const duplicated = await repository.duplicate(node.config.taskCardUid, { transaction });
-        if (duplicated) {
-          nextConfig = {
-            ...nextConfig,
-            taskCardUid: duplicated.uid,
-          };
-        }
+    if (node.config.taskCardUid) {
+      const repository = this.workflow.app.db.getRepository('flowModels') as FlowModelRepository;
+      const duplicated = await repository.duplicate(node.config.taskCardUid, { transaction });
+      if (duplicated) {
+        nextConfig = {
+          ...nextConfig,
+          taskCardUid: duplicated.uid,
+        };
       }
-    } catch (error) {
-      this.workflow.app.logger.error('Failed to duplicate CC config:', error);
-      throw error;
     }
 
     return nextConfig;

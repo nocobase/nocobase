@@ -356,9 +356,7 @@ export function CcInterfaceConfig() {
   const [v1Visible, setV1Visible] = useState(false);
   const { t, viewer, themeToken } = ctx;
   const api = useAPIClient();
-  const [dataSourceName, collectionName] = flowContext?.workflow?.config?.collection
-    ? parseCollectionName(flowContext.workflow.config.collection)
-    : [null, null];
+  const [dataSourceName, collectionName] = parseCollectionName(flowContext.workflow.config.collection);
 
   const openV2 = ({ needConfirm } = {} as any) => {
     const doOpen = () => {
