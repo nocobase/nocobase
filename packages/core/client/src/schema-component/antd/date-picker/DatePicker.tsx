@@ -248,7 +248,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
             newProps.format = dateTimeFormat;
             setStateProps(newProps);
             fieldSchema['x-component-props'] = {
-              ...props,
+              ...(fieldSchema['x-component-props'] || {}),
               picker: value,
               format: dateTimeFormat,
             };
@@ -338,7 +338,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
           newProps.format = dateTimeFormat;
           setStateProps(newProps);
           fieldSchema['x-component-props'] = {
-            ...props,
+            ...(fieldSchema['x-component-props'] || {}),
             picker: value,
             format: dateTimeFormat,
           };
