@@ -172,7 +172,5 @@ export default class extends Instruction {
     SchemaConfigButton,
     SchemaConfig,
     WorkflowVariableTextArea,
-    CcInterfaceConfig,
-    CcTaskCardConfigButton,
   };
 }
