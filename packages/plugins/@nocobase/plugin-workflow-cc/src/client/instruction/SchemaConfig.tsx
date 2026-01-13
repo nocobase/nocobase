@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { uid } from '@formily/shared';
-import { ISchema, observer, useForm } from '@formily/react';
+import { ISchema, observer, useField, useForm } from '@formily/react';
 import { Button, Dropdown, Modal, Spin, Typography } from 'antd';
 import { DeleteOutlined, DownOutlined, SettingOutlined } from '@ant-design/icons';
 
@@ -466,48 +466,77 @@ export function CCInterfaceConfig({ children }) {
   );
 }
 
+// V2: Task Card Drawer Content
+function CCTaskCardDrawerContent({ field, formDisabled, workflow }) {
+  const flowEngine = useFlowEngine();
+  const viewCtx = useFlowViewContext();
+  const { data: model, loading } = useRequest(
+    async () => {
+      const model: FlowModel = await flowEngine.loadOrCreateModel({
+        async: true,
+        uid: field.value,
+        subType: 'object',
+        use: 'CCTaskCardDetailsModel',
+        subModels: {
+          grid: {
+            use: 'CCTaskCardGridModel',
+            subType: 'object',
+          },
+        },
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'workflowCcTasks',
+            },
+          },
+          detailsSettings: {
+            layout: {
+              layout: 'horizontal',
+            },
+          },
+        },
+      });
+
+      if (model?.uid) {
+        if (viewCtx) {
+          model.context.addDelegate(viewCtx);
+        }
+        model.context.defineProperty('flowSettingsEnabled', {
+          get: () => !formDisabled,
+        });
+        model.context.defineProperty('workflow', {
+          get: () => workflow,
+          cache: false,
+        });
+        field.setValue(model.uid);
+      }
+
+      return model;
+    },
+    {
+      refreshDeps: [field.value, formDisabled],
+    },
+  );
+
+  if (loading) {
+    return <Spin />;
+  }
+
+  return <FlowModelRenderer model={model as FlowModel} hideRemoveInSettings showFlowSettings={false} />;
+}
+
 // V2: Task Card Config Button
 export function CCTaskCardConfigButton() {
   const form = useForm();
+  const field = useField();
   const ctx = useFlowEngineContext();
   const flowContext = useFlowContext();
   const { setFormValueChanged } = useActionContext();
-  const flowEngine = useFlowEngine();
-  const viewCtx = useFlowViewContext();
   const themeToken = ctx.themeToken;
   const t = ctx.t;
 
-  const taskCardUid = form.values.taskCardUid;
-
-  const openConfig = async () => {
-    const model: FlowModel = await flowEngine.loadOrCreateModel({
-      async: true,
-      uid: taskCardUid,
-      subType: 'object',
-      use: 'CCTaskCardDetailsModel',
-      subModels: {
-        grid: {
-          use: 'CCTaskCardGridModel',
-        },
-      },
-    });
-
-    if (model?.uid) {
-      if (viewCtx) {
-        model.context.addDelegate(viewCtx);
-      }
-      model.context.defineProperty('flowSettingsEnabled', {
-        get: () => !form.disabled,
-      });
-      model.context.defineProperty('workflow', {
-        get: () => flowContext.workflow,
-      });
-      if (!taskCardUid) {
-        form.setValuesIn('taskCardUid', model.uid);
-        setFormValueChanged?.(true);
-      }
-    }
-
+  const openConfig = useCallback(() => {
     ctx.viewer.open({
       type: 'dialog',
       width: 600,
@@ -526,9 +555,13 @@ export function CCTaskCardConfigButton() {
           marginBottom: 0,
         },
       },
-      content: <FlowModelRenderer model={model as FlowModel} hideRemoveInSettings showFlowSettings={false} />,
+      content: <CCTaskCardDrawerContent field={field} formDisabled={form.disabled} workflow={flowContext.workflow} />,
     });
-  };
+
+    if (!field.value) {
+      setFormValueChanged?.(true);
+    }
+  }, [ctx, field, form.disabled, flowContext.workflow, setFormValueChanged, t, themeToken]);
 
   return (
     <Button icon={<SettingOutlined />} type="primary" onClick={openConfig} disabled={false}>
