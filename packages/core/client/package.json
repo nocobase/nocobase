@@ -62,6 +62,7 @@
     "mermaid": "9.4.3",
     "mime": "^4.0.4",
     "mime-match": "^1.0.2",
+    "quill-image-resize-module-react": "^3.0.0",
     "react-beautiful-dnd": "^13.1.0",
     "react-device-detect": "2.2.3",
     "react-drag-listview": "^0.1.9",
