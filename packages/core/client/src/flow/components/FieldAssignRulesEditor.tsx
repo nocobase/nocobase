@@ -137,14 +137,16 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       ];
       let current = rootCollection;
       for (let i = 0; i < segs.length - 1; i++) {
-        const seg = segs[i];
+        const seg = segs[i] as string;
         const field = current?.getField?.(seg);
         if (!field?.isAssociationField?.()) break;
         const toMany = isToManyAssociationField(field);
         const nextCollection = field?.targetCollection;
         if (!nextCollection) break;
         const viaLabel = t(
-          typeof (field as CollectionFieldLike).title === 'string' ? (field as CollectionFieldLike).title : seg,
+          typeof (field as CollectionFieldLike).title === 'string'
+            ? ((field as CollectionFieldLike).title as string)
+            : seg,
         );
         levels.push({ collection: nextCollection, toMany, viaLabel });
         current = nextCollection;
@@ -251,14 +253,18 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     const labels: string[] = [];
     let collection = rootCollection;
     for (let i = 0; i < segs.length; i++) {
-      const seg = segs[i];
+      const seg = segs[i] as string;
       const field = collection?.getField?.(seg);
       if (!field) {
         labels.push(seg);
         continue;
       }
       labels.push(
-        t(typeof (field as CollectionFieldLike).title === 'string' ? (field as CollectionFieldLike).title : seg),
+        t(
+          typeof (field as CollectionFieldLike).title === 'string'
+            ? ((field as CollectionFieldLike).title as string)
+            : seg,
+        ),
       );
       if (field?.isAssociationField?.() && field?.targetCollection) {
         collection = field.targetCollection;
