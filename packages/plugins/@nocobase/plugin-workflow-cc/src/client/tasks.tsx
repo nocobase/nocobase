@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAntdToken } from 'antd-style';
 import { Card, ConfigProvider, Descriptions, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -37,10 +37,20 @@ import PluginWorkflowClient, {
   useTasksCountsContext,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
+import { useFlowEngine } from '@nocobase/flow-engine';
 
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
 import { lang } from './locale';
+import { RemoteFlowModelRenderer } from './flow/RemoteFlowModelRenderer';
+
+function parseCollectionName(collection?: string) {
+  if (!collection) {
+    return [null, null];
+  }
+  const [dataSourceKey, collectionName] = collection.split('.');
+  return [dataSourceKey || null, collectionName || collection];
+}
 
 function useDetailsBlockProps() {
   const { form } = useFormBlockContext();
@@ -113,6 +123,9 @@ function FlowContextProvider(props) {
   const [flowContext, setFlowContext] = useState<any>(null);
   const [record, setRecord] = useState<any>(useCollectionRecordData());
   const [node, setNode] = useState<any>(null);
+  const { setVisible } = useActionContext();
+  const { service } = useListBlockContext() || {};
+  const flowEngine = useFlowEngine();
 
   useEffect(() => {
     if (!id) {
@@ -134,17 +147,60 @@ function FlowContextProvider(props) {
           execution,
         });
         setRecord(data?.data);
-        return;
       });
   }, [api, id]);
 
-  const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
+  const upstreams =
+    useAvailableUpstreams(node && flowContext ? flowContext?.nodes.find((item) => item.id === node.id) : null) || [];
   const nodeComponents = upstreams.reduce(
     (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
     {},
   );
 
-  return node && flowContext ? (
+  useEffect(() => {
+    if (!node?.config?.ccUid) {
+      return;
+    }
+    return () => {
+      flowEngine.removeModelWithSubModels(node.config.ccUid);
+    };
+  }, [flowEngine, node?.config?.ccUid]);
+
+  if (!node || !flowContext) {
+    return <Spin />;
+  }
+
+  if (node?.config?.ccUid) {
+    return (
+      <CollectionRecordProvider record={record}>
+        <RemoteFlowModelRenderer
+          uid={node.config.ccUid}
+          onModelLoaded={(model) => {
+            model.context.defineProperty('view', {
+              value: {
+                inputArgs: {
+                  flowContext,
+                  record,
+                  availableUpstreams: upstreams,
+                },
+                close: () => {
+                  setVisible(false);
+                },
+                refresh: () => {
+                  service?.refresh?.();
+                },
+              },
+            });
+            model.context.defineProperty('disableBlockGridPadding', {
+              value: true,
+            });
+          }}
+        />
+      </CollectionRecordProvider>
+    );
+  }
+
+  return (
     <CollectionRecordProvider record={record}>
       <FlowContext.Provider value={flowContext}>
         <NodeContext.Provider value={node}>
@@ -162,8 +218,6 @@ function FlowContextProvider(props) {
         </NodeContext.Provider>
       </FlowContext.Provider>
     </CollectionRecordProvider>
-  ) : (
-    <Spin />
   );
 }
 
@@ -329,7 +383,7 @@ function TaskItem() {
   const { setRecord } = usePopupRecordContext();
   const onOpen = useCallback(
     (e: React.MouseEvent) => {
-      const targetElement = e.target as Element; // 将事件目标转换为Element类型
+      const targetElement = e.target as Element;
       const currentTargetElement = e.currentTarget as Element;
       if (currentTargetElement.contains(targetElement)) {
         setRecord(record);
@@ -339,6 +393,45 @@ function TaskItem() {
     },
     [navigate, record, setRecord],
   );
+  const taskCardUid = record?.node?.config?.taskCardUid;
+  const [dataDataSourceKey, dataCollectionName] = record?.workflow?.config?.collection
+    ? parseCollectionName(record.workflow.config.collection)
+    : [null, null];
+  const recordRef = useRef(record);
+  recordRef.current = record;
+  const modelRef = useRef<any>();
+
+  const onModelLoaded = useCallback(
+    (model) => {
+      modelRef.current = model;
+      model.setDecoratorProps({
+        onClick: onOpen,
+        hoverable: true,
+      });
+      model.getCurrentRecord = () => recordRef.current;
+      model.context.defineProperty('workflow', {
+        get: () => recordRef.current.workflow,
+        cache: false,
+      });
+      if (dataDataSourceKey && dataCollectionName) {
+        model.context.defineProperty('dataDataSourceKey', {
+          get: () => dataDataSourceKey,
+          cache: false,
+        });
+        model.context.defineProperty('dataCollectionName', {
+          get: () => dataCollectionName,
+          cache: false,
+        });
+      }
+    },
+    [dataCollectionName, dataDataSourceKey, onOpen],
+  );
+
+  const mapModel = useCallback((model) => model.clone(), []);
+
+  if (taskCardUid) {
+    return <RemoteFlowModelRenderer uid={taskCardUid} onModelLoaded={onModelLoaded} mapModel={mapModel} />;
+  }
 
   return (
     <Card
@@ -375,13 +468,15 @@ function useTodoActionParams(status) {
     appends: [
       'node.id',
       'node.title',
+      'node.config',
       'workflow.id',
       'workflow.title',
       'workflow.enabled',
+      'workflow.config',
       'execution.id',
       'execution.status',
     ],
-    except: ['node.config', 'workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
+    except: ['workflow.options', 'execution.context', 'execution.output'],
   };
 }
 
