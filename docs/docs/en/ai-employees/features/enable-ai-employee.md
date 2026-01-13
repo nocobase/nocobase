@@ -21,7 +21,7 @@ First, in the `Profile` tab, turn on the `Enable` switch.
 Then, in the `Model settings` tab, set the Model for the built-in AI Employee:
 
 - Select the LLM Service.
-- Select the Model you want to use. Recommended (tested): **gemini-2.5**, **deepseek-chat**, **qwen3-max**.
+- Select the Model you want to use. Recommended (tested): **gemini-3**, **deepseek-chat**, **qwen3-max**.
 
 ![20251022121729](https://static-docs.nocobase.com/20251022121729.png)
 
