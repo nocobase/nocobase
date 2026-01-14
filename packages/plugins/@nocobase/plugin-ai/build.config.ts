@@ -130,7 +130,7 @@ export default defineConfig({
     const deps = [
       'decamelize',
       'zod',
-      'zod-to-json-schema',
+      // 'zod-to-json-schema',
       // 'langsmith',
       'p-retry',
       'p-queue',
