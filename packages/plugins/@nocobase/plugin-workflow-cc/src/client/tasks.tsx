@@ -158,12 +158,16 @@ function FlowContextProvider(props) {
               uid={ccUid}
               onModelLoaded={(model) => {
                 model.context.defineProperty('flowSettingsEnabled', { value: false });
-                model.context.view.inputArgs = {
-                  flowContext,
-                  availableUpstreams: upstreams,
-                  trigger,
-                  node,
-                };
+                model.context.defineProperty('view', {
+                  value: {
+                    inputArgs: {
+                      flowContext,
+                      availableUpstreams: upstreams,
+                      trigger,
+                      node,
+                    },
+                  },
+                });
               }}
             />
           </NodeContext.Provider>
