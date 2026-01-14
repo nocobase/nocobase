@@ -12,7 +12,7 @@ import 'vditor/dist/index.css';
 // import { MarkdownVditor } from './components';
 import { lazy } from '@nocobase/client';
 const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
-import { markdownVditorComponentFieldSettings } from './settings/markdownVditorComponentFieldSettings';
+import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
 export class PluginFieldMarkdownVditorClient extends Plugin {
   dependencyLoaded = false;
@@ -24,7 +24,7 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
   async load() {
     this.app.addComponents({ MarkdownVditor });
     this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
-    this.app.schemaSettingsManager.add(markdownVditorComponentFieldSettings);
+    this.app.schemaSettingsManager.addItem('fieldSettings:component:MarkdownVditor', 'editMode', editModeSettingsItem);
   }
 
   getCDN() {

@@ -26,7 +26,7 @@ import useStyle from './style';
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
 export const Edit = withDynamicSchemaProps((props) => {
-  const { disabled, onChange, value, fileCollection, toolbar, editMode } = props;
+  const { disabled, onChange, value, fileCollection, toolbar, editMode = 'ir' } = props;
 
   const [editorReady, setEditorReady] = useState(false);
   const vdRef = useRef<Vditor>();
