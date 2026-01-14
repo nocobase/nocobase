@@ -27,6 +27,7 @@ import MultiConditionsInstruction from './nodes/multi-conditions';
 import CreateInstruction from './nodes/create';
 import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
+import OutputInstruction from './nodes/output';
 import QueryInstruction from './nodes/query';
 import UpdateInstruction from './nodes/update';
 import { BindWorkflowConfig } from './settings/BindWorkflowConfig';
@@ -212,6 +213,7 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('multi-conditions', MultiConditionsInstruction);
 
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
 
     this.registerInstruction('query', QueryInstruction);
     this.registerInstruction('create', CreateInstruction);
