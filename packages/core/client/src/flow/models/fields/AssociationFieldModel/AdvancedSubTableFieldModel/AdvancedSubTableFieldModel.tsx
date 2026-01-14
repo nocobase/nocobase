@@ -207,7 +207,6 @@ const DisplayTable = (props) => {
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const { t } = useTranslation();
   const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
-  console.log(disabled);
   // 表格内部数据
   const [tableData, setTableData] = useState(value);
 
@@ -764,7 +763,7 @@ AdvancedSubTableFieldModel.registerFlow({
 
         let next;
         if (index === -1) {
-          next = [...prev, { ...updatedRecord, __is_new__: true, __index__: prev.length }];
+          next = [...prev, { ...updatedRecord, __is_new__: true, __index__: uid() }];
         } else {
           next = [...prev];
           next[index] = {
