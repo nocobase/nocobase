@@ -8,7 +8,7 @@
  */
 
 export const registerFontSize = (Quill) => {
-  const Size = Quill.import('formats/size');
-  Size.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
-  Quill.register(Size, true);
+  const SizeStyle = Quill.import('attributors/style/size');
+  SizeStyle.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
+  Quill.register(SizeStyle, true);
 };

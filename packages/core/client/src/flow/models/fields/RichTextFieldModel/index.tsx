@@ -77,6 +77,8 @@ export const RichTextField = (props) => {
     'indent',
     'link',
     'image',
+    'width',
+    'height',
     'break',
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
