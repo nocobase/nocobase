@@ -23,6 +23,9 @@ const FormAssignRulesUI = observer(
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
 
+    const actionName = ctx.model?.getAclActionName?.() ?? ctx.model?.context?.actionName;
+    const isEditForm = actionName === 'update';
+
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
     }, [ctx.model]);
@@ -30,8 +33,10 @@ const FormAssignRulesUI = observer(
     // 兼容：将字段级默认值（editItemSettings/formItemSettings.initialValue）合并到表单级 assignRules 里展示
     const mergedValue = React.useMemo(() => {
       const legacyDefaults = collectLegacyDefaultValueRulesFromFormModel(ctx.model);
-      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-    }, [ctx.model, props.value]);
+      const merged = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+      // 编辑表单仅支持“赋值”模式（不允许“默认值”模式）
+      return isEditForm ? merged.map((it) => ({ ...it, mode: 'assign' })) : merged;
+    }, [ctx.model, isEditForm, props.value]);
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，便于用户在此处编辑/删除后统一保存
     const hasInitializedMergeRef = React.useRef(false);
@@ -52,6 +57,7 @@ const FormAssignRulesUI = observer(
         value={mergedValue}
         onChange={props.onChange}
         showValueEditorWhenNoField
+        fixedMode={isEditForm ? 'assign' : undefined}
       />
     );
   },
