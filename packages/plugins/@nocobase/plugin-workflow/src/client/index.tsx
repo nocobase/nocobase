@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
+import { lazy, Plugin, useCompile } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
 // import { ExecutionPage } from './ExecutionPage';
@@ -17,6 +17,10 @@ const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage')
 const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
 const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
 
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { observer } from '@formily/react';
+import { Tooltip } from 'antd';
+import React from 'react';
 import { lang, NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
@@ -32,20 +36,8 @@ import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { VariableOption } from './variable';
-import {
-  MobileTabBarWorkflowTasksItem,
-  TasksCountsProvider,
-  TasksProvider,
-  tasksSchemaInitializerItem,
-  TaskTypeOptions,
-  WorkflowTasks,
-  WorkflowTasksMobile,
-} from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
-import { observer } from '@formily/react';
-import { Space, Tooltip } from 'antd';
-import React from 'react';
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { TasksCountsProvider, TasksProvider, TaskTypeOptions, WorkflowTasks } from './WorkflowTasks';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -156,13 +148,19 @@ export default class PluginWorkflowClient extends Plugin {
 
     const mobilePlugin = this.pm.get('mobile') as any;
     if (mobilePlugin?.mobileRouter) {
-      this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
-      this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
-      const MobileComponent = observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' });
-      mobilePlugin.mobileRouter.add('mobile.page.workflow.tasks.list', {
-        path: '/page/workflow-tasks/:taskType?/:status?/:popupId?',
-        Component: MobileComponent,
-      });
+      import('./WorkflowTasksMobile')
+        .then(({ tasksSchemaInitializerItem, MobileTabBarWorkflowTasksItem, WorkflowTasksMobile }) => {
+          this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
+          this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
+          const MobileComponent = observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' });
+          mobilePlugin.mobileRouter.add('mobile.page.workflow.tasks.list', {
+            path: '/page/workflow-tasks/:taskType?/:status?/:popupId?',
+            Component: MobileComponent,
+          });
+        })
+        .catch((err) => {
+          console.error('Failed to load mobile components for workflow tasks:', err);
+        });
     }
 
     this.registerInstructionGroup('control', { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` });

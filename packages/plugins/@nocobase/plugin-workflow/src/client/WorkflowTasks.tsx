@@ -10,10 +10,9 @@ import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { observer } from '@formily/react';
 import { App, Badge, Button, Flex, Layout, Menu, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
-import { NavBar, Toast } from 'antd-mobile';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
   ActionContextProvider,
@@ -35,16 +34,6 @@ import {
   useRequest,
   useToken,
 } from '@nocobase/client';
-
-import {
-  MobilePageContentContainer,
-  MobilePageHeader,
-  MobilePageProvider,
-  MobileRouteItem,
-  MobileTabBarItem,
-  useMobilePage,
-  useMobileRoutes,
-} from '@nocobase/plugin-mobile/client';
 
 import PluginWorkflowClient from '.';
 import { lang, NAMESPACE } from './locale';
@@ -70,7 +59,7 @@ export interface TaskTypeOptions {
 
 type Stats = Record<string, { pending: number; all: number }>;
 
-const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; total: number }>({
+export const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; total: number }>({
   reload() {},
   counts: {},
   total: 0,
@@ -80,19 +69,18 @@ export function useTasksCountsContext() {
   return useContext(TasksCountsContext);
 }
 
-function MenuLink({ type }: any) {
+function MenuLink({ type, isMobile }: any) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const compile = useCompile();
   const { title } = workflowPlugin.taskTypes.get(type);
   const { counts } = useContext(TasksCountsContext);
   const typeTitle = compile(title);
-  const mobilePage = useMobilePage();
 
   return (
     <Link
       replace
       to={
-        mobilePage
+        isMobile
           ? `/page/workflow-tasks/${type}/${TASK_STATUS.PENDING}`
           : `/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
       }
@@ -127,19 +115,17 @@ function StatusTabs() {
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
   const { isMobileLayout } = useMobileLayout();
-  const mobilePage = useMobilePage();
   const onSwitchTab = useCallback(
     (key: string) => {
       if (!type?.key) {
         return;
       }
-      navigate(mobilePage ? `/page/workflow-tasks/${type.key}/${key}` : `/admin/workflow/tasks/${type.key}/${key}`);
+      navigate(isMobileLayout ? `/page/workflow-tasks/${type.key}/${key}` : `/admin/workflow/tasks/${type.key}/${key}`);
     },
-    [navigate, mobilePage, type],
+    [navigate, isMobileLayout, type],
   );
-  const isMobile = Boolean(mobilePage || isMobileLayout);
   const { Actions } = type;
-  return isMobile ? (
+  return isMobileLayout ? (
     <Flex justify="space-between">
       <Segmented
         defaultValue={status}
@@ -159,7 +145,7 @@ function StatusTabs() {
         ]}
         onChange={onSwitchTab}
       />
-      <Actions onlyIcon={isMobile} />
+      <Actions onlyIcon={isMobileLayout} />
     </Flex>
   ) : (
     <Tabs
@@ -195,14 +181,14 @@ function StatusTabs() {
   );
 }
 
-function useTaskTypeItems() {
+export function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const types = workflowPlugin.taskTypes.getKeys();
 
   return useMemo(() => Array.from(types), [types]);
 }
 
-function useAvailableTaskTypeItems() {
+export function useAvailableTaskTypeItems(isMobile = false) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const types = useTaskTypeItems();
   const { counts } = useContext(TasksCountsContext);
@@ -214,10 +200,10 @@ function useAvailableTaskTypeItems() {
         .map((key: string) => {
           return {
             key,
-            label: <MenuLink type={key} />,
+            label: <MenuLink type={key} isMobile={isMobile} />,
           };
         }),
-    [counts, types, workflowPlugin.taskTypes],
+    [counts, types, workflowPlugin.taskTypes, isMobile],
   );
 }
 
@@ -235,7 +221,7 @@ function PopupContext(props: any) {
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
-  const mobilePage = useMobilePage();
+  const { isMobileLayout } = useMobileLayout();
   const setVisible = useCallback(
     (visible: boolean) => {
       if (!visible) {
@@ -243,12 +229,14 @@ function PopupContext(props: any) {
           navigate(-1);
         } else {
           navigate(
-            mobilePage ? `/page/workflow-tasks/${taskType}/${status}` : `/admin/workflow/tasks/${taskType}/${status}`,
+            isMobileLayout
+              ? `/page/workflow-tasks/${taskType}/${status}`
+              : `/admin/workflow/tasks/${taskType}/${status}`,
           );
         }
       }
     },
-    [mobilePage, navigate, status, taskType],
+    [isMobileLayout, navigate, status, taskType],
   );
   if (!popupId) {
     return null;
@@ -266,10 +254,10 @@ export function usePopupRecordContext() {
   return useContext(PopupRecordContext);
 }
 
-function TaskPageContent() {
+export function TaskPageContent() {
   const apiClient = useAPIClient();
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
-  const mobilePage = useMobilePage();
+  const { isMobileLayout } = useMobileLayout();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const { token } = theme.useToken();
@@ -310,9 +298,7 @@ function TaskPageContent() {
 
   // const typeKey = taskType ?? items[0].key;
 
-  const { isMobileLayout } = useMobileLayout();
-
-  const isMobile = mobilePage || isMobileLayout;
+  const isMobile = isMobileLayout;
 
   const contentClass = css`
     height: 100%;
@@ -633,186 +619,5 @@ export function TasksProvider(props: any) {
         {props.children}
       </SchemaComponentOptions>
     </PinnedPluginListProvider>
-  );
-}
-
-export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
-  name: 'workflow-tasks-center',
-  type: 'item',
-  useComponentProps() {
-    const { resource, refresh, schemaResource } = useMobileRoutes();
-    const items = useTaskTypeItems();
-    return items.length
-      ? {
-          isItem: true,
-          title: lang('Workflow tasks'),
-          badge: 10,
-          async onClick(values) {
-            const res = await resource.list();
-            if (Array.isArray(res?.data?.data)) {
-              const findIndex = res?.data?.data.findIndex((route) => route?.options?.url === `/page/workflow-tasks`);
-              if (findIndex > -1) {
-                Toast.show({
-                  icon: 'fail',
-                  content: lang('The workflow tasks page has already been created.'),
-                });
-                return;
-              }
-            }
-            const { data } = await resource.create({
-              values: {
-                type: 'page',
-                title: lang('Workflow tasks'),
-                icon: 'CheckCircleOutlined',
-                schemaUid: 'workflow-tasks',
-                options: {
-                  url: `/page/workflow-tasks`,
-                  schema: {
-                    'x-decorator': 'TasksCountsProvider',
-                    'x-component': 'MobileTabBarWorkflowTasksItem',
-                  },
-                },
-                // children: [
-                //   {
-                //     type: 'page',
-                //     title: lang('Workflow tasks'),
-                //     icon: 'CheckCircleOutlined',
-                //     schemaUid: 'workflow-tasks',
-                //     options: {
-                //       url: `/page/workflow-tasks`,
-                //       itemSchema: {
-                //         name: uid(),
-                //         'x-decorator': 'BlockItem',
-                //         'x-settings': `mobile:tab-bar:page`,
-                //         'x-component': 'MobileTabBarWorkflowTasksItem',
-                //         'x-toolbar-props': {
-                //           showBorder: false,
-                //           showBackground: true,
-                //         },
-                //       },
-                //     },
-                //   },
-                // ],
-              } as MobileRouteItem,
-            });
-            // const parentId = data.data.id;
-            refresh();
-          },
-        }
-      : null;
-  },
-};
-
-export const MobileTabBarWorkflowTasksItem = observer(
-  (props: any) => {
-    const { message } = App.useApp();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const items = useAvailableTaskTypeItems();
-    const onClick = useCallback(() => {
-      if (items.length) {
-        navigate(`/page/workflow-tasks/${items[0].key}/${TASK_STATUS.PENDING}`);
-      } else {
-        message.error(lang('No workflow tasks available. Please contact the administrator.'));
-      }
-    }, [items, message, navigate]);
-    const { total } = useContext(TasksCountsContext);
-
-    const selected = props.url && location.pathname.startsWith(props.url);
-
-    return (
-      <MobileTabBarItem
-        {...{
-          ...props,
-          onClick,
-          badge: total > 0 ? total : undefined,
-          selected,
-        }}
-      />
-    );
-  },
-  {
-    displayName: 'MobileTabBarWorkflowTasksItem',
-  },
-);
-
-function WorkflowTasksMobileTabs() {
-  const { token } = useToken();
-  const items = useAvailableTaskTypeItems();
-  return (
-    <Tabs
-      className={css({
-        padding: `0 ${token.paddingPageHorizontal}px`,
-        '.adm-tabs-header': {
-          borderBottomWidth: 0,
-        },
-        '.adm-tabs-tab': {
-          height: 49,
-          padding: '10px 0 10px',
-        },
-        '> .ant-tabs-nav': {
-          marginBottom: 0,
-          '&::before': {
-            borderBottom: 'none',
-          },
-        },
-
-        '.ant-tabs-tab+.ant-tabs-tab': {
-          marginLeft: '2em',
-        },
-      })}
-      items={items}
-    />
-  );
-}
-
-export function WorkflowTasksMobile() {
-  const navigate = useNavigate();
-
-  return (
-    <MobilePageProvider>
-      <MobilePageHeader>
-        <NavBar className="nb-workflow-tasks-back-action" onBack={() => navigate(-1)}>
-          {lang('Workflow tasks')}
-        </NavBar>
-        <TasksCountsProvider>
-          <WorkflowTasksMobileTabs />
-        </TasksCountsProvider>
-      </MobilePageHeader>
-      <MobilePageContentContainer
-        className={css`
-          padding: 0 !important;
-          > div {
-            height: 100%;
-            overflow: hidden;
-
-            > .ant-formily-layout {
-              height: 100%;
-              overflow: hidden;
-
-              > div {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                overflow: hidden;
-              }
-            }
-          }
-
-          .ant-nb-list {
-            .itemCss:not(:last-child) {
-              padding-bottom: 0;
-              margin-bottom: 0.5em;
-            }
-            .itemCss:not(:first-child) {
-              padding-top: 0;
-              margin-top: 0.5em;
-            }
-          }
-        `}
-      >
-        <TaskPageContent />
-      </MobilePageContentContainer>
-    </MobilePageProvider>
   );
 }
