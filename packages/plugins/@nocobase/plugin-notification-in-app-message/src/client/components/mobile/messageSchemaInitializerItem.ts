@@ -28,7 +28,7 @@ export const messageSchemaInitializerItem: SchemaInitializerItemType = {
   useComponentProps() {
     const { t } = useLocalTranslation();
     const app = useApp();
-    const useMobileRoutes = app.getComponent('useMobileRoutes') as any;
+    const useMobileRoutes = app.scopes?.useMobileRoutes;
     const { resource, refresh, schemaResource } = useMobileRoutes();
     return {
       isItem: true,
