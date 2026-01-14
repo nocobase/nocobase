@@ -135,20 +135,26 @@ export const createConnection: AppDbCreator = async ({ app }) => {
   }
 
   if (['postgres', 'kingbase'].includes(dialect)) {
-    return withPgClient({ host, port, user: username, password, database: dialect }, (client) =>
-      schema ? client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`) : client.query(`CREATE DATABASE "${database}"`),
-    );
+    if (schema) {
+      return withPgClient({ host, port, user: username, password, database }, (client) =>
+        client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`),
+      );
+    } else {
+      return withPgClient({ host, port, user: username, password, database: dialect }, (client) =>
+        client.query(`CREATE DATABASE "${database}"`),
+      );
+    }
   }
 };
 
 export const createSchema: AppDbCreator = async ({ app }) => {
-  const { host, port, username, password, dialect, schema } = app.options.database as any;
+  const { host, port, username, password, dialect, schema, database } = app.options.database as any;
 
   if (!['postgres', 'kingbase'].includes(dialect)) {
     throw new Error('Schema is only supported for postgres/kingbase');
   }
 
-  return withPgClient({ host, port, user: username, password, database: dialect }, (client) =>
+  return withPgClient({ host, port, user: username, password, database }, (client) =>
     client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`),
   );
 };
