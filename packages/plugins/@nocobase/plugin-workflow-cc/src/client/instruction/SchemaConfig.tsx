@@ -564,20 +564,13 @@ export function CCTaskCardConfigButton() {
   const openConfig = useCallback(() => {
     ctx.viewer.open({
       type: 'dialog',
-      width: 600,
+      width: 800,
       closable: true,
       title: t('Task card', { ns: NAMESPACE }),
       styles: {
         body: {
           padding: 0,
           backgroundColor: 'var(--nb-box-bg)',
-        },
-        content: {
-          padding: 0,
-        },
-        header: {
-          padding: `${themeToken.padding}px ${themeToken.paddingLG}px`,
-          marginBottom: 0,
         },
       },
       content: (
@@ -589,7 +582,7 @@ export function CCTaskCardConfigButton() {
         />
       ),
     });
-  }, [ctx, taskCardUid, form.disabled, flowContext.workflow, onUidChange, t, themeToken]);
+  }, [ctx, taskCardUid, form.disabled, flowContext.workflow, onUidChange, t]);
 
   return (
     <Button icon={<SettingOutlined />} type="primary" onClick={openConfig} disabled={false}>
