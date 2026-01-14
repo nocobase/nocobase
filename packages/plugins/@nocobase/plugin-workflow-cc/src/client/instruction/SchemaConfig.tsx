@@ -525,7 +525,21 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow }) {
     return <Spin />;
   }
 
-  return <FlowModelRenderer model={model as FlowModel} hideRemoveInSettings showFlowSettings={false} />;
+  return (
+    <FlowModelRenderer
+      model={model as FlowModel}
+      hideRemoveInSettings
+      showFlowSettings={
+        formDisabled
+          ? false
+          : {
+              showBackground: false,
+              showBorder: true,
+              showDragHandle: false,
+            }
+      }
+    />
+  );
 }
 
 // V2: Task Card Config Button
