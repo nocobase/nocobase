@@ -152,6 +152,12 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         current = nextCollection;
       }
 
+      // 仅在“关系字段的子路径”场景下追加 currentObject 变量树；
+      // 顶层字段/非关联嵌套对象字段应使用 formValues（避免语义混淆）。
+      if (levels.length <= 1) {
+        return undefined;
+      }
+
       const buildObjectNode = (idx: number, basePaths: string[], nodeName: string, titleKey: string): MetaTreeNode => {
         const level = levels[idx] || levels[0];
         const children: MetaTreeNode[] = [];
@@ -166,16 +172,16 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         }
 
         children.push({
-          title: t('Properties'),
-          name: 'attributes',
+          title: t('Attributes'),
+          name: 'value',
           type: 'object',
-          paths: [...basePaths, 'attributes'],
-          children: async () => buildCollectionMetaTreeNodes(level.collection, [...basePaths, 'attributes'], new Set()),
+          paths: [...basePaths, 'value'],
+          children: async () => buildCollectionMetaTreeNodes(level.collection, [...basePaths, 'value'], new Set()),
         });
 
         if (idx > 0) {
           // 直接把上级对象节点作为子节点，避免出现 “Parent object / Parent object” 的重复层级
-          children.push(buildObjectNode(idx - 1, [...basePaths, 'parent'], 'parent', 'Parent object'));
+          children.push(buildObjectNode(idx - 1, [...basePaths, 'parentObject'], 'parentObject', 'Parent object'));
         }
 
         const viaLabel = idx > 0 ? level?.viaLabel : undefined;
@@ -190,7 +196,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         };
       };
 
-      return [buildObjectNode(levels.length - 1, ['current'], 'current', 'Current object')];
+      return [buildObjectNode(levels.length - 1, ['currentObject'], 'currentObject', 'Current object')];
     },
     [buildCollectionMetaTreeNodes, rootCollection, t],
   );

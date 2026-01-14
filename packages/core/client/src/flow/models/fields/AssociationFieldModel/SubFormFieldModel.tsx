@@ -25,6 +25,109 @@ import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
 
+type CurrentObjectChain = {
+  index?: number;
+  isNew?: boolean;
+  isStored?: boolean;
+  value: any;
+  parentObject?: CurrentObjectChain;
+};
+
+function createCurrentObjectChainMetaFactory(options: {
+  t: (key: string) => string;
+  title: string;
+  collectionAccessor: () => any;
+  valueAccessor: (ctx: any) => any;
+  parentCollectionAccessor?: () => any;
+}) {
+  const { t, title, collectionAccessor, valueAccessor, parentCollectionAccessor } = options;
+  const valueMetaFactory = createAssociationAwareObjectMetaFactory(collectionAccessor, title, valueAccessor);
+  const parentValueMetaFactory = parentCollectionAccessor
+    ? createAssociationAwareObjectMetaFactory(
+        parentCollectionAccessor,
+        title,
+        (ctx) => ctx?.currentObject?.parentObject?.value,
+      )
+    : null;
+
+  const factory: any = async () => {
+    const valueMeta = await valueMetaFactory();
+    if (!valueMeta) return null;
+
+    const parentValueMeta = parentValueMetaFactory ? await parentValueMetaFactory() : null;
+    const buildVars = (valueMeta as any).buildVariablesParams;
+    const parentBuildVars = parentValueMeta ? (parentValueMeta as any).buildVariablesParams : null;
+
+    const meta: any = {
+      type: 'object',
+      title,
+      properties: {
+        index: { type: 'number', title: t('Index') },
+        value: { ...(valueMeta as any), title: t('Attributes') },
+        parentObject: {
+          type: 'object',
+          title: t('Parent object'),
+          properties: {
+            index: { type: 'number', title: t('Index') },
+            value: parentValueMeta
+              ? { ...(parentValueMeta as any), title: t('Attributes') }
+              : { type: 'object', title: t('Attributes') },
+          },
+        },
+      },
+      buildVariablesParams: async (ctx: any) => {
+        const out: Record<string, any> = {};
+
+        if (typeof buildVars === 'function') {
+          const built = await buildVars(ctx);
+          if (built && typeof built === 'object' && Object.keys(built).length) {
+            out.value = built;
+          }
+        }
+
+        if (typeof parentBuildVars === 'function') {
+          const built = await parentBuildVars(ctx);
+          if (built && typeof built === 'object' && Object.keys(built).length) {
+            out.parentObject = { value: built };
+          }
+        }
+
+        return out;
+      },
+    };
+
+    return meta;
+  };
+
+  factory.title = title;
+  return factory;
+}
+
+function createCurrentObjectChainResolver(options: {
+  collectionAccessor: () => any;
+  valueAccessor?: () => unknown;
+  parentCollectionAccessor?: () => any;
+  parentValueAccessor?: () => unknown;
+}): (subPath: string) => boolean {
+  const base = createAssociationSubpathResolver(options.collectionAccessor, options.valueAccessor);
+  const baseParent =
+    typeof options.parentCollectionAccessor === 'function'
+      ? createAssociationSubpathResolver(options.parentCollectionAccessor, options.parentValueAccessor)
+      : null;
+  return (p: string) => {
+    const raw = String(p || '');
+    if (!raw) return false;
+    if (raw === 'value') return false;
+    if (raw.startsWith('value.')) {
+      return base(raw.slice('value.'.length));
+    }
+    if (raw.startsWith('parentObject.value.')) {
+      return baseParent ? baseParent(raw.slice('parentObject.value.'.length)) : false;
+    }
+    return false;
+  };
+}
+
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
     super.onInit(options);
@@ -77,12 +180,16 @@ export const ObjectNester = (props) => {
     }
   }, [props.disabled, grid]);
   useEffect(() => {
+    const currentObjectOptions = model?.context?.getPropertyOptions?.('currentObject');
+    const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
     grid.context.defineProperty('currentObject', {
       get: () => {
-        return props.value;
+        return model?.context?.currentObject;
       },
+      ...rest,
+      cache: false,
     });
-  }, [props.value]);
+  }, [grid, model]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -99,18 +206,30 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 
     this.context.defineProperty('currentObject', {
       get: () => {
-        return this.context.form.getFieldValue(this.props.name);
+        const parentObject = (this.parent as any)?.context?.currentObject as CurrentObjectChain | undefined;
+        const value = this.context.form.getFieldValue(this.props.name);
+        return {
+          index: undefined,
+          isNew: value?.isNew,
+          isStored: value?.isStored,
+          value,
+          parentObject,
+        } satisfies CurrentObjectChain;
       },
       cache: false,
-      meta: createAssociationAwareObjectMetaFactory(
-        () => this.context.collection,
-        this.context.t('Current object'),
-        () => this.context.form.getFieldValue(this.props.name),
-      ),
-      resolveOnServer: createAssociationSubpathResolver(
-        () => this.context.collection,
-        () => this.context.form.getFieldValue(this.props.name),
-      ),
+      meta: createCurrentObjectChainMetaFactory({
+        t: this.context.t,
+        title: this.context.t('Current object'),
+        collectionAccessor: () => this.context.collection,
+        valueAccessor: (ctx) => ctx?.currentObject?.value,
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+      }),
+      resolveOnServer: createCurrentObjectChainResolver({
+        collectionAccessor: () => this.context.collection,
+        valueAccessor: () => this.context.form.getFieldValue(this.props.name),
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentValueAccessor: () => (this.parent as any)?.context?.currentObject?.value,
+      }),
       serverOnlyWhenContextParams: true,
     });
   }
@@ -213,18 +332,30 @@ const ArrayNester = ({
               });
               currentFork.context.defineProperty('currentObject', {
                 get: () => {
-                  return currentFork.context.form.getFieldValue([name, fieldName]);
+                  const parentObject = model?.context?.currentObject as CurrentObjectChain | undefined;
+                  const value = currentFork.context.form.getFieldValue([name, fieldName]);
+                  return {
+                    index,
+                    isNew: value?.isNew,
+                    isStored: value?.isStored,
+                    value,
+                    parentObject,
+                  } satisfies CurrentObjectChain;
                 },
                 cache: false,
-                meta: createAssociationAwareObjectMetaFactory(
-                  () => currentFork.context.collection,
-                  currentFork.context.t('Current object'),
-                  () => currentFork.context.form.getFieldValue([name, fieldName]),
-                ),
-                resolveOnServer: createAssociationSubpathResolver(
-                  () => currentFork.context.collection,
-                  () => currentFork.context.form.getFieldValue([name, fieldName]),
-                ),
+                meta: createCurrentObjectChainMetaFactory({
+                  t: currentFork.context.t,
+                  title: currentFork.context.t('Current object'),
+                  collectionAccessor: () => currentFork.context.collection,
+                  valueAccessor: (ctx) => ctx?.currentObject?.value,
+                  parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                }),
+                resolveOnServer: createCurrentObjectChainResolver({
+                  collectionAccessor: () => currentFork.context.collection,
+                  valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
+                  parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                  parentValueAccessor: () => model?.context?.currentObject?.value,
+                }),
                 serverOnlyWhenContextParams: true,
               });
               return (
@@ -297,16 +428,21 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
     });
 
     this.context.defineProperty('currentObject', {
-      value: null,
-      meta: createAssociationAwareObjectMetaFactory(
-        () => this.context.collection,
-        this.context.t('Current object'),
-        (ctx) => ctx['currentObject'],
-      ),
-      resolveOnServer: createAssociationSubpathResolver(
-        () => this.context.collection,
-        () => this.context['currentObject'],
-      ),
+      get: () => undefined,
+      cache: false,
+      meta: createCurrentObjectChainMetaFactory({
+        t: this.context.t,
+        title: this.context.t('Current object'),
+        collectionAccessor: () => this.context.collection,
+        valueAccessor: (ctx) => ctx?.currentObject?.value,
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+      }),
+      resolveOnServer: createCurrentObjectChainResolver({
+        collectionAccessor: () => this.context.collection,
+        valueAccessor: () => (this.context as any)?.currentObject?.value,
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentValueAccessor: () => (this.parent as any)?.context?.currentObject?.value,
+      }),
       serverOnlyWhenContextParams: true,
     });
 
