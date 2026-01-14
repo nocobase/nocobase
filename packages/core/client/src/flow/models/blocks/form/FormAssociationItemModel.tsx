@@ -18,18 +18,17 @@ import {
 import { get, castArray } from 'lodash';
 import React from 'react';
 import { Form } from 'antd';
+import { uid } from '@formily/shared';
 import { FieldModel } from '../../base';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { useJsonTemplateResolver } from '../../../utils/useJsonTemplateResolver';
 
 const AssociationItem = (props) => {
   const path = `{{ctx.formValues.${props.fieldPath}}}`;
-  console.log(path);
-  const { data, loading, error } = useJsonTemplateResolver(path);
+  const { data, loading, error } = useJsonTemplateResolver(path, [props.refreshId]);
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
-  console.log(data);
-  return <FieldModelRenderer model={props.modelForRender} value={data || props.value} />;
+  return <FieldModelRenderer {...props.mergedProps} model={props.modelForRender} value={data || props.value} />;
 };
 
 /**
@@ -216,7 +215,16 @@ export class FormAssociationItemModel extends DisplayItemModel {
         }}
       >
         {() => {
-          return <AssociationItem modelForRender={modelForRender} value={value} fieldPath={this.fieldPath} />;
+          const refreshId = uid();
+          return (
+            <AssociationItem
+              modelForRender={modelForRender}
+              value={value}
+              fieldPath={this.fieldPath}
+              refreshId={refreshId}
+              mergedProps={mergedProps}
+            />
+          );
         }}
       </Form.Item>
     );
