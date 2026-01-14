@@ -435,13 +435,14 @@ function useTodoActionParams(status) {
     appends: [
       'node.id',
       'node.title',
+      'node.config',
       'workflow.id',
       'workflow.title',
       'workflow.enabled',
       'execution.id',
       'execution.status',
     ],
-    except: ['node.config', 'workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
+    except: ['workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
   };
 }
 
