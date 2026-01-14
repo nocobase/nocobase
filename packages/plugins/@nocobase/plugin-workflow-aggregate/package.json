@@ -14,16 +14,16 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-aggregate",
   "devDependencies": {
     "antd": "5.x",
-    "mathjs": "^10.6.0",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
-    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
+    "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/test": "2.x",
+    "mathjs": "^15.1.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
