@@ -11,7 +11,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { uid } from '@formily/shared';
 import { ISchema, observer, useField, useForm } from '@formily/react';
 import { Button, Dropdown, Modal, Spin, Typography } from 'antd';
-import { DeleteOutlined, DownOutlined, SettingOutlined } from '@ant-design/icons';
+import { CreditCardOutlined, DeleteOutlined, DownOutlined, SettingOutlined } from '@ant-design/icons';
 
 import {
   ActionContextProvider,
@@ -585,7 +585,7 @@ export function CCTaskCardConfigButton() {
   }, [ctx, taskCardUid, form.disabled, flowContext.workflow, onUidChange, t]);
 
   return (
-    <Button icon={<SettingOutlined />} type="primary" onClick={openConfig} disabled={false}>
+    <Button icon={<CreditCardOutlined />} type="default" onClick={openConfig} disabled={false}>
       {lang('Go to configure')}
     </Button>
   );
