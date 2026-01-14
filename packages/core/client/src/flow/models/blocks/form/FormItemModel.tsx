@@ -115,9 +115,13 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
+            const currentObjectOptions = this.context.getPropertyOptions('currentObject');
             if (this.context.currentObject) {
+              const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
               fork.context.defineProperty('currentObject', {
+                ...rest,
                 get: () => this.context.currentObject,
+                cache: false,
               });
             }
             if (this.context.pattern) {
@@ -134,7 +138,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
-    const record = this.context.currentObject || this.context.record;
+    const record = this.context.currentObject?.value || this.context.record;
     return (
       <FormItem {...mergedPropsWithoutInitial} name={fieldPath} validateFirst={true}>
         <FieldModelRenderer model={modelForRender} name={fieldPath} />

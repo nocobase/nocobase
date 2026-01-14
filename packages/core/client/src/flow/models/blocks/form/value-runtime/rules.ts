@@ -1056,13 +1056,13 @@ export class RuleEngine {
     }
 
     // “当前对象”链：用于多层级关系字段条件
-    // 语义：ctx.current -> { index?, attributes, parent? }，其中：
+    // 语义：ctx.currentObject -> { index?, isNew?, isStored?, value, parentObject? }，其中：
     // - index：仅当当前对象位于对多关联行内时存在（0-based）
-    // - attributes：当前对象的属性（来自 formValues 的对应切片，支持无限嵌套属性访问）
-    // - parent：上级对象（同结构，可链式 parent.parent...）
+    // - value：当前对象的值（来自 formValues 的对应切片，支持无限嵌套属性访问）
+    // - parentObject：上级对象（同结构，可链式 parentObject.parentObject...）
     let currentCached: any;
     let currentCachedReady = false;
-    ctx.defineProperty('current', {
+    ctx.defineProperty('currentObject', {
       get: () => {
         if (!currentCachedReady) {
           currentCached = this.buildCurrentObjectChainValue(baseCtx, trackingFormValues, targetNamePath);
@@ -1077,18 +1077,20 @@ export class RuleEngine {
 
   private buildCurrentObjectChainValue(baseCtx: any, trackingFormValues: any, targetNamePath: NamePath | null) {
     const rootCollection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
-    const defaultRoot = {
-      index: undefined as number | undefined,
-      attributes: trackingFormValues,
-      parent: undefined as any,
+    const buildNode = (value: any, index: number | undefined, parentObject: any) => {
+      return {
+        index,
+        isNew: value?.isNew,
+        isStored: value?.isStored,
+        value,
+        parentObject,
+      };
     };
-    if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) {
-      return defaultRoot;
-    }
-
-    if (!rootCollection?.getField) {
-      return defaultRoot;
-    }
+    const defaultRoot = buildNode(trackingFormValues, undefined, undefined);
+    // currentObject 仅用于“关系字段的子路径”场景；
+    // 顶层字段/非关联嵌套对象字段应使用 formValues。
+    if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) return undefined;
+    if (!rootCollection?.getField) return undefined;
 
     const assocEntries: Array<{ path: NamePath; toMany: boolean }> = [];
     const prefix: NamePath = [];
@@ -1121,13 +1123,13 @@ export class RuleEngine {
     const build = (idx: number): any => {
       if (idx < 0) return defaultRoot;
       const assocEntry = assocEntries[idx];
-      const attributes = _.get(trackingFormValues, assocEntry.path);
+      const value = _.get(trackingFormValues, assocEntry.path);
       const lastSeg = assocEntry.path[assocEntry.path.length - 1];
       const index = assocEntry.toMany && typeof lastSeg === 'number' ? lastSeg : undefined;
-      return { index, attributes, parent: build(idx - 1) };
+      return buildNode(value, index, build(idx - 1));
     };
 
-    return assocEntries.length ? build(assocEntries.length - 1) : defaultRoot;
+    return assocEntries.length ? build(assocEntries.length - 1) : undefined;
   }
 
   private getFieldIndexSignature(baseCtx: any): string {
@@ -1189,8 +1191,8 @@ export class RuleEngine {
       const varName = sep >= 0 ? rest.slice(0, sep) : rest;
       const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
 
-      // 特殊变量：current 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parent/index 链依赖 fieldIndex。
-      if (varName === 'current') {
+      // 特殊变量：currentObject 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parentObject/index 链依赖 fieldIndex。
+      if (varName === 'currentObject') {
         const disposer = reaction(
           () => this.getFieldIndexSignature(baseCtx),
           () => this.scheduleRule(rule.id),
