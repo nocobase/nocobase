@@ -57,7 +57,6 @@ import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
-import { useMobilePage } from '@nocobase/plugin-mobile/client';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -432,11 +431,10 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const { isMobileLayout } = useMobileLayout();
-  const mobilePage = useMobilePage();
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
-  const isMobile = Boolean(mobilePage || isMobileLayout);
+  const isMobile = isMobileLayout;
   return status ? (
     <Space
       className={css`

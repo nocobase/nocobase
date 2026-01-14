@@ -10,7 +10,6 @@
 import { Plugin } from '@nocobase/client';
 import { MessageManagerProvider } from './MessageManagerProvider';
 import NotificationManager from '@nocobase/plugin-notification-manager/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
 import { tval } from '@nocobase/utils/client';
 import { MessageConfigForm } from './components/MessageConfigForm';
 import { ContentConfigForm } from './components/ContentConfigForm';
@@ -43,22 +42,22 @@ export class PluginNotificationInAppClient extends Plugin {
         deletable: true,
       },
     });
-    const mobileManager = this.pm.get(MobileManager);
-    this.app.schemaInitializerManager.addItem(
-      'mobile:tab-bar',
-      'notification-in-app-message',
-      messageSchemaInitializerItem,
-    );
-    this.app.addComponents({ MobileTabBarMessageItem: MobileTabBarMessageItem });
-    if (mobileManager.mobileRouter) {
-      mobileManager.mobileRouter.add('mobile.page.in-app-message', {
+    const mobilePlugin = this.pm.get('mobile') as any;
+    if (mobilePlugin?.mobileRouter) {
+      this.app.schemaInitializerManager.addItem(
+        'mobile:tab-bar',
+        'notification-in-app-message',
+        messageSchemaInitializerItem,
+      );
+      this.app.addComponents({ MobileTabBarMessageItem: MobileTabBarMessageItem });
+      mobilePlugin.mobileRouter.add('mobile.page.in-app-message', {
         path: '/page/in-app-message',
       });
-      mobileManager.mobileRouter.add('mobile.page.in-app-message.channels', {
+      mobilePlugin.mobileRouter.add('mobile.page.in-app-message.channels', {
         path: '/page/in-app-message',
         Component: MobileChannelPage,
       });
-      mobileManager.mobileRouter.add('mobile.page.in-app-message.messages', {
+      mobilePlugin.mobileRouter.add('mobile.page.in-app-message.messages', {
         path: '/page/in-app-message/messages',
         Component: MobileMessagePage,
       });

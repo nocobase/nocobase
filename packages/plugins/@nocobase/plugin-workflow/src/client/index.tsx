@@ -9,7 +9,6 @@
 
 import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
 
 // import { ExecutionPage } from './ExecutionPage';
 // import { WorkflowPage } from './WorkflowPage';
@@ -155,16 +154,12 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowTasks,
     });
 
-    const mobileManager = this.pm.get(MobileManager);
-    this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
-    this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
-    if (mobileManager.mobileRouter) {
+    const mobilePlugin = this.pm.get('mobile') as any;
+    if (mobilePlugin?.mobileRouter) {
+      this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
+      this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
       const MobileComponent = observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' });
-      // mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
-      //   path: '/page/workflow-tasks',
-      //   Component: MobileComponent,
-      // });
-      mobileManager.mobileRouter.add('mobile.page.workflow.tasks.list', {
+      mobilePlugin.mobileRouter.add('mobile.page.workflow.tasks.list', {
         path: '/page/workflow-tasks/:taskType?/:status?/:popupId?',
         Component: MobileComponent,
       });

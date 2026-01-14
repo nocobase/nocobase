@@ -16,10 +16,10 @@ import {
   ISchema,
   SchemaInitializerItemType,
   useCurrentUserContext,
+  useApp,
 } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import PluginBlockTemplateClient from '..';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { useT } from '../locale';
 import { findBlockRootSchema } from '../utils/schema';
 import { convertTemplateToBlock, correctIdReferences } from '../initializers/TemplateBlockInitializer';
@@ -45,10 +45,12 @@ export const useBlockTemplateMenus = () => {
 export const BlockTemplateMenusProvider = ({ children }) => {
   const api = useAPIClient();
   const plugin = usePlugin(PluginBlockTemplateClient);
-  const mobilePlugin = usePlugin(PluginMobileClient);
+  const app = useApp();
+  const mobilePlugin = app.pm.get('mobile') as any;
+  const mobileBasename = mobilePlugin?.mobileBasename || '/m';
   const blockTemplatesResource = useResource('blockTemplates');
   const t = useT();
-  const isMobile = window.location.pathname.startsWith(mobilePlugin.mobileBasename);
+  const isMobile = window.location.pathname.startsWith(mobileBasename);
   const location = useLocation();
   const previousPathRef = React.useRef(location.pathname);
   const user = useCurrentUserContext();

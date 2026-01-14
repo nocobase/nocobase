@@ -8,11 +8,11 @@
  */
 
 import React, { useEffect } from 'react';
-import { MobilePage } from '@nocobase/plugin-mobile/client';
 import { useParams } from 'react-router-dom';
 import { useRequest } from '@nocobase/client';
 import { Spin } from 'antd';
 import { BlockTemplateInfoContext } from './BlockTemplateInfoContext';
+import { MobilePage } from '@nocobase/plugin-mobile/client';
 
 export const BlockTemplateMobilePage = () => {
   const { key } = useParams<{ key: string }>();

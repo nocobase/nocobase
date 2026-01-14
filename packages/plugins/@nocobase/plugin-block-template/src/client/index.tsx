@@ -17,7 +17,6 @@ import { revertSettingItem } from './settings/revertSetting';
 import { getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
 import {
   hideBlocksFromTemplate,
@@ -112,17 +111,20 @@ export class PluginBlockTemplateClient extends Plugin {
     });
 
     // add mobile router
-    this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileRouter?.add('mobile.schema.blockTemplate', {
+    const mobilePlugin = this.app.pm.get('mobile') as any;
+    mobilePlugin?.mobileRouter?.add('mobile.schema.blockTemplate', {
       path: `/block-templates/inherited/:key/:pageSchemaUid`,
       Component: BlockTemplateMobilePage,
     });
   }
 
   isInBlockTemplateConfigPage() {
-    const mobilePath =
-      this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates/inherited';
+    const mobilePlugin = this.app.pm.get('mobile') as any;
+    const mobilePath = mobilePlugin?.mobileBasename ? mobilePlugin.mobileBasename + '/block-templates/inherited' : null;
     const desktopPath = 'admin/settings/block-templates/inherited';
-    return window.location.pathname.includes(desktopPath) || window.location.pathname.includes(mobilePath);
+    return (
+      window.location.pathname.includes(desktopPath) || (mobilePath && window.location.pathname.includes(mobilePath))
+    );
   }
 
   setTemplateCache = (schema?: ISchema) => {
