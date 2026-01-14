@@ -40,7 +40,7 @@ export const RichTextField = (props) => {
       [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }, 'link'],
       ['clean', 'image'],
     ],
-    // 测试环境下忽略 imageResize 注册，避免报错
+    // Ignore the registration of imageResize in the test environment to avoid errors
     ...(process.env.NODE_ENV !== 'test' && {
       imageResize: {
         modules: ['Resize', 'DisplaySize'],

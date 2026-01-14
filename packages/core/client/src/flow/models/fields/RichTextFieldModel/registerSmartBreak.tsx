@@ -34,7 +34,6 @@ export function lineBreakMatcher(node, delta) {
 }
 
 export function handleLinebreak(range, context) {
-  // @ts-ignore
   const { quill } = this;
   const Quill = quill.constructor;
   const Parchment = Quill.import('parchment');
@@ -57,7 +56,6 @@ export function handleLinebreak(range, context) {
 }
 
 export function handleEnter(range, context) {
-  // @ts-ignore
   const { quill } = this;
   const Quill = quill.constructor;
   const Parchment = Quill.import('parchment');

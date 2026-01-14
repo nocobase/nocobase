@@ -12,7 +12,7 @@ export const registerFontSize = (Quill) => {
   SizeStyle.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
   Quill.register(SizeStyle, true);
 
-  // 设置默认字体大小为 14px（对应 toolbar 中的 false 值）
+  // Set the default font size to 14px
   const Parchment = Quill.import('parchment');
   SizeStyle.add(Parchment.Scope.BLOCK, '14px');
 };

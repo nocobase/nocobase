@@ -10,7 +10,6 @@
 import ImageResize from 'quill-image-resize-module-react';
 
 export const registerImageResize = (Quill) => {
-  // 扩展 Image format 以支持 width 和 height 属性
   const Image = Quill.import('formats/image');
 
   class ImageFormat extends Image {
@@ -22,7 +21,6 @@ export const registerImageResize = (Quill) => {
       if (domNode.hasAttribute('height')) {
         formats.height = domNode.getAttribute('height');
       }
-      // 支持 style 中的 width 和 height
       if (domNode.style.width) {
         formats.width = domNode.style.width;
       }
@@ -36,7 +34,6 @@ export const registerImageResize = (Quill) => {
       if (name === 'width' || name === 'height') {
         if (value) {
           this.domNode.setAttribute(name, value);
-          // 同时设置到 style 中，确保显示正确
           this.domNode.style[name] = value;
         } else {
           this.domNode.removeAttribute(name);
@@ -47,9 +44,7 @@ export const registerImageResize = (Quill) => {
       }
     }
 
-    // 重写 value 方法，清理 imageResize 添加的 cursor 样式
     value() {
-      // 移除 cursor 样式
       if (this.domNode.style.cursor) {
         this.domNode.style.cursor = '';
       }

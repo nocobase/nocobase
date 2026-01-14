@@ -348,7 +348,7 @@ export const useRichTextStyles = () => {
     ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='huge']::before": {
       fontSize: '32px',
     },
-    /* 下拉列表中的项 */
+
     ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='12px']::before": {
       content: "'12px'",
     },
@@ -374,7 +374,6 @@ export const useRichTextStyles = () => {
       content: "'48px'",
     },
 
-    /* 当前选中的显示文本 */
     ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='12px']::before": {
       content: "'12px'",
     },
