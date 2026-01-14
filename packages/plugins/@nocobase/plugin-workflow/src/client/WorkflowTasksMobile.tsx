@@ -44,7 +44,7 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
   type: 'item',
   useComponentProps() {
     const app = useApp();
-    const useMobileRoutes = app.getComponent('useMobileRoutes') as any;
+    const useMobileRoutes = app.scopes?.useMobileRoutes;
     const { resource, refresh } = useMobileRoutes();
     const items = useTaskTypeItems();
     return items.length
