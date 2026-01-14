@@ -9,10 +9,17 @@
 
 import { useRequest } from 'ahooks';
 import { useFlowContext } from '@nocobase/flow-engine';
-export const useJsonTemplateResolver = (template: string) => {
+
+export const useJsonTemplateResolver = (template: string, deps: any[] = []) => {
   const ctx = useFlowContext();
-  return useRequest(async () => {
-    const value = await ctx.resolveJsonTemplate(template);
-    return value;
-  });
+
+  return useRequest(
+    async () => {
+      const value = await ctx.resolveJsonTemplate(template);
+      return value;
+    },
+    {
+      refreshDeps: deps,
+    },
+  );
 };
