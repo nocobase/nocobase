@@ -31,9 +31,22 @@ import { TableColumnProps, Tooltip, Input, Space, Divider } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
-import { FieldModel } from '../../../base';
-import { EditFormModel } from '../../../blocks/form/EditFormModel';
+import { FieldModel } from '../../../base/FieldModel';
 import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
+import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
+
+const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
+  React.useEffect(() => {
+    const emitter = model?.flowEngine?.emitter;
+    if (!emitter) return;
+    void emitter.emitAsync('model:mounted', { uid: model?.uid, model });
+    return () => {
+      void emitter.emitAsync('model:unmounted', { uid: model?.uid, model });
+      model?.dispose?.();
+    };
+  }, [model]);
+  return null;
+};
 
 export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
@@ -199,10 +212,45 @@ interface CellProps {
   id: string | number;
   parent: any;
   width?: number;
+  parentFieldIndex?: any;
+  parentCurrentObject?: any;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, width }) => {
+  ({ value, record, rowIdx, id, parent, width, parentFieldIndex, parentCurrentObject }) => {
+    const baseFieldIndex = parentFieldIndex ?? parent?.parent?.context?.fieldIndex ?? parent?.context?.fieldIndex;
+    const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
+    const associationFieldPath =
+      parent?.parent?.fieldPath ?? parent?.parent?.context?.fieldPath ?? parent?.parent?.props?.name;
+    const associationKey =
+      parent?.parent?.context?.collectionField?.name ||
+      String(associationFieldPath || '')
+        .split('.')
+        .filter(Boolean)
+        .pop();
+    const rowIndex = Number(rowIdx);
+    const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
+    const rowFork: any = parent.createFork({}, `row:${baseIndexKey}:${String(rowIdx)}`);
+    if (associationKey && Number.isFinite(rowIndex)) {
+      rowFork.context.defineProperty('fieldIndex', {
+        value: [...baseArr, `${associationKey}:${rowIndex}`],
+      });
+    }
+    rowFork.context.defineProperty('currentObject', {
+      get: () => {
+        const parentObject = (parentCurrentObject ?? parent?.context?.currentObject) as any;
+        return {
+          index: Number.isFinite(rowIndex) ? rowIndex : undefined,
+          isNew: record?.isNew ?? record?.__is_new__,
+          isStored: record?.isStored ?? record?.__is_stored__,
+          value: record,
+          parentObject,
+        };
+      },
+      cache: false,
+    });
+
+    const isRecordNew = record?.isNew ?? record?.__is_new__;
     return (
       <div
         style={{
@@ -235,31 +283,35 @@ const MemoCell: React.FC<CellProps> = React.memo(
           }
         `}
       >
+        <SubTableRowRuleBinder model={rowFork} />
         {parent.mapSubModels('field', (action: FieldModel) => {
           const fieldPath = action.context.fieldPath.split('.');
           const namePath = fieldPath.pop();
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', { get: () => record });
+          fork.context.defineProperty('currentObject', {
+            get: () => rowFork.context.currentObject,
+            cache: false,
+          });
 
           if (parent.props.readPretty) {
             fork.setProps({ value });
             return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
           }
 
-          if (parent.props.aclViewDisabled && !record.__is_new__) return null;
+          if (parent.props.aclViewDisabled && !isRecordNew) return null;
 
           return (
             <FormItem
               {...parent.props}
               key={id}
-              name={[...fieldPath, rowIdx, namePath]}
+              name={buildDynamicNamePath([...fieldPath, Number(rowIdx), namePath], baseArr)}
               style={{ marginBottom: 0 }}
               showLabel={false}
               disabled={
                 parent.props.disabled ||
-                (!record?.__is_new__ && parent.props.aclDisabled) ||
-                (record?.__is_new__ && parent.props.aclCreateDisabled)
+                (!isRecordNew && parent.props.aclDisabled) ||
+                (isRecordNew && parent.props.aclCreateDisabled)
               }
             >
               {fork.constructor.isLargeField ? (
@@ -272,8 +324,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   defaultValue={value}
                   disabled={
                     parent.props.disabled ||
-                    (!record?.__is_new__ && parent.props.aclDisabled) ||
-                    (record?.__is_new__ && parent.props.aclCreateDisabled)
+                    (!isRecordNew && parent.props.aclDisabled) ||
+                    (isRecordNew && parent.props.aclCreateDisabled)
                   }
                 />
               ) : (
@@ -286,7 +338,13 @@ const MemoCell: React.FC<CellProps> = React.memo(
     );
   },
   (prev, next) => {
-    return prev.value === next.value && prev.id === next.id && prev.width === next.width;
+    return (
+      prev.value === next.value &&
+      prev.id === next.id &&
+      prev.width === next.width &&
+      prev.parentFieldIndex === next.parentFieldIndex &&
+      prev.parentCurrentObject === next.parentCurrentObject
+    );
   },
 );
 
@@ -471,8 +529,19 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record } = props || {};
-      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} width={this.props.width} />;
+      const { value, id, rowIdx, record, parentFieldIndex, parentCurrentObject } = props || {};
+      return (
+        <MemoCell
+          value={value}
+          record={record}
+          rowIdx={rowIdx}
+          id={id}
+          parent={this}
+          width={this.props.width}
+          parentFieldIndex={parentFieldIndex}
+          parentCurrentObject={parentCurrentObject}
+        />
+      );
     };
   }
 }
@@ -501,9 +570,8 @@ SubTableColumnModel.registerFlow({
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         const currentBlockModel = ctx.model.context.blockModel;
-        if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(ctx.model.fieldPath);
-        }
+        // 避免强依赖 EditFormModel（减少循环依赖风险）：仅在存在该能力时调用
+        currentBlockModel?.addAppends?.(ctx.model.fieldPath);
       },
     },
     title: {
