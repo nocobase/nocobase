@@ -63,15 +63,15 @@ function createCurrentObjectChainMetaFactory(options: {
       title,
       properties: {
         index: { type: 'number', title: t('Index') },
-        value: { ...(valueMeta as any), title: t('Attributes') },
+        value: { ...(valueMeta as any), title: t('Properties') },
         parentObject: {
           type: 'object',
           title: t('Parent object'),
           properties: {
             index: { type: 'number', title: t('Index') },
             value: parentValueMeta
-              ? { ...(parentValueMeta as any), title: t('Attributes') }
-              : { type: 'object', title: t('Attributes') },
+              ? { ...(parentValueMeta as any), title: t('Properties') }
+              : { type: 'object', title: t('Properties') },
           },
         },
       },
