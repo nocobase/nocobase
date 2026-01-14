@@ -158,6 +158,7 @@ function FlowContextProvider(props) {
               uid={ccUid}
               onModelLoaded={(model) => {
                 model.context.defineProperty('flowSettingsEnabled', { value: false });
+                model.context.defineProperty('disableBlockGridPadding', { value: true });
                 model.context.defineProperty('view', {
                   value: {
                     inputArgs: {
