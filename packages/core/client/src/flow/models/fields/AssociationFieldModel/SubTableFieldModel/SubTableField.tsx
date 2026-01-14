@@ -31,8 +31,8 @@ export function SubTableField(props) {
     pageSize,
     allowCreate, //acl
     isConfigMode,
-    resetPage,
-    filterTargetKey = 'id',
+    parentFieldIndex,
+    parentCurrentObject,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -111,8 +111,10 @@ export function SubTableField(props) {
           rowIdx: pageRowIdx,
           id: `field-${col.dataIndex}-${rowIdx}`,
           value: text,
+          parentFieldIndex,
+          parentCurrentObject,
           onChange: (value) => {
-            handleCellChange(rowIdx, col.dataIndex, value?.target?.value || value);
+            handleCellChange(pageRowIdx, col.dataIndex, value?.target?.value || value);
           },
           ['aria-describedby']: `field-${col.dataIndex}-${rowIdx}`,
         });
