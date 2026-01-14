@@ -52,7 +52,8 @@ export class FormBlockModel<
   _defaultCustomModelClasses = {
     FormActionGroupModel: 'FormActionGroupModel',
     FormItemModel: 'FormItemModel',
-    FormCustomItemModel: 'FormCustomItemModel',
+    FormAssociationFieldGroupModel: 'FormAssociationFieldGroupModel',
+    // FormCustomItemModel: 'FormCustomItemModel',
   };
 
   customModelClasses: CustomFormBlockModelClassesEnum = {};

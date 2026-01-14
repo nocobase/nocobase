@@ -54,6 +54,7 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
         subModelKey="items"
         subModelBaseClasses={[
           this.context.getModelClassName('FormItemModel'),
+          this.context.getModelClassName('FormAssociationFieldGroupModel'),
           this.context.getModelClassName('FormCustomItemModel'),
           this.context.getModelClassName('FormJSFieldItemModel'),
         ].filter(Boolean)}
