@@ -15,7 +15,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Schema } from '@formily/react';
-import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
 import { useLocalTranslation } from '../../../locale';
 import {
   fetchChannels,
@@ -39,6 +38,9 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
 
 const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
   const app = useApp();
+  const MobilePageProvider = app.getComponent('MobilePageProvider') as any;
+  const MobilePageHeader = app.getComponent('MobilePageHeader') as any;
+  const MobilePageContentContainer = app.getComponent('MobilePageContentContainer') as any;
   const basename = app.router.basename.replace(/\/+$/, '');
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
