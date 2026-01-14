@@ -723,7 +723,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                             resolveOnServer: recordOptions?.resolveOnServer,
                             serverOnlyWhenContextParams: recordOptions?.serverOnlyWhenContextParams,
                           });
+                          const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
                           fork.context.defineProperty('currentObject', {
+                            ...rest,
                             get: () => this.context.currentObject,
                             cache: false,
                             meta: currentObjectOptions?.meta,
