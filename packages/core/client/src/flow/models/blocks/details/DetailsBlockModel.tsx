@@ -28,6 +28,7 @@ import React from 'react';
 import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
+import { dispatchEventDeep } from '../../../utils';
 
 export class DetailsBlockModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -89,6 +90,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       multiResource.setPage(page);
       multiResource.loading = true;
       await this.refresh();
+      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
@@ -210,6 +212,29 @@ DetailsBlockModel.registerFlow({
     },
     linkageRules: {
       use: 'detailsFieldLinkageRules',
+    },
+  },
+});
+
+DetailsBlockModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    blockLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+    fieldslinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'detailsFieldLinkageRules',
+        flowKey: 'detailsSettings',
+        stepKey: 'linkageRules',
+      },
     },
   },
 });

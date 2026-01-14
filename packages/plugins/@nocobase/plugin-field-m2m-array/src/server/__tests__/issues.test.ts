@@ -793,6 +793,123 @@ describe('issues', () => {
       }),
     ).resolves.not.toThrow();
   });
+
+  test('appending second-level m2m(array) relations in association queries', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'members',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'fin_bill',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'ref_sps',
+            type: 'belongsToArray',
+            foreignKey: 'sp_ids',
+            target: 'members',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'fin_pay_app',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'ref_pay_app_rows',
+            type: 'hasMany',
+            target: 'fin_pay_app_rows',
+            onDelete: 'CASCADE',
+            sourceKey: 'id',
+            foreignKey: 'app_id',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'fin_pay_app_rows',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'app_id',
+            type: 'bigInt',
+            isForeignKey: true,
+          },
+          {
+            name: 'bill_id',
+            type: 'bigInt',
+            isForeignKey: true,
+          },
+          {
+            name: 'ref_pay_app',
+            type: 'belongsTo',
+            foreignKey: 'app_id',
+            onDelete: 'CASCADE',
+            target: 'fin_pay_app',
+            targetKey: 'id',
+          },
+          {
+            name: 'ref_bill',
+            type: 'belongsTo',
+            foreignKey: 'bill_id',
+            onDelete: 'RESTRICT',
+            target: 'fin_bill',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    //@ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+
+    const res1 = await agent.resource('fin_pay_app').create({
+      values: {},
+    });
+    expect(res1.status).toBe(200);
+
+    const res2 = await agent.resource(`fin_pay_app/${res1.body.data.id}/ref_pay_app_rows`).list({
+      appends: ['ref_bill', 'ref_bill.ref_sps'],
+    });
+    expect(res2.status).toBe(200);
+  });
 });
 
 describe('issues with users', () => {

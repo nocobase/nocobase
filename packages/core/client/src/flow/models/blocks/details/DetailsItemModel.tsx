@@ -146,8 +146,13 @@ export class DetailsItemModel extends DisplayItemModel<{
           })()
         : fieldModel;
     const mergedProps = this.context.pattern
-      ? { ...this.props, pattern: this.context.pattern, disabled: this.context.pattern === 'readPretty' }
-      : this.props;
+      ? {
+          ...this.parent.parent.props,
+          ...this.props,
+          pattern: this.context.pattern,
+          disabled: this.context.pattern === 'readPretty',
+        }
+      : { ...this.parent.parent.props, ...this.props };
     const value = getValueWithIndex(record, this.fieldPath, idx);
     return (
       <FormItem {...mergedProps} value={value}>
@@ -158,7 +163,7 @@ export class DetailsItemModel extends DisplayItemModel<{
 }
 
 DetailsItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 
@@ -298,6 +303,16 @@ DetailsItemModel.registerFlow({
           (ctx.model.subModels.field as any).disableTitleField
         );
       },
+    },
+  },
+});
+
+DetailsItemModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
     },
   },
 });

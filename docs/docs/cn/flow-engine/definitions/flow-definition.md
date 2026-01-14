@@ -16,6 +16,28 @@ interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
 }
 ```
 
+其中 `on` 的类型如下：
+
+```ts
+type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+type FlowEvent<TModel extends FlowModel = FlowModel> =
+  | string
+  | {
+      eventName: string;
+      defaultParams?: Record<string, any>;
+      phase?: FlowEventPhase;
+      flowKey?: string;
+      stepKey?: string;
+    };
+```
+
 ## 注册方式
 
 ```ts
@@ -134,7 +156,7 @@ sort: 1   // 延后执行
 **必需**: 否  
 **描述**: 允许该流被 `dispatchEvent` 触发的事件配置
 
-仅用于声明触发事件名（字符串或 `{ eventName }`），不包含处理函数。
+用于声明触发事件名（字符串或 `{ eventName }`），以及可选的执行时机（`phase`）。不包含处理函数（处理逻辑在 `steps` 里）。
 
 **支持的事件类型**:
 - `'click'` - 点击事件
@@ -154,6 +176,37 @@ sort: 1   // 延后执行
 on: 'click'  // 点击时触发
 on: 'submit' // 提交时触发
 on: { eventName: 'customEvent', defaultParams: { param1: 'value1' } }
+```
+
+#### 执行时机（phase）
+
+当同一个事件（例如 `click`）存在多条事件流时，可以用 `phase / flowKey / stepKey` 指定该流插入到内置静态流的哪个位置执行：
+
+| phase | 含义 | 需要的字段 |
+| --- | --- | --- |
+| `beforeAllFlows`（默认） | 在所有内置静态流之前执行 | - |
+| `afterAllFlows` | 在所有内置静态流之后执行 | - |
+| `beforeFlow` | 在某条内置静态流开始前执行 | `flowKey` |
+| `afterFlow` | 在某条内置静态流结束后执行 | `flowKey` |
+| `beforeStep` | 在某条内置静态流的某个 step 开始前执行 | `flowKey` + `stepKey` |
+| `afterStep` | 在某条内置静态流的某个 step 结束后执行 | `flowKey` + `stepKey` |
+
+**示例**：
+
+```ts
+// 1) 默认：在所有内置静态流之前（不需要写 phase）
+on: { eventName: 'click' }
+
+// 2) 在所有内置静态流之后
+on: { eventName: 'click', phase: 'afterAllFlows' }
+
+// 3) 在某条内置静态流开始前/结束后
+on: { eventName: 'click', phase: 'beforeFlow', flowKey: 'buttonSettings' }
+on: { eventName: 'click', phase: 'afterFlow', flowKey: 'buttonSettings' }
+
+// 4) 在某条内置静态流的某个步骤开始前/结束后
+on: { eventName: 'click', phase: 'beforeStep', flowKey: 'buttonSettings', stepKey: 'general' }
+on: { eventName: 'click', phase: 'afterStep', flowKey: 'buttonSettings', stepKey: 'general' }
 ```
 
 ### steps

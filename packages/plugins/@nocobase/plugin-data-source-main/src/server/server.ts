@@ -485,19 +485,17 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.resourceManager.registerActionHandlers(collectionActions);
     this.app.resourceManager.define(mainDataSourceResource);
 
-    const handleFieldSource = (
-      fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>,
-      rawFields?: ColumnsDescription,
-    ) => {
+    const handleFieldSource = ({
+      fields,
+      isRawValue,
+      rawFields,
+    }: {
+      fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>;
+      isRawValue?: boolean;
+      rawFields?: ColumnsDescription;
+    }) => {
       lodash.castArray(fields).forEach((field, index) => {
-        let source: string;
-
-        if (field && typeof field.get === 'function') {
-          source = field.get('source');
-        } else {
-          source = field?.source;
-        }
-
+        const source = isRawValue ? field.source : field.get('source');
         if (!source) {
           return;
         }
@@ -514,7 +512,7 @@ export class PluginDataSourceMainServer extends Plugin {
         // 原始字段 options
         lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
 
-        const currentValues = field && typeof (field as any).get === 'function' ? (field as any).get() : field;
+        const currentValues = isRawValue ? field : field.get();
 
         lodash.mergeWith(newOptions, currentValues, (objValue, srcValue) => {
           if (srcValue === null) {
@@ -522,36 +520,21 @@ export class PluginDataSourceMainServer extends Plugin {
           }
         });
 
-        if (field && typeof (field as any).set === 'function') {
-          field.set('options', newOptions);
-        } else {
+        if (isRawValue) {
           fields[index] = {
             ...field,
             ...newOptions,
           };
+        } else {
+          field.set('options', newOptions);
         }
-
-        // Handle rawFields and fieldTypes from HEAD version
         const fieldTypes = fieldTypeMap[this.db.options.dialect];
         if (rawFields && fieldTypes) {
-          const fieldName =
-            field && typeof (field as any).get === 'function' ? (field as any).get('name') : field?.name;
-          const rawField = rawFields[fieldName];
-          if (rawField) {
-            const interfaceValue =
-              field && typeof (field as any).get === 'function' ? (field as any).get('interface') : field?.interface;
-            if (!PRESET_FIELDS_INTERFACES.includes(interfaceValue)) {
-              const mappedType = extractTypeFromDefinition(rawField.type);
-              const possibleTypes = fieldTypes[mappedType];
-              if (field && typeof (field as any).set === 'function') {
-                field.set('possibleTypes', possibleTypes);
-              } else {
-                fields[index] = {
-                  ...fields[index],
-                  possibleTypes,
-                };
-              }
-            }
+          const rawField = rawFields[field.get('name')];
+          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
+            const mappedType = extractTypeFromDefinition(rawField.type);
+            const possibleTypes = fieldTypes[mappedType];
+            field.set('possibleTypes', possibleTypes);
           }
         }
       });
@@ -565,7 +548,7 @@ export class PluginDataSourceMainServer extends Plugin {
         for (const collection of ctx.body) {
           if (collection.view === true) {
             const fields = collection.fields;
-            handleFieldSource(fields);
+            handleFieldSource({ fields, isRawValue: true });
           }
         }
       }
@@ -584,11 +567,11 @@ export class PluginDataSourceMainServer extends Plugin {
             // ignore
           }
         }
-        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
+        handleFieldSource({ fields: ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields });
       }
 
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {
-        handleFieldSource(ctx.body);
+        handleFieldSource({ fields: ctx.body });
       }
     });
 

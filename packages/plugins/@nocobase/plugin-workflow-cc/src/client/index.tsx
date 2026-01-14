@@ -62,6 +62,8 @@ export class PluginWorkflowCCClient extends Plugin {
         ],
       }),
     );
+
+    workflow.registerCollectionsToDataSource([ccCollection]);
   }
 }
 

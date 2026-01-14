@@ -283,7 +283,12 @@ module.exports = (cli) => {
         NOCOBASE_PKG_URL = 'https://pkg.nocobase.com/',
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
+        DISABLE_PKG_DOWNLOAD,
       } = process.env;
+      if (DISABLE_PKG_DOWNLOAD === 'true') {
+        logger.info('Package download is disabled.');
+        return;
+      }
       let accessKeyId;
       let accessKeySecret;
       try {

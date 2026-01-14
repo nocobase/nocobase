@@ -258,6 +258,25 @@ ActionModel.registerFlow({
   },
 });
 
+// 分页切换后需要重新计算 ACL 与联动规则（fork 复用时尤其重要）
+ActionModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
+    },
+    linkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'actionLinkageRules',
+        flowKey: 'buttonSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+  },
+});
+
 ActionModel.registerEvents({
   click: {
     title: tExpr('Click'),
