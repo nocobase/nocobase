@@ -35,7 +35,6 @@ const CCAddBlockButton = ({ model }: { model: CCBlockGridModel }) => {
 
     // Node Data - 过滤掉审批节点，因为抄送插件不需要显示审批相关的区块
     const nodeBlocks: SubModelItem[] = nodes
-      .filter((node) => node.type !== 'approval')
       .map((node) => {
         const instruction = workflowPlugin.instructions.get(node.type);
         return instruction?.getCreateModelMenuItem?.({ node, workflow });
