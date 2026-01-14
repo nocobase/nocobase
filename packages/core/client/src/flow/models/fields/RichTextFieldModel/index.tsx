@@ -33,7 +33,7 @@ export const RichTextField = (props) => {
       [
         { header: [1, 2, 3, false] },
         {
-          size: ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'],
+          size: [false, '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'],
         },
       ],
       ['bold', 'italic', 'underline', 'strike'],
