@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "2.0.0-beta.9",
+  "version": "2.0.0-beta.10",
   "private": true,
   "displayName": "Audit logs (deprecated)",
   "displayName.ru-RU": "Журнал аудита (устарел)",
