@@ -13,18 +13,8 @@ import { NavBar, Toast } from 'antd-mobile';
 import React, { useCallback, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { css, SchemaInitializerItemType, usePlugin, useToken } from '@nocobase/client';
+import { css, SchemaInitializerItemType, useApp, useToken } from '@nocobase/client';
 
-import {
-  MobilePageContentContainer,
-  MobilePageHeader,
-  MobilePageProvider,
-  MobileRouteItem,
-  MobileTabBarItem,
-  useMobileRoutes,
-} from '@nocobase/plugin-mobile/client';
-
-import PluginWorkflowClient from '.';
 import { lang } from './locale';
 import {
   TasksCountsContext,
@@ -33,6 +23,15 @@ import {
   useAvailableTaskTypeItems,
   useTaskTypeItems,
 } from './WorkflowTasks';
+
+// 内联 MobileRouteItem 类型定义
+type MobileRouteItem = {
+  type: string;
+  title: string;
+  icon: string;
+  schemaUid: string;
+  options: any;
+};
 
 const TASK_STATUS = {
   ALL: 'all',
@@ -44,6 +43,8 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
   name: 'workflow-tasks-center',
   type: 'item',
   useComponentProps() {
+    const app = useApp();
+    const useMobileRoutes = app.getComponent('useMobileRoutes') as any;
     const { resource, refresh } = useMobileRoutes();
     const items = useTaskTypeItems();
     return items.length
@@ -87,6 +88,8 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
 
 export const MobileTabBarWorkflowTasksItem = observer(
   (props: any) => {
+    const app = useApp();
+    const MobileTabBarItem = app.getComponent('MobileTabBarItem') as any;
     const { message } = App.useApp();
     const navigate = useNavigate();
     const location = useLocation();
@@ -149,6 +152,10 @@ function WorkflowTasksMobileTabs() {
 }
 
 export function WorkflowTasksMobile() {
+  const app = useApp();
+  const MobilePageProvider = app.getComponent('MobilePageProvider') as any;
+  const MobilePageHeader = app.getComponent('MobilePageHeader') as any;
+  const MobilePageContentContainer = app.getComponent('MobilePageContentContainer') as any;
   const navigate = useNavigate();
 
   return (

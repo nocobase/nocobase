@@ -8,15 +8,27 @@
  */
 
 import { uid } from '@formily/shared';
-import { SchemaInitializerItemType } from '@nocobase/client';
-import { MobileRouteItem, useMobileRoutes } from '@nocobase/plugin-mobile/client';
+import { SchemaInitializerItemType, useApp } from '@nocobase/client';
 import { Toast } from 'antd-mobile';
 import { useLocalTranslation } from '../../../locale';
+
+// 内联 MobileRouteItem 类型定义
+type MobileRouteItem = {
+  type: string;
+  title: string;
+  icon: string;
+  schemaUid: string;
+  options: any;
+  children?: MobileRouteItem[];
+};
+
 export const messageSchemaInitializerItem: SchemaInitializerItemType = {
   name: 'message-schema',
   type: 'item',
   useComponentProps() {
     const { t } = useLocalTranslation();
+    const app = useApp();
+    const useMobileRoutes = app.getComponent('useMobileRoutes') as any;
     const { resource, refresh, schemaResource } = useMobileRoutes();
     return {
       isItem: true,
