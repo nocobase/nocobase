@@ -188,7 +188,7 @@
   "Select context": "Select context",
   "Select users": "Select users",
   "Select workflow": "Select workflow",
-  "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. If this node is added multiple times, the value of the last executed node prevails.": "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. If this node is added multiple times, the value of the last executed node prevails.",
+  "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. You can also use this node in an AI employee workflow, to define what to output. If this node is added multiple times, the value of the last executed node prevails.": "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. You can also use this node in an AI employee workflow, to define what to output. If this node is added multiple times, the value of the last executed node prevails.",
   "Single record": "Single record",
   "Some node meets error.": "Some node meets error.",
   "Started and executing, maybe waiting for an async callback (manual, delay etc.).": "Started and executing, maybe waiting for an async callback (manual, delay etc.).",
