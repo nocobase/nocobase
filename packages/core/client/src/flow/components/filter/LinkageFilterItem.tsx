@@ -10,7 +10,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
-import { observer } from '@formily/reactive-react';
 import {
   VariableInput,
   type MetaTreeNode,
@@ -18,6 +17,7 @@ import {
   useFlowViewContext,
   parseValueToPath,
   FlowModel,
+  observer,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
@@ -32,6 +32,7 @@ export interface LinkageFilterItemValue {
   path: string | null;
   operator: string;
   value: any;
+  noValue?: boolean;
 }
 
 export interface LinkageFilterItemProps {
@@ -156,7 +157,10 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
         const fallback = operatorMetadataList.find((op) => op.selected) || operatorMetadataList[0];
         value.operator = fallback?.value || '';
         if (fallback?.noValue) {
-          value.value = '';
+          value.value = true;
+          value.noValue = true;
+        } else {
+          value.noValue = false;
         }
         shouldDefaultOperatorRef.current = false;
       }
@@ -168,7 +172,10 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       const fallback = operatorMetadataList.find((op) => op.selected) || operatorMetadataList[0];
       value.operator = fallback?.value || '';
       if (fallback?.noValue) {
-        value.value = '';
+        value.value = true;
+        value.noValue = true;
+      } else {
+        value.noValue = false;
       }
     }
   }, [operatorMetadataList, selectedOperator, value]);
@@ -272,7 +279,10 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       value.operator = operatorValue;
       const selectedOperatorMeta = operatorMetadataList.find((o) => o.value === operatorValue);
       if (selectedOperatorMeta?.noValue) {
-        value.value = '';
+        value.value = true;
+        value.noValue = true;
+      } else {
+        value.noValue = false;
       }
     },
     [value, operatorMetadataList],

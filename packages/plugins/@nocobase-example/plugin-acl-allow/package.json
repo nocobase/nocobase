@@ -1,9 +1,8 @@
 {
   "name": "@nocobase-example/plugin-acl-allow",
   "private": true,
-  "version": "2.0.0-alpha.50",
+  "version": "2.0.0-alpha.64",
   "main": "dist/server/index.js",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

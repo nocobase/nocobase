@@ -16,6 +16,10 @@ export default {
   skillSettings: {
     skills: [
       {
+        name: 'dataModeling-getDataSources',
+        autoCall: true,
+      },
+      {
         name: 'dataModeling-getCollectionNames',
         autoCall: true,
       },

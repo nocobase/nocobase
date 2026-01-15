@@ -36,6 +36,7 @@ type RebuildOptions = {
   targetUse: string;
   defaultProps?: Record<string, unknown>;
   pattern?: string;
+  fieldSettingsInit?: unknown;
 };
 
 export function getFieldBindingUse(fieldModel?: FieldModel): string | undefined {
@@ -43,17 +44,31 @@ export function getFieldBindingUse(fieldModel?: FieldModel): string | undefined 
   return typeof bindingUse === 'string' ? bindingUse : undefined;
 }
 
-export async function rebuildFieldSubModel({ parentModel, targetUse, defaultProps, pattern }: RebuildOptions) {
+export async function rebuildFieldSubModel({
+  parentModel,
+  targetUse,
+  defaultProps,
+  pattern,
+  fieldSettingsInit,
+}: RebuildOptions) {
   const fieldModel = parentModel.subModels['field'];
   const fieldUid = fieldModel?.uid;
+  const prevSubModels = fieldModel?.serialize?.()?.subModels;
+  // RecordPickerFieldModel 的子model提前创建会报错
+  for (const key in prevSubModels) {
+    const subModel = prevSubModels[key];
+    if (subModel.delegateToParent === false) {
+      delete prevSubModels[key];
+    }
+  }
   const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
-  const prevBindingUse = prevStepParams.fieldBinding?.use;
+  const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
 
   const nextStepParams: FieldStepParams = {
     ...prevStepParams,
     fieldBinding: { ...prevStepParams.fieldBinding, use: targetUse },
     fieldSettings: {
-      init: parentModel.getFieldSettingsInitParams?.(),
+      init: nextFieldSettingsInit,
     },
   };
 
@@ -61,14 +76,17 @@ export async function rebuildFieldSubModel({ parentModel, targetUse, defaultProp
 
   if (fieldUid) {
     fieldModel?.invalidateFlowCache('beforeRender', true);
-    engine.removeModel(fieldUid);
+    engine.removeModelWithSubModels(fieldUid);
   }
 
   const subModel = parentModel.setSubModel('field', {
     uid: fieldUid,
     use: FieldModel,
-    props: { ...(fieldModel?.props || {}), ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
+    props: { ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
     stepParams: nextStepParams as StepParams,
+    // Preserve existing subModels (e.g. SubTable columns) so switching field component back and forth
+    // does not require a full page refresh to restore the UI.
+    subModels: prevSubModels,
   });
 
   await subModel.dispatchEvent('beforeRender', undefined, { useCache: false });

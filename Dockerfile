@@ -23,7 +23,7 @@ COPY . /tmp
 
 SHELL ["/bin/bash", "-c"]
 
-RUN  yarn install && yarn build --no-dts && \
+RUN yarn install && yarn build --no-dts && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
   if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
@@ -34,6 +34,8 @@ RUN  yarn install && yarn build --no-dts && \
   git config user.email "test@mail.com"  && \
   git config user.name "test" && git add .  && \
   git commit -m "chore(versions): test publish packages" && \
+  yarn nocobase client:extract && \
+  yarn nocobase client:upload && \
   yarn release:force --registry $VERDACCIO_URL && \
   yarn config set registry $VERDACCIO_URL && \
   cd /tmp/docs && \

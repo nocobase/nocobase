@@ -30,7 +30,7 @@ import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel } from '../base';
 import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
-import { matchMimetype } from '../../../schema-component/antd/upload/shared';
+import { matchMimetype, getThumbnailPlaceholderURL } from '../../../schema-component/antd/upload/shared';
 
 export const CardUpload = (props) => {
   const {
@@ -44,11 +44,11 @@ export const CardUpload = (props) => {
   } = props;
   const [fileList, setFileList] = useState(castArray(value || []));
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
   useEffect(() => {
-    setFileList(castArray(value || []));
+    setFileList(normalizedFileList(castArray(value || [])));
   }, [value]);
 
   const getBase64 = (file): Promise<string> =>
@@ -63,7 +63,7 @@ export const CardUpload = (props) => {
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }
-    setPreviewImage(file.url || (file.preview as string));
+    setPreviewImage(file);
     setCurrentImageIndex(index);
     setPreviewOpen(true);
   };
@@ -71,18 +71,20 @@ export const CardUpload = (props) => {
   const goToPreviousImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : fileList.length - 1));
     const file = fileList[currentImageIndex - 1];
-    setPreviewImage(file.url || (file.preview as string));
+    setPreviewImage(file);
   };
 
   const goToNextImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex < fileList.length - 1 ? prevIndex + 1 : 0));
     const file = fileList[currentImageIndex + 1];
-    setPreviewImage(file.url || (file.preview as string));
+    setPreviewImage(file);
   };
   const onDownload = () => {
-    const url = previewImage;
-    const suffix = url.slice(url.lastIndexOf('.'));
-    const filename = Date.now() + suffix;
+    const url = previewImage.url || previewImage.preview;
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
+    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
+    const filename = `${Date.now()}_${previewImage.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())
@@ -97,6 +99,16 @@ export const CardUpload = (props) => {
         link.remove();
       });
   };
+
+  const normalizedFileList = (data) => {
+    return data.map((file) => {
+      return {
+        ...file,
+        thumbUrl: matchMimetype(file, 'image/*') ? file.preview || file.url : getThumbnailPlaceholderURL(file),
+      };
+    });
+  };
+
   return (
     <FieldContext.Provider
       value={
@@ -110,6 +122,12 @@ export const CardUpload = (props) => {
         className={css`
           .ant-upload-list-picture-card {
             margin-bottom: 10px;
+            .ant-upload-list-item-container {
+              margin: ${showFileName ? '8px 0px' : '0px'};
+            }
+          }
+          .ant-upload-select {
+            margin: ${showFileName ? '8px 0px' : '0px'};
           }
         `}
       >
@@ -160,7 +178,7 @@ export const CardUpload = (props) => {
             preview={{
               visible: previewOpen,
               onVisibleChange: (visible) => setPreviewOpen(visible),
-              afterOpenChange: (visible) => !visible && setPreviewImage(''),
+              afterOpenChange: (visible) => !visible && setPreviewImage(null),
               toolbarRender: (
                 _,
                 {
@@ -208,7 +226,7 @@ export const CardUpload = (props) => {
                   return (
                     <audio controls>
                       <source src={file.url || file.preview} type={file.type} />
-                      您的浏览器不支持音频标签。
+                      {t('Your browser does not support the audio tag.')}
                     </audio>
                   );
                 } else if (matchMimetype(file, 'video/*')) {
@@ -216,7 +234,7 @@ export const CardUpload = (props) => {
                   return (
                     <video controls width="100%">
                       <source src={file.url || file.preview} type={file.type} />
-                      您的浏览器不支持视频标签。
+                      {t('Your browser does not support the video tag.')}
                     </video>
                   );
                 } else if (matchMimetype(file, 'text/plain')) {
@@ -231,14 +249,21 @@ export const CardUpload = (props) => {
                   return (
                     <Alert
                       type="warning"
-                      description={t('File type is not supported for previewing, please download it to preview.')}
+                      description={
+                        <span>
+                          {t('File type is not supported for previewing,')}
+                          <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                            {t('download it to preview')}
+                          </a>
+                        </span>
+                      }
                       showIcon
                     />
                   );
                 }
               },
             }}
-            src={previewImage}
+            src={previewImage.url || previewImage.preview}
           />
         )}
         {allowSelectExistingRecord ? (
@@ -304,20 +329,9 @@ UploadFieldModel.registerFlow({
   steps: {
     quickUpload: {
       title: tExpr('Quick upload'),
-      uiSchema(ctx) {
-        if (!ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection) {
-          return null;
-        }
-        return {
-          quickUpload: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: tExpr('Yes'),
-              unCheckedChildren: tExpr('No'),
-            },
-          },
-        };
+      uiMode: { type: 'switch', key: 'quickUpload' },
+      hideInSettings(ctx) {
+        return !ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection;
       },
       defaultParams(ctx) {
         return {
@@ -328,47 +342,16 @@ UploadFieldModel.registerFlow({
         ctx.model.setProps({ quickUpload: params.quickUpload });
       },
     },
-    allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing file'),
-      uiSchema(ctx) {
-        if (!ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection) {
-          return null;
-        }
-        return {
-          allowSelectExistingRecord: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: tExpr('Yes'),
-              unCheckedChildren: tExpr('No'),
-            },
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          allowSelectExistingRecord: ctx.collectionField.targetCollection && ctx.collectionField.isAssociationField(),
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ allowSelectExistingRecord: params.allowSelectExistingRecord });
-      },
-    },
+
     allowMultiple: {
       title: tExpr('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            multiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return null;
-        }
+      uiMode: { type: 'switch', key: 'multiple' },
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
+        );
       },
+
       defaultParams(ctx) {
         return {
           multiple:
@@ -385,19 +368,27 @@ UploadFieldModel.registerFlow({
     },
     showFileName: {
       title: tExpr('Show file name'),
-      uiSchema: (ctx) => {
-        return {
-          showFileName: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
+      uiMode: { type: 'switch', key: 'showFileName' },
       defaultParams: {
         showFileName: false,
       },
       handler(ctx, params) {
         ctx.model.setProps('showFileName', params.showFileName);
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Allow selection of existing file'),
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
+      hideInSettings(ctx) {
+        return !ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection;
+      },
+      defaultParams(ctx) {
+        return {
+          allowSelectExistingRecord: ctx.collectionField.targetCollection && ctx.collectionField.isAssociationField(),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ allowSelectExistingRecord: params.allowSelectExistingRecord });
       },
     },
   },
@@ -431,6 +422,7 @@ UploadFieldModel.registerFlow({
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.props.target;
         const collectionField = ctx.collectionField;
+
         if (!fileManagerPlugin) {
           return onSuccess(file);
         }
@@ -438,13 +430,40 @@ UploadFieldModel.registerFlow({
           // 上传前检查存储策略
           const { data: checkData } = await ctx.api.resource('storages').check({
             fileCollectionName: fileCollection,
+            storageName: collectionField.options.storage,
           });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
-            onError?.(new Error(`当前存储 ${checkData.data.storage?.title} 不支持上传`));
+            const messageValue = ctx
+              .t(`The current storage "{{storageName}}" does not support file uploads.`, {
+                storageName: checkData.data.storage?.title,
+              })
+              .replaceAll('&gt;', '>');
+            onError?.(new Error(messageValue));
             return;
           }
 
+          const storageType = fileManagerPlugin.getStorageType(checkData?.data?.storage?.type) || {};
+
+          const storage = checkData?.data?.storage;
+          if (storageType.createUploadCustomRequest) {
+            const customRequest = storageType.createUploadCustomRequest({
+              ...ctx.model.props,
+              api: ctx.api,
+              action: `${fileCollection}:create?attachmentField=${collectionField.collectionName}.${collectionField.name}`,
+              storage,
+            });
+
+            if (typeof customRequest === 'function') {
+              await customRequest({
+                file,
+                onProgress,
+                onSuccess,
+                onError,
+              });
+              return;
+            }
+          }
           // 开始上传
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
@@ -488,10 +507,12 @@ UploadFieldModel.registerFlow({
   steps: {
     openView: {
       title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.('uploadSettings', 'allowSelectExistingRecord')
+          ?.allowSelectExistingRecord;
+        return allowSelectExistingRecord === false;
+      },
       uiSchema(ctx) {
-        if (!ctx.model.props.allowSelectExistingRecord) {
-          return;
-        }
         return {
           mode: {
             type: 'string',
@@ -578,7 +599,7 @@ UploadFieldModel.registerFlow({
               },
             },
           },
-          content: () => <RecordPickerContent model={ctx.model} />,
+          content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
           styles: {
             content: {
               padding: 0,

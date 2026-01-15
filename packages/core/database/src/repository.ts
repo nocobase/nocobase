@@ -49,8 +49,8 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { valuesToFilter } from './utils/filter-utils';
 import { processIncludes } from './utils';
+import { valuesToFilter } from './utils/filter-utils';
 
 const debug = require('debug')('noco-database');
 
@@ -66,7 +66,7 @@ export interface FilterAble {
 
 export type BaseTargetKey = string | number;
 export type MultiTargetKey = Record<string, BaseTargetKey>;
-export type TargetKey = BaseTargetKey | MultiTargetKey;
+export type TargetKey = BaseTargetKey | MultiTargetKey | MultiTargetKey[];
 
 export type TK = TargetKey | TargetKey[];
 
@@ -115,7 +115,7 @@ export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'i
   } & FilterByTk;
 
 export interface FilterByTk {
-  filterByTk?: TargetKey;
+  filterByTk?: TK;
   targetCollection?: string;
 }
 

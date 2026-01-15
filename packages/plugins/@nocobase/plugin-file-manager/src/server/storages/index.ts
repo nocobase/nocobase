@@ -20,11 +20,13 @@ export interface StorageModel {
   type: string;
   name: string;
   baseUrl: string;
+  renameMode?: string;
   options: Record<string, any>;
   rules?: Record<string, any>;
   path?: string;
   default?: boolean;
   paranoid?: boolean;
+  settings?: Record<string, any>;
 }
 
 export interface AttachmentModel {
@@ -92,6 +94,7 @@ export abstract class StorageType {
     try {
       const fileURL = await this.getFileURL(file);
       const requestOptions: AxiosRequestConfig = {
+        ...this.storage.settings?.requestOptions,
         responseType: 'stream',
         validateStatus: (status) => status === 200,
         timeout: 30000, // 30 seconds timeout

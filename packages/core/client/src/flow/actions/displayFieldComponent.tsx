@@ -18,15 +18,15 @@ export function buildAssociationOptions(ctx: any, itemModel, titleField?: string
   const makeOptions = (list: any[]) =>
     list.map((model) => {
       const m = ctx.engine.getModelClass(model.modelName);
-      return { label: m.meta?.label || model.modelName, value: model.modelName };
+      return { label: ctx.t(m.meta?.label || model.modelName), value: model.modelName };
     });
 
   if (titleField) {
     const titleFieldClasses = itemModel.getBindingsByField(ctx, collectionField.targetCollection.getField(titleField));
 
     return [
-      classes.length && { label: tExpr('AssociationField component'), options: makeOptions(classes) },
-      { label: tExpr('Title field component'), options: makeOptions(titleFieldClasses) },
+      classes.length && { label: ctx.t('AssociationField component'), options: makeOptions(classes) },
+      { label: ctx.t('Title field component'), options: makeOptions(titleFieldClasses) },
     ].filter(Boolean);
   }
 
@@ -36,25 +36,25 @@ export function buildAssociationOptions(ctx: any, itemModel, titleField?: string
 export const displayFieldComponent = defineAction({
   name: 'displayFieldComponent',
   title: tExpr('Field component'),
-  uiSchema: (ctx: any) => {
+  uiMode: (ctx) => {
     const { titleField } = ctx.model.props;
-    if (!ctx.collectionField) {
-      return;
-    }
-    const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
-    if (classes.length === 1 && !titleField) return null;
-
     const options = buildAssociationOptions(ctx, ctx.model.constructor, titleField);
     return {
-      use: {
-        type: 'string',
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: options,
+      type: 'select',
+      key: 'use',
+      props: {
+        options,
       },
     };
   },
-
+  hideInSettings: async (ctx: any) => {
+    const { titleField } = ctx.model.props;
+    if (!ctx.collectionField) {
+      return true;
+    }
+    const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+    if (classes.length === 1 && !titleField) return true;
+  },
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     if (!ctx.collectionField) {
       return;

@@ -28,18 +28,20 @@ import {
   useFlowModel,
 } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
-import { TableColumnProps, Tooltip } from 'antd';
-import { get, omit } from 'lodash';
-import React, { useMemo } from 'react';
+import { TableColumnProps, Tooltip, Space, InputNumber, Button, Divider } from 'antd';
+import { get, omit, capitalize } from 'lodash';
+import React, { useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { getRowKey } from './utils';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
-function FieldDeletePlaceholder() {
+export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
-  const name = model.fieldPath;
+  const collection = props?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.props.title || model.fieldPath;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -52,33 +54,78 @@ function FieldDeletePlaceholder() {
   }).replaceAll('&gt;', '>');
   return (
     <Tooltip title={content}>
-      <ExclamationCircleOutlined style={{ opacity: '0.45' }} />
+      <ExclamationCircleOutlined style={{ opacity: '0.3' }} />
     </Tooltip>
   );
 }
 
+function FieldWithoutPermissionPlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const collection = model.context.collectionField?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.context.collectionField?.name || model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const { actionName } = model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return (
+    <Tooltip title={messageValue}>
+      <LockOutlined style={{ opacity: '0.3' }} />
+    </Tooltip>
+  );
+}
+
+export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
+  const [customWidth, setCustomWidth] = useState(defaultValue);
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen(true);
+      }}
+      onMouseLeave={() => {
+        setOpen(true);
+      }}
+    >
+      <Space.Compact block>
+        <InputNumber
+          placeholder={t('Custom column width')}
+          value={customWidth}
+          onChange={(val) => {
+            setCustomWidth(val);
+          }}
+          style={{ width: '100%', minWidth: 200 }}
+        />
+        <Button type="primary" onClick={() => handleChange(customWidth)}>
+          OK
+        </Button>
+      </Space.Compact>
+    </div>
+  );
+};
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
-  renderHiddenInConfig() {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
-    }
-    return (
-      <Tooltip
-        title={this.context.t(
-          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
-        )}
-      >
-        <LockOutlined style={{ opacity: '0.45' }} />
-      </Tooltip>
-    );
-  }
-
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
     await this.dispatchEvent('beforeRender');
+  }
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    return this.renderOriginal.call(this);
   }
 
   static defineChildren(ctx: FlowModelContext) {
@@ -145,6 +192,7 @@ export class TableColumnModel extends DisplayItemModel {
               text-overflow: ellipsis;
               white-space: nowrap;
               width: calc(${this.props.width}px - 16px);
+              opacity: ${this.hidden ? '0.3' : '1'};
             `}
           >
             {this.props.title}
@@ -185,24 +233,40 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
+                if (this.hidden && this.context.flowSettingsEnabled) {
+                  if (this.forbidden) {
+                    return <FieldWithoutPermissionPlaceholder />;
+                  }
+                  return (
+                    <Tooltip
+                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                    >
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                    </Tooltip>
+                  );
+                }
+                if (!this.collectionField) {
+                  return <FieldDeletePlaceholder />;
+                }
                 return cellRenderer(value, record, record.__index || index);
               })()}
             </ErrorBoundary>
           </FlowModelProvider>
         );
       },
-      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
+      hidden: this.hidden && !this.context.flowSettingsEnabled,
     };
   }
   onInit(options: any): void {
     super.onInit(options);
   }
 
-  render(): any {
+  renderItem(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {
-          const fork = field.createFork({}, `${record.__index || index}`);
+          const rowKey = getRowKey(record, this.context.collection.filterTargetKey);
+          const fork = field.createFork({}, `${record.__index || index}_${rowKey}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
             fork.context.t('Current record'),
@@ -247,7 +311,7 @@ export class TableColumnModel extends DisplayItemModel {
 }
 
 TableColumnModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
 });
 
 TableColumnModel.registerFlow({
@@ -270,9 +334,7 @@ TableColumnModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
+
     title: {
       title: tExpr('Column title'),
       uiSchema: (ctx) => {
@@ -296,9 +358,10 @@ TableColumnModel.registerFlow({
       }),
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title);
+        ctx.model.setProps('title', title || ctx.fieldPath);
       },
     },
+
     tooltip: {
       title: tExpr('Tooltip'),
       uiSchema: {
@@ -313,11 +376,42 @@ TableColumnModel.registerFlow({
     },
     width: {
       title: tExpr('Column width'),
-      uiSchema: {
-        width: {
-          'x-component': 'NumberPicker',
-          'x-decorator': 'FormItem',
-        },
+      uiMode(ctx) {
+        const columnWidth = ctx.model.props.width;
+        return {
+          type: 'select',
+          key: 'width',
+          props: {
+            options: [
+              { label: 50, value: 50 },
+              { label: 100, value: 100 },
+              { label: 150, value: 150 },
+              { label: 200, value: 200 },
+              { label: 250, value: 250 },
+              { label: 300, value: 300 },
+              { label: 350, value: 350 },
+              { label: 400, value: 400 },
+              { label: 450, value: 450 },
+              { label: 500, value: 500 },
+            ],
+            dropdownRender: (menu, setOpen, handleChange) => {
+              return (
+                <>
+                  {menu}
+                  <Divider style={{ margin: '4px 0' }} />
+                  <CustomWidth
+                    setOpen={setOpen}
+                    handleChange={handleChange}
+                    t={ctx.t}
+                    defaultValue={
+                      [50, 100, 150, 200, 250, 300, 350, 400, 450, 500].includes(columnWidth) ? null : columnWidth
+                    }
+                  />
+                </>
+              );
+            },
+          },
+        };
       },
       defaultParams: {
         width: 150,
@@ -326,25 +420,12 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('width', params.width);
       },
     },
+    aclCheck: {
+      use: 'aclCheck',
+    },
     quickEdit: {
       title: tExpr('Enable quick edit'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.collectionField) {
-          return;
-        }
-        const blockCollectionName = ctx.model.context.blockModel.collection.name;
-        const fieldCollectionName = ctx.model.collectionField.collectionName;
-        if (blockCollectionName !== fieldCollectionName) {
-          return;
-        }
-        return {
-          editable: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
-          },
-        };
-      },
+      uiMode: { type: 'switch', key: 'editable' },
       defaultParams(ctx) {
         if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
@@ -365,19 +446,10 @@ TableColumnModel.registerFlow({
     },
     sorter: {
       title: tExpr('Sortable'),
-      uiSchema(ctx) {
-        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-          ctx.model.collectionField.interface,
-        );
-        if (!targetInterface.sortable) {
-          return;
-        }
-        return {
-          sorter: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
+      uiMode: { type: 'switch', key: 'sorter' },
+      hideInSettings: async (ctx) => {
+        const targetInterface = ctx.model.collectionField.getInterfaceOptions();
+        return !targetInterface.sortable;
       },
       defaultParams: {
         sorter: false,
@@ -388,40 +460,60 @@ TableColumnModel.registerFlow({
         });
       },
     },
+    fixed: {
+      title: tExpr('Fixed'),
+      use: 'fixed',
+    },
     fieldNames: {
       use: 'titleField',
-      title: tExpr('Label field'),
+      title: tExpr('Title field'),
 
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
         }
-        if (params.label !== previousParams.label) {
-          const targetCollection = ctx.collectionField.targetCollection;
-          const targetCollectionField = targetCollection.getField(params.label);
-          const binding = (ctx.model.constructor as typeof TableColumnModel).getDefaultBindingByField(
-            ctx,
-            targetCollectionField,
-          );
-          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
-            const fieldUid = ctx.model.subModels['field']['uid'];
-            await ctx.engine.destroyModel(fieldUid);
-            const model = ctx.model.setSubModel('field', {
-              use: binding.modelName,
-              stepParams: {
-                fieldSettings: {
-                  init: {
-                    dataSourceKey: ctx.model.collectionField.dataSourceKey,
-                    collectionName: targetCollection.name,
-                    fieldPath: params.label,
-                  },
-                },
-              },
-            });
-            await model.save();
-          }
-          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+        if (params.label === previousParams.label) {
+          return null;
         }
+        const targetCollection = ctx.collectionField.targetCollection;
+        const targetCollectionField = targetCollection.getField(params.label);
+        if (!targetCollectionField) {
+          return null;
+        }
+        const binding = (ctx.model.constructor as typeof TableColumnModel).getDefaultBindingByField(
+          ctx,
+          targetCollectionField,
+        );
+        const fieldModel: any = ctx.model.subModels.field;
+        const currentUse = getFieldBindingUse(fieldModel) || fieldModel?.use;
+        const targetUse = binding?.modelName || currentUse;
+        const fieldSettingsInit = {
+          dataSourceKey: ctx.model.collectionField.dataSourceKey,
+          collectionName: targetCollection.name,
+          fieldPath: params.label,
+        };
+        const defaultProps =
+          typeof binding?.defaultProps === 'function'
+            ? binding.defaultProps(ctx, targetCollectionField)
+            : binding?.defaultProps;
+        if (targetUse && targetUse !== currentUse) {
+          await rebuildFieldSubModel({
+            parentModel: ctx.model as any,
+            targetUse,
+            defaultProps,
+            fieldSettingsInit,
+          });
+        } else if (fieldModel) {
+          fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
+          await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+        }
+        ctx.model.setProps(targetCollectionField.getComponentProps());
+      },
+      defaultParams: (ctx: any) => {
+        const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+        return {
+          label: ctx.model.props.titleField || titleField,
+        };
       },
       handler(ctx, params) {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
@@ -432,10 +524,6 @@ TableColumnModel.registerFlow({
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
-    },
-    fixed: {
-      title: tExpr('Fixed'),
-      use: 'fixed',
     },
   },
 });

@@ -74,6 +74,7 @@ describe('Web client desktopRoutes', async () => {
 
   const createUiMenu = async (loginAgent: ExtendedAgent, data?: { title?: string }) => {
     const response = await loginAgent.resource(`desktopRoutes`).create({
+      updateAssociationValues: ['children'],
       values: {
         type: 'page',
         title: data?.title || generateRandomString(),

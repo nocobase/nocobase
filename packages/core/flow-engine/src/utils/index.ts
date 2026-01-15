@@ -34,7 +34,7 @@ export { isInheritedFrom } from './inheritance';
 export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-utils';
+export { compileUiSchema, resolveStepUiSchema, resolveUiMode, shouldHideStepInSettings } from './schema-utils';
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
@@ -59,7 +59,6 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
-export { buildSettingsViewInputArgs } from './buildSettingsViewInputArgs';
 
 // 安全全局对象（window/document）
 export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';

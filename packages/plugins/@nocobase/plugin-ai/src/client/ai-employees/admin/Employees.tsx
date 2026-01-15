@@ -16,9 +16,9 @@ import { Field } from '@formily/core';
 import { avatars } from '../avatars';
 import { ModelSettings } from './ModelSettings';
 import { ProfileSettings } from './ProfileSettings';
+import { SystemPrompt } from './SystemPrompt';
 import aiEmployees from '../../../collections/ai-employees';
 import { SkillSettings } from './SkillSettings';
-import { DataSourceSettings } from './DataSourceSettings';
 import { Templates } from './Templates';
 import {
   useCreateFormProps,
@@ -57,6 +57,12 @@ const AIEmployeeForm: React.FC<{
           children: <ProfileSettings edit={edit} />,
           forceRender: true,
         },
+        {
+          key: 'roleSetting',
+          label: t('Role setting'),
+          children: <SystemPrompt />,
+          forceRender: true,
+        },
         // {
         //   key: 'chat',
         //   label: 'Chat settings',
@@ -73,11 +79,6 @@ const AIEmployeeForm: React.FC<{
           label: t('Skills'),
           children: <SkillSettings />,
         },
-        // {
-        //   key: 'dataSources',
-        //   label: t('Data sources'),
-        //   children: <DataSourceSettings />,
-        // },
         ...(knowledgeBaseEnabled
           ? [
               {

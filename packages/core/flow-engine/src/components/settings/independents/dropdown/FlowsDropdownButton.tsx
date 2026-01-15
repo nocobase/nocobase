@@ -8,11 +8,13 @@
  */
 
 import { DownOutlined, SettingOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
 import { Alert, Button, Dropdown, Space } from 'antd';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
+import { shouldHideStepInSettings } from '../../../../utils';
+import { ActionDefinition } from '../../../../types';
+import { observer } from '../../../../reactive';
 
 // 支持两种使用方式的接口定义
 interface ModelProvidedProps {
@@ -108,26 +110,26 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
     }
 
     // 获取可配置的flows和steps
-    const getConfigurableFlowsAndSteps = useCallback(() => {
+    const getConfigurableFlowsAndSteps = useCallback(async () => {
       try {
         // const ModelClass = model.constructor as typeof FlowModel;
         const flows = model.getFlows();
 
         const flowsArray = Array.from(flows.values());
 
-        return flowsArray
-          .map((flow) => {
-            const configurableSteps = Object.entries(flow.steps)
-              .map(([stepKey, stepDefinition]) => {
-                const actionStep = stepDefinition;
+        const result = await Promise.all(
+          flowsArray.map(async (flow) => {
+            const configurableSteps = await Promise.all(
+              Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
+                const actionStep: any = stepDefinition;
 
-                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-                if (actionStep.hideInSettings) {
+                // 支持静态与动态 hideInSettings
+                if (await shouldHideStepInSettings(model, flow, actionStep)) {
                   return null;
                 }
 
                 // 从step获取uiSchema（如果存在）
-                const stepUiSchema = actionStep.uiSchema || {};
+                const stepUiSchema: ActionDefinition['uiSchema'] = actionStep.uiSchema || {};
 
                 // 如果step使用了action，也获取action的uiSchema
                 let actionUiSchema = {};
@@ -161,19 +163,34 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
                   uiSchema: mergedUiSchema,
                   title: actionStep.title || stepKey,
                 };
-              })
-              .filter(Boolean);
+              }),
+            ).then((steps) => steps.filter(Boolean));
 
             return configurableSteps.length > 0 ? { flow, steps: configurableSteps } : null;
-          })
-          .filter(Boolean);
+          }),
+        );
+
+        return result.filter(Boolean);
       } catch (error) {
         console.warn('[FlowsDropdownButton] 获取可配置flows失败:', error);
         return [];
       }
     }, [model]);
 
-    const configurableFlowsAndSteps = getConfigurableFlowsAndSteps();
+    const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<any[]>([]);
+
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        const flows = await getConfigurableFlowsAndSteps();
+        if (mounted) {
+          setConfigurableFlowsAndSteps(flows as any[]);
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, [getConfigurableFlowsAndSteps]);
 
     // 构建菜单项
     const buildMenuItems = () => {

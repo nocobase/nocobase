@@ -17,6 +17,7 @@ import {
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import React from 'react';
+import { uid } from '@formily/shared';
 import { FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { RecordPickerContent } from '../RecordPickerFieldModel';
@@ -64,7 +65,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
 
   getColumns() {
     const { enableIndexColumn } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
 
     const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
       Boolean,
@@ -84,7 +84,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         ...baseColumns.concat({
           key: '_empty',
         }),
-        isConfigMode && {
+        this.context.flowSettingsEnabled && {
           key: 'addColumn',
           fixed: 'right',
           width: 100,
@@ -101,7 +101,16 @@ export class SubTableFieldModel extends AssociationFieldModel {
         wrapper: HeaderWrapperComponent,
       },
     };
-    return <SubTableField {...this.props} columns={columns} components={components} />;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
+    return (
+      <SubTableField
+        {...this.props}
+        columns={columns}
+        components={components}
+        isConfigMode={isConfigMode}
+        filterTargetKey={this.collection.filterTargetKey}
+      />
+    );
   }
   onInit(options: any): void {
     super.onInit(options);
@@ -137,51 +146,18 @@ export class SubTableFieldModel extends AssociationFieldModel {
 }
 
 SubTableFieldModel.registerFlow({
-  key: 'loadTableColumns',
-  title: tExpr('Association table settings'),
+  key: 'subTableColumnSettings',
+  title: tExpr('Sub-table settings'),
   sort: 300,
   steps: {
-    aclCheck: {
-      use: 'aclCheck',
-    },
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
-    allowAddNew: {
-      title: tExpr('Allow add new data'),
-      uiSchema: {
-        allowAddNew: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowAddNew: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowAddNew: params.allowAddNew,
-        });
-      },
-    },
     enableIndexColumn: {
-      title: tExpr('Enable index column'),
-      uiSchema: {
-        enableIndexColumn: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      title: tExpr('Show row numbers'),
+      uiMode: { type: 'switch', key: 'enableIndexColumn' },
       defaultParams: {
         enableIndexColumn: true,
       },
@@ -191,55 +167,13 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
-    allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing records'),
-      uiSchema: {
-        allowSelectExistingRecord: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowSelectExistingRecord: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowSelectExistingRecord: params.allowSelectExistingRecord,
-        });
-      },
-    },
-    allowDisassociation: {
-      title: tExpr('Allow disassociation'),
-      uiSchema: {
-        allowDisassociation: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowDisassociation: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowDisassociation: params.allowDisassociation,
-        });
-      },
-    },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
@@ -258,22 +192,64 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
+    allowAddNew: {
+      title: tExpr('Enable add new action'),
+      uiMode: { type: 'switch', key: 'allowAddNew' },
+      defaultParams: {
+        allowAddNew: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowAddNew: params.allowAddNew,
+        });
+      },
+    },
+
+    allowDisassociation: {
+      title: tExpr('Enable remove action'),
+      uiMode: { type: 'switch', key: 'allowDisassociation' },
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Enable select action'),
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
   },
 });
 
 SubTableFieldModel.registerFlow({
   key: 'selectExitRecordSettings',
   title: tExpr('Selector setting'),
+  sort: 400,
   on: {
     eventName: 'openView',
   },
   steps: {
     openView: {
-      title: tExpr('Edit popup'),
+      title: tExpr('Edit select record popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.(
+          'subTableColumnSettings',
+          'allowSelectExistingRecord',
+        )?.allowSelectExistingRecord;
+        return !allowSelectExistingRecord;
+      },
       uiSchema(ctx) {
-        if (!ctx.model.props.allowSelectExistingRecord) {
-          return;
-        }
         return {
           mode: {
             type: 'string',
@@ -318,6 +294,7 @@ SubTableFieldModel.registerFlow({
         };
         const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.model.selectedRows.value = ctx.model.props.value || [];
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -343,7 +320,7 @@ SubTableFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      __is_stored__: true,
                     };
                   }),
                 ];
@@ -369,6 +346,21 @@ SubTableFieldModel.registerFlow({
               padding: 0,
             },
           },
+        });
+      },
+    },
+  },
+});
+
+// 分页切换后重置page
+SubTableFieldModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    pageRefresh: {
+      handler(ctx, params) {
+        ctx.model.setProps({
+          resetPage: uid(),
         });
       },
     },

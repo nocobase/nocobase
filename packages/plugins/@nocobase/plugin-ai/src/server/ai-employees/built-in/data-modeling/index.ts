@@ -20,6 +20,10 @@ export default {
         autoCall: true,
       },
       {
+        name: 'dataModeling-getDataSources',
+        autoCall: true,
+      },
+      {
         name: 'dataModeling-getCollectionNames',
         autoCall: true,
       },
@@ -38,6 +42,10 @@ export default {
       {
         name: 'dataSource-dataSourceQuery',
         autoCall: true,
+      },
+      {
+        name: 'dataModeling-suggestions',
+        autoCall: false,
       },
     ],
   },

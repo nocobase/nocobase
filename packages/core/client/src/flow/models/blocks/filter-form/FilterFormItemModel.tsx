@@ -19,15 +19,23 @@ import { Empty } from 'antd';
 import _, { debounce } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
-import { getAllDataModels } from '../filter-manager/utils';
+import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
+import { FilterManager } from '../filter-manager';
 
 const getModelFields = async (model: CollectionBlockModel) => {
-  const collection = model.context.collection as Collection;
+  // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
+  const collection = (model as any).collection || (model.context.collection as Collection);
   const fields = (await model?.getFilterFields?.()) || [];
   return fields
     .map((field: any) => {
-      const binding = FilterableItemModel.getDefaultBindingByField(model.context, field);
+      // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
+      const ctxWithFlags = new FlowModelContext(model);
+      ctxWithFlags.addDelegate(model.context);
+      ctxWithFlags.defineProperty('flags', {
+        value: { ...model.context?.flags, isInFilterFormBlock: true },
+      });
+      const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
       if (!binding) {
         return;
       }
@@ -49,9 +57,6 @@ const getModelFields = async (model: CollectionBlockModel) => {
               },
             },
             filterFormItemSettings: {
-              label: {
-                label: field.title,
-              },
               init: {
                 filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
                 defaultTargetUid: model.uid,
@@ -141,6 +146,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   operator: string;
+  mounted = false;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
 
@@ -148,10 +154,28 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
   }
 
+  private getCurrentOperatorMeta() {
+    const operator = getDefaultOperator(this);
+    if (!operator) return null;
+
+    const operatorList = this.collectionField?.filterable?.operators;
+
+    if (!Array.isArray(operatorList)) {
+      return null;
+    }
+
+    return operatorList.find((op) => op.value === operator) || null;
+  }
+
   onInit(options) {
     super.onInit(options);
     // 创建防抖的 doFilter 方法，延迟 300ms
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
+  }
+
+  onMount(): void {
+    super.onMount();
+    this.mounted = true;
   }
 
   onUnmount() {
@@ -161,11 +185,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   doFilter() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   doReset() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   /**
@@ -173,11 +199,30 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    if (this.subModels.field.getFilterValue) {
-      return this.subModels.field.getFilterValue();
+    const fieldValue = this.subModels.field.getFilterValue
+      ? this.subModels.field.getFilterValue()
+      : this.context.form?.getFieldValue(this.props.name);
+
+    let rawValue = fieldValue;
+
+    if (!this.mounted) {
+      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
     }
 
-    return this.context.form?.getFieldValue(this.props.name);
+    const operatorMeta = this.getCurrentOperatorMeta();
+    if (operatorMeta?.noValue) {
+      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      if (Array.isArray(options)) {
+        return rawValue;
+      }
+      return true;
+    }
+
+    return rawValue;
+  }
+
+  getDefaultValue() {
+    return this.getStepParams('filterFormItemSettings', 'initialValue')?.defaultValue;
   }
 
   /**
@@ -203,7 +248,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     };
   }
 
-  render() {
+  renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
       <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
@@ -273,16 +318,7 @@ FilterFormItemModel.registerFlow({
 
     showLabel: {
       title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: { type: 'switch', key: 'showLabel' },
       defaultParams: {
         showLabel: true,
       },
@@ -331,22 +367,25 @@ FilterFormItemModel.registerFlow({
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
-      uiSchema: (ctx) => {
+      uiMode(ctx) {
         const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
-        if (classes.length === 1) {
-          return null;
-        }
+        const t = ctx.t;
         return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model.modelName,
+          type: 'select',
+          key: 'use',
+          props: {
+            options: classes.map((model) => ({
+              label: t(model.modelName),
               value: model.modelName,
             })),
           },
         };
+      },
+      hideInSettings(ctx) {
+        const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
+        if (classes.length === 1) {
+          return true;
+        }
       },
     },
     connectFields: {
@@ -354,6 +393,12 @@ FilterFormItemModel.registerFlow({
     },
     defaultOperator: {
       use: 'defaultOperator',
+    },
+    operatorComponentProps: {
+      use: 'operatorComponentProps',
+    },
+    customizeFilterRender: {
+      use: 'customizeFilterRender',
     },
   },
 });

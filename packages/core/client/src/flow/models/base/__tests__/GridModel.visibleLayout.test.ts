@@ -105,4 +105,57 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     expect(Object.keys(rows)).toEqual([]);
     expect(Object.keys(sizes)).toEqual([]);
   });
+
+  it('uses rowOrder when provided to keep row sequence', () => {
+    engine.flowSettings.disable();
+
+    const visible = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-4',
+      props: {
+        rows: {
+          second: [['v1']],
+          first: [['v1']],
+        },
+        sizes: {
+          second: [24],
+          first: [24],
+        },
+        rowOrder: ['first', 'second'],
+      },
+      structure: {} as any,
+    });
+
+    (model as any).subModels = { items: [visible] };
+
+    const { rows } = (model as any).getVisibleLayout();
+    expect(Object.keys(rows)).toEqual(['first', 'second']);
+  });
+
+  it('falls back to rows key order when rowOrder is missing', () => {
+    engine.flowSettings.disable();
+
+    const visible = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-5',
+      props: {
+        rows: {
+          second: [['v1']],
+          first: [['v1']],
+        },
+        sizes: {
+          second: [24],
+          first: [24],
+        },
+      },
+      structure: {} as any,
+    });
+
+    (model as any).subModels = { items: [visible] };
+
+    const { rows } = (model as any).getVisibleLayout();
+    expect(Object.keys(rows)).toEqual(['second', 'first']);
+  });
 });

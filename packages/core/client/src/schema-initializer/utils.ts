@@ -1931,7 +1931,7 @@ function useAssociationFields({
   ]);
 }
 
-const isInTemplateSettingPage = () => window.location.pathname.includes('/block-templates/inherited');
+const isInTemplateSettingPage = () => window.location.pathname.includes('/ui-templates/inherited-v1');
 
 const initializerMenusGenerators = new Map<
   string,

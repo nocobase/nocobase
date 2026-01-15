@@ -138,6 +138,7 @@ export const DateFilterDynamicComponent = (props) => {
       {['past', 'next'].includes(value?.type) && [
         <InputNumber
           key="number"
+          style={{ flex: 1 }}
           value={value?.number}
           onChange={(val) => {
             const obj = {

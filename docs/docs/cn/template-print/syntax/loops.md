@@ -412,42 +412,6 @@ Model S
 ```
 
 
-#### 9. 语法说明：智能筛选
-
-- 通过智能条件块可根据复杂条件隐藏整行，示例格式：
-  ```
-  {d.array[i].属性:ifIN('关键字'):drop(row)}
-  ```
-
-#### 10. 示例：智能筛选
-
-##### 数据
-```json
-[
-  { "name": "Falcon 9" },
-  { "name": "Model S" },
-  { "name": "Model 3" },
-  { "name": "Falcon Heavy" }
-]
-```
-
-##### 模板
-```
-People
-{d[i].name}
-{d[i].name:ifIN('Falcon'):drop(row)}
-{d[i+1].name}
-```
-
-##### 结果
-```
-People
-Model S
-Model 3
-```
-（注：模板中含 “Falcon” 的行被智能筛选条件删除。）
-
-
 ### 去重处理
 
 #### 1. 语法说明

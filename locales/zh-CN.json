@@ -464,7 +464,6 @@
     "Display only": "阅读模式",
     "Display order number": "显示序号",
     "Display page title": "显示页面标题",
-    "Display style": "显示样式",
     "Display title": "显示标题",
     "DisplayName": "显示名称",
     "Divide by": "除以",
@@ -731,7 +730,7 @@
     "Kanban": "看板",
     "Label": "标签",
     "Label align": "字段标题对齐方式",
-    "Label field": "标签字段",
+    "Label field": "标题字段",
     "Label width": "字段标题宽度",
     "Language": "语言设置",
     "Large": "较宽",
@@ -1560,7 +1559,6 @@
     "Copy failed": "复制失败",
     "Copy failed under HTTP. Clipboard API is unavailable on non-HTTPS pages. Please copy [{{uid}}] manually.": "HTTP 环境下复制失败。非 HTTPS 页面不支持剪贴板 API，请手动复制 [{{uid}}]。",
     "Copy failed, please copy [{{uid}}] manually.": "复制失败，请手动复制 [{{uid}}]。",
-    "Copy popup UID": "复制弹窗 UID",
     "Data blocks": "数据区块",
     "Delete": "删除",
     "Delete failed": "删除失败",
@@ -2207,7 +2205,7 @@
     "Completed": "已完成",
     "Confirm": "确定",
     "Confirm cancel": "确认取消",
-    "Confirm cancel description": "确定要取消这个任务吗？",
+    "Confirm to cancel this task?": "确定要取消这个任务吗？",
     "Created at": "创建时间",
     "Data": "数据",
     "Download": "下载",
@@ -2687,7 +2685,7 @@
     "The last step cannot be deleted": "最后一个步骤不可以删除",
     "Whether to delete this step": "是否删除这个步骤？"
   },
-  "@nocobase/plugin-block-reference": {
+  "@nocobase/plugin-ui-templates": {
     "Block UID": "区块 UID",
     "Block UID is already set and cannot be modified": "当前已经指定区块UID，不允许修改",
     "Copy": "复制",
@@ -5143,7 +5141,7 @@
     "Will be executed in the background as a queued task.": "将作为队列任务在后台执行。",
     "Workflow": "工作流",
     "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "工作流已执行，结果状态为 <1>{{statusText}}</1><2>查看执行详情</2>",
-    "Workflow is not exists": "工作流不存在",
+    "Workflow of execution is not existed": "执行计划所属的工作流不存在",
     "Workflow tasks": "流程待办",
     "Workflow todos": "流程待办",
     "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "删除成功之前触发工作流（支持操作前事件）。",
@@ -5978,6 +5976,7 @@
       "周六"
     ],
     "weekOption": "周",
-    "yearOption": "年"
+    "yearOption": "年",
+    "Display fields": "显示字段"
   }
 }

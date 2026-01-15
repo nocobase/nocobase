@@ -9,14 +9,22 @@
 
 import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { ButtonProps } from 'antd';
 
 export class ExpandCollapseActionModel extends ActionModel {
   expandFlag: boolean;
 
+  defaultProps: ButtonProps = {
+    type: 'default',
+    icon: 'DownOutlined',
+  };
+
   static scene = ActionSceneEnum.collection;
+
   setTitle(title) {
     this.setProps({ title });
   }
+
   setExpandFlag(flag) {
     this.expandFlag = flag;
   }

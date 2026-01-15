@@ -10,7 +10,7 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { uid } from '@nocobase/utils';
+import { getDateVars, uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -169,4 +169,62 @@ export const enablePerfHooks = (app: Application) => {
 
 export function getBodyLimit() {
   return process.env.REQUEST_BODY_LIMIT || '10mb';
+}
+
+function getUser(ctx) {
+  return async ({ fields }) => {
+    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+    ctx.logger?.info('filter-parse: ', { userFields });
+    if (!ctx.state.currentUser) {
+      return;
+    }
+    if (!userFields.length) {
+      return;
+    }
+    const user = await ctx.db.getRepository('users').findOne({
+      filterByTk: ctx.state.currentUser.id,
+      fields: userFields,
+    });
+    ctx.logger?.info('filter-parse: ', {
+      $user: user?.toJSON(),
+    });
+    return user;
+  };
+}
+
+function isNumeric(str: any) {
+  if (typeof str === 'number') return true;
+  if (typeof str != 'string') return false;
+  return !isNaN(str as any) && !isNaN(parseFloat(str));
+}
+
+export function createContextVariablesScope(ctx) {
+  const state = JSON.parse(JSON.stringify(ctx.state));
+  return {
+    timezone: ctx.get('x-timezone'),
+    now: new Date().toISOString(),
+    getField: (path) => {
+      const fieldPath = path
+        .split('.')
+        .filter((p) => !p.startsWith('$') && !isNumeric(p))
+        .join('.');
+      const { resourceName } = ctx.action;
+      return ctx.database.getFieldByPath(`${resourceName}.${fieldPath}`);
+    },
+    vars: {
+      ctx: {
+        state,
+      },
+      // @deprecated
+      $system: {
+        now: new Date().toISOString(),
+      },
+      // @deprecated
+      $date: getDateVars(),
+      // 新的命名方式，防止和 formily 内置变量冲突
+      $nDate: getDateVars(),
+      $user: getUser(ctx),
+      $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
+    },
+  };
 }

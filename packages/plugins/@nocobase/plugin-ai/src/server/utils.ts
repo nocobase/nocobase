@@ -14,6 +14,20 @@ import axios from 'axios';
 import { getDateVars, parse, parseFilter } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 
+export function sendSSEError(ctx: Context, error: Error | string) {
+  const body = typeof error === 'string' ? error : error.message || 'Unknown error';
+  if (!ctx.res.headersSent) {
+    ctx.set({
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    ctx.status = 200;
+  }
+  ctx.res.write(`data: ${JSON.stringify({ type: 'error', body })}\n\n`);
+  ctx.res.end();
+}
+
 export function stripToolCallTags(content: string): string | null {
   if (typeof content !== 'string') {
     return content;
@@ -47,11 +61,20 @@ export async function encodeLocalFile(url: string) {
   return Buffer.from(data).toString('base64');
 }
 
-export async function encodeFile(url: string) {
+export async function encodeFile(ctx: Context, url: string) {
   if (!url.startsWith('http')) {
     return encodeLocalFile(url);
   }
-  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  const referer = ctx.get('referer') || '';
+  const ua = ctx.get('user-agent') || '';
+  ctx.log.trace('llm message encode file', { url, referer, ua });
+  const response = await axios.get(url, {
+    responseType: 'arraybuffer',
+    headers: {
+      referer,
+      'User-Agent': ua,
+    },
+  });
   return Buffer.from(response.data).toString('base64');
 }
 

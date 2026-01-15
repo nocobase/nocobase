@@ -96,10 +96,12 @@ class AIChatConversationImpl implements AIChatConversation {
         $lt: query.messageId,
       };
     }
-    return await this.aiConversationMessagesRepo.find({
-      sort: ['messageId'],
+    const messages = await this.aiConversationMessagesRepo.find({
+      sort: ['-messageId'], // 改为倒序，取最新的
+      limit: 50, // 限制最多 50 条消息
       filter,
     });
+    return messages.reverse(); // 反转回正序
   }
 
   async lastUserMessage(): Promise<AIMessage> {
@@ -133,12 +135,20 @@ class AIChatConversationImpl implements AIChatConversation {
     const formattedMessages = [];
     const { provider, workContextHandler } = options;
 
+    // 截断过长的内容
+    const truncate = (text: string, maxLen = 50000) => {
+      if (!text || text.length <= maxLen) return text;
+      return text.slice(0, maxLen) + '\n...[truncated]';
+    };
+
     for (const msg of messages) {
       const attachments = msg.attachments;
       const workContext = msg.workContext;
       let content = msg.content?.content;
-      if (!content && !attachments && !msg.toolCalls?.length) {
-        continue;
+
+      // 截断消息内容
+      if (typeof content === 'string') {
+        content = truncate(content);
       }
       if (msg.role === 'user') {
         if (typeof content === 'string') {
@@ -153,7 +163,7 @@ class AIChatConversationImpl implements AIChatConversation {
         const contents = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(attachment);
+            const parsed = await provider.parseAttachment(this.ctx, attachment);
             contents.push(parsed);
           }
           if (content) {
@@ -181,6 +191,7 @@ class AIChatConversationImpl implements AIChatConversation {
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
+        additional_kwargs: msg.metadata?.additional_kwargs,
       });
     }
 

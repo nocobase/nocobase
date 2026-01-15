@@ -147,12 +147,37 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
 
 export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   constructor(private app: Application) {}
+
+  private inFlightFindOne = new Map<string, Promise<any>>();
+
+  private buildFindOneKey(query: any) {
+    const uid = query?.uid ?? '';
+    const parentId = query?.parentId ?? '';
+    const subKey = query?.subKey ?? '';
+    return `uid:${uid}|parentId:${parentId}|subKey:${subKey}`;
+  }
+
   async findOne(query) {
-    const response = await this.app.apiClient.request({
-      url: 'flowModels:findOne',
-      params: _.pick(query, ['uid', 'parentId', 'subKey']),
-    });
-    return response.data?.data;
+    const key = this.buildFindOneKey(query);
+    const existing = this.inFlightFindOne.get(key);
+    if (existing) {
+      const data = await existing;
+      return data ? _.cloneDeep(data) : data;
+    }
+
+    const promise = this.app.apiClient
+      .request({
+        url: 'flowModels:findOne',
+        params: _.pick(query, ['uid', 'parentId', 'subKey']),
+      })
+      .then((response) => response.data?.data)
+      .finally(() => {
+        this.inFlightFindOne.delete(key);
+      });
+
+    this.inFlightFindOne.set(key, promise);
+    const data = await promise;
+    return data ? _.cloneDeep(data) : data;
   }
 
   async save(model: FlowModel, options?: { onlyStepParams?: boolean }) {

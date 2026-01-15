@@ -412,42 +412,6 @@ Model S
 ```
 
 
-#### 9. Syntax Description: Intelligent Filtering
-
-- Using intelligent condition blocks, you can hide an entire row based on complex conditions. For example:
-  ```
-  {d.array[i].property:ifIN('keyword'):drop(row)}
-  ```
-
-#### 10. Example: Intelligent Filtering
-
-##### Data
-```json
-[
-  { "name": "Falcon 9" },
-  { "name": "Model S" },
-  { "name": "Model 3" },
-  { "name": "Falcon Heavy" }
-]
-```
-
-##### Template
-```
-People
-{d[i].name}
-{d[i].name:ifIN('Falcon'):drop(row)}
-{d[i+1].name}
-```
-
-##### Result
-```
-People
-Model S
-Model 3
-```
-(Note: Rows containing "Falcon" in the template are removed by the intelligent filtering condition.)
-
-
 ### Deduplication
 
 #### 1. Syntax Description

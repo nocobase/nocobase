@@ -25,8 +25,20 @@ const TypedComponents = {
   bigInt: InputNumber.ReadPretty,
   double: InputNumber.ReadPretty,
   decimal: InputNumber.ReadPretty,
+  number: InputNumber.ReadPretty,
   date: DatePicker.ReadPretty,
   string: InputString.ReadPretty,
+};
+
+const EditableComponents = {
+  boolean: Checkbox,
+  integer: InputNumber,
+  bigInt: InputNumber,
+  double: InputNumber,
+  decimal: InputNumber,
+  number: InputNumber,
+  date: DatePicker,
+  string: InputString,
 };
 
 function getValuesByPath(values, key, index?) {
@@ -72,6 +84,14 @@ function areValuesEqual(value1, value2) {
   return _.isEqual(value1, value2);
 }
 
+const resolveFormulaUsageFlags = (form: any, ctx?: any) => {
+  const flags = form?.props?.['x-flag'] || ctx?.flags || {};
+  const hasFlags = !!flags && Object.keys(flags).length > 0;
+  const isFilterContext = !!(flags?.isInFilterFormBlock || flags?.isInFilterAction);
+  const isDefaultValueDialog = !!flags?.isInSetDefaultValueDialog;
+  return { flags, hasFlags, isFilterContext, isDefaultValueDialog };
+};
+
 export function FormulaResult(props) {
   const { value, collectionField, form, id, ...others } = props;
   const { dataType, expression, engine = 'math.js' } = collectionField?.options || {};
@@ -81,12 +101,17 @@ export function FormulaResult(props) {
   const fieldPath = Array.isArray(id) ? id?.join('.') : id;
   const { t } = useTranslation();
 
+  const { flags, isFilterContext, isDefaultValueDialog } = resolveFormulaUsageFlags(form);
+
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
 
   useEffect(() => {
-    if (form?.readPretty) {
+    // DefaultValue 弹窗：constant/null 时不计算
+    const constantOrNull = isDefaultValueDialog && (flags?.constant || flags?.null || flags?.root === 'constant');
+
+    if (form?.readPretty || isFilterContext || constantOrNull) {
       return;
     }
     const scope = toJS(getValuesByFullPath(form.getFieldsValue(), fieldPath));
@@ -104,12 +129,19 @@ export function FormulaResult(props) {
   }, [watchedValues]);
 
   useEffect(() => {
-    if (!areValuesEqual(value, editingValue)) {
+    if (!areValuesEqual(value, editingValue) && !isFilterContext) {
       setTimeout(() => {
         form.setFieldValue(fieldPath, editingValue);
       });
     }
-  }, [editingValue]);
+  }, [editingValue, isFilterContext]);
+
+  // 筛选/默认值等场景下需要可编辑组件
+  if (isFilterContext) {
+    const EditableComp = EditableComponents[dataType] ?? InputString;
+    return <EditableComp {...others} value={value} onChange={(v) => others?.onChange?.(v)} />;
+  }
+
   const Component = TypedComponents[dataType] ?? InputString;
   if (!collectionField) {
     return;
@@ -161,10 +193,52 @@ DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['formula'], {
   isDefault: true,
   when(ctx, fieldInstance) {
     if (fieldInstance.type === 'formula') {
-      return ['double', 'bigint', 'integer'].includes(fieldInstance.dataType);
+      return ['double', 'bigInt', 'integer'].includes(fieldInstance.dataType);
     }
     return true;
   },
 });
 
-FilterableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], { isDefault: true });
+FilterableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], {
+  isDefault: true,
+  when(ctx) {
+    const { hasFlags, isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
+    return hasFlags && !isFilterContext;
+  },
+});
+
+// 在筛选场景下使用可编辑模型，按 dataType 选择合适的组件
+FilterableItemModel.bindModelToInterface('InputFieldModel', ['formula'], {
+  isDefault: false,
+  when(ctx, fieldInstance) {
+    const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
+    if (!isFilterContext) return false;
+    const dataType = fieldInstance?.dataType;
+    return !['date', 'boolean', 'integer', 'bigInt', 'double', 'decimal', 'number'].includes(dataType);
+  },
+});
+
+FilterableItemModel.bindModelToInterface('DateTimeFilterFieldModel', ['formula'], {
+  isDefault: false,
+  when(ctx, fieldInstance) {
+    const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
+    return isFilterContext && fieldInstance?.dataType === 'date';
+  },
+});
+
+FilterableItemModel.bindModelToInterface('CheckboxFieldModel', ['formula'], {
+  isDefault: false,
+  when(ctx, fieldInstance) {
+    const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
+    return isFilterContext && fieldInstance?.dataType === 'boolean';
+  },
+});
+
+FilterableItemModel.bindModelToInterface('NumberFieldModel', ['formula'], {
+  isDefault: false,
+  when(ctx, fieldInstance) {
+    const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
+    if (!isFilterContext) return false;
+    return ['integer', 'bigInt', 'double', 'decimal', 'number'].includes(fieldInstance?.dataType);
+  },
+});

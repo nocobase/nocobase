@@ -11,7 +11,7 @@ import {
   DndProvider,
   MultiRecordResource,
   FlowModelRenderer,
-  escapeT,
+  tExpr,
   Droppable,
   DragHandler,
   AddSubModelButton,
@@ -19,7 +19,7 @@ import {
   FlowModel,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, ActionModel, BlockModel } from '@nocobase/client';
+import { CollectionBlockModel, BlockSceneEnum, ActionModel, dispatchEventDeep } from '@nocobase/client';
 import React from 'react';
 import { List, Space } from 'antd';
 import { css } from '@emotion/css';
@@ -77,11 +77,13 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           return this.translate('Total {{count}} items', { count: total });
         },
         showSizeChanger: true,
-        onChange: (page, pageSize) => {
+        onChange: async (page, pageSize) => {
           this.resource.loading = true;
           this.resource.setPage(page);
           this.resource.setPageSize(pageSize);
-          this.resource.refresh();
+          await this.resource.refresh();
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          await dispatchEventDeep(this, 'paginationChange');
         },
       };
     } else {
@@ -120,56 +122,71 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
     }
   }
 
+  renderActions() {
+    const flowSettingsEnabled = !!this.context.flowSettingsEnabled;
+
+    if (!flowSettingsEnabled && !this.hasSubModel('actions')) {
+      return;
+    }
+
+    return (
+      <DndProvider>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <Space>
+            {this.mapSubModels('actions', (action) => {
+              // @ts-ignore
+              if (action.props.position === 'left') {
+                return (
+                  <FlowModelRenderer
+                    key={action.uid}
+                    model={action}
+                    showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                  />
+                );
+              }
+
+              return null;
+            })}
+            {/* 占位 */}
+            <span></span>
+          </Space>
+          <Space wrap>
+            {this.mapSubModels('actions', (action) => {
+              if (action.hidden && !flowSettingsEnabled) {
+                return;
+              }
+              // @ts-ignore
+              if (action.props.position !== 'left') {
+                return (
+                  <Droppable model={action} key={action.uid}>
+                    <FlowModelRenderer
+                      model={action}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                      extraToolbarItems={[
+                        {
+                          key: 'drag-handler',
+                          component: DragHandler,
+                          sort: 1,
+                        },
+                      ]}
+                    />
+                  </Droppable>
+                );
+              }
+
+              return null;
+            })}
+            {this.renderConfiguireActions()}
+          </Space>
+        </div>
+      </DndProvider>
+    );
+  }
+
   renderComponent() {
     return (
       <>
-        <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <Space>
-              {this.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position === 'left') {
-                  return (
-                    <FlowModelRenderer
-                      key={action.uid}
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                    />
-                  );
-                }
-
-                return null;
-              })}
-              {/* 占位 */}
-              <span></span>
-            </Space>
-            <Space wrap>
-              {this.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position !== 'left') {
-                  return (
-                    <Droppable model={action} key={action.uid}>
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                }
-
-                return null;
-              })}
-              {this.renderConfiguireActions()}
-            </Space>
-          </div>
-        </DndProvider>
+        {this.renderActions()}
         <List
           {...this.props}
           pagination={this.pagination()}
@@ -210,17 +227,17 @@ ListBlockModel.registerFlow({
 });
 
 ListBlockModel.registerFlow({
-  key: 'listettings',
+  key: 'listSettings',
   sort: 500,
-  title: escapeT('List settings', { ns: 'block-list' }),
+  title: tExpr('List settings', { ns: 'block-list' }),
   steps: {
     pageSize: {
-      title: escapeT('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      title: tExpr('Page size'),
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
@@ -241,15 +258,15 @@ ListBlockModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
-      title: escapeT('Data scope'),
+      title: tExpr('Data scope'),
     },
     defaultSorting: {
       use: 'sortingRule',
-      title: escapeT('Default sorting'),
+      title: tExpr('Default sorting'),
     },
     layout: {
       use: 'layout',
-      title: escapeT('Layout'),
+      title: tExpr('Layout'),
       handler(ctx, params) {
         ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
         const item = ctx.model.subModels.item as FlowModel;
@@ -261,7 +278,7 @@ ListBlockModel.registerFlow({
       },
     },
     refreshData: {
-      title: escapeT('Refresh data'),
+      title: tExpr('Refresh data'),
       async handler(ctx, params) {
         // await Promise.all(
         //   // ctx.model.mapSubModels('item', async (item: ListItemModel) => {
@@ -278,11 +295,26 @@ ListBlockModel.registerFlow({
   },
 });
 
+ListBlockModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    linkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+  },
+});
+
 ListBlockModel.define({
-  label: escapeT('List'),
-  group: escapeT('Content'),
+  label: tExpr('List'),
+  group: tExpr('Content'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'ListBlockModel',
     subModels: {

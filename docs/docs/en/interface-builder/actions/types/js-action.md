@@ -34,7 +34,7 @@ JS Action is used to execute JavaScript when a button is clicked, allowing for c
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
 
-- You can use AI employees to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- You can use AI employees to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
 
 ## Common Usage (Simplified Examples)
 

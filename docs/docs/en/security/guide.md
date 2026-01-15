@@ -256,7 +256,6 @@ If you are willing to sacrifice a certain degree of convenience, these two opera
 NocoBase supports complete intranet deployment, refer to
 
 - https://www.nocobase.com/en/blog/load-docker-image
-- [Upload plugins to the plugin directory to install and upgrade](/get-started/install-upgrade-plugins#third-party-plugins)
 
 ### Multiple Environment Isolation
 

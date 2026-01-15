@@ -19,6 +19,7 @@ export class JSRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('JS action'),
+    icon: 'JavaScriptOutlined',
   };
 }
 
@@ -67,9 +68,9 @@ JSRecordActionModel.registerFlow({
           version: 'v1',
           code: `
 if (!ctx.record) {
-  ctx.message.error('未获取到记录');
+  ctx.message.error('No record');
 } else {
-  ctx.message.success('记录ID：' + (ctx.filterByTk ?? ctx.record?.id));
+  ctx.message.success('Record ID: ' + (ctx.filterByTk ?? ctx.record?.id));
 }
 `,
         };

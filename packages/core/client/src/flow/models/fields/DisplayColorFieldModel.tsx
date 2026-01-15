@@ -16,6 +16,9 @@ import { FieldModel } from '../base';
 export class DisplayColorFieldModel extends FieldModel {
   public render() {
     const { value } = this.props;
+    if (!value) {
+      return null;
+    }
     return (
       <div
         role="button"

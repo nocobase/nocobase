@@ -16,6 +16,7 @@ import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
+import { Context } from '@nocobase/actions';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -95,9 +96,6 @@ export abstract class LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
       const res = await axios.get(`${baseURL}/models`, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -105,7 +103,16 @@ export abstract class LLMProvider {
       });
       return { models: res?.data.data };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      const status = e.response?.status || 500;
+      const data = e.response?.data;
+      const errorMsg =
+        data?.error?.message ||
+        data?.message ||
+        (typeof data?.error === 'string' ? data.error : undefined) ||
+        (typeof data === 'string' ? data : undefined) ||
+        e.response?.statusText ||
+        e.message;
+      return { code: status, errMsg: errorMsg };
     }
   }
 
@@ -117,10 +124,10 @@ export abstract class LLMProvider {
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(attachment: any): Promise<any> {
+  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(decodeURIComponent(url));
+    const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',
@@ -137,7 +144,7 @@ export abstract class LLMProvider {
     }
   }
 
-  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
+  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']): any {
     const { responseFormat } = this.modelOptions || {};
     const { schema, name, description, strict } = structuredOutput || {};
     if (!schema) {

@@ -372,7 +372,11 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   // other plugins build to a bundle just include plugin-commercial
   if (!cwd.includes(PLUGIN_COMMERCIAL)) {
     externalOptions.external = [/^[./]/];
-    externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
+    externalOptions.noExternal = [
+      entryFile, 
+      /@nocobase\/plugin-commercial\/server/, 
+      /dist\/server\/index\.js/,
+    ];
     externalOptions.onSuccess = async () => {
       const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
       serverFiles.forEach((file) => {
@@ -380,6 +384,9 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       });
     };
     externalOptions.esbuildPlugins = [pluginEsbuildCommercialInject];
+  }
+  if (cwd.includes(PLUGIN_COMMERCIAL)) {
+    externalOptions.noExternal = [/@nocobase\/plugin-license/, /dist\/server\/index\.js/];
   }
 
   // bundle all files、inject commercial code and obfuscate
@@ -620,7 +627,7 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                 module.source = {
                   source: `
 __webpack_require__.p = (function() {
-  var publicPath = window['__nocobase_public_path__'] || '/';
+  var publicPath = window['__webpack_public_path__'] || '/';
   // 确保路径以 / 结尾
   if (!publicPath.endsWith('/')) {
     publicPath += '/';

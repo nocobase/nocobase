@@ -204,7 +204,12 @@ type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | '
 
 export type MaintainingCommandStatus = {
   command: {
+    components?: {
+      maintaining: string;
+      maintainingDialog: string;
+    };
     name: string;
+    [key: string]: any;
   };
   status: MaintainingStatus;
   error?: Error;
@@ -1331,6 +1336,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
+    this._dataSourceManager.beforeAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        setupSnowflakeIdField(this, dataSource.collectionManager.db);
+      }
+    });
     this._dataSourceManager.afterAddDataSource((dataSource) => {
       if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
         for (const [actionName, actionParams] of Object.entries(availableActions)) {
@@ -1386,8 +1396,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
-
-    setupSnowflakeIdField(this);
   }
 
   protected createDatabase(options: ApplicationOptions) {

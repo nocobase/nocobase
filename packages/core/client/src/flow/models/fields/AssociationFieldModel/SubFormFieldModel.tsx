@@ -7,20 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   tExpr,
+  observable,
   FlowModelRenderer,
   useFlowModel,
   createAssociationAwareObjectMetaFactory,
   createAssociationSubpathResolver,
 } from '@nocobase/flow-engine';
-import { Button, Card, Divider, Form, Tooltip } from 'antd';
+import { Button, Card, Divider, Form, Tooltip, Space } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
+import { RecordPickerContent } from './RecordPickerFieldModel';
+import { ActionWithoutPermission } from '../../base/ActionModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -33,6 +36,11 @@ class FormAssociationFieldModel extends AssociationFieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
+    if (this.parent.context.actionName === 'update') {
+      this.context.defineProperty('actionName', {
+        get: () => 'view',
+      });
+    }
   }
 }
 export const ObjectNester = (props) => {
@@ -51,6 +59,9 @@ export const ObjectNester = (props) => {
       get: () => record,
       cache: false,
     });
+    fork.context.defineProperty('fieldKey', {
+      get: () => rowIndex,
+    });
 
     return fork;
   }, [gridModel, rowIndex, record]);
@@ -65,6 +76,13 @@ export const ObjectNester = (props) => {
       });
     }
   }, [props.disabled, grid]);
+  useEffect(() => {
+    grid.context.defineProperty('currentObject', {
+      get: () => {
+        return props.value;
+      },
+    });
+  }, [props.value]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -135,9 +153,19 @@ SubFormFieldModel.registerFlow({
   },
 });
 
-const ArrayNester = ({ name, value, disabled }: any) => {
+const ArrayNester = ({
+  name,
+  value,
+  disabled,
+  allowAddNew,
+  allowSelectExistingRecord,
+  onSelectExitRecordClick,
+  allowDisassociation,
+  allowCreate,
+}: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
@@ -149,6 +177,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       cache: false,
     });
   }, [disabled]);
+
   return (
     <Card
       bordered={true}
@@ -172,7 +201,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldKey', {
-                  get: () => key,
+                  get: () => fieldIndex,
                 });
                 forksRef.current[key] = fork;
               }
@@ -198,42 +227,60 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 ),
                 serverOnlyWhenContextParams: true,
               });
-
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (
-                    <div style={{ textAlign: 'right' }}>
-                      <Tooltip title={t('Remove')}>
-                        <CloseOutlined
-                          style={{ zIndex: 1000, color: '#a8a3a3' }}
-                          onClick={() => {
-                            remove(index);
-                            const gridFork = forksRef.current[key];
-                            // 同时销毁子模型的 fork
-                            gridFork.mapSubModels('items', (item) => {
-                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                  {!disabled &&
+                    (allowDisassociation || value?.[index]?.__is_new__ || value?.[index]?.__is_stored__) && (
+                      <div style={{ textAlign: 'right' }}>
+                        <Tooltip title={t('Remove')}>
+                          <CloseOutlined
+                            style={{ zIndex: 1000, color: '#a8a3a3' }}
+                            onClick={() => {
+                              remove(index);
+                              const gridFork = forksRef.current[key];
                               // 同时销毁子模型的 fork
-                              item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
-                              item.getFork(cacheKey)?.dispose();
-                            });
-                            gridFork.dispose();
-                            // 删除 fork 缓存
-                            delete forksRef.current[key];
-                          }}
-                        />
-                      </Tooltip>
-                    </div>
-                  )}
+                              gridFork.mapSubModels('items', (item) => {
+                                const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                                // 同时销毁子模型的 fork
+                                item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                                item.getFork(cacheKey)?.dispose();
+                              });
+                              gridFork.dispose();
+                              // 删除 fork 缓存
+                              delete forksRef.current[key];
+                            }}
+                          />
+                        </Tooltip>
+                      </div>
+                    )}
                   <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
                   <Divider />
                 </div>
               );
             })}
-            <Button type="link" onClick={() => add({})} disabled={disabled}>
-              <PlusOutlined />
-              {t('Add new')}
-            </Button>
+            <Space>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={() => add({ __is_new__: true })} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button type="link" onClick={() => onSelectExitRecordClick()} disabled={disabled}>
+                  <ZoomInOutlined /> {t('Select record')}
+                </Button>
+              )}
+            </Space>
           </>
         )}
       </Form.List>
@@ -242,6 +289,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
 };
 
 export class SubFormListFieldModel extends FormAssociationFieldModel {
+  selectedRows = observable.ref([]);
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
@@ -262,6 +310,17 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       ),
       serverOnlyWhenContextParams: true,
     });
+
+    this.onSelectExitRecordClick = () => {
+      this.dispatchEvent('openView', {});
+    };
+  }
+
+  set onSelectExitRecordClick(fn) {
+    this.setProps({ onSelectExitRecordClick: fn });
+  }
+  change() {
+    this.props.onChange(this.selectedRows.value);
   }
   onMount() {
     super.onMount();
@@ -282,6 +341,170 @@ SubFormListFieldModel.define({
     subModels: {
       grid: {
         use: 'FormGridModel',
+      },
+    },
+  },
+});
+
+SubFormListFieldModel.registerFlow({
+  key: 'subFormListSettings',
+  title: tExpr('Sub-form settings'),
+  sort: 200,
+  steps: {
+    allowAddNew: {
+      title: tExpr('Enable add new action'),
+      uiMode: { type: 'switch', key: 'allowAddNew' },
+      defaultParams: {
+        allowAddNew: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowAddNew: params.allowAddNew,
+        });
+      },
+    },
+    allowDisassociation: {
+      title: tExpr('Enable remove action'),
+      uiMode: { type: 'switch', key: 'allowDisassociation' },
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Enable select action'),
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
+  },
+});
+
+SubFormListFieldModel.registerFlow({
+  key: 'selectExitRecordSettings',
+  title: tExpr('Selector setting'),
+  on: {
+    eventName: 'openView',
+  },
+  sort: 300,
+  steps: {
+    openView: {
+      title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.('subFormListSettings', 'allowSelectExistingRecord')
+          ?.allowSelectExistingRecord;
+        return !allowSelectExistingRecord;
+      },
+      uiSchema(ctx) {
+        return {
+          mode: {
+            type: 'string',
+            title: tExpr('Open mode'),
+            enum: [
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+          size: {
+            type: 'string',
+            title: tExpr('Popup size'),
+            enum: [
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+        };
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.model.selectedRows.value = ctx.model.props.value || [];
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          target: ctx.layoutContentElement,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'select',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
+            rowSelectionProps: {
+              type: 'checkbox',
+              defaultSelectedRows: () => {
+                return ctx.model.props.value;
+              },
+              renderCell: undefined,
+              selectedRowKeys: undefined,
+              onChange: (_, selectedRows) => {
+                const prev = ctx.model.props.value || [];
+                const merged = [
+                  ...prev,
+                  ...selectedRows.map((v) => {
+                    return {
+                      ...v,
+                      __is_stored__: true,
+                    };
+                  }),
+                ];
+
+                // 去重，防止同一个值重复
+                const unique = merged.filter(
+                  (row, index, self) =>
+                    index ===
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.__is_new__,
+                );
+                ctx.model.selectedRows.value = unique;
+              },
+            },
+          },
+          content: () => <RecordPickerContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
+        });
       },
     },
   },

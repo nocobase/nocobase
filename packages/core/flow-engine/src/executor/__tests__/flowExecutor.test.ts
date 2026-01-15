@@ -139,6 +139,72 @@ describe('FlowExecutor', () => {
     expect(submitHandler).not.toHaveBeenCalled();
   });
 
+  it("dispatchEvent('click') skips instance flows when triggerByRouter is true", async () => {
+    class MyModel extends FlowModel {}
+
+    const globalHandler = vi.fn().mockResolvedValue('global-ok');
+    MyModel.registerFlow('globalClick', {
+      on: 'click',
+      steps: {
+        s: { handler: globalHandler },
+      },
+    });
+
+    const instanceHandler = vi.fn().mockResolvedValue('instance-ok');
+    const model = new MyModel({
+      uid: 'm-click-router-replay',
+      flowEngine: engine,
+      flowRegistry: {
+        instanceClick: {
+          on: 'click',
+          steps: {
+            s: { handler: instanceHandler },
+          },
+        },
+      },
+      stepParams: {},
+      subModels: {},
+    } as FlowModelOptions);
+
+    await engine.executor.dispatchEvent(model, 'click', { triggerByRouter: true }, { sequential: true });
+
+    expect(globalHandler).toHaveBeenCalledTimes(1);
+    expect(instanceHandler).not.toHaveBeenCalled();
+  });
+
+  it("dispatchEvent('click') keeps instance flows when triggerByRouter is not true", async () => {
+    class MyModel extends FlowModel {}
+
+    const globalHandler = vi.fn().mockResolvedValue('global-ok');
+    MyModel.registerFlow('globalClick', {
+      on: 'click',
+      steps: {
+        s: { handler: globalHandler },
+      },
+    });
+
+    const instanceHandler = vi.fn().mockResolvedValue('instance-ok');
+    const model = new MyModel({
+      uid: 'm-click-normal',
+      flowEngine: engine,
+      flowRegistry: {
+        instanceClick: {
+          on: 'click',
+          steps: {
+            s: { handler: instanceHandler },
+          },
+        },
+      },
+      stepParams: {},
+      subModels: {},
+    } as FlowModelOptions);
+
+    await engine.executor.dispatchEvent(model, 'click', { triggerByRouter: false }, { sequential: true });
+
+    expect(globalHandler).toHaveBeenCalledTimes(1);
+    expect(instanceHandler).toHaveBeenCalledTimes(1);
+  });
+
   it('dispatchEvent default parallel does not stop on exitAll', async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, opts?: { exitAll?: boolean }) => ({

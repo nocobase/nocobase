@@ -42,7 +42,6 @@
  * />
  */
 
-import { observer } from '@formily/reactive-react';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -53,6 +52,7 @@ import { ToolbarItemConfig } from '../types';
 import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
+import { observer } from '../reactive';
 
 export interface FlowModelRendererProps {
   model?: FlowModel;
@@ -346,17 +346,19 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     extraToolbarItems,
     useCache,
   }) => {
+    useEffect(() => {
+      if (model?.context) {
+        model.context.defineProperty('useCache', {
+          value: typeof useCache === 'boolean' ? useCache : model.context.useCache,
+        });
+      }
+    }, [model?.context, useCache]);
+
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
       console.warn('FlowModelRenderer: Invalid model or render method not found.', model);
       return null;
     }
-
-    useEffect(() => {
-      model.context.defineProperty('useCache', {
-        value: typeof useCache === 'boolean' ? useCache : model.context.useCache,
-      });
-    }, [model.context, useCache]);
 
     // 构建渲染内容：统一在渲染前触发 beforeRender 事件（带缓存）
     const content = (

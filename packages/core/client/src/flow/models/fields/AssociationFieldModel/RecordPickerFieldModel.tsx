@@ -18,7 +18,7 @@ import {
   useFlowViewContext,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, Select } from 'antd';
+import { Button, Select, Tooltip, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
@@ -29,6 +29,12 @@ function RemoteModelRenderer({ options, fieldModel }) {
   const { data, loading } = useRequest(
     async () => {
       const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      if (model && fieldModel) {
+        model.context.defineProperty('flowSettingsEnabled', {
+          get: () => fieldModel.context.flowSettingsEnabled,
+          cache: false,
+        });
+      }
       return model;
     },
     {
@@ -39,8 +45,9 @@ function RemoteModelRenderer({ options, fieldModel }) {
     if (!data) {
       return;
     }
-
-    fieldModel.selectBlockModel = data;
+    if (fieldModel) {
+      fieldModel.selectBlockModel = data;
+    }
   }, [data]);
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
@@ -74,7 +81,7 @@ export function RecordPickerContent({ model, toOne = false }) {
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
-          subKey: 'grid',
+          subKey: 'grid-block',
           async: true,
           delegateToParent: false,
           subType: 'object',
@@ -114,7 +121,7 @@ export function RecordPickerContent({ model, toOne = false }) {
 }
 
 function RecordPickerField(props) {
-  const { fieldNames } = props;
+  const { fieldNames, onClick, disabled } = props;
   const ctx = useFlowContext();
   const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
   useEffect(() => {
@@ -140,6 +147,11 @@ function RecordPickerField(props) {
     <Select
       {...props}
       open={false}
+      onClick={(e) => {
+        if (!disabled) {
+          onClick(e);
+        }
+      }}
       value={normalizeValue(props.value, fieldNames, toOne)}
       labelRender={(item) => {
         return <LabelByField option={item} fieldNames={fieldNames} />;
@@ -153,6 +165,50 @@ function RecordPickerField(props) {
         ctx.model.change();
       }}
       showSearch={false}
+      maxTagCount="responsive"
+      maxTagPlaceholder={(omittedValues) => (
+        <Tooltip
+          title={
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 6,
+                maxWidth: '100%',
+              }}
+            >
+              {omittedValues.map((item) => (
+                <Tag
+                  key={item.value}
+                  style={{
+                    margin: 0,
+                    background: '#fafafa',
+                    border: '1px solid #d9d9d9',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {item.label}
+                </Tag>
+              ))}
+            </div>
+          }
+          overlayInnerStyle={{
+            background: '#fff',
+            color: '#000',
+            padding: 8,
+            maxWidth: '100%',
+          }}
+          color="#fff"
+          overlayStyle={{
+            pointerEvents: 'auto',
+            maxWidth: 300,
+          }}
+        >
+          +{omittedValues.length}...
+        </Tooltip>
+      )}
     />
   );
 }
@@ -198,6 +254,7 @@ RecordPickerFieldModel.registerFlow({
   on: {
     eventName: 'openView',
   },
+  sort: 300,
   steps: {
     openView: {
       title: tExpr('Edit popup'),

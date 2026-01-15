@@ -27,6 +27,7 @@ export interface TextAreaWithContextSelectorProps {
   onChange?: (v: string) => void;
   placeholder?: string;
   rows?: number;
+  maxRows?: number;
   style?: React.CSSProperties;
 }
 
@@ -38,6 +39,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
   onChange,
   placeholder,
   rows = 3,
+  maxRows = 24,
   style,
 }) => {
   const flowCtx = useFlowContext();
@@ -101,7 +103,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
         ref={ref}
         value={innerValue}
         onChange={handleTextChange}
-        rows={rows}
+        autoSize={{ minRows: rows, maxRows }}
         placeholder={placeholder}
         style={{ width: '100%' }}
       />
@@ -114,14 +116,11 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
           lineHeight: 0,
         }}
       >
-        {/* 参考 1.0：小号按钮 + 非 hover 去掉右/上边框，背景透明，贴合右上角 */}
         <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)}>
           <Button
             type="default"
+            style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}
             className={css`
-              font-style: italic;
-              font-family: 'New York, Times New Roman, Times, serif';
-              line-height: 1;
               &:not(:hover) {
                 border-right-color: transparent;
                 border-top-color: transparent;

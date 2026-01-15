@@ -18,8 +18,6 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
-const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
-const omit = require('lodash/omit');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -297,14 +295,24 @@ function buildIndexHtml(force = false) {
     fs.copyFileSync(file, tpl);
   }
   const data = fs.readFileSync(tpl, 'utf-8');
-  const replacedData = data
+  let replacedData = data
+    .replace(/\{\{env.CDN_BASE_URL\}\}/g, process.env.CDN_BASE_URL)
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
     .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+
+  if (process.env.CDN_BASE_URL) {
+    const appBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+    const appPublicPath = process.env.APP_PUBLIC_PATH.replace(/\/+$/, '');
+    const re1 = new RegExp(`src="${appPublicPath}/`, 'g');
+    const re2 = new RegExp(`href="${appPublicPath}/`, 'g');
+    replacedData = replacedData.replace(re1, `src="${appBaseUrl}/`).replace(re2, `href="${appBaseUrl}/`);
+  }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
 
@@ -362,6 +370,7 @@ exports.initEnv = function initEnv() {
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
     API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
+    API_CLIENT_SHARE_TOKEN: 'false',
     API_CLIENT_STORAGE_TYPE: 'localStorage',
     // DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
@@ -385,6 +394,8 @@ exports.initEnv = function initEnv() {
     PLUGIN_STATICS_PATH: '/static/plugins/',
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
+    APP_BASE_URL: '',
+    CDN_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
     WATCH_FILE: resolve(process.cwd(), 'storage/app.watch.ts'),
   };
@@ -440,6 +451,16 @@ exports.initEnv = function initEnv() {
     process.env.__env_modified__ = true;
   }
 
+  if (!process.env.CDN_BASE_URL && process.env.APP_PUBLIC_PATH !== '/') {
+    process.env.CDN_BASE_URL = process.env.APP_PUBLIC_PATH;
+  }
+
+  if (process.env.CDN_BASE_URL.includes('http') && process.env.CDN_VERSION === 'auto') {
+    const version = require('../package.json').version;
+    process.env.CDN_BASE_URL = process.env.CDN_BASE_URL.replace(/\/+$/, '') + '/' + version + '/';
+    process.env.CDN_VERSION = '';
+  }
+
   if (!process.env.TZ) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);
@@ -490,89 +511,3 @@ exports.generatePlugins = function () {
     return;
   }
 };
-
-async function isEnvMatch(keyData) {
-  const env = await getEnvAsync();
-  if (env?.container?.id && keyData?.instanceData?.container?.id) {
-    return (
-      JSON.stringify(omit(env, ['timestamp', 'container', 'hostname', 'mac'])) ===
-      JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname', 'mac']))
-    );
-  }
-  return (
-    JSON.stringify(omit(env, ['timestamp', 'mac'])) ===
-    JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'mac']))
-  );
-}
-
-exports.getAccessKeyPair = async function () {
-  const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
-  if (!fs.existsSync(keyFile)) {
-    return {};
-  }
-
-  let keyData = {};
-  try {
-    const str = fs.readFileSync(keyFile, 'utf-8');
-    const keyDataStr = keyDecrypt(str);
-    keyData = JSON.parse(keyDataStr);
-  } catch (error) {
-    showLicenseInfo(LicenseKeyError.parseFailed);
-    throw new Error(LicenseKeyError.parseFailed.title);
-  }
-
-  const isEnvMatched = await isEnvMatch(keyData);
-  if (!isEnvMatched) {
-    showLicenseInfo(LicenseKeyError.notMatch);
-    throw new Error(LicenseKeyError.notMatch.title);
-  }
-
-  const { accessKeyId, accessKeySecret } = keyData;
-  return { accessKeyId, accessKeySecret };
-};
-
-const LicenseKeyError = {
-  notExist: {
-    title: 'License key not found',
-    content:
-      'Please go to the license settings page to obtain the Instance ID for the current environment, and then generate the license key on the service platform.',
-  },
-  parseFailed: {
-    title: 'Invalid license key format',
-    content: 'Please check your license key, or regenerate the license key on the service platform.',
-  },
-  notMatch: {
-    title: 'License key mismatch',
-    content:
-      'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
-  },
-  notValid: {
-    title: 'Invalid license key',
-    content:
-      'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
-  },
-};
-
-exports.LicenseKeyError = LicenseKeyError;
-
-function showLicenseInfo({ title, content }) {
-  const rows = [];
-  const length = 80;
-  let row = '';
-  content.split(' ').forEach((word) => {
-    if (row.length + word.length > length) {
-      rows.push(row);
-      row = '';
-    }
-    row += word + ' ';
-  });
-  if (row) {
-    rows.push(row);
-  }
-  console.log(Array(length).fill('-').join(''));
-  console.log(chalk.yellow(title));
-  console.log(chalk.yellow(rows.join('\n')));
-  console.log(Array(length).fill('-').join(''));
-}
-
-exports.showLicenseInfo = showLicenseInfo;

@@ -58,6 +58,9 @@ export default class extends Plugin {
       execution.workflow =
         workflowPlugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
     }
+    if (!execution.workflow) {
+      return;
+    }
     if (!execution.workflow.nodes) {
       execution.workflow.nodes = await execution.workflow.getNodes({ transaction });
     }
@@ -241,7 +244,7 @@ export default class extends Plugin {
       actions: jobActions,
     });
 
-    this.app.acl.allow('workflowManualTasks', ['list', 'listMine', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('workflowManualTasks', ['listMine', 'get', 'submit'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);

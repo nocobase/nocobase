@@ -16,18 +16,22 @@ import {
   FlowModelRenderer,
   useFlowContext,
   FlowModel,
+  useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select, Space, Button, Divider, Tooltip, Tag } from 'antd';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
 import { PlusOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
+import { BlockSceneEnum } from '../../base';
+import { ActionWithoutPermission } from '../../base/ActionModel';
+import { EditFormModel } from '../../blocks';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -83,10 +87,46 @@ export function CreateContent({ model, toOne = false }) {
   );
 }
 
-export function LazySelect(props: Readonly<LazySelectProps>) {
-  const { fieldNames, value, multiple, allowMultiple, options, quickCreate, onChange, ...others } = props;
+const useFieldPermissionMessage = (model, allowEdit) => {
+  const collection = model.context.collectionField?.collection;
+  const dataSource = collection.dataSource;
+  const t = model.context.t;
+  const name = model.context.collectionField?.name || model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  if (allowEdit) {
+    return null;
+  }
+  const messageValue = t(
+    `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+    {
+      name: nameValue,
+      actionName: 'Update',
+    },
+  ).replaceAll('&gt;', '>');
+  return messageValue;
+};
+
+const LazySelect = (props: Readonly<LazySelectProps>) => {
+  const {
+    fieldNames = { label: 'label', value: 'value' },
+    value,
+    multiple,
+    allowMultiple,
+    options,
+    quickCreate,
+    onChange,
+    allowCreate = true,
+    allowEdit = true,
+    ...others
+  } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
+  const model: any = useFlowModel();
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const QuickAddContent = ({ searchText }) => {
     return (
@@ -99,6 +139,8 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
       </div>
     );
   };
+  const fieldAclMessage = useFieldPermissionMessage(model, allowEdit);
+
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -184,7 +226,7 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
           const isFullMatch = realOptions.some((v) => v[fieldNames.label] === others.searchText);
           return (
             <>
-              {quickCreate === 'quickAdd' && others.searchText ? (
+              {quickCreate === 'quickAdd' && allowCreate && allowEdit && others.searchText ? (
                 <>
                   {!(realOptions.length === 0 && others.searchText) && menu}
                   {realOptions.length > 0 && others.searchText && !isFullMatch && <Divider style={{ margin: 0 }} />}
@@ -197,10 +239,24 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
           );
         }}
       />
-      {quickCreate === 'modalAdd' && <Button onClick={others.onModalAddClick}>{t('Add new')}</Button>}
+      {quickCreate === 'modalAdd' &&
+        ((allowCreate && allowEdit) || isConfigMode) &&
+        (allowCreate && allowEdit ? (
+          <Button onClick={others.onModalAddClick}>{t('Add new')}</Button>
+        ) : (
+          <ActionWithoutPermission
+            forbidden={{ actionName: 'create' }}
+            collection={model.collectionField.targetCollection}
+            message={fieldAclMessage}
+          >
+            <Button onClick={others.onModalAddClick} disabled={!allowEdit} style={{ opacity: '0.3' }}>
+              {t('Add new')}
+            </Button>
+          </ActionWithoutPermission>
+        ))}
     </Space.Compact>
   );
-}
+};
 
 export class RecordSelectFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
@@ -215,6 +271,7 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField?.targetCollection,
     });
+    this.setDataSource([]);
   }
 
   set onPopupScroll(fn) {
@@ -402,9 +459,8 @@ async function originalHandler(ctx, params) {
     const labelFieldName = ctx.model.props.fieldNames.label;
     const targetLabelField = targetCollection.getField(labelFieldName);
 
-    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-      targetLabelField.options.interface,
-    );
+    const targetInterface = targetLabelField.getInterfaceOptions();
+
     const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
 
     const searchText = ctx.inputArgs.searchText?.trim();
@@ -455,23 +511,25 @@ RecordSelectFieldModel.registerFlow({
   sort: 200,
   steps: {
     init: {
-      handler(ctx) {
+      async handler(ctx) {
         const resource = ctx.createResource(MultiRecordResource);
         const collectionField = ctx.model.context.collectionField;
         const { target, dataSourceKey, foreignKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
         resource.setPageSize(paginationState.pageSize);
+        const isFilterScene = ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter;
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
-        const sourceValue = ctx.record?.[collectionField?.sourceKey];
+        const record = ctx.currentObject || ctx.record;
+        const sourceValue = record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
-        if (sourceValue != null && isOToAny) {
+        if (!isFilterScene && sourceValue != null && isOToAny) {
           const eqKey = `${foreignKey}.$eq`;
           orFilters.push({ [eqKey]: sourceValue });
         }
 
-        if (isOToAny) {
+        if (!isFilterScene && isOToAny) {
           const isKey = `${foreignKey}.$is`;
           orFilters.push({ [isKey]: null });
         }
@@ -480,6 +538,21 @@ RecordSelectFieldModel.registerFlow({
           resource.addFilterGroup(foreignKey, { $or: orFilters });
         }
         ctx.model.resource = resource;
+      },
+    },
+    allowEditCheck: {
+      async handler(ctx) {
+        if (ctx.blockModel instanceof EditFormModel) {
+          const aclEdit = await ctx.aclCheck({
+            dataSourceKey: ctx.collectionField.dataSourceKey,
+            resourceName: ctx.collectionField?.collectionName,
+            actionName: 'update',
+            fields: [ctx.collectionField.name],
+          });
+          ctx.model.setProps({
+            allowEdit: !!aclEdit,
+          });
+        }
       },
     },
   },
@@ -501,19 +574,12 @@ RecordSelectFieldModel.registerFlow({
       use: 'sortingRule',
     },
     allowMultiple: {
-      title: tExpr('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            allowMultiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return null;
-        }
+      title: tExpr('Multiple'),
+      uiMode: { type: 'switch', key: 'allowMultiple' },
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
+        );
       },
       defaultParams(ctx) {
         return {
@@ -530,19 +596,25 @@ RecordSelectFieldModel.registerFlow({
     },
     quickCreate: {
       title: tExpr('Quick create'),
-      uiSchema(ctx) {
+      uiMode(ctx) {
         const t = ctx.t;
         return {
-          quickCreate: {
-            enum: [
+          type: 'select',
+          key: 'quickCreate',
+          props: {
+            options: [
               { label: t('None'), value: 'none' },
               { label: t('Dropdown'), value: 'quickAdd' },
               { label: t('Pop-up'), value: 'modalAdd' },
             ],
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
           },
         };
+      },
+      hideInSettings(ctx) {
+        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
+          return true;
+        }
+        return false;
       },
       defaultParams: {
         quickCreate: 'none',

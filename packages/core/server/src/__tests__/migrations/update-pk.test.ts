@@ -28,6 +28,7 @@ describe('update pk', () => {
   });
 
   it('update primary keys', async () => {
+    const collectionRepo = app.db.getRepository('collections');
     const collection = app.db.collection({
       name: 'departments',
       fields: [
@@ -40,16 +41,30 @@ describe('update pk', () => {
       ],
     });
     await collection.sync();
-    const collection1 = app.db.getCollection('departments');
-    const field1 = collection1.getField('id');
+    // @ts-ignore
+    await collectionRepo.db2cm('departments');
+    const fieldRepo = app.db.getRepository('fields');
+    const field1 = await fieldRepo.findOne({
+      filter: {
+        collectionName: 'departments',
+        name: 'id',
+      },
+    });
     expect(field1.options.autoIncrement).toBe(true);
+    expect(field1.type).toBe('bigInt');
     const migration = new Migration({
       // @ts-ignore
       app,
       db: app.db,
     });
     await migration.up();
-    const field2 = collection1.getField('id');
-    expect(field2.options.autoIncrement).toBe(true);
+    const field2 = await fieldRepo.findOne({
+      filter: {
+        collectionName: 'departments',
+        name: 'id',
+      },
+    });
+    expect(field2.options.autoIncrement).toBeUndefined();
+    expect(field2.type).toBe('snowflakeId');
   });
 });

@@ -133,6 +133,14 @@ let modelOptions: FlowModelOptions;
 
 beforeEach(() => {
   flowEngine = createMockFlowEngine();
+  // Mock api for FlowEngineContext
+  (flowEngine.context as any).api = {
+    auth: {
+      role: 'admin',
+      locale: 'en-US',
+      token: 'mock-token',
+    },
+  };
   modelOptions = {
     uid: 'test-model-uid',
     flowEngine,
@@ -293,6 +301,17 @@ describe('FlowModel', () => {
 
         model.setStepParams(null as any);
         expect(model.stepParams).toEqual(originalParams);
+      });
+
+      test('should emit onStepParamsChanged when params updated', () => {
+        const listener = vi.fn();
+        model.emitter.on('onStepParamsChanged', listener);
+
+        model.setStepParams('flow1', 'step1', { foo: 'bar' });
+
+        expect(listener).toHaveBeenCalledTimes(1);
+
+        model.emitter.off('onStepParamsChanged', listener);
       });
     });
   });
@@ -879,7 +898,10 @@ describe('FlowModel', () => {
             { data: 'test' },
             expect.objectContaining({ sequential: true }),
           );
-          expect(_dispatchEventSpy).not.toHaveBeenCalled();
+          // _dispatchEvent is called by _dispatchEventWithDebounce after debounce
+          // So we check it's called at least once eventually
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          expect(_dispatchEventSpy).toHaveBeenCalledTimes(1);
 
           _dispatchEventSpy.mockRestore();
           _dispatchEventWithDebounceSpy.mockRestore();
@@ -967,7 +989,7 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenCalledTimes(1);
           expect(handlerSpy).toHaveBeenLastCalledWith(
             expect.objectContaining({
-              inputArgs: { call: 3 },
+              inputArgs: expect.objectContaining({ call: 1 }),
             }),
             expect.any(Object),
           );
@@ -990,21 +1012,21 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
-              inputArgs: { call: 1 },
+              inputArgs: expect.objectContaining({ call: 1 }),
             }),
             expect.any(Object),
           );
           expect(handlerSpy).toHaveBeenNthCalledWith(
             2,
             expect.objectContaining({
-              inputArgs: { call: 2 },
+              inputArgs: expect.objectContaining({ call: 2 }),
             }),
             expect.any(Object),
           );
           expect(handlerSpy).toHaveBeenNthCalledWith(
             3,
             expect.objectContaining({
-              inputArgs: { call: 3 },
+              inputArgs: expect.objectContaining({ call: 3 }),
             }),
             expect.any(Object),
           );
@@ -1032,14 +1054,14 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
-              inputArgs: { type: 'immediate' },
+              inputArgs: expect.objectContaining({ type: 'immediate' }),
             }),
             expect.any(Object),
           );
           expect(handlerSpy).toHaveBeenNthCalledWith(
             2,
             expect.objectContaining({
-              inputArgs: { type: 'debounced', call: 2 },
+              inputArgs: expect.objectContaining({ type: 'debounced', call: 1 }),
             }),
             expect.any(Object),
           );
@@ -1067,7 +1089,7 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenCalledTimes(1);
           expect(handlerSpy).toHaveBeenCalledWith(
             expect.objectContaining({
-              inputArgs,
+              inputArgs: expect.objectContaining(inputArgs),
             }),
             expect.any(Object),
           );
@@ -1976,6 +1998,22 @@ describe('FlowModel', () => {
       test('should set instance title correctly', () => {
         model.setTitle('Custom Title');
         expect(model.title).toBe('Custom Title');
+      });
+
+      test('should be reactive when title changes', () => {
+        const seen: string[] = [];
+        const dispose = reaction(
+          () => model.title,
+          (next) => {
+            if (typeof next === 'string') seen.push(next);
+          },
+        );
+
+        model.setTitle('First Title');
+        model.setTitle('Second Title');
+
+        dispose();
+        expect(seen).toEqual(['First Title', 'Second Title']);
       });
 
       test('should update title when called multiple times', () => {

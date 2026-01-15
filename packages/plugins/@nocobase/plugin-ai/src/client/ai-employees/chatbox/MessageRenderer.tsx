@@ -278,7 +278,18 @@ export const UserMessage: React.FC<{
           ))}
         </div>
       ) : null}
-      {_.isEmpty(msg.content) ? <></> : <Bubble content={msg.content} />}
+      {_.isEmpty(msg.content) ? (
+        <></>
+      ) : (
+        <Bubble
+          content={msg.content}
+          styles={{
+            content: {
+              whiteSpace: 'pre-wrap',
+            },
+          }}
+        />
+      )}
     </MessageWrapper>
   );
 });
@@ -322,7 +333,7 @@ export const ErrorMessage: React.FC<{
 });
 
 export const HintMessage: React.FC<{ msg: any }> = memo(({ msg }) => {
-  return <Alert message={<>{msg.content} </>} type="info" showIcon closable />;
+  return <Alert style={{ marginBottom: 8 }} message={<>{msg.content} </>} type="info" showIcon closable />;
 });
 
 export const TaskMessage: React.FC<{

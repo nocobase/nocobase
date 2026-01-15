@@ -37,7 +37,11 @@ features:
         showOnHome: true
       - title: Multi-app and Multi-workspace
         details: Create multiple physically isolated application instances or logically isolated business workspaces to support multi-tenant scenarios.
-        link: /multi-app
+        link: /multi-app/multi-app
+        showOnHome: true
+      - title: Integration
+        details: Seamlessly connect with external systems, third-party services, and various data sources to extend NocoBase's functionality.
+        link: /integration/
         showOnHome: true
   - title: Operations and Security
     details: System operations management, data security, and monitoring capabilities.

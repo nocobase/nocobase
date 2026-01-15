@@ -18,7 +18,6 @@ import {
 } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { SelectOptions } from '../../../actions/titleField';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
@@ -118,7 +117,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     });
   }
 
-  render() {
+  renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
     const idx = this.context.fieldIndex;
@@ -136,6 +135,11 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
+            if (this.context.currentObject) {
+              fork.context.defineProperty('currentObject', {
+                get: () => this.context.currentObject,
+              });
+            }
             if (this.context.pattern) {
               fork.context.defineProperty('pattern', {
                 get: () => this.context.pattern,
@@ -149,8 +153,18 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
+    const record = this.context.currentObject || this.context.record;
     return (
-      <FormItem {...mergedProps} name={fieldPath} validateFirst={true}>
+      <FormItem
+        {...mergedProps}
+        name={fieldPath}
+        validateFirst={true}
+        disabled={
+          this.props.disabled ||
+          (!_.isEmpty(record) && !record.__is_new__ && this.props.aclDisabled) ||
+          (!_.isEmpty(record) && record.__is_new__ && this.props.aclCreateDisabled)
+        }
+      >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
@@ -158,7 +172,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 }
 
 FormItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 
@@ -167,6 +181,16 @@ FormItemModel.registerFlow({
   sort: 300,
   title: tExpr('Form item settings'),
   steps: {
+    showLabel: {
+      title: tExpr('Show label'),
+      uiMode: { type: 'switch', key: 'showLabel' },
+      defaultParams: {
+        showLabel: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ showLabel: params.showLabel });
+      },
+    },
     label: {
       title: tExpr('Label'),
       uiSchema: (ctx) => {
@@ -196,6 +220,84 @@ FormItemModel.registerFlow({
     },
     aclCheck: {
       use: 'aclCheck',
+      async handler(ctx, params) {
+        if (!ctx.collectionField || !ctx.blockModel) {
+          return;
+        }
+        const blockActionName = ctx.blockModel.context.actionName;
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField?.name],
+          actionName: blockActionName,
+        });
+
+        if (blockActionName === 'update') {
+          // 编辑表单
+          const resultView = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'view',
+          });
+          if (ctx.prefixFieldPath && ctx.currentObject) {
+            //子表单下的新增
+            const createFieldAclResult = await ctx.aclCheck({
+              dataSourceKey: ctx.dataSource?.key,
+              resourceName: ctx.collectionField?.collectionName,
+              fields: [ctx.collectionField.name],
+              actionName: 'create',
+            });
+
+            if (!createFieldAclResult) {
+              ctx.model.setProps({
+                aclCreateDisabled: true,
+              });
+            }
+          }
+
+          if (!resultView && !ctx.currentObject?.__is_new__) {
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: 'view',
+            };
+            ctx.exitAll();
+          }
+
+          if (!result) {
+            ctx.model.setProps({
+              aclDisabled: true,
+            });
+          }
+        } else if (blockActionName === 'create') {
+          // 新增表单
+          const updateCollectionAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            actionName: 'update',
+          });
+
+          const updateFieldAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'update',
+          });
+          if (!result && !ctx.currentObject?.__is_stored__) {
+            // 子表单中选择的记录
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: blockActionName,
+            };
+            ctx.exitAll();
+          }
+          if (!updateCollectionAclResult || !updateFieldAclResult) {
+            ctx.model.setProps({
+              aclDisabled: true,
+            });
+          }
+        }
+      },
     },
     init: {
       async handler(ctx) {
@@ -207,25 +309,6 @@ FormItemModel.registerFlow({
       },
     },
 
-    showLabel: {
-      title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        showLabel: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ showLabel: params.showLabel });
-      },
-    },
     tooltip: {
       title: tExpr('Tooltip'),
       uiSchema: {
@@ -277,7 +360,7 @@ FormItemModel.registerFlow({
       defaultParams: (ctx) => {
         const collectionField = ctx.model.collectionField;
 
-        if (collectionField.interface === 'nanoid') {
+        if (collectionField.interface === 'nanoid' && collectionField.options.autoFill !== false) {
           const { size, customAlphabet } = collectionField.options || { size: 21 };
           return {
             defaultValue: Alphabet(customAlphabet, size)(),
@@ -311,27 +394,21 @@ FormItemModel.registerFlow({
       title: tExpr('Field component'),
     },
     pattern: {
-      title: tExpr('Display mode'),
       use: 'pattern',
     },
 
     titleField: {
       use: 'titleField',
-      uiSchema: async (ctx) => {
-        if (!ctx.collectionField) {
-          return;
+      hideInSettings(ctx) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
+          return true;
         }
         const isAssociationReadPretty =
           ctx.collectionField.isAssociationField() && ctx.model.getProps().pattern === 'readPretty';
         if (!isAssociationReadPretty) {
-          return null;
+          return true;
         }
-        return {
-          titleField: {
-            'x-component': SelectOptions,
-            'x-decorator': 'FormItem',
-          },
-        };
+        return false;
       },
       defaultParams: (ctx: any) => {
         const titleField =
@@ -346,9 +423,10 @@ FormItemModel.registerFlow({
         if (!isAssociationReadPretty) {
           return null;
         }
-        if (params.titleField !== previousParams.titleField) {
+        const label = params.titleField || params.label;
+        if (label !== previousParams.titleField) {
           const targetCollection = ctx.collectionField.targetCollection;
-          const targetCollectionField = targetCollection.getField(params.titleField);
+          const targetCollectionField = targetCollection.getField(label);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
           if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
@@ -360,21 +438,35 @@ FormItemModel.registerFlow({
                   init: {
                     dataSourceKey: ctx.model.collectionField.dataSourceKey,
                     collectionName: targetCollection.name,
-                    fieldPath: params.titleField,
+                    fieldPath: label,
                   },
                 },
               },
             });
             await model.save();
           }
-          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.titleField).getComponentProps());
+          ctx.model.setProps(ctx.collectionField.targetCollection.getField(label).getComponentProps());
         }
       },
       async handler(ctx, params) {
-        ctx.model.setProps({ titleField: params?.titleField });
-        // if (ctx.model.props.pattern === 'readPretty') {
-        //   ctx.model.setProps({ titleField: params?.label });
-        // }
+        if (ctx.model.props.pattern === 'readPretty') {
+          ctx.model.setProps({ titleField: params?.label });
+        } else {
+          ctx.model.setProps({ titleField: params.titleField });
+        }
+      },
+    },
+  },
+});
+
+FormItemModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
+      defaultParams: {
+        strategy: 'formItem',
       },
     },
   },

@@ -14,7 +14,6 @@ import { FlowContextProvider } from './FlowContextProvider';
 import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
 import { FlowViewer } from './views/FlowView';
-import { observer } from '@formily/reactive-react';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -91,9 +90,10 @@ export const useFlowEngine = ({ throwError = true } = {}): FlowEngine => {
   if (!context && throwError) {
     // This error should ideally not be hit if FlowEngineProvider is used correctly at the root
     // and always supplied with an engine.
-    throw new Error(
+    console.warn(
       'useFlowEngine must be used within a FlowEngineProvider, and FlowEngineProvider must be supplied with an engine.',
     );
+    return;
   }
   return context;
 };

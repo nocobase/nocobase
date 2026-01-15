@@ -74,7 +74,7 @@ const queryParentSQL = (options: {
   return `WITH RECURSIVE cte AS (
       SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
       FROM ${tableName}
-      WHERE ${q(targetKeyField)} IN (${nodeIds.join(',')})
+      WHERE ${q(targetKeyField)} IN ('${nodeIds.join("','")}')
       UNION ALL
       SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
       FROM ${tableName} AS t

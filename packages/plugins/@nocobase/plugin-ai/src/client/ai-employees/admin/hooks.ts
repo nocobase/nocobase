@@ -85,8 +85,13 @@ export const useCreateActionProps = () => {
   return {
     type: 'primary',
     async onClick() {
-      await form.submit();
       const values = form.values;
+      const modelSettings = values?.modelSettings;
+      if (!modelSettings?.llmService || !modelSettings?.model) {
+        message.warning(t('Please complete model setting before submitting'));
+        return;
+      }
+      await form.submit();
       await api.resource('aiEmployees').create({
         values,
       });
@@ -113,8 +118,21 @@ export const useEditActionProps = () => {
   return {
     type: 'primary',
     async onClick() {
+      const values = { ...form.values };
+      // Handle built-in AI employee about mode
+      // _aboutMode is set by SystemPrompt component for built-in employees
+      if (values._aboutMode === 'system') {
+        values.about = null;
+      }
+      // Remove temporary field before submitting
+      delete values._aboutMode;
+
+      const modelSettings = values?.modelSettings;
+      if (!modelSettings?.llmService || !modelSettings?.model) {
+        message.warning(t('Please complete model settings before submitting'));
+        return;
+      }
       await form.submit();
-      const values = form.values;
       await resource.update({
         values,
         filterByTk: values[filterTk],
@@ -134,9 +152,12 @@ export const useDeleteActionProps = () => {
   const { onClick } = useDestroyActionProps();
   const isBuiltIn = record?.builtIn;
   const { message } = App.useApp();
+  const api = useAPIClient();
+  const isSuperUser = api.auth.role === 'root';
+
   return {
     async onClick(e?, callBack?) {
-      if (isBuiltIn) {
+      if (isBuiltIn && !isSuperUser) {
         message.warning(t('Cannot delete built-in ai employees'));
         return;
       }

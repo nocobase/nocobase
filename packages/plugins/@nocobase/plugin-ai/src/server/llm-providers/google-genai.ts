@@ -15,6 +15,8 @@ import { encodeFile } from '../utils';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
+import { Context } from '@nocobase/actions';
+import { AIChatContext } from '../types/ai-chat-conversation.type';
 
 const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com/v1beta/';
 
@@ -56,9 +58,6 @@ export class GoogleGenAIProvider extends LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
       const res = await axios.get(`${baseURL}/models?key=${apiKey}`);
       return {
         models: res?.data?.models.map((model) => ({
@@ -108,10 +107,10 @@ export class GoogleGenAIProvider extends LLMProvider {
     };
   }
 
-  async parseAttachment(attachment: any) {
+  async parseAttachment(ctx: Context, attachment: any) {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(decodeURIComponent(url));
+    const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',
@@ -125,6 +124,37 @@ export class GoogleGenAIProvider extends LLMProvider {
         data,
       };
     }
+  }
+
+  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
+    const { responseFormat } = this.modelOptions || {};
+    const { schema, name, description } = structuredOutput || {};
+    if (!schema) {
+      return;
+    }
+
+    const methods = {
+      json_object: 'jsonMode',
+      json_schema: 'jsonSchema',
+    };
+
+    const options: Record<string, any> = {
+      includeRaw: true,
+      name,
+    };
+
+    const method = methods[responseFormat];
+    if (method) {
+      options.method = method;
+    }
+
+    return {
+      schema: {
+        ...schema,
+        description: description ?? schema.description,
+      },
+      options,
+    };
   }
 
   protected builtInTools(): any[] {

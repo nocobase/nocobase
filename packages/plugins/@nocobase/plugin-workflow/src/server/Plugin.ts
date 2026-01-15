@@ -30,6 +30,7 @@ import { Instruction, InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import EndInstruction from './instructions/EndInstruction';
+import OutputInstruction from './instructions/OutputInstruction';
 import CreateInstruction from './instructions/CreateInstruction';
 import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
@@ -295,6 +296,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.registerInstruction('condition', ConditionInstruction);
     this.registerInstruction('multi-conditions', MultiConditionsInstruction);
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
     this.registerInstruction('query', QueryInstruction);
@@ -316,6 +318,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
+      instance_id: this.app.instanceId,
     });
   }
 
@@ -329,6 +332,9 @@ export default class PluginWorkflowServer extends Plugin {
     this.initTriggers(options.triggers);
     this.initInstructions(options.instructions);
     initFunctions(this, options.functions);
+    this.functions.register('instanceId', () => this.app.instanceId);
+    this.functions.register('epoch', () => 1605024000);
+    this.functions.register('genSnowflakeId', () => this.app.snowflakeIdGenerator.generate());
 
     this.loggerCache = new LRUCache({
       max: 20,

@@ -21,7 +21,7 @@ import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
-interface CanResult {
+export interface CanResult {
   role: string;
   resource: string;
   action: string;
@@ -248,6 +248,14 @@ export class ACL extends EventEmitter {
       return null;
     }
 
+    if (role === 'root') {
+      return {
+        resource,
+        action,
+        role,
+      };
+    }
+
     const actionPath = `${rawResourceName ? rawResourceName : resource}:${action}`;
     const snippetAllowed = aclRole.snippetAllowed(actionPath);
 
@@ -379,6 +387,7 @@ export class ACL extends EventEmitter {
 
     return async function ACLMiddleware(ctx, next) {
       ctx.acl = acl;
+
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName: rawResourceName, actionName } = ctx.action;
 

@@ -8,12 +8,18 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, tExpr, FlowSettingsButton, DndProvider, useFlowEngine } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  tExpr,
+  FlowSettingsButton,
+  DndProvider,
+  useFlowEngine,
+  observer,
+} from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
 import { isEmpty } from 'lodash';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -86,8 +92,6 @@ const DisplayTable = (props) => {
   }, [currentPage, currentPageSize, value]);
 
   const getColumns = () => {
-    const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
-
     const cols = adjustColumnOrder(
       [
         enableIndexColumn && {
@@ -105,7 +109,7 @@ const DisplayTable = (props) => {
         }),
       ].filter(Boolean),
     ) as any;
-    if (isConfigMode) {
+    if (model.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
@@ -170,6 +174,7 @@ const DisplayTable = (props) => {
   );
 };
 export class DisplaySubTableFieldModel extends FieldModel {
+  disableTitleField = true;
   defaultOverflowMode = 'ellipsis';
   get collection() {
     return this.context.collection;
@@ -191,6 +196,12 @@ export class DisplaySubTableFieldModel extends FieldModel {
         return this.context.fieldPath;
       },
     });
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return 'view';
+      },
+      cache: false,
+    });
   }
 
   async afterAddAsSubModel() {
@@ -205,6 +216,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
     return baseColumns;
   }
+
   public render() {
     return (
       <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns()} model={this} />
@@ -223,11 +235,11 @@ DisplaySubTableFieldModel.registerFlow({
     },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },

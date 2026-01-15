@@ -80,6 +80,17 @@ export class XlsxImporter extends EventEmitter {
     return data;
   }
 
+  async validateBySpaces(data: string[][], ctx?: Context) {
+    if (ctx?.space?.can) {
+      await ctx.space.can({
+        data: data?.slice(1) || [],
+        columns: this.options.columns.map((column) => column.dataIndex),
+        collection: this.options.collection.name,
+        ctx,
+      });
+    }
+  }
+
   async validate(ctx?: Context) {
     const columns = this.getColumnsByPermission(ctx);
     if (columns.length == 0) {
@@ -94,6 +105,9 @@ export class XlsxImporter extends EventEmitter {
     }
 
     const data = await this.getData(ctx);
+
+    await this.validateBySpaces(data, ctx);
+
     return data;
   }
 
@@ -312,6 +326,14 @@ export class XlsxImporter extends EventEmitter {
       });
     }
 
+    const translate = (message: string) => {
+      if (options.context?.t) {
+        return options.context.t(message, { ns: 'action-import' });
+      } else {
+        return message;
+      }
+    };
+
     try {
       await this.loggerService.measureExecutedTime(
         async () =>
@@ -326,13 +348,13 @@ export class XlsxImporter extends EventEmitter {
       handingRowIndex += chunkRows.length;
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new Error(
-          `${options.context?.t('Unique constraint error, fields:', { ns: 'action-import' })} ${JSON.stringify(
-            error.fields,
-          )}`,
-        );
+        throw new Error(`${translate('Unique constraint error, fields:')} ${JSON.stringify(error.fields)}`);
       }
 
+      if (error.params?.rowIndex) {
+        handingRowIndex += error.params.rowIndex;
+        error.params.rowIndex = handingRowIndex;
+      }
       this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
         rowIndex: handingRowIndex,
         rowData: rows[handingRowIndex],
@@ -374,7 +396,7 @@ export class XlsxImporter extends EventEmitter {
       if (insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
-            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+            await db.emitAsync(`${this.repository.collection.name}.afterCreate`, instance, {
               transaction,
             });
             await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {

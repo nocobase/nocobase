@@ -20,6 +20,7 @@ import {
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
+  getPageActive,
   tExpr,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
@@ -49,6 +50,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
     const tabModel: BasePageTabModel = this.flowEngine.getModel(tabActiveKey);
 
     if (tabModel) {
+      if (tabModel.context.tabActive) {
+        tabModel.context.tabActive.value = getPageActive(tabModel.context) ? method === 'onActive' : false;
+      }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
         item[method]?.();
       });
@@ -76,35 +80,41 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   mapTabs() {
     return this.mapSubModels('tabs', (model) => {
-      return {
-        key: model.uid,
-        label: (
-          <Droppable model={model}>
-            <FlowModelRenderer
-              model={model}
-              showFlowSettings={{
-                showBackground: true,
-                showBorder: false,
-                toolbarPosition: 'above',
-                style: { transform: 'translateY(8px)' },
-              }}
-              extraToolbarItems={[
-                {
-                  key: 'drag-handler',
-                  component: DragHandler,
-                  sort: 1,
-                },
-              ]}
-            />
-          </Droppable>
-        ),
-        children: model.renderChildren(),
-      };
-    });
+      return !this.context.flowSettingsEnabled && model.hidden
+        ? null
+        : {
+            key: model.uid,
+            label: (
+              <Droppable model={model}>
+                <FlowModelRenderer
+                  model={model}
+                  showFlowSettings={{
+                    showBackground: true,
+                    showBorder: false,
+                    toolbarPosition: 'above',
+                    style: { transform: 'translateY(8px)' },
+                  }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            ),
+            children: model.renderChildren(),
+          };
+    }).filter(Boolean);
+  }
+
+  getFirstTab() {
+    return this.subModels.tabs?.[0];
   }
 
   renderFirstTab() {
-    const firstTab = this.subModels.tabs?.[0];
+    const firstTab = this.getFirstTab();
     return firstTab?.renderChildren?.();
   }
 
@@ -116,7 +126,11 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          activeKey={this.props.tabActiveKey}
+          activeKey={
+            this.context.view?.navigation?.viewParams
+              ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
+              : this.props.tabActiveKey
+          }
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {

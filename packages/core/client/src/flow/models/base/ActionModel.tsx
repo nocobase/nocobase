@@ -7,15 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined } from '@ant-design/icons';
-import { DefaultStructure, FlowModel, tExpr } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel, tExpr, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
+import { useTranslation } from 'react-i18next';
 import _ from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Icon } from '../../../icon/Icon';
 import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
+
+export function ActionWithoutPermission(props) {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const collection = props.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}`;
+  }, []);
+  const { actionName } = props?.forbidden || model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(_.capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [actionName, nameValue, t]);
+
+  return <Tooltip title={props.message || messageValue}>{props.children}</Tooltip>;
+}
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
 
@@ -27,14 +52,15 @@ export const ActionSceneEnum = {
 };
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
-  declare props: ButtonProps;
+  declare props: ButtonProps & { tooltip?: string };
   declare scene: ActionSceneType;
 
-  defaultProps: ButtonProps = {
+  defaultProps: ButtonProps & { tooltip?: string } = {
     type: 'default',
     title: tExpr('Action'),
   };
 
+  enableEditTooltip = true;
   enableEditTitle = true;
   enableEditIcon = true;
   enableEditType = true;
@@ -51,7 +77,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   getAclActionName() {
-    return 'view';
+    return null;
   }
 
   onInit(options: any): void {
@@ -89,19 +115,27 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   onClick(event) {
-    this.dispatchEvent('click', {
-      event,
-      ...this.getInputArgs(),
-    });
+    this.dispatchEvent(
+      'click',
+      {
+        event,
+        ...this.getInputArgs(),
+      },
+      {
+        debounce: true,
+      },
+    );
   }
 
   getTitle() {
     return this.props.title;
   }
+
   getIcon() {
     return this.props.icon;
   }
-  render() {
+
+  renderButton() {
     const props = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
 
@@ -112,15 +146,32 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     );
   }
 
+  render() {
+    if (this.props.tooltip) {
+      return <Tooltip title={this.props.tooltip}>{this.renderButton()}</Tooltip>;
+    }
+
+    return this.renderButton();
+  }
+
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
+    const props = this.props;
+    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    if (this.forbidden) {
+      return (
+        <ActionWithoutPermission>
+          <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+            {props.children || this.getTitle()}
+          </Button>
+        </ActionWithoutPermission>
+      );
+    }
     return (
-      <Tooltip
-        title={this.context.t(
-          'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-        )}
-      >
-        <Button type={this.props.type} disabled icon={<LockOutlined />} />
+      <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+        <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+          {props.children || this.getTitle()}
+        </Button>
       </Tooltip>
     );
   }
@@ -140,6 +191,13 @@ ActionModel.registerFlow({
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: tExpr('Button title'),
+              }
+            : undefined,
+          tooltip: ctx.model.enableEditTooltip
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: tExpr('Button tooltip'),
               }
             : undefined,
           icon: ctx.model.enableEditIcon
@@ -183,9 +241,10 @@ ActionModel.registerFlow({
         return ctx.model.defaultProps;
       },
       handler(ctx, params) {
-        const { title, ...rest } = params;
+        const { title, tooltip, ...rest } = params;
         ctx.model.setProps({
-          title: ctx.t(title),
+          title: title ? ctx.t(title) : undefined,
+          tooltip: tooltip ? ctx.t(tooltip) : undefined,
           ...rest,
         });
       },
@@ -195,6 +254,25 @@ ActionModel.registerFlow({
     },
     linkageRules: {
       use: 'actionLinkageRules',
+    },
+  },
+});
+
+// 分页切换后需要重新计算 ACL 与联动规则（fork 复用时尤其重要）
+ActionModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
+    },
+    linkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'actionLinkageRules',
+        flowKey: 'buttonSettings',
+        stepKey: 'linkageRules',
+      },
     },
   },
 });

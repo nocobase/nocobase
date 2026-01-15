@@ -35,10 +35,19 @@ export const InputNumberField = (props: AntdInputNumberProps) => {
       onChange(toSafeNumber(v));
     }
   };
-  let inputNumberProps = {
-    onChange: handleChange,
-    ...others,
+  const handelCompositionEnd = (v) => {
+    if (Number.isNaN(v) || typeof v === 'object') {
+      props.onCompositionEnd(undefined);
+    } else {
+      props.onCompositionEnd(v);
+    }
   };
+  let inputNumberProps = {
+    ...others,
+    onChange: handleChange,
+    onCompositionEnd: handelCompositionEnd,
+  };
+
   if (others['formatStyle']) {
     inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
   }
@@ -50,10 +59,10 @@ export class NumberFieldModel extends FieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id'], {
+EditableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });
 
-FilterableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id'], {
+FilterableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });

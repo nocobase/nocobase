@@ -157,6 +157,10 @@ export default defineConfig({
               link: '/examples/flow-models/lifecycle',
             },
             {
+              title: 'scheduleModelOperation',
+              link: '/examples/flow-models/schedule-model-operation',
+            },
+            {
               title: 'hidden 属性演示',
               link: '/examples/flow-model-hidden',
             },
@@ -213,6 +217,10 @@ export default defineConfig({
             {
               title: 'hideInSettings - 在设置界面中隐藏',
               link: '/examples/flow-definition/hide-in-settings',
+            },
+            {
+              title: '扩展设置菜单（Common actions）',
+              link: '/examples/flow-definition/settings-menu-extra-items',
             },
             {
               title: 'uiMode - 步骤设置的 UI 模式',

@@ -66,9 +66,11 @@ export class PluginFlowEngine extends Plugin {
 export * from './components/filter';
 export * from './components/code-editor';
 export * from './components/TextAreaWithContextSelector';
+export * from './components/SkeletonFallback';
 export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
+export * from './utils';
 export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
 

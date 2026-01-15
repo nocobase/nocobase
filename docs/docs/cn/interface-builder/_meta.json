@@ -79,11 +79,6 @@
           },
           {
             "type": "custom-link",
-            "label": "引用区块",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
@@ -133,6 +128,11 @@
             "type": "custom-link",
             "label": "区块标题",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "表单草稿",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -489,6 +489,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI 模板",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

@@ -28,6 +28,7 @@ import React from 'react';
 import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
+import { dispatchEventDeep } from '../../../utils';
 
 export class DetailsBlockModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -89,6 +90,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       multiResource.setPage(page);
       multiResource.loading = true;
       await this.refresh();
+      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
@@ -120,14 +122,40 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     );
   }
 
+  renderConfigureActions() {
+    return (
+      <AddSubModelButton
+        key="details-actions-add"
+        model={this}
+        subModelKey="actions"
+        subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
+        afterSubModelInit={async (actionModel) => {
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
+        }}
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
     return (
       <>
         <DndProvider>
-          <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
-            <Space>
+          <div
+            style={{
+              textAlign: 'right',
+              lineHeight: '0px',
+              padding: isConfigMode && this.context.themeToken.padding,
+            }}
+          >
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
@@ -144,18 +172,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                   </Droppable>
                 );
               })}
-
-              <AddSubModelButton
-                key="details-actions-add"
-                model={this}
-                subModelKey="actions"
-                subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
-                afterSubModelInit={async (actionModel) => {
-                  actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
-                }}
-              >
-                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-              </AddSubModelButton>
+              {this.renderConfigureActions()}
             </Space>
           </div>
         </DndProvider>
@@ -195,6 +212,29 @@ DetailsBlockModel.registerFlow({
     },
     linkageRules: {
       use: 'detailsFieldLinkageRules',
+    },
+  },
+});
+
+DetailsBlockModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    blockLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+    fieldslinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'detailsFieldLinkageRules',
+        flowKey: 'detailsSettings',
+        stepKey: 'linkageRules',
+      },
     },
   },
 });

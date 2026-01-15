@@ -174,7 +174,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 如下图所示：
 
-![操作执行顺序](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![操作执行顺序](https://static-docs.nocobase.com/20251219234806.png)
 
 ### 与数据表事件的区别
 

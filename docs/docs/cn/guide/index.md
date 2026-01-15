@@ -37,7 +37,11 @@ features:
         showOnHome: true
       - title: 多应用和多空间
         details: 创建多个物理隔离的应用实例或者逻辑隔离的业务空间，支持多租户场景。
-        link: /multi-app
+        link: /multi-app/multi-app/
+        showOnHome: true
+      - title: 集成
+        details: 与外部系统、第三方服务和各种数据源无缝连接，扩展 NocoBase 的功能。
+        link: /integration/
         showOnHome: true
   - title: 运维与安全
     details: 系统运维管理、数据安全与监控能力。

@@ -17,6 +17,7 @@ export default {
     {
       type: 'belongsToMany',
       name: 'posts',
+      through: 'postsTags',
     },
     {
       type: 'string',

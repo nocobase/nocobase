@@ -5,28 +5,35 @@ pkg: "@nocobase/plugin-email-manager"
 # 批量发送
 
 ## 批量发送概览
-可以对多人进行批量发送邮件（每个收件人将收到单独邮件）。  
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_10_PM.png)
+支持向多个收件人批量发送邮件，每个收件人将收到独立的邮件。
+
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_15_PM.png)
 
 ## 通过表格批量发送
-也可以通过表格进行批量发送邮件：
 
-1. 给表格添加发送邮件按钮
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_14_PM.png)
+可在表格中配置批量选中发送邮件功能。
 
-2. 配置表格中的邮件字段（用于选中表格后解析邮件地址）  
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_13_PM.png)
+1. 在表格添加发送邮件按钮
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
 
-3. 勾选表格数据进行发送邮件
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_15_PM.png)
+2. 配置收件人字段（系统会从选中的表格数据中提取邮箱地址）。
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_17_PM%20(1).png)
 
-如果需要发送整个表格的邮件地址，可开启 **默认选中当前表所有记录作为收件人** 功能：  
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_16_PM.png)
+3. 勾选需要发送的表格行数据。
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
-编辑邮件内容后，点击批量发送按钮进行发送：  
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_17_PM.png)
+若需向表格中的所有记录发送，可将收件人范围设置为 **All records**。
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_18_PM%20(1).png)
+
+编辑邮件内容后，点击 **批量发送** 按钮完成发送。
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
 ## 邮件发送追踪
-可在邮件管理中心查看并追踪具体的邮件发送情况：  
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM%20(1).png)  
+
+发送完成后，可在邮件管理中心查看发送状态和邮件信息。
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_20_PM.png)
+
 ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM.png)

@@ -77,6 +77,12 @@ For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 
 ![20251023202017](https://static-docs.nocobase.com/20251023202017.png)
 
+### Field template
+
+Field templates let you reuse the field section configuration (selected fields, layout, and field settings) in Details blocks. See [Field template](/interface-builder/fields/field-template).
+
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
 
 ## Configure Actions
 

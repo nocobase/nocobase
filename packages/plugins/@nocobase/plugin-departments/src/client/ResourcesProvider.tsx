@@ -57,6 +57,16 @@ export const ResourcesProvider: React.FC = (props) => {
     userService.run();
   }, [department]);
 
+  useEffect(() => {
+    if (!user) {
+      userService.run();
+    } else {
+      userService.mutate({
+        data: [user],
+      } as any);
+    }
+  }, [user]);
+
   const departmentRequest = {
     resource: 'departments',
     action: 'list',

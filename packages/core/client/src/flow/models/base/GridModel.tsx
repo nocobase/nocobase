@@ -96,7 +96,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   // 拖拽高亮区域的配置，子类可以覆盖此属性来自定义偏移
   dragOverlayConfig?: DragOverlayConfig;
   // 通过稳定引用减少子项不必要的重渲染
-  private readonly itemFallback = (<SkeletonFallback />);
+  itemFallback = (<SkeletonFallback />);
   private readonly itemExtraToolbarItems = [
     {
       key: 'drag-handler',
@@ -106,6 +106,57 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   ];
   private dragState?: DragState;
   private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
+  protected deriveRowOrder(rows: Record<string, string[][]>, provided?: string[]) {
+    const order: string[] = [];
+    const used = new Set<string>();
+
+    (provided || Object.keys(rows)).forEach((rowId) => {
+      if (rows[rowId] && !used.has(rowId)) {
+        order.push(rowId);
+        used.add(rowId);
+      }
+    });
+
+    Object.keys(rows).forEach((rowId) => {
+      if (!used.has(rowId)) {
+        order.push(rowId);
+        used.add(rowId);
+      }
+    });
+
+    return order;
+  }
+
+  normalizeRowsWithOrder(rows: Record<string, string[][]>, provided?: string[]) {
+    const rowOrder = this.deriveRowOrder(rows, provided);
+    const ordered: Record<string, string[][]> = {};
+    rowOrder.forEach((rowId) => {
+      if (rows[rowId]) {
+        ordered[rowId] = rows[rowId];
+      }
+    });
+    Object.keys(rows).forEach((rowId) => {
+      if (!ordered[rowId]) {
+        ordered[rowId] = rows[rowId];
+      }
+    });
+    return { rows: ordered, rowOrder };
+  }
+
+  orderSizesByRowOrder(sizes: Record<string, number[]>, rowOrder: string[]) {
+    const ordered: Record<string, number[]> = {};
+    rowOrder.forEach((rowId) => {
+      if (sizes[rowId]) {
+        ordered[rowId] = sizes[rowId];
+      }
+    });
+    Object.keys(sizes).forEach((rowId) => {
+      if (!ordered[rowId]) {
+        ordered[rowId] = sizes[rowId];
+      }
+    });
+    return ordered;
+  }
   private getItemFlowSettings(): Exclude<FlowModelRendererProps['showFlowSettings'], boolean> {
     if (!this._memoItemFlowSettings) {
       this._memoItemFlowSettings = { showBackground: false, showDragHandle: true, ...this.itemFlowSettings };
@@ -128,15 +179,19 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       if (position) {
         const newSizes = _.cloneDeep(this.props.sizes || {});
         newSizes[position.rowId] = [24]; // 默认新行宽度为 24
+        const { rowOrder } = this.normalizeRowsWithOrder(this.props.rows || {}, this.props.rowOrder);
+        const orderedSizes = this.orderSizesByRowOrder(newSizes, rowOrder);
         this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
           rows: this.props.rows || {},
-          sizes: newSizes,
+          sizes: orderedSizes,
+          rowOrder,
         });
 
-        this.setProps('sizes', newSizes);
+        this.setProps('sizes', orderedSizes);
+        this.setProps('rowOrder', rowOrder);
       }
     });
-    this.emitter.on('onSubModelRemoved', (model: FlowModel) => {
+    this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
       const modelUid = model.uid;
 
       // 1. 获取当前 modelUid 所在的位置
@@ -160,12 +215,17 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
           delete newSizes[position.rowId];
         }
 
+        const { rowOrder } = this.normalizeRowsWithOrder(rows, this.props.rowOrder);
+        const orderedSizes = this.orderSizesByRowOrder(newSizes, rowOrder);
+
         this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
           rows,
-          sizes: newSizes,
+          sizes: orderedSizes,
+          rowOrder,
         });
 
-        this.setProps('sizes', newSizes);
+        this.setProps('sizes', orderedSizes);
+        this.setProps('rowOrder', rowOrder);
       }
 
       // 删除筛选配置
@@ -220,12 +280,16 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   }
 
   saveGridLayout(layout?: GridLayoutData) {
-    const rows = layout?.rows ?? this.props.rows ?? {};
-    const sizes = layout?.sizes ?? this.props.sizes ?? {};
+    const sourceRows = layout?.rows ?? this.props.rows ?? {};
+    const sourceRowOrder = layout?.rowOrder ?? this.props.rowOrder;
+    const { rows, rowOrder } = this.normalizeRowsWithOrder(sourceRows, sourceRowOrder);
+    const sizes = this.orderSizesByRowOrder(layout?.sizes ?? this.props.sizes ?? {}, rowOrder);
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
       rows,
       sizes,
+      rowOrder,
     });
+    this.setProps('rowOrder', rowOrder);
     this.saveStepParams();
   }
 
@@ -268,13 +332,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   resetRows(syncProps = false) {
     const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
     const mergedRows = this.mergeRowsWithItems(params.rows || {});
+    const { rows, rowOrder } = this.normalizeRowsWithOrder(mergedRows, params.rowOrder);
+    const sizes = this.orderSizesByRowOrder(params.sizes || {}, rowOrder);
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
-      rows: mergedRows,
-      sizes: params.sizes || {},
+      rows,
+      sizes,
+      rowOrder,
     });
 
     if (syncProps) {
-      this.setProps('rows', mergedRows);
+      this.setProps('rows', rows);
+      this.setProps('sizes', sizes);
+      this.setProps('rowOrder', rowOrder);
     }
   }
 
@@ -425,6 +494,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.dragState.previewLayout = {
       rows: _.cloneDeep(preview.rows),
       sizes: _.cloneDeep(preview.sizes),
+      rowOrder: _.cloneDeep(preview.rowOrder),
     };
 
     const container = this.gridContainerRef.current;
@@ -447,11 +517,14 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   handleDragStart(event: DragStartEvent) {
     const sourceUid = event.active.id as string;
+    const { rows, rowOrder } = this.normalizeRowsWithOrder(this.props.rows || {}, this.props.rowOrder);
+    const sizes = this.orderSizesByRowOrder(this.props.sizes || {}, rowOrder);
     this.dragState = {
       sourceUid,
       snapshot: {
-        rows: _.cloneDeep(this.props.rows || {}),
-        sizes: _.cloneDeep(this.props.sizes || {}),
+        rows: _.cloneDeep(rows),
+        sizes: _.cloneDeep(sizes),
+        rowOrder,
       },
       slots: [],
       containerRect: { top: 0, left: 0, width: 0, height: 0 },
@@ -506,6 +579,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     if (previewLayout) {
       this.setProps('rows', _.cloneDeep(previewLayout.rows));
       this.setProps('sizes', _.cloneDeep(previewLayout.sizes));
+      if (previewLayout.rowOrder) {
+        this.setProps('rowOrder', _.cloneDeep(previewLayout.rowOrder));
+      }
       this.saveGridLayout(previewLayout);
     }
 
@@ -522,7 +598,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   /**
    * 运行态按可见 block 过滤行/列，避免“整行都是 hidden block”但依然保留行间距占位。
-   * - 配置态（flowSettings.enabled）保持原始 rows/sizes 以便拖拽和布局编辑。
+   * - 配置态（flowSettingsEnabled）保持原始 rows/sizes 以便拖拽和布局编辑。
    * - 运行态仅在判断为“整列/整行都不可见”时做过滤，不写回 props/stepParams，布局元数据保持不变。
    */
   private getVisibleLayout() {
@@ -534,9 +610,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       : rawRows;
     const baseSizes: Record<string, number[]> = this.context.isMobileLayout ? {} : rawSizes;
 
+    const { rows: orderedBaseRows, rowOrder } = this.normalizeRowsWithOrder(baseRows, this.props.rowOrder);
+    const orderedBaseSizes = this.orderSizesByRowOrder(baseSizes, rowOrder);
+
     // 配置态：不做任何过滤，保持完整布局
-    if (this.flowEngine.flowSettings.enabled) {
-      return { rows: baseRows, sizes: baseSizes };
+    if (this.context.flowSettingsEnabled) {
+      return { rows: orderedBaseRows, sizes: orderedBaseSizes };
     }
 
     const items = this.subModels?.items || [];
@@ -549,9 +628,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     const rows: Record<string, string[][]> = {};
     const sizes: Record<string, number[]> = {};
 
-    Object.entries(baseRows).forEach(([rowKey, cells]) => {
-      const rowCells = cells;
-      const rowSizes = baseSizes[rowKey] || [];
+    rowOrder.forEach((rowKey) => {
+      const rowCells = orderedBaseRows[rowKey];
+      const rowSizes = orderedBaseSizes[rowKey] || [];
       const keptCells: string[][] = [];
       const keptSizes: number[] = [];
 
@@ -609,9 +688,13 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 dragOverlayRect={this.props.dragOverlayRect}
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
+                  if (!baseItem) {
+                    return this.itemFallback;
+                  }
                   const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
                   const record = this.context.record;
+                  const currentObject = this.context.currentObject;
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -628,6 +711,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                             get: () => record,
                             cache: false,
                           });
+                          fork.context.defineProperty('currentObject', {
+                            get: () => currentObject,
+                            cache: false,
+                          });
                           return fork;
                         })();
                   return (
@@ -636,7 +723,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         model={item}
                         key={`${item.uid}:${fieldKey}:${(item as any)?.use || (item as any)?.constructor?.name || 'm'}`}
                         fallback={baseItem.skeleton || this.itemFallback}
-                        showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
+                        showFlowSettings={this.context.flowSettingsEnabled ? this.getItemFlowSettings() : false}
                         showErrorFallback
                         settingsMenuLevel={(item as any)?.settingsMenuLevel ?? this.itemSettingsMenuLevel}
                         showTitle
@@ -649,9 +736,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
             </DndProvider>
           </Space>
         )}
-        {this.flowEngine.flowSettings.enabled && (
-          <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>
-        )}
+        {this.context.flowSettingsEnabled && <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>}
       </>
     );
   }
@@ -690,8 +775,11 @@ GridModel.registerFlow({
       },
       async handler(ctx, params) {
         const mergedRows = ctx.model.mergeRowsWithItems(params.rows || {});
-        ctx.model.setProps('rows', mergedRows);
-        ctx.model.setProps('sizes', params.sizes || {});
+        const { rows, rowOrder } = (ctx.model as GridModel).normalizeRowsWithOrder(mergedRows, params.rowOrder);
+        const sizes = (ctx.model as GridModel).orderSizesByRowOrder(params.sizes || {}, rowOrder);
+        ctx.model.setProps('rows', rows);
+        ctx.model.setProps('sizes', sizes);
+        ctx.model.setProps('rowOrder', rowOrder);
       },
     },
   },
@@ -722,7 +810,7 @@ export function transformRowsToSingleColumn(
   return singleColumnRows;
 }
 
-function recalculateGridSizes({
+export function recalculateGridSizes({
   position,
   direction,
   resizeDistance,
@@ -756,7 +844,7 @@ function recalculateGridSizes({
   const totalGutter = gutter * (currentRowSizes.length - 1);
 
   // 当前移动的距离占总宽度的多少份
-  const currentMoveDistance = Math.floor((resizeDistance / (gridContainerWidth - totalGutter)) * columnCount);
+  let currentMoveDistance = Math.floor((resizeDistance / (gridContainerWidth - totalGutter)) * columnCount);
 
   if (currentMoveDistance === prevMoveDistance) {
     return { newRows, newSizes, moveDistance: currentMoveDistance };
@@ -764,11 +852,31 @@ function recalculateGridSizes({
 
   newSizes[position.rowId] ??= [columnCount];
 
-  newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
+  const rowSizes = newSizes[position.rowId];
+  let delta = currentMoveDistance - prevMoveDistance;
+  const hasLeftNeighbor = direction === 'left' && position.columnIndex > 0;
+  const hasRightNeighbor = direction === 'right' && position.columnIndex < rowSizes.length - 1;
+
+  // 如果拖动会让总宽度增加，则限制最大增量不超过 columnCount
+  if (!hasLeftNeighbor && !hasRightNeighbor && delta > 0) {
+    const currentTotal = rowSizes.reduce((a, b) => a + b, 0);
+    const maxDelta = columnCount - currentTotal;
+
+    if (maxDelta <= 0) {
+      return { newRows, newSizes, moveDistance: prevMoveDistance };
+    }
+
+    if (delta > maxDelta) {
+      currentMoveDistance = prevMoveDistance + maxDelta;
+      delta = maxDelta;
+    }
+  }
+
+  newSizes[position.rowId][position.columnIndex] += delta;
 
   if (direction === 'left' && position.columnIndex > 0) {
     // 如果是左侧拖动，左侧的列宽度需要相应的减少或增加
-    newSizes[position.rowId][position.columnIndex - 1] -= currentMoveDistance - prevMoveDistance;
+    newSizes[position.rowId][position.columnIndex - 1] -= delta;
 
     // 如果左侧列的宽度为 0，且是一个空白列，则需要删除该列
     if (newSizes[position.rowId][position.columnIndex - 1] === 0) {
@@ -798,7 +906,7 @@ function recalculateGridSizes({
 
   if (direction === 'right' && position.columnIndex < newSizes[position.rowId].length - 1) {
     // 如果是右侧拖动，右侧的列宽度需要相应的减少或增加
-    newSizes[position.rowId][position.columnIndex + 1] -= currentMoveDistance - prevMoveDistance;
+    newSizes[position.rowId][position.columnIndex + 1] -= delta;
 
     // 如果右侧列的宽度为 0，且是一个空白列，则需要删除该列
     if (newSizes[position.rowId][position.columnIndex + 1] === 0) {

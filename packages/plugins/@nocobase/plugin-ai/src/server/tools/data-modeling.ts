@@ -13,17 +13,22 @@ import { z } from 'zod';
 
 const idField = {
   name: 'id',
-  type: 'bigInt',
-  autoIncrement: true,
+  type: 'snowflakeId',
+  autoIncrement: false,
   primaryKey: true,
   allowNull: false,
   uiSchema: {
     type: 'number',
     title: '{{t("ID")}}',
     'x-component': 'InputNumber',
-    'x-read-pretty': true,
+    'x-component-props': {
+      stringMode: true,
+      separator: '0.00',
+      step: '1',
+    },
+    'x-validator': 'integer',
   },
-  interface: 'id',
+  interface: 'snowflakeId',
 };
 const createdAtField = {
   name: 'createdAt',
@@ -62,21 +67,21 @@ const createPrompt = `You are now entering the **New Schema Creation Flow**. Fol
 
 3. **Output and Confirmation**
    - Present the full schema in **formatted natural language** (not plain JSON).
-   - Wait for user confirmation, then call the \`defineCollections\` tool with the **complete schema definition**.
+   - Wait for user confirmation, then call the \`dataModeling-defineCollections\` tool with the **complete schema definition**.
    - Until the tool responds, **assume the schema is not saved** — user may continue editing.
    - **Do not say or imply the schema has been created without tool response.**
 
-Only the \`defineCollections\` tool may be used.`;
+Only the \`dataModeling-defineCollections\` tool may be used.`;
 
 const editPrompt = `## Existing Schema Editing Flow
 
 1. **Clarify What Needs to Be Changed**
    - Identify which tables are affected by the requested changes.
-   - If needed, call \`getCollectionNames\` to retrieve the list of all tables (ID and title).
+   - If needed, call \`dataModeling-getCollectionNames\` to retrieve the list of all tables (ID and title).
 
 2. **Fetch Table Metadata**
    - Analyze the current structure and identify what needs to be added, removed, or updated.
-   - If needed, use the \`getCollectionMetadata\` tool to retrieve schema details of the target table(s).
+   - If needed, use the \`dataModeling-getCollectionMetadata\` tool to retrieve schema details of the target table(s).
 
 3. **Propose Changes**
    - Output your change suggestions in clear **natural language**.
@@ -84,9 +89,15 @@ const editPrompt = `## Existing Schema Editing Flow
    - Wait for user confirmation before applying any changes.
 
 4. **Apply Changes**
-   - Once confirmed, call the \`defineCollections\` tool with **only the modified parts** of the schema.
+   - Once confirmed, call the \`dataModeling-defineCollections\` tool with **only the modified parts** of the schema.
    - Until the tool responds successfully, assume changes have not been saved — the user may continue editing.
    - **Do not say or imply the schema is being or has been updated until a tool response is received.**`;
+
+class IntentError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 export const dataModelingIntentRouter: ToolOptions = {
   name: 'intentRouter',
@@ -129,14 +140,25 @@ export const getCollectionNames: ToolOptions = {
   description: '{{t("Retrieve names and titles map of all collections")}}',
   schema: {
     type: 'object',
-    properties: {},
+    properties: {
+      dataSource: {
+        type: 'string',
+        description: 'The data source name to retrieve collections from. Defaults to "main".',
+      },
+    },
     additionalProperties: false,
   },
-  invoke: async (ctx: Context) => {
+  invoke: async (ctx: Context, args: { dataSource?: string }) => {
+    const { dataSource = 'main' } = args || {};
     let names: { name: string; title: string }[] = [];
     try {
-      const collections = await ctx.db.getRepository('collections').find();
-      names = collections.map((collection: { name: string; title: string }) => ({
+      const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+      if (!ds) {
+        throw new Error(`Data source "${dataSource}" not found`);
+      }
+
+      const collections = ds.collectionManager.getCollections();
+      names = collections.map((collection) => ({
         name: collection.name,
         title: collection.title,
       }));
@@ -152,7 +174,6 @@ export const getCollectionNames: ToolOptions = {
         content: `Failed to retrieve collection names: ${err.message}`,
       };
     }
-
     return {
       status: 'success',
       content: JSON.stringify(names),
@@ -167,6 +188,10 @@ export const getCollectionMetadata: ToolOptions = {
   schema: {
     type: 'object',
     properties: {
+      dataSource: {
+        type: 'string',
+        description: 'The data source name. Defaults to "main".',
+      },
       collectionNames: {
         type: 'array',
         items: {
@@ -181,39 +206,92 @@ export const getCollectionMetadata: ToolOptions = {
   invoke: async (
     ctx: Context,
     args: {
+      dataSource?: string;
       collectionNames: string[];
     },
   ) => {
-    const { collectionNames } = args || {};
+    const { collectionNames, dataSource = 'main' } = args || {};
     if (!collectionNames || !Array.isArray(collectionNames) || collectionNames.length === 0) {
       return {
         status: 'error',
         content: 'No collection names provided or invalid format.',
       };
     }
-    const collections = await ctx.db.getRepository('collections').find({
-      filter: { name: collectionNames },
-      appends: ['fields'],
-    });
-    const metadata = collections.map((collection: any) => {
-      const fields = collection.fields.map((field: any) => {
+
+    try {
+      const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+      if (!ds) {
         return {
-          name: field.name,
-          type: field.type,
-          interface: field.interface,
-          options: field.options || {},
+          status: 'error',
+          content: `Data source "${dataSource}" not found`,
         };
-      });
+      }
+
+      const metadata = [];
+      for (const name of collectionNames) {
+        const collection = ds.collectionManager.getCollection(name);
+        if (!collection) continue;
+
+        const fields = collection.getFields().map((field) => {
+          return {
+            name: field.name,
+            type: field.type,
+            interface: field.options.interface,
+            options: field.options || {},
+          };
+        });
+        metadata.push({
+          name: collection.name,
+          title: collection.title,
+          fields,
+        });
+      }
       return {
-        name: collection.name,
-        title: collection.title,
-        fields,
+        status: 'success',
+        content: JSON.stringify(metadata),
       };
-    });
-    return {
-      status: 'success',
-      content: JSON.stringify(metadata),
-    };
+    } catch (err) {
+      return {
+        status: 'error',
+        content: `Failed to retrieve metadata: ${err.message}`,
+      };
+    }
+  },
+};
+
+export const getDataSources: ToolOptions = {
+  name: 'getDataSources',
+  title: '{{t("Get data sources")}}',
+  description: '{{t("Retrieve list of all available data sources")}}',
+  schema: {
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  },
+  invoke: async (ctx: Context) => {
+    try {
+      const records = await ctx.db.getRepository('dataSources').find();
+      const displayNameMap = new Map(records.map((r) => [r.get('key'), r.get('displayName')]));
+      const dataSources = [];
+      // Add data sources
+      for (const [key, ds] of ctx.app.dataSourceManager.dataSources) {
+        dataSources.push({
+          key: key,
+          displayName: displayNameMap.get(key) || key,
+          type: ds.collectionManager?.db?.sequelize?.getDialect() || 'unknown',
+        });
+      }
+
+      return {
+        status: 'success',
+        content: JSON.stringify(dataSources),
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        content: `Failed to retrieve data sources: ${err.message}`,
+      };
+    }
   },
 };
 
@@ -222,16 +300,27 @@ export const defineCollections: ToolOptions = {
   title: '{{t("Define collections")}}',
   description: '{{t("Create or edit collections")}}',
   schema: z.object({
+    intent: z.enum(['create', 'edit']).describe(
+      `Pass the intent of the current tool invocation as an enum value. The value must be either 'create' or 'edit':
+- create: create a brand-new data table definition
+- edit: modify an existing data table definition`,
+    ),
     collections: z
       .array(
         z.object({}).catchall(z.any()).describe('Valid collection object which defined in collection_type_definition'),
       )
       .describe('An array of collections to be defined or edited.'),
   }),
-  invoke: async (ctx: Context) => {
-    const {
-      args: { collections },
-    } = ctx.action.params.values || {};
+  invoke: async (ctx: Context, args: any) => {
+    const { intent, collections: originalCollections } = ctx.action?.params?.values?.args ?? args ?? {};
+    if (!intent || !['create', 'edit'].includes(intent)) {
+      return {
+        status: 'error',
+        content: `Please explicitly specify your intent. The value of the intent parameter must be either 'create' or 'edit'.`,
+      };
+    }
+    const collectionsType = typeof originalCollections;
+    const collections = collectionsType === 'string' ? JSON.parse(originalCollections) : originalCollections;
     if (!collections || !Array.isArray(collections)) {
       return {
         status: 'error',
@@ -282,12 +371,22 @@ export const defineCollections: ToolOptions = {
           const baseFields = [...systemFields, ...normalFields];
           const collection = await repo.findOne({ filter: { name: options.name }, transaction });
           if (!collection) {
+            if (intent === 'edit') {
+              throw new IntentError(
+                `You want to edit a collection definition, but there is no existing data table definition named '${options.name}'.`,
+              );
+            }
             await repo.create({
               values: { ...options, fields: baseFields },
               transaction,
               context: ctx,
             });
           } else {
+            if (intent === 'create') {
+              throw new IntentError(
+                `You want to create a collection definition, but a collection definition named '${options.name}' already exists. Please change the name of your collection definition and then invoke this tool again.`,
+              );
+            }
             await repo.update({
               filterByTk: options.name,
               values: _.omit(options, ['fields']),
@@ -360,6 +459,17 @@ export const defineCollections: ToolOptions = {
         stack: e.stack,
         cause: e.cause,
       });
+      if (e instanceof IntentError) {
+        return {
+          status: 'error',
+          content: e.message,
+        };
+      }
+      if (intent === 'create') {
+        for (const options of sorted) {
+          ctx.db.removeCollection(options.name);
+        }
+      }
       return {
         status: 'error',
         content: `Failed to define collections: ${e.message}`,

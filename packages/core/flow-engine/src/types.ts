@@ -110,6 +110,8 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
    * 仅填补缺失，不覆盖已有。固定返回形状：{ [stepKey]: params }
    */
   defaultParams?: Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
+  enableTitle?: boolean;
+  divider?: 'top' | 'bottom';
 }
 
 export interface IModelComponentProps {
@@ -161,6 +163,16 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   scene?: ActionScene | ActionScene[];
   sort?: number;
   /**
+   * Whether the step/action requires params to be configured before use.
+   */
+  paramsRequired?: boolean;
+  /**
+   * Whether to hide this step/action from settings menus.
+   * - Supports static boolean and dynamic decision based on runtime context.
+   * - StepDefinition.hideInSettings can override the ActionDefinition value.
+   */
+  hideInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  /**
    * 在执行 Action 前为 ctx 定义临时属性。
    * - 仅支持 PropertyOptions 形态（例如：{ foo: { value: 5 } }）；
    * - 或函数形式（接收 ctx，返回 PropertyOptions 对象；支持 Promise）。
@@ -202,11 +214,36 @@ export type FlowEventName =
   | (string & {});
 
 /**
+ * 事件流的执行时机（phase）。
+ *
+ * 说明：
+ * - 缺省（phase 未配置）表示保持现有行为；
+ * - 当配置了 phase 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 锚点；
+ * - phase 同时适用于动态事件流（实例级）与静态流（内置）。
+ */
+export type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+/**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
-  | { eventName: FlowEventName; defaultParams?: Record<string, any> };
+  | {
+      eventName: FlowEventName;
+      defaultParams?: Record<string, any>;
+      /** 动态事件流的执行时机（默认 beforeAllFlows） */
+      phase?: FlowEventPhase;
+      /** phase 为 beforeFlow/afterFlow/beforeStep/afterStep 时使用 */
+      flowKey?: string;
+      /** phase 为 beforeStep/afterStep 时使用 */
+      stepKey?: string;
+    };
 
 /**
  * 事件分发选项。
@@ -232,7 +269,7 @@ export type StepUIMode =
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -251,8 +288,6 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
-  paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
-  hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 

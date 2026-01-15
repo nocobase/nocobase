@@ -9,7 +9,7 @@
 
 import {
   FlowSettingsButton,
-  escapeT,
+  tExpr,
   Droppable,
   AddSubModelButton,
   DragHandler,
@@ -53,7 +53,7 @@ const ResponsiveSpace = (props) => {
 };
 
 export class ActionPanelBlockModel extends BlockModel {
-  renderConfiguireActions() {
+  renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'action-panel-add-actions'}
@@ -70,6 +70,7 @@ export class ActionPanelBlockModel extends BlockModel {
     const { layout, ellipsis } = this.props;
 
     const token = this.context.themeToken;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <div id={`model-${this.uid}`} className="action-panel-block">
@@ -79,22 +80,38 @@ export class ActionPanelBlockModel extends BlockModel {
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
                   {this.mapSubModels('actions', (action: ActionModel) => {
-                    const { icon, color = '#1677FF', title } = action.props;
+                    if (action.hidden && !isConfigMode) {
+                      return;
+                    }
+                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
+
                     action.enableEditDanger = false;
                     action.enableEditType = false;
                     action.renderHiddenInConfig = () => {
                       return (
                         <Tooltip
-                          title={this.context.t(
-                            'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-                          )}
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
                         >
-                          <Button disabled style={{ display: 'block' }}>
-                            <Avatar
-                              style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)' }}
-                              size={48}
-                              icon={<LockOutlined />}
-                            />
+                          <Button onClick={action.onClick.bind(action)}>
+                            <div style={{ width: '5em', opacity: '0.3' }}>
+                              <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
+                              <div
+                                style={
+                                  ellipsis
+                                    ? {
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }
+                                    : {
+                                        whiteSpace: 'normal',
+                                        wordBreak: 'break-word',
+                                      }
+                                }
+                              >
+                                {title}
+                              </div>
+                            </div>
                           </Button>
                         </Tooltip>
                       );
@@ -132,7 +149,7 @@ export class ActionPanelBlockModel extends BlockModel {
                               border: none !important;
                               box-shadow: none;
                               .ant-btn-icon {
-                                display: ${action.hidden ? 'block' : ' none'};
+                                display: none;
                               }
                             }
                           `}
@@ -166,30 +183,41 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action: ActionModel) => {
-                    const { icon, color = '#1677FF', title } = action.props;
+                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
                     action.enableEditDanger = false;
                     action.enableEditType = false;
                     action.renderHiddenInConfig = () => {
                       return (
-                        <Button disabled>
-                          <List.Item
-                            disabled
-                            prefix={
-                              (
-                                <Avatar
-                                  style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)' }}
-                                  icon={<LockOutlined />}
-                                />
-                              ) as any
-                            }
-                          >
-                            <div style={{ fontSize: '14px' }}>
-                              {this.context.t(
-                                'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-                              )}
-                            </div>
-                          </List.Item>
-                        </Button>
+                        <Tooltip
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                        >
+                          <Button style={{ opacity: '0.3' }} onClick={action.onClick.bind(action)}>
+                            <List.Item
+                              prefix={
+                                (
+                                  <Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />
+                                ) as any
+                              }
+                            >
+                              <div
+                                style={
+                                  ellipsis
+                                    ? {
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }
+                                    : {
+                                        whiteSpace: 'normal',
+                                        wordBreak: 'break-word',
+                                      }
+                                }
+                              >
+                                {title}
+                              </div>
+                            </List.Item>
+                          </Button>
+                        </Tooltip>
                       );
                     };
                     action.props.children = (
@@ -257,14 +285,14 @@ export class ActionPanelBlockModel extends BlockModel {
             </div>
           </DndProvider>
         </ConfigProvider>
-        <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
+        {this.context.flowSettingsEnabled && <div style={{ marginTop: '10px' }}>{this.renderConfigureActions()}</div>}
       </div>
     );
   }
 }
 
 ActionPanelBlockModel.define({
-  label: escapeT('Action panel'),
+  label: tExpr('Action panel'),
   createModelOptions: {
     use: 'ActionPanelBlockModel',
   },
@@ -272,17 +300,17 @@ ActionPanelBlockModel.define({
 
 ActionPanelBlockModel.registerFlow({
   key: 'actionPanelBlockSetting',
-  title: escapeT('Action panel settings', { ns: 'block-workbench' }),
+  title: tExpr('Action panel settings', { ns: 'block-workbench' }),
   steps: {
     layout: {
-      title: escapeT('Layout', { ns: 'block-workbench' }),
-      uiSchema(ctx) {
+      title: tExpr('Layout', { ns: 'block-workbench' }),
+      uiMode(ctx) {
         const t = ctx.t;
         return {
-          layout: {
-            'x-component': 'Radio.Group',
-            'x-decorator': 'FormItem',
-            enum: [
+          type: 'select',
+          key: 'layout',
+          props: {
+            options: [
               { label: t('Grid', { ns: 'block-workbench' }), value: WorkbenchLayout.Grid },
               { label: t('List', { ns: 'block-workbench' }), value: WorkbenchLayout.List },
             ],
@@ -299,19 +327,8 @@ ActionPanelBlockModel.registerFlow({
       },
     },
     ellipsis: {
-      title: escapeT('Ellipsis action title', { ns: 'block-workbench' }),
-      uiSchema(ctx) {
-        return {
-          ellipsis: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: escapeT('Yes'),
-              unCheckedChildren: escapeT('No'),
-            },
-          },
-        };
-      },
+      title: tExpr('Ellipsis action title', { ns: 'block-workbench' }),
+      uiMode: { type: 'switch', key: 'ellipsis' },
       defaultParams: {
         ellipsis: true,
       },

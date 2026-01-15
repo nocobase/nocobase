@@ -12,7 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
-import { createStyles } from 'antd-style';
+import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -61,6 +61,7 @@ import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesT
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -93,13 +94,19 @@ export const useAllAccessDesktopRoutes = () => {
 };
 
 const RoutesRequestProvider: FC = ({ children }) => {
+  const ctx = useFlowEngineContext();
   const mountedRef = useRef(false);
-  const { data, refresh, loading } = useRequest<{
-    data: any;
-  }>({
-    url: `/desktopRoutes:listAccessible`,
-    params: { tree: true, sort: 'sort' },
-  });
+  const { data, refresh, loading } = useRequest<any>(
+    {
+      url: `/desktopRoutes:listAccessible`,
+      params: { tree: true, sort: 'sort' },
+    },
+    {
+      onSuccess(data) {
+        ctx.routeRepository.setRoutes(data?.data || emptyArray);
+      },
+    },
+  );
 
   const allAccessRoutesValue = useMemo(() => {
     return {
@@ -687,6 +694,18 @@ const appContainerStyle: React.CSSProperties = {
 };
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
+const GlobalStyle = () => {
+  const { token } = useToken();
+  const El: FC<any> = useMemo(() => {
+    if (token.globalStyle) {
+      return createGlobalStyle`${token.globalStyle}`;
+    }
+    return () => null;
+  }, [token.globalStyle]);
+
+  return <El />;
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
@@ -808,6 +827,7 @@ export const InternalAdminLayout = () => {
                 return (
                   <SetIsMobileLayout isMobile={isMobile}>
                     <ConfigProvider theme={isMobile ? mobileTheme : theme}>
+                      <GlobalStyle />
                       <LayoutContent />
                     </ConfigProvider>
                   </SetIsMobileLayout>

@@ -9,6 +9,18 @@
 
 import { defineAction } from '@nocobase/flow-engine';
 
+const getRecordPkValue = (value: any) => {
+  if (!value) return undefined;
+
+  // 如果是对象，取第一个 value
+  if (typeof value === 'object') {
+    return Object.values(value)[0];
+  }
+
+  // 原始值（number / string）
+  return value;
+};
+
 export const aclCheck = defineAction({
   name: 'aclCheck',
   async handler(ctx, params) {
@@ -17,14 +29,18 @@ export const aclCheck = defineAction({
       resourceName: ctx.collectionField?.collectionName || ctx.resourceName,
       actionName: ctx.actionName,
       fields: ctx?.collectionField && [ctx.collectionField.name],
+      allowedActions: ctx.resource?.getMeta('allowedActions'),
+      recordPkValue: getRecordPkValue(ctx?.record && ctx.collection?.getFilterByTK?.(ctx?.record)),
     });
-    if (ctx.fieldPath && !ctx.collectionField) {
-      ctx.model.fieldDeleted = true;
-      ctx.model.hidden = true;
-      ctx.exitAll();
+
+    if (!ctx.actionName) {
+      return;
     }
     if (!result) {
       ctx.model.hidden = true;
+      ctx.model.forbidden = {
+        actionName: ctx.actionName,
+      };
       ctx.exitAll();
     }
   },

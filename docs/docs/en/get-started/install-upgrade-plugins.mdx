@@ -6,26 +6,9 @@ NocoBase built-in plugins are automatically updated with the core version and re
 
 ## Commercial Plugins
 
-Please log in to NocoBase Service and refer to the documentation to learn how to install and upgrade commercial plugins.
+For detailed installation and upgrade instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 ## Third-party Plugins
-
-### Online Plugin Installation
-
-![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
-
-:::warning Note
-
-NocoBase supports online plugin installation through the interface, but the current experience is not ideal. Reasons include:
-
-- Due to Node.js process runtime limitations, after installing or updating plugins, you need to stop the process and then run the `upgrade` command for the changes to take effect;
-- In multi-app scenarios, online installation struggles to handle plugin synchronization across multiple sub-applications simultaneously;
-- Batch plugin updates are not supported;
-- Online installation or updates can easily cause abnormal application process termination.
-
-Therefore, it is recommended to use command-line or manual upload methods to install and upgrade plugins. We recommend integrating this with CI/CD workflows, using command-line methods to download, extract, and upgrade plugins, ensuring consistency and reliability for each update deployment.
-
-:::
 
 ### Installing Plugins via Command Line
 

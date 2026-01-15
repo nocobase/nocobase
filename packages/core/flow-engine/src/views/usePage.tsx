@@ -26,6 +26,7 @@ const PageElementsHolder = React.memo(
   React.forwardRef((props: any, ref: any) => {
     const [elements, patchElement] = usePatchElement();
     React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+    console.log('[NocoBase] Rendering PageElementsHolder with elements count:', elements.length);
     return <>{elements}</>;
   }),
 );
@@ -74,7 +75,7 @@ export function usePage() {
       return null; // Header 组件本身不渲染内容
     };
 
-    const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
+    const { target, content, preventClose, inheritContext = true, inputArgs, ...restConfig } = config;
 
     const ctx = new FlowContext();
     // 为当前视图创建作用域引擎（隔离实例与缓存）
@@ -92,15 +93,27 @@ export function usePage() {
       type: 'embed' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => pageRef.current?.destroy(),
+      destroy: (result?: any) => {
+        config.onClose?.();
+        resolvePromise?.(result);
+        pageRef.current?.destroy();
+        closeFunc?.();
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
+      },
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (preventClose && !force) {
           return;
         }
-        resolvePromise?.(result);
-        pageRef.current?.destroy();
-        closeFunc?.();
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentPage.destroy(result);
       },
       Header: HeaderComponent,
       Footer: FooterComponent,
@@ -131,7 +144,11 @@ export function usePage() {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         // 支持 content 为函数，传递 currentPage
-        const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const pageContent = React.useMemo(
+          () => (typeof content === 'function' ? content(currentPage, ctx) : content),
+          [],
+        );
         // 响应themeToken的响应式更新
         void ctx.themeToken;
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -147,16 +164,11 @@ export function usePage() {
 
         return (
           <PageComponent
-            key={`page-${uuid}`}
             ref={pageRef}
             hidden={config.inputArgs?.hidden?.value}
             {...restConfig}
-            afterClose={() => {
-              closeFunc?.();
-              config.onClose?.();
-              resolvePromise?.(config.result);
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
+            onClose={() => {
+              currentPage.close(config.result);
             }}
           >
             {pageContent}
@@ -168,8 +180,9 @@ export function usePage() {
       },
     );
 
+    const key = inputArgs?.viewUid || `page-${uuid}`;
     const page = (
-      <FlowEngineProvider engine={scopedEngine}>
+      <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <PageWithContext />
         </FlowViewContextProvider>
@@ -177,7 +190,7 @@ export function usePage() {
     );
 
     if (target && target instanceof HTMLElement) {
-      closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target));
+      closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target, key));
     } else {
       closeFunc = holderRef.current?.patchElement(page);
     }

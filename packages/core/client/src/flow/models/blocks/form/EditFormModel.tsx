@@ -23,6 +23,8 @@ import { omitBy, isUndefined } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { submitHandler } from './submitHandler';
+import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
@@ -70,27 +72,38 @@ export class EditFormModel extends FormBlockModel {
       multiResource.setPage(page);
       multiResource.loading = true;
       await multiResource.refresh();
+      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
+  async submit(params: any = {}) {
+    await submitHandler(this.context, params);
+  }
+
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
-          <Space>
-            {this.mapSubModels('actions', (action) => (
-              <Droppable model={action} key={action.uid}>
-                <MemoFlowModelRenderer
-                  key={action.uid}
-                  model={action}
-                  showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
-                  extraToolbarItems={this.actionExtraToolbarItems}
-                />
-              </Droppable>
-            ))}
+          <Space wrap>
+            {this.mapSubModels('actions', (action) => {
+              if (action.hidden && !isConfigMode) {
+                return;
+              }
+              return (
+                <Droppable model={action} key={action.uid}>
+                  <MemoFlowModelRenderer
+                    key={action.uid}
+                    model={action}
+                    showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
+                    extraToolbarItems={this.actionExtraToolbarItems}
+                  />
+                </Droppable>
+              );
+            })}
             {this.renderConfigureActions()}
           </Space>
         </DndProvider>
@@ -153,11 +166,37 @@ EditFormModel.registerFlow({
         });
       },
     },
+    dataScope: {
+      use: 'dataScope',
+    },
     refresh: {
       async handler(ctx) {
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
+      },
+    },
+  },
+});
+
+EditFormModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    blockLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
+      },
+    },
+    fieldsLinkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'fieldLinkageRules',
+        flowKey: 'eventSettings',
+        stepKey: 'linkageRules',
       },
     },
   },

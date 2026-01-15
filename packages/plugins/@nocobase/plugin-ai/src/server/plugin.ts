@@ -29,6 +29,7 @@ import {
   formFiller,
   getCollectionMetadata,
   getCollectionNames,
+  getDataSources,
   getWorkflowCallers,
   chartGenerator,
 } from './tools';
@@ -44,6 +45,7 @@ import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
+import { suggestions } from './tools/suggestions';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -55,6 +57,15 @@ export class PluginAIServer extends Plugin {
   aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
   snowflake: Snowflake;
+
+  /**
+   * Check if the AI employee is a builder/admin-only type (e.g., Nathan, Orin).
+   * These employees have powerful capabilities (coding, schema modification) and should be restricted to admins.
+   */
+  isBuilderAI(username: string) {
+    const BUILDER_AI_USERNAMES = ['nathan', 'orin', 'dara'];
+    return BUILDER_AI_USERNAMES.includes(username);
+  }
 
   async afterAdd() {}
 
@@ -135,6 +146,10 @@ export class PluginAIServer extends Plugin {
       },
       {
         groupName: dataModelingGroupName,
+        tool: getDataSources,
+      },
+      {
+        groupName: dataModelingGroupName,
         tool: getCollectionNames,
       },
       {
@@ -144,6 +159,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: defineCollections,
+      },
+      {
+        groupName: dataModelingGroupName,
+        tool: suggestions,
       },
       {
         tool: chartGenerator,
@@ -228,8 +247,21 @@ export class PluginAIServer extends Plugin {
     }
 
     this.app.db.on('roles.beforeCreate', async (instance: Model) => {
-      instance.set('allowNewAiEmployee', ['admin', 'member'].includes(instance.name));
+      instance.set('allowNewAiEmployee', true);
     });
+    // 为新角色默认开启 AI 员工
+    this.app.db.on('roles.afterCreate', async (instance: Model, { transaction }) => {
+      const allAiEmployees = await this.app.db.getRepository('aiEmployees').find({
+        transaction,
+      });
+
+      const generalAiEmployees = allAiEmployees.filter((ai: { username: string }) => !this.isBuilderAI(ai.username));
+
+      if (generalAiEmployees.length > 0) {
+        await instance.addAiEmployees(generalAiEmployees, { transaction });
+      }
+    });
+
     this.app.db.on('aiEmployees.afterCreate', async (instance: Model, { transaction }) => {
       const roles = await this.app.db.getRepository('roles').find({
         filter: {
@@ -238,9 +270,15 @@ export class PluginAIServer extends Plugin {
         transaction,
       });
 
+      // 为初始化/新创建的 AI 员工分配角色，builder 类的AI员工默认只对 Admin 角色开启
+      let targetRoles = roles;
+      if (this.isBuilderAI(instance.username)) {
+        targetRoles = roles.filter((role: { name: string }) => role.name === 'admin');
+      }
+
       // @ts-ignore
       await this.app.db.getRepository('aiEmployees.roles', instance.username).add({
-        tk: roles.map((role: { name: string }) => role.name),
+        tk: targetRoles.map((role: { name: string }) => role.name),
         transaction,
       });
     });

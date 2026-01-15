@@ -15,74 +15,78 @@ export class AssociationFieldGroupModel extends FlowModel {
     const itemModel = this.itemModelName;
 
     const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
-      return targetCollection.getToOneAssociationFields().map((field) => {
-        const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
-        if (!field.targetCollection) {
-          console.error(
-            `AssociationFieldGroupModel: target collection ${field.target} not found for field ${field.name}`,
-          );
-          return;
-        }
-        return {
-          key: `${fPath}-assocationField`,
-          label: field.title,
-          children: () => {
-            return [
-              {
-                key: `${fPath}-children-collectionField`,
-                label: 'Display collection fields',
-                type: 'group',
-                children: field.targetCollection
-                  .getFields()
-                  .map((f) => {
-                    const fp = `${fPath}.${f.name}`;
-                    const binding = DisplayItemModel.getDefaultBindingByField(ctx, f, {
-                      fallbackToTargetTitleField: true,
-                    });
+      return targetCollection
+        .getToOneAssociationFields()
+        .map((field) => {
+          const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
+          if (!field.targetCollection) {
+            console.error(
+              `AssociationFieldGroupModel: target collection ${field.target} not found for field ${field.name}`,
+            );
+            return;
+          }
+          return {
+            key: `${fPath}-assocationField`,
+            label: field.title,
+            children: () => {
+              return [
+                {
+                  key: `${fPath}-children-collectionField`,
+                  // @ts-ignore
+                  label: ctx.t('Display fields'),
+                  type: 'group',
+                  children: field.targetCollection
+                    .getFields()
+                    .map((f) => {
+                      const fp = `${fPath}.${f.name}`;
+                      const binding = DisplayItemModel.getDefaultBindingByField(ctx, f, {
+                        fallbackToTargetTitleField: true,
+                      });
 
-                    if (!binding) {
-                      return;
-                    }
-                    const use = binding.modelName;
-                    return {
-                      key: `c-${fPath}.${f.name}`,
-                      label: f.title,
-                      useModel: itemModel,
-                      toggleable: (subModel) => {
-                        const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
-                        return fieldPath === fp;
-                      },
-                      createModelOptions: {
-                        stepParams: {
-                          fieldSettings: {
-                            init: {
-                              dataSourceKey: ctx.collection.dataSourceKey,
-                              collectionName: ctx.collection.name,
-                              fieldPath: fp,
-                              associationPathName: fPath,
+                      if (!binding) {
+                        return;
+                      }
+                      const use = binding.modelName;
+                      return {
+                        key: `c-${fPath}.${f.name}`,
+                        label: f.title,
+                        useModel: itemModel,
+                        toggleable: (subModel) => {
+                          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+                          return fieldPath === fp;
+                        },
+                        createModelOptions: {
+                          stepParams: {
+                            fieldSettings: {
+                              init: {
+                                dataSourceKey: ctx.collection.dataSourceKey,
+                                collectionName: ctx.collection.name,
+                                fieldPath: fp,
+                                associationPathName: fPath,
+                              },
+                            },
+                          },
+                          subModels: {
+                            field: {
+                              use: use,
                             },
                           },
                         },
-                        subModels: {
-                          field: {
-                            use: use,
-                          },
-                        },
-                      },
-                    };
-                  })
-                  .filter(Boolean),
-              },
-              {
-                key: `${fPath}-children-associationField`,
-                label: 'Display association fields',
-                type: 'group',
-                children: (displayAssociationFields(field.targetCollection, fPath) || []).filter(Boolean),
-              },
-            ];
-          },
-        };
-      });
+                      };
+                    })
+                    .filter(Boolean),
+                },
+                {
+                  key: `${fPath}-children-associationField`,
+                  label: 'Display association fields',
+                  type: 'group',
+                  children: (displayAssociationFields(field.targetCollection, fPath) || []).filter(Boolean),
+                },
+              ];
+            },
+          };
+        })
+        .filter(Boolean);
     };
 
     return displayAssociationFields(ctx.collection);
@@ -90,6 +94,6 @@ export class AssociationFieldGroupModel extends FlowModel {
 }
 
 AssociationFieldGroupModel.define({
-  label: '{{t("Display association fields")}}',
+  label: '{{t("Display fields")}}',
   //   hide: true,
 });

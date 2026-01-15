@@ -94,11 +94,15 @@ export default class Processor {
   }
 
   private makeJobs(jobs: Array<JobModel>) {
-    jobs.forEach((job) => {
+    for (const job of jobs) {
       const node = this.nodesMap.get(job.nodeId);
+      if (!node) {
+        this.logger.warn(`node (#${job.nodeId}) not found for job (#${job.id}), this will lead to unexpected error`);
+        continue;
+      }
       this.jobsMapByNodeKey[node.key] = job;
       this.jobResultsMapByNodeKey[node.key] = job.result;
-    });
+    }
   }
 
   public async prepare() {
@@ -480,12 +484,17 @@ export default class Processor {
       }
     }
 
-    return {
+    const scopes = {
       $context: this.execution.context,
       $jobsMapByNodeKey: this.jobResultsMapByNodeKey,
       $system: systemFns,
       $scopes,
       $env: this.options.plugin.app.environment.getVariables(),
+    };
+
+    return {
+      ...scopes,
+      ctx: scopes, // 2.0
     };
   }
 

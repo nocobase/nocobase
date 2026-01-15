@@ -460,7 +460,9 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const parentModel = parentId ? (this._modelInstances.get(parentId) as FlowModel | undefined) : undefined;
+    const parentModel = parentId
+      ? ((this.getModel(parentId) || this.previousEngine?.getModel(parentId)) as FlowModel | undefined)
+      : undefined;
     const ModelClass = this._resolveModelClass(
       typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
       options,
@@ -484,8 +486,8 @@ export class FlowEngine {
       modelInstance.context.addDelegate(extra.delegate);
     }
 
-    if (parentId && this._modelInstances.has(parentId)) {
-      modelInstance.setParent(this._modelInstances.get(parentId));
+    if (parentModel) {
+      modelInstance.setParent(parentModel);
       if (extra?.delegateToParent === false) {
         modelInstance.removeParentDelegate();
       }
@@ -753,6 +755,110 @@ export class FlowEngine {
   }
 
   /**
+   * Try to locate a model instance in previous engines (view stack) by uid.
+   * This is mainly used by view-scoped engines to reuse already-loaded model trees
+   * (e.g. models created from local JSON) without hitting the repository.
+   */
+  private findModelInPreviousEngines<T extends FlowModel = FlowModel>(uid: string): T | undefined {
+    let eng = this.previousEngine;
+    while (eng) {
+      const found = eng.getModel<T>(uid);
+      if (found) return found;
+      eng = eng.previousEngine;
+    }
+    return undefined;
+  }
+
+  /**
+   * Try to locate a sub-model in previous engines (view stack) by (parentId, subKey).
+   */
+  private findSubModelInPreviousEngines<T extends FlowModel = FlowModel>(
+    parentId: string,
+    subKey: string,
+  ): { parent: FlowModel; model: T } | undefined {
+    let eng = this.previousEngine;
+    while (eng) {
+      const parent = eng.getModel<FlowModel>(parentId);
+      if (parent) {
+        const sub = (parent.subModels as any)?.[subKey];
+        if (sub) {
+          const model = Array.isArray(sub) ? (sub[0] as T) : (sub as T);
+          if (model) return { parent, model };
+        }
+      }
+      eng = eng.previousEngine;
+    }
+    return undefined;
+  }
+
+  /**
+   * Hydrate a model into current engine from an already-existing model instance in previous engines.
+   * - Avoids repository requests when the model tree is already present in memory.
+   */
+  private hydrateModelFromPreviousEngines<T extends FlowModel = FlowModel>(
+    options: any,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): T | null {
+    const uid = options?.uid;
+    const parentId = options?.parentId;
+    const subKey = options?.subKey;
+
+    // 1) Prefer exact uid match when provided.
+    if (uid && !this._modelInstances.has(uid)) {
+      const existing = this.findModelInPreviousEngines<T>(uid);
+      if (existing?.context.flowSettingsEnabled) {
+        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
+        return null;
+      }
+      if (existing) {
+        const data = existing.serialize();
+        return this.createModel<T>(data as any, extra);
+      }
+    }
+
+    // 2) Parent/subKey lookup (common for pages/popups).
+    if (parentId && subKey) {
+      const found = this.findSubModelInPreviousEngines<T>(parentId, subKey);
+      if (!found || found.parent.context.flowSettingsEnabled) return null;
+
+      const { parent: parentFromPrev, model: modelFromPrev } = found;
+      // Ensure the parent shell exists in current engine so findModelByParentId can work locally.
+      let localParent = this.getModel<FlowModel>(parentId);
+      if (!localParent) {
+        const parentData = parentFromPrev.serialize();
+        delete (parentData as any).subModels;
+        localParent = this.createModel<FlowModel>(parentData as any, extra);
+      }
+      // Create (or reuse) the sub-model instance in current engine.
+      const modelData = modelFromPrev.serialize();
+      const localModel = this.createModel<T>(modelData as any, extra);
+
+      // Mount under local parent if not mounted yet (so later lookups by parentId/subKey won't hit repo).
+      const mounted = (localParent.subModels as any)?.[subKey];
+      if (Array.isArray(mounted)) {
+        const exists = mounted.some((m) => m?.uid === (localModel as any)?.uid);
+        if (!exists) {
+          localParent.addSubModel(subKey, localModel as any);
+        }
+      } else if (mounted instanceof FlowModel) {
+        // Keep existing instance when uid matches; otherwise, replace.
+        if (mounted.uid !== (localModel as any)?.uid) {
+          localParent.setSubModel(subKey, localModel as any);
+        }
+      } else {
+        if ((localModel as any)?.subType === 'array') {
+          localParent.addSubModel(subKey, localModel as any);
+        } else {
+          localParent.setSubModel(subKey, localModel as any);
+        }
+      }
+      return localModel;
+    }
+
+    return null;
+  }
+
+  /**
    * Load a model instance (prefers local, falls back to repository).
    * @template T FlowModel subclass type, defaults to FlowModel.
    * @param {any} options Load options
@@ -763,6 +869,10 @@ export class FlowEngine {
     const model = this.findModelByParentId(options.parentId, options.subKey);
     if (model) {
       return model as T;
+    }
+    const hydrated = this.hydrateModelFromPreviousEngines<T>(options);
+    if (hydrated) {
+      return hydrated as T;
     }
     const data = await this._modelRepository.findOne(options);
     return data?.uid ? this.createModel<T>(data as any) : null;
@@ -811,6 +921,12 @@ export class FlowEngine {
     if (m) {
       return m;
     }
+
+    const hydrated = this.hydrateModelFromPreviousEngines<T>(options, extra);
+    if (hydrated) {
+      return hydrated;
+    }
+
     const data = await this._modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
@@ -902,7 +1018,13 @@ export class FlowEngine {
     if (this.ensureModelRepository()) {
       await this._modelRepository.destroy(uid);
     }
-    return this.removeModel(uid);
+
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    const parent = modelInstance?.parent;
+    const result = this.removeModel(uid);
+    parent && parent.emitter.emit('onSubModelDestroyed', modelInstance);
+
+    return result;
   }
 
   /**
@@ -1050,8 +1172,8 @@ export class FlowEngine {
         model.sortIndex = index;
       });
 
-      // 更新父模型的subModels引用
-      sourceModel.parent.subModels[sourceModel.subKey] = subModelsCopy;
+      // 更新父模型的 subModels 引用，确保拖拽后仍为可观察数组
+      subModels.splice(0, subModels.length, ...subModelsCopy);
 
       return true;
     };

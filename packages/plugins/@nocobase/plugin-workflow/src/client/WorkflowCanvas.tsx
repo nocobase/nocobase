@@ -28,6 +28,7 @@ import {
   useResourceContext,
   useCompile,
   css,
+  useRequest,
 } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 
@@ -250,15 +251,15 @@ function ExecuteActionButton() {
 }
 
 function WorkflowMenu() {
-  const { workflow, revisions } = useFlowContext();
+  const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const app = useApp();
   const { resource } = useResourceContext();
+  const { refresh } = useResourceActionContext();
   const { message } = App.useApp();
-  const executed = useWorkflowExecuted();
   const allExecuted = useWorkflowAnyExecuted();
 
   const onRevision = useCallback(async () => {
@@ -290,11 +291,30 @@ function WorkflowMenu() {
         });
         message.success(t('Operation succeeded'));
 
-        navigate(
-          workflow.current
-            ? app.pluginSettingsManager.getRoutePath('workflow')
-            : getWorkflowDetailPath(revisions.find((item) => item.current)?.id),
-        );
+        const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
+        if (workflow.current) {
+          return navigate(workflowHomepage);
+        }
+
+        if (revisions.length) {
+          navigate(getWorkflowDetailPath(revisions.find((item) => item.current)?.id));
+        }
+        const res = await resource.list({
+          filter: {
+            key: workflow.key,
+            current: true,
+          },
+          fields: ['id'],
+          pageSize: 1,
+        });
+        if (res.status !== 200) {
+          return;
+        }
+        const [current] = res.data.data;
+        if (!current) {
+          return navigate(workflowHomepage);
+        }
+        return navigate(getWorkflowDetailPath(current.id));
       },
     });
   }, [workflow, modal, t, resource, message, navigate, app.pluginSettingsManager, revisions]);
@@ -302,6 +322,9 @@ function WorkflowMenu() {
   const onMenuCommand = useCallback(
     ({ key }) => {
       switch (key) {
+        case 'refresh':
+          refresh();
+          return;
         case 'history':
           setHistoryVisible(true);
           return;
@@ -313,7 +336,7 @@ function WorkflowMenu() {
           break;
       }
     },
-    [onDelete, onRevision],
+    [onDelete, onRevision, refresh],
   );
 
   return (
@@ -328,6 +351,12 @@ function WorkflowMenu() {
             },
             {
               type: 'divider',
+            },
+            {
+              role: 'button',
+              'aria-label': 'refresh',
+              key: 'refresh',
+              label: t('Refresh'),
             },
             {
               role: 'button',
@@ -370,25 +399,10 @@ function WorkflowMenu() {
   );
 }
 
-export function WorkflowCanvas() {
-  const navigate = useNavigate();
-  const app = useApp();
-  const { data, refresh, loading } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  const { setTitle } = useDocumentTitle();
+function RevisionsDropdown() {
   const { styles } = useStyles();
-  const [enabled, setEnabled] = useState(data?.data?.enabled ?? false);
-  const [switchLoading, setSwitchLoading] = useState(false);
-
-  const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
-  linkNodes(nodes);
-
-  useEffect(() => {
-    const { title, enabled } = data?.data ?? {};
-    setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
-    setEnabled(enabled);
-  }, [data?.data, setTitle]);
-
+  const navigate = useNavigate();
+  const { workflow } = useFlowContext();
   const onSwitchVersion = useCallback(
     ({ key }) => {
       if (key != workflow.id) {
@@ -397,6 +411,90 @@ export function WorkflowCanvas() {
     },
     [workflow.id, navigate],
   );
+
+  const { data, run } = useRequest<any>(
+    {
+      resource: 'workflows',
+      action: 'list',
+      params: {
+        filter: { key: workflow.key },
+        fields: ['id', 'createdAt', 'current', 'enabled', 'versionStats.executed'],
+        sort: '-id',
+      },
+    },
+    {
+      refreshDeps: [workflow.id],
+      manual: true,
+    },
+  );
+
+  const loadRevisions = useCallback(
+    (visible) => {
+      if (visible) {
+        run();
+      }
+    },
+    [run],
+  );
+
+  const revisions = data?.data ?? [];
+
+  return (
+    <Dropdown
+      className="workflow-versions"
+      trigger={['click']}
+      onOpenChange={loadRevisions}
+      menu={{
+        onClick: onSwitchVersion,
+        defaultSelectedKeys: [`${workflow.id}`],
+        className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
+        items: revisions
+          .sort((a, b) => b.id - a.id)
+          .map((item, index) => ({
+            role: 'button',
+            'aria-label': `version-${index}`,
+            key: `${item.id}`,
+            icon: item.current ? <RightOutlined /> : null,
+            className: cx({
+              executed: item.versionStats.executed > 0,
+              unexecuted: item.versionStats.executed == 0,
+              enabled: item.enabled,
+            }),
+            label: (
+              <>
+                <strong>{`#${item.id}`}</strong>
+                <time>{dayjs(item.createdAt).fromNow()}</time>
+              </>
+            ),
+          })),
+      }}
+    >
+      <Button type="text" aria-label="version">
+        <label>{lang('Version')}</label>
+        <span>{workflow?.id ? `#${workflow.id}` : null}</span>
+        <DownOutlined />
+      </Button>
+    </Dropdown>
+  );
+}
+
+export function WorkflowCanvas() {
+  const navigate = useNavigate();
+  const app = useApp();
+  const { data, refresh, loading } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  const { setTitle } = useDocumentTitle();
+  const [enabled, setEnabled] = useState(data?.data?.enabled ?? false);
+  const [switchLoading, setSwitchLoading] = useState(false);
+
+  const { nodes = [], ...workflow } = data?.data ?? {};
+  linkNodes(nodes);
+
+  useEffect(() => {
+    const { title, enabled } = data?.data ?? {};
+    setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
+    setEnabled(enabled);
+  }, [data?.data, setTitle]);
 
   const onToggle = useCallback(
     async (value) => {
@@ -432,7 +530,6 @@ export function WorkflowCanvas() {
     <FlowContext.Provider
       value={{
         workflow,
-        revisions,
         nodes,
         refresh,
       }}
@@ -459,40 +556,7 @@ export function WorkflowCanvas() {
         </header>
         <aside>
           <ExecuteActionButton />
-          <Dropdown
-            className="workflow-versions"
-            trigger={['click']}
-            menu={{
-              onClick: onSwitchVersion,
-              defaultSelectedKeys: [`${workflow.id}`],
-              className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
-              items: revisions
-                .sort((a, b) => b.id - a.id)
-                .map((item, index) => ({
-                  role: 'button',
-                  'aria-label': `version-${index}`,
-                  key: `${item.id}`,
-                  icon: item.current ? <RightOutlined /> : null,
-                  className: cx({
-                    executed: item.versionStats.executed > 0,
-                    unexecuted: item.versionStats.executed == 0,
-                    enabled: item.enabled,
-                  }),
-                  label: (
-                    <>
-                      <strong>{`#${item.id}`}</strong>
-                      <time>{dayjs(item.createdAt).fromNow()}</time>
-                    </>
-                  ),
-                })),
-            }}
-          >
-            <Button type="text" aria-label="version">
-              <label>{lang('Version')}</label>
-              <span>{workflow?.id ? `#${workflow.id}` : null}</span>
-              <DownOutlined />
-            </Button>
-          </Dropdown>
+          <RevisionsDropdown />
           <Switch
             checked={enabled}
             onChange={onToggle}
