@@ -314,7 +314,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     disabled: disableAction,
     loading: loadingOfUseAction,
   } = useAction?.(actionCallback) || ({} as any);
-  const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
+  const disabled = form.disabled || field.data?.disabled || propsDisabled || disableAction;
   const buttonStyle = useMemo(() => {
     return {
       ...style,
