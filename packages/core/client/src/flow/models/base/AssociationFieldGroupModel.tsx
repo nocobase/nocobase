@@ -59,9 +59,11 @@ export class AssociationFieldGroupModel extends FlowModel {
                             fieldSettings: {
                               init: {
                                 dataSourceKey: ctx.collection.dataSourceKey,
-                                collectionName: ctx.collection.name,
+                                collectionName: ctx.prefixFieldPath
+                                  ? ctx.blockModel.context.collection.name
+                                  : ctx.collection.name,
                                 fieldPath: fp,
-                                associationPathName: ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${fPath}` : fPath,
+                                associationPathName: fPath,
                               },
                             },
                           },
@@ -88,7 +90,7 @@ export class AssociationFieldGroupModel extends FlowModel {
         .filter(Boolean);
     };
 
-    return displayAssociationFields(ctx.collection);
+    return displayAssociationFields(ctx.collection, ctx.prefixFieldPath);
   }
 }
 
