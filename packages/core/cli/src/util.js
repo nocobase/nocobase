@@ -455,6 +455,12 @@ exports.initEnv = function initEnv() {
     process.env.CDN_BASE_URL = process.env.APP_PUBLIC_PATH;
   }
 
+  if (process.env.CDN_BASE_URL.includes('http') && process.env.CDN_VERSION === 'auto') {
+    const version = require('../package.json').version;
+    process.env.CDN_BASE_URL = process.env.CDN_BASE_URL.replace(/\/+$/, '') + '/' + version + '/';
+    process.env.CDN_VERSION = '';
+  }
+
   if (!process.env.TZ) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);

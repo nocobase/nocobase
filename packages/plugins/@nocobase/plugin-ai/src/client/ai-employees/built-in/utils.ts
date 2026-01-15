@@ -9,6 +9,8 @@
 
 import { AIEmployee } from '../types';
 
+const BUILDER_AI_USERNAMES = ['nathan', 'orin', 'dara'];
+
 export const isBuiltIn = (aiEmployee: AIEmployee) => {
   return aiEmployee?.builtIn;
 };
@@ -21,7 +23,7 @@ export const isDataModelingAssistant = (aiEmployee: AIEmployee) => {
 };
 
 export const isHide = (aiEmployee: AIEmployee) => {
-  return isBuiltIn(aiEmployee) && ['nathan', 'orin'].includes(aiEmployee.username);
+  return isBuiltIn(aiEmployee) && BUILDER_AI_USERNAMES.includes(aiEmployee.username);
 };
 
 export const isSupportLanguage = (language: string) => {
