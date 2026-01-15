@@ -72,7 +72,7 @@
       "prettier --write"
     ],
     "*.ts?(x)": [
-      "eslint --fix"
+      "eslint --fix --cache --cache-location node_modules/.cache/eslint/"
     ]
   },
   "devDependencies": {

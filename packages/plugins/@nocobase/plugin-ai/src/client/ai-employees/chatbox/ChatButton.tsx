@@ -7,68 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Avatar, Dropdown, Button, Divider } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Avatar, Dropdown, FloatButton } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { RightOutlined, LeftOutlined } from '@ant-design/icons';
-import { useMobileLayout, useToken } from '@nocobase/client';
+import { useMobileLayout } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { ShortcutList } from '../shortcuts/ShortcutList';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
-import { contextAware } from '../stores/context-aware';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
-import { useLocation } from 'react-router-dom';
 import { isHide } from '../built-in/utils';
-import { AIEmployeeShortcutModel } from '../flow/models';
 import { useChatConversationOptions } from './hooks/useChatConversationOptions';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const { isMobileLayout } = useMobileLayout();
   const isV2Page = ctx.pageInfo.version === 'v2';
-  ctx.engine.flowSettings.on('beforeOpen', (event) => {
-    if (event?.model instanceof AIEmployeeShortcutModel) {
-      return;
-    }
-    setFolded(true);
-  });
 
   const { aiEmployees } = useAIEmployeesData();
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
 
   const { switchAIEmployee } = useChatBoxActions();
-
-  const { token } = useToken();
-
-  const [folded, setFolded] = useState(false);
-
-  const showed = useRef(false);
-
-  const location = useLocation();
-
-  useEffect(() => {
-    showed.current = false;
-  }, [location]);
-
-  useEffect(() => {
-    if (!contextAware.aiEmployees.length) {
-      return;
-    }
-
-    if (!folded || showed.current) {
-      return;
-    }
-
-    setFolded(false);
-    showed.current = true;
-    const timer = setTimeout(() => setFolded(true), 1500);
-    return () => clearTimeout(timer);
-  }, [contextAware.aiEmployees.length, folded]);
 
   const { resetDefaultWebSearch } = useChatConversationOptions();
 
@@ -97,63 +61,48 @@ export const ChatButton: React.FC = observer(() => {
   return (
     !isMobileLayout &&
     isV2Page && (
-      <div
-        className={css`
-          z-index: 1050;
-          display: flex;
-          border-radius: 8px;
-          gap: 8px;
-          position: fixed;
-          bottom: 42px;
-          align-items: center;
-          inset-inline-end: 8px;
-          width: fit-content;
-          height: 60px;
-          padding: 4px;
-
-          background: rgba(255, 255, 255, 0.2);
-          backdrop-filter: blur(20px) saturate(180%);
-          -webkit-backdrop-filter: blur(20px) saturate(180%);
-          border: 1px solid rgba(255, 255, 255, 0.4);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        `}
+      <Dropdown
+        menu={{ items }}
+        placement="topRight"
+        trigger={['hover']}
+        align={{ offset: [-36, -12] }}
+        open={dropdownOpen}
+        onOpenChange={(nextOpen) => setDropdownOpen(nextOpen)}
       >
-        <>
-          <Button
-            variant="text"
-            color="default"
-            icon={!folded ? <RightOutlined /> : <LeftOutlined />}
-            style={{
-              height: '52px',
-              width: '12px',
-              fontSize: token.fontSizeSM,
-            }}
-            onClick={() => setFolded(!folded)}
-          />
-        </>
+        <div
+          className={css`
+            z-index: 1050;
+            position: fixed;
+            bottom: 42px;
+            inset-inline-end: 0px;
+            height: 62px;
+            padding: 10px 14px 10px 10px;
+            border-radius: 31px 0 0 31px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
-        {!folded && (
-          <>
-            <ShortcutList />
-            <Divider
-              type="vertical"
-              style={{
-                height: '50px',
-              }}
-            />
-            <Dropdown menu={{ items }} placement="topRight">
-              <Avatar
-                src={icon}
-                size={52}
-                shape="square"
-                onClick={() => {
-                  setOpen(!open);
-                }}
-              />
-            </Dropdown>
-          </>
-        )}
-      </div>
+            opacity: 0.7;
+            background: rgba(255, 255, 255);
+            box-shadow:
+              0 3px 6px -4px rgba(0, 0, 0, 0.12),
+              0 6px 16px 0px rgba(0, 0, 0, 0.08),
+              0 9px 28px 8px rgba(0, 0, 0, 0.05);
+            transition: opacity 0.2s ease;
+            &:hover {
+              opacity: 1;
+            }
+
+            ${dropdownOpen
+              ? `
+            opacity: 1;
+            `
+              : ''}
+          `}
+        >
+          <Avatar src={icon} size={42} shape="square" />
+        </div>
+      </Dropdown>
     )
   );
 });

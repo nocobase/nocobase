@@ -140,6 +140,23 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.role.length).toBeGreaterThan(0);
   });
 
+  it('should resolve record list when filterByTk is an array (formValues.roles.title)', async () => {
+    const payload = {
+      template: { titles: '{{ ctx.formValues.roles.title }}' },
+      contextParams: {
+        'formValues.roles': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: ['admin', 'member'],
+        },
+      },
+    };
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+    expect(Array.isArray(data.titles)).toBe(true);
+    expect(data.titles).toEqual(expect.arrayContaining(['{{t("Admin")}}', '{{t("Member")}}']));
+  });
+
   it('should support bracket notation for first association segment', async () => {
     const payload = {
       template: {

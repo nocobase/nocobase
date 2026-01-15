@@ -12,6 +12,7 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { JSONValue } from '../template/resolver';
 import { variables, inferSelectsFromUsage } from './registry';
 import { adjustSelectsForCollection } from './selects';
+import { fetchRecordOrRecordsJson, getExtraKeyFieldsForSelect } from './records';
 
 /**
  * 预取：构建“同记录”的字段/关联并集，一次查询写入 ctx.state.__varResolveBatchCache，供后续解析复用
@@ -62,6 +63,8 @@ export async function prefetchRecordsForResolve(
         const collection = (recordParams as any)?.collection;
         const filterByTk = (recordParams as any)?.filterByTk;
         if (!collection || typeof filterByTk === 'undefined') continue;
+        // 空数组不应退化为“无条件查询”，直接跳过预取
+        if (Array.isArray(filterByTk) && filterByTk.length === 0) continue;
         const group = ensureGroup(dataSourceKey, collection, filterByTk);
         let { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
         const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, generatedFields, generatedAppends);
@@ -96,13 +99,28 @@ export async function prefetchRecordsForResolve(
         const pkAttr = modelInfo?.primaryKeyAttribute;
         const pkIsValid =
           pkAttr && modelInfo?.rawAttributes && Object.prototype.hasOwnProperty.call(modelInfo.rawAttributes, pkAttr);
-        if (fields.size && pkIsValid) {
-          fields.add(pkAttr as string);
+        const filterTargetKey = (repo as any)?.collection?.filterTargetKey as string | string[] | undefined;
+        const extraKeyFields = getExtraKeyFieldsForSelect(filterByTk, {
+          filterTargetKey,
+          pkAttr: pkAttr as string | undefined,
+          pkIsValid,
+          rawAttributes: modelInfo?.rawAttributes,
+        });
+        // 仅在启用 fields 选择时追加 key 字段；否则 fields=undefined 会默认返回全字段，无需补齐
+        if (fields.size && extraKeyFields.length) {
+          extraKeyFields.forEach((f) => fields.add(f));
         }
         const fld = fields.size ? Array.from(fields).sort() : undefined;
         const app = appends.size ? Array.from(appends).sort() : undefined;
-        const rec = await repo.findOne({ filterByTk: filterByTk as any, fields: fld, appends: app });
-        const json = rec ? rec.toJSON() : undefined;
+        const json = await fetchRecordOrRecordsJson(repo as any, {
+          filterByTk,
+          preferFullRecord: false,
+          fields: fld,
+          appends: app,
+          filterTargetKey,
+          pkAttr: pkAttr as string | undefined,
+          pkIsValid,
+        });
         if (cache) {
           const key = JSON.stringify({ ds: dataSourceKey, c: collection, tk: filterByTk, f: fld, a: app });
           cache.set(key, json);

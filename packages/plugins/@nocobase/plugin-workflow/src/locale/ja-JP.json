@@ -54,7 +54,7 @@
   "Collection event": "コレクションイベント",
   "Collection operations": "フィールド操作",
   "Completed": "完了",
-  "Concat": "Concat",
+  "Concatenate": "連結",
   "Condition": "条件",
   "Condition expression": "条件式",
   "Condition label": "Condition label",
@@ -256,8 +256,5 @@
   "Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).": "ワークフローは、送信が成功する前または後に、ワークフローの種類に基づいてトリガーされます（ローカルモードでのアクション前後のイベントと承認イベントをサポート）。",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "ボタンをクリックするとデータを保存せずにワークフローが直接トリガーされます。「カスタムアクションイベント」にのみバインドできます。",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "不明なタイプのワークフローはエラーを引き起こします。このタイプを提供するプラグインを削除するか確認してください。",
-  "Yes": "Yes",
-  "concat": "連結",
-  "false": "偽",
-  "true": "真"
+  "Yes": "Yes"
 }

@@ -11,7 +11,7 @@ interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   key: string; // 流唯一标识
   title?: string; // 可选：流显示名称
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
-  on?: { eventName: string }; // 可选：事件触发配置
+  on?: FlowEvent<TModel>; // 可选：事件触发配置（字符串或对象）
   steps: Record<string, StepDefinition<TModel>>; // 流步骤定义
 }
 
@@ -38,6 +38,48 @@ interface InlineStepDefinition<TModel extends FlowModel = FlowModel> {
 ```
 
 ---
+
+## on（事件触发配置）
+
+`on` 用于声明该 Flow 可以被 `model.dispatchEvent('<eventName>')` 触发：
+
+- `on: '<eventName>'`
+- `on: { eventName: '<eventName>', ... }`
+
+简化类型如下：
+
+```ts
+type FlowEventName =
+  | 'click'
+  | 'submit'
+  | 'reset'
+  | 'remove'
+  | 'openView'
+  | 'dropdownOpen'
+  | 'popupScroll'
+  | 'search'
+  | 'customRequest'
+  | 'collapseToggle'
+  | (string & {});
+
+type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+type FlowEvent =
+  | FlowEventName
+  | {
+      eventName: FlowEventName;
+      defaultParams?: Record<string, any>;
+      phase?: FlowEventPhase;
+      flowKey?: string;
+      stepKey?: string;
+    };
+```
 
 ## 定义流方式
 
