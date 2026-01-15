@@ -540,7 +540,7 @@ const RenderButton = ({
           }
         };
         if (confirm?.enable !== false && confirm?.content) {
-          if (!fieldSchema['x-action-settings'].skipValidator) {
+          if (!fieldSchema['x-action-settings']?.skipValidator) {
             await form?.submit?.();
           }
           modal.confirm({
