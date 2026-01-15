@@ -7,56 +7,53 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useField, useFieldSchema, useForm } from '@formily/react';
-import { FormLayout } from '@formily/antd-v5';
-import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
 import { TableOutlined } from '@ant-design/icons';
+import { FormLayout } from '@formily/antd-v5';
+import { useField, useFieldSchema, useForm } from '@formily/react';
+import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
 import { useAntdToken } from 'antd-style';
 import dayjs from 'dayjs';
-import { useTranslation } from 'react-i18next';
 import { get } from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 import {
-  css,
-  PopupContextProvider,
+  List,
+  OpenModeProvider,
+  SchemaComponent,
+  SchemaComponentContext,
   SchemaInitializerItem,
+  css,
+  useAPIClient,
+  useActionContext,
   useCollectionRecordData,
   useCompile,
+  useCurrentUserContext,
+  useFormBlockContext,
+  useListBlockContext,
+  useMobileLayout,
+  useMobilePage,
   useOpenModeContext,
   usePlugin,
   useSchemaInitializer,
   useSchemaInitializerItem,
-  SchemaComponent,
-  SchemaComponentContext,
-  useAPIClient,
-  useActionContext,
-  useCurrentUserContext,
-  useFormBlockContext,
-  useListBlockContext,
-  List,
-  OpenModeProvider,
-  ActionContextProvider,
-  useRequest,
-  CollectionRecordProvider,
-  useMobileLayout,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
+  EXECUTION_STATUS,
   FlowContext,
+  WorkflowTitle,
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
-  EXECUTION_STATUS,
-  WorkflowTitle,
   usePopupRecordContext,
 } from '@nocobase/plugin-workflow/client';
 
+import { TASK_STATUS, TASK_TYPE_MANUAL, TaskStatusOptionsMap } from '../common/constants';
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -431,10 +428,11 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
-  const isMobile = isMobileLayout;
+  const isMobile = mobilePage || isMobileLayout;
   return status ? (
     <Space
       className={css`

@@ -8,8 +8,7 @@
  */
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
-import { observer } from '@formily/react';
-import { App, Badge, Button, Flex, Layout, Menu, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
+import { Badge, Button, Flex, Layout, Menu, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -23,13 +22,13 @@ import {
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
-  SchemaInitializerItemType,
   useAPIClient,
   useApp,
   useCompile,
   useDocumentTitle,
   useIsLoggedIn,
   useMobileLayout,
+  useMobilePage,
   usePlugin,
   useRequest,
   useToken,
@@ -75,12 +74,13 @@ function MenuLink({ type, isMobile }: any) {
   const { title } = workflowPlugin.taskTypes.get(type);
   const { counts } = useContext(TasksCountsContext);
   const typeTitle = compile(title);
+  const mobilePage = useMobilePage();
 
   return (
     <Link
       replace
       to={
-        isMobile
+        mobilePage
           ? `/page/workflow-tasks/${type}/${TASK_STATUS.PENDING}`
           : `/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
       }
@@ -115,17 +115,19 @@ function StatusTabs() {
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
   const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
   const onSwitchTab = useCallback(
     (key: string) => {
       if (!type?.key) {
         return;
       }
-      navigate(isMobileLayout ? `/page/workflow-tasks/${type.key}/${key}` : `/admin/workflow/tasks/${type.key}/${key}`);
+      navigate(mobilePage ? `/page/workflow-tasks/${type.key}/${key}` : `/admin/workflow/tasks/${type.key}/${key}`);
     },
-    [navigate, isMobileLayout, type],
+    [navigate, mobilePage, type],
   );
   const { Actions } = type;
-  return isMobileLayout ? (
+  const isMobile = mobilePage || isMobileLayout;
+  return isMobile ? (
     <Flex justify="space-between">
       <Segmented
         defaultValue={status}
@@ -145,7 +147,7 @@ function StatusTabs() {
         ]}
         onChange={onSwitchTab}
       />
-      <Actions onlyIcon={isMobileLayout} />
+      <Actions onlyIcon={isMobile} />
     </Flex>
   ) : (
     <Tabs
@@ -222,6 +224,7 @@ function PopupContext(props: any) {
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
   const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
   const setVisible = useCallback(
     (visible: boolean) => {
       if (!visible) {
@@ -229,14 +232,12 @@ function PopupContext(props: any) {
           navigate(-1);
         } else {
           navigate(
-            isMobileLayout
-              ? `/page/workflow-tasks/${taskType}/${status}`
-              : `/admin/workflow/tasks/${taskType}/${status}`,
+            mobilePage ? `/page/workflow-tasks/${taskType}/${status}` : `/admin/workflow/tasks/${taskType}/${status}`,
           );
         }
       }
     },
-    [isMobileLayout, navigate, status, taskType],
+    [mobilePage, navigate, status, taskType],
   );
   if (!popupId) {
     return null;
@@ -258,6 +259,7 @@ export function TaskPageContent() {
   const apiClient = useAPIClient();
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const { token } = theme.useToken();
@@ -298,7 +300,7 @@ export function TaskPageContent() {
 
   // const typeKey = taskType ?? items[0].key;
 
-  const isMobile = isMobileLayout;
+  const isMobile = mobilePage || isMobileLayout;
 
   const contentClass = css`
     height: 100%;
