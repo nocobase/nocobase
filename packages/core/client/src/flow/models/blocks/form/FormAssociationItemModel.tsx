@@ -17,7 +17,6 @@ import {
 } from '@nocobase/flow-engine';
 import { get, castArray } from 'lodash';
 import React from 'react';
-import { Form } from 'antd';
 import { uid } from '@formily/shared';
 import { FieldModel } from '../../base';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
@@ -122,51 +121,6 @@ export class FormAssociationItemModel extends DisplayItemModel {
     });
   }
 
-  renderAssociationItem() {
-    const fieldModel = this.subModels.field as FieldModel;
-    const idx = this.context.fieldIndex;
-    const record = this.context.record;
-    const currentObject = this.context.currentObject;
-    // 嵌套场景下继续传透，为字段子模型创建 fork
-    const modelForRender =
-      idx != null
-        ? (() => {
-            const fork = fieldModel.createFork({}, `${idx}`);
-            fork.context.defineProperty('fieldIndex', {
-              get: () => idx,
-            });
-            fork.context.defineProperty('record', {
-              get: () => record,
-              cache: false,
-            });
-            fork.context.defineProperty('currentObject', {
-              get: () => currentObject,
-              cache: false,
-            });
-            if (this.context.pattern) {
-              fork.context.defineProperty('pattern', {
-                get: () => this.context.pattern,
-              });
-            }
-            return fork;
-          })()
-        : fieldModel;
-    const mergedProps = this.context.pattern
-      ? {
-          ...this.parent.parent.props,
-          ...this.props,
-          pattern: this.context.pattern,
-          disabled: this.context.pattern === 'readPretty',
-        }
-      : { ...this.parent.parent.props, ...this.props };
-    const value = getValueWithIndex(record, this.fieldPath, idx);
-    return (
-      <FormItem {...mergedProps} value={value}>
-        <FieldModelRenderer model={modelForRender} />
-      </FormItem>
-    );
-  }
-
   renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
@@ -205,11 +159,12 @@ export class FormAssociationItemModel extends DisplayItemModel {
         }
       : { ...this.parent.parent.props, ...this.props };
     const value = getValueWithIndex(record, this.fieldPath, idx);
+    console.log(value, this.fieldPath, mergedProps);
     return (
-      <Form.Item
+      <FormItem
         {...mergedProps}
         shouldUpdate={(prevValues, curValues) => {
-          console.log(prevValues);
+          //   console.log(prevValues);
           //   return prevValues.additional !== curValues.additional;
           return true;
         }}
@@ -226,7 +181,7 @@ export class FormAssociationItemModel extends DisplayItemModel {
             />
           );
         }}
-      </Form.Item>
+      </FormItem>
     );
   }
 }
