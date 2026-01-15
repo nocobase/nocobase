@@ -591,7 +591,7 @@ const RenderButton = ({
         }
       };
       if (d.confirmEnable !== false && d.confirmContent) {
-        if (!fieldSchema['x-action-settings']?.skipValidator) {
+        if (!fieldSchema?.['x-action-settings']?.skipValidator) {
           await form?.submit?.();
         }
         d.modal.confirm({
