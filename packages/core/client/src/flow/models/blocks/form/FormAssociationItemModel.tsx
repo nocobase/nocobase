@@ -23,49 +23,15 @@ import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubMod
 import { useJsonTemplateResolver } from '../../../utils/useJsonTemplateResolver';
 
 const AssociationItem = (props) => {
-  const path = `{{ctx.formValues.${props.fieldPath}}}`;
+  console.log(props);
+  const prefix = props.underSubForm ? 'ctx.currentObject' : 'ctx.formValues';
+  const path = `{{${prefix}.${props.fieldPath}}}`;
   const { data, loading, error } = useJsonTemplateResolver(path, [props.refreshId]);
+  console.log(path, data);
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   return <FieldModelRenderer {...props.mergedProps} model={props.modelForRender} value={data || props.value} />;
 };
-
-/**
- * 从 record 中取值
- * @param record 当前行数据
- * @param fieldPath 字段路径 (如 "o2m_aa.oho_bb.name")
- * @param idx Form.List 的索引
- */
-export function getValueWithIndex(record: any, fieldPath: string, idx?: string[]) {
-  const fieldIndex = castArray(idx).filter((v) => typeof v === 'string');
-  const path = fieldPath.split('.');
-
-  if (fieldIndex?.length) {
-    const fullPath: (string | number)[] = [];
-    let pathPtr = 0;
-    let idxPtr = 0;
-
-    while (pathPtr < path.length) {
-      const current = path[pathPtr];
-      fullPath.push(current);
-
-      // 检查当前集合是否有索引
-      if (idxPtr < fieldIndex.length) {
-        const [listName, indexStr] = fieldIndex[idxPtr].split(':');
-        if (listName === current) {
-          fullPath.push(Number(indexStr));
-          idxPtr++;
-        }
-      }
-
-      pathPtr++;
-    }
-
-    return get(record, fullPath);
-  }
-
-  return get(record, path);
-}
 
 export class FormAssociationItemModel extends DisplayItemModel {
   static defineChildren(ctx: FlowModelContext) {
@@ -150,23 +116,18 @@ export class FormAssociationItemModel extends DisplayItemModel {
             return fork;
           })()
         : fieldModel;
-    const mergedProps = this.context.pattern
-      ? {
-          ...this.parent.parent.props,
-          ...this.props,
-          pattern: this.context.pattern,
-          disabled: this.context.pattern === 'readPretty',
-        }
-      : { ...this.parent.parent.props, ...this.props };
-    const value = getValueWithIndex(record, this.fieldPath, idx);
-    console.log(value, this.fieldPath, mergedProps);
+    const name = this.collectionField.name;
+    const path = this.fieldPath.replace(new RegExp(`\\.${name}$`), '');
+    const dependenciesPath = castArray(path.split('.'));
+    const prefix = this.context.prefixFieldPath;
     return (
       <FormItem
-        {...mergedProps}
+        {...this.props}
         shouldUpdate={(prevValues, curValues) => {
-          //   console.log(prevValues);
-          //   return prevValues.additional !== curValues.additional;
-          return true;
+          return (
+            JSON.stringify(get(prevValues, [...dependenciesPath])) !==
+            JSON.stringify(get(curValues, [...dependenciesPath]))
+          );
         }}
       >
         {() => {
@@ -174,10 +135,10 @@ export class FormAssociationItemModel extends DisplayItemModel {
           return (
             <AssociationItem
               modelForRender={modelForRender}
-              value={value}
-              fieldPath={this.fieldPath}
+              fieldPath={this.fieldPath.replace(new RegExp(`^${prefix}\\.`), '')}
               refreshId={refreshId}
-              mergedProps={mergedProps}
+              mergedProps={this.props}
+              underSubForm={!!prefix}
             />
           );
         }}
