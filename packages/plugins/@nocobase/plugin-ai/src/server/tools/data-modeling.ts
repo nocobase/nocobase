@@ -486,7 +486,8 @@ export const defineCollections: ToolOptions = {
 export const searchFieldMetadata: ToolOptions = {
   name: 'searchFieldMetadata',
   title: '{{t("Search field metadata")}}',
-  description: '{{t("Search fields in data models by keyword. Returns either search results or a suggested query.")}}',
+  description:
+    '{{t("Search fields in data models by keyword (english first). Returns either search results or a suggested query.")}}',
 
   schema: {
     type: 'object',
@@ -569,18 +570,7 @@ export const searchFieldMetadata: ToolOptions = {
           status: 'success',
           content: JSON.stringify({
             kind: 'results',
-            results: hits.slice(0, Math.min(limit, 20)).map((hit: any) => ({
-              path: `${hit.dataSource}.${hit.collection}.${hit.name}`,
-
-              name: hit.name,
-              title: hit.title,
-
-              collection: hit.collection,
-              dataSource: hit.dataSource,
-              fieldType: hit.fieldType,
-
-              score: hit.score,
-            })),
+            results: hits.slice(0, Math.min(limit, 20)),
           }),
         };
       }

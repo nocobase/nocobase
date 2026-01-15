@@ -734,23 +734,35 @@ export class PluginDataSourceManagerServer extends Plugin {
       options: field.options,
       text: `${field.name} ${field.options?.uiSchema?.title || ''} ${collection}`,
     });
-    this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
+    this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
       const cm = dataSource.collectionManager;
       if (cm instanceof SequelizeCollectionManager) {
         const db = cm.db;
         db.on('afterDefineCollection', (collection: Collection) => {
-          collection.on('field.afterAdd', (field) => {
-            const doc = getFieldDocument(dataSource.name, collection.name, field);
-            index.add(doc);
-          });
-          collection.on('field.afterRemove', (field) => {
-            const doc = getFieldDocument(dataSource.name, collection.name, field);
-            try {
-              index.remove(doc);
-            } catch (err) {
-              // ignore
+          if (dataSource.name === 'main') {
+            collection.on('field.afterAdd', (field) => {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              index.add(doc);
+            });
+            collection.on('field.afterRemove', (field) => {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              try {
+                index.remove(doc);
+              } catch (err) {
+                // ignore
+              }
+            });
+          } else {
+            for (const [_, field] of collection.fields) {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              try {
+                index.remove(doc);
+              } catch (err) {
+                // ignore
+              }
+              index.add(doc);
             }
-          });
+          }
         });
       }
     });
