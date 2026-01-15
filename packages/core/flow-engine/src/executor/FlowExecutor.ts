@@ -237,11 +237,22 @@ export class FlowExecutor {
           return false;
         });
 
+    // 路由系统的“重放打开视图”会再次 dispatchEvent('click')，但这不应重复触发用户配置的动态事件流。
+    // 约定：由路由重放触发时，会在 inputArgs 中携带 triggerByRouter: true
+    const isRouterReplayClick = eventName === 'click' && inputArgs?.triggerByRouter === true;
+    const flowsToRun = isRouterReplayClick
+      ? flows.filter((flow) => {
+          const reg = flow['flowRegistry'] as any;
+          const type = reg?.constructor?._type as 'instance' | 'global' | undefined;
+          return type !== 'instance';
+        })
+      : flows;
+
     // 组装执行函数（返回值用于缓存；beforeRender 返回 results:any[]，其它返回 true）
     const execute = async () => {
       if (sequential) {
         // 顺序执行：动态流（实例级）优先，其次静态流；各自组内再按 sort 升序，最后保持原始顺序稳定
-        const flowsWithIndex = flows.map((f, i) => ({ f, i }));
+        const flowsWithIndex = flowsToRun.map((f, i) => ({ f, i }));
         const ordered = flowsWithIndex
           .slice()
           .sort((a, b) => {
@@ -283,7 +294,7 @@ export class FlowExecutor {
 
       // 并行
       const results = await Promise.all(
-        flows.map(async (flow) => {
+        flowsToRun.map(async (flow) => {
           logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
           try {
             return await this.runFlow(model, flow.key, inputArgs, runId);
