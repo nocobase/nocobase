@@ -223,7 +223,6 @@ function PopupContext(props: any) {
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
-  const { isMobileLayout } = useMobileLayout();
   const mobilePage = useMobilePage();
   const setVisible = useCallback(
     (visible: boolean) => {
