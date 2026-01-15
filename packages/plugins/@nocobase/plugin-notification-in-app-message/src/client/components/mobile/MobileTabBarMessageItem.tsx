@@ -8,14 +8,12 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { useApp } from '@nocobase/client';
+import { MobileTabBarItem } from '@nocobase/client';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { unreadMsgsCountObs } from '../../observables';
 
 const InnerMobileTabBarMessageItem = (props) => {
-  const app = useApp();
-  const MobileTabBarItem = app.getComponent('MobileTabBarItem') as any;
   const navigate = useNavigate();
   const location = useLocation();
   const onClick = () => {

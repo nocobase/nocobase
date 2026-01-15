@@ -8,18 +8,20 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { css, useApp, useCurrentUserContext } from '@nocobase/client';
+import {
+  css,
+  MobilePageContentContainer,
+  MobilePageHeader,
+  MobilePageProvider,
+  useCurrentUserContext,
+} from '@nocobase/client';
 import { Tabs } from 'antd-mobile';
 import React, { useEffect } from 'react';
 import { useLocalTranslation } from '../../../locale';
 import { ChannelStatus, channelStatusFilterObs, fetchChannels, userIdObs } from '../../observables';
 import { ChannelList } from './ChannelList';
+
 const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickItem?: (item: any) => void }) => {
-  const app = useApp();
-  const MobilePageProvider = app.getComponent('MobilePageProvider') as any;
-  const MobilePageHeader = app.getComponent('MobilePageHeader') as any;
-  const MobilePageNavigationBar = app.getComponent('MobilePageNavigationBar') as any;
-  const MobilePageContentContainer = app.getComponent('MobilePageContentContainer') as any;
   const { t } = useLocalTranslation();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
@@ -32,7 +34,6 @@ const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickI
   return (
     <MobilePageProvider displayNavigationBar={props.displayNavigationBar}>
       <MobilePageHeader>
-        <MobilePageNavigationBar />
         <Tabs
           className={css({
             '.adm-tabs-header': {

@@ -59,6 +59,7 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
+export * from './mobile';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 export { withSkeletonComponent } from './hoc/withSkeletonComponent';

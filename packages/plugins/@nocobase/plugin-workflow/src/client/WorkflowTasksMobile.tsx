@@ -13,7 +13,16 @@ import { NavBar, Toast } from 'antd-mobile';
 import React, { useCallback, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { css, SchemaInitializerItemType, useApp, useToken } from '@nocobase/client';
+import {
+  css,
+  MobilePageContentContainer,
+  MobilePageHeader,
+  MobilePageProvider,
+  MobileTabBarItem,
+  SchemaInitializerItemType,
+  useApp,
+  useToken,
+} from '@nocobase/client';
 
 import { lang } from './locale';
 import {
@@ -88,8 +97,6 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
 
 export const MobileTabBarWorkflowTasksItem = observer(
   (props: any) => {
-    const app = useApp();
-    const MobileTabBarItem = app.getComponent('MobileTabBarItem') as any;
     const { message } = App.useApp();
     const navigate = useNavigate();
     const location = useLocation();
@@ -152,10 +159,6 @@ function WorkflowTasksMobileTabs() {
 }
 
 export function WorkflowTasksMobile() {
-  const app = useApp();
-  const MobilePageProvider = app.getComponent('MobilePageProvider') as any;
-  const MobilePageHeader = app.getComponent('MobilePageHeader') as any;
-  const MobilePageContentContainer = app.getComponent('MobilePageContentContainer') as any;
   const navigate = useNavigate();
 
   return (
