@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { omit } from 'lodash';
+import _, { omit } from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 
@@ -31,11 +31,11 @@ export class ACL {
   constructor(private flowEngine: FlowEngine) {}
 
   setData(data: Record<string, any>) {
-    this.data = data;
+    this.data = _.cloneDeep(data);
   }
 
   setMeta(data: Record<string, any>) {
-    this.meta = data;
+    this.meta = _.cloneDeep(data);
   }
 
   async load() {
