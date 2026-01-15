@@ -81,17 +81,15 @@ async function evaluate(expr: string, ctx: any) {
       /^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\.([a-zA-Z_$][a-zA-Z0-9_$-]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)*))?$/,
     );
     if (dotOnly) {
-      const first = dotOnly[1] as string;
-      const rest = dotOnly[2] as string | undefined;
+      const first = dotOnly[1];
+      const rest = dotOnly[2];
       const base = await ctx[first];
       if (!rest) return base;
       // 使用异步版本取值，逐段 await，并保留数组场景下的隐式聚合语义
       const resolved = await asyncGetValuesByPath(base, rest);
       // 当 dot path 含 '-' 时可能与减号运算符存在歧义（例如：ctx.aa.bb-ctx.cc）。
       // 若按 path 解析未取到值，则回退到 JS 表达式解析，尽量保持兼容。
-      if (typeof resolved === 'undefined' && rest.includes('-')) {
-        // fallback to JS evaluation below
-      } else {
+      if (typeof resolved !== 'undefined' || !rest.includes('-')) {
         return resolved;
       }
     }

@@ -428,6 +428,20 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
     return getValuesByPath(base as object, segs.join('.'));
   };
 
+  const resolveInnerExpression = async (innerExpr: string): Promise<any> => {
+    const dotPath = matchDotOnly(innerExpr);
+    if (dotPath) {
+      const resolved = await resolveDotOnlyPath(dotPath);
+      // 当 dotPath 含 '-' 时可能与减号运算符存在歧义，例如：ctx.aa.bb-ctx.cc。
+      // 若按 path 解析未取到值，则回退到 JS 表达式解析，尽量保持兼容。
+      if (resolved === undefined && dotPath.includes('-')) {
+        return await processExpression(innerExpr, ctx);
+      }
+      return resolved;
+    }
+    return await processExpression(innerExpr, ctx);
+  };
+
   /**
    * 单个表达式模式匹配
    *
@@ -448,17 +462,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
   const singleMatch = expression.match(/^\s*\{\{\s*([^{}]+?)\s*\}\}\s*$/);
   if (singleMatch) {
     const inner = singleMatch[1];
-    const dotPath = matchDotOnly(inner);
-    if (dotPath) {
-      const resolved = await resolveDotOnlyPath(dotPath);
-      // 当 dotPath 含 '-' 时可能与减号运算符存在歧义，例如：ctx.aa.bb-ctx.cc。
-      // 若按 path 解析未取到值，则回退到 JS 表达式解析，尽量保持兼容。
-      if (resolved === undefined && dotPath.includes('-')) {
-        return await processExpression(inner, ctx);
-      }
-      return resolved;
-    }
-    return await processExpression(inner, ctx);
+    return await resolveInnerExpression(inner);
   }
 
   /**
@@ -481,16 +485,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
   let result = expression;
 
   for (const [fullMatch, innerExpr] of matches) {
-    const dotPath = matchDotOnly(innerExpr);
-    let value: any;
-    if (dotPath) {
-      value = await resolveDotOnlyPath(dotPath);
-      if (value === undefined && dotPath.includes('-')) {
-        value = await processExpression(innerExpr, ctx);
-      }
-    } else {
-      value = await processExpression(innerExpr, ctx);
-    }
+    const value = await resolveInnerExpression(innerExpr);
     if (value !== undefined) {
       const replacement = typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value);
       result = result.replace(fullMatch, replacement);
