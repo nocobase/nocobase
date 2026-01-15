@@ -22,6 +22,7 @@
   "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "Additional system prompt appended to the AI employee’s definition, used to refine instructions",
   "Applied": "Applied",
   "Apply to editor": "Apply to editor",
+  "Base URL is optional, leave blank to use default (recommended)": "Base URL is optional, leave blank to use default (recommended)",
   "Are you sure delete this datasource?": "Are you sure delete this datasource?",
   "Asc": "Asc",
   "Auto skill description": "When auto skill usage is enabled, the AI employee will invoke tools automatically when needed. Otherwise, the tool call parameters will be returned in the conversation for the user to review and trigger manually.",

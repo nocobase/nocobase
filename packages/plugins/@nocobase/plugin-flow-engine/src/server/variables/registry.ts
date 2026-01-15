@@ -14,6 +14,7 @@ import type { TargetKey } from '@nocobase/database';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
 import { adjustSelectsForCollection } from './selects';
+import { fetchRecordOrRecordsJson, getExtraKeyFieldsForSelect, mergeFieldsWithExtras } from './records';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -217,10 +218,18 @@ async function fetchRecordWithRequestCache(
     const pkAttr = modelInfo?.primaryKeyAttribute;
     const pkIsValid =
       pkAttr && modelInfo?.rawAttributes && Object.prototype.hasOwnProperty.call(modelInfo.rawAttributes, pkAttr);
-    const fieldsWithPk =
-      Array.isArray(fields) && fields.length > 0 && pkIsValid
-        ? Array.from(new Set<string>([...fields, pkAttr as string]))
-        : fields;
+
+    // 当 filterByTk 为数组时，返回值应为 records[]（例如 formValues.roles）
+    // 同时：fields 模式下确保包含主键；数组模式下尽量包含 filterTargetKey 以便对齐顺序
+    const filterTargetKey = (repo as unknown as { collection?: { filterTargetKey?: string | string[] } }).collection
+      ?.filterTargetKey;
+    const extraKeyFields = getExtraKeyFieldsForSelect(filterByTk, {
+      filterTargetKey,
+      pkAttr: pkAttr as string | undefined,
+      pkIsValid,
+      rawAttributes: modelInfo?.rawAttributes,
+    });
+    const fieldsWithPk = mergeFieldsWithExtras(fields, extraKeyFields);
 
     // 对于需要完整记录的场景（preferFullRecord 为 true，例如模板中出现 xxx.record），
     // 缓存键不再区分 fields/appends，只按“全量记录”维度缓存。
@@ -304,18 +313,15 @@ async function fetchRecordWithRequestCache(
     }
     // 当 preferFullRecord 为 true 时，无论之前如何推导字段/关联，都以“完整记录”维度查询，
     // 确保 ctx.xxx.record 返回的是完整 JSON 记录，而非仅包含部分字段的切片。
-    const rec = await repo.findOne(
-      preferFullRecord
-        ? {
-            filterByTk: filterByTk as TargetKey,
-          }
-        : {
-            filterByTk: filterByTk as TargetKey,
-            fields: fieldsWithPk,
-            appends,
-          },
-    );
-    const json = rec ? rec.toJSON() : undefined;
+    const json = await fetchRecordOrRecordsJson(repo as any, {
+      filterByTk,
+      preferFullRecord,
+      fields: fieldsWithPk,
+      appends,
+      filterTargetKey,
+      pkAttr: pkAttr as string | undefined,
+      pkIsValid,
+    });
     if (cache) cache.set(key, json);
     return json;
   } catch (e: unknown) {

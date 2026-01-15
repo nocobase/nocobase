@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
-import { tval } from '@nocobase/utils/client';
+import { tExpr } from '@nocobase/flow-engine';
 import { namespace } from '../../locale';
 
 export const ProviderSettingsForm: React.FC = () => {
@@ -19,12 +19,12 @@ export const ProviderSettingsForm: React.FC = () => {
         type: 'void',
         properties: {
           baseURL: {
-            title: tval('Base URL', { ns: namespace }),
+            title: tExpr('Base URL', { ns: namespace }),
             type: 'string',
             'x-decorator': 'FormItem',
             'x-component': 'TextAreaWithGlobalScope',
             default: 'http://localhost:11434',
-            description: tval('Ollama server URL (default: http://localhost:11434)', { ns: namespace }),
+            description: tExpr('Ollama server URL (default: http://localhost:11434)', { ns: namespace }),
           },
         },
       }}
