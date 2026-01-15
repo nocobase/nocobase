@@ -22,8 +22,24 @@ import { FieldModel } from '../../base';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { useJsonTemplateResolver } from '../../../utils/useJsonTemplateResolver';
 
+function mergeArrays(a, b) {
+  if (!b) {
+    return a;
+  }
+  const result = [...a];
+
+  b.forEach((item) => {
+    const [prefix, index] = item.split(':');
+    if (result.includes(prefix)) {
+      const prefixIndex = result.indexOf(prefix);
+      result.splice(prefixIndex + 1, 0, index);
+    }
+  });
+
+  return result;
+}
+
 const AssociationItem = (props) => {
-  console.log(props);
   const prefix = props.underSubForm ? 'ctx.currentObject' : 'ctx.formValues';
   const path = `{{${prefix}.${props.fieldPath}}}`;
   const { data, loading, error } = useJsonTemplateResolver(path, [props.refreshId]);
@@ -118,7 +134,7 @@ export class FormAssociationItemModel extends DisplayItemModel {
         : fieldModel;
     const name = this.collectionField.name;
     const path = this.fieldPath.replace(new RegExp(`\\.${name}$`), '');
-    const dependenciesPath = castArray(path.split('.'));
+    const dependenciesPath = mergeArrays(castArray(path.split('.')), idx);
     const prefix = this.context.prefixFieldPath;
     return (
       <FormItem
