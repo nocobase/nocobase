@@ -16,7 +16,7 @@ import rolesConnectionResourcesResourcer from './resourcers/data-sources-resourc
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 import dataSourcesActions from './actions/data-sources';
-import { LoadingProgress } from '@nocobase/data-source-manager';
+import { DataSource, LoadingProgress, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
@@ -24,6 +24,7 @@ import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { mergeRole } from '@nocobase/acl';
 import { loadDataSourceTablesIntoCollections } from './middlewares/load-tables';
+import { Collection } from '@nocobase/database';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -704,6 +705,54 @@ export class PluginDataSourceManagerServer extends Plugin {
           'key.$ne': 'main',
         },
       };
+    });
+
+    this.indexFieldForAI();
+  }
+
+  indexFieldForAI() {
+    const index = this.app.aiManager.documentManager.addMemoeryIndex('dataModels.fields', {
+      fields: ['name', 'title', 'text'],
+      storeFields: ['dataSource', 'collection', 'name', 'title', 'fieldType', 'options'],
+      searchOptions: {
+        boost: {
+          name: 5,
+          title: 4,
+          text: 1,
+        },
+        prefix: true,
+        fuzzy: 0.2,
+      },
+    });
+    const getFieldDocument = (dataSource: string, collection: string, field: any) => ({
+      id: `${dataSource}.${collection}.${field.name}`,
+      name: field.name,
+      title: field.options?.uiSchema?.title || field.name,
+      dataSource,
+      collection,
+      fieldType: field.type,
+      options: field.options,
+      text: `${field.name} ${field.options?.uiSchema?.title || ''} ${collection}`,
+    });
+    this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
+      const cm = dataSource.collectionManager;
+      if (cm instanceof SequelizeCollectionManager) {
+        const db = cm.db;
+        db.on('afterDefineCollection', (collection: Collection) => {
+          collection.on('field.afterAdd', (field) => {
+            const doc = getFieldDocument(dataSource.name, collection.name, field);
+            index.add(doc);
+          });
+          collection.on('field.afterRemove', (field) => {
+            const doc = getFieldDocument(dataSource.name, collection.name, field);
+            try {
+              index.remove(doc);
+            } catch (err) {
+              // ignore
+            }
+          });
+        });
+      }
     });
   }
 

@@ -24,7 +24,7 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-
+import { AIManager } from '@nocobase/ai';
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import { Snowflake } from '@nocobase/snowflake-id';
 import {
@@ -259,6 +259,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public workerIdAllocator: WorkerIdAllocator;
   public snowflakeIdGenerator: SnowflakeIdGenerator;
 
+  public aiManager: AIManager;
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -1291,6 +1292,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.aiManager = new AIManager();
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.eventQueue = new EventQueue(this, options.eventQueue);

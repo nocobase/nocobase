@@ -482,3 +482,134 @@ export const defineCollections: ToolOptions = {
     };
   },
 };
+
+export const searchFieldMetadata: ToolOptions = {
+  name: 'searchFieldMetadata',
+  title: '{{t("Search field metadata")}}',
+  description: '{{t("Search fields in data models by keyword. Returns either search results or a suggested query.")}}',
+
+  schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search keywords, e.g. "order amount", "user email".',
+      },
+      dataSource: {
+        type: 'string',
+        description: 'Limit search to a specific data source.',
+      },
+      collection: {
+        type: 'string',
+        description: 'Limit search to a specific collection.',
+      },
+      fieldType: {
+        type: 'string',
+        description: 'Limit search to a specific field type, e.g. "string", "number".',
+      },
+      limit: {
+        type: 'number',
+        minimum: 1,
+        maximum: 20,
+        description: 'Maximum number of results to return. Default is 5.',
+      },
+    },
+    required: ['query'],
+    additionalProperties: false,
+  },
+
+  invoke: async (
+    ctx,
+    args: {
+      query: string;
+      dataSource?: string;
+      collection?: string;
+      fieldType?: string;
+      limit?: number;
+    },
+  ) => {
+    const { query, dataSource, collection, fieldType, limit = 5 } = args || {};
+
+    if (!query || typeof query !== 'string') {
+      return {
+        status: 'error',
+        content: 'Search query is required.',
+      };
+    }
+
+    try {
+      const index = ctx.app.aiManager.documentManager.getMemoryIndex('dataModels.fields');
+
+      if (!index) {
+        return {
+          status: 'error',
+          content: 'Field search index is not available.',
+        };
+      }
+
+      const searchOptions = {
+        filter: (doc: any) => {
+          if (dataSource && doc.dataSource !== dataSource) {
+            return false;
+          }
+          if (collection && doc.collection !== collection) {
+            return false;
+          }
+          if (fieldType && doc.fieldType !== fieldType) {
+            return false;
+          }
+          return true;
+        },
+      };
+
+      const hits = index.search(query, searchOptions);
+
+      if (hits.length > 0) {
+        return {
+          status: 'success',
+          content: JSON.stringify({
+            kind: 'results',
+            results: hits.slice(0, Math.min(limit, 20)).map((hit: any) => ({
+              path: `${hit.dataSource}.${hit.collection}.${hit.name}`,
+
+              name: hit.name,
+              title: hit.title,
+
+              collection: hit.collection,
+              dataSource: hit.dataSource,
+              fieldType: hit.fieldType,
+
+              score: hit.score,
+            })),
+          }),
+        };
+      }
+
+      const suggestions = index.autoSuggest(query);
+      if (suggestions.length) {
+        return {
+          status: 'success',
+          content: JSON.stringify({
+            kind: 'suggestions',
+            originalQuery: query,
+            suggestions,
+            reason: 'No direct matches found. This is a suggested search term, not a search result.',
+          }),
+        };
+      }
+
+      return {
+        status: 'success',
+        content: JSON.stringify({
+          kind: 'results',
+          results: [],
+        }),
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        content: `Failed to search field metadata: ${err.message}`,
+      };
+    }
+  },
+};
