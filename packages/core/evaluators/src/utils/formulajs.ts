@@ -36,6 +36,14 @@ export interface FormulaEvaluatorOptions {
   blockedIdentifiers?: string[];
 }
 
+function isAlreadyLockedError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const message = (error as Error).message || '';
+  return message.includes('(SES_ALREADY_LOCKED_DOWN)');
+}
+
 function ensureLockdown(options?: LockdownOptions) {
   const globalRef = globalThis as Record<string | symbol, any>;
   if (globalRef[SES_LOCK_FLAG]) {
@@ -44,7 +52,13 @@ function ensureLockdown(options?: LockdownOptions) {
   if (typeof lockdown !== 'function') {
     throw new Error('SES lockdown is unavailable in the current runtime environment.');
   }
-  lockdown(options);
+  try {
+    lockdown(options);
+  } catch (error) {
+    if (!isAlreadyLockedError(error)) {
+      throw error;
+    }
+  }
   globalRef[SES_LOCK_FLAG] = true;
 }
 

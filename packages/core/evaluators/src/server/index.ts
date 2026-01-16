@@ -18,6 +18,64 @@ export { Evaluator, evaluate, appendArrayColumn } from '../utils';
 
 export const evaluators = new Registry<Evaluator>();
 
+const BUFFER_OVERRIDE_FLAG = Symbol.for('nocobase.evaluators.bufferOverrides');
+
+function enableBufferPrototypeOverrides() {
+  const globalRef = globalThis as Record<string | symbol, any>;
+  if (globalRef[BUFFER_OVERRIDE_FLAG]) {
+    return;
+  }
+
+  const bufferCtor = globalRef.Buffer as typeof Buffer | undefined;
+  if (!bufferCtor || !bufferCtor.prototype) {
+    return;
+  }
+
+  const bufferPrototype = bufferCtor.prototype;
+  const descriptors = Object.getOwnPropertyDescriptors(bufferPrototype);
+  for (const key of Reflect.ownKeys(descriptors)) {
+    const descriptor = descriptors[key as string];
+    if (!descriptor || typeof descriptor.value !== 'function' || !descriptor.configurable) {
+      continue;
+    }
+
+    const original = descriptor.value;
+    const getter = function () {
+      return original;
+    };
+    const setter = function (this: unknown, value: unknown) {
+      if (this === bufferPrototype) {
+        throw new TypeError(`Cannot assign to read only property '${String(key)}' of object 'Buffer.prototype'`);
+      }
+      Object.defineProperty(this as object, key, {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value,
+      });
+    };
+
+    Object.defineProperty(getter, 'originalValue', {
+      configurable: false,
+      enumerable: false,
+      writable: false,
+      value: original,
+    });
+
+    Object.defineProperty(bufferPrototype, key, {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: getter,
+      set: setter,
+    });
+  }
+
+  globalRef[BUFFER_OVERRIDE_FLAG] = true;
+}
+
+// mysql2 mutates Buffer instances when mocking packets; run the shim before the SES lockdown happens.
+enableBufferPrototypeOverrides();
+
 const formulajs = createFormulaEvaluator({
   lockdownOptions: {
     consoleTaming: 'unsafe',
