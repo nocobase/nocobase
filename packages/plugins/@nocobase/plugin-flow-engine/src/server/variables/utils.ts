@@ -12,7 +12,6 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { JSONValue } from '../template/resolver';
 import { variables, inferSelectsFromUsage } from './registry';
 import { adjustSelectsForCollection } from './selects';
-import { fetchRecordOrRecordsJson, getExtraKeyFieldsForSelect } from './records';
 
 /**
  * 预取：构建“同记录”的字段/关联并集，一次查询写入 ctx.state.__varResolveBatchCache，供后续解析复用
@@ -25,11 +24,28 @@ export async function prefetchRecordsForResolve(
     const log = koaCtx.app?.logger?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' });
     const groupMap = new Map<
       string,
-      { dataSourceKey: string; collection: string; filterByTk: unknown; fields: Set<string>; appends: Set<string> }
+      {
+        dataSourceKey: string;
+        collection: string;
+        filterByTk: unknown;
+        fields: Set<string>;
+        appends: Set<string>;
+      }
     >();
 
-    const ensureGroup = (dataSourceKey: string, collection: string, filterByTk: unknown) => {
-      const groupKey = JSON.stringify({ ds: dataSourceKey, collection, tk: filterByTk });
+    const ensureGroup = (
+      dataSourceKey: string,
+      collection: string,
+      filterByTk: unknown,
+      opts?: { fields?: string[]; appends?: string[] },
+    ) => {
+      const groupKey = JSON.stringify({
+        ds: dataSourceKey,
+        collection,
+        tk: filterByTk,
+        f: Array.isArray(opts?.fields) ? [...opts.fields].sort() : undefined,
+        a: Array.isArray(opts?.appends) ? [...opts.appends].sort() : undefined,
+      });
       let group = groupMap.get(groupKey);
       if (!group) {
         group = { dataSourceKey, collection, filterByTk, fields: new Set<string>(), appends: new Set<string>() };
@@ -63,9 +79,23 @@ export async function prefetchRecordsForResolve(
         const collection = (recordParams as any)?.collection;
         const filterByTk = (recordParams as any)?.filterByTk;
         if (!collection || typeof filterByTk === 'undefined') continue;
-        // 空数组不应退化为“无条件查询”，直接跳过预取
-        if (Array.isArray(filterByTk) && filterByTk.length === 0) continue;
-        const group = ensureGroup(dataSourceKey, collection, filterByTk);
+        const explicitFields = (recordParams as any)?.fields as string[] | undefined;
+        const explicitAppends = (recordParams as any)?.appends as string[] | undefined;
+        const hasExplicit = Array.isArray(explicitFields) || Array.isArray(explicitAppends);
+        const group = ensureGroup(dataSourceKey, collection, filterByTk, {
+          fields: hasExplicit ? explicitFields : undefined,
+          appends: hasExplicit ? explicitAppends : undefined,
+        });
+
+        // 若显式传入了 fields/appends，则认为 selects 被“锁定”，不再基于模板 usage 扩展，
+        // 避免在同一批解析中预取超出选择范围的字段，导致占位符被意外解析/覆盖。
+        if (hasExplicit) {
+          const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, explicitFields, explicitAppends);
+          fixed.fields?.forEach((f) => group.fields.add(f));
+          fixed.appends?.forEach((a) => group.appends.add(a));
+          continue;
+        }
+
         let { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
         const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, generatedFields, generatedAppends);
         generatedFields = fixed.fields;
@@ -99,28 +129,13 @@ export async function prefetchRecordsForResolve(
         const pkAttr = modelInfo?.primaryKeyAttribute;
         const pkIsValid =
           pkAttr && modelInfo?.rawAttributes && Object.prototype.hasOwnProperty.call(modelInfo.rawAttributes, pkAttr);
-        const filterTargetKey = (repo as any)?.collection?.filterTargetKey as string | string[] | undefined;
-        const extraKeyFields = getExtraKeyFieldsForSelect(filterByTk, {
-          filterTargetKey,
-          pkAttr: pkAttr as string | undefined,
-          pkIsValid,
-          rawAttributes: modelInfo?.rawAttributes,
-        });
-        // 仅在启用 fields 选择时追加 key 字段；否则 fields=undefined 会默认返回全字段，无需补齐
-        if (fields.size && extraKeyFields.length) {
-          extraKeyFields.forEach((f) => fields.add(f));
+        if (fields.size && pkIsValid) {
+          fields.add(pkAttr as string);
         }
         const fld = fields.size ? Array.from(fields).sort() : undefined;
         const app = appends.size ? Array.from(appends).sort() : undefined;
-        const json = await fetchRecordOrRecordsJson(repo as any, {
-          filterByTk,
-          preferFullRecord: false,
-          fields: fld,
-          appends: app,
-          filterTargetKey,
-          pkAttr: pkAttr as string | undefined,
-          pkIsValid,
-        });
+        const rec = await repo.findOne({ filterByTk: filterByTk as any, fields: fld, appends: app });
+        const json = rec ? rec.toJSON() : undefined;
         if (cache) {
           const key = JSON.stringify({ ds: dataSourceKey, c: collection, tk: filterByTk, f: fld, a: app });
           cache.set(key, json);
