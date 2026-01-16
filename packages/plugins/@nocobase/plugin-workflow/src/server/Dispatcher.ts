@@ -18,6 +18,7 @@ import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
+import { countWorkflowStackEntries } from './utils/stack';
 
 type Pending = { execution: ExecutionModel; job?: JobModel; loaded?: boolean };
 
@@ -241,14 +242,17 @@ export default class Dispatcher {
     const { stack } = options;
     let valid = true;
     if (stack?.length > 0) {
-      const existed = await workflow.countExecutions({
-        where: {
-          id: stack,
-        },
-        transaction: options.transaction,
-      });
-
       const limitCount = workflow.options.stackLimit || 1;
+      const { count, hasLegacy } = countWorkflowStackEntries(stack, workflow.id);
+      let existed = count;
+      if (hasLegacy && existed < limitCount) {
+        existed = await workflow.countExecutions({
+          where: {
+            id: stack,
+          },
+          transaction: options.transaction,
+        });
+      }
       if (existed >= limitCount) {
         this.plugin
           .getLogger(workflow.id)
@@ -351,7 +355,8 @@ export default class Dispatcher {
           this.pending.push({ execution });
         } else {
           logger.info(
-            `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
+            `instance serving? ${this.plugin.serving()}; local pending list? ${this.pending.length}; executing? ${!!this
+              .executing}; sending execution (${execution.id}) to queue`,
           );
           try {
             await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {

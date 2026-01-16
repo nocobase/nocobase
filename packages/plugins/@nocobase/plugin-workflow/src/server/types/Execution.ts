@@ -19,6 +19,7 @@ export default class ExecutionModel extends Model {
   declare context: any;
   declare status: number;
   declare dispatched: boolean;
+  declare workflowId: number;
 
   declare createdAt: Date;
   declare updatedAt: Date;

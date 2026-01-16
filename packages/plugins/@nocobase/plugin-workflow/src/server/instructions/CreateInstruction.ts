@@ -11,6 +11,7 @@ import { parseCollectionName } from '@nocobase/data-source-manager';
 
 import { JOB_STATUS } from '../constants';
 import { toJSON } from '../utils';
+import { buildExecutionStack } from '../utils/stack';
 import type Processor from '../Processor';
 import type { FlowNodeModel } from '../types';
 import { Instruction } from '.';
@@ -29,7 +30,7 @@ export class CreateInstruction extends Instruction {
     const created = await repository.create({
       ...options,
       context: {
-        stack: Array.from(new Set((processor.execution.stack ?? []).concat(processor.execution.id))),
+        stack: buildExecutionStack(processor.execution),
       },
       transaction,
     });

@@ -13,6 +13,7 @@ import { Instruction } from '.';
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
+import { buildExecutionStack } from '../utils/stack';
 
 export class DestroyInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
@@ -27,7 +28,7 @@ export class DestroyInstruction extends Instruction {
     const result = await repository.destroy({
       ...options,
       context: {
-        stack: Array.from(new Set((processor.execution.stack ?? []).concat(processor.execution.id))),
+        stack: buildExecutionStack(processor.execution),
       },
       transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
     });
