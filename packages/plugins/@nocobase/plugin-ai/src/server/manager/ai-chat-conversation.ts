@@ -119,12 +119,6 @@ class AIChatConversationImpl implements AIChatConversation {
     const { userMessages, provider, model, service, tools } = options;
     const messages = await this.formatMessages(userMessages, options);
     const systemPrompt = await options.getSystemPrompt?.();
-    if (systemPrompt) {
-      messages.unshift({
-        role: 'system',
-        content: systemPrompt,
-      });
-    }
     const chatContext: AIChatContext = {
       provider,
       model,

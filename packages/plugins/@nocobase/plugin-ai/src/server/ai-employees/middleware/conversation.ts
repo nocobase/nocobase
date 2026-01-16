@@ -87,7 +87,7 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
     stateSchema: z.object({
       lastMessageIndex: z.number().default(0),
     }),
-    beforeAgent: async (state) => {
+    beforeAgent: async (state, runtime) => {
       const lastMessageIndex = state.lastMessageIndex;
       const userMessages = state.messages
         .slice(lastMessageIndex)
@@ -104,11 +104,9 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
 
       aiEmployee.removeAbortController();
 
-      const values = convertAIMessage(lastMessage as AIMessage);
-
       const aiMessage = lastMessage as AIMessage;
       const toolCalls = aiMessage.tool_calls;
-
+      const values = convertAIMessage(aiMessage);
       if (values) {
         if (runtime.signal?.aborted) {
           values.metadata.interrupted = true;
