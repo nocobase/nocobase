@@ -164,6 +164,16 @@ describe('evaluate', () => {
       const result = formulaEval('Date.parse({{a}})', { a: '2021-01-01T00:00:00.000Z' });
       expect(result).toBe(1609459200000);
     });
+
+    it('should block access to dangerous globals', () => {
+      expect(formulaEval('typeof process', {})).toBe('undefined');
+      expect(formulaEval('typeof window', {})).toBe('undefined');
+      expect(formulaEval('typeof globalThis', {})).toBe('undefined');
+    });
+
+    it('should reject attempts to escape the sandbox', () => {
+      expect(() => formulaEval('this.constructor.constructor("return process")()', {})).toThrow();
+    });
   });
 
   describe('string', () => {
