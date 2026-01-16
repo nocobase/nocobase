@@ -92,7 +92,6 @@
   "deprecated": [
     "@nocobase/plugin-audit-logs",
     "@nocobase/plugin-charts",
-    "@nocobase/plugin-mobile",
     "@nocobase/plugin-mobile-client",
     "@nocobase/plugin-snapshot-field"
   ],
