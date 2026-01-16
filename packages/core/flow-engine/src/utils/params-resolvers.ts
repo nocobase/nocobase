@@ -409,8 +409,13 @@ export async function preprocessExpression(expression: string, ctx: FlowContext)
 async function compileExpression<TModel extends FlowModel = FlowModel>(expression: string, ctx: FlowContext) {
   // 仅点号路径匹配：ctx.a.b.c（不支持括号/函数/索引），用于数组聚合取值
   const matchDotOnly = (expr: string): string | null => {
-    const m = expr.trim().match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)$/);
-    return m ? m[1] : null;
+    // 顶层变量名仍使用 JS 标识符规则（与 ctx.defineProperty 保持一致）；
+    // 子路径允许包含 '-'（例如 formValues.oho-test.o2m-users）。
+    const m = expr
+      .trim()
+      .match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\.([a-zA-Z_$][a-zA-Z0-9_$-]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)*))?$/);
+    if (!m) return null;
+    return m[2] ? `${m[1]}.${m[2]}` : m[1];
   };
 
   // 基于 getValuesByPath 的聚合取值：支持数组扁平化，仅支持 '.' 访问
@@ -421,6 +426,20 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
     const base = await (ctx as any)[first];
     if (segs.length === 0) return base;
     return getValuesByPath(base as object, segs.join('.'));
+  };
+
+  const resolveInnerExpression = async (innerExpr: string): Promise<any> => {
+    const dotPath = matchDotOnly(innerExpr);
+    if (dotPath) {
+      const resolved = await resolveDotOnlyPath(dotPath);
+      // 当 dotPath 含 '-' 时可能与减号运算符存在歧义，例如：ctx.aa.bb-ctx.cc。
+      // 若按 path 解析未取到值，则回退到 JS 表达式解析，尽量保持兼容。
+      if (resolved === undefined && dotPath.includes('-')) {
+        return await processExpression(innerExpr, ctx);
+      }
+      return resolved;
+    }
+    return await processExpression(innerExpr, ctx);
   };
 
   /**
@@ -443,11 +462,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
   const singleMatch = expression.match(/^\s*\{\{\s*([^{}]+?)\s*\}\}\s*$/);
   if (singleMatch) {
     const inner = singleMatch[1];
-    const dotPath = matchDotOnly(inner);
-    if (dotPath) {
-      return await resolveDotOnlyPath(dotPath);
-    }
-    return await processExpression(inner, ctx);
+    return await resolveInnerExpression(inner);
   }
 
   /**
@@ -470,8 +485,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
   let result = expression;
 
   for (const [fullMatch, innerExpr] of matches) {
-    const dotPath = matchDotOnly(innerExpr);
-    const value = dotPath ? await resolveDotOnlyPath(dotPath) : await processExpression(innerExpr, ctx);
+    const value = await resolveInnerExpression(innerExpr);
     if (value !== undefined) {
       const replacement = typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value);
       result = result.replace(fullMatch, replacement);
