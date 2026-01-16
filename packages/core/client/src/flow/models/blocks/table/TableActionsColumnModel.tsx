@@ -9,7 +9,7 @@
 
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import type { ForkFlowModel, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   createRecordMetaFactory,
@@ -25,9 +25,14 @@ import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
+import { getRowKey } from './utils';
+
+const recordIdentityByFork = new WeakMap<ForkFlowModel<any>, string>();
 
 const Columns = observer<any>(({ record, model, index }) => {
   const isConfigMode = !!model.context.flowSettingsEnabled;
+  const slotKey = `${record.__index ?? index}`;
+  const recordIdentity = getRowKey(record, model?.context?.collection?.filterTargetKey);
   return (
     <DndProvider>
       <Space
@@ -40,11 +45,22 @@ const Columns = observer<any>(({ record, model, index }) => {
         `}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
-          const fork = action.createFork({}, `${record.__index || index}`);
-          if (fork.hidden && !isConfigMode) {
+          // Static hidden can be skipped safely; dynamic hidden is handled by fork.beforeRender + model.render wrapper.
+          if (action.hidden && !isConfigMode) {
             return;
           }
-          // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
+
+          // Use a stable "slot" key to avoid unbounded fork growth (pageSize slots),
+          // but reset the fork instance when the underlying row record changes (pagination/virtualization),
+          // preventing linkage-rule state from leaking across rows.
+          const cachedFork = action.getFork(slotKey);
+          if (cachedFork && recordIdentityByFork.get(cachedFork) !== recordIdentity) {
+            cachedFork.dispose();
+          }
+
+          const fork = action.createFork({}, slotKey);
+          recordIdentityByFork.set(fork, recordIdentity);
+
           fork.invalidateFlowCache('beforeRender');
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => (fork.context as any).collection,
