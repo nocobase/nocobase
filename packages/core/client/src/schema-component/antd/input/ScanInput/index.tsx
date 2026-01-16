@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useRef } from 'react';
-import { Input, Button, Space } from 'antd';
 import { ScanOutlined } from '@ant-design/icons';
-import { QRCodeScanner } from './QRCodeScanner';
+import { Input } from 'antd';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { withAutoFocus } from '../../../../hoc/withAutoFocus';
 import { NocoBaseInputProps } from '../Input';
+import { QRCodeScanner } from './QRCodeScanner';
 
-const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, disabled, disableManualInput }) => {
+const InputWithAutoFocus = withAutoFocus(Input);
+
+const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, disabled, disableManualInput, autoFocus }) => {
   const { t } = useTranslation();
   const [scanVisible, setScanVisible] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,12 +36,13 @@ const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, disabled, di
 
   return (
     <>
-      <Input
+      <InputWithAutoFocus
         ref={inputRef as any}
         value={value}
         onChange={handleInputChange}
         disabled={disabled}
         readOnly={disableManualInput}
+        autoFocus={autoFocus}
         addonAfter={
           <ScanOutlined
             onPointerDown={(e) => e.preventDefault()}
