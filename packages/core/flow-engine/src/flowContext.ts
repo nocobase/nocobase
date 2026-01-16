@@ -45,6 +45,7 @@ import { FlowExitAllException } from './utils/exceptions';
 import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { inferRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
@@ -69,6 +70,61 @@ function filterBuilderOutputByPaths(built: any, neededPaths: string[]): any {
     return out;
   }
   return undefined;
+}
+
+// Helper: extract top-level segment of a subpath (e.g. 'a.b' -> 'a', 'tags[0].name' -> 'tags')
+function topLevelOf(subPath: string): string | undefined {
+  if (!subPath) return undefined;
+  const m = String(subPath).match(/^([^.[]+)/);
+  return m?.[1];
+}
+
+// Helper: infer selects (fields/appends) from usage paths (mirrors server-side inferSelectsFromUsage)
+function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: string[]; generatedFields?: string[] } {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return { generatedAppends: undefined, generatedFields: undefined };
+  }
+
+  const appendSet = new Set<string>();
+  const fieldSet = new Set<string>();
+
+  const normalizePath = (raw: string): string => {
+    if (!raw) return '';
+    let s = String(raw);
+    // remove numeric indexes like [0]
+    s = s.replace(/\[(?:\d+)\]/g, '');
+    // normalize string indexes like ["name"] / ['name'] into .name
+    s = s.replace(/\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\]/g, (_m, g1, g2) => `.${(g1 || g2) as string}`);
+    s = s.replace(/\.\.+/g, '.');
+    s = s.replace(/^\./, '').replace(/\.$/, '');
+    return s;
+  };
+
+  for (let path of paths) {
+    if (!path) continue;
+    // drop leading numeric index like [0].name
+    while (/^\[(\d+)\](\.|$)/.test(path)) {
+      path = path.replace(/^\[(\d+)\]\.?/, '');
+    }
+    const norm = normalizePath(path);
+    if (!norm) continue;
+    const segments = norm.split('.').filter(Boolean);
+    if (segments.length === 0) continue;
+
+    if (segments.length === 1) {
+      fieldSet.add(segments[0]);
+      continue;
+    }
+
+    for (let i = 0; i < segments.length - 1; i++) {
+      appendSet.add(segments.slice(0, i + 1).join('.'));
+    }
+    fieldSet.add(segments.join('.'));
+  }
+
+  const generatedAppends = appendSet.size ? Array.from(appendSet) : undefined;
+  const generatedFields = fieldSet.size ? Array.from(fieldSet) : undefined;
+  return { generatedAppends, generatedFields };
 }
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -1030,6 +1086,22 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const needServer = Object.keys(serverVarPaths).length > 0;
       let serverResolved = template;
       if (needServer) {
+        const inferRecordRefWithMeta = (ctx: any): RecordRef | undefined => {
+          const ref = inferRecordRef(ctx as any);
+          if (ref) return ref as RecordRef;
+          try {
+            const tk = ctx?.resource?.getMeta?.('currentFilterByTk');
+            if (typeof tk === 'undefined' || tk === null) return undefined;
+            const collection =
+              ctx?.collection?.name || ctx?.resource?.getResourceName?.()?.split?.('.')?.slice?.(-1)?.[0];
+            if (!collection) return undefined;
+            const dataSourceKey = ctx?.collection?.dataSourceKey || ctx?.resource?.getDataSourceKey?.();
+            return { collection, dataSourceKey, filterByTk: tk } as RecordRef;
+          } catch (_) {
+            return undefined;
+          }
+        };
+
         const collectFromMeta = async (): Promise<Record<string, any>> => {
           const out: Record<string, any> = {};
           try {
@@ -1069,7 +1141,62 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         };
 
         const inputFromMeta = await collectFromMeta();
-        const autoInput = { ...inputFromMeta };
+        const autoInput = { ...inputFromMeta } as Record<string, any>;
+
+        // Special-case: formValues
+        // If server needs to resolve some formValues paths but meta params only cover association anchors
+        // (e.g. formValues.customer) and some top-level paths are missing (e.g. formValues.status),
+        // inject a top-level record anchor (formValues -> { collection, filterByTk, fields/appends }) so server can fetch DB values.
+        // This anchor MUST be selective (fields/appends derived from serverVarPaths['formValues']) to avoid server overriding
+        // client-only values for configured form fields in the same template.
+        try {
+          const varName = 'formValues';
+          const neededPaths = serverVarPaths[varName] || [];
+          if (neededPaths.length) {
+            const requiredTop = new Set<string>();
+            for (const p of neededPaths) {
+              const top = topLevelOf(p);
+              if (top) requiredTop.add(top);
+            }
+            const metaOut = inputFromMeta?.[varName];
+            const builtTop = new Set<string>();
+            if (metaOut && typeof metaOut === 'object' && !Array.isArray(metaOut) && !isRecordRefLike(metaOut)) {
+              Object.keys(metaOut).forEach((k) => builtTop.add(k));
+            }
+
+            const missing = [...requiredTop].filter((k) => !builtTop.has(k));
+            if (missing.length) {
+              const ref = inferRecordRefWithMeta(this);
+              if (ref) {
+                const { generatedFields, generatedAppends } = inferSelectsFromUsage(neededPaths);
+                const recordRef: RecordRef = {
+                  ...ref,
+                  fields: generatedFields,
+                  appends: generatedAppends,
+                };
+
+                // Preserve existing association anchors by lifting them to dotted keys before overwriting formValues
+                const existing = autoInput[varName];
+                if (
+                  existing &&
+                  typeof existing === 'object' &&
+                  !Array.isArray(existing) &&
+                  !isRecordRefLike(existing)
+                ) {
+                  for (const [k, v] of Object.entries(existing)) {
+                    autoInput[`${varName}.${k}`] = v;
+                  }
+                  delete autoInput[varName];
+                }
+
+                autoInput[varName] = recordRef;
+              }
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
+
         const autoContextParams = Object.keys(autoInput).length
           ? _buildServerContextParams(this, autoInput)
           : undefined;

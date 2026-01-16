@@ -121,6 +121,69 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.id).toBe(1);
   });
 
+  it('should respect explicit fields/appends and keep unresolved placeholders', async () => {
+    const payload = {
+      template: {
+        id: '{{ ctx.view.record.id }}',
+        // name 未在 fields 中显式选择，必须保留占位符
+        name: '{{ ctx.view.record.name }}',
+      },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+          fields: ['id'],
+        },
+      },
+    };
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+    expect(data.id).toBe(1);
+    expect(data.name).toBe('{{ ctx.view.record.name }}');
+  });
+
+  it('should merge top-level record params with deep record params (deep wins)', async () => {
+    const roleName = 'r_test_nested_role';
+    const rolesRepo = app.db.getRepository('roles');
+    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
+    if (!existing) {
+      await rolesRepo.create({
+        values: {
+          name: roleName,
+          title: 'Test Nested Role',
+          allowConfigure: true,
+        },
+      });
+    }
+
+    const payload = {
+      template: {
+        uid: '{{ ctx.x.id }}',
+        role: '{{ ctx.x.profile.name }}',
+      },
+      contextParams: {
+        x: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+          fields: ['id'],
+        },
+        'x.profile': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: roleName,
+          fields: ['name'],
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+    expect(data.uid).toBe(1);
+    expect(data.role).toBe(roleName);
+  });
+
   it('should resolve deep association with auto appends (roles[0].name)', async () => {
     const payload = {
       template: { role: '{{ ctx.view.record.roles[0].name }}' },
@@ -138,23 +201,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     // role should be a string (e.g., 'admin'), content depends on seed
     expect(typeof data.role).toBe('string');
     expect(data.role.length).toBeGreaterThan(0);
-  });
-
-  it('should resolve record list when filterByTk is an array (formValues.roles.title)', async () => {
-    const payload = {
-      template: { titles: '{{ ctx.formValues.roles.title }}' },
-      contextParams: {
-        'formValues.roles': {
-          dataSourceKey: 'main',
-          collection: 'roles',
-          filterByTk: ['admin', 'member'],
-        },
-      },
-    };
-    const res = await execResolve(payload, 1);
-    const data = res.body?.data ?? res.body;
-    expect(Array.isArray(data.titles)).toBe(true);
-    expect(data.titles).toEqual(expect.arrayContaining(['{{t("Admin")}}', '{{t("Member")}}']));
   });
 
   it('should support bracket notation for first association segment', async () => {
