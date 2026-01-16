@@ -8,7 +8,7 @@
   "dependencies": {
     "@nocobase/resourcer": "2.0.0-alpha.64",
     "@nocobase/utils": "2.0.0-alpha.64",
-    "minisearch": "^7.2.0"
+    "flexsearch": "^0.8.2"
   },
   "repository": {
     "type": "git",

@@ -708,46 +708,39 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.indexFieldForAI();
+
+    this.app.dataSourceManager.afterAddDataSource(() => {
+      let totalBytes = 0;
+      const index = this.app.aiManager.documentManager.getIndex('dataModels.fields');
+
+      index.export((key, data) => {
+        totalBytes += Buffer.byteLength(data);
+      });
+
+      console.log('index size:', totalBytes);
+    });
   }
 
   indexFieldForAI() {
-    const index = this.app.aiManager.documentManager.addMemoeryIndex('dataModels.fields', {
-      fields: ['name', 'title', 'text'],
-      storeFields: ['dataSource', 'collection', 'name', 'title', 'fieldType', 'options'],
-      searchOptions: {
-        boost: {
-          name: 5,
-          title: 4,
-          text: 1,
-        },
-        prefix: true,
-        fuzzy: 0.2,
-      },
-    });
+    const index = this.app.aiManager.documentManager.addIndex('dataModels.fields');
     const getFieldDocument = (dataSource: string, collection: string, field: any) => ({
       id: `${dataSource}.${collection}.${field.name}`,
-      name: field.name,
-      title: field.options?.uiSchema?.title || field.name,
-      dataSource,
-      collection,
-      fieldType: field.type,
-      options: field.options,
       text: `${field.name} ${field.options?.uiSchema?.title || ''} ${collection}`,
     });
     this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
       const cm = dataSource.collectionManager;
       if (cm instanceof SequelizeCollectionManager) {
         const db = cm.db;
-        db.on('afterDefineCollection', (collection: Collection) => {
+        db.on('afterDefineCollection', async (collection: Collection) => {
           if (dataSource.name === 'main') {
-            collection.on('field.afterAdd', (field) => {
+            collection.on('field.afterAdd', async (field) => {
               const doc = getFieldDocument(dataSource.name, collection.name, field);
-              index.add(doc);
+              await index.addAsync(doc.id, doc.text);
             });
-            collection.on('field.afterRemove', (field) => {
+            collection.on('field.afterRemove', async (field) => {
               const doc = getFieldDocument(dataSource.name, collection.name, field);
               try {
-                index.remove(doc);
+                await index.removeAsync(doc.id);
               } catch (err) {
                 // ignore
               }
@@ -756,11 +749,11 @@ export class PluginDataSourceManagerServer extends Plugin {
             for (const [_, field] of collection.fields) {
               const doc = getFieldDocument(dataSource.name, collection.name, field);
               try {
-                index.remove(doc);
+                await index.removeAsync(doc.id);
               } catch (err) {
                 // ignore
               }
-              index.add(doc);
+              await index.addAsync(doc.id, doc.text);
             }
           }
         });

@@ -7,18 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import MiniSearch, { Options as MiniSearchOptions } from 'minisearch';
+import { Document, DocumentOptions, Index, IndexOptions } from 'flexsearch';
 
 export class DocumentManager {
-  memoryIndexes: Map<string, MiniSearch> = new Map();
+  indexes: Map<string, Index> = new Map();
+  documents: Map<string, Document> = new Map();
 
-  addMemoeryIndex(name: string, options: MiniSearchOptions) {
-    const index = new MiniSearch(options);
-    this.memoryIndexes.set(name, index);
+  addIndex(name: string, options?: IndexOptions) {
+    const index = new Index(options);
+    this.indexes.set(name, index);
     return index;
   }
 
-  getMemoryIndex(name: string): MiniSearch | undefined {
-    return this.memoryIndexes.get(name);
+  getIndex(name: string): Index | undefined {
+    return this.indexes.get(name);
+  }
+
+  addDocument(name: string, options?: DocumentOptions) {
+    const doc = new Document(options);
+    this.documents.set(name, doc);
+    return doc;
+  }
+
+  getDocument(name: string): Document | undefined {
+    return this.documents.get(name);
   }
 }

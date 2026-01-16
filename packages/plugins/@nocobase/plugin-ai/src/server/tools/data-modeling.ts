@@ -8,6 +8,9 @@
  */
 import { ToolOptions } from '../manager/tool-manager';
 import { Context } from '@nocobase/actions';
+import { AIManager } from '@nocobase/ai';
+import { DataSource } from '@nocobase/data-source-manager';
+import { Field } from '@nocobase/database';
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -529,7 +532,7 @@ export const searchFieldMetadata: ToolOptions = {
       limit?: number;
     },
   ) => {
-    const { query, dataSource, collection, fieldType, limit = 5 } = args || {};
+    const { query, dataSource: dataSourceArg, collection: collectionArg, fieldType, limit = 5 } = args || {};
 
     if (!query || typeof query !== 'string') {
       return {
@@ -539,7 +542,8 @@ export const searchFieldMetadata: ToolOptions = {
     }
 
     try {
-      const index = ctx.app.aiManager.documentManager.getMemoryIndex('dataModels.fields');
+      const aiManager: AIManager = ctx.app.aiManager;
+      const index = aiManager.documentManager.getIndex('dataModels.fields');
 
       if (!index) {
         return {
@@ -548,54 +552,57 @@ export const searchFieldMetadata: ToolOptions = {
         };
       }
 
-      const searchOptions = {
-        filter: (doc: any) => {
-          if (dataSource && doc.dataSource !== dataSource) {
-            return false;
-          }
-          if (collection && doc.collection !== collection) {
-            return false;
-          }
-          if (fieldType && doc.fieldType !== fieldType) {
-            return false;
-          }
-          return true;
-        },
-      };
+      let isSuggest = false;
+      let result = await index.searchAsync(query, {
+        limit: Math.min(limit * 3, 20),
+      });
 
-      const hits = index.search(query, searchOptions);
-
-      if (hits.length > 0) {
-        return {
-          status: 'success',
-          content: JSON.stringify({
-            kind: 'results',
-            results: hits.slice(0, Math.min(limit, 20)),
-          }),
-        };
+      if (!result?.length) {
+        result = await index.searchAsync(query, {
+          suggest: true,
+          limit: Math.min(limit * 3, 20),
+        });
+        isSuggest = true;
       }
 
-      const suggestions = index.autoSuggest(query);
-      if (suggestions.length) {
-        return {
-          status: 'success',
-          content: JSON.stringify({
-            kind: 'suggestions',
-            originalQuery: query,
-            suggestions,
-            reason: 'No direct matches found. This is a suggested search term, not a search result.',
-          }),
-        };
-      }
+      const results = (result || [])
+        .map((path: string) => {
+          const [ds, coll, f] = path.split('.');
+
+          if (dataSourceArg && ds !== dataSourceArg) {
+            return null;
+          }
+          if (collectionArg && coll !== collectionArg) {
+            return null;
+          }
+          const dataSource: DataSource = ctx.app.dataSourceManager.get(ds);
+          const collection = dataSource.collectionManager.getCollection(coll);
+          const field = collection.getField(f) as Field;
+          if (fieldType && field.type !== fieldType) {
+            return null;
+          }
+
+          return {
+            name: field.name,
+            title: field.options?.uiSchema?.title || field.name,
+            dataSource: ds,
+            collection: coll,
+            fieldType: field.type,
+            options: field.options,
+          };
+        })
+        .filter(Boolean)
+        .slice(0, limit);
 
       return {
         status: 'success',
         content: JSON.stringify({
-          kind: 'results',
-          results: [],
+          kind: !isSuggest ? 'exact_results' : 'suggested_results',
+          results,
         }),
       };
-    } catch (err) {
+    } catch (err: any) {
+      ctx.log.error(err, { module: 'ai-employees', submodule: 'tool-calling', method: 'searchFieldMetadata' });
       return {
         status: 'error',
         content: `Failed to search field metadata: ${err.message}`,

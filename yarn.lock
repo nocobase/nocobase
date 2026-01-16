@@ -18552,6 +18552,11 @@ flatted@^3.2.9:
   resolved "https://registry.npmmirror.com/flatted/-/flatted-3.2.9.tgz#7eb4c67ca1ba34232ca9d2d93e9886e611ad7daf"
   integrity sha512-36yxDn5H7OFZQla0/jFJmbIKTdZAQHngCedGxiMmpNfEZM0sdEeT+WczLQrjK6D7o2aiyLYDnkw0R3JK0Qv1RQ==
 
+flexsearch@^0.8.2:
+  version "0.8.212"
+  resolved "https://registry.npmjs.org/flexsearch/-/flexsearch-0.8.212.tgz#b9509af778a991b938292e36fe0809a4ece4b940"
+  integrity sha512-wSyJr1GUWoOOIISRu+X2IXiOcVfg9qqBRyCPRUdLMIGJqPzMo+jMRlvE83t14v1j0dRMEaBbER/adQjp6Du2pw==
+
 flru@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmmirror.com/flru/-/flru-1.0.2.tgz#1ae514c62b8b035ffff9ca9e4563ddcc817f4845"
@@ -25267,11 +25272,6 @@ minipass@^5.0.0:
   version "7.1.2"
   resolved "https://registry.npmmirror.com/minipass/-/minipass-7.1.2.tgz#93a9626ce5e5e66bd4db86849e7515e92340a707"
   integrity sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==
-
-minisearch@^7.2.0:
-  version "7.2.0"
-  resolved "https://registry.npmjs.org/minisearch/-/minisearch-7.2.0.tgz#3dc30e41e9464b3836553b6d969b656614f8f359"
-  integrity sha512-dqT2XBYUOZOiC5t2HRnwADjhNS2cecp9u+TJRiJ1Qp/f5qjkeT5APcGPjHw+bz89Ms8Jp+cG4AlE+QZ/QnDglg==
 
 minizlib@^1.3.3:
   version "1.3.3"
