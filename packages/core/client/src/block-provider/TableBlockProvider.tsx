@@ -17,6 +17,7 @@ import { SchemaComponentOptions } from '../schema-component';
 import { TableElementRefContext } from '../schema-component/antd/table-v2/Table';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
+import { TableUidContext } from './TableUidContext';
 /**
  * @internal
  */
@@ -192,8 +193,6 @@ const useTableBlockParamsCompat = (props) => {
 
   return { params, parseVariableLoading };
 };
-
-export const TableUidContext = createContext<string>(null);
 
 export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const resourceName = props.resource || props.association;

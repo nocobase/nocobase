@@ -10,7 +10,7 @@
 import { message } from 'antd';
 import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TableUidContext } from '../../../../block-provider';
+import { TableUidContext } from '../../../../block-provider/TableUidContext';
 
 export interface ColumnSettings {
   key: string;

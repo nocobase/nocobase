@@ -8,7 +8,7 @@
  */
 
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { TableUidContext } from '../../../../block-provider';
+import { TableUidContext } from '../../../../block-provider/TableUidContext';
 import { ColumnSettings, useColumnSettings } from './useColumnSettings';
 
 export interface TableColumnProps {
