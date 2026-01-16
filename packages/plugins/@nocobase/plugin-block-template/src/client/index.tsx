@@ -7,28 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockTemplatesPane, Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
-import { templateBlockInitializerItem } from './initializers';
-import { NAMESPACE } from './constants';
-import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
-import * as _ from 'lodash';
-import { revertSettingItem } from './settings/revertSetting';
-import { getFullSchema } from './utils/template';
-import { registerTemplateBlockInterceptors } from './utils/interceptors';
-import { TemplateGridDecorator } from './components/TemplateGridDecorator';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import { BlockTemplatesPane, Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
+import _ from 'lodash';
+import { BlockTemplateList, BlockTemplatePage } from './components';
+import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
+import { TemplateGridDecorator } from './components/TemplateGridDecorator';
+import { NAMESPACE } from './constants';
+import { templateBlockInitializerItem } from './initializers';
+import { convertToNormalBlockSettingItem } from './settings/convertToNormalBlockSetting';
+import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
+import { revertSettingItem } from './settings/revertSetting';
+import { saveAsTemplateSetting } from './settings/saveAsTemplateSetting';
+import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import {
   hideBlocksFromTemplate,
   hideConnectDataBlocksFromTemplate,
   hideConvertToBlockSettingItem,
   hideDeleteSettingItem,
 } from './utils/setting';
-import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
-import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
-import { saveAsTemplateSetting } from './settings/saveAsTemplateSetting';
-import { convertToNormalBlockSettingItem } from './settings/convertToNormalBlockSetting';
+import { getFullSchema } from './utils/template';
 
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
@@ -111,18 +110,29 @@ export class PluginBlockTemplateClient extends Plugin {
       Component: BlockTemplatePage,
     });
 
+    const mobilePlugin = this.app.pluginManager.get<any>('mobile');
+    if (!mobilePlugin) {
+      return;
+    }
     // add mobile router
-    this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileRouter?.add('mobile.schema.blockTemplate', {
+    mobilePlugin.mobileRouter?.add('mobile.schema.blockTemplate', {
       path: `/block-templates/inherited/:key/:pageSchemaUid`,
       Component: BlockTemplateMobilePage,
     });
   }
 
   isInBlockTemplateConfigPage() {
-    const mobilePath =
-      this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates/inherited';
     const desktopPath = 'admin/settings/block-templates/inherited';
-    return window.location.pathname.includes(desktopPath) || window.location.pathname.includes(mobilePath);
+    const isDesktop = window.location.pathname.includes(desktopPath);
+    if (isDesktop) {
+      return true;
+    }
+    const mobilePlugin = this.app.pluginManager.get<any>('mobile');
+    if (!mobilePlugin) {
+      return isDesktop;
+    }
+    const mobilePath = mobilePlugin.mobileBasename + '/block-templates/inherited';
+    return window.location.pathname.includes(mobilePath);
   }
 
   setTemplateCache = (schema?: ISchema) => {

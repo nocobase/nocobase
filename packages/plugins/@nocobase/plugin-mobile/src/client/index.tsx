@@ -19,6 +19,7 @@ import { Mobile } from './mobile';
 import {
   MobileLayout,
   MobileTabBar,
+  MobileTabBarItem,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
   mobileTabBarPageSettings,
@@ -30,6 +31,7 @@ import {
   MobileNotFoundPage,
   MobilePage,
   MobilePageContent,
+  MobilePageContentContainer,
   MobilePageHeader,
   MobilePageNavigationBar,
   MobilePageProvider,
@@ -41,6 +43,7 @@ import {
   mobilePageTabsSettings,
   mobilePagesTabInitializer,
   useMobileNavigationBarLink,
+  useMobilePage,
 } from './pages';
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
@@ -54,6 +57,8 @@ import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-bloc
 // @ts-ignore
 import pkg from './../../package.json';
 import { MobileComponentsProvider } from './MobileComponentsProvider';
+import { MobilePopup } from './adaptor-of-desktop/ActionDrawer';
+import { useMobileRoutes } from './mobile-providers';
 
 export { MobilePopup } from './adaptor-of-desktop/ActionDrawer';
 export * from './desktop-mode';
@@ -65,6 +70,8 @@ export * from './pages';
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
   mobilePath = '/m';
+  useMobileRoutes = useMobileRoutes;
+  useMobilePage = useMobilePage;
 
   get desktopMode() {
     return this.options?.config?.desktopMode ?? true;
@@ -155,6 +162,10 @@ export class PluginMobileClient extends Plugin {
 
   addComponents() {
     this.app.addComponents({
+      MobileTabBarItem,
+      MobilePageContentContainer,
+      MobilePopup,
+      MobilePage,
       MobilePageProvider,
       MobileNavigationBarAction,
       MobilePageNavigationBar,

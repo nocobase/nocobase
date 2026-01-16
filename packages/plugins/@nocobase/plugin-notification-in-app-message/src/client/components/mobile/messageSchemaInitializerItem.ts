@@ -8,10 +8,17 @@
  */
 
 import { uid } from '@formily/shared';
-import { SchemaInitializerItemType } from '@nocobase/client';
-import { MobileRouteItem, useMobileRoutes } from '@nocobase/plugin-mobile/client';
+import { SchemaInitializerItemType, useApp } from '@nocobase/client';
+import { type MobileRouteItem } from '@nocobase/plugin-mobile/client';
 import { Toast } from 'antd-mobile';
 import { useLocalTranslation } from '../../../locale';
+
+function useMobileRoutes() {
+  const app = useApp();
+  const plugin = app.pm.get<any>('mobile');
+  return plugin?.useMobileRoutes() || { resource: null, schemaResource: null, refresh: () => {} };
+}
+
 export const messageSchemaInitializerItem: SchemaInitializerItemType = {
   name: 'message-schema',
   type: 'item',
