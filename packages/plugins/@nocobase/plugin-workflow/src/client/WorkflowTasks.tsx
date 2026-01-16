@@ -44,7 +44,7 @@ import { lang, NAMESPACE } from './locale';
 function useMobilePage() {
   const app = useApp();
   const plugin = app.pm.get<any>('mobile');
-  return plugin?.useMobilePage() || {};
+  return plugin?.useMobilePage();
 }
 
 function useMobileRoutes() {

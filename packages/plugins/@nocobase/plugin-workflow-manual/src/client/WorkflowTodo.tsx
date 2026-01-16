@@ -62,7 +62,7 @@ import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 function useMobilePage() {
   const app = useApp();
   const plugin = app.pm.get<any>('mobile');
-  return plugin?.useMobilePage() || {};
+  return plugin?.useMobilePage();
 }
 
 function TaskStatusColumn(props) {
