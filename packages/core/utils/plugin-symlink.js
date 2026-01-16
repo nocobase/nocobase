@@ -93,6 +93,14 @@ async function createPluginSymLink(pluginName, sourcePath, nodeModulesPath, plug
     return;
   }
 
+  const distClientIndexPath = resolve(sourcePath, pluginName, 'dist', 'client', 'index.js');
+
+  if (await fs.pathExists(distClientIndexPath)) {
+    // Update the mtime of distClientIndexPath
+    const now = new Date();
+    await fs.utimes(distClientIndexPath, now, now);
+  }
+
   try {
     const targetPath = resolve(sourcePath, pluginName);
 

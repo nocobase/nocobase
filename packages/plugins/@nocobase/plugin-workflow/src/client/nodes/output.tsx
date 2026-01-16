@@ -19,7 +19,7 @@ export default class extends Instruction {
   title = `{{t("Output", { ns: "${NAMESPACE}" })}}`;
   type = 'output';
   group = 'control';
-  description = `{{t("Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. If this node is added multiple times, the value of the last executed node prevails.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. You can also use this node in an AI employee workflow, to define what to output. If this node is added multiple times, the value of the last executed node prevails.", { ns: "${NAMESPACE}" })}}`;
   icon = (<ProfileOutlined />);
   fieldset = {
     value: {
