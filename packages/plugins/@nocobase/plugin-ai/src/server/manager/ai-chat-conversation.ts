@@ -116,18 +116,29 @@ class AIChatConversationImpl implements AIChatConversation {
   }
 
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
-    const { userMessages, provider, model, service, tools } = options;
+    const {
+      userMessages,
+      userDecisions: decisions,
+      provider,
+      model,
+      service,
+      getSystemPrompt,
+      getTools,
+      getMiddleware,
+    } = options;
     const messages = await this.formatMessages(userMessages, options);
-    const systemPrompt = await options.getSystemPrompt?.();
+    const systemPrompt = await getSystemPrompt?.();
+    const tools = await getTools?.();
     const chatContext: AIChatContext = {
       provider,
       model,
       service,
       systemPrompt,
       messages,
+      decisions,
       tools,
     };
-    chatContext.middleware = options.getMiddleware(chatContext);
+    chatContext.middleware = await getMiddleware?.(chatContext);
     return chatContext;
   }
 

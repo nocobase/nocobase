@@ -11,19 +11,24 @@ import { Model, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
 import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
-import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { sendSSEError, parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types';
+import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, UserDecision } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { DocumentSegmentedWithScore } from '../features';
 import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
-import { conversationMiddleware, debugMiddleware } from './middleware';
+import {
+  conversationMiddleware,
+  debugMiddleware,
+  toolCallStatusMiddleware,
+  toolInteractionMiddleware,
+} from './middleware';
+import { ToolOptions } from '../manager/tool-manager';
 
 type ToolMessage = {
   id: string;
@@ -42,13 +47,13 @@ type ToolMessage = {
 
 export class AIEmployee {
   employee: Model;
-  private plugin: PluginAIServer;
-  private db: Database;
-  sessionId: string;
-  private ctx: Context;
-  private systemMessage: string;
   aiChatConversation: AIChatConversation;
   skillSettings?: Record<string, any>;
+  private plugin: PluginAIServer;
+  private db: Database;
+  private sessionId: string;
+  private ctx: Context;
+  private systemMessage: string;
   private webSearch?: boolean;
 
   constructor(
@@ -123,7 +128,7 @@ export class AIEmployee {
     try {
       const stream = await provider.getAgentStream(chatContext, {
         signal,
-        streamMode: 'messages',
+        streamMode: ['updates', 'messages', 'custom'],
         configurable: { thread_id: this.sessionId },
         context: { ctx: this.ctx },
       });
@@ -150,23 +155,38 @@ export class AIEmployee {
     const { signal, provider, allowEmpty = false } = options;
     let isMessageEmpty = true;
     try {
-      for await (const [chunk] of stream) {
-        if (chunk.type !== 'ai') {
-          continue;
-        }
-        if (isMessageEmpty && chunk.content?.length) {
-          isMessageEmpty = false;
-        }
+      for await (const [mode, chunks] of stream) {
+        if (mode === 'messages') {
+          const [chunk] = chunks;
+          if (chunk.type !== 'ai') {
+            continue;
+          }
+          if (isMessageEmpty && chunk.content?.length) {
+            isMessageEmpty = false;
+          }
 
-        if (chunk.content) {
-          this.ctx.res.write(
-            `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
-          );
-        }
+          if (chunk.content) {
+            this.ctx.res.write(
+              `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
+            );
+          }
 
-        const webSearch = provider.parseWebSearchAction(chunk);
-        if (webSearch?.length) {
-          this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
+          const webSearch = provider.parseWebSearchAction(chunk);
+          if (webSearch?.length) {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
+          }
+        } else if (mode === 'updates') {
+          if ('__interrupt__' in chunks) {
+            if (isMessageEmpty) {
+              isMessageEmpty = false;
+            }
+            console.log(`\n\nInterrupt: ${JSON.stringify(chunks.__interrupt__)}`);
+          }
+        } else if (mode === 'custom') {
+          if (isMessageEmpty) {
+            isMessageEmpty = false;
+          }
+          this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks })}\n\n`);
         }
       }
 
@@ -436,121 +456,40 @@ export class AIEmployee {
     });
   }
 
-  async callTool(messageId: string, autoCall: boolean) {
-    try {
-      const toolCalls = await this.getToolCallList(messageId);
-      const tools = await this.withTool(toolCalls);
-
-      const backendTools = tools
-        .filter(({ auto }) => auto === autoCall)
-        .filter(({ tool }) => tool.execution === 'backend');
-      const frontendTools = tools
-        .filter(({ auto }) => auto === autoCall)
-        .filter(({ tool }) => tool.execution === 'frontend');
-
-      if (!_.isEmpty(backendTools)) {
-        const parallelToolCall = backendTools.map(async (toolCall) => {
-          const [updated] = await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'pending',
-              invokeStartTime: new Date(),
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'init',
-              },
-            },
-          );
-          if (updated === 0) {
-            return;
-          }
-          const result = await toolCall.tool.invoke(this.ctx, toolCall.args, toolCall.id);
-          await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'done',
-              invokeEndTime: new Date(),
-              status: result.status,
-              content: result.content,
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'pending',
-              },
-            },
-          );
-        });
-        await Promise.all(parallelToolCall);
-      }
-
-      if (!_.isEmpty(frontendTools)) {
-        const parallelToolCall = frontendTools.map(async (toolCall) => {
-          const [updated] = await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'pending',
-              invokeStartTime: new Date(),
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'init',
-              },
-            },
-          );
-          if (updated === 0) {
-            return null;
-          } else {
-            return toolCall;
-          }
-        });
-
-        const type = 'tool_calls';
-        const body = (await Promise.all(parallelToolCall)).filter((x) => !_.isNull(x));
-        if (!_.isEmpty(body)) {
-          this.ctx.res.write(`data: ${JSON.stringify({ type, body })} \n\n`);
-        }
-        this.ctx.res.end();
-      } else {
-        await this.sendToolMessage(messageId);
-      }
-    } catch (err) {
-      this.ctx.log.error(err);
-      this.sendErrorResponse(err.message || 'Tool call error');
-    }
+  async updateToolCallPending(toolCallId: string) {
+    const [updated] = await this.aiToolMessagesModel.update(
+      {
+        invokeStatus: 'pending',
+        invokeStartTime: new Date(),
+      },
+      {
+        where: {
+          sessionId: this.sessionId,
+          toolCallId,
+          invokeStatus: 'init',
+        },
+      },
+    );
+    return updated;
   }
 
-  async confirmToolCall(messageId: string, toolCallIds: string[] = []) {
-    if (!_.isEmpty(toolCallIds)) {
-      const toolCallList = await this.getToolCallList(messageId);
-      const tools = await this.withTool(toolCallList.filter((x) => toolCallIds.includes(x.id)));
-      const frontendTools = tools.filter(({ tool }) => tool.execution === 'frontend');
-      if (!_.isEmpty(frontendTools)) {
-        const parallelToolCall = frontendTools.map(async (toolCall) => {
-          const result = await toolCall.tool.invoke(this.ctx, toolCall.args, toolCall.id);
-          await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'done',
-              invokeEndTime: new Date(),
-              status: result.status,
-              content: result.content,
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'pending',
-              },
-            },
-          );
-        });
-        await Promise.all(parallelToolCall);
-      }
-    }
-    await this.sendToolMessage(messageId);
+  async updateToolCallDone(toolCallId: string, { status, content }: any) {
+    const [updated] = await this.aiToolMessagesModel.update(
+      {
+        invokeStatus: 'done',
+        invokeEndTime: new Date(),
+        status,
+        content,
+      },
+      {
+        where: {
+          sessionId: this.sessionId,
+          toolCallId,
+          invokeStatus: 'pending',
+        },
+      },
+    );
+    return updated;
   }
 
   async cancelToolCall() {
@@ -632,82 +571,33 @@ export class AIEmployee {
     });
   }
 
-  private async sendToolMessage(messageId: string) {
-    const toolCalls: ToolMessage[] = await this.aiToolMessagesRepo.find({ filter: { messageId } });
-    if (_.isEmpty(toolCalls) || !toolCalls.every((item) => item.invokeStatus === 'done')) {
-      this.ctx.res.end();
-      return;
-    }
-
-    const { provider, model, service } = await this.getLLMService();
-    const toolCallMap = await this.getToolCallMap(messageId);
-    await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-      await conversation.addMessages(
-        toolCalls.map((toolCall) => ({
-          role: 'tool',
-          content: {
-            type: 'text',
-            content: toolCall.content,
-          },
-          metadata: {
-            model,
-            provider: service.provider,
-            toolCall: toolCallMap.get(toolCall.toolCallId),
-            autoCall: toolCall.auto,
-          },
-        })),
-      );
-      for (const toolCall of toolCalls) {
-        await this.aiToolMessagesRepo.update({
-          filter: {
-            messageId,
-            toolCallId: toolCall.toolCallId,
-          },
-          values: {
-            invokeStatus: 'confirmed',
-          },
-          transaction,
-        });
-      }
-    });
-
-    const chatContext = await this.aiChatConversation.getChatContext({
-      userMessages: [],
-      workContextHandler: this.plugin.workContextHandler,
-      provider,
-      model,
-      service,
-      getSystemPrompt: async () => this.getSystemPrompt(),
-      tools: await this.getTools(),
-      getMiddleware: (chatContext) => this.getMiddleware(chatContext),
-    });
-
-    const { stream, signal } = await this.prepareChatStream(chatContext, provider);
-    await this.processChatStream(stream, {
-      signal,
-      model,
-      service,
-      provider,
-      allowEmpty: true,
-    });
+  get logger() {
+    return this.ctx.logger;
   }
 
   sendErrorResponse(errorMessage: string) {
     sendSSEError(this.ctx, errorMessage);
   }
 
-  async processMessages(userMessages: AIMessageInput[], messageId?: string) {
+  async processMessages({
+    userMessages = [],
+    userDecisions,
+  }: {
+    userMessages?: AIMessageInput[];
+    userDecisions?: UserDecision[];
+  }) {
     try {
       const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
         userMessages,
+        userDecisions,
         workContextHandler: this.plugin.workContextHandler,
         provider,
         model,
         service,
         getSystemPrompt: async () => this.getSystemPrompt(),
-        tools: await this.getTools(),
-        getMiddleware: (chatContext) => this.getMiddleware(chatContext),
+        getTools: async () => this.getTools(),
+        getMiddleware: async (chatContext) => this.getMiddleware(chatContext),
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
@@ -735,10 +625,10 @@ export class AIEmployee {
         provider,
         model,
         service,
-        getSystemPrompt: async () => await this.getSystemPrompt(),
         messageId,
-        tools: await this.getTools(),
-        getMiddleware: (chatContext) => this.getMiddleware(chatContext),
+        getSystemPrompt: async () => this.getSystemPrompt(),
+        getTools: async () => this.getTools(),
+        getMiddleware: async (chatContext) => this.getMiddleware(chatContext),
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
@@ -818,7 +708,7 @@ export class AIEmployee {
 
   private async getTools() {
     const toolMap = await this.getToolMap();
-    const tools = [];
+    const tools: ToolOptions[] = [];
     let skills = this.getSkills();
     const skillFilter = this.skillSettings?.skills;
     if (skillFilter) {
@@ -832,6 +722,7 @@ export class AIEmployee {
       for (const skill of skills) {
         const tool = toolMap.get(skill.name);
         if (tool) {
+          tool.autoCall = skill.autoCall;
           tools.push(tool);
         }
       }
@@ -839,8 +730,14 @@ export class AIEmployee {
     return tools;
   }
 
-  private getMiddleware(chatContext: AIChatContext) {
-    return [debugMiddleware(this.ctx.logger), conversationMiddleware(this, chatContext)];
+  private async getMiddleware(chatContext: AIChatContext) {
+    const tools = await this.getTools();
+    return [
+      toolInteractionMiddleware(this, tools),
+      toolCallStatusMiddleware(this),
+      conversationMiddleware(this, chatContext),
+      debugMiddleware(this, this.ctx.logger),
+    ];
   }
 
   private async getToolMap() {
@@ -853,7 +750,7 @@ export class AIEmployee {
     return this.ctx.db.getRepository('aiMessages');
   }
 
-  get aiToolMessagesRepo() {
+  private get aiToolMessagesRepo() {
     return this.ctx.db.getRepository('aiToolMessages');
   }
 

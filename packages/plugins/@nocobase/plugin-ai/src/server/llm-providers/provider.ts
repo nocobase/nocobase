@@ -21,6 +21,7 @@ import { ToolOptions } from '../manager/tool-manager';
 import { tool } from 'langchain';
 import { createAgent } from 'langchain';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
+import { Command } from '@langchain/langgraph';
 
 let isCheckPointerInit = false;
 const DB_URI = `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE}?sslmode=disable`;
@@ -109,7 +110,18 @@ export abstract class LLMProvider {
     }
 
     const agent = this.prepareAgent(context);
-    return agent.stream({ messages: context.messages }, options);
+    if (context.decisions?.length) {
+      return agent.stream(
+        new Command({
+          resume: {
+            decisions: context.decisions,
+          },
+        }),
+        options,
+      );
+    } else {
+      return agent.stream({ messages: context.messages }, options);
+    }
   }
 
   async listModels(): Promise<{

@@ -9,17 +9,16 @@
 
 import { Logger } from '@nocobase/logger';
 import { createMiddleware } from 'langchain';
+import { AIEmployee } from '../ai-employee';
 
-export const debugMiddleware = (logger: Logger) => {
+export const debugMiddleware = (aiEmployee: AIEmployee, logger: Logger) => {
   return createMiddleware({
     name: 'DebugMiddleware',
-    beforeModel: (state) => {
-      logger.debug(state);
-      return;
+    beforeModel: (state, runtime) => {
+      logger.debug({ aiEmployee, state, runtime });
     },
-    afterModel: (state) => {
-      logger.debug(state);
-      return;
+    afterModel: (state, runtime) => {
+      logger.debug({ aiEmployee, state, runtime });
     },
   });
 };

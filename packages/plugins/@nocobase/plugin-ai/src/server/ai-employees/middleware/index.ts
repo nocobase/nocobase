@@ -9,3 +9,4 @@
 
 export * from './debug';
 export * from './conversation';
+export * from './tools';

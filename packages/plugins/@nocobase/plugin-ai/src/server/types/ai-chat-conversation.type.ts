@@ -10,7 +10,7 @@
 import { Transaction } from '@nocobase/database';
 import { LLMProvider } from '../llm-providers/provider';
 import { WorkContextHandler } from './work-context-handler.type';
-import { AIMessage, AIToolCall } from './ai-message.type';
+import { AIMessage, AIToolCall, UserDecision } from './ai-message.type';
 
 export interface AIChatConversation extends TransactionSupported<AIChatConversation> {
   getSessionId(): string;
@@ -41,6 +41,7 @@ export type AIChatContext = {
     tool_call_id?: string;
     tool_calls?: AIToolCall[];
   }[];
+  decisions?: UserDecision[];
   tools?: any[];
   middleware?: any[];
   structuredOutput?: {
@@ -63,11 +64,12 @@ export type AIMessageRemoveOptions = {
 
 export type AIChatContextOptions = {
   userMessages: AIMessageInput[];
+  userDecisions?: UserDecision[];
   workContextHandler: WorkContextHandler;
   provider: LLMProvider;
   model: any;
   service: any;
   getSystemPrompt?: () => Promise<string>;
-  tools?: any[];
-  getMiddleware?: (chatContext: AIChatContext) => any[];
+  getTools?: () => Promise<any[]>;
+  getMiddleware?: (chatContext: AIChatContext) => Promise<any[]>;
 } & AIMessageQuery;

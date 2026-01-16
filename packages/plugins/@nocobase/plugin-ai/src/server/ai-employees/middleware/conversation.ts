@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AIMessage, createMiddleware, HumanMessage } from 'langchain';
+import { AIMessage, createMiddleware, HumanMessage, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import { AIChatContext, AIMessageInput } from '../../types';
 import { AIMessage as AIConversationMessage, AIMessageContent } from '../../types/ai-message.type';
@@ -82,24 +82,65 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
     return values;
   };
 
+  const convertToolMessage = (message: ToolMessage): AIMessageInput => {
+    const { model, service } = chatContext;
+
+    const values: AIMessageInput = {
+      role: 'tool',
+      content: {
+        type: 'text',
+        content: message.content,
+      },
+      metadata: {
+        model,
+        provider: service.provider,
+        toolCallId: message.tool_call_id,
+      },
+    };
+
+    return values;
+  };
+
   return createMiddleware({
     name: 'ConversationMiddleware',
     stateSchema: z.object({
+      lastHumanMessageIndex: z.number().default(0),
+      lastAIMessageIndex: z.number().default(0),
+      lastToolMessageIndex: z.number().default(0),
       lastMessageIndex: z.number().default(0),
     }),
-    beforeAgent: async (state, runtime) => {
-      const lastMessageIndex = state.lastMessageIndex;
+    beforeAgent: async (state) => {
+      const lastHumanMessageIndex = state.lastHumanMessageIndex;
       const userMessages = state.messages
-        .slice(lastMessageIndex)
         .filter((x) => x.type === 'human')
+        .slice(lastHumanMessageIndex)
         .map((x) => x as HumanMessage)
         .map(convertHumanMessage);
-      await aiEmployee.aiChatConversation.addMessages(userMessages);
+      if (userMessages.length) {
+        await aiEmployee.aiChatConversation.addMessages(userMessages);
+      }
+    },
+    beforeModel: async (state) => {
+      const lastToolMessageIndex = state.lastToolMessageIndex;
+      const toolMessages = state.messages
+        .filter((x) => x.type === 'tool')
+        .slice(lastToolMessageIndex)
+        .map((x) => x as ToolMessage)
+        .map(convertToolMessage);
+      if (toolMessages.length) {
+        await aiEmployee.aiChatConversation.addMessages(toolMessages);
+      }
     },
     afterModel: async (state, runtime) => {
+      const newState = {
+        lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
+        lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
+        lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
+        lastMessageIndex: state.messages.length,
+      };
       const lastMessage = state.messages.at(-1);
       if (lastMessage?.type !== 'ai') {
-        return;
+        return newState;
       }
 
       aiEmployee.removeAbortController();
@@ -119,8 +160,16 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
           }
         });
       }
+      if (toolCalls?.length) {
+        runtime.writer?.(toolCalls);
+      }
+
+      return newState;
     },
     afterAgent: (state) => ({
+      lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
+      lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
+      lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
       lastMessageIndex: state.messages.length,
     }),
   });

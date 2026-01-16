@@ -199,12 +199,6 @@ export const useChatMessageActions = () => {
           }
         }
       }
-      await confirmToolCall({
-        sessionId,
-        aiEmployee,
-        toolCallIds,
-        toolCallResults,
-      });
     }
   };
 
@@ -413,52 +407,6 @@ export const useChatMessageActions = () => {
     [],
   );
 
-  const confirmToolCall = useCallback(
-    async ({
-      sessionId,
-      messageId,
-      aiEmployee,
-      toolCallIds,
-      toolCallResults,
-    }: {
-      sessionId: string;
-      messageId?: string;
-      aiEmployee: AIEmployee;
-      toolCallIds?: string[];
-      toolCallResults?: { id: string; [key: string]: any }[];
-    }) => {
-      setResponseLoading(true);
-      addMessage({
-        key: uid(),
-        role: aiEmployee.username,
-        content: { type: 'text', content: '' },
-        loading: true,
-      });
-
-      try {
-        const sendRes = await api.request({
-          url: 'aiConversations:confirmToolCall',
-          method: 'POST',
-          headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults },
-          responseType: 'stream',
-          adapter: 'fetch',
-        });
-
-        if (!sendRes?.data) {
-          setResponseLoading(false);
-          return;
-        }
-
-        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-      } catch (err) {
-        setResponseLoading(false);
-        throw err;
-      }
-    },
-    [],
-  );
-
   const loadMoreMessages = useCallback(async () => {
     const messagesService = messagesServiceRef.current;
     if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
@@ -506,7 +454,6 @@ export const useChatMessageActions = () => {
     resendMessages,
     cancelRequest,
     callTool,
-    confirmToolCall,
     updateToolArgs,
     lastMessageRef,
     startEditingMessage,
