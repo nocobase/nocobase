@@ -193,6 +193,8 @@ const useTableBlockParamsCompat = (props) => {
   return { params, parseVariableLoading };
 };
 
+export const TableUidContext = createContext<string>(null);
+
 export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const resourceName = props.resource || props.association;
 
@@ -231,13 +233,15 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   }
 
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
-      <FormContext.Provider value={form}>
-        <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
-        </BlockProvider>
-      </FormContext.Provider>
-    </SchemaComponentOptions>
+    <TableUidContext.Provider value={fieldSchema['x-uid']}>
+      <SchemaComponentOptions scope={{ treeTable }}>
+        <FormContext.Provider value={form}>
+          <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
+            <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+          </BlockProvider>
+        </FormContext.Provider>
+      </SchemaComponentOptions>
+    </TableUidContext.Provider>
   );
 });
 
