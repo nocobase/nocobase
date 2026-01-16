@@ -36,18 +36,22 @@ import {
   useToken,
 } from '@nocobase/client';
 
-import {
-  MobilePageContentContainer,
-  MobilePageHeader,
-  MobilePageProvider,
-  MobileRouteItem,
-  MobileTabBarItem,
-  useMobilePage,
-  useMobileRoutes,
-} from '@nocobase/plugin-mobile/client';
+import { type MobileRouteItem } from '@nocobase/plugin-mobile/client';
 
 import PluginWorkflowClient from '.';
 import { lang, NAMESPACE } from './locale';
+
+function useMobilePage() {
+  const app = useApp();
+  const plugin = app.pm.get<any>('mobile');
+  return plugin?.useMobilePage() || {};
+}
+
+function useMobileRoutes() {
+  const app = useApp();
+  const plugin = app.pm.get<any>('mobile');
+  return plugin?.useMobileRoutes() || { resource: null, schemaResource: null, refresh: () => {} };
+}
 
 const layoutClass = css`
   height: 100%;
@@ -719,7 +723,11 @@ export const MobileTabBarWorkflowTasksItem = observer(
     const { total } = useContext(TasksCountsContext);
 
     const selected = props.url && location.pathname.startsWith(props.url);
-
+    const app = useApp();
+    const MobileTabBarItem = app.getComponent('MobileTabBarItem');
+    if (!MobileTabBarItem) {
+      return null;
+    }
     return (
       <MobileTabBarItem
         {...{
@@ -768,6 +776,14 @@ function WorkflowTasksMobileTabs() {
 
 export function WorkflowTasksMobile() {
   const navigate = useNavigate();
+  const app = useApp();
+  const MobilePageProvider = app.getComponent('MobilePageProvider');
+  const MobilePageHeader = app.getComponent('MobilePageHeader');
+  const MobilePageContentContainer = app.getComponent('MobilePageContentContainer');
+
+  if (!MobilePageProvider || !MobilePageHeader || !MobilePageContentContainer) {
+    return null;
+  }
 
   return (
     <MobilePageProvider>

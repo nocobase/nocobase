@@ -18,7 +18,6 @@
 
 import { observer } from '@formily/reactive-react';
 import { Icon, useApp, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
-import { MobilePopup } from '@nocobase/plugin-mobile/client';
 import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { FC, useCallback, useEffect, useState } from 'react';
@@ -49,9 +48,11 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
   const { token } = theme.useToken();
   const { isMobileLayout } = useMobileLayout();
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const app = useApp();
+  const MobilePopup = app.getComponent('MobilePopup');
 
   if (isMobileLayout) {
-    return (
+    return MobilePopup ? (
       <>
         <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
           <MobileChannelPage displayNavigationBar={false} onClickItem={setSelectedChannel} />
@@ -65,7 +66,7 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
           <MobileMessagePage displayPageHeader={false} />
         </MobilePopup>
       </>
-    );
+    ) : null;
   }
 
   return (

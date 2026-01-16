@@ -7,57 +7,63 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useField, useFieldSchema, useForm } from '@formily/react';
-import { FormLayout } from '@formily/antd-v5';
-import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
 import { TableOutlined } from '@ant-design/icons';
+import { FormLayout } from '@formily/antd-v5';
+import { useField, useFieldSchema, useForm } from '@formily/react';
+import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
 import { useAntdToken } from 'antd-style';
 import dayjs from 'dayjs';
-import { useTranslation } from 'react-i18next';
 import { get } from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import {
-  css,
+  ActionContextProvider,
+  CollectionRecordProvider,
+  List,
+  OpenModeProvider,
   PopupContextProvider,
-  SchemaInitializerItem,
-  useCollectionRecordData,
-  useCompile,
-  useOpenModeContext,
-  usePlugin,
-  useSchemaInitializer,
-  useSchemaInitializerItem,
   SchemaComponent,
   SchemaComponentContext,
+  SchemaInitializerItem,
+  css,
   useAPIClient,
   useActionContext,
+  useApp,
+  useCollectionRecordData,
+  useCompile,
   useCurrentUserContext,
   useFormBlockContext,
   useListBlockContext,
-  List,
-  OpenModeProvider,
-  ActionContextProvider,
-  useRequest,
-  CollectionRecordProvider,
   useMobileLayout,
+  useOpenModeContext,
+  usePlugin,
+  useRequest,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
+  EXECUTION_STATUS,
   FlowContext,
+  WorkflowTitle,
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
-  EXECUTION_STATUS,
-  WorkflowTitle,
   usePopupRecordContext,
 } from '@nocobase/plugin-workflow/client';
 
+import { TASK_STATUS, TASK_TYPE_MANUAL, TaskStatusOptionsMap } from '../common/constants';
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
-import { useMobilePage } from '@nocobase/plugin-mobile/client';
+
+function useMobilePage() {
+  const app = useApp();
+  const plugin = app.pm.get<any>('mobile');
+  return plugin?.useMobilePage() || {};
+}
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();

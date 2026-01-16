@@ -8,7 +8,7 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { MobileTabBarItem } from '@nocobase/plugin-mobile/client';
+import { useApp } from '@nocobase/client';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { unreadMsgsCountObs } from '../../observables';
@@ -19,10 +19,12 @@ const InnerMobileTabBarMessageItem = (props) => {
   const onClick = () => {
     navigate('/page/in-app-message');
   };
+  const app = useApp();
+  const MobileTabBarItem = app.getComponent('MobileTabBarItem');
 
   const selected = props.url && location.pathname.startsWith(props.url);
 
-  return (
+  return MobileTabBarItem ? (
     <MobileTabBarItem
       {...{
         ...props,
@@ -31,7 +33,7 @@ const InnerMobileTabBarMessageItem = (props) => {
         selected,
       }}
     />
-  );
+  ) : null;
 };
 
 export const MobileTabBarMessageItem = observer(InnerMobileTabBarMessageItem, {

@@ -8,18 +8,17 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { MessageManagerProvider } from './MessageManagerProvider';
 import NotificationManager from '@nocobase/plugin-notification-manager/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
 import { tval } from '@nocobase/utils/client';
-import { MessageConfigForm } from './components/MessageConfigForm';
-import { ContentConfigForm } from './components/ContentConfigForm';
 import { NAMESPACE } from '../locale';
-import { setAPIClient } from './utils';
-import { messageSchemaInitializerItem } from './components/mobile/messageSchemaInitializerItem';
+import { ContentConfigForm } from './components/ContentConfigForm';
+import { MessageConfigForm } from './components/MessageConfigForm';
 import { MobileChannelPage } from './components/mobile/ChannelPage';
 import { MobileMessagePage } from './components/mobile/MessagePage';
+import { messageSchemaInitializerItem } from './components/mobile/messageSchemaInitializerItem';
 import { MobileTabBarMessageItem } from './components/mobile/MobileTabBarMessageItem';
+import { MessageManagerProvider } from './MessageManagerProvider';
+import { setAPIClient } from './utils';
 export class PluginNotificationInAppClient extends Plugin {
   async afterAdd() {}
 
@@ -43,14 +42,14 @@ export class PluginNotificationInAppClient extends Plugin {
         deletable: true,
       },
     });
-    const mobileManager = this.pm.get(MobileManager);
     this.app.schemaInitializerManager.addItem(
       'mobile:tab-bar',
       'notification-in-app-message',
       messageSchemaInitializerItem,
     );
     this.app.addComponents({ MobileTabBarMessageItem: MobileTabBarMessageItem });
-    if (mobileManager.mobileRouter) {
+    const mobileManager = this.pm.get<any>('mobile');
+    if (mobileManager) {
       mobileManager.mobileRouter.add('mobile.page.in-app-message', {
         path: '/page/in-app-message',
       });
