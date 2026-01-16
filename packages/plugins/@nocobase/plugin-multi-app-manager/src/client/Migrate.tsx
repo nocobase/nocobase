@@ -66,15 +66,18 @@ const MigrateModal: React.FC<{
             }
             setMigrating(true);
             await form.validateFields();
-            await api.resource('apps').migrate({
-              values: {
-                appNames: state?.selectedRowKeys,
-                environments: form.getFieldValue('environments'),
-              },
-            });
-            setState?.({ selectedRowKeys: [] });
-            setOpen(false);
-            setMigrating(false);
+            try {
+              await api.resource('apps').migrate({
+                values: {
+                  appNames: state?.selectedRowKeys,
+                  environments: form.getFieldValue('environments'),
+                },
+              });
+            } finally {
+              setState?.({ selectedRowKeys: [] });
+              setOpen(false);
+              setMigrating(false);
+            }
           }}
         >
           {t('Submit')}
