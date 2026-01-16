@@ -29,6 +29,7 @@
     "@langchain/google-genai": "^2.1.7",
     "@langchain/ollama": "^1.1.0",
     "@langchain/openai": "^1.2.1",
+    "@langchain/langgraph-checkpoint-postgres": "1.0.0",
     "@nocobase/ai-employee-avatars": "^1.0.2",
     "@xyflow/react": "^12.7.0",
     "echarts": "^5.5.0",

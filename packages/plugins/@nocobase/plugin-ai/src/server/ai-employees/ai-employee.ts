@@ -23,6 +23,7 @@ import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
+import { conversationMiddleware, debugMiddleware } from './middleware';
 
 type ToolMessage = {
   id: string;
@@ -40,14 +41,14 @@ type ToolMessage = {
 };
 
 export class AIEmployee {
-  private employee: Model;
+  employee: Model;
   private plugin: PluginAIServer;
   private db: Database;
-  private sessionId: string;
+  sessionId: string;
   private ctx: Context;
   private systemMessage: string;
-  private aiChatConversation: AIChatConversation;
-  private skillSettings?: Record<string, any>;
+  aiChatConversation: AIChatConversation;
+  skillSettings?: Record<string, any>;
   private webSearch?: boolean;
 
   constructor(
@@ -120,7 +121,12 @@ export class AIEmployee {
     const { signal } = controller;
 
     try {
-      const stream = await provider.stream(chatContext, { signal, version: 'v2' });
+      const stream = await provider.getAgentStream(chatContext, {
+        signal,
+        streamMode: 'messages',
+        configurable: { thread_id: this.sessionId },
+        context: { ctx: this.ctx },
+      });
       this.plugin.aiEmployeesManager.conversationController.set(this.sessionId, controller);
       return { stream, controller, signal };
     } catch (error) {
@@ -141,119 +147,39 @@ export class AIEmployee {
       allowEmpty?: boolean;
     },
   ) {
-    const { signal, messageId, model, service, provider, allowEmpty = false } = options;
-
-    let gathered: any;
-    let errMsg = '';
+    const { signal, provider, allowEmpty = false } = options;
+    let isMessageEmpty = true;
     try {
-      for await (const streamEvent of stream) {
-        if (streamEvent.event !== 'on_chat_model_stream') {
-          this.ctx.log.debug(`skip event: ${streamEvent.event}`);
+      for await (const [chunk] of stream) {
+        if (chunk.type !== 'ai') {
           continue;
         }
-        const chunk = streamEvent.data.chunk;
-        gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
+        if (isMessageEmpty && chunk.content?.length) {
+          isMessageEmpty = false;
+        }
+
         if (chunk.content) {
           this.ctx.res.write(
             `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
           );
         }
-        if (chunk.tool_call_chunks) {
-          this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunk.tool_call_chunks })}\n\n`);
-        }
+
         const webSearch = provider.parseWebSearchAction(chunk);
         if (webSearch?.length) {
           this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
         }
       }
-    } catch (err) {
-      errMsg = err.message;
-      this.ctx.log.error(err);
-    }
 
-    this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
-
-    // 如果流式过程中发生错误，必须发送错误事件，无论是否有部分内容
-    if (errMsg) {
-      this.sendErrorResponse(errMsg);
-      return;
-    }
-
-    const message = gathered?.content;
-    const toolCalls = gathered?.tool_calls;
-    const skills = this.employee.skillSettings?.skills;
-    if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
-      this.sendErrorResponse(errMsg);
-      return;
-    }
-
-    if (message || toolCalls?.length) {
-      const values: AIMessageInput = {
-        role: this.employee.username,
-        content: {
-          type: 'text',
-          content: message,
-        },
-        metadata: {
-          model,
-          provider: service.provider,
-          usage_metadata: {},
-        },
-        toolCalls: null,
-      };
-
-      if (signal.aborted) {
-        values.metadata.interrupted = true;
-      }
-
-      if (toolCalls?.length) {
-        values.toolCalls = toolCalls;
-        values.metadata.autoCallTools = toolCalls
-          .filter((tool: { name: string }) => {
-            return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
-          })
-          .map((tool: { name: string }) => tool.name);
-      }
-
-      if (gathered?.usage_metadata) {
-        values.metadata.usage_metadata = gathered.usage_metadata;
-      }
-      if (gathered?.response_metadata) {
-        values.metadata.response_metadata = gathered.response_metadata;
-      }
-      if (gathered?.additional_kwargs) {
-        values.metadata.additional_kwargs = gathered.additional_kwargs;
-      }
-
-      const aiMessage = await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-        if (messageId) {
-          await conversation.removeMessages({ messageId });
-          await this.aiToolMessagesRepo.destroy({
-            filter: {
-              sessionId: this.sessionId,
-              messageId: {
-                $gte: messageId,
-              },
-            },
-            transaction,
-          });
-        }
-        const result: AIMessage = await conversation.addMessages(values);
-        if (toolCalls?.length) {
-          await this.initToolCall(transaction, result.messageId, toolCalls);
-        }
-
-        return result;
-      });
-
-      if (toolCalls?.length) {
-        this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
-        await this.callTool(aiMessage.messageId, true);
+      if (isMessageEmpty && !signal.aborted && !allowEmpty) {
+        this.sendErrorResponse('Empty message');
         return;
       }
+    } catch (err) {
+      this.ctx.log.error(err);
+      this.sendErrorResponse(err.message);
+    } finally {
+      this.ctx.res.end();
     }
-
-    this.ctx.res.end();
   }
 
   async parseUISchema(content: string) {
@@ -330,7 +256,7 @@ export class AIEmployee {
     return message;
   }
 
-  async getSystemPrompt(aiMessages: AIMessage[]) {
+  async getSystemPrompt() {
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id,
@@ -349,6 +275,7 @@ export class AIEmployee {
       background = await parseVariables(this.ctx, this.systemMessage);
     }
 
+    const aiMessages = await this.aiChatConversation.listMessages();
     const workContextBackground = await this.plugin.workContextHandler.background(this.ctx, aiMessages);
     if (workContextBackground?.length) {
       background = `${background}\n${workContextBackground.join('\n')}`;
@@ -745,10 +672,14 @@ export class AIEmployee {
     });
 
     const chatContext = await this.aiChatConversation.getChatContext({
+      userMessages: [],
       workContextHandler: this.plugin.workContextHandler,
       provider,
-      getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
+      model,
+      service,
+      getSystemPrompt: async () => this.getSystemPrompt(),
       tools: await this.getTools(),
+      getMiddleware: (chatContext) => this.getMiddleware(chatContext),
     });
 
     const { stream, signal } = await this.prepareChatStream(chatContext, provider);
@@ -767,19 +698,16 @@ export class AIEmployee {
 
   async processMessages(userMessages: AIMessageInput[], messageId?: string) {
     try {
-      await this.aiChatConversation.withTransaction(async (conversation) => {
-        if (messageId) {
-          await conversation.removeMessages({ messageId });
-        }
-        await conversation.addMessages(userMessages);
-      });
-
       const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
+        userMessages,
         workContextHandler: this.plugin.workContextHandler,
         provider,
-        getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
+        model,
+        service,
+        getSystemPrompt: async () => this.getSystemPrompt(),
         tools: await this.getTools(),
+        getMiddleware: (chatContext) => this.getMiddleware(chatContext),
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
@@ -802,11 +730,15 @@ export class AIEmployee {
     try {
       const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
+        userMessages: [],
         workContextHandler: this.plugin.workContextHandler,
         provider,
-        getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
+        model,
+        service,
+        getSystemPrompt: async () => await this.getSystemPrompt(),
         messageId,
         tools: await this.getTools(),
+        getMiddleware: (chatContext) => this.getMiddleware(chatContext),
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
@@ -824,6 +756,10 @@ export class AIEmployee {
       this.sendErrorResponse(err.message);
       return false;
     }
+  }
+
+  removeAbortController() {
+    this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
   }
 
   private getAutoSkillNames(): string[] {
@@ -903,6 +839,10 @@ export class AIEmployee {
     return tools;
   }
 
+  private getMiddleware(chatContext: AIChatContext) {
+    return [debugMiddleware(this.ctx.logger), conversationMiddleware(this, chatContext)];
+  }
+
   private async getToolMap() {
     const toolGroupList = await this.plugin.aiManager.toolManager.listTools(false);
     const toolList = toolGroupList.flatMap(({ tools }) => tools);
@@ -913,7 +853,7 @@ export class AIEmployee {
     return this.ctx.db.getRepository('aiMessages');
   }
 
-  private get aiToolMessagesRepo() {
+  get aiToolMessagesRepo() {
     return this.ctx.db.getRepository('aiToolMessages');
   }
 

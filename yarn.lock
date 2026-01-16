@@ -5472,6 +5472,13 @@
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
 
+"@langchain/langgraph-checkpoint-postgres@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmmirror.com/@langchain/langgraph-checkpoint-postgres/-/langgraph-checkpoint-postgres-1.0.0.tgz#14f710cd93a76296b883ad629e6921da608ad710"
+  integrity sha512-oTHCbQ9N1Zki2J0B/ulq9g/t2DRPePeQqTTJQdMYkdhpHEuWBbEPhpybSTbtXHD/6iT/UImBkUaum+nmPCIJZw==
+  dependencies:
+    pg "^8.12.0"
+
 "@langchain/langgraph-checkpoint@^1.0.0":
   version "1.0.0"
   resolved "https://registry.npmmirror.com/@langchain/langgraph-checkpoint/-/langgraph-checkpoint-1.0.0.tgz#ece2ede439d0d0b0b532c4be7817fd5029afe4f8"
@@ -27021,7 +27028,7 @@ pg@^8.11.3, pg@^8.7.3:
   optionalDependencies:
     pg-cloudflare "^1.1.1"
 
-pg@^8.16.3:
+pg@^8.12.0, pg@^8.16.3:
   version "8.16.3"
   resolved "https://registry.npmmirror.com/pg/-/pg-8.16.3.tgz#160741d0b44fdf64680e45374b06d632e86c99fd"
   integrity sha512-enxc1h0jA/aq5oSDMvqyW3q89ra6XIIDZgCX9vkMrnz5DFTw/Ny3Li2lFQ+pt3L6MCgm/5o2o8HW9hiJji+xvw==

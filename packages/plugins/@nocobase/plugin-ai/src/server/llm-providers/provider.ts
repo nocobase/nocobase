@@ -19,6 +19,12 @@ import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
 import { ToolOptions } from '../manager/tool-manager';
 import { tool } from 'langchain';
+import { createAgent } from 'langchain';
+import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
+
+let isCheckPointerInit = false;
+const DB_URI = `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE}?sslmode=disable`;
+const checkpointer = PostgresSaver.fromConnString(DB_URI);
 
 export interface LLMProviderOptions {
   app: Application;
@@ -71,6 +77,21 @@ export abstract class LLMProvider {
     return chain;
   }
 
+  prepareAgent(context: AIChatContext) {
+    const toolDefinitions = context.tools.map(ToolDefinition.from('ToolOptions'));
+    let tools = [...this.builtInTools()];
+    if (tools.length) {
+      if (!this.isToolConflict() && toolDefinitions?.length) {
+        tools.push(...toolDefinitions);
+      }
+    } else if (toolDefinitions?.length) {
+      tools = toolDefinitions;
+    }
+    const middleware = context.middleware;
+    const systemPrompt = context.systemPrompt;
+    return createAgent({ model: this.chatModel, tools, middleware, systemPrompt, checkpointer });
+  }
+
   async invokeChat(context: AIChatContext, options?: any) {
     const chain = this.prepareChain(context);
     return chain.invoke(context.messages, options);
@@ -79,6 +100,16 @@ export abstract class LLMProvider {
   async stream(context: AIChatContext, options?: any) {
     const chain = this.prepareChain(context);
     return chain.streamEvents(context.messages, options);
+  }
+
+  async getAgentStream(context: AIChatContext, options?: any) {
+    if (!isCheckPointerInit) {
+      isCheckPointerInit = true;
+      await checkpointer.setup();
+    }
+
+    const agent = this.prepareAgent(context);
+    return agent.stream({ messages: context.messages }, options);
   }
 
   async listModels(): Promise<{

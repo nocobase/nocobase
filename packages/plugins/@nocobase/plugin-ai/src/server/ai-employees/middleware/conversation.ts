@@ -1,0 +1,129 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { AIMessage, createMiddleware, HumanMessage } from 'langchain';
+import { AIEmployee } from '../ai-employee';
+import { AIChatContext, AIMessageInput } from '../../types';
+import { AIMessage as AIConversationMessage, AIMessageContent } from '../../types/ai-message.type';
+import z from 'zod';
+
+export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AIChatContext) => {
+  const convertAIMessage = (aiMessage: AIMessage): AIMessageInput => {
+    const { model, service } = chatContext;
+    const message = aiMessage.content;
+    const toolCalls = aiMessage.tool_calls;
+    const skills = aiEmployee.skillSettings?.skills;
+
+    if (!message && !toolCalls?.length) {
+      return null;
+    }
+
+    const values: AIMessageInput = {
+      role: aiEmployee.employee.username,
+      content: {
+        type: 'text',
+        content: message,
+      },
+      metadata: {
+        model,
+        provider: service.provider,
+        usage_metadata: {},
+      },
+      toolCalls: null,
+    };
+
+    if (toolCalls?.length) {
+      values.toolCalls = toolCalls as any;
+      values.metadata.autoCallTools = toolCalls
+        .filter((tool: { name: string }) => {
+          return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
+        })
+        .map((tool: { name: string }) => tool.name);
+    }
+
+    if (aiMessage.usage_metadata) {
+      values.metadata.usage_metadata = aiMessage.usage_metadata;
+    }
+    if (aiMessage.response_metadata) {
+      values.metadata.response_metadata = aiMessage.response_metadata;
+    }
+    if (aiMessage.additional_kwargs) {
+      values.metadata.additional_kwargs = aiMessage.additional_kwargs;
+    }
+
+    return values;
+  };
+
+  const convertHumanMessage = (aiMessage: HumanMessage): AIMessageInput => {
+    const { model, service } = chatContext;
+
+    if (!aiMessage.additional_kwargs.userContent) {
+      return null;
+    }
+
+    const values: AIMessageInput = {
+      role: 'user',
+      content: aiMessage.additional_kwargs?.userContent as AIMessageContent,
+      metadata: {
+        model,
+        provider: service.provider,
+      },
+    };
+
+    values.attachments = aiMessage.additional_kwargs.attachments as any;
+    values.workContext = aiMessage.additional_kwargs.workContext as any;
+
+    return values;
+  };
+
+  return createMiddleware({
+    name: 'ConversationMiddleware',
+    stateSchema: z.object({
+      lastMessageIndex: z.number().default(0),
+    }),
+    beforeAgent: async (state) => {
+      const lastMessageIndex = state.lastMessageIndex;
+      const userMessages = state.messages
+        .slice(lastMessageIndex)
+        .filter((x) => x.type === 'human')
+        .map((x) => x as HumanMessage)
+        .map(convertHumanMessage);
+      await aiEmployee.aiChatConversation.addMessages(userMessages);
+    },
+    afterModel: async (state, runtime) => {
+      const lastMessage = state.messages.at(-1);
+      if (lastMessage?.type !== 'ai') {
+        return;
+      }
+
+      aiEmployee.removeAbortController();
+
+      const values = convertAIMessage(lastMessage as AIMessage);
+
+      const aiMessage = lastMessage as AIMessage;
+      const toolCalls = aiMessage.tool_calls;
+
+      if (values) {
+        if (runtime.signal?.aborted) {
+          values.metadata.interrupted = true;
+        }
+
+        await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
+          const result: AIConversationMessage = await conversation.addMessages(values);
+          if (toolCalls?.length) {
+            await aiEmployee.initToolCall(transaction, result.messageId, toolCalls as any);
+          }
+        });
+      }
+    },
+    afterAgent: (state) => ({
+      lastMessageIndex: state.messages.length,
+    }),
+  });
+};

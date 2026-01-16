@@ -521,7 +521,7 @@ export default {
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
         );
-        await aiEmployee.callTool(message.messageId, false);
+        // await aiEmployee.callTool(message.messageId, false);
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Tool call error');

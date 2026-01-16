@@ -116,22 +116,28 @@ class AIChatConversationImpl implements AIChatConversation {
   }
 
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
-    const aiMessages = await this.listMessages(options);
-    const messages = await this.formatMessages(aiMessages, options);
-    const systemPrompt = await options.getSystemPrompt?.(aiMessages);
+    const { userMessages, provider, model, service, tools } = options;
+    const messages = await this.formatMessages(userMessages, options);
+    const systemPrompt = await options.getSystemPrompt?.();
     if (systemPrompt) {
       messages.unshift({
         role: 'system',
         content: systemPrompt,
       });
     }
-    return {
+    const chatContext: AIChatContext = {
+      provider,
+      model,
+      service,
+      systemPrompt,
       messages,
-      tools: options.tools,
+      tools,
     };
+    chatContext.middleware = options.getMiddleware(chatContext);
+    return chatContext;
   }
 
-  private async formatMessages(messages: AIMessage[], options: AIChatContextOptions) {
+  private async formatMessages(messages: AIMessageInput[], options: AIChatContextOptions) {
     const formattedMessages = [];
     const { provider, workContextHandler } = options;
 
@@ -144,7 +150,8 @@ class AIChatConversationImpl implements AIChatConversation {
     for (const msg of messages) {
       const attachments = msg.attachments;
       const workContext = msg.workContext;
-      let content = msg.content?.content;
+      const userContent = msg.content;
+      let { content } = userContent ?? {};
 
       // 截断消息内容
       if (typeof content === 'string') {
@@ -176,6 +183,11 @@ class AIChatConversationImpl implements AIChatConversation {
         formattedMessages.push({
           role: 'user',
           content: contents.length ? contents : content,
+          additional_kwargs: {
+            userContent,
+            attachments,
+            workContext,
+          },
         });
         continue;
       }

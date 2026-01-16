@@ -31,13 +31,18 @@ export interface TransactionSupported<T> {
 }
 
 export type AIChatContext = {
+  provider: LLMProvider;
+  model: any;
+  service: any;
+  systemPrompt?: string;
   messages: {
-    role: 'user' | 'assistant' | 'tool';
+    role: 'user' | 'assistant' | 'tool' | 'system';
     content: any;
     tool_call_id?: string;
     tool_calls?: AIToolCall[];
   }[];
   tools?: any[];
+  middleware?: any[];
   structuredOutput?: {
     name: string;
     description?: string;
@@ -57,8 +62,12 @@ export type AIMessageRemoveOptions = {
 };
 
 export type AIChatContextOptions = {
+  userMessages: AIMessageInput[];
   workContextHandler: WorkContextHandler;
   provider: LLMProvider;
-  getSystemPrompt?: (aiMessages: AIMessage[]) => Promise<string>;
+  model: any;
+  service: any;
+  getSystemPrompt?: () => Promise<string>;
   tools?: any[];
+  getMiddleware?: (chatContext: AIChatContext) => any[];
 } & AIMessageQuery;
