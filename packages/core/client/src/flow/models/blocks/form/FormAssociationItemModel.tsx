@@ -140,6 +140,13 @@ export class FormAssociationItemModel extends DisplayItemModel {
       <FormItem
         {...this.props}
         shouldUpdate={(prevValues, curValues) => {
+          if (dependenciesPath.length > 1 && !get(prevValues, [...dependenciesPath])) {
+            dependenciesPath.pop();
+            return (
+              JSON.stringify(get(prevValues, [...dependenciesPath])) !==
+              JSON.stringify(get(curValues, [...dependenciesPath]))
+            );
+          }
           return (
             JSON.stringify(get(prevValues, [...dependenciesPath])) !==
             JSON.stringify(get(curValues, [...dependenciesPath]))
