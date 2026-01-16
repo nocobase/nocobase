@@ -8,12 +8,15 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { observer, Schema, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps, Skeleton } from 'antd';
 import classNames from 'classnames';
-import React, { FC, startTransition, useEffect, useState } from 'react';
+import React, { FC, startTransition, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { MobilePopup } from '../../../mobile';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { SchemaComponent } from '../../core';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
@@ -92,6 +95,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const { token } = useToken();
     const tabContext = useTabsContext();
     const parentZIndex = useZIndexContext();
+    const { isMobileLayout } = useMobileLayout();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -100,12 +104,48 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     });
     const { hidden } = useCurrentPopupContext();
     const showFooter = !!footerSchema;
+    const title = field.title || '';
+    const clonedSchema = useMemo(() => new Schema(schema.toJSON()), [schema]);
+    const contentSchema = useMemo(() => {
+      return clonedSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === footerNodeName) {
+          s.parent.removeProperty(s.name);
+        }
+        return buf;
+      }) as Schema;
+    }, [clonedSchema, footerNodeName]);
+    const footerContent = showFooter ? (
+      <NocoBaseRecursionField
+        basePath={field.address}
+        schema={schema}
+        onlyRenderProperties
+        filterProperties={(s) => {
+          return s['x-component'] === footerNodeName;
+        }}
+      />
+    ) : null;
+
     if (process.env.__E2E__) {
       useSetAriaLabelForModal(visible);
     }
 
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
     const ready = useDelayedVisible(visible, delay); // 200ms 与 Modal 动画时间一致
+
+    if (isMobileLayout) {
+      return (
+        <ActionContextNoRerender>
+          <zIndexContext.Provider value={zIndex}>
+            <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+              <MobilePopup title={title} visible={visible && !hidden} onClose={() => setVisible(false, true)}>
+                <SchemaComponent basePath={field.address} schema={contentSchema} />
+                {footerContent && <div className="ant-modal-footer">{footerContent}</div>}
+              </MobilePopup>
+            </TabsContextProvider>
+          </zIndexContext.Provider>
+        </ActionContextNoRerender>
+      );
+    }
 
     return (
       <ActionContextNoRerender>

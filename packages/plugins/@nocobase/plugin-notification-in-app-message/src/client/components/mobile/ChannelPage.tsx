@@ -8,18 +8,19 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { css, useCurrentUserContext } from '@nocobase/client';
 import {
+  css,
   MobilePageContentContainer,
   MobilePageHeader,
-  MobilePageNavigationBar,
   MobilePageProvider,
-} from '@nocobase/plugin-mobile/client';
+  useCurrentUserContext,
+} from '@nocobase/client';
 import { Tabs } from 'antd-mobile';
 import React, { useEffect } from 'react';
 import { useLocalTranslation } from '../../../locale';
 import { ChannelStatus, channelStatusFilterObs, fetchChannels, userIdObs } from '../../observables';
 import { ChannelList } from './ChannelList';
+
 const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickItem?: (item: any) => void }) => {
   const { t } = useLocalTranslation();
   const ctx = useCurrentUserContext();
@@ -33,7 +34,6 @@ const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickI
   return (
     <MobilePageProvider displayNavigationBar={props.displayNavigationBar}>
       <MobilePageHeader>
-        <MobilePageNavigationBar />
         <Tabs
           className={css({
             '.adm-tabs-header': {

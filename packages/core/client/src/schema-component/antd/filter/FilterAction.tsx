@@ -15,6 +15,8 @@ import { Button, Space } from 'antd';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { MobilePopup } from '../../../mobile';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
@@ -52,6 +54,10 @@ const InternalFilterAction = React.memo((props: FilterActionProps) => {
 
   // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { options, onSubmit, onReset, Container = StablePopover, icon, onlyIcon } = useProps(props);
+  const { isMobileLayout } = useMobileLayout();
+  const { t } = useTranslation();
+  const compile = useCompile();
+  const title = compile(fieldSchema.title) || t('Filter');
 
   const onOpenChange = useCallback((visible: boolean): void => {
     setVisible(visible);
@@ -77,6 +83,20 @@ const InternalFilterAction = React.memo((props: FilterActionProps) => {
       />
     );
   }, [field, fieldSchema, form, onReset, onSubmit, options]);
+
+  if (isMobileLayout) {
+    return (
+      <FilterActionContext.Provider value={filterActionContextValue}>
+        <div>
+          <Action onClick={handleClick} icon={icon} onlyIcon={onlyIcon} />
+          <MobilePopup title={title} visible={visible} onClose={() => setVisible(false)}>
+            {content}
+          </MobilePopup>
+        </div>
+      </FilterActionContext.Provider>
+    );
+  }
+
   return (
     <FilterActionContext.Provider value={filterActionContextValue}>
       <Container

@@ -8,18 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { MessageManagerProvider } from './MessageManagerProvider';
 import NotificationManager from '@nocobase/plugin-notification-manager/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
 import { tval } from '@nocobase/utils/client';
-import { MessageConfigForm } from './components/MessageConfigForm';
-import { ContentConfigForm } from './components/ContentConfigForm';
 import { NAMESPACE } from '../locale';
+import { ContentConfigForm } from './components/ContentConfigForm';
+import { MessageConfigForm } from './components/MessageConfigForm';
+import { MessageManagerProvider } from './MessageManagerProvider';
 import { setAPIClient } from './utils';
-import { messageSchemaInitializerItem } from './components/mobile/messageSchemaInitializerItem';
-import { MobileChannelPage } from './components/mobile/ChannelPage';
-import { MobileMessagePage } from './components/mobile/MessagePage';
-import { MobileTabBarMessageItem } from './components/mobile/MobileTabBarMessageItem';
+
 export class PluginNotificationInAppClient extends Plugin {
   async afterAdd() {}
 
@@ -43,25 +39,43 @@ export class PluginNotificationInAppClient extends Plugin {
         deletable: true,
       },
     });
-    const mobileManager = this.pm.get(MobileManager);
-    this.app.schemaInitializerManager.addItem(
-      'mobile:tab-bar',
-      'notification-in-app-message',
-      messageSchemaInitializerItem,
-    );
-    this.app.addComponents({ MobileTabBarMessageItem: MobileTabBarMessageItem });
-    if (mobileManager.mobileRouter) {
-      mobileManager.mobileRouter.add('mobile.page.in-app-message', {
-        path: '/page/in-app-message',
-      });
-      mobileManager.mobileRouter.add('mobile.page.in-app-message.channels', {
-        path: '/page/in-app-message',
-        Component: MobileChannelPage,
-      });
-      mobileManager.mobileRouter.add('mobile.page.in-app-message.messages', {
-        path: '/page/in-app-message/messages',
-        Component: MobileMessagePage,
-      });
+    const mobilePlugin = this.pm.get('mobile') as any;
+    if (mobilePlugin?.mobileRouter) {
+      Promise.all([
+        import('./components/mobile/messageSchemaInitializerItem'),
+        import('./components/mobile/ChannelPage'),
+        import('./components/mobile/MessagePage'),
+        import('./components/mobile/MobileTabBarMessageItem'),
+      ])
+        .then(
+          ([
+            { messageSchemaInitializerItem },
+            { MobileChannelPage },
+            { MobileMessagePage },
+            { MobileTabBarMessageItem },
+          ]) => {
+            this.app.schemaInitializerManager.addItem(
+              'mobile:tab-bar',
+              'notification-in-app-message',
+              messageSchemaInitializerItem,
+            );
+            this.app.addComponents({ MobileTabBarMessageItem });
+            mobilePlugin.mobileRouter.add('mobile.page.in-app-message', {
+              path: '/page/in-app-message',
+            });
+            mobilePlugin.mobileRouter.add('mobile.page.in-app-message.channels', {
+              path: '/page/in-app-message',
+              Component: MobileChannelPage,
+            });
+            mobilePlugin.mobileRouter.add('mobile.page.in-app-message.messages', {
+              path: '/page/in-app-message/messages',
+              Component: MobileMessagePage,
+            });
+          },
+        )
+        .catch((err) => {
+          console.error('Failed to load mobile components for in-app message notification:', err);
+        });
     }
   }
 }

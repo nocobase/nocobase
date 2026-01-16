@@ -19,6 +19,7 @@ import { Mobile } from './mobile';
 import {
   MobileLayout,
   MobileTabBar,
+  MobileTabBarItem,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
   mobileTabBarPageSettings,
@@ -30,6 +31,7 @@ import {
   MobileNotFoundPage,
   MobilePage,
   MobilePageContent,
+  MobilePageContentContainer,
   MobilePageHeader,
   MobilePageNavigationBar,
   MobilePageProvider,
@@ -42,6 +44,8 @@ import {
   mobilePagesTabInitializer,
   useMobileNavigationBarLink,
 } from './pages';
+
+import { MobileRouteItem, useMobileRoutes } from './mobile-providers';
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import { MenuPermissions, MobileAllRoutesProvider } from './MenuPermissions';
@@ -130,6 +134,7 @@ export class PluginMobileClient extends Plugin {
   addScopes() {
     this.app.addScopes({
       useMobileNavigationBarLink,
+      useMobileRoutes,
     });
   }
 
@@ -160,7 +165,9 @@ export class PluginMobileClient extends Plugin {
       MobilePageNavigationBar,
       MobileHomePage,
       MobilePageContent,
+      MobilePageContentContainer,
       MobileTabBar,
+      MobileTabBarItem,
       MobilePageHeader,
       MobilePageTabs,
       MobileNavigationActionBar,

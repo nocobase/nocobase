@@ -7,13 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { MobilePopup } from '../../../mobile';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { SchemaComponent } from '../../core';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
@@ -87,6 +90,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     const { componentCls, hashId } = useStyles();
     const tabContext = useTabsContext();
     const parentZIndex = useZIndexContext();
+    const { isMobileLayout } = useMobileLayout();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -121,6 +125,43 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       },
       [footerNodeName],
     );
+
+    const footerContent = footerSchema ? (
+      <div className={'footer'}>
+        <MemoizeRecursionField
+          basePath={field.address}
+          schema={schema}
+          onlyRenderProperties
+          filterProperties={keepFooterNode}
+        />
+      </div>
+    ) : null;
+    const title = typeof field.title === 'string' ? t(field.title, { ns: NAMESPACE_UI_SCHEMA }) : field.title;
+    const clonedSchema = useMemo(() => new Schema(schema.toJSON()), [schema]);
+    const contentSchema = useMemo(() => {
+      return clonedSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === footerNodeName) {
+          s.parent.removeProperty(s.name);
+        }
+        return buf;
+      }) as Schema;
+    }, [clonedSchema, footerNodeName]);
+
+    if (isMobileLayout) {
+      return (
+        <ActionContextNoRerender>
+          <zIndexContext.Provider value={zIndex}>
+            <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+              <MobilePopup title={title} visible={visible && !hidden} onClose={() => onClose(undefined)}>
+                <SchemaComponent basePath={field.address} schema={contentSchema} />
+                {footerContent}
+              </MobilePopup>
+            </TabsContextProvider>
+          </zIndexContext.Provider>
+        </ActionContextNoRerender>
+      );
+    }
+
     return (
       <ActionContextNoRerender>
         <zIndexContext.Provider value={zIndex}>
@@ -136,18 +177,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
               open={visible}
               onClose={onClose}
               rootClassName={classNames(componentCls, hashId, drawerProps?.className, others.className, 'reset')}
-              footer={
-                footerSchema && (
-                  <div className={'footer'}>
-                    <MemoizeRecursionField
-                      basePath={field.address}
-                      schema={schema}
-                      onlyRenderProperties
-                      filterProperties={keepFooterNode}
-                    />
-                  </div>
-                )
-              }
+              footer={footerSchema && footerContent}
             >
               <ActionDrawerContent footerNodeName={footerNodeName} field={field} schema={schema} />
             </Drawer>

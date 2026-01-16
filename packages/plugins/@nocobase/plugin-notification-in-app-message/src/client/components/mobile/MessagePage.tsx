@@ -8,14 +8,20 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { css, useApp, useCurrentUserContext } from '@nocobase/client';
+import {
+  css,
+  MobilePageContentContainer,
+  MobilePageHeader,
+  MobilePageProvider,
+  useApp,
+  useCurrentUserContext,
+} from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 import { Badge, InfiniteScroll, List, NavBar } from 'antd-mobile';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Schema } from '@formily/react';
-import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
 import { useLocalTranslation } from '../../../locale';
 import {
   fetchChannels,
