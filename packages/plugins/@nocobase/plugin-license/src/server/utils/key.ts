@@ -68,7 +68,8 @@ export async function saveLicenseKey(licenseKey: string, ctx?: any) {
   await fs.promises.writeFile(filePath, licenseKey);
 
   if (ctx && ctx.cache) {
-    await ctx.cache.set('license-key', licenseKey);
+    await ctx.cache.del(CACHE_KEY);
+    await ctx.cache.set(CACHE_KEY, licenseKey, 30 * 24 * 60 * 60 * 1000); // cache for 30 day
   }
 }
 
@@ -89,6 +90,9 @@ export async function getKey(ctx?: Context): Promise<string> {
   if (ctx?.cache) {
     try {
       key = await ctx.cache.get(CACHE_KEY);
+      if (key) {
+        return key;
+      }
     } catch (e) {
       logger.warn('Failed to get license key from cache', e);
     }
@@ -126,7 +130,6 @@ export async function getKey(ctx?: Context): Promise<string> {
       },
       headers: keyData?.service?.headers || {},
     });
-    // logger.info('Successfully retrieved the remote license key');
     const { key: remoteKey } = data || {};
     if (remoteKey && typeof remoteKey === 'string') {
       await saveLicenseKey(remoteKey, ctx);

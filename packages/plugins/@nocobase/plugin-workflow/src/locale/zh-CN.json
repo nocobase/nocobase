@@ -188,7 +188,7 @@
   "Select context": "选择上下文",
   "Select users": "选择用户",
   "Select workflow": "选择工作流",
-  "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. If this node is added multiple times, the value of the last executed node prevails.": "设置工作流的输出数据，在作为子流程执行后可以被上级流程后续节点使用。如果多次添加此节点，则以最后一个被执行的节点的值为准。",
+  "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. You can also use this node in an AI employee workflow, to define what to output. If this node is added multiple times, the value of the last executed node prevails.": "设置工作流的输出数据。在作为子流程执行后可以被上级流程后续节点使用。你也可以在 AI 员工工作流中使用此节点，来定义输出内容。如果多次添加此节点，则以最后一个被执行的节点的值为准。",
   "Single record": "单条数据",
   "Some node meets error.": "某个节点出错。",
   "Started and executing, maybe waiting for an async callback (manual, delay etc.).": "已开始执行，可能在等待异步回调（人工、延时等）。",

@@ -423,9 +423,10 @@ FormItemModel.registerFlow({
         if (!isAssociationReadPretty) {
           return null;
         }
-        if (params.titleField !== previousParams.titleField) {
+        const label = params.titleField || params.label;
+        if (label !== previousParams.titleField) {
           const targetCollection = ctx.collectionField.targetCollection;
-          const targetCollectionField = targetCollection.getField(params.titleField);
+          const targetCollectionField = targetCollection.getField(label);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
           if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
@@ -437,21 +438,22 @@ FormItemModel.registerFlow({
                   init: {
                     dataSourceKey: ctx.model.collectionField.dataSourceKey,
                     collectionName: targetCollection.name,
-                    fieldPath: params.titleField,
+                    fieldPath: label,
                   },
                 },
               },
             });
             await model.save();
           }
-          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.titleField).getComponentProps());
+          ctx.model.setProps(ctx.collectionField.targetCollection.getField(label).getComponentProps());
         }
       },
       async handler(ctx, params) {
-        ctx.model.setProps({ titleField: params?.titleField });
-        // if (ctx.model.props.pattern === 'readPretty') {
-        //   ctx.model.setProps({ titleField: params?.label });
-        // }
+        if (ctx.model.props.pattern === 'readPretty') {
+          ctx.model.setProps({ titleField: params?.label });
+        } else {
+          ctx.model.setProps({ titleField: params.titleField });
+        }
       },
     },
   },

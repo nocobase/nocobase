@@ -39,3 +39,4 @@ vitest.config.mts.timestamp-*
 python/
 git-repos.json
 CLAUDE.md
+AGENTS.md

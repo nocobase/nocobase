@@ -38,11 +38,7 @@ export const titleField = defineAction({
     };
   },
   hideInSettings: async (ctx: FlowModelContext) => {
-    return (
-      !ctx.collectionField ||
-      !ctx.collectionField.isAssociationField() ||
-      (ctx.model.subModels.field as any).disableTitleField
-    );
+    return !ctx.collectionField || !ctx.collectionField.isAssociationField();
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     const target = ctx.model.collectionField.target;

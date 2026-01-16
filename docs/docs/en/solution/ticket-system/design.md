@@ -2,7 +2,7 @@
 
 > **Version**: v2.0-beta
 
-> **Updated**: 2025-12-29
+> **Updated**: 2026-01-05
 
 > **Status**: Preview
 
@@ -687,4 +687,4 @@ When an agent opens ticket details, Max automatically recommends related knowled
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2025-12-29*
+*Document Version: 2.0 | Last Updated: 2026-01-05*
