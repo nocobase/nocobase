@@ -13,14 +13,16 @@ type Handler<C, R> = (ctx: C) => R | Promise<R>;
 interface Rule<C, R> {
   when: Predicate<C>;
   run: Handler<C, R>;
+  priority?: number;
 }
 
 export class ConditionalRegistry<C, R> {
   private rules: Rule<C, R>[] = [];
   private defaultHandler?: Handler<C, R>;
 
-  register(when: Predicate<C>, run: Handler<C, R>) {
-    this.rules.push({ when, run });
+  register(when: Predicate<C>, run: Handler<C, R>, priority = 0) {
+    this.rules.push({ when, run, priority });
+    this.rules.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   }
 
   setDefault(run: Handler<C, R>) {

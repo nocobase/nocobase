@@ -265,8 +265,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter;
   }
 
-  registerAppDbCreator(condition: Predicate<AppDbCreatorOptions>, creator: AppDbCreator) {
-    this.appDbCreator.register(condition, creator);
+  registerAppDbCreator(condition: Predicate<AppDbCreatorOptions>, creator: AppDbCreator, priority?: number) {
+    this.appDbCreator.register(condition, creator, priority);
   }
 
   async createDatabase(options: AppDbCreatorOptions) {
