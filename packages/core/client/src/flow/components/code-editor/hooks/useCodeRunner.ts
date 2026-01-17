@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { parseErrorLineColumn } from '../errorHelpers';
 import {
   FlowModelContext,
@@ -15,10 +15,11 @@ import {
   createSafeWindow,
   createSafeDocument,
   createSafeNavigator,
-  compileRunJs,
+  prepareRunJsCode,
 } from '@nocobase/flow-engine';
 
 export type RunLog = { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number };
+type RunResult = Awaited<ReturnType<JSRunner['run']>>;
 
 function safeToString(x: any): string {
   try {
@@ -45,11 +46,17 @@ function createConsoleCapture(push: (level: RunLog['level'], args: any[]) => voi
 export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [running, setRunning] = useState(false);
+  const activeRunTokenRef = useRef(0);
+  const cancelActiveCaptureRef = useRef<(() => void) | null>(null);
   const clearLogs = useCallback(() => setLogs([]), []);
   const run = useCallback(
-    async (code: string): Promise<Awaited<ReturnType<JSRunner['run']>> | undefined> => {
+    async (code: string): Promise<RunResult | undefined> => {
       setRunning(true);
       setLogs([]);
+      activeRunTokenRef.current += 1;
+      const runToken = activeRunTokenRef.current;
+      cancelActiveCaptureRef.current?.();
+      cancelActiveCaptureRef.current = null;
       try {
         const model = hostCtx?.model;
         if (!model) throw new Error('No model in FlowContext');
@@ -71,19 +78,28 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
 
         // 选择一个可用的设置流：优先 jsSettings，不存在则尝试 clickSettings
         const preferFlowKeys = ['jsSettings', 'clickSettings'] as const;
-        const availableKey = preferFlowKeys.find((k) => (runtimeModel as any)?.getFlow?.(k));
+        const availableKey = preferFlowKeys.find((k) => runtimeModel.getFlow(k));
         const flowKey = availableKey || 'jsSettings';
-        const compiledForPreview = await compileRunJs(code);
+        const preparedForPreview = await prepareRunJsCode(code, { preprocessTemplates: true });
 
         // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
         type JSRunnerPrototype = { run: JSRunner['run'] };
         const proto = JSRunner.prototype as unknown as JSRunnerPrototype;
         const originalRun = proto.run;
-        let lastResult: Awaited<ReturnType<JSRunner['run']>> | undefined;
-        let resolveDeferred: (res: any) => void = () => {};
-        const deferred = new Promise<any>((resolve) => (resolveDeferred = resolve));
-        proto.run = async function patchedRun(this: any, jsCode: string) {
-          const isPreviewCode = jsCode === compiledForPreview;
+        let resolveDeferred: (res: RunResult) => void = () => {};
+        const deferred = new Promise<RunResult>((resolve) => (resolveDeferred = resolve));
+        let previewResult: RunResult | undefined;
+        let restored = false;
+        const restore = () => {
+          if (restored) return;
+          restored = true;
+          (JSRunner.prototype as unknown as JSRunnerPrototype).run = originalRun;
+          cancelActiveCaptureRef.current = null;
+        };
+        cancelActiveCaptureRef.current = restore;
+        proto.run = async function patchedRun(this: { globals?: Record<string, any> }, jsCode: string) {
+          // Be tolerant to flows that run either the raw source or the prepared (preprocessed/compiled) code.
+          const isPreviewCode = jsCode === preparedForPreview || jsCode === code;
           const prevConsole = this?.globals?.console;
           try {
             if (!this.globals) this.globals = {};
@@ -96,7 +112,8 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
             // 预览过程中会触发 params-resolvers 等内部 ctx.runjs 调用（例如 resolveJsonTemplate 解析 {{ }}）。
             // 这些内部调用失败不应影响“预览代码本身”的执行结果，否则会出现预览成功但提示失败的误判。
             if (isPreviewCode) {
-              lastResult = res;
+              previewResult = res;
+              resolveDeferred(res);
             }
             return res;
           } finally {
@@ -120,66 +137,75 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
             // 无可用流程（典型场景：联动规则里的 RunJS 预览），直接在当前上下文执行代码
             const navigator = createSafeNavigator();
             await hostCtx.runjs(
-              compiledForPreview,
+              code,
               { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
               { version },
             );
           } else if (typeof eventName === 'string') {
-            await m.dispatchEvent(
-              eventName,
-              { preview: { code: compiledForPreview, version } },
-              { sequential: true, useCache: false },
-            );
+            await m.dispatchEvent(eventName, { preview: { code, version } }, { sequential: true, useCache: false });
           } else if (isManual) {
-            await m.applyFlow(flowKey, { preview: { code: compiledForPreview, version } });
+            await m.applyFlow(flowKey, { preview: { code, version } });
           } else {
             await m.dispatchEvent(
               'beforeRender',
-              { preview: { code: compiledForPreview, version } },
+              { preview: { code, version } },
               { sequential: true, useCache: false },
             );
           }
         };
 
-        let runResult: Awaited<ReturnType<JSRunner['run']>> | undefined;
+        let runResult: RunResult | undefined;
         try {
           await runOnModel(runtimeModel);
-          // After model finished dispatching, resolve with the last observed result
-          try {
-            resolveDeferred(lastResult ?? { success: true, value: undefined });
-          } catch (e) {
-            console.warn('[useCodeRunner] resolve deferred (post-run) failed:', e);
+        } catch (e) {
+          restore();
+          throw e;
+        }
+
+        const pushRunResultLog = (res: RunResult) => {
+          if (!res?.success) {
+            const errText = res?.timeout ? 'Execution timed out' : String(res?.error || 'Unknown error');
+            const pos = parseErrorLineColumn(res?.error);
+            if (pos && typeof pos.line === 'number' && typeof pos.column === 'number') {
+              setLogs((prev) => [...prev, { level: 'error', msg: errText, line: pos.line, column: pos.column }]);
+            } else {
+              push('error', [errText]);
+            }
+          } else {
+            push('info', ['Execution succeeded']);
           }
-          const timeoutMs = 12000;
-          runResult = (await Promise.race([
+        };
+
+        if (previewResult) {
+          restore();
+          runResult = previewResult;
+          pushRunResultLog(runResult);
+          return runResult;
+        }
+
+        // Some flows (e.g. using ctx.onRefReady) schedule the actual ctx.runjs call asynchronously.
+        // Do not block the preview button; instead, resolve optimistically and update logs when result arrives.
+        const timeoutMs = 12000;
+        void (async () => {
+          const result: RunResult = await Promise.race([
             deferred,
-            new Promise((resolve) =>
+            new Promise<RunResult>((resolve) =>
               setTimeout(
                 () => resolve({ success: false, timeout: true, error: new Error('Preview timed out') }),
                 timeoutMs,
               ),
             ),
-          ])) as Awaited<ReturnType<JSRunner['run']>>;
-        } finally {
-          // Always restore original prototype method, even if dispatch throws
-          (JSRunner.prototype as unknown as JSRunnerPrototype).run = originalRun;
-        }
-        if (!runResult?.success) {
-          const errText = runResult?.timeout ? 'Execution timed out' : String(runResult?.error || 'Unknown error');
-          const pos = parseErrorLineColumn(runResult?.error);
-          if (pos && typeof pos.line === 'number' && typeof pos.column === 'number') {
-            setLogs((prev) => [...prev, { level: 'error', msg: errText, line: pos.line, column: pos.column }]);
-          } else {
-            push('error', [errText]);
-          }
-        } else {
-          push('info', ['Execution succeeded']);
-        }
-        return runResult as Awaited<ReturnType<JSRunner['run']>>;
-      } catch (err: any) {
-        const msg = err?.message || String(err) || 'Run preview failed';
+          ]);
+          if (activeRunTokenRef.current !== runToken) return;
+          restore();
+          pushRunResultLog(result);
+        })();
+
+        return { success: true, value: undefined };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err) || 'Run preview failed';
         setLogs((prev) => [...prev, { level: 'error', msg }]);
-        return { success: false, error: err } as Awaited<ReturnType<JSRunner['run']>>;
+        return { success: false, error: err };
       } finally {
         setRunning(false);
       }
