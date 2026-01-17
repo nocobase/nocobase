@@ -98,6 +98,7 @@ async function setupFormModel() {
       { name: 'customer', type: 'belongsTo', target: 'customers', interface: 'm2o' },
       { name: 'assignees', type: 'belongsToMany', target: 'users', interface: 'm2m' },
       { name: 'note', type: 'string', interface: 'text' },
+      { name: 'status', type: 'string', interface: 'text' },
     ],
   });
 
@@ -114,6 +115,17 @@ async function setupFormModel() {
     },
   });
   return model;
+}
+
+function mockFormGridEnabledFields(model: any, fieldPaths: string[]) {
+  const items = (fieldPaths || []).map((fieldPath) => ({
+    getStepParams: (flowKey: string, stepKey: string) =>
+      flowKey === 'fieldSettings' && stepKey === 'init' ? { fieldPath } : undefined,
+  }));
+  model.subModels = model.subModels || {};
+  model.subModels.grid = model.subModels.grid || {};
+  model.subModels.grid.subModels = model.subModels.grid.subModels || {};
+  model.subModels.grid.subModels.items = items;
 }
 
 // -----------------------------
@@ -238,6 +250,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
+    mockFormGridEnabledFields(model, ['customer', 'assignees', 'note']);
 
     // cache=false check
     const v1 = (model.context as any).formValues;
@@ -364,6 +377,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ assignees: [{ id: 3 }, { id: 5 }] });
+    mockFormGridEnabledFields(model, ['assignees']);
 
     // 解析一个会触发服务端解析的变量模板
     const tpl = { who: '{{ ctx.formValues.assignees.org.name }}' } as any;
@@ -400,9 +414,141 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     };
     (model.context as any).defineProperty('form', { value: fakeForm2 });
     fakeForm2.setFieldsValue({ customer: { id: 9 } });
+    mockFormGridEnabledFields(model, ['customer']);
 
     const tpl2 = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
     await (model.context as any).resolveJsonTemplate(tpl2);
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('unconfigured field: new record returns undefined and does not call server', async () => {
+    const model = await setupFormModel();
+
+    const api = { request: vi.fn(async () => ({ data: {} }) as any) } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    // 新建表单：没有 currentFilterByTk / filterByTk 锚点
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    // 仅配置 customer / assignees，不包含 status
+    mockFormGridEnabledFields(model, ['customer', 'assignees', 'note']);
+    fakeForm.setFieldsValue({ note: 'hello' });
+
+    const tpl = { status: '{{ ctx.formValues.status }}' } as any;
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(0);
+    expect(out).toEqual({ status: undefined });
+  });
+
+  it('unconfigured field: edit record triggers server resolve with selective formValues record ref', async () => {
+    const model = await setupFormModel();
+
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const batch = config?.data?.values?.batch || [];
+        const item = batch[0] || {};
+        const cp = item?.contextParams || {};
+        const keys = Object.keys(cp).sort();
+        expect(keys).toEqual(['formValues']);
+        expect(cp.formValues).toMatchObject({
+          dataSourceKey: 'main',
+          collection: 'orders',
+          filterByTk: 1,
+        });
+        expect(cp.formValues.fields).toEqual(['status']);
+        expect(cp.formValues.appends).toBeUndefined();
+        return {
+          data: {
+            data: {
+              results: [{ id: item.id, data: { status: 'PAID', note: '{{ ctx.formValues.note }}' } }],
+            },
+          },
+        } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    // 模拟编辑表单：设置 currentFilterByTk
+    (model.context as any).resource?.setMeta?.({ currentFilterByTk: 1 });
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    // status 未配置在表单中（仅配置其他字段）
+    mockFormGridEnabledFields(model, ['customer', 'assignees', 'note']);
+    fakeForm.setFieldsValue({ note: 'LOCAL_NOTE' });
+
+    const tpl = { status: '{{ ctx.formValues.status }}', note: '{{ ctx.formValues.note }}' } as any;
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+    expect(out).toEqual({ status: 'PAID', note: 'LOCAL_NOTE' });
+  });
+
+  it('unconfigured association subpath (edit record): injects top-level formValues record ref with appends/fields', async () => {
+    const model = await setupFormModel();
+
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const batch = config?.data?.values?.batch || [];
+        const item = batch[0] || {};
+        const cp = item?.contextParams || {};
+        const keys = Object.keys(cp).sort();
+        expect(keys).toEqual(['formValues']);
+        expect(cp.formValues).toMatchObject({
+          dataSourceKey: 'main',
+          collection: 'orders',
+          filterByTk: 1,
+        });
+        expect(cp.formValues.fields).toEqual(['customer.level.name']);
+        expect(cp.formValues.appends).toEqual(['customer', 'customer.level']);
+        return { data: { data: { results: [{ id: item.id, data: { who: 'L1' } }] } } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    (model.context as any).resource?.setMeta?.({ currentFilterByTk: 1 });
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    // customer 未配置在表单中：只能基于当前记录（DB）解析 customer.level.name
+    mockFormGridEnabledFields(model, ['note']);
+    fakeForm.setFieldsValue({ note: 'hello' });
+
+    const tpl = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+    expect(out).toEqual({ who: 'L1' });
   });
 });

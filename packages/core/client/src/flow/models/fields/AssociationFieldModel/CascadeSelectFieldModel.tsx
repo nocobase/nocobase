@@ -12,7 +12,7 @@ import { last } from 'lodash';
 import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { debounce } from 'lodash';
+import { debounce, castArray } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -186,8 +186,8 @@ const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fi
   return (
     <div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={value.map((_, i) => `item-${i}`)} strategy={verticalListSortingStrategy}>
-          {value.map((item, index) => (
+        <SortableContext items={value?.map((_, i) => `item-${i}`)} strategy={verticalListSortingStrategy}>
+          {value?.map((item, index) => (
             <SortableItem
               key={index}
               id={`item-${index}`}
@@ -342,7 +342,7 @@ export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
         onChange={(value) => {
           this.props.onChange(value);
         }}
-        value={this.props.value}
+        value={castArray(this.props.value).filter(Boolean)}
       />
     );
   }

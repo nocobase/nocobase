@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "displayName": "Notification: In-app message",
   "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",

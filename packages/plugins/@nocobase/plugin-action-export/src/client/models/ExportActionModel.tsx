@@ -57,7 +57,22 @@ ExportActionModel.registerFlow({
         const { exportSettings } = ctx.model.getProps();
         const currentBlock = ctx.model.context.blockModel;
         const { resource } = currentBlock;
-        const { title, fields } = currentBlock.collection;
+        const { title, fields, filterTargetKey } = currentBlock.collection;
+        const selectedRows = resource.getSelectedRows();
+        let filter;
+        // If there are selected rows, use the filter for selected rows, otherwise use the default filter
+        if (selectedRows.length > 0) {
+          filter = { [filterTargetKey]: ctx.blockModel.collection.getFilterByTK(selectedRows) };
+        } else {
+          filter = resource.getFilter(); // Default filter if no rows are selected
+        }
+
+        // If filterTargetKey indicates a complex filter (e.g., multiple keys), apply `$or`
+        if (Array.isArray(filterTargetKey) && filterTargetKey.length > 1) {
+          // Assuming getFilterByTK returns an array of conditions, apply $or
+          filter = { $or: ctx.blockModel.collection.getFilterByTK(selectedRows) };
+        }
+
         exportSettings.forEach((es) => {
           const { uiSchema, interface: fieldInterface } = fields.get(es.dataIndex[0]) ?? {};
           // @ts-ignore
@@ -80,7 +95,7 @@ ExportActionModel.registerFlow({
             title: ctx.t(title),
             appends: resource.getAppends(),
             sort: resource.getSort(),
-            filter: resource.getFilter(),
+            filter: filter,
           },
         });
         const blob = new Blob([data], { type: 'application/x-xls' });

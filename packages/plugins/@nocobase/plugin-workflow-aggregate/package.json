@@ -6,7 +6,7 @@
   "description": "Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.",
   "description.zh-CN": "可用于在工作流中对数据库进行聚合查询，如：统计数量、求和、平均值等。",
   "description.ru-RU": "Используется для агрегирования данных из базы данных в рабочем процессе, например: статистика, сумма, среднее и т.д.",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-aggregate",
@@ -14,16 +14,16 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-aggregate",
   "devDependencies": {
     "antd": "5.x",
-    "mathjs": "^10.6.0",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
-    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
+    "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/test": "2.x",
+    "mathjs": "^15.1.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

@@ -17,6 +17,8 @@ import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
+import { ToolOptions } from '../manager/tool-manager';
+import { tool } from 'langchain';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -48,15 +50,16 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
+    const toolDefinitions = context.tools.map(ToolDefinition.from('ToolOptions'));
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
-      if (!this.isToolConflict() && context.tools?.length) {
-        tools.push(...context.tools);
+      if (!this.isToolConflict() && toolDefinitions?.length) {
+        tools.push(...toolDefinitions);
       }
       chain = chain.bindTools?.(tools);
-    } else if (context.tools?.length) {
-      chain = chain.bindTools?.(context.tools);
+    } else if (toolDefinitions?.length) {
+      chain = chain.bindTools?.(toolDefinitions);
     }
 
     if (context.structuredOutput) {
@@ -242,5 +245,36 @@ export abstract class EmbeddingProvider {
       throw new Error('Embedding model is required');
     }
     return model;
+  }
+}
+
+type FromType = 'ToolOptions';
+
+class ToolDefinition {
+  constructor(
+    private from: FromType,
+    private _tool: any,
+  ) {}
+
+  static from(from: FromType) {
+    return (tool: any) => new ToolDefinition(from, tool).tool;
+  }
+
+  get tool() {
+    if (this.from === 'ToolOptions') {
+      return this.convertToolOptions();
+    } else {
+      throw new Error('not supported tool definitions');
+    }
+  }
+
+  private convertToolOptions() {
+    const { invoke, name, description, schema, returnDirect = false } = this._tool as ToolOptions;
+    return tool((input, { toolCall, context }) => invoke(context.ctx, input, toolCall.id), {
+      name,
+      description,
+      schema,
+      returnDirect: returnDirect as boolean,
+    });
   }
 }

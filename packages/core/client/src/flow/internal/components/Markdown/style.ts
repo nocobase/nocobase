@@ -158,6 +158,7 @@ export const useMarkdownStyles = () => {
     '& > *:last-child': { marginBottom: '0' },
     '.ant-description-textarea, .ant-description-input': { lineHeight: token.lineHeight },
     '.field-interface-datetime': { minWidth: '100px' },
+    img: { maxWidth: '100%' },
     ...(isDarkTheme ? darkStyle : defaultStyle),
   });
 };

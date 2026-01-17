@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-grid-card",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "dist/server/index.js",
   "displayName": "Block: GridCard",
   "displayName.zh-CN": "区块：网格卡片",

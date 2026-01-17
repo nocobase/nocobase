@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-api-doc",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "displayName": "API documentation",
   "displayName.ru-RU": "Документация API",
   "displayName.zh-CN": "API 文档",
