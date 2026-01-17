@@ -9,14 +9,7 @@
 
 import { compileRunJs } from './jsxTransform';
 
-export type PrepareRunJsCodeOptions = {
-  /**
-   * Enable runtime template compatibility:
-   * - Replace legacy `{{ctx...}}` placeholders with values resolved at runtime.
-   * - Supports placeholders inside string literals / template literals without injecting `await`
-   *   into nested non-async function bodies (by hoisting resolution to the top-level).
-   * - Skip processing inside explicit `ctx.resolveJsonTemplate(...)` calls
-   */
+type PrepareRunJsCodeOptions = {
   preprocessTemplates?: boolean;
 };
 
@@ -171,8 +164,8 @@ function wrapStringTokenWithReplacements(
   const uniq = Array.from(new Set(placeholders));
   if (!uniq.length) return token;
 
-  // Avoid injecting `await` into nested functions by using a runtime (sync) stringify helper.
-  // Keep legacy semantics where undefined values do not replace the template marker.
+  // 通过运行时（同步）字符串化 helper，避免在嵌套函数里注入 `await`。
+  // 保持旧语义：当值为 undefined 时，不替换模板标记本身。
   let expr = token;
   for (const p of uniq) {
     const v = placeholderVar(p);
@@ -182,17 +175,17 @@ function wrapStringTokenWithReplacements(
 }
 
 /**
- * Preprocess RunJS source code to support legacy `{{ ... }}` placeholders at runtime.
+ * 预处理 RunJS 源码，以在运行时兼容旧版 `{{ ... }}` 占位符。
  *
- * Important: This is NOT template resolution (no values are computed here).
- * It rewrites code into valid JS that calls `ctx.resolveJsonTemplate(...)` during execution.
+ * 注意：这不是“模板解析”（这里不会计算任何值）。
+ * 它会把代码重写为合法的 JS，并在执行期间调用 `ctx.resolveJsonTemplate(...)`。
  *
- * Design notes:
- * - To avoid syntax errors like "await is only valid in async functions", we hoist all template
- *   resolutions to the top-level of the RunJS program, then replace occurrences with variables.
- * - For string / template literals, we avoid wrapping with `await ...` in-place. Instead we keep
- *   the original literal expression and apply `.split().join()` replacements using a small helper
- *   that matches `resolveJsonTemplate`'s string replacement behavior for objects/undefined.
+ * 设计说明：
+ * - 为避免出现 “await is only valid in async functions” 之类的语法错误，会把所有模板解析提升到
+ *   RunJS 程序的顶层，再用变量替换各处的出现位置。
+ * - 对于字符串/模板字面量，不在原位置直接包一层 `await ...`。而是保留原字面量表达式，并通过
+ *   一个小 helper 用 `.split().join()` 做替换，以匹配 `resolveJsonTemplate` 对 object/undefined
+ *   的字符串替换行为。
  */
 export function preprocessRunJsTemplates(
   code: string,
@@ -206,8 +199,8 @@ export function preprocessRunJsTemplates(
   const processBarePlaceholders = options.processBarePlaceholders !== false;
   const processStringLiterals = options.processStringLiterals !== false;
   const skipIfAlreadyPreprocessed = options.skipIfAlreadyPreprocessed !== false;
-  // Avoid double-preprocessing (e.g. if a caller accidentally passes already-prepared code back into ctx.runjs).
-  // This is a heuristic; these internal symbol names are intentionally unlikely to collide with user code.
+  // 避免重复预处理（例如调用方不小心把已处理过的代码再次传回 ctx.runjs）。
+  // 这里使用启发式判断；这些内部符号名刻意设计得不太可能与用户代码冲突。
   if (skipIfAlreadyPreprocessed) {
     if (processBarePlaceholders && processStringLiterals && PREPROCESSED_MARKER_RE.test(code)) return code;
     if (processBarePlaceholders && !processStringLiterals && BARE_PLACEHOLDER_VAR_RE.test(code)) return code;
@@ -255,7 +248,7 @@ export function preprocessRunJsTemplates(
   let out = '';
   let i = 0;
 
-  // Skip processing inside explicit `ctx.resolveJsonTemplate(...)` calls.
+  // 显式的 `ctx.resolveJsonTemplate(...)` 调用内部不做处理。
   let resolveCallPending = false;
   let resolveParenDepth = 0;
 
@@ -263,7 +256,7 @@ export function preprocessRunJsTemplates(
     const ch = code[i];
     const next = code[i + 1];
 
-    // Comments (always preserved; no transformations inside)
+    // 注释（始终保留；内部不做任何转换）
     if (ch === '/' && next === '/') {
       const end = readLineComment(code, i);
       out += code.slice(i, end);
@@ -277,7 +270,7 @@ export function preprocessRunJsTemplates(
       continue;
     }
 
-    // Strings / template literals (optionally transformed, but never inside resolveJsonTemplate call)
+    // 字符串/模板字面量（可选转换，但在 resolveJsonTemplate 调用内部永不转换）
     if (ch === "'" || ch === '"') {
       const end = readQuotedString(code, i, ch);
       const token = code.slice(i, end);
@@ -311,7 +304,7 @@ export function preprocessRunJsTemplates(
       continue;
     }
 
-    // Track `ctx.resolveJsonTemplate(` call regions
+    // 跟踪 `ctx.resolveJsonTemplate(` 的调用区域
     if (resolveParenDepth === 0 && !resolveCallPending && readsResolveJsonTemplateCall(code, i)) {
       out += RESOLVE_JSON_TEMPLATE_CALL;
       i += RESOLVE_JSON_TEMPLATE_CALL.length;
@@ -331,12 +324,12 @@ export function preprocessRunJsTemplates(
         resolveParenDepth = 1;
         continue;
       }
-      // Not a call; reset and re-process current char normally
+      // 不是调用；重置状态并按正常逻辑重新处理当前字符
       resolveCallPending = false;
       continue;
     }
 
-    // While inside resolveJsonTemplate(...), only track parentheses and output raw
+    // 在 resolveJsonTemplate(...) 内部，仅跟踪括号深度并原样输出
     if (resolveParenDepth > 0) {
       if (ch === '(') resolveParenDepth += 1;
       else if (ch === ')') resolveParenDepth -= 1;
@@ -346,7 +339,7 @@ export function preprocessRunJsTemplates(
     }
 
     if (processBarePlaceholders) {
-      // Bare {{ ... }} placeholders -> runtime await resolveJsonTemplate("{{...}}")
+      // 裸的 {{ ... }} 占位符 -> 运行时 await resolveJsonTemplate("{{...}}")
       if (ch === '{' && next === '{') {
         const end = code.indexOf('}}', i + 2);
         if (end !== -1) {
@@ -388,18 +381,18 @@ export function preprocessRunJsTemplates(
 }
 
 /**
- * Prepare user RunJS source code for execution.
- * - Optional runtime template compatibility rewrite
- * - JSX transform (sucrase) so RunJS can use JSX safely
+ * 为执行准备用户的 RunJS 源码。
+ * - 可选：运行时模板兼容重写
+ * - JSX 转换（sucrase），确保 RunJS 可以安全使用 JSX
  */
 export async function prepareRunJsCode(code: string, options: PrepareRunJsCodeOptions = {}): Promise<string> {
   const src = typeof code === 'string' ? code : String(code ?? '');
   if (!options.preprocessTemplates) return await compileRunJs(src);
 
-  // Phase 1: only rewrite *bare* {{ ... }} placeholders to keep code parsable (esp. before JSX transform).
+  // 阶段 1：仅重写“裸”的 {{ ... }} 占位符，保持代码可解析（尤其是在 JSX 转换前）。
   const preBare = preprocessRunJsTemplates(src, { processStringLiterals: false });
-  // Phase 2: JSX -> JS.
+  // 阶段 2：JSX -> JS。
   const jsxCompiled = await compileRunJs(preBare);
-  // Phase 3: rewrite string/template literals on plain JS output (avoid breaking JSX attribute syntax).
+  // 阶段 3：对纯 JS 输出重写字符串/模板字面量（避免破坏 JSX 属性语法）。
   return preprocessRunJsTemplates(jsxCompiled, { processBarePlaceholders: false });
 }
