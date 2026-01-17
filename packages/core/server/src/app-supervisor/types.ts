@@ -120,6 +120,7 @@ export interface AppDiscoveryAdapter {
    * Persist an application's lifecycle status back to the discovery backend.
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
+  clearAppStatus?(appName: string): void | Promise<void>;
 
   loadAppModels?(mainApp: Application): Promise<void>;
   getAppsStatuses?(appNames?: string[]): Promise<AppStatusesResult> | AppStatusesResult;

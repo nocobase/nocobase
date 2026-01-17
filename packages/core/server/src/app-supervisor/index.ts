@@ -350,7 +350,15 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async setAppStatus(appName: string, status: AppStatus, options = {}) {
+    this.logger.debug('Setting app status', { appName, status });
     return this.discoveryAdapter.setAppStatus(appName, status, options);
+  }
+
+  async clearAppStatus(appName: string) {
+    if (typeof this.discoveryAdapter.clearAppStatus !== 'function') {
+      return;
+    }
+    return this.discoveryAdapter.clearAppStatus(appName);
   }
 
   async getAppsStatuses(appNames?: string[]) {
@@ -692,7 +700,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       delete this.lastMaintainingMessage[app.name];
       delete this.statusBeforeCommanding[app.name];
       this.lastSeenAt.delete(app.name);
-      await this.setAppStatus(app.name, 'stopped');
+      await this.clearAppStatus(app.name);
     });
 
     app.on('maintainingMessageChanged', async ({ message, maintainingStatus }) => {
