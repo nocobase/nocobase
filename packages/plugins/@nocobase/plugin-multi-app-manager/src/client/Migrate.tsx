@@ -96,13 +96,14 @@ const MigrateModal: React.FC<{
 export const Migrate: React.FC = () => {
   const { t } = usePluginUtils();
   const api = useAPIClient();
-  const { state, setState } = useResourceActionContext();
+  const { state } = useResourceActionContext();
   const [open, setOpen] = useState(false);
 
   const { loading, data } = useRequest<{
     enabled: boolean;
   }>(() =>
     api
+      .silent()
       .resource('pm')
       .get({
         filterByTk: 'app-supervisor',
