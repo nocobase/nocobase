@@ -40,8 +40,11 @@ const PopoverComponent = React.forwardRef<any, any>(({ afterClose, content, plac
       destroyTooltipOnHide
       content={config.content}
       placement={config.placement}
-      getPopupContainer={() => document.body}
+      getPopupContainer={() => document.querySelector('#nocobase-app-container') || document.body}
       onOpenChange={(nextOpen) => {
+        if (!nextOpen && config.preventClose) {
+          return;
+        }
         setVisible(nextOpen);
         if (!nextOpen) {
           afterClose?.();

@@ -15,7 +15,7 @@ AI 员工是 NocoBase 的内置插件 (`@nocobase/plugin-ai`)，开箱即用，�
 
 在使用 AI 员工之前，需要先接入在线 LLM 服务。
 
-NocoBase 目前支持主流的在线 LLM 服务，如 OpenAI, Gemini, Claude, DeepSeek, Qwen（阿里千问）等。推荐使用模型（已验证）：**gemini-2.5**、**deepseek-chat**、**qwen3-max**。
+NocoBase 目前支持主流的在线 LLM 服务，如 OpenAI, Gemini, Claude, DeepSeek, Qwen（阿里千问）等。推荐使用模型（已验证）：**gemini-3**、**deepseek-chat**、**qwen3-max**。
 
 除了在线 LLM 服务，NocoBase 也支持 Ollama 本地模型的接入。
 
@@ -33,7 +33,7 @@ NocoBase 目前支持主流的在线 LLM 服务，如 OpenAI, Gemini, Claude, De
 NocoBase 预置了多个开箱即用的 AI 员工，覆盖常见场景。
 1.  进入 **系统设置** -> **AI 员工** 列表页。
 2.  找到你需要的 **AI 员工**，例如 **Viz (洞察分析师)**。
-3.  点击 **编辑**，在 **LLM 设置** 中选择刚才配置的模型服务商 (LLM Service) 和 模型 (Model)，推荐使用：**gemini-2.5**、**deepseek-chat**、**qwen3-max**
+3.  点击 **编辑**，在 **LLM 设置** 中选择刚才配置的模型服务商 (LLM Service) 和 模型 (Model)，推荐使用：**gemini-3**、**deepseek-chat**、**qwen3-max**
 4.  在员工资料 (Profile) 中点击 **启用 (Enabled)** 开关。
 5.  点击底部 **提交** 保存即可生效。
 

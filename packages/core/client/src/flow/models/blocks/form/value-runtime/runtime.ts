@@ -124,7 +124,15 @@ export class FormValueRuntime {
   }
 
   private getFormValueAtPath(namePath: NamePath) {
-    return this.getForm().getFieldValue(namePath);
+    const form: any = this.getForm?.();
+    if (form && typeof form.getFieldValue === 'function') {
+      return form.getFieldValue(namePath as any);
+    }
+    if (form && typeof form.getFieldsValue === 'function') {
+      const snapshot = form.getFieldsValue(true);
+      return _.get(snapshot, namePath as any);
+    }
+    return undefined;
   }
 
   mount(options?: { sync?: boolean }) {

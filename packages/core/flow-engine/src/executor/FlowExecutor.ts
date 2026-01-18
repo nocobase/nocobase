@@ -17,9 +17,19 @@ import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 import { createEphemeralContext } from '../utils/createEphemeralContext';
+import type { ScheduledCancel } from '../scheduler/ModelOperationScheduler';
 
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
+
+  private async emitModelEventIf(
+    eventName: string | undefined,
+    topic: string,
+    payload: Record<string, any>,
+  ): Promise<void> {
+    if (!eventName) return;
+    await this.engine.emitter.emitAsync(`model:event:${eventName}:${topic}`, payload);
+  }
 
   /** Cache wrapper for applyFlow cache lifecycle */
   private async withApplyFlowCache<T>(cacheKey: string | null, executor: () => Promise<T>): Promise<T> {
@@ -57,7 +67,13 @@ export class FlowExecutor {
   /**
    * Execute a single flow on model.
    */
-  async runFlow(model: FlowModel, flowKey: string, inputArgs?: Record<string, any>, runId?: string): Promise<any> {
+  async runFlow(
+    model: FlowModel,
+    flowKey: string,
+    inputArgs?: Record<string, any>,
+    runId?: string,
+    eventName?: string,
+  ): Promise<any> {
     const flow = model.getFlow(flowKey);
 
     if (!flow) {
@@ -98,6 +114,16 @@ export class FlowExecutor {
     // Setup steps meta and runtime mapping
     setupRuntimeContextSteps(flowContext, stepDefs, model, flowKey);
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
+
+    const flowEventBasePayload = {
+      uid: model.uid,
+      model,
+      runId: flowContext.runId,
+      inputArgs,
+      flowKey,
+    };
+
+    await this.emitModelEventIf(eventName, `flow:${flowKey}:start`, flowEventBasePayload);
 
     for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
       // Resolve handler and params
@@ -156,6 +182,11 @@ export class FlowExecutor {
           );
           continue;
         }
+
+        await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:start`, {
+          ...flowEventBasePayload,
+          stepKey,
+        });
         const currentStepResult = handler(runtimeCtx, combinedParams);
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
@@ -163,15 +194,47 @@ export class FlowExecutor {
         // Store step result and update context
         stepResults[stepKey] = lastResult;
         stepsRuntime[stepKey].result = stepResults[stepKey];
+        await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
+          ...flowEventBasePayload,
+          result: lastResult,
+          stepKey,
+        });
       } catch (error) {
+        if (!(error instanceof FlowExitException) && !(error instanceof FlowExitAllException)) {
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:error`, {
+            ...flowEventBasePayload,
+            error,
+            stepKey,
+          });
+        }
         if (error instanceof FlowExitException) {
           flowContext.logger.info(`[FlowEngine] ${error.message}`);
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
+            ...flowEventBasePayload,
+            stepKey,
+          });
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
+            ...flowEventBasePayload,
+            result: stepResults,
+          });
           return Promise.resolve(stepResults);
         }
         if (error instanceof FlowExitAllException) {
           flowContext.logger.info(`[FlowEngine] ${error.message}`);
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
+            ...flowEventBasePayload,
+            stepKey,
+          });
+          await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
+            ...flowEventBasePayload,
+            result: error,
+          });
           return Promise.resolve(error);
         }
+        await this.emitModelEventIf(eventName, `flow:${flowKey}:error`, {
+          ...flowEventBasePayload,
+          error,
+        });
         flowContext.logger.error(
           { err: error },
           `BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`,
@@ -179,10 +242,12 @@ export class FlowExecutor {
         return Promise.reject(error);
       }
     }
+    await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
+      ...flowEventBasePayload,
+      result: stepResults,
+    });
     return Promise.resolve(stepResults);
   }
-
-  // runAutoFlows 已移除：统一通过 dispatchEvent('beforeRender') + useCache 控制
 
   /**
    * Dispatch an event to flows bound via flow.on and execute them.
@@ -202,14 +267,15 @@ export class FlowExecutor {
 
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
+    const eventBasePayload = {
+      uid: model.uid,
+      model,
+      runId,
+      inputArgs,
+    };
 
     try {
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
-        uid: model.uid,
-        model,
-        runId,
-        inputArgs,
-      });
+      await this.emitModelEventIf(eventName, 'start', eventBasePayload);
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -237,11 +303,25 @@ export class FlowExecutor {
           return false;
         });
 
+    // 路由系统的“重放打开视图”会再次 dispatchEvent('click')，但这不应重复触发用户配置的动态事件流。
+    // 约定：由路由重放触发时，会在 inputArgs 中携带 triggerByRouter: true
+    const isRouterReplayClick = eventName === 'click' && inputArgs?.triggerByRouter === true;
+    const flowsToRun = isRouterReplayClick
+      ? flows.filter((flow) => {
+          const reg = flow['flowRegistry'] as any;
+          const type = reg?.constructor?._type as 'instance' | 'global' | undefined;
+          return type !== 'instance';
+        })
+      : flows;
+
+    // 记录本次 dispatchEvent 内注册的调度任务，用于在结束/错误后兜底清理未触发的任务
+    const scheduledCancels: ScheduledCancel[] = [];
+
     // 组装执行函数（返回值用于缓存；beforeRender 返回 results:any[]，其它返回 true）
     const execute = async () => {
       if (sequential) {
         // 顺序执行：动态流（实例级）优先，其次静态流；各自组内再按 sort 升序，最后保持原始顺序稳定
-        const flowsWithIndex = flows.map((f, i) => ({ f, i }));
+        const flowsWithIndex = flowsToRun.map((f, i) => ({ f, i }));
         const ordered = flowsWithIndex
           .slice()
           .sort((a, b) => {
@@ -259,12 +339,103 @@ export class FlowExecutor {
           })
           .map((x) => x.f);
         const results: any[] = [];
+
+        // 预处理：当事件流配置了 on.phase 时，将其执行移动到指定节点，并从“立即执行列表”中移除
+        const staticFlowsByKey = new Map(
+          ordered
+            .filter((f) => {
+              const reg = f['flowRegistry'] as any;
+              const type = reg?.constructor?._type as 'instance' | 'global' | undefined;
+              return type !== 'instance';
+            })
+            .map((f) => [f.key, f] as const),
+        );
+        const scheduled = new Set<string>();
+        const scheduleGroups = new Map<string, Array<{ flow: any; order: number }>>();
+        ordered.forEach((flow, indexInOrdered) => {
+          const on = flow.on;
+          const onObj = typeof on === 'object' ? (on as any) : undefined;
+          if (!onObj) return;
+
+          const phase: any = onObj.phase;
+          const flowKey: any = onObj.flowKey;
+          const stepKey: any = onObj.stepKey;
+
+          // 默认：beforeAllFlows（保持现有行为）
+          if (!phase || phase === 'beforeAllFlows') return;
+
+          let whenKey: string | null = null;
+          if (phase === 'afterAllFlows') {
+            whenKey = `event:${eventName}:end`;
+          } else if (phase === 'beforeFlow' || phase === 'afterFlow') {
+            if (!flowKey) {
+              // 配置不完整：降级到“全部静态流之后”
+              whenKey = `event:${eventName}:end`;
+            } else {
+              const anchorFlow = staticFlowsByKey.get(String(flowKey));
+              if (anchorFlow) {
+                const anchorPhase = phase === 'beforeFlow' ? 'start' : 'end';
+                whenKey = `event:${eventName}:flow:${String(flowKey)}:${anchorPhase}`;
+              } else {
+                // 锚点不存在（flow 被删除或覆盖等）：降级到“全部静态流之后”
+                whenKey = `event:${eventName}:end`;
+              }
+            }
+          } else if (phase === 'beforeStep' || phase === 'afterStep') {
+            if (!flowKey || !stepKey) {
+              // 配置不完整：降级到“全部静态流之后”
+              whenKey = `event:${eventName}:end`;
+            } else {
+              const anchorFlow = staticFlowsByKey.get(String(flowKey));
+              const anchorStepExists = !!anchorFlow?.hasStep?.(String(stepKey));
+              if (anchorFlow && anchorStepExists) {
+                const anchorPhase = phase === 'beforeStep' ? 'start' : 'end';
+                whenKey = `event:${eventName}:flow:${String(flowKey)}:step:${String(stepKey)}:${anchorPhase}`;
+              } else {
+                // 锚点不存在（flow/step 被删除或覆盖等）：降级到“全部静态流之后”
+                whenKey = `event:${eventName}:end`;
+              }
+            }
+          } else {
+            // 未知 phase：忽略
+            return;
+          }
+
+          if (!whenKey) return;
+          scheduled.add(flow.key);
+          const list = scheduleGroups.get(whenKey) || [];
+          list.push({ flow, order: indexInOrdered });
+          scheduleGroups.set(whenKey, list);
+        });
+
+        // 注册调度（同锚点按 flow.sort 升序；sort 相同保持稳定顺序）
+        for (const [whenKey, list] of scheduleGroups.entries()) {
+          const sorted = list.slice().sort((a, b) => {
+            const sa = a.flow.sort ?? 0;
+            const sb = b.flow.sort ?? 0;
+            if (sa !== sb) return sa - sb;
+            return a.order - b.order;
+          });
+          for (const it of sorted) {
+            const cancel = model.scheduleModelOperation(
+              model.uid,
+              async (m) => {
+                const res = await this.runFlow(m, it.flow.key, inputArgs, runId, eventName);
+                results.push(res);
+              },
+              { when: whenKey as any },
+            );
+            scheduledCancels.push(cancel);
+          }
+        }
+
         for (const flow of ordered) {
+          if (scheduled.has(flow.key)) continue;
           try {
             logger.debug(
               `BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}' (sequential).`,
             );
-            const result = await this.runFlow(model, flow.key, inputArgs, runId);
+            const result = await this.runFlow(model, flow.key, inputArgs, runId, eventName);
             if (result instanceof FlowExitAllException) {
               logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
               break; // 终止后续
@@ -283,10 +454,10 @@ export class FlowExecutor {
 
       // 并行
       const results = await Promise.all(
-        flows.map(async (flow) => {
+        flowsToRun.map(async (flow) => {
           logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
           try {
-            return await this.runFlow(model, flow.key, inputArgs, runId);
+            return await this.runFlow(model, flow.key, inputArgs, runId, eventName);
           } catch (error) {
             logger.error(
               { err: error },
@@ -318,11 +489,8 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
-        uid: model.uid,
-        model,
-        runId,
-        inputArgs,
+      await this.emitModelEventIf(eventName, 'end', {
+        ...eventBasePayload,
         result,
       });
       return result;
@@ -337,14 +505,16 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
-        uid: model.uid,
-        model,
-        runId,
-        inputArgs,
+      await this.emitModelEventIf(eventName, 'error', {
+        ...eventBasePayload,
         error,
       });
       if (throwOnError) throw error;
+    } finally {
+      // 清理未触发的调度任务，避免跨事件/跨 runId 残留导致意外执行
+      for (const cancel of scheduledCancels) {
+        cancel();
+      }
     }
   }
 }

@@ -337,7 +337,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     disabled: disableAction,
     loading: loadingOfUseAction,
   } = useAction?.(actionCallback) || ({} as any);
-  const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
+  const disabled = form.disabled || field.data?.disabled || propsDisabled || disableAction;
   const buttonStyle = useMemo(() => {
     return {
       ...style,
@@ -591,7 +591,9 @@ const RenderButton = ({
         }
       };
       if (d.confirmEnable !== false && d.confirmContent) {
-        await form?.submit?.();
+        if (!fieldSchema?.['x-action-settings']?.skipValidator) {
+          await form?.submit?.();
+        }
         d.modal.confirm({
           title: d.t(resultTitle, { title: d.confirmTitleProp || d.title || d.field?.title }),
           content: d.t(resultContent, { title: d.confirmTitleProp || d.title || d.field?.title }),

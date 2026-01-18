@@ -348,6 +348,56 @@ export const useRichTextStyles = () => {
     ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='huge']::before": {
       fontSize: '32px',
     },
+
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='12px']::before": {
+      content: "'12px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='14px']::before": {
+      content: "'14px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='16px']::before": {
+      content: "'16px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='18px']::before": {
+      content: "'18px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='20px']::before": {
+      content: "'20px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='24px']::before": {
+      content: "'24px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='32px']::before": {
+      content: "'32px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-item[data-value='48px']::before": {
+      content: "'48px'",
+    },
+
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='12px']::before": {
+      content: "'12px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='14px']::before": {
+      content: "'14px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='16px']::before": {
+      content: "'16px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='18px']::before": {
+      content: "'18px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='20px']::before": {
+      content: "'20px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='24px']::before": {
+      content: "'24px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='32px']::before": {
+      content: "'32px'",
+    },
+    ".ql-snow .ql-picker.ql-size .ql-picker-label[data-value='48px']::before": {
+      content: "'48px'",
+    },
     '.ql-snow .ql-color-picker.ql-background .ql-picker-item': {
       backgroundColor: '#fff',
     },
@@ -435,6 +485,9 @@ export const useRichTextStyles = () => {
       border: `1px solid ${token.colorBorder}`,
       borderBottomLeftRadius: '2px',
       borderBottomRightRadius: '2px',
+    },
+    '.ql-container p': {
+      marginBlockEnd: '1em',
     },
   });
 };

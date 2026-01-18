@@ -56,7 +56,7 @@
   "Collection event": "数据表事件",
   "Collection operations": "数据表操作",
   "Completed": "已完成",
-  "Concat": "连接",
+  "Concatenate": "连接",
   "Condition": "条件判断",
   "Condition expression": "条件表达式",
   "Condition label": "条件名称",
@@ -120,7 +120,7 @@
   "Hours": "小时",
   "If checked, all nodes in-progress could continue to be processed in execution of disabled workflow. Otherwise, all nodes in-progress will be aborted automatically.": "如果选中，在途的节点在禁用或升级到新版本的工作流中将继续处理。否则将自动取消执行。",
   "If checked, when there are multiple records in the query result, an array will be returned as the result, which can be operated on one by one using a loop node. Otherwise, only one record will be returned.": "选中后，当查询结果有多条记录时，会返回数组作为结果，可以使用循环节点对它逐条操作；否则，仅返回一条数据。",
-  "If the number of loop calls is too large, there will be performance issues.": "If the number of loop calls is too large, there will be performance issues.",
+  "Input workflow result": "请输入工作流执行结果",
   "Inside of \"No\" branch": "“否”分支内",
   "Inside of \"Yes\" branch": "“是”分支内",
   "Inside of \"{{branchName}}\" branch": "“{{branchName}}”分支内",
@@ -161,6 +161,8 @@
   "Operations": "操作",
   "Operator": "运算符",
   "Otherwise": "否则",
+  "Output": "流程输出",
+  "Output value": "结果值",
   "Pending": "待处理",
   "Please add at least one condition": "请添加至少一个条件",
   "Please select collection first": "请先选择数据表",
@@ -186,6 +188,7 @@
   "Select context": "选择上下文",
   "Select users": "选择用户",
   "Select workflow": "选择工作流",
+  "Set output data of this workflow. When this one is executed as a subflow, the output could be used as variables in downstream nodes of super workflow. You can also use this node in an AI employee workflow, to define what to output. If this node is added multiple times, the value of the last executed node prevails.": "设置工作流的输出数据。在作为子流程执行后可以被上级流程后续节点使用。你也可以在 AI 员工工作流中使用此节点，来定义输出内容。如果多次添加此节点，则以最后一个被执行的节点的值为准。",
   "Single record": "单条数据",
   "Some node meets error.": "某个节点出错。",
   "Started and executing, maybe waiting for an async callback (manual, delay etc.).": "已开始执行，可能在等待异步回调（人工、延时等）。",
@@ -260,6 +263,5 @@
   "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "删除成功之前触发工作流（支持操作前事件）。",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "按钮点击后直接触发工作流，但不会保存数据。仅支持绑定“自定义操作事件”。",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的工作流会导致错误，请删除或检查提供该类型的插件。",
-  "Yes": "是",
-  "concat": "连接"
+  "Yes": "是"
 }

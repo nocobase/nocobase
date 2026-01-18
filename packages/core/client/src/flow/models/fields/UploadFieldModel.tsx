@@ -558,13 +558,23 @@ UploadFieldModel.registerFlow({
         };
         const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const parentIdForPicker = ctx.model.props?.sourceFieldModelUid || ctx.model.uid;
+        const quickEditPopover =
+          ctx.model.parent?.use === 'QuickEditFormModel' ? (ctx.model.parent as any)?.viewContainer : null;
+        quickEditPopover?.update?.({ preventClose: true });
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
           inheritContext: false,
           target: ctx.layoutContentElement,
+          onClose: () => {
+            // Defer restore to avoid the click that closes the popup also closing the popover.
+            setTimeout(() => {
+              quickEditPopover?.update?.({ preventClose: false });
+            }, 0);
+          },
           inputArgs: {
-            parentId: ctx.model.uid,
+            parentId: parentIdForPicker,
             scene: 'select',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,

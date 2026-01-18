@@ -24,11 +24,28 @@ export async function prefetchRecordsForResolve(
     const log = koaCtx.app?.logger?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' });
     const groupMap = new Map<
       string,
-      { dataSourceKey: string; collection: string; filterByTk: unknown; fields: Set<string>; appends: Set<string> }
+      {
+        dataSourceKey: string;
+        collection: string;
+        filterByTk: unknown;
+        fields: Set<string>;
+        appends: Set<string>;
+      }
     >();
 
-    const ensureGroup = (dataSourceKey: string, collection: string, filterByTk: unknown) => {
-      const groupKey = JSON.stringify({ ds: dataSourceKey, collection, tk: filterByTk });
+    const ensureGroup = (
+      dataSourceKey: string,
+      collection: string,
+      filterByTk: unknown,
+      opts?: { fields?: string[]; appends?: string[] },
+    ) => {
+      const groupKey = JSON.stringify({
+        ds: dataSourceKey,
+        collection,
+        tk: filterByTk,
+        f: Array.isArray(opts?.fields) ? [...opts.fields].sort() : undefined,
+        a: Array.isArray(opts?.appends) ? [...opts.appends].sort() : undefined,
+      });
       let group = groupMap.get(groupKey);
       if (!group) {
         group = { dataSourceKey, collection, filterByTk, fields: new Set<string>(), appends: new Set<string>() };
@@ -62,7 +79,23 @@ export async function prefetchRecordsForResolve(
         const collection = (recordParams as any)?.collection;
         const filterByTk = (recordParams as any)?.filterByTk;
         if (!collection || typeof filterByTk === 'undefined') continue;
-        const group = ensureGroup(dataSourceKey, collection, filterByTk);
+        const explicitFields = (recordParams as any)?.fields as string[] | undefined;
+        const explicitAppends = (recordParams as any)?.appends as string[] | undefined;
+        const hasExplicit = Array.isArray(explicitFields) || Array.isArray(explicitAppends);
+        const group = ensureGroup(dataSourceKey, collection, filterByTk, {
+          fields: hasExplicit ? explicitFields : undefined,
+          appends: hasExplicit ? explicitAppends : undefined,
+        });
+
+        // 若显式传入了 fields/appends，则认为 selects 被“锁定”，不再基于模板 usage 扩展，
+        // 避免在同一批解析中预取超出选择范围的字段，导致占位符被意外解析/覆盖。
+        if (hasExplicit) {
+          const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, explicitFields, explicitAppends);
+          fixed.fields?.forEach((f) => group.fields.add(f));
+          fixed.appends?.forEach((a) => group.appends.add(a));
+          continue;
+        }
+
         let { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
         const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, generatedFields, generatedAppends);
         generatedFields = fixed.fields;
