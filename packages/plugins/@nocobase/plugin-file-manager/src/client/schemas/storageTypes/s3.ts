@@ -50,6 +50,28 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
+        documentUrlType: {
+          title: `{{t("Full upload address format", { ns: "${NAMESPACE}" })}}`,
+          type: 'string',
+          default: 'ignoreBucket',
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          'x-component-props': {
+            direction: 'vertical',
+          },
+          enum: [
+            { label: `{{t("Ignore Bucket (Default)", { ns: "${NAMESPACE}" })}}`, value: 'ignoreBucket' },
+            { label: `{{t("Bucket as Sub-path", { ns: "${NAMESPACE}" })}}`, value: 'bucketAsSubPath' },
+          ],
+          'x-reactions': {
+            dependencies: ['options.bucket', 'baseUrl'],
+            fulfill: {
+              state: {
+                description: `{{ ($deps[1] || "").replace(/\\/+$/, "") + ($self.value === "bucketAsSubPath" ? "/" + ($deps[0] || "bucket") : "") + "/<object-key>" }}`,
+              },
+            },
+          },
+        },
         endpoint: {
           title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
           type: 'string',

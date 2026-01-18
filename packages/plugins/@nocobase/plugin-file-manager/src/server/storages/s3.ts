@@ -151,6 +151,31 @@ export default class extends StorageType {
     };
   }
 
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    if (file.url && isURL(file.url)) {
+      return super.getFileURL(file, preview);
+    }
+
+    const { bucket, endpoint, documentUrlType } = this.storage.options;
+
+    let bucketInPath;
+    if (documentUrlType === 'bucketAsSubPath') {
+      const baseUrlHasBucket =
+        endpoint && this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
+      bucketInPath = endpoint && !baseUrlHasBucket ? bucket : undefined;
+    }
+
+    const keys = [
+      this.storage.baseUrl,
+      bucketInPath,
+      file.path && encodeURI(file.path),
+      ensureUrlEncoded(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+
+    return urlJoin(keys);
+  }
+
   async deleteS3Objects(bucketName: string, objects: string[]) {
     const Deleted = [];
     for (const Key of objects) {
