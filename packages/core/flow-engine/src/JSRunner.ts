@@ -13,6 +13,12 @@ export interface JSRunnerOptions {
   timeoutMs?: number;
   globals?: Record<string, any>;
   version?: string;
+  /**
+   * Enable RunJS template compatibility preprocessing for `{{ ... }}`.
+   * When enabled via `ctx.runjs(code, vars, { preprocessTemplates: true })` (default),
+   * the code will be rewritten to call `ctx.resolveJsonTemplate(...)` at runtime.
+   */
+  preprocessTemplates?: boolean;
 }
 
 export class JSRunner {
@@ -55,7 +61,8 @@ export class JSRunner {
     error?: any;
     timeout?: boolean;
   }> {
-    if (location?.search.includes('skipRunJs=true')) {
+    const search = typeof location !== 'undefined' ? location.search : undefined;
+    if (typeof search === 'string' && search.includes('skipRunJs=true')) {
       return { success: true, value: null };
     }
     const wrapped = `(async () => {
