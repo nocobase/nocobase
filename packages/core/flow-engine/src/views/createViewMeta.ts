@@ -173,20 +173,16 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
     // 优先根据 popup.runtime.resource.collectionName 推断集合：
     // - 适用于非路由弹窗（无 navigation.viewStack）但传入了 collectionName 的场景（如 record picker/quick create）
     // - 即使缺少 filterByTk，也能加载字段树，避免变量面板中 record 节点变成叶子 “record”
-    try {
-      if (view && isPopupView(view)) {
-        const runtime = await buildPopupRuntime(ctx, view);
-        const res = runtime?.resource;
-        const dataSourceKey = res?.dataSourceKey || view?.inputArgs?.dataSourceKey || 'main';
-        const collectionName = res?.collectionName || view?.inputArgs?.collectionName;
-        if (collectionName) {
-          const ds = ctx.dataSourceManager?.getDataSource?.(dataSourceKey);
-          const col = ds?.collectionManager?.getCollection?.(collectionName) || null;
-          if (col) return col;
-        }
+    if (view && isPopupView(view)) {
+      const runtime = await buildPopupRuntime(ctx, view);
+      const res = runtime?.resource;
+      const dataSourceKey = res?.dataSourceKey || view?.inputArgs?.dataSourceKey || 'main';
+      const collectionName = res?.collectionName || view?.inputArgs?.collectionName;
+      if (collectionName) {
+        const ds = ctx.dataSourceManager?.getDataSource?.(dataSourceKey);
+        const col = ds?.collectionManager?.getCollection?.(collectionName) || null;
+        if (col) return col;
       }
-    } catch (err) {
-      ctx.logger?.debug?.({ err }, '[FlowEngine] popup.getCurrentCollection: resolve from runtime failed');
     }
 
     // 兜底：回退到 recordRef 推断（要求 filterByTk 存在）

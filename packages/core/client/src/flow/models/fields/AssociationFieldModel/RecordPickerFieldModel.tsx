@@ -22,7 +22,7 @@ import { Button, Select, Tooltip, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
-import { LabelByField } from './recordSelectShared';
+import { buildOpenerUids, LabelByField } from './recordSelectShared';
 
 function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
@@ -304,21 +304,10 @@ RecordPickerFieldModel.registerFlow({
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
         const sourceCollection = ctx.collectionField?.collection;
-        const sourceRecord = (ctx as any)?.currentObject || (ctx as any)?.record;
-        const sourceId =
-          sourceRecord && sourceCollection?.filterTargetKey
-            ? sourceRecord?.[sourceCollection.filterTargetKey]
-            : undefined;
+        const sourceRecord = ctx.currentObject || ctx.record;
+        const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
         const associationName = ctx.collectionField?.resourceName;
-        const parentOpenerUids =
-          (ctx.view?.inputArgs?.openerUids as string[] | undefined) ||
-          (ctx.inputArgs?.openerUids as string[] | undefined) ||
-          [];
-        const openerUid =
-          (ctx.view?.inputArgs?.viewUid as string | undefined) ||
-          (ctx.model.context?.inputArgs?.viewUid as string | undefined) ||
-          ctx.model.uid;
-        const openerUids = Array.from(new Set([...parentOpenerUids, openerUid].filter(Boolean)));
+        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],

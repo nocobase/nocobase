@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createCurrentRecordMetaFactory, FlowModel, useFlowModel } from '@nocobase/flow-engine';
+import {
+  createCurrentRecordMetaFactory,
+  FlowModel,
+  useFlowModel,
+  type FlowRuntimeContext,
+} from '@nocobase/flow-engine';
 import type { SelectProps } from 'antd';
 import React from 'react';
 import { omit } from 'lodash';
@@ -19,6 +24,39 @@ export interface AssociationFieldNames {
 
 export type AssociationOption = Record<string, any>;
 export type PopupScrollEvent = Parameters<NonNullable<SelectProps<any>['onPopupScroll']>>[0];
+
+function readStringArray(val: unknown, name: string): string[] | undefined {
+  if (typeof val === 'undefined' || val === null) return undefined;
+  if (!Array.isArray(val)) {
+    throw new TypeError(`[FlowEngine] ${name} must be an array`);
+  }
+  for (const item of val) {
+    if (typeof item !== 'string') {
+      throw new TypeError(`[FlowEngine] ${name} must be string[]`);
+    }
+  }
+  return val as string[];
+}
+
+export function buildOpenerUids(ctx: FlowRuntimeContext, inputArgs: Record<string, unknown> = {}): string[] {
+  // Keep consistent with `packages/core/client/src/flow/actions/openView.tsx`
+  const isRouteManaged = !!(inputArgs as { navigation?: unknown }).navigation;
+  const viewOpenerUids = readStringArray(ctx.view?.inputArgs?.openerUids, 'view.inputArgs.openerUids');
+  const inputOpenerUids = readStringArray(inputArgs.openerUids, 'inputArgs.openerUids');
+  const parentOpenerUids = viewOpenerUids || inputOpenerUids || [];
+  if (isRouteManaged) {
+    return (inputOpenerUids || parentOpenerUids).filter(Boolean);
+  }
+  const viewUidFromView = (ctx.view?.inputArgs as { viewUid?: unknown } | undefined)?.viewUid;
+  const viewUidFromModel = (ctx.model.context?.inputArgs as { viewUid?: unknown } | undefined)?.viewUid;
+  const openerUid =
+    typeof viewUidFromView === 'string' && viewUidFromView
+      ? viewUidFromView
+      : typeof viewUidFromModel === 'string' && viewUidFromModel
+        ? viewUidFromModel
+        : ctx.model.uid;
+  return [...parentOpenerUids, openerUid].filter(Boolean);
+}
 
 export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'options' | 'value' | 'onChange'> {
   fieldNames: AssociationFieldNames;
