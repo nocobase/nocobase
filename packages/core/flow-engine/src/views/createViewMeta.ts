@@ -151,7 +151,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
 
   // 统一解析锚定视图下的 RecordRef，避免在设置弹窗等二级视图中被误导
   const resolveRecordRef = async (flowCtx: FlowContext): Promise<RecordRef | undefined> => {
-    const view = anchorView ?? (flowCtx.view as any);
+    const view = anchorView ?? flowCtx.view;
     if (!view || !isPopupView(view)) return undefined;
 
     const base = await buildPopupRuntime(flowCtx, view);
@@ -169,7 +169,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
   };
 
   const getCurrentCollection = async (): Promise<Collection | null> => {
-    const view = anchorView ?? (ctx.view as any);
+    const view = anchorView ?? ctx.view;
     // 优先根据 popup.runtime.resource.collectionName 推断集合：
     // - 适用于非路由弹窗（无 navigation.viewStack）但传入了 collectionName 的场景（如 record picker/quick create）
     // - 即使缺少 filterByTk，也能加载字段树，避免变量面板中 record 节点变成叶子 “record”

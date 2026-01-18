@@ -32,6 +32,7 @@ import {
   LabelByField,
   resolveOptions,
   toSelectValue,
+  type AssociationOption,
   type LazySelectProps,
 } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
@@ -207,7 +208,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         value={toSelectValue(value, fieldNames, isMultiple)}
         mode={isMultiple ? 'multiple' : undefined}
         onChange={(value, option) => {
-          onChange(option as any);
+          onChange(option as AssociationOption | AssociationOption[]);
         }}
         optionRender={({ data }) => {
           return <LabelByField option={data} fieldNames={fieldNames} />;
