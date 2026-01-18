@@ -97,6 +97,7 @@ export const RichTextField = (props) => {
         }
       }}
       readOnly={disabled}
+      bounds={'.quill'}
     />
   );
 };
