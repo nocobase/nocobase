@@ -1,11 +1,12 @@
-import { Plugin, SchemaComponent } from '@nocobase/client';
-import { mockApp } from '@nocobase/client/demo-utils';
 import {
+  Plugin,
+  SchemaComponent,
   MobileProviders,
   MobileTabBar,
   getMobileTabBarItemSchema,
   mobileTabBarLinkSettings,
-} from '@nocobase/plugin-mobile/client';
+} from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 
 import { schemaViewer } from './fixtures/schemaViewer';

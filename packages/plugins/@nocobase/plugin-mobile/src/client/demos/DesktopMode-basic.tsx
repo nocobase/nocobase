@@ -1,6 +1,4 @@
-import { ACLRolesCheckProvider, APIClientProvider, mockAPIClient, Plugin } from '@nocobase/client';
-import { DesktopMode } from '@nocobase/plugin-mobile/client';
-
+import { ACLRolesCheckProvider, APIClientProvider, mockAPIClient, Plugin, DesktopMode } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

@@ -1,6 +1,5 @@
 import React from 'react';
-import { BlockItem, Plugin, SchemaComponent } from '@nocobase/client';
-import { MobileTabBar, getMobileTabBarItemSchema } from '@nocobase/plugin-mobile/client';
+import { BlockItem, Plugin, SchemaComponent, MobileTabBar, getMobileTabBarItemSchema } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 import { schemaViewer } from './fixtures/schemaViewer';

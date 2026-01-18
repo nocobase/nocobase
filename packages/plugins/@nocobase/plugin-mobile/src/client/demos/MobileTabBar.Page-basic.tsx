@@ -1,6 +1,5 @@
 import React from 'react';
-import { Plugin } from '@nocobase/client';
-import { MobileTabBar } from '@nocobase/plugin-mobile/client';
+import { Plugin, MobileTabBar } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const Demo = () => {

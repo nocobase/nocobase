@@ -14,7 +14,7 @@ import {
   MobilePageHeader,
   MobilePageNavigationBar,
   MobilePageProvider,
-} from '@nocobase/plugin-mobile/client';
+} from '@nocobase/client';
 import { Tabs } from 'antd-mobile';
 import React, { useEffect } from 'react';
 import { useLocalTranslation } from '../../../locale';

@@ -71,6 +71,7 @@ export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
+export * from './mobile';
 export { getPageMenuSchema, useInsertPageSchema } from './modules/menu/PageMenuItem';
 export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModeProvider';
 export { PopupContextProvider } from './modules/popup/PopupContextProvider';

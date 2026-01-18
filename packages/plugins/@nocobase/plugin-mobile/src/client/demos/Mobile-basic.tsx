@@ -1,6 +1,6 @@
-import { Plugin } from '@nocobase/client';
+import { Mobile, Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import PluginMobileClient, { Mobile } from '@nocobase/plugin-mobile/client';
+import PluginMobileClient from '..';
 
 class DemoPlugin extends Plugin {
   async beforeLoad(): Promise<void> {

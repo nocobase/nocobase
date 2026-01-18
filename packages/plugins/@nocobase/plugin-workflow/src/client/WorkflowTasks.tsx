@@ -44,7 +44,7 @@ import {
   MobileTabBarItem,
   useMobilePage,
   useMobileRoutes,
-} from '@nocobase/plugin-mobile/client';
+} from '@nocobase/client';
 
 import PluginWorkflowClient from '.';
 import { lang, NAMESPACE } from './locale';

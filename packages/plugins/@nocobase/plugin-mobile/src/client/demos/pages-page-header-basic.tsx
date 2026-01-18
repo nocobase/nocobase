@@ -1,7 +1,7 @@
 /**
  * iframe: true
  */
-import { MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
+import { MobilePageHeader, MobilePageProvider } from '@nocobase/client';
 import React from 'react';
 
 const App = () => {

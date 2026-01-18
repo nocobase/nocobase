@@ -1,7 +1,12 @@
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
-import { MobilePageNavigationBar, MobilePageProvider, MobileTitleProvider } from '@nocobase/plugin-mobile/client';
+import {
+  SchemaComponent,
+  Plugin,
+  MobilePageNavigationBar,
+  MobilePageProvider,
+  MobileTitleProvider,
+} from '@nocobase/client';
 
 const schema = {
   type: 'void',

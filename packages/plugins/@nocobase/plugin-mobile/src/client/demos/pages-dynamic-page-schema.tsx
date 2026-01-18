@@ -1,6 +1,14 @@
-import { BlockItem, DndContext, Grid, Plugin, SchemaComponent } from '@nocobase/client';
+import {
+  BlockItem,
+  DndContext,
+  Grid,
+  Plugin,
+  SchemaComponent,
+  MobileProviders,
+  getMobilePageSchema,
+} from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import PluginMobileClient, { MobileProviders, getMobilePageSchema } from '@nocobase/plugin-mobile/client';
+import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import React from 'react';
 
 import { schemaViewer } from './fixtures/schemaViewer';

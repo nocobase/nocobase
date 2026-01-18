@@ -2,9 +2,8 @@
  * iframe: true
  * compact: true
  */
-import { Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { MobileProviders, MobileTabBar, mobileTabBarInitializer } from '@nocobase/plugin-mobile/client';
+import { Plugin, MobileProviders, MobileTabBar, mobileTabBarInitializer } from '@nocobase/client';
 import React from 'react';
 
 class DemoPlugin extends Plugin {
