@@ -17,7 +17,7 @@ import { revertSettingItem } from './settings/revertSetting';
 import { getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import PluginMobileClient from '@nocobase/client';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
 import {
   hideBlocksFromTemplate,

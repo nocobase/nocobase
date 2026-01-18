@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/client';
 import { MessageManagerProvider } from './MessageManagerProvider';
 import NotificationManager from '@nocobase/plugin-notification-manager/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
+import MobileManager from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
 import { MessageConfigForm } from './components/MessageConfigForm';
 import { ContentConfigForm } from './components/ContentConfigForm';

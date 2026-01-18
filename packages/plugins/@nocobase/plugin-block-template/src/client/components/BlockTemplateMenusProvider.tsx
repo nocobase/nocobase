@@ -19,7 +19,7 @@ import {
 } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import PluginBlockTemplateClient from '..';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import PluginMobileClient from '@nocobase/client';
 import { useT } from '../locale';
 import { findBlockRootSchema } from '../utils/schema';
 import { convertTemplateToBlock, correctIdReferences } from '../initializers/TemplateBlockInitializer';

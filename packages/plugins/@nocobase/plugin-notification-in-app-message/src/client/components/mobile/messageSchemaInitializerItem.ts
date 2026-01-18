@@ -9,7 +9,7 @@
 
 import { uid } from '@formily/shared';
 import { SchemaInitializerItemType } from '@nocobase/client';
-import { MobileRouteItem, useMobileRoutes } from '@nocobase/plugin-mobile/client';
+import { MobileRouteItem, useMobileRoutes } from '@nocobase/client';
 import { Toast } from 'antd-mobile';
 import { useLocalTranslation } from '../../../locale';
 export const messageSchemaInitializerItem: SchemaInitializerItemType = {

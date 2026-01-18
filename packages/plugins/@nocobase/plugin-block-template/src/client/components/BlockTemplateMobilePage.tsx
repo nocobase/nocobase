@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { MobilePage } from '@nocobase/plugin-mobile/client';
+import { MobilePage } from '@nocobase/client';
 import { useParams } from 'react-router-dom';
 import { useRequest } from '@nocobase/client';
 import { Spin } from 'antd';

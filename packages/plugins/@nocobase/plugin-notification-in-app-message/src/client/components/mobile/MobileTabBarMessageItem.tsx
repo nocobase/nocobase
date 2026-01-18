@@ -8,7 +8,7 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { MobileTabBarItem } from '@nocobase/plugin-mobile/client';
+import { MobileTabBarItem } from '@nocobase/client';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { unreadMsgsCountObs } from '../../observables';

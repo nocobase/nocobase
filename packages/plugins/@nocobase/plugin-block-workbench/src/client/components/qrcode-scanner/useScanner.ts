@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { useApp } from '@nocobase/client';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import PluginMobileClient from '@nocobase/client';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

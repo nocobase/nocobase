@@ -57,7 +57,7 @@ import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
-import { useMobilePage } from '@nocobase/plugin-mobile/client';
+import { useMobilePage } from '@nocobase/client';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();

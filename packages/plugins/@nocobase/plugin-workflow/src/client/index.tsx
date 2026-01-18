@@ -9,7 +9,7 @@
 
 import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
-import MobileManager from '@nocobase/plugin-mobile/client';
+import MobileManager from '@nocobase/client';
 
 // import { ExecutionPage } from './ExecutionPage';
 // import { WorkflowPage } from './WorkflowPage';
