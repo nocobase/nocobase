@@ -32,6 +32,7 @@ import {
   getDataSources,
   getWorkflowCallers,
   chartGenerator,
+  searchFieldMetadata,
 } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
@@ -143,6 +144,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: dataModelingIntentRouter,
+      },
+      {
+        groupName: dataModelingGroupName,
+        tool: searchFieldMetadata,
       },
       {
         groupName: dataModelingGroupName,

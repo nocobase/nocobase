@@ -17,7 +17,8 @@
     "@nocobase/plugin-data-source-manager": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/test": "2.x",
+    "@nocobase/ai": "2.x"
   },
   "devDependencies": {
     "@ant-design/x": "^1.1.0",
