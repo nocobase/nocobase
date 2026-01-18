@@ -1,5 +1,4 @@
-import { Plugin } from '@nocobase/client';
-import { MobileNotFoundPage } from '@nocobase/plugin-mobile/client';
+import { Plugin, MobileNotFoundPage } from '@nocobase/client';
 
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';

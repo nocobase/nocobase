@@ -15,10 +15,6 @@ import './js-bridge';
 import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
 import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
-// @ts-ignore
-import pkg from './../../package.json';
-
-export * from '@nocobase/client';
 
 export class PluginMobileClient extends CorePluginMobileClient {
   async load() {

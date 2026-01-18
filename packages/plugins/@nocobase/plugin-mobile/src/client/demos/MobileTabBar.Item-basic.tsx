@@ -1,5 +1,5 @@
 import React from 'react';
-import { MobileTabBar } from '@nocobase/plugin-mobile/client';
+import { MobileTabBar } from '@nocobase/client';
 
 const Demo = () => {
   return <MobileTabBar.Item title="Test"></MobileTabBar.Item>;

@@ -1,6 +1,4 @@
-import { Plugin } from '@nocobase/client';
-import { MobilePage } from '@nocobase/plugin-mobile/client';
-
+import { Plugin, MobilePage } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 class DemoPlugin extends Plugin {

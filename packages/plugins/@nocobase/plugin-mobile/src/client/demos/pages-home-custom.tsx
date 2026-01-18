@@ -1,9 +1,9 @@
 /**
  * iframe: true
  */
-import { Plugin } from '@nocobase/client';
+import { Plugin, Mobile } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import PluginMobileClient, { Mobile } from '@nocobase/plugin-mobile/client';
+import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import React from 'react';
 
 class DemoPlugin extends Plugin {

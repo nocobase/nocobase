@@ -1,7 +1,6 @@
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
-import { mobilePageSettings } from '@nocobase/plugin-mobile/client';
+import { SchemaComponent, Plugin, mobilePageSettings } from '@nocobase/client';
 
 import { schemaViewer } from './fixtures/schemaViewer';
 

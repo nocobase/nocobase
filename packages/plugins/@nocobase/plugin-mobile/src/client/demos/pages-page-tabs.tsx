@@ -1,12 +1,12 @@
-import { Plugin } from '@nocobase/client';
-import { mockApp } from '@nocobase/client/demo-utils';
 import {
+  Plugin,
   MobilePageNavigationBar,
   MobilePageProvider,
   MobilePageTabs,
   MobileRoutesProvider,
   MobileTitleProvider,
-} from '@nocobase/plugin-mobile/client';
+} from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 

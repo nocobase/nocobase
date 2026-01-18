@@ -1,11 +1,5 @@
-import { Plugin } from '@nocobase/client';
+import { Plugin, MobileRoutesProvider, MobileTitleProvider, useMobileRoutes, useMobileTitle } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import {
-  MobileRoutesProvider,
-  MobileTitleProvider,
-  useMobileRoutes,
-  useMobileTitle,
-} from '@nocobase/plugin-mobile/client';
 import React from 'react';
 
 const InnerPage = () => {
