@@ -23,6 +23,8 @@ import {
   FlowStepContext,
   isBeforeRenderFlow,
   observer,
+  GLOBAL_EMBED_CONTAINER_ID,
+  EMBED_REPLACING_DATA_KEY,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -91,9 +93,11 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const t = model.translate.bind(model);
 
   const handleClick = () => {
-    const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
+    const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
 
-    target.innerHTML = ''; // 清空容器内原有内容
+    if (!target) {
+      return;
+    }
 
     model.context.viewer.embed({
       type: 'embed',
@@ -102,10 +106,14 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
       onOpen() {
         target.style.width = '33.3%';
         target.style.maxWidth = '800px';
+        target.style.minWidth = '0px';
       },
       onClose() {
-        target.style.width = 'auto';
-        target.style.maxWidth = 'none';
+        if (target.dataset[EMBED_REPLACING_DATA_KEY] !== '1') {
+          target.style.width = 'auto';
+          target.style.maxWidth = 'none';
+          target.style.minWidth = 'auto';
+        }
       },
       content: <DynamicFlowsEditor model={model} />,
     });

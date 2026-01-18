@@ -13,7 +13,7 @@ import { render, act, waitFor, screen } from '@testing-library/react';
 import { FlowEngine } from '../../flowEngine';
 import { FlowEngineProvider } from '../../provider';
 import { FlowViewer } from '../FlowView';
-import { usePage } from '../usePage';
+import { usePage, GLOBAL_EMBED_CONTAINER_ID } from '../usePage';
 import { App, ConfigProvider } from 'antd';
 
 describe('FlowViewer zIndex with usePage', () => {
@@ -129,5 +129,58 @@ describe('FlowViewer zIndex with usePage', () => {
     });
 
     unmount();
+  });
+
+  it('replaces previous embed view when using global #nocobase-embed-container target', async () => {
+    let api: { open: (config: any, flowContext: any) => any } | undefined;
+
+    function TestApp({ onReady }: { onReady: (page: any) => void }) {
+      const [page, pageHolder] = usePage() as [{ open: (config: any, flowContext: any) => any }, React.ReactNode];
+
+      React.useEffect(() => {
+        onReady(page);
+      }, [page, onReady]);
+
+      return <>{pageHolder}</>;
+    }
+
+    const Wrapper: React.FC<{ onReady: (page: any) => void }> = ({ onReady }) => (
+      <ConfigProvider>
+        <App>
+          <FlowEngineProvider engine={engine}>
+            <TestApp onReady={onReady} />
+          </FlowEngineProvider>
+        </App>
+      </ConfigProvider>
+    );
+
+    const target = document.createElement('div');
+    target.id = GLOBAL_EMBED_CONTAINER_ID;
+    document.body.appendChild(target);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(page) => {
+          api = page;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(api).toBeDefined());
+
+    await act(async () => {
+      api!.open({ target, content: <div data-testid="page1">Page 1</div> }, engine.context);
+    });
+    await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
+
+    // Opening page2 into the global embed container should destroy page1 (replace behavior).
+    await act(async () => {
+      api!.open({ target, content: <div data-testid="page2">Page 2</div> }, engine.context);
+    });
+    await waitFor(() => expect(screen.getByTestId('page2')).toBeInTheDocument());
+    expect(screen.queryByTestId('page1')).not.toBeInTheDocument();
+
+    unmount();
+    document.body.removeChild(target);
   });
 });
