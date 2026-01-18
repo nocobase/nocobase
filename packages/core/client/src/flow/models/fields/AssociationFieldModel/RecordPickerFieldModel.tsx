@@ -303,6 +303,22 @@ RecordPickerFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const sourceCollection = ctx.collectionField?.collection;
+        const sourceRecord = (ctx as any)?.currentObject || (ctx as any)?.record;
+        const sourceId =
+          sourceRecord && sourceCollection?.filterTargetKey
+            ? sourceRecord?.[sourceCollection.filterTargetKey]
+            : undefined;
+        const associationName = ctx.collectionField?.resourceName;
+        const parentOpenerUids =
+          (ctx.view?.inputArgs?.openerUids as string[] | undefined) ||
+          (ctx.inputArgs?.openerUids as string[] | undefined) ||
+          [];
+        const openerUid =
+          (ctx.view?.inputArgs?.viewUid as string | undefined) ||
+          (ctx.model.context?.inputArgs?.viewUid as string | undefined) ||
+          ctx.model.uid;
+        const openerUids = Array.from(new Set([...parentOpenerUids, openerUid].filter(Boolean)));
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -313,7 +329,9 @@ RecordPickerFieldModel.registerFlow({
             scene: 'select',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
+            openerUids,
             rowSelectionProps: {
               type: toOne ? 'radio' : 'checkbox',
               defaultSelectedRows: () => {

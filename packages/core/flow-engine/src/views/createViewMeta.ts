@@ -142,7 +142,9 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
   const isPopupView = (view?: FlowView): boolean => {
     if (!view) return false;
     const stack = Array.isArray(view.navigation?.viewStack) ? view.navigation.viewStack : [];
-    return stack.length >= 2;
+    const openerUids = view?.inputArgs?.openerUids;
+    const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
+    return stack.length >= 2 || hasOpener;
   };
 
   const hasPopupNow = (): boolean => isPopupView(anchorView ?? ctx.view);
@@ -167,6 +169,27 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
   };
 
   const getCurrentCollection = async (): Promise<Collection | null> => {
+    const view = anchorView ?? (ctx.view as any);
+    // 优先根据 popup.runtime.resource.collectionName 推断集合：
+    // - 适用于非路由弹窗（无 navigation.viewStack）但传入了 collectionName 的场景（如 record picker/quick create）
+    // - 即使缺少 filterByTk，也能加载字段树，避免变量面板中 record 节点变成叶子 “record”
+    try {
+      if (view && isPopupView(view)) {
+        const runtime = await buildPopupRuntime(ctx, view);
+        const res = runtime?.resource;
+        const dataSourceKey = res?.dataSourceKey || view?.inputArgs?.dataSourceKey || 'main';
+        const collectionName = res?.collectionName || view?.inputArgs?.collectionName;
+        if (collectionName) {
+          const ds = ctx.dataSourceManager?.getDataSource?.(dataSourceKey);
+          const col = ds?.collectionManager?.getCollection?.(collectionName) || null;
+          if (col) return col;
+        }
+      }
+    } catch (err) {
+      ctx.logger?.debug?.({ err }, '[FlowEngine] popup.getCurrentCollection: resolve from runtime failed');
+    }
+
+    // 兜底：回退到 recordRef 推断（要求 filterByTk 存在）
     const ref = await resolveRecordRef(ctx);
     if (!ref?.collection) return null;
     const ds = ctx.dataSourceManager?.getDataSource?.(ref.dataSourceKey || 'main');
