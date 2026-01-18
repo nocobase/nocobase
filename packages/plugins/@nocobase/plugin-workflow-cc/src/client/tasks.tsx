@@ -35,12 +35,16 @@ import PluginWorkflowClient, {
   useAvailableUpstreams,
   usePopupRecordContext,
   useTasksCountsContext,
+  useTrigger,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
+import { FlowModel, FlowModelRenderer, useFlowEngine, useFlowViewContext } from '@nocobase/flow-engine';
 
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
 import { lang } from './locale';
+import { RemoteFlowModelRenderer } from './flow/RemoteFlowModelRenderer';
+import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
 
 function useDetailsBlockProps() {
   const { form } = useFormBlockContext();
@@ -113,6 +117,8 @@ function FlowContextProvider(props) {
   const [flowContext, setFlowContext] = useState<any>(null);
   const [record, setRecord] = useState<any>(useCollectionRecordData());
   const [node, setNode] = useState<any>(null);
+  const flowEngine = useFlowEngine();
+  const viewCtx = useFlowViewContext();
 
   useEffect(() => {
     if (!id) {
@@ -138,7 +144,42 @@ function FlowContextProvider(props) {
       });
   }, [api, id]);
 
-  const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
+  // V2: 使用 FlowModel 渲染
+  const ccUid = node?.config?.ccUid;
+  if (ccUid && node && flowContext) {
+    const trigger = workflowPlugin.triggers.get(flowContext.workflow.type);
+    const upstreams = flowContext.nodes.filter((item) => item.id !== node.id);
+
+    return (
+      <CollectionRecordProvider record={record}>
+        <FlowContext.Provider value={flowContext}>
+          <NodeContext.Provider value={node}>
+            <RemoteFlowModelRenderer
+              uid={ccUid}
+              onModelLoaded={(model) => {
+                model.context.defineProperty('flowSettingsEnabled', { value: false });
+                model.context.defineProperty('disableBlockGridPadding', { value: true });
+                model.context.defineProperty('view', {
+                  value: {
+                    inputArgs: {
+                      flowContext,
+                      availableUpstreams: upstreams,
+                      trigger,
+                      node,
+                    },
+                  },
+                });
+              }}
+            />
+          </NodeContext.Provider>
+        </FlowContext.Provider>
+      </CollectionRecordProvider>
+    );
+  }
+
+  // V1: 使用 RemoteSchemaComponent 渲染
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node?.id));
   const nodeComponents = upstreams.reduce(
     (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
     {},
@@ -327,9 +368,12 @@ function TaskItem() {
   const record = useCollectionRecordData();
   const navigate = useNavigate();
   const { setRecord } = usePopupRecordContext();
+  const flowEngine = useFlowEngine();
+  const viewCtx = useFlowViewContext();
+
   const onOpen = useCallback(
     (e: React.MouseEvent) => {
-      const targetElement = e.target as Element; // 将事件目标转换为Element类型
+      const targetElement = e.target as Element;
       const currentTargetElement = e.currentTarget as Element;
       if (currentTargetElement.contains(targetElement)) {
         setRecord(record);
@@ -340,6 +384,27 @@ function TaskItem() {
     [navigate, record, setRecord],
   );
 
+  // V2: 使用 FlowModel 任务卡片渲染
+  const taskCardUid = record.node?.config?.taskCardUid;
+  const onModelLoaded = useCallback(
+    (model: CCTaskCardDetailsModel) => {
+      model.setDecoratorProps({ onClick: onOpen, hoverable: true });
+      model.getCurrentRecord = () => record;
+      model.context.defineProperty('workflow', {
+        get: () => record.workflow,
+        cache: false,
+      });
+    },
+    [record, onOpen],
+  );
+
+  const mapModel = useCallback((model) => model.clone(), []);
+
+  if (taskCardUid) {
+    return <RemoteFlowModelRenderer uid={taskCardUid} onModelLoaded={onModelLoaded} mapModel={mapModel} />;
+  }
+
+  // V1: 使用默认 Card 渲染
   return (
     <Card
       onClick={onOpen}
@@ -375,13 +440,14 @@ function useTodoActionParams(status) {
     appends: [
       'node.id',
       'node.title',
+      'node.config',
       'workflow.id',
       'workflow.title',
       'workflow.enabled',
       'execution.id',
       'execution.status',
     ],
-    except: ['node.config', 'workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
+    except: ['workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
   };
 }
 
