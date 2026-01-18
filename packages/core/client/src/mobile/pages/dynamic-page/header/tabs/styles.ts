@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { genStyleHook } from '../../../schema-component/antd';
+import { genStyleHook } from '../../../../../schema-component';
 
 export const useStyles = genStyleHook('nb-mobile-tabs-for-mobile-action-page', (token) => {
   const { componentCls } = token;

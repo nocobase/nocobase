@@ -8,16 +8,7 @@
  */
 
 import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
-import {
-  Action,
-  FlagProvider,
-  NocoBaseRecursionField,
-  SchemaComponent,
-  useActionContext,
-  useGlobalTheme,
-  useZIndexContext,
-  zIndexContext,
-} from '../schema-component';
+import { Action, SchemaComponent, useActionContext, useZIndexContext, zIndexContext } from '../../schema-component';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
@@ -26,6 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { usePopupContainer } from './FilterAction';
 import { MIN_Z_INDEX_INCREMENT } from './zIndex';
+import { useGlobalTheme } from '../../global-theme';
+import { FlagProvider } from '../../flag-provider/FlagProvider';
+import { NocoBaseRecursionField } from '../../formily/NocoBaseRecursionField';
 
 export interface MobilePopupProps {
   title?: string;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer } from '../../../application';
+import { SchemaInitializer } from '../../../../../../application/schema-initializer/SchemaInitializer';
 import { mobileNavigationBarLinkInitializerItem } from './items';
 
 export const mobileNavigationBarActionsInitializer = new SchemaInitializer({

@@ -14,11 +14,12 @@ import React, { FC, useCallback } from 'react';
 import { useMobileRoutes } from '../mobile-providers';
 import { useStyles } from './mobile-tab-bar/styles';
 
-import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '../schema-component';
 import { isInnerLink } from '../utils';
 import { MobileTabBarInitializer } from './mobile-tab-bar/initializer';
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './mobile-tab-bar/MobileTabBar.Item';
 import { MobileTabBarLink, MobileTabBarPage } from './mobile-tab-bar/types';
+import { DndContext, DndContextProps, SchemaComponent, useDesignable } from '../../schema-component';
+import { cx } from '../..';
 
 export interface MobileTabBarProps {
   /**

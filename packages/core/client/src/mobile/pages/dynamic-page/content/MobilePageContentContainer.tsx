@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useToken } from '../../../schema-component';
 import _ from 'lodash';
 import React, { FC, useEffect } from 'react';
 import classnames from 'classnames';
-import { PageBackgroundColor } from '../../../mobile/constants';
+import { useToken } from '../../../../style/useToken';
+import { PageBackgroundColor } from '../../../constants';
 
 export const MobilePageContentContainer: FC<{
   hideTabBar?: boolean;

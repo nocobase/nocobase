@@ -11,14 +11,15 @@ import { Space, Tabs, TabsProps } from 'antd-mobile';
 import React, { FC, useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
-import { DndContext, DndContextProps, Icon, SortableItem, useCompile } from '../../../schema-component';
+import { DndContext, DndContextProps, SortableItem, useCompile } from '../../../../../schema-component';
 import { useTranslation } from 'react-i18next';
 import { useRouteTranslation } from '../../../../locale';
-import { useMobileRoutes } from '../../../mobile-providers';
-import { useMobilePage } from '../../dynamic-page/context';
+import { useMobileRoutes } from '../../../../mobile-providers';
+import { useMobilePage } from '../../../dynamic-page/context';
 import { MobilePageTabInitializer } from './initializer';
 import { MobilePageTabsSettings } from './settings';
 import { useStyles } from './styles';
+import { Icon } from '../../../../../icon';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();

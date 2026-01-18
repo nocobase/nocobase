@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient, LOADING_DELAY, useAPIClient, useRequest } from '../../api-client';
+import { APIClient, useAPIClient, useRequest } from '../../../api-client';
 import { Spin } from 'antd';
 import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -16,6 +16,7 @@ import type { IResource } from '@nocobase/sdk';
 
 import { useRouteTranslation } from '../../locale';
 import { useMobileTitle } from './MobileTitle';
+import { LOADING_DELAY } from '../../../variables/constants';
 
 export interface MobileRouteItem {
   id: number;

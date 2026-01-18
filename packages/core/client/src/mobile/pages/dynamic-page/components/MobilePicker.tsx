@@ -8,10 +8,10 @@
  */
 
 import { connect, mapProps } from '@formily/react';
-import { Select } from '../../../schema-component';
 import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Select } from '../../../../schema-component';
 
 const MobilePicker = connect(
   (props) => {
@@ -78,6 +78,7 @@ const MobilePicker = connect(
           >
             <CheckList
               multiple={['multiple', 'tags'].includes(mode)}
+              // @ts-ignore
               value={Array.isArray(selected) ? selected : [selected] || []}
               onChange={(val) => {
                 if (['multiple', 'tags'].includes(mode)) {

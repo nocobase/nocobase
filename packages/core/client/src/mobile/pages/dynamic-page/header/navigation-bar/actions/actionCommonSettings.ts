@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, createModalSettingsItem } from '../../../schema-component';
+import { createModalSettingsItem, ISchema } from '../../../../../../application';
 import { ActionColorSelect } from './ActionColorSelect';
 import { ActionFillSelect } from './ActionFillSelect';
 

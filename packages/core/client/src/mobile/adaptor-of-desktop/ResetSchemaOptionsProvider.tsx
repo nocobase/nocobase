@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponentOptions, useSchemaOptionsContext } from '../schema-component';
 import React, { FC, useMemo } from 'react';
 import { useGridCardBlockDecoratorProps } from './useGridCardBlockDecoratorProps';
+import { SchemaComponentOptions, useSchemaOptionsContext } from '../../schema-component';
 
 export const ResetSchemaOptionsProvider: FC = (props) => {
   const { scope: desktopScopes } = useSchemaOptionsContext();

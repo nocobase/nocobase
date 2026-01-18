@@ -11,22 +11,20 @@ import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@for
 import { autorun } from '@formily/reactive';
 import {
   inferPickerType,
-  isVariable,
   mapDatePicker,
   mapTimeFormat,
   DatePicker as NBDatePicker,
   TimePicker as NBTimePicker,
   useCompile,
   useDatePickerContext,
-  useLocalVariables,
-  useVariables,
-} from '../../../schema-component';
+} from '../../../../schema-component';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { Select, Space } from 'antd';
 import { DatePicker, Picker } from 'antd-mobile';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isVariable, useLocalVariables, useVariables } from '../../../../variables';
 
 function getPrecision(timeFormat: string): 'hour' | 'minute' | 'second' {
   const lowerFormat = timeFormat.toLowerCase();
@@ -254,7 +252,6 @@ const MobileDateFilterWithPicker = (props: any) => {
   return (
     <Space.Compact>
       <Select
-        role="button"
         data-testid="select-picker"
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}

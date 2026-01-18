@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer, useSchemaInitializerRender } from '../../application';
+import { SchemaInitializer, useSchemaInitializerRender } from '../../../application';
 import { mobileTabBarSchemaInitializerItem, mobileTabBarLinkInitializerItem } from './types';
 
 export const mobileTabBarInitializer = new SchemaInitializer({

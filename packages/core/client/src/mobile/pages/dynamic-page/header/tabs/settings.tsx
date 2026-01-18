@@ -7,20 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  createTextSettingsItem,
-  SchemaSettings,
-  SchemaSettingsItemType,
-  SchemaToolbar,
-  SchemaToolbarProvider,
-  useSchemaToolbar,
-} from '../../../schema-component';
 import { App } from 'antd';
 import React, { FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
+import { createTextSettingsItem } from '../../../../../application/schema-settings/utils/createTextSettingsItem';
+import { SchemaToolbarProvider, useSchemaToolbar } from '../../../../../application/schema-toolbar/context';
+import { SchemaSettingsItemType } from '../../../../../application/schema-settings/types';
+import { SchemaSettings } from '../../../../../application/schema-settings/SchemaSettings';
+import { SchemaToolbar } from '../../../../../schema-settings';
 
 const remove = createTextSettingsItem({
   name: 'remove',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PagePopups, Plugin, RouterManager, createRouterManager } from '../application';
+import { Plugin, RouterManager, createRouterManager } from '../application';
 import React from 'react';
 
 import { Outlet } from 'react-router-dom';
@@ -43,6 +43,7 @@ import { MobileComponentsProvider } from './MobileComponentsProvider';
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import { MenuPermissions, MobileAllRoutesProvider } from './MenuPermissions';
+import { PagePopups } from '../schema-component';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;

@@ -7,18 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ISchema,
-  SchemaInitializerItemActionModalType,
-  SchemaSettings,
-  SchemaSettingsActionLinkItem,
-  useSchemaInitializer,
-  useLinkActionProps,
-} from '../../../../schema-component';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { editAction } from '../actionCommonSettings';
 import { actionCommonInitializerSchema } from '../actionCommonInitializerSchema';
+import { SchemaSettings } from '../../../../../../../application/schema-settings/SchemaSettings';
+import { SchemaSettingsActionLinkItem } from '../../../../../../mobile-layout/mobile-tab-bar/types/MobileTabBar.Link/SchemaSettingsActionLinkItem';
+import { useLinkActionProps } from '../../../../../../../block-provider/hooks';
+import { ISchema } from '../../../../../../../application/globalType';
+import { SchemaInitializerItemActionModalType } from '../../../../../../../application/schema-initializer/types';
+import { useSchemaInitializer } from '../../../../../../../application/schema-initializer/context';
 
 export const mobileNavigationBarLinkSettings = new SchemaSettings({
   name: 'mobile:navigation-bar:actions:link',

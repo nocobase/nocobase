@@ -9,10 +9,10 @@
 
 import { ArrayItems } from '@formily/antd-v5';
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettingsModalItem, useURLAndHTMLSchema } from '../../../../schema-component';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMobileRoutes } from '../../../../mobile-providers/context/MobileRoutes';
+import { SchemaSettingsModalItem, useURLAndHTMLSchema } from '../../../../..';
 
 export const SchemaSettingsActionLinkItem: FC = () => {
   const fieldSchema = useFieldSchema();

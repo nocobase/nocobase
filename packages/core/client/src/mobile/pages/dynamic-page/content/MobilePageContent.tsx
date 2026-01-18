@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent } from '../../../schema-component';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useMobileRoutes } from '../../../mobile-providers';
 import { MobilePageContentContainer } from './MobilePageContentContainer';
+import { RemoteSchemaComponent } from '../../../../schema-component';
 
 export const MobilePageContent = () => {
   const { tabSchemaUid } = useParams();

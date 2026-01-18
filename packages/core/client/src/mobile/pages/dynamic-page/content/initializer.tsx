@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer, gridRowColWrap } from '../../../application';
+import { SchemaInitializer } from '../../../../application';
+import { gridRowColWrap } from '../../../../schema-initializer';
 
 export const mobileAddBlockInitializer = new SchemaInitializer({
   title: '{{t("Add block")}}',

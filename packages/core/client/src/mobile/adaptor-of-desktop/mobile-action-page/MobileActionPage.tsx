@@ -8,21 +8,21 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
+import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { MIN_Z_INDEX_INCREMENT } from '../zIndex';
+import { useMobileActionPageStyle } from './MobileActionPage.style';
+import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
 import {
   BackButtonUsedInSubPage,
-  NocoBaseRecursionField,
   SchemaComponent,
   TabsContextProvider,
   useActionContext,
   useTabsContext,
   useZIndexContext,
   zIndexContext,
-} from '../../schema-component';
-import React, { useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { MIN_Z_INDEX_INCREMENT } from '../zIndex';
-import { useMobileActionPageStyle } from './MobileActionPage.style';
-import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
+} from '../../../schema-component';
+import { NocoBaseRecursionField } from '../../..';
 
 const components = { Tabs: MobileTabsForMobileActionPage };
 

@@ -8,22 +8,6 @@
  */
 
 import { observer, useField, useFieldSchema } from '@formily/react';
-import {
-  css,
-  DndContext,
-  Icon,
-  NocoBaseRecursionField,
-  SchemaComponent,
-  SortableItem,
-  Tabs as TabsOfPC,
-  useBackButton,
-  useCompile,
-  useDesigner,
-  useFlag,
-  useSchemaInitializerRender,
-  useTabsContext,
-  withDynamicSchemaProps,
-} from '../../schema-component';
 import { Tabs } from 'antd-mobile';
 import { LeftOutline } from 'antd-mobile-icons';
 import classNames from 'classnames';
@@ -33,6 +17,19 @@ import { MobilePageHeader } from '../../pages/dynamic-page';
 import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
 import { useStyles } from '../../pages/dynamic-page/header/tabs';
 import { hideDivider } from '../hideDivider';
+import { useSchemaInitializerRender } from '../../../application';
+import {
+  DndContext,
+  SchemaComponent,
+  SortableItem,
+  useBackButton,
+  useCompile,
+  useDesigner,
+  useTabsContext,
+  Tabs as TabsOfPC,
+} from '../../../schema-component';
+import { useFlag } from '../../../flag-provider';
+import { css, Icon, NocoBaseRecursionField, withDynamicSchemaProps } from '../../..';
 
 export const MobileTabsForMobileActionPage: any = observer(
   (props) => {

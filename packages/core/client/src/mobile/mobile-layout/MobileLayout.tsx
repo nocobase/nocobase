@@ -10,9 +10,9 @@
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
 
-import { useMobileApp } from '../mobile';
 import { MobileProviders } from '../mobile-providers/MobileProviders';
 import { MobileTabBar } from './MobileTabBar';
+import { useMobileApp } from '../MobileAppContext';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;

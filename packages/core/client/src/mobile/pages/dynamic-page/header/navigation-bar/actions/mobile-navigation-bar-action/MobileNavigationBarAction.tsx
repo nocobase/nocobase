@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cx, Icon, useSchemaToolbar } from '../../../../schema-component';
 import { Button, ButtonProps, Space } from 'antd-mobile';
 import React, { FC, useMemo } from 'react';
 import { useStyles } from './styles';
+import { useSchemaToolbar } from '../../../../../../../application/schema-toolbar/context';
+import { Icon } from '../../../../../../../icon';
+import { cx } from '../../../../../../..';
 
 interface MobileNavigationBarActionProps extends ButtonProps {
   icon?: string | React.ReactNode;

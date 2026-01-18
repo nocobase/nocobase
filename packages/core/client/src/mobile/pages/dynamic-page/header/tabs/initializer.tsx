@@ -15,7 +15,7 @@ import {
   useSchemaInitializer,
   useSchemaInitializerRender,
   SchemaInitializerActionModal,
-} from '../../../application';
+} from '../../../../../application';
 
 import { getPageContentTabSchema } from '../../content';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';

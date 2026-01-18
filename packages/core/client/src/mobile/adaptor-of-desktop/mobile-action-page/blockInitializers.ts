@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer, useApp } from '../../application';
+import { SchemaInitializer, useApp } from '../../../application';
 
 export const getMobilePopupBlockInitializers = (desktopPopupBlockInitializers: SchemaInitializer) => {
   const dataBlocks = desktopPopupBlockInitializers.options.items.find((item) => item.name === 'dataBlocks');

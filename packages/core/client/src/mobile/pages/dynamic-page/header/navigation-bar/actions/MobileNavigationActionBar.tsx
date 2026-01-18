@@ -9,16 +9,14 @@
 
 import { cx } from '@emotion/css';
 import { ISchema, observer, useFieldSchema } from '@formily/react';
-import {
-  DndContext,
-  NocoBaseRecursionField,
-  useProps,
-  useSchemaInitializerRender,
-  useSchemaToolbar,
-  withDynamicSchemaProps,
-} from '../../../schema-component';
 import { SpaceProps } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
+import { withDynamicSchemaProps } from '../../../../../../hoc/withDynamicSchemaProps';
+import { useSchemaToolbar } from '../../../../../../application/schema-toolbar/context';
+import { useProps } from '../../../../../../schema-component/hooks/useProps';
+import { useSchemaInitializerRender } from '../../../../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { DndContext } from '../../../../../../schema-component/common/dnd-context';
+import { NocoBaseRecursionField } from '../../../../../../formily/NocoBaseRecursionField';
 
 export interface ActionBarProps {
   style?: CSSProperties;

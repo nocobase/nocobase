@@ -8,14 +8,14 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { cx, NocoBaseRecursionField, SchemaToolbarProvider } from '../../../schema-component';
 import { NavBar } from 'antd-mobile';
 import React, { FC } from 'react';
 
-import { useMobileTitle } from '../../../mobile-providers';
 import { useRouteTranslation } from '../../../../locale';
-import { useMobilePage } from '../../dynamic-page/context';
 import { useStyles } from './styles';
+import { useMobileTitle } from '../../../../mobile-providers/context/MobileTitle';
+import { useMobilePage } from '../../context';
+import { cx, NocoBaseRecursionField, SchemaToolbarProvider } from '../../../../..';
 
 export const MobilePageNavigationBar: FC = () => {
   const { title } = useMobileTitle() || {};

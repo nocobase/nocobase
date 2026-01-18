@@ -8,10 +8,11 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettings, createSwitchSettingsItem, useDesignable } from '../../schema-component';
 import { useTranslation } from 'react-i18next';
 import { useMobileApp } from '../../MobileAppContext';
 import { useMobileRoutes } from '../../mobile-providers/context/MobileRoutes';
+import { createSwitchSettingsItem, SchemaSettings } from '../../../application';
+import { useDesignable } from '../../../schema-component';
 
 export const mobilePageSettings = new SchemaSettings({
   name: 'mobile:page',
