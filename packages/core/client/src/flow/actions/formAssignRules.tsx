@@ -35,7 +35,7 @@ const FormAssignRulesUI = observer(
       const legacyDefaults = collectLegacyDefaultValueRulesFromFormModel(ctx.model);
       const merged = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
       // 编辑表单仅支持“赋值”模式（不允许“默认值”模式）
-      return isEditForm ? merged.map((it) => ({ ...it, mode: 'assign' })) : merged;
+      return isEditForm ? merged.map((it): FieldAssignRuleItem => ({ ...it, mode: 'assign' })) : merged;
     }, [ctx.model, isEditForm, props.value]);
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，便于用户在此处编辑/删除后统一保存
