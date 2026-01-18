@@ -145,7 +145,7 @@ describe('database creators', () => {
       password: 'secret',
       database: 'postgres',
     });
-    expect(pgClientInstances[0].query).toHaveBeenCalledWith('CREATE DATABASE "tenant"');
+    expect(pgClientInstances[0].query).toHaveBeenCalledWith('SELECT 1 FROM pg_database WHERE datname = $1', ['tenant']);
     expect(pgClientInstances[0].end).toHaveBeenCalled();
   });
 
@@ -172,7 +172,7 @@ describe('database creators', () => {
       port: 5433,
       user: 'root',
       password: 'secret',
-      database: 'kingbase',
+      database: 'db_test',
     });
     expect(pgClientInstances[0].query).toHaveBeenCalledWith('CREATE SCHEMA IF NOT EXISTS custom_schema');
   });
