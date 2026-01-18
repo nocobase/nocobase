@@ -184,6 +184,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
   const [refreshTick, setRefreshTick] = useState(0);
   const [extraMenuItems, setExtraMenuItems] = useState<FlowModelExtraMenuItem[]>([]);
+  const closeDropdown = useCallback(() => {
+    setVisible(false);
+  }, []);
   const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -292,6 +295,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   );
 
   const handleDelete = useCallback(() => {
+    closeDropdown();
     Modal.confirm({
       title: t('Confirm delete'),
       icon: <ExclamationCircleOutlined />,
@@ -312,7 +316,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         }
       },
     });
-  }, [model]);
+  }, [closeDropdown, model, t]);
 
   const handleStepConfiguration = useCallback(
     (key: string) => {
@@ -345,6 +349,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
 
       try {
+        closeDropdown();
         targetModel.openFlowSettings({
           flowKey,
           stepKey,
@@ -353,7 +358,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         console.log(t('Configuration popup cancelled or error'), ':', error);
       }
     },
-    [model],
+    [closeDropdown, model, t],
   );
 
   const handleMenuClick = useCallback(
@@ -363,18 +368,21 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
 
       if (cleanKey.startsWith('copy-pop-uid:')) {
+        closeDropdown();
         handleCopyPopupUid(cleanKey);
         return;
       }
 
       const extra = extraMenuItems.find((it) => it?.key === originalKey || it?.key === cleanKey);
       if (extra?.onClick) {
+        closeDropdown();
         extra.onClick();
         return;
       }
 
       switch (cleanKey) {
         case 'copy-uid':
+          closeDropdown();
           handleCopyUid();
           break;
         case 'delete':
@@ -385,7 +393,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           break;
       }
     },
-    [handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid, extraMenuItems],
+    [closeDropdown, handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid, extraMenuItems],
   );
 
   // 获取单个模型的可配置flows和steps
