@@ -572,7 +572,7 @@ describe('ReferenceFormGridModel', () => {
     expect(items[0].context.engine).toBe(scoped);
   });
 
-  it('delegates layout + linkage rules stepParams to template grid (legacy fallback to template root)', async () => {
+  it('delegates layout/assignRules/linkageRules stepParams to template grid (legacy fallback to template root)', async () => {
     const engine = new FlowEngine();
     const store: Record<string, any> = {
       'tpl-root': {
@@ -695,6 +695,8 @@ describe('ReferenceFormGridModel', () => {
       labelWrap: true,
       colon: true,
     });
+    const assignRulesParams = { value: [{ key: 'a1', targetPath: 'title', value: 'hello' }] };
+    refGrid.setStepParams('formModelSettings', 'assignRules', assignRulesParams);
     refGrid.setStepParams('eventSettings', 'linkageRules', { value: [] });
 
     expect(refGrid.getStepParams('formModelSettings', 'layout')).toEqual({
@@ -704,12 +706,16 @@ describe('ReferenceFormGridModel', () => {
       labelWrap: true,
       colon: true,
     });
+    expect(refGrid.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(refGrid.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [] });
 
     await refGrid.saveStepParams();
     const savedUids = mockRepository.save.mock.calls.map((c) => c[0]?.uid).sort();
     expect(savedUids).toContain('host-grid');
     expect(savedUids).toContain('tpl-grid');
+
+    const savedTplGrid = mockRepository.save.mock.calls.find((c) => c[0]?.uid === 'tpl-grid')?.[0];
+    expect(savedTplGrid?.stepParams?.formModelSettings?.assignRules).toEqual(assignRulesParams);
   });
 
   it('flushes local (pre-resolve) stepParams to template grid on resolve/save', async () => {

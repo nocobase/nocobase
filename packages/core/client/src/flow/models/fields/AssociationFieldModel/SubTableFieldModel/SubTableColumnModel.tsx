@@ -31,9 +31,22 @@ import { TableColumnProps, Tooltip, Input } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
-import { FieldModel } from '../../../base';
-import { EditFormModel } from '../../../blocks/form/EditFormModel';
+import { FieldModel } from '../../../base/FieldModel';
 import { FieldDeletePlaceholder } from '../../../blocks/table/TableColumnModel';
+import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
+
+const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
+  React.useEffect(() => {
+    const emitter = model?.flowEngine?.emitter;
+    if (!emitter) return;
+    void emitter.emitAsync('model:mounted', { uid: model?.uid, model });
+    return () => {
+      void emitter.emitAsync('model:unmounted', { uid: model?.uid, model });
+      model?.dispose?.();
+    };
+  }, [model]);
+  return null;
+};
 
 function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
@@ -331,7 +344,46 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record } = props;
+      const { value, id, rowIdx, record, parentFieldIndex, parentCurrentObject } = props;
+      // 子表格列模型本身没有行级 fieldIndex，上下文中无法把 `roles.name` 解析成 `roles[0].name`，
+      // 导致“默认值/赋值规则”在对多关系字段下无法生效。
+      // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
+      const baseFieldIndex = parentFieldIndex ?? (this.parent as any)?.context?.fieldIndex ?? this.context?.fieldIndex;
+      const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
+      const rowFork: any = (() => {
+        const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
+        const fork = this.createFork({}, `row:${baseIndexKey}:${String(rowIdx)}`);
+        const associationFieldPath =
+          (this.parent as any)?.fieldPath ??
+          (this.parent as any)?.context?.fieldPath ??
+          (this.parent as any)?.props?.name;
+        const associationKey =
+          (this.parent as any)?.context?.collectionField?.name ||
+          String(associationFieldPath || '')
+            .split('.')
+            .filter(Boolean)
+            .pop();
+        const rowIndex = Number(rowIdx);
+        if (associationKey && Number.isFinite(rowIndex)) {
+          fork.context.defineProperty('fieldIndex', {
+            value: [...baseArr, `${associationKey}:${rowIndex}`],
+          });
+        }
+        fork.context.defineProperty('currentObject', {
+          get: () => {
+            const parentObject = (parentCurrentObject ?? this.context?.currentObject) as any;
+            return {
+              index: Number.isFinite(rowIndex) ? rowIndex : undefined,
+              isNew: record?.isNew,
+              isStored: record?.isStored,
+              value: record,
+              parentObject,
+            };
+          },
+          cache: false,
+        });
+        return fork;
+      })();
       return (
         <div
           style={{
@@ -347,6 +399,7 @@ export class SubTableColumnModel<
             }
           `}
         >
+          <SubTableRowRuleBinder model={rowFork} />
           {this.mapSubModels('field', (action: FieldModel) => {
             const fieldPath = action.context.fieldPath.split('.');
             const namePath = fieldPath.pop();
@@ -362,7 +415,7 @@ export class SubTableColumnModel<
                 <FormItem
                   {...this.props}
                   key={id}
-                  name={[...fieldPath, rowIdx, namePath]}
+                  name={buildDynamicNamePath([...fieldPath, Number(rowIdx), namePath], baseArr)}
                   style={{ marginBottom: 0 }}
                   showLabel={false}
                   // initialValue={value}
@@ -423,9 +476,8 @@ SubTableColumnModel.registerFlow({
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         const currentBlockModel = ctx.model.context.blockModel;
-        if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(ctx.model.fieldPath);
-        }
+        // 避免强依赖 EditFormModel（减少循环依赖风险）：仅在存在该能力时调用
+        currentBlockModel?.addAppends?.(ctx.model.fieldPath);
       },
     },
     title: {

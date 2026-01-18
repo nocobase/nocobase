@@ -29,10 +29,12 @@ import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
-import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
+import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import _ from 'lodash';
 import { SubFormFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
+import { findFormItemModelByFieldPath, getCollectionFromModel } from '../internal/utils/modelUtils';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -91,6 +93,52 @@ const getFormFieldsByForkModel = (ctx: any) => {
     return [];
   }
 };
+
+function normalizeAssignRuleItemsFromLinkageParams(
+  raw: any,
+  legacy: { mode: 'default' | 'assign'; valueKey: 'assignValue' | 'initialValue' },
+  resolveTargetPath?: (legacyFieldUid: string) => string | undefined,
+): FieldAssignRuleItem[] {
+  if (Array.isArray(raw)) {
+    return raw as any;
+  }
+
+  if (!raw || typeof raw !== 'object') return [];
+
+  // legacy object params: { field, assignValue } | { field, initialValue }
+  const legacyField = (raw as any)?.field;
+  const legacyValue = (raw as any)?.[legacy.valueKey];
+  if (legacyField) {
+    const targetPath = resolveTargetPath?.(String(legacyField));
+    if (!targetPath) return [];
+    return [
+      {
+        key: 'legacy',
+        enable: true,
+        targetPath,
+        mode: legacy.mode,
+        condition: { logic: '$and', items: [] },
+        value: legacyValue,
+      },
+    ];
+  }
+
+  // legacy empty: keep empty list
+  return [];
+}
+
+function createLegacyTargetPathResolver(ctx: FlowContext) {
+  return (legacyFieldUid: string) => {
+    try {
+      const m: any = ctx.engine?.getModel?.(legacyFieldUid);
+      const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
+      return fp ? String(fp) : undefined;
+    } catch (error) {
+      console.warn(`Failed to resolve legacy field uid ${legacyFieldUid}:`, error);
+      return undefined;
+    }
+  };
+}
 
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
@@ -545,78 +593,85 @@ export const linkageAssignField = defineAction({
   sort: 200,
   uiSchema: {
     value: {
-      type: 'object',
+      type: 'array',
       'x-component': (props) => {
-        const { value = { field: undefined, assignValue: undefined }, onChange } = props;
+        const { value, onChange } = props;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFields(ctx);
+        const fieldOptions = collectFieldAssignCascaderOptions({
+          formBlockModel: ctx.model,
+          t,
+          maxFormItemDepth: 1,
+          includeAssociationSubfields: false,
+        });
 
-        const selectedFieldUid = value.field;
-
-        const handleFieldChange = (selectedField) => {
-          const nextField = selectedField;
-          const changed = nextField !== selectedFieldUid;
-          onChange({
-            ...value,
-            field: nextField,
-            // 切换字段时清空赋值
-            assignValue: changed ? undefined : value.assignValue,
-          });
-        };
+        const normalized = normalizeAssignRuleItemsFromLinkageParams(
+          value,
+          {
+            mode: 'assign',
+            valueKey: 'assignValue',
+          },
+          createLegacyTargetPathResolver(ctx),
+        );
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
-              <Select
-                value={selectedFieldUid}
-                onChange={handleFieldChange}
-                placeholder={t('Please select field')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            {selectedFieldUid && (
-              <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Assign value')}</div>
-                <FieldAssignValueInput
-                  key={selectedFieldUid}
-                  fieldUid={selectedFieldUid}
-                  value={value.assignValue}
-                  onChange={(v) => onChange({ ...value, assignValue: v })}
-                />
-              </div>
-            )}
-          </div>
+          <FieldAssignRulesEditor
+            t={t}
+            fieldOptions={fieldOptions}
+            rootCollection={getCollectionFromModel(ctx.model)}
+            value={normalized}
+            onChange={onChange}
+          />
         );
       },
     },
   },
   handler: (ctx, { value, setProps }) => {
-    // 字段赋值处理逻辑
-    const { assignValue, field } = value || {};
-    if (!field) return;
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'assign', valueKey: 'assignValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
+    if (!items.length) return;
     try {
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-      const fieldModel = gridModels.find((model: any) => model.uid === field);
-      if (!fieldModel) return;
-      const collectionField = (fieldModel as any)?.collectionField;
-      const finalValue = coerceForToOneField(collectionField, assignValue);
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof finalValue === 'undefined') {
-        setProps(fieldModel as FlowModel, {});
-        return;
+      const evaluator = (path: any, operator: string, right: any) => {
+        if (!operator) return true;
+        return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+      };
+
+      for (const it of items) {
+        if (it?.enable === false) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
+
+        const condition = it?.condition;
+        if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+          continue;
+        }
+
+        const fieldModel = findFormItemModelByFieldPath(ctx.model, targetPath);
+        if (!fieldModel) continue;
+
+        const collectionField = (fieldModel as any)?.collectionField;
+        const finalValue = coerceForToOneField(collectionField, it?.value);
+
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof finalValue === 'undefined') {
+          setProps(fieldModel as FlowModel, {});
+          continue;
+        }
+
+        const mode = it?.mode === 'default' ? 'default' : 'assign';
+        if (mode === 'default') {
+          setProps(fieldModel as FlowModel, { initialValue: finalValue });
+        } else {
+          setProps(fieldModel as FlowModel, { value: finalValue });
+        }
       }
-      setProps(fieldModel as FlowModel, { value: finalValue });
     } catch (error) {
-      console.warn(`Failed to assign value to field ${field}:`, error);
+      console.warn('Failed to assign value to fields:', error);
     }
   },
 });
@@ -628,88 +683,97 @@ export const subFormLinkageAssignField = defineAction({
   sort: 200,
   uiSchema: {
     value: {
-      type: 'object',
+      type: 'array',
       'x-component': (props) => {
-        const { value = { field: undefined, assignValue: undefined }, onChange } = props;
+        const { value, onChange } = props;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFieldsByForkModel(ctx);
+        const fieldOptions = collectFieldAssignCascaderOptions({
+          formBlockModel: ctx.model,
+          t,
+          maxFormItemDepth: 1,
+          includeAssociationSubfields: false,
+        });
 
-        const selectedFieldUid = value.field;
-
-        const handleFieldChange = (selectedField) => {
-          const nextField = selectedField;
-          const changed = nextField !== selectedFieldUid;
-          onChange({
-            ...value,
-            field: nextField,
-            // 切换字段时清空赋值
-            assignValue: changed ? undefined : value.assignValue,
-          });
-        };
+        const normalized = normalizeAssignRuleItemsFromLinkageParams(
+          value,
+          {
+            mode: 'assign',
+            valueKey: 'assignValue',
+          },
+          createLegacyTargetPathResolver(ctx),
+        );
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
-              <Select
-                value={selectedFieldUid}
-                onChange={handleFieldChange}
-                placeholder={t('Please select field')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            {selectedFieldUid && (
-              <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Assign value')}</div>
-                <FieldAssignValueInput
-                  key={selectedFieldUid}
-                  fieldUid={selectedFieldUid}
-                  value={value.assignValue}
-                  onChange={(v) => onChange({ ...value, assignValue: v })}
-                />
-              </div>
-            )}
-          </div>
+          <FieldAssignRulesEditor
+            t={t}
+            fieldOptions={fieldOptions}
+            rootCollection={getCollectionFromModel(ctx.model)}
+            value={normalized}
+            onChange={onChange}
+          />
         );
       },
     },
   },
   handler: (ctx, { value, setProps }) => {
     // 字段赋值处理逻辑
-    const { assignValue, field } = value || {};
-    if (!field) return;
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'assign', valueKey: 'assignValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
+    if (!items.length) return;
     try {
-      const formItemModel = ctx.engine.getModel(field);
-      const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${field}`);
+      const evaluator = (path: any, operator: string, right: any) => {
+        if (!operator) return true;
+        return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+      };
 
-      let model = forkModel;
+      for (const it of items) {
+        if (it?.enable === false) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        const itemModel = targetPath ? findFormItemModelByFieldPath(ctx.model, targetPath) : null;
+        const fieldUid = itemModel?.uid ? String(itemModel.uid) : '';
+        if (!fieldUid) continue;
 
-      // 适配对一子表单的场景
-      if (!forkModel) {
-        model = formItemModel;
+        const condition = it?.condition;
+        if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+          continue;
+        }
+
+        const formItemModel = ctx.engine.getModel(fieldUid);
+        const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
+
+        let model = forkModel;
+
+        // 适配对一子表单的场景
+        if (!forkModel) {
+          model = formItemModel;
+        }
+
+        if (!model) continue;
+
+        const collectionField = (formItemModel as any)?.collectionField;
+        const finalValue = coerceForToOneField(collectionField, it?.value);
+
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof finalValue === 'undefined') {
+          setProps(model, {});
+          continue;
+        }
+
+        const mode = it?.mode === 'default' ? 'default' : 'assign';
+        if (mode === 'default') {
+          setProps(model, { initialValue: finalValue });
+        } else {
+          setProps(model, { value: finalValue });
+        }
       }
-
-      if (!model) return;
-
-      const collectionField = (formItemModel as any)?.collectionField;
-      const finalValue = coerceForToOneField(collectionField, assignValue);
-
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof finalValue === 'undefined') {
-        setProps(model, {});
-        return;
-      }
-      setProps(model, { value: finalValue });
     } catch (error) {
-      console.warn(`Failed to assign value to field ${field}:`, error);
+      console.warn('Failed to assign value to fields:', error);
     }
   },
 });
@@ -721,76 +785,80 @@ export const setFieldsDefaultValue = defineAction({
   sort: 200,
   uiSchema: {
     value: {
-      type: 'object',
+      type: 'array',
       'x-component': (props) => {
-        const { value = { field: undefined, initialValue: undefined }, onChange } = props;
+        const { value, onChange } = props;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFields(ctx);
+        const fieldOptions = collectFieldAssignCascaderOptions({
+          formBlockModel: ctx.model,
+          t,
+          maxFormItemDepth: 1,
+          includeAssociationSubfields: false,
+        });
 
-        const selectedFieldUid = value.field;
-
-        const handleFieldChange = (selectedField) => {
-          const nextField = selectedField;
-          const changed = nextField !== selectedFieldUid;
-          onChange({
-            ...value,
-            field: nextField,
-            initialValue: changed ? undefined : value.initialValue,
-          });
-        };
+        const normalized = normalizeAssignRuleItemsFromLinkageParams(
+          value,
+          {
+            mode: 'default',
+            valueKey: 'initialValue',
+          },
+          createLegacyTargetPathResolver(ctx),
+        );
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
-              <Select
-                value={selectedFieldUid}
-                onChange={handleFieldChange}
-                placeholder={t('Please select field')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            {selectedFieldUid && (
-              <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Default value')}</div>
-                <FieldAssignValueInput
-                  key={selectedFieldUid}
-                  fieldUid={selectedFieldUid}
-                  value={value.initialValue}
-                  onChange={(v) => onChange({ ...value, initialValue: v })}
-                />
-              </div>
-            )}
-          </div>
+          <FieldAssignRulesEditor
+            t={t}
+            fieldOptions={fieldOptions}
+            rootCollection={getCollectionFromModel(ctx.model)}
+            value={normalized}
+            onChange={onChange}
+            fixedMode="default"
+          />
         );
       },
     },
   },
   handler: (ctx, { value, setProps }) => {
-    const { initialValue, field } = value || {};
-    if (!field) return;
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'default', valueKey: 'initialValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
+    if (!items.length) return;
     try {
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-      const fieldModel = gridModels.find((model: any) => model.uid === field);
-      if (!fieldModel) return;
-      const collectionField = (fieldModel as any)?.collectionField;
-      const finalInitialValue = coerceForToOneField(collectionField, initialValue);
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof finalInitialValue === 'undefined') {
-        setProps(fieldModel as FlowModel, {});
-        return;
+      const evaluator = (path: any, operator: string, right: any) => {
+        if (!operator) return true;
+        return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+      };
+
+      for (const it of items) {
+        if (it?.enable === false) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
+
+        const condition = it?.condition;
+        if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+          continue;
+        }
+
+        const fieldModel = findFormItemModelByFieldPath(ctx.model, targetPath);
+        if (!fieldModel) continue;
+
+        const collectionField = (fieldModel as any)?.collectionField;
+        const finalInitialValue = coerceForToOneField(collectionField, it?.value);
+
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof finalInitialValue === 'undefined') {
+          setProps(fieldModel as FlowModel, {});
+          continue;
+        }
+        setProps(fieldModel as FlowModel, { initialValue: finalInitialValue });
       }
-      setProps(fieldModel as FlowModel, { initialValue: finalInitialValue });
     } catch (error) {
-      console.warn(`Failed to assign value to field ${field}:`, error);
+      console.warn('Failed to set fields default value:', error);
     }
   },
 });
@@ -1335,6 +1403,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     }
   });
 
+  const valuePatches: Array<{ path: any; value: any }> = [];
+
   mergedByUid.forEach((model: any, uid) => {
     const patchProps = mergedPropsByUid.get(uid) || {};
     const newProps = { ...model.__originalProps, ...patchProps };
@@ -1362,14 +1432,40 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     if ('value' in newProps && model.context.form) {
       const path = model.isFork ? model.context.fieldPathArray : model.props.name;
       if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
-        model.context.form.setFieldValue(path, newProps.value);
-        model.context.blockModel?.dispatchEvent('formValuesChange', {});
-        model.context.blockModel?.emitter.emit('formValuesChange', {});
+        valuePatches.push({ path, value: newProps.value });
       }
     }
 
     model.__props = null;
   });
+
+  if (valuePatches.length) {
+    const setter = (ctx as any)?.setFormValues;
+    let wrote = false;
+    if (typeof setter === 'function') {
+      try {
+        await setter(valuePatches, { source: 'linkage' });
+        wrote = true;
+      } catch (error) {
+        console.warn(
+          '[linkageRules] Failed to set form values via ctx.setFormValues, fallback to form.setFieldValue',
+          error,
+        );
+      }
+    }
+
+    if (!wrote) {
+      valuePatches.forEach(({ path, value }) => {
+        try {
+          ctx.model?.context?.form?.setFieldValue?.(path, value);
+        } catch {
+          // ignore
+        }
+      });
+      ctx.model?.context?.blockModel?.dispatchEvent?.('formValuesChange', {});
+      ctx.model?.context?.blockModel?.emitter?.emit?.('formValuesChange', {});
+    }
+  }
 };
 
 export const blockLinkageRules = defineAction({

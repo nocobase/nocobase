@@ -120,6 +120,7 @@ export class DetailsItemModel extends DisplayItemModel<{
     const idx = this.context.fieldIndex;
     const record = this.context.record;
     const currentObject = this.context.currentObject;
+    const currentObjectOptions = this.context.getPropertyOptions('currentObject');
 
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
@@ -133,7 +134,9 @@ export class DetailsItemModel extends DisplayItemModel<{
               get: () => record,
               cache: false,
             });
+            const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
             fork.context.defineProperty('currentObject', {
+              ...rest,
               get: () => currentObject,
               cache: false,
             });

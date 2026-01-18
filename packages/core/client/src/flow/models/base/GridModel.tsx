@@ -695,6 +695,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   const rowIndex = this.context.fieldIndex;
                   const record = this.context.record;
                   const currentObject = this.context.currentObject;
+                  const currentObjectOptions = this.context.getPropertyOptions('currentObject');
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -711,7 +712,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                             get: () => record,
                             cache: false,
                           });
+                          const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
                           fork.context.defineProperty('currentObject', {
+                            ...rest,
                             get: () => currentObject,
                             cache: false,
                           });
