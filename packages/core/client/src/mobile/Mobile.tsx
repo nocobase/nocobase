@@ -27,10 +27,9 @@ import { MobileActionPage } from './adaptor-of-desktop/mobile-action-page/Mobile
 import { ResetSchemaOptionsProvider } from './adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from './constants';
 import { DesktopMode } from './desktop-mode/DesktopMode';
-import { PluginMobileClient } from './PluginMobileClient';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
-import { usePlugin } from '../application';
+import { useApp } from '../application';
 import { AdminProvider } from '../route-switch';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
@@ -57,9 +56,10 @@ export const Mobile = () => {
   useToAdaptActionDrawerToMobile();
   useToAddMobilePopupBlockInitializers();
 
+  const app = useApp();
   const { componentCls, hashId } = useStyles();
-  const mobilePlugin = usePlugin(PluginMobileClient);
-  const MobileRouter = mobilePlugin.getRouterComponent();
+  const mobilePlugin = app.pm.get('mobile') as any;
+  const MobileRouter = mobilePlugin?.getRouterComponent();
   const AdminProviderComponent = mobilePlugin?.options?.config?.skipLogin ? React.Fragment : AdminProvider;
 
   React.useEffect(() => {
@@ -84,7 +84,7 @@ export const Mobile = () => {
     }
   }, []);
 
-  const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
+  const DesktopComponent = mobilePlugin?.desktopMode === false ? React.Fragment : DesktopMode;
   const modeToComponent = React.useMemo(() => {
     return {
       PopoverNester: (props) => {

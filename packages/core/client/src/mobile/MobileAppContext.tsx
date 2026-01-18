@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { usePlugin } from '../application';
+import { useApp } from '../application';
 import React, { FC, createContext } from 'react';
 import { css } from '@emotion/css';
-import { PluginMobileClient } from './PluginMobileClient';
 
 interface MobileAppContextProps {
   showTabBar?: boolean;
@@ -27,18 +26,19 @@ export interface MobileAppProviderProps {
 }
 
 export const MobileAppProvider: FC<MobileAppProviderProps> = ({ children }) => {
-  const mobilePlugin = usePlugin(PluginMobileClient);
-  const [showTabBar, setShowTabBarState] = React.useState(mobilePlugin.getPluginOptions()?.showTabBar ?? true);
+  const app = useApp();
+  const mobilePlugin = app.pm.get('mobile') as any;
+  const [showTabBar, setShowTabBarState] = React.useState(mobilePlugin?.getPluginOptions()?.showTabBar ?? true);
   const setShowTabBar = (nextShowTabBar: boolean) => {
     setShowTabBarState(nextShowTabBar);
-    mobilePlugin.updateOptions({ showTabBar: nextShowTabBar });
+    mobilePlugin?.updateOptions({ showTabBar: nextShowTabBar });
   };
   const [showBackButton, setShowBackButtonState] = React.useState(
-    mobilePlugin.getPluginOptions()?.showBackButton ?? true,
+    mobilePlugin?.getPluginOptions()?.showBackButton ?? true,
   );
   const setShowBackButton = (nextShowBackButton: boolean) => {
     setShowBackButtonState(nextShowBackButton);
-    mobilePlugin.updateOptions({ showBackButton: nextShowBackButton });
+    mobilePlugin?.updateOptions({ showBackButton: nextShowBackButton });
   };
 
   return (
