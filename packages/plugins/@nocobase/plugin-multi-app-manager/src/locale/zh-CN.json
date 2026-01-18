@@ -22,5 +22,6 @@
   "Start mode": "启动方式",
   "Start on first visit": "首次访问时启动",
   "Start with main application": "随主应用一同启动",
-  "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "迁移数据时，系统会基于该端口号自动为每个应用分配一个递增的端口号，您也可以在迁移后手动修改。"
+  "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "迁移数据时，系统会基于该端口号自动为每个应用分配一个递增的端口号，您也可以在迁移后手动修改。",
+  "Migrate to app supervisor": "迁移到应用监管器"
 }

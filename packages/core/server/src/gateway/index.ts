@@ -105,6 +105,9 @@ export class Gateway extends EventEmitter {
     try {
       for (const app of apps) {
         try {
+          if (!app) {
+            continue;
+          }
           await app.destroy({ signal });
         } catch (error) {
           const logger = app?.log ?? console;
@@ -301,6 +304,7 @@ export class Gateway extends EventEmitter {
     }
 
     let handleApp = 'main';
+    const supervisor = AppSupervisor.getInstance();
     try {
       handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
     } catch (error) {
@@ -308,13 +312,19 @@ export class Gateway extends EventEmitter {
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
     }
-    const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
+    if (handleApp !== 'main') {
+      const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+      if (isProxy) {
+        return;
+      }
+    }
+    const hasApp = supervisor.hasApp(handleApp);
 
     if (!hasApp) {
-      void AppSupervisor.getInstance().bootStrapApp(handleApp);
+      void supervisor.bootstrapApp(handleApp);
     }
 
-    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');
+    let appStatus = await supervisor.getAppStatus(handleApp, 'preparing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
@@ -332,12 +342,21 @@ export class Gateway extends EventEmitter {
     }
 
     if (appStatus === 'initialized') {
-      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
-      appInstance.runCommand('start', '--quickstart');
-      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
+      const appInstance = await supervisor.getApp(handleApp);
+      if (!appInstance) {
+        this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+        return;
+      }
+      supervisor.startApp(handleApp);
+      appStatus = await supervisor.getAppStatus(handleApp);
     }
 
-    const app = await AppSupervisor.getInstance().getApp(handleApp);
+    const app = await supervisor.getApp(handleApp);
+
+    if (!app) {
+      this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
 
     if (appStatus !== 'running') {
       this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });
@@ -351,7 +370,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (handleApp !== 'main') {
-      AppSupervisor.getInstance().touchApp(handleApp);
+      await supervisor.setAppLastSeenAt(handleApp);
     }
 
     const ctx: GatewayRequestContext = { req, res, appName: handleApp };
@@ -531,6 +550,10 @@ export class Gateway extends EventEmitter {
 
     this.wsServer = new WSServer();
     this.server.on('upgrade', async (request, socket, head) => {
+      const isProxy = await AppSupervisor.getInstance().proxyWs(request, socket, head);
+      if (isProxy) {
+        return;
+      }
       const appInstance = await AppSupervisor.getInstance().getApp('main');
       for (const handle of Gateway.wsServers) {
         const result = await handle(request, socket, head, appInstance);
