@@ -175,10 +175,10 @@ function wrapStringTokenWithReplacements(
 }
 
 /**
- * 预处理 RunJS 源码，以在运行时兼容旧版 `{{ ... }}` 占位符。
+ * 预处理 RunJS 源码，兼容旧版 `{{ ... }}` 占位符。
  *
- * 注意：这不是“模板解析”（这里不会计算任何值）。
- * 它会把代码重写为合法的 JS，并在执行期间调用 `ctx.resolveJsonTemplate(...)`。
+ * 注意：这不是“变量解析”（这里不会计算任何值）。
+ * 它会把代码重写为合法的 JS，并在执行期间调用 `ctx.resolveJsonTemplate(...)` 来解析 {{ ... }}。
  *
  * 设计说明：
  * - 为避免出现 “await is only valid in async functions” 之类的语法错误，会把所有模板解析提升到
@@ -192,20 +192,16 @@ export function preprocessRunJsTemplates(
   options: {
     processBarePlaceholders?: boolean;
     processStringLiterals?: boolean;
-    skipIfAlreadyPreprocessed?: boolean;
   } = {},
 ): string {
   if (!CTX_TEMPLATE_MARKER_RE.test(code)) return code;
   const processBarePlaceholders = options.processBarePlaceholders !== false;
   const processStringLiterals = options.processStringLiterals !== false;
-  const skipIfAlreadyPreprocessed = options.skipIfAlreadyPreprocessed !== false;
   // 避免重复预处理（例如调用方不小心把已处理过的代码再次传回 ctx.runjs）。
   // 这里使用启发式判断；这些内部符号名刻意设计得不太可能与用户代码冲突。
-  if (skipIfAlreadyPreprocessed) {
-    if (processBarePlaceholders && processStringLiterals && PREPROCESSED_MARKER_RE.test(code)) return code;
-    if (processBarePlaceholders && !processStringLiterals && BARE_PLACEHOLDER_VAR_RE.test(code)) return code;
-    if (!processBarePlaceholders && processStringLiterals && STRINGIFY_HELPER_RE.test(code)) return code;
-  }
+  if (processBarePlaceholders && processStringLiterals && PREPROCESSED_MARKER_RE.test(code)) return code;
+  if (processBarePlaceholders && !processStringLiterals && BARE_PLACEHOLDER_VAR_RE.test(code)) return code;
+  if (!processBarePlaceholders && processStringLiterals && STRINGIFY_HELPER_RE.test(code)) return code;
 
   const placeholderVars = new Map<string, string>();
   const preambleLines: string[] = [];
