@@ -19,6 +19,28 @@ const STRINGIFY_HELPER_BASE_NAME = '__runjs_templateValueToString';
 const BARE_PLACEHOLDER_VAR_RE = /\b__runjs_ctx_tpl_\d+\b/;
 const STRINGIFY_HELPER_RE = /\b__runjs_templateValueToString(?:_\d+)?\b/;
 const PREPROCESSED_MARKER_RE = /\b__runjs_ctx_tpl_\d+\b|\b__runjs_templateValueToString(?:_\d+)?\b/;
+const PREPARE_RUNJS_CODE_CACHE_LIMIT = 256;
+
+const PREPARE_RUNJS_CODE_CACHE = {
+  withTemplates: new Map<string, Promise<string>>(),
+  withoutTemplates: new Map<string, Promise<string>>(),
+};
+
+function lruGet<V>(map: Map<string, V>, key: string): V | undefined {
+  const v = map.get(key);
+  if (typeof v === 'undefined') return undefined;
+  map.delete(key);
+  map.set(key, v);
+  return v;
+}
+
+function lruSet<V>(map: Map<string, V>, key: string, value: V, limit: number): void {
+  if (map.has(key)) map.delete(key);
+  map.set(key, value);
+  if (map.size <= limit) return;
+  const oldestKey = map.keys().next().value;
+  if (typeof oldestKey !== 'undefined') map.delete(oldestKey);
+}
 
 function isIdentChar(ch: string | undefined): boolean {
   return !!ch && /[A-Za-z0-9_$]/.test(ch);
@@ -383,12 +405,31 @@ export function preprocessRunJsTemplates(
  */
 export async function prepareRunJsCode(code: string, options: PrepareRunJsCodeOptions = {}): Promise<string> {
   const src = typeof code === 'string' ? code : String(code ?? '');
-  if (!options.preprocessTemplates) return await compileRunJs(src);
+  const preprocessTemplates = !!options.preprocessTemplates;
+  const cache = preprocessTemplates
+    ? PREPARE_RUNJS_CODE_CACHE.withTemplates
+    : PREPARE_RUNJS_CODE_CACHE.withoutTemplates;
+  const cached = lruGet(cache, src);
+  if (cached) return await cached;
 
-  // 阶段 1：仅重写“裸”的 {{ ... }} 占位符，保持代码可解析（尤其是在 JSX 转换前）。
-  const preBare = preprocessRunJsTemplates(src, { processStringLiterals: false });
-  // 阶段 2：JSX -> JS。
-  const jsxCompiled = await compileRunJs(preBare);
-  // 阶段 3：对纯 JS 输出重写字符串/模板字面量（避免破坏 JSX 属性语法）。
-  return preprocessRunJsTemplates(jsxCompiled, { processBarePlaceholders: false });
+  const task = (async () => {
+    if (!preprocessTemplates) return await compileRunJs(src);
+
+    // 阶段 1：仅重写“裸”的 {{ ... }} 占位符，保持代码可解析（尤其是在 JSX 转换前）。
+    const preBare = preprocessRunJsTemplates(src, { processStringLiterals: false });
+    // 阶段 2：JSX -> JS。
+    const jsxCompiled = await compileRunJs(preBare);
+    // 阶段 3：对纯 JS 输出重写字符串/模板字面量（避免破坏 JSX 属性语法）。
+    return preprocessRunJsTemplates(jsxCompiled, { processBarePlaceholders: false });
+  })();
+
+  lruSet(cache, src, task, PREPARE_RUNJS_CODE_CACHE_LIMIT);
+
+  try {
+    return await task;
+  } catch (e) {
+    // Avoid poisoning cache if unexpected errors happen
+    cache.delete(src);
+    throw e;
+  }
 }

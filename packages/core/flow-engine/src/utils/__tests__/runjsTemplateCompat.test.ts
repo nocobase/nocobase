@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import * as jsxTransform from '../../utils/jsxTransform';
 import { prepareRunJsCode, preprocessRunJsTemplates } from '../runjsTemplateCompat';
 
 describe('runjsTemplateCompat', () => {
@@ -107,6 +108,19 @@ ctx.render(<div className="x">{name}</div>);
       expect(out).toMatch(/ctx\.React\.createElement/);
       expect(out).toMatch(/title:\s*\(/);
       expect(out).toContain(`.split("{{ctx.user.name}}").join(`);
+    });
+
+    it('caches prepared code by source and preprocessTemplates option', async () => {
+      const spy = vi.spyOn(jsxTransform, 'compileRunJs');
+      const src = `/* cache-test */\nconst a = 1;\nreturn a;`;
+
+      await prepareRunJsCode(src, { preprocessTemplates: false });
+      await prepareRunJsCode(src, { preprocessTemplates: false });
+      await prepareRunJsCode(src, { preprocessTemplates: true });
+      await prepareRunJsCode(src, { preprocessTemplates: true });
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      spy.mockRestore();
     });
   });
 });
