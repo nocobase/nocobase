@@ -22,6 +22,7 @@ export const runjs = defineAction({
   title: tExpr('Execute JavaScript'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
   sort: 10000, // 排到最后
+  useRawParams: true,
   uiSchema: {
     code: {
       type: 'string',
@@ -38,6 +39,10 @@ export const runjs = defineAction({
     if (ctx.inputArgs?.navigation) return;
 
     const navigator = createSafeNavigator();
-    ctx.runjs(params.code, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+    return ctx.runjs(params.code, {
+      window: createSafeWindow({ navigator }),
+      document: createSafeDocument(),
+      navigator,
+    });
   },
 });
