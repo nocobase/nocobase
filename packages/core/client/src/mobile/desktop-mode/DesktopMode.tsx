@@ -11,11 +11,11 @@ import { Layout } from 'antd';
 import React, { FC } from 'react';
 import { isDesktop } from 'react-device-detect';
 
-import { useUIConfigurationPermissions } from '../../schema-component';
 import { PageBackgroundColor } from '../constants';
 import { DesktopModeContent } from './Content';
 import { DesktopModeHeader } from './Header';
 import { SizeContextProvider } from './sizeContext';
+import { useUIConfigurationPermissions } from '../../acl/ACLProvider';
 
 interface DesktopModeProps {
   children?: React.ReactNode;

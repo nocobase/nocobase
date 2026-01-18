@@ -12,9 +12,13 @@ import { Button, Popover, QRCode } from 'antd';
 import React, { FC, useState } from 'react';
 
 import { CustomIconComponentProps } from '@ant-design/icons/lib/components/Icon';
-import { css, DesignableSwitch, Icon, useApp, useUIConfigurationPermissions } from '../../schema-component';
+import { DesignableSwitch } from '../../schema-component';
 import { useTranslation } from 'react-i18next';
 import { useSize } from './sizeContext';
+import { Icon } from '../../icon';
+import { useApp } from '../../application';
+import { useUIConfigurationPermissions } from '../../acl';
+import { css } from '../..';
 
 const PadSvg = () => (
   <svg

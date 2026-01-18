@@ -9,7 +9,7 @@
 
 import { genStyleHook } from '../../../../../schema-component/antd';
 
-export const useStyles = genStyleHook('nb-mobile-page-navigation-bar', (token) => {
+export const useMobileNavigationBarStyles = genStyleHook('nb-mobile-page-navigation-bar', (token) => {
   const { componentCls } = token;
   return {
     [componentCls]: {

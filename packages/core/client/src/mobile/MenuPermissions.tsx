@@ -10,14 +10,15 @@
 import { css } from '@emotion/css';
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { SchemaComponent, useAPIClient, useCompile, useRequest } from '../schema-component';
+import { SchemaComponent, useCompile } from '../schema-component';
 import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table, TableProps } from 'antd';
 import _, { uniq } from 'lodash';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileRoutesProvider, useMobileRoutes } from './mobile-providers';
+import { useAPIClient, useRequest } from '../api-client';
 
 interface MenuItem {
   title: string;

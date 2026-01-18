@@ -11,7 +11,7 @@ import React, { FC } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { MobileTabBarItemProps, MobileTabBarItem } from '../../MobileTabBar.Item';
-import { useLinkActionProps } from '../../../../schema-component';
+import { useLinkActionProps } from '../../../../../block-provider';
 
 export interface MobileTabBarLinkProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
   url: string;

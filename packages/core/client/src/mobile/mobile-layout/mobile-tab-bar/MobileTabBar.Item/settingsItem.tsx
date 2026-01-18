@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, createModalSettingsItem, createTextSettingsItem } from '../../../schema-component';
 import { useFieldSchema } from '@formily/react';
 import { useNavigate } from 'react-router-dom';
 import { App } from 'antd';
@@ -16,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useUpdateTabBarItem } from './useUpdateTabBarItem';
 import { getMobileTabBarItemSchemaFields } from './schemaFormFields';
 import { useMobileRoutes } from '../../../mobile-providers';
+import { createModalSettingsItem, createTextSettingsItem, ISchema } from '../../../../application';
 
 export const editTabItemSettingsItem = (getMoreFields?: (values: any) => Record<string, ISchema>) =>
   createModalSettingsItem({

@@ -10,7 +10,6 @@
 import { Plugin } from '@nocobase/client';
 import { MessageManagerProvider } from './MessageManagerProvider';
 import NotificationManager from '@nocobase/plugin-notification-manager/client';
-import MobileManager from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
 import { MessageConfigForm } from './components/MessageConfigForm';
 import { ContentConfigForm } from './components/ContentConfigForm';
@@ -43,7 +42,7 @@ export class PluginNotificationInAppClient extends Plugin {
         deletable: true,
       },
     });
-    const mobileManager = this.pm.get(MobileManager);
+    const mobileManager = this.pm.get('mobile') as any;
     this.app.schemaInitializerManager.addItem(
       'mobile:tab-bar',
       'notification-in-app-message',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '../../../../schema-component';
+import { SchemaSettings } from '../../../../../application';
 import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../MobileTabBar.Item';
 import { SchemaSettingsActionLinkItem } from './SchemaSettingsActionLinkItem';
 

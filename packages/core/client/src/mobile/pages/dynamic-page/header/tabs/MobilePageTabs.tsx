@@ -18,7 +18,7 @@ import { useMobileRoutes } from '../../../../mobile-providers';
 import { useMobilePage } from '../../../dynamic-page/context';
 import { MobilePageTabInitializer } from './initializer';
 import { MobilePageTabsSettings } from './settings';
-import { useStyles } from './styles';
+import { useMobileTabsStyles } from './styles';
 import { Icon } from '../../../../../icon';
 
 export const MobilePageTabs: FC = () => {
@@ -30,7 +30,7 @@ export const MobilePageTabs: FC = () => {
   const { t } = useTranslation();
 
   const navigate = useNavigate();
-  const { componentCls, hashId } = useStyles();
+  const { componentCls, hashId } = useMobileTabsStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
     return tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid;

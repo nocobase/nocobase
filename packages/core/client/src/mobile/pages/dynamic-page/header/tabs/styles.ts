@@ -9,7 +9,7 @@
 
 import { genStyleHook } from '../../../../../schema-component';
 
-export const useStyles = genStyleHook('nb-mobile-tabs-for-mobile-action-page', (token) => {
+export const useMobileTabsStyles = genStyleHook('nb-mobile-tabs-for-mobile-action-page', (token) => {
   const { componentCls } = token;
   return {
     [componentCls]: {

@@ -15,7 +15,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMobileApp } from '../../MobileAppContext';
 import { MobilePageHeader } from '../../pages/dynamic-page';
 import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
-import { useStyles } from '../../pages/dynamic-page/header/tabs';
+import { useMobileTabsStyles } from '../../pages/dynamic-page/header/tabs';
 import { hideDivider } from '../hideDivider';
 import { useSchemaInitializerRender } from '../../../application';
 import {
@@ -37,7 +37,7 @@ export const MobileTabsForMobileActionPage: any = observer(
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const { activeKey: _activeKey, onChange: _onChange } = useTabsContext() || {};
     const [activeKey, setActiveKey] = useState(_activeKey);
-    const { componentCls, hashId } = useStyles();
+    const { componentCls, hashId } = useMobileTabsStyles();
     const { showBackButton } = useMobileApp();
     const { goBack } = useBackButton();
     const { isInMobileDrawer } = useFlag();

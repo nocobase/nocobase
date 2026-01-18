@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { genStyleHook } from '../schema-component/antd';
+import { genStyleHook } from '../../schema-component';
 
 export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer', (token) => {
   const { componentCls } = token;

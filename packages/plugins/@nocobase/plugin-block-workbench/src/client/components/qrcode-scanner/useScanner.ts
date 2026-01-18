@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { useApp } from '@nocobase/client';
-import PluginMobileClient from '@nocobase/client';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +21,7 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
 
 export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
   const app = useApp();
-  const mobileManager = app.pm.get(PluginMobileClient) as PluginMobileClient;
+  const mobileManager = app.pm.get('mobile') as any;
   const mobileRouter = mobileManager.mobileRouter;
   const appRouter = app.router;
 

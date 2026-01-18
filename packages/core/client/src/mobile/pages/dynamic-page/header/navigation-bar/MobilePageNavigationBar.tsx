@@ -12,7 +12,7 @@ import { NavBar } from 'antd-mobile';
 import React, { FC } from 'react';
 
 import { useRouteTranslation } from '../../../../locale';
-import { useStyles } from './styles';
+import { useMobileNavigationBarStyles } from './styles';
 import { useMobileTitle } from '../../../../mobile-providers/context/MobileTitle';
 import { useMobilePage } from '../../context';
 import { cx, NocoBaseRecursionField, SchemaToolbarProvider } from '../../../../..';
@@ -21,7 +21,7 @@ export const MobilePageNavigationBar: FC = () => {
   const { title } = useMobileTitle() || {};
   const { displayNavigationBar = true, displayPageTitle = true } = useMobilePage();
   const fieldSchema = useFieldSchema();
-  const { componentCls, hashId } = useStyles();
+  const { componentCls, hashId } = useMobileNavigationBarStyles();
   const { t } = useRouteTranslation();
 
   if (!displayNavigationBar) return null;

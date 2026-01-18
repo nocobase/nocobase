@@ -8,16 +8,10 @@
  */
 
 import {
-  AdminProvider,
   AllDataBlocksProvider,
-  AntdAppProvider,
   AssociationFieldMode,
   AssociationFieldModeProvider,
-  BlockTemplateProvider,
-  GlobalThemeProvider,
-  OpenModeProvider,
   useAssociationFieldModeContext,
-  usePlugin,
   usePopupSettings,
   zIndexContext,
 } from '../schema-component';
@@ -36,6 +30,11 @@ import { DesktopMode } from './desktop-mode/DesktopMode';
 import { PluginMobileClient } from './PluginMobileClient';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
+import { usePlugin } from '../application';
+import { AdminProvider } from '../route-switch';
+import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
+import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
+import { BlockTemplateProvider } from '../schema-templates';
 
 const CommonDrawer: FC = (props) => {
   const { isPopupVisibleControlledByURL } = usePopupSettings();

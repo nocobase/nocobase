@@ -7,18 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  Action,
-  OpenModeProvider,
-  SchemaComponentOptions,
-  useMobileLayout,
-  usePopupSettings,
-} from '../schema-component';
+import { Action, SchemaComponentOptions, usePopupSettings } from '../schema-component';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, useEffect } from 'react';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from './adaptor-of-desktop/FilterAction';
 import { mobileComponents } from './pages/dynamic-page/MobilePage';
+import { useMobileLayout } from '../route-switch';
+import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 
 const ResetScrollbar = createGlobalStyle`
   ::-webkit-scrollbar {

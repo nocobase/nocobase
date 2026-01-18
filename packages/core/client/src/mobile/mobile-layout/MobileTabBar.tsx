@@ -12,7 +12,7 @@ import 'antd-mobile/es/components/tab-bar/tab-bar.css';
 import React, { FC, useCallback } from 'react';
 
 import { useMobileRoutes } from '../mobile-providers';
-import { useStyles } from './mobile-tab-bar/styles';
+import { useMobileTabBarStyles } from './mobile-tab-bar/styles';
 
 import { isInnerLink } from '../utils';
 import { MobileTabBarInitializer } from './mobile-tab-bar/initializer';
@@ -33,7 +33,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
-  const { componentCls, hashId } = useStyles();
+  const { componentCls, hashId } = useMobileTabBarStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
   const validRouteList = routeList.filter((item) => item.schemaUid || isInnerLink(item.options?.url));

@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Icon, useCompile } from '../../../schema-component';
 import { Badge } from 'antd-mobile';
 import classnames from 'classnames';
 import React, { FC } from 'react';
 import { useRouteTranslation } from '../../../locale';
+import { Icon } from '../../../../icon';
+import { useCompile } from '../../../../schema-component';
 
 export interface MobileTabBarItemProps {
   icon?: string | React.ReactNode;
