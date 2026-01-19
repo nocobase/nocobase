@@ -186,7 +186,13 @@ export class AIEmployee {
           if (isMessageEmpty) {
             isMessageEmpty = false;
           }
-          this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks })}\n\n`);
+          if (chunks.action === 'showToolCalls') {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
+          } else if (chunks.action === 'beforeToolCall') {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
+          } else {
+            this.ctx.logger.warn(`Unknown custom action: `, chunks);
+          }
         }
       }
 
@@ -473,13 +479,13 @@ export class AIEmployee {
     return updated;
   }
 
-  async updateToolCallDone(toolCallId: string, { status, content }: any) {
+  async updateToolCallDone(toolCallId: string, result: any) {
     const [updated] = await this.aiToolMessagesModel.update(
       {
         invokeStatus: 'done',
         invokeEndTime: new Date(),
-        status,
-        content,
+        status: result?.status ?? 'success',
+        content: result?.content ?? result,
       },
       {
         where: {

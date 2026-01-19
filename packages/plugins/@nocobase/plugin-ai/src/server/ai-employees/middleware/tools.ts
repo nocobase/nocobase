@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMiddleware, humanInTheLoopMiddleware } from 'langchain';
+import { createMiddleware, humanInTheLoopMiddleware, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import z from 'zod';
 import { ToolOptions } from '../../manager/tool-manager';
+import _ from 'lodash';
 
 export const toolInteractionMiddleware = (_aiEmployee: AIEmployee, tools: ToolOptions[]) => {
   const interruptOn = {};
@@ -26,18 +27,34 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
   return createMiddleware({
     name: 'ToolCallStatusMiddleware',
     wrapToolCall: async (request, handler) => {
+      const { runtime, toolCall } = request;
       await aiEmployee.updateToolCallPending(request.toolCall.id);
-      let doneResult;
+      let result;
       try {
-        const result = await handler(request);
-        doneResult = result;
-        return result;
+        runtime.writer?.({ action: 'beforeToolCall', body: { toolCall } });
+        const toolMessage = await handler(request);
+        runtime.writer?.({
+          action: 'afterToolCall',
+          body: { toolCall, toolMessage },
+        });
+
+        if (toolMessage instanceof ToolMessage) {
+          result = _.isObject(toolMessage.content) ? toolMessage.content : JSON.parse(toolMessage.content);
+        } else {
+          result = toolMessage.toJSON();
+        }
+
+        return toolMessage;
       } catch (e) {
-        doneResult = { status: 'error', content: e.message };
         aiEmployee.logger.error(e);
+        result = { status: 'error', content: e.message };
+        runtime.writer?.({
+          action: 'afterToolCallError',
+          body: { toolCall, error: e },
+        });
         throw e;
       } finally {
-        await aiEmployee.updateToolCallDone(request.toolCall.id, doneResult);
+        await aiEmployee.updateToolCallDone(request.toolCall.id, result);
       }
     },
   });

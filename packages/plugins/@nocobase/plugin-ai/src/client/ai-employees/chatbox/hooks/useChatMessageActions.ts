@@ -376,13 +376,6 @@ export const useChatMessageActions = () => {
       args?: Record<string, any>;
     }) => {
       setResponseLoading(true);
-      addMessage({
-        key: uid(),
-        role: aiEmployee.username,
-        content: { type: 'text', content: '' },
-        loading: true,
-      });
-
       try {
         const sendRes = await api.request({
           url: 'aiConversations:callTool',
