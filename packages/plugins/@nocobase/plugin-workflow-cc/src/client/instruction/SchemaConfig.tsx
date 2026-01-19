@@ -548,7 +548,6 @@ export function CCTaskCardConfigButton() {
   const ctx = useFlowEngineContext();
   const flowContext = useFlowContext();
   const { setFormValueChanged } = useActionContext();
-  const themeToken = ctx.themeToken;
   const t = ctx.t;
 
   const taskCardUid = form.values.taskCardUid;
