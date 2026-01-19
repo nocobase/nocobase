@@ -159,7 +159,6 @@ export function useDrawer() {
 
     ctx.defineProperty('view', {
       get: () => currentDrawer,
-      // meta: createViewMeta(ctx),
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
