@@ -169,23 +169,6 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
   };
 
   const getCurrentCollection = async (): Promise<Collection | null> => {
-    const view = anchorView ?? ctx.view;
-    // 优先根据 popup.runtime.resource.collectionName 推断集合：
-    // - 适用于非路由弹窗（无 navigation.viewStack）但传入了 collectionName 的场景（如 record picker/quick create）
-    // - 即使缺少 filterByTk，也能加载字段树，避免变量面板中 record 节点变成叶子 “record”
-    if (view && isPopupView(view)) {
-      const runtime = await buildPopupRuntime(ctx, view);
-      const res = runtime?.resource;
-      const dataSourceKey = res?.dataSourceKey || view?.inputArgs?.dataSourceKey || 'main';
-      const collectionName = res?.collectionName || view?.inputArgs?.collectionName;
-      if (collectionName) {
-        const ds = ctx.dataSourceManager?.getDataSource?.(dataSourceKey);
-        const col = ds?.collectionManager?.getCollection?.(collectionName) || null;
-        if (col) return col;
-      }
-    }
-
-    // 兜底：回退到 recordRef 推断（要求 filterByTk 存在）
     const ref = await resolveRecordRef(ctx);
     if (!ref?.collection) return null;
     const ds = ctx.dataSourceManager?.getDataSource?.(ref.dataSourceKey || 'main');
@@ -372,19 +355,24 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
         const props: Record<string, any> = {};
         // 当前弹窗 UID（纯前端变量）
         props.uid = { type: 'string', title: t('Popup uid') };
-        // 基于锚定视图计算“当前弹窗记录”的集合与 RecordRef
-        const recordFactory: PropertyMetaFactory = async () => {
-          const col = await getCurrentCollection();
-          if (!col) return null;
-          return await buildRecordMeta(
-            () => col,
-            t('Current popup record'),
-            (c) => resolveRecordRef(c),
-          );
-        };
-        recordFactory.title = t('Current popup record');
-        recordFactory.hasChildren = true;
-        props.record = recordFactory;
+        // 仅当存在 filterByTk（可推断具体记录）时才提供“当前弹窗记录”变量；
+        // 对于新增/选择类弹窗（无 filterByTk），不应展示该变量以避免误导。
+        const recordRef = await resolveRecordRef(ctx);
+        if (recordRef) {
+          // 基于锚定视图计算“当前弹窗记录”的集合与 RecordRef
+          const recordFactory: PropertyMetaFactory = async () => {
+            const col = await getCurrentCollection();
+            if (!col) return null;
+            return await buildRecordMeta(
+              () => col,
+              t('Current popup record'),
+              (c) => resolveRecordRef(c),
+            );
+          };
+          recordFactory.title = t('Current popup record');
+          recordFactory.hasChildren = true;
+          props.record = recordFactory;
+        }
         // 当 view.inputArgs 带有 sourceId + associationName 时，提供“上级记录”变量（基于 sourceId 推断）
         try {
           const inputArgs = ctx.view?.inputArgs;

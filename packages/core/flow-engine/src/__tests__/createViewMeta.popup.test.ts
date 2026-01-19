@@ -176,35 +176,8 @@ describe('createViewMeta - popup variables', () => {
     });
   });
 
-  it('record factory can load field tree even without filterByTk', async () => {
+  it('does not expose popup.record without filterByTk', async () => {
     const { ctx } = makeCtx();
-
-    // Minimal collection stub for createCollectionContextMeta/buildRecordMeta
-    const postsCollection: any = {
-      name: 'posts',
-      title: 'Posts',
-      fields: [
-        {
-          name: 'title',
-          title: 'Title',
-          type: 'string',
-          interface: 'input',
-          uiSchema: {},
-          filterable: true,
-          isAssociationField: () => false,
-        },
-      ],
-    };
-
-    ctx.defineProperty('dataSourceManager', {
-      value: {
-        getDataSource: (_key: string) => ({
-          collectionManager: {
-            getCollection: (name: string) => (name === 'posts' ? postsCollection : null),
-          },
-        }),
-      },
-    });
 
     const anchorView: FlowView = {
       type: 'dialog',
@@ -213,7 +186,7 @@ describe('createViewMeta - popup variables', () => {
         viewUid: 'popup-uid',
         dataSourceKey: 'main',
         collectionName: 'posts',
-        // filterByTk 缺失：应仍可展示字段树（仅用于变量选择菜单）
+        // filterByTk 缺失：不应展示“当前弹窗记录”变量
       },
       Header: null,
       Footer: null,
@@ -221,16 +194,10 @@ describe('createViewMeta - popup variables', () => {
       update: () => void 0,
     } as any;
 
+    ctx.defineProperty('view', { value: anchorView });
+
     const meta = (await createPopupMeta(ctx, anchorView)())!;
     const props = typeof meta.properties === 'function' ? await (meta.properties as any)() : meta.properties || {};
-
-    expect(typeof props.record).toBe('function');
-    const recordMeta = await (props.record as any)();
-    expect(recordMeta).toBeTruthy();
-    expect(recordMeta.title).toBe('Current popup record');
-
-    const recordProps =
-      typeof recordMeta.properties === 'function' ? await recordMeta.properties() : recordMeta.properties;
-    expect(recordProps).toHaveProperty('title');
+    expect(props.record).toBeUndefined();
   });
 });
