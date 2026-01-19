@@ -5,19 +5,20 @@ import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginSitemap } from '@rspress/plugin-sitemap';
 import * as path from 'node:path';
 
-const base = process.env.DOCS_BASE || '/';
+const lang = process.env.DOCS_LANG || 'en';
+const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
 
 export default defineConfig({
-  root: path.join(__dirname, 'docs'),
-  outDir: path.join(__dirname, 'dist'),
+  root: path.join(__dirname, `docs/${lang}`),
+  outDir: path.join(__dirname, lang === 'en' ? 'dist' : `dist/${lang}`),
   themeDir: path.join(__dirname, 'theme'),
   base,
   // title: 'NocoBase Documentation',
   icon: 'https://www.nocobase.com/images/favicon/apple-touch-icon.png',
   logo: {
-    light: '/logo.png',
-    dark: '/logo-white.png',
+    light: 'https://static-docs.nocobase.com/20260119193433.png',
+    dark: 'https://static-docs.nocobase.com/20260119193447.png',
   },
   route: {
     cleanUrls: true,
@@ -55,24 +56,24 @@ export default defineConfig({
     // }),
     pluginLlms(),
     pluginSitemap({
-      siteUrl: 'https://docs.nocobase.com', // 替换为你的网站 URL
+      siteUrl: `https://v2.docs.nocobase.com${lang === 'en' ? '' : `/${lang}`}`,
     }),
   ],
-  locales: [
-    {
-      lang: 'en',
-      label: 'English',
-      title: 'NocoBase Documentation',
-      description: 'Helping you learn and master NocoBase quickly',
-    },
-    {
-      lang: 'cn',
-      label: '简体中文',
-      title: 'NocoBase 文档',
-      description: '帮助你快速学习和掌握 NocoBase',
-    },
-  ],
-  lang: 'en',
+  // locales: [
+  //   {
+  //     lang: 'en',
+  //     label: 'English',
+  //     title: 'NocoBase Documentation',
+  //     description: 'Helping you learn and master NocoBase quickly',
+  //   },
+  //   {
+  //     lang: 'cn',
+  //     label: '简体中文',
+  //     title: 'NocoBase 文档',
+  //     description: '帮助你快速学习和掌握 NocoBase',
+  //   },
+  // ],
+  lang,
   themeConfig: {
     socialLinks: [
       {
