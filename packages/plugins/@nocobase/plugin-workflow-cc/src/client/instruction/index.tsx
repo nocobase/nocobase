@@ -161,9 +161,7 @@ export default class extends Instruction {
     },
   };
   createDefaultConfig() {
-    return {
-      ccDetail: uid(),
-    };
+    return {};
   }
   scope = {
     useNodeContext,
