@@ -125,7 +125,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     [t],
   );
 
-  const buildCurrentObjectMetaTree = React.useCallback(
+  const buildItemMetaTree = React.useCallback(
     (targetPath?: string): MetaTreeNode[] | undefined => {
       if (!rootCollection?.getField) return undefined;
       const segs = parseTargetPathToSegments(targetPath);
@@ -152,7 +152,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         current = nextCollection;
       }
 
-      // 仅在“关系字段的子路径”场景下追加 currentObject 变量树；
+      // 仅在“关系字段的子路径”场景下追加 item 变量树；
       // 顶层字段/非关联嵌套对象字段应使用 formValues（避免语义混淆）。
       if (levels.length <= 1) {
         return undefined;
@@ -164,7 +164,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
         if (level.toMany) {
           children.push({
-            title: t('Index'),
+            title: t('Index (starts from 0)'),
             name: 'index',
             type: 'number',
             paths: [...basePaths, 'index'],
@@ -180,8 +180,8 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         });
 
         if (idx > 0) {
-          // 直接把上级对象节点作为子节点，避免出现 “Parent object / Parent object” 的重复层级
-          children.push(buildObjectNode(idx - 1, [...basePaths, 'parentObject'], 'parentObject', 'Parent object'));
+          // 直接把上级项节点作为子节点，避免出现 “Parent item / Parent item” 的重复层级
+          children.push(buildObjectNode(idx - 1, [...basePaths, 'parentItem'], 'parentItem', 'Parent object'));
         }
 
         const viaLabel = idx > 0 ? level?.viaLabel : undefined;
@@ -196,7 +196,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         };
       };
 
-      return [buildObjectNode(levels.length - 1, ['currentObject'], 'currentObject', 'Current object')];
+      return [buildObjectNode(levels.length - 1, ['item'], 'item', 'Current object')];
     },
     [buildCollectionMetaTreeNodes, rootCollection, t],
   );
@@ -471,7 +471,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
   const collapseItems: CollapseProps['items'] = value.map((item, index) => {
     const mode = getEffectiveMode(item);
-    const extraMetaTree = buildCurrentObjectMetaTree(item.targetPath);
+    const extraMetaTree = buildItemMetaTree(item.targetPath);
     return {
       key: item.key || String(index),
       label: renderPanelHeader(item, index),

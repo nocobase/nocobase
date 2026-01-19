@@ -20,7 +20,7 @@ HelloBlockModel.registerFlow({
   steps: {
     refReady: {
       handler: async (ctx) => {
-        ctx.defineProperty('currentObject', {
+        ctx.defineProperty('item', {
           get: async () => {
             return {
               value: {
@@ -36,19 +36,19 @@ HelloBlockModel.registerFlow({
         });
         ctx.onRefReady(ctx.ref, async (el) => {
           const json = await ctx.resolveJsonTemplate({
-            key1: '{{ctx.currentObject.value.key1}}',
-            key2: '{{ctx.currentObject.value.key2}}',
-            key3: '{{ctx.currentObject.value.key3}}',
-            key4: '{{ctx.currentObject.value.key4}}',
-            key5: '{{ctx.currentObject.value.key5}}',
-            key6: '{{ctx.currentObject.value.key6}}',
+            key1: '{{ctx.item.value.key1}}',
+            key2: '{{ctx.item.value.key2}}',
+            key3: '{{ctx.item.value.key3}}',
+            key4: '{{ctx.item.value.key4}}',
+            key5: '{{ctx.item.value.key5}}',
+            key6: '{{ctx.item.value.key6}}',
             key7: {
-              key1: '{{ctx.currentObject.value.key1}}',
-              key2: '{{ctx.currentObject.value.key2}}',
+              key1: '{{ctx.item.value.key1}}',
+              key2: '{{ctx.item.value.key2}}',
             },
-            key8: ['{{ctx.currentObject.value.key1}}', '{{ctx.currentObject.value.key3}}', '{{ctx.currentObject.value.key6}}'],
+            key8: ['{{ctx.item.value.key1}}', '{{ctx.item.value.key3}}', '{{ctx.item.value.key6}}'],
             key9:
-              '{{ctx.currentObject.value.key1}} - "{{ctx.currentObject.value.key3}}" - {{ctx.currentObject.value.key3}} - val9',
+              '{{ctx.item.value.key1}} - "{{ctx.item.value.key3}}" - {{ctx.item.value.key3}} - val9',
           });
           el.innerHTML = `<pre>${JSON.stringify(json, null, 2)}</pre>`;
         });

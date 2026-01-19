@@ -1055,39 +1055,37 @@ export class RuleEngine {
       ctx.defineProperty('formValues', { get: () => trackingFormValues, cache: false });
     }
 
-    // “当前对象”链：用于多层级关系字段条件
-    // 语义：ctx.currentObject -> { index?, isNew?, isStored?, value, parentObject? }，其中：
+    // “当前项”链：用于多层级关系字段条件
+    // 语义：ctx.item -> { index?, isNew?, isStored?, value, parentItem? }，其中：
     // - index：仅当当前对象位于对多关联行内时存在（0-based）
     // - value：当前对象的值（来自 formValues 的对应切片，支持无限嵌套属性访问）
-    // - parentObject：上级对象（同结构，可链式 parentObject.parentObject...）
-    let currentCached: any;
-    let currentCachedReady = false;
-    ctx.defineProperty('currentObject', {
-      get: () => {
-        if (!currentCachedReady) {
-          currentCached = this.buildCurrentObjectChainValue(baseCtx, trackingFormValues, targetNamePath);
-          currentCachedReady = true;
-        }
-        return currentCached;
-      },
-      cache: false,
-    });
+    // - parentItem：上级项（同结构，可链式 parentItem.parentItem...）
+    let itemCached: any;
+    let itemCachedReady = false;
+    const getItem = () => {
+      if (!itemCachedReady) {
+        itemCached = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath);
+        itemCachedReady = true;
+      }
+      return itemCached;
+    };
+    ctx.defineProperty('item', { get: getItem, cache: false });
     return ctx;
   }
 
-  private buildCurrentObjectChainValue(baseCtx: any, trackingFormValues: any, targetNamePath: NamePath | null) {
+  private buildItemChainValue(baseCtx: any, trackingFormValues: any, targetNamePath: NamePath | null) {
     const rootCollection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
-    const buildNode = (value: any, index: number | undefined, parentObject: any) => {
+    const buildNode = (value: any, index: number | undefined, parentItem: any) => {
       return {
         index,
         isNew: value?.isNew,
         isStored: value?.isStored,
         value,
-        parentObject,
+        parentItem,
       };
     };
     const defaultRoot = buildNode(trackingFormValues, undefined, undefined);
-    // currentObject 仅用于“关系字段的子路径”场景；
+    // item 仅用于“关系字段的子路径”场景；
     // 顶层字段/非关联嵌套对象字段应使用 formValues。
     if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) return undefined;
     if (!rootCollection?.getField) return undefined;
@@ -1191,8 +1189,8 @@ export class RuleEngine {
       const varName = sep >= 0 ? rest.slice(0, sep) : rest;
       const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
 
-      // 特殊变量：currentObject 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parentObject/index 链依赖 fieldIndex。
-      if (varName === 'currentObject') {
+      // 特殊变量：item 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parentItem/index 链依赖 fieldIndex。
+      if (varName === 'item') {
         const disposer = reaction(
           () => this.getFieldIndexSignature(baseCtx),
           () => this.scheduleRule(rule.id),

@@ -32,7 +32,7 @@ export function SubTableField(props) {
     allowCreate, //acl
     isConfigMode,
     parentFieldIndex,
-    parentCurrentObject,
+    parentItem,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -112,7 +112,7 @@ export function SubTableField(props) {
           id: `field-${col.dataIndex}-${rowIdx}`,
           value: text,
           parentFieldIndex,
-          parentCurrentObject,
+          parentItem,
           onChange: (value) => {
             handleCellChange(pageRowIdx, col.dataIndex, value?.target?.value || value);
           },

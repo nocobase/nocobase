@@ -42,7 +42,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
           const key = `row_${index}_${blockPage}`;
           const fork = gridModel.createFork({}, `${key}`);
           fork.gridContainerRef = React.createRef<HTMLDivElement>();
-          const parentObject = model?.context?.currentObject;
+          const parentItem = model?.context?.item;
           fork.context.defineProperty('fieldIndex', {
             get: () => [...resultIndex, `${collectionName}:${index}`],
           });
@@ -52,13 +52,13 @@ const ArrayNester = ({ name, value = [] }: any) => {
           fork.context.defineProperty('record', {
             get: () => record,
           });
-          fork.context.defineProperty('currentObject', {
+          fork.context.defineProperty('item', {
             get: () => ({
               index,
               isNew: item?.isNew,
               isStored: item?.isStored,
               value: item,
-              parentObject,
+              parentItem,
             }),
             cache: false,
           });

@@ -484,7 +484,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record, parentFieldIndex, parentCurrentObject } = props;
+      const { value, id, rowIdx, record, parentFieldIndex, parentItem } = props;
       // 子表格列模型本身没有行级 fieldIndex，上下文中无法把 `roles.name` 解析成 `roles[0].name`，
       // 导致“默认值/赋值规则”在对多关系字段下无法生效。
       // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
@@ -509,15 +509,15 @@ export class SubTableColumnModel<
             value: [...baseArr, `${associationKey}:${rowIndex}`],
           });
         }
-        fork.context.defineProperty('currentObject', {
+        fork.context.defineProperty('item', {
           get: () => {
-            const parentObject = (parentCurrentObject ?? this.context?.currentObject) as any;
+            const parentItemCtx = (parentItem ?? this.context?.item) as any;
             return {
               index: Number.isFinite(rowIndex) ? rowIndex : undefined,
               isNew: record?.isNew,
               isStored: record?.isStored,
               value: record,
-              parentObject,
+              parentItem: parentItemCtx,
             };
           },
           cache: false,

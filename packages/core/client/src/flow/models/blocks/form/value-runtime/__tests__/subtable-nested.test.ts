@@ -44,7 +44,7 @@ describe('SubTableColumnModel (nested subform)', () => {
     const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
     runtime.mount({ sync: true });
 
-    // Provide collection metadata for currentObject chain & to-many index checks.
+    // Provide collection metadata for item chain & to-many index checks.
     const rolesCollection: any = { getField: () => null };
     const rolesField: any = { isAssociationField: () => true, type: 'hasMany', targetCollection: rolesCollection };
     const usersItemCollection: any = { getField: (name: string) => (name === 'roles' ? rolesField : null) };
