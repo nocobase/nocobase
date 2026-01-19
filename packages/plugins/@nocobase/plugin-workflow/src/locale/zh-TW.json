@@ -54,7 +54,7 @@
   "Collection event": "Collection event",
   "Collection operations": "Collection operations",
   "Completed": "Completed",
-  "Concat": "Concat",
+  "Concatenate": "連接",
   "Condition": "Condition",
   "Condition expression": "Condition expression",
   "Condition label": "Condition label",
@@ -254,5 +254,4 @@
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.",
   "Yes": "Yes",
-  "concat": "concat"
 }

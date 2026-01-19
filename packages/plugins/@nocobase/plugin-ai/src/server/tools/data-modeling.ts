@@ -8,6 +8,9 @@
  */
 import { ToolOptions } from '../manager/tool-manager';
 import { Context } from '@nocobase/actions';
+import { AIManager } from '@nocobase/ai';
+import { DataSource } from '@nocobase/data-source-manager';
+import { Field } from '@nocobase/database';
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -480,5 +483,130 @@ export const defineCollections: ToolOptions = {
       status: 'success',
       content: 'Defined collections successfully in one transaction.',
     };
+  },
+};
+
+export const searchFieldMetadata: ToolOptions = {
+  name: 'searchFieldMetadata',
+  title: '{{t("Search field metadata")}}',
+  description:
+    '{{t("Search fields in data models by keyword (english first). Returns either search results or a suggested query.")}}',
+
+  schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search keywords, e.g. "order amount", "user email".',
+      },
+      dataSource: {
+        type: 'string',
+        description: 'Limit search to a specific data source.',
+      },
+      collection: {
+        type: 'string',
+        description: 'Limit search to a specific collection.',
+      },
+      fieldType: {
+        type: 'string',
+        description: 'Limit search to a specific field type, e.g. "string", "number".',
+      },
+      limit: {
+        type: 'number',
+        minimum: 1,
+        maximum: 20,
+        description: 'Maximum number of results to return. Default is 5.',
+      },
+    },
+    required: ['query'],
+    additionalProperties: false,
+  },
+
+  invoke: async (
+    ctx,
+    args: {
+      query: string;
+      dataSource?: string;
+      collection?: string;
+      fieldType?: string;
+      limit?: number;
+    },
+  ) => {
+    const { query, dataSource: dataSourceArg, collection: collectionArg, fieldType, limit = 5 } = args || {};
+
+    if (!query || typeof query !== 'string') {
+      return {
+        status: 'error',
+        content: 'Search query is required.',
+      };
+    }
+
+    try {
+      const aiManager: AIManager = ctx.app.aiManager;
+      const index = aiManager.documentManager.getIndex('dataModels.fields');
+
+      if (!index) {
+        return {
+          status: 'error',
+          content: 'Field search index is not available.',
+        };
+      }
+
+      let isSuggest = false;
+      let result = await index.searchAsync(query, {
+        limit: Math.min(limit * 3, 20),
+      });
+
+      if (!result?.length) {
+        result = await index.searchAsync(query, {
+          suggest: true,
+          limit: Math.min(limit * 3, 20),
+        });
+        isSuggest = true;
+      }
+
+      const results = (result || [])
+        .map((path: string) => {
+          const [ds, coll, f] = path.split('.');
+
+          if (dataSourceArg && ds !== dataSourceArg) {
+            return null;
+          }
+          if (collectionArg && coll !== collectionArg) {
+            return null;
+          }
+          const dataSource: DataSource = ctx.app.dataSourceManager.get(ds);
+          const collection = dataSource.collectionManager.getCollection(coll);
+          const field = collection.getField(f) as Field;
+          if (fieldType && field.type !== fieldType) {
+            return null;
+          }
+
+          return {
+            name: field.name,
+            title: field.options?.uiSchema?.title || field.name,
+            dataSource: ds,
+            collection: coll,
+            fieldType: field.type,
+            options: field.options,
+          };
+        })
+        .filter(Boolean)
+        .slice(0, limit);
+
+      return {
+        status: 'success',
+        content: JSON.stringify({
+          kind: !isSuggest ? 'exact_results' : 'suggested_results',
+          results,
+        }),
+      };
+    } catch (err: any) {
+      ctx.log.error(err, { module: 'ai-employees', submodule: 'tool-calling', method: 'searchFieldMetadata' });
+      return {
+        status: 'error',
+        content: `Failed to search field metadata: ${err.message}`,
+      };
+    }
   },
 };

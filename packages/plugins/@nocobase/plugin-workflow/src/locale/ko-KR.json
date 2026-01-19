@@ -59,7 +59,7 @@
   "Collection event": "컬렉션 이벤트",
   "Collection operations": "컬렉션 작업",
   "Completed": "완료됨",
-  "Concat": "Concat",
+  "Concatenate": "연결",
   "Condition": "조건",
   "Condition expression": "조건식",
   "Condition label": "Condition label",
@@ -274,6 +274,5 @@
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "버튼 클릭 시 데이터 저장 없이 워크플로우가 바로 트리거됩니다. \"Custom action event\"에만 바인딩할 수 있습니다.",
   "Workflow will be triggered directly once the button is clicked, without data saving.": "버튼 클릭 시 데이터 저장 없이 워크플로우가 바로 트리거됩니다.",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "알 수 없는 유형의 워크플로우는 오류를 유발합니다. 삭제하거나 해당 플러그인을 확인하세요.",
-  "Yes": "Yes",
-  "concat": "연결"
+  "Yes": "Yes"
 }

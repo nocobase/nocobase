@@ -22,7 +22,7 @@ NocoBase 预置了多个针对特定场景的 AI 员工。
 然后在`Model settings`标签页中，为内置 AI 员工设置模型：
 
 - 选择 LLM 服务；
-- 选择要使用的大模型。推荐（已验证）：**gemini-2.5**、**deepseek-chat**、**qwen3-max**。
+- 选择要使用的大模型。推荐（已验证）：**gemini-3**、**deepseek-chat**、**qwen3-max**。
 
 ![20251022121729](https://static-docs.nocobase.com/20251022121729.png)
 

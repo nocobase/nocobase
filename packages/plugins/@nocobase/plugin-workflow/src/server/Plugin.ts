@@ -30,6 +30,7 @@ import { Instruction, InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import EndInstruction from './instructions/EndInstruction';
+import OutputInstruction from './instructions/OutputInstruction';
 import CreateInstruction from './instructions/CreateInstruction';
 import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
@@ -295,6 +296,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.registerInstruction('condition', ConditionInstruction);
     this.registerInstruction('multi-conditions', MultiConditionsInstruction);
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
     this.registerInstruction('query', QueryInstruction);

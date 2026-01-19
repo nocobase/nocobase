@@ -87,16 +87,17 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
   const processor = (await workflowPlugin.trigger(workflow as any, {
     ...args,
   })) as Processor;
-  if (!processor.lastSavedJob) {
+  const output = processor.execution.output ?? processor.lastSavedJob?.result;
+  if (output == null || output === '') {
     return { status: 'error' as const, content: 'No content' };
   }
-  if (processor.execution.status !== EXECUTION_STATUS.RESOLVED) {
+  if (processor.execution.status < 0) {
     return { status: 'error' as const, content: 'Workflow execution exceptions' };
   }
-  const lastJobResult = truncateLongStrings(processor.lastSavedJob.result);
+  const result = truncateLongStrings(output);
   return {
     status: 'success' as const,
-    content: JSON.stringify(lastJobResult),
+    content: JSON.stringify(result),
   };
 };
 
