@@ -27,6 +27,7 @@ if [ ! -f "/app/nocobase/package.json" ]; then
   touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
 fi
 
+cd /app/nocobase && yarn nocobase postinstall
 cd /app/nocobase && yarn nocobase create-nginx-conf
 cd /app/nocobase && yarn nocobase generate-instance-id
 rm -rf /etc/nginx/sites-enabled/nocobase.conf
