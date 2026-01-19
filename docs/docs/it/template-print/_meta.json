@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Panoramica",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Note di Configurazione",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Sintassi Template"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Funzionalità Avanzate"
+  },
+  {
+    "type": "custom-link",
+    "label": "Domande Frequenti (FAQ)",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Scenari Applicativi",
+    "link": "/template-print/scenes"
+  }
+]

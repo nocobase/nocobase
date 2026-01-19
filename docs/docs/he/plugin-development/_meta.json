@@ -1,0 +1,211 @@
+[
+  {
+    "type": "custom-link",
+    "label": "התחלה מהירה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "סקירת פיתוח Plugin",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "כתיבת Plugin ראשון",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "מבנה תיקיות הפרויקט",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "פיתוח Server-side",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "סקירה כללית",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections טבלאות נתונים",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database: פעולות",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager - ניהול מקורות נתונים",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL בקרת הרשאות",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cache",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context - הקשר בקשה",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration סקריפט שדרוג",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger יומן",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Telemetry",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n בינאום",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager ניהול משימות מתוזמנות",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "פיתוח Client-side",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "סקירה כללית",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router ניתוב",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL בקרת הרשאות",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager - ניהול מקורות נתונים",
+        "link": "/plugin-development/client/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Resource",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "Request",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "Styles & Themes",
+        "link": "/plugin-development/client/styles-themes"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger יומן",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n בינאום",
+        "link": "/plugin-development/client/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test",
+        "link": "/plugin-development/client/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "אחר",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "מדריך שדרוג Plugin",
+        "link": "/plugin-development/plugin-upgrade-guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "רשימת שפות",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "ניהול תלויות",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "בנייה",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

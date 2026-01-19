@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "การใช้งานพื้นฐาน",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "การวนซ้ำ",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "เครื่องมือจัดรูปแบบ"
+  }
+]

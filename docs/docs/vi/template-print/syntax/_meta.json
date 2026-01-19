@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Cách dùng cơ bản",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Xử lý vòng lặp",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Công cụ định dạng"
+  }
+]

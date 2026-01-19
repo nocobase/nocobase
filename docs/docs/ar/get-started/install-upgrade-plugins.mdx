@@ -1,0 +1,111 @@
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
+
+# تثبيت وترقية الإضافات
+
+## الإضافات المدمجة
+
+تُحدَّث الإضافات المدمجة في NocoBase تلقائيًا مع إصدار النواة، ولا تتطلب أي إجراء يدوي.
+
+## الإضافات التجارية
+
+يرجى تسجيل الدخول إلى خدمة NocoBase والاطلاع على الوثائق لمعرفة كيفية تثبيت وترقية الإضافات التجارية.
+
+## إضافات الطرف الثالث
+
+### تثبيت الإضافات عبر الإنترنت
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning ملاحظة
+
+يدعم NocoBase تثبيت الإضافات عبر الإنترنت من خلال الواجهة، لكن التجربة الحالية ليست مثالية. تشمل الأسباب ما يلي:
+
+- بسبب قيود آلية تشغيل عملية Node.js، بعد تثبيت أو تحديث الإضافات، تحتاج إلى إيقاف العملية ثم تشغيل أمر `upgrade` لكي تسري التغييرات؛
+- في سيناريوهات التطبيقات المتعددة، يواجه التثبيت عبر الإنترنت صعوبة في التعامل مع مزامنة الإضافات عبر تطبيقات فرعية متعددة في وقت واحد؛
+- لا يُدعم تحديث الإضافات دفعة واحدة؛
+- قد يؤدي التثبيت أو التحديث عبر الإنترنت بسهولة إلى إنهاء غير طبيعي لعملية التطبيق.
+
+لذلك، يُوصى باستخدام طرق سطر الأوامر أو الرفع اليدوي لتثبيت وترقية الإضافات. ننصح بدمج هذا مع سير عمل CI/CD، باستخدام طرق سطر الأوامر لتنزيل الإضافات واستخراجها وترقيتها، مما يضمن الاتساق والموثوقية لكل عملية نشر تحديث.
+
+:::
+
+### تثبيت الإضافات عبر سطر الأوامر
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+إذا كانت الإضافة مثبتة بالفعل وتحتاج إلى ترقية، فقم بتشغيل الأمر التالي:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### الرفع اليدوي والاستخراج
+
+يرجى تنزيل حزمة الإضافة إلى جهازك المحلي أولاً، ثم رفعها يدويًا واستخراجها إلى الدليل `./storage/plugins`. إذا كانت الإضافة ممكّنة بالفعل، فقم بتنفيذ الأمر التالي لإكمال ترقية الإضافة بعد الرفع والاستخراج.
+
+> ⚠️ **ملاحظة**: لتجنب مشاكل التخزين المؤقت، يرجى التأكد من إيقاف تطبيق NocoBase قبل التنفيذ.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### الطريقة الصحيحة لاستخراج إضافة
+
+يوضح المثال التالي كيفية استخراج حزمة إضافة بشكل صحيح إلى الدليل المحدد:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+سيقوم هذا الأمر باستخراج الإضافة إلى الدليل المحدد دون إنشاء طبقة دليل `package` إضافية.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### مثال على هيكل الدليل الصحيح
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

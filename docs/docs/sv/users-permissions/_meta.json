@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Användare",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Roller & behörigheter",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Rollkonfiguration",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Behörighetskonfiguration",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Använd i UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Rollunion",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Utvecklarguide",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Utöka behörighetsfältet",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avdelningar",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Avdelningshantering",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Avdelningsrollhantering",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Synkronisering av användardata",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Synkroniseringshantering",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Datakällor",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Utvecklarguide",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Utöka synkroniseringskällor",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Utöka synkroniseringsmål",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

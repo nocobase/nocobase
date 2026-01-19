@@ -1,0 +1,111 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
+# Eklentileri Kurma ve Yükseltme
+
+## Yerleşik Eklentiler
+
+NocoBase'in yerleşik eklentileri, çekirdek sürümüyle birlikte otomatik olarak güncellenir ve manuel bir işlem gerektirmez.
+
+## Ticari Eklentiler
+
+Ticari eklentileri nasıl kuracağınızı ve yükselteceğinizi öğrenmek için lütfen NocoBase Service'e giriş yapın ve ilgili belgelere başvurun.
+
+## Üçüncü Taraf Eklentileri
+
+### Çevrimiçi Eklenti Kurulumu
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Dikkat
+
+NocoBase, arayüz üzerinden çevrimiçi eklenti kurulumunu desteklese de, mevcut deneyim ideal değildir. Bunun nedenleri şunlardır:
+
+- Node.js işlem çalışma zamanı sınırlamaları nedeniyle, eklentileri kurduktan veya güncelledikten sonra değişikliklerin etkili olması için işlemi durdurmanız ve ardından `upgrade` komutunu çalıştırmanız gerekir;
+- Çoklu uygulama senaryolarında, çevrimiçi kurulum birden fazla alt uygulama arasındaki eklenti senkronizasyonunu aynı anda yönetmekte zorlanır;
+- Toplu eklenti güncellemeleri desteklenmemektedir;
+- Çevrimiçi kurulum veya güncellemeler, uygulama işleminin anormal şekilde sonlanmasına kolayca neden olabilir.
+
+Bu nedenle, eklentileri kurmak ve yükseltmek için komut satırı veya manuel yükleme yöntemlerini kullanmanız önerilir. Bunu CI/CD iş akışlarıyla entegre etmenizi, eklentileri indirmek, çıkarmak ve yükseltmek için komut satırı yöntemlerini kullanmanızı, böylece her güncelleme dağıtımında tutarlılık ve güvenilirlik sağlamanızı tavsiye ederiz.
+
+:::
+
+### Komut Satırı Aracılığıyla Eklenti Kurulumu
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Eklenti zaten kuruluysa ve yükseltilmesi gerekiyorsa, aşağıdaki komutu çalıştırın:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Manuel Yükleme ve Çıkarma
+
+Lütfen eklenti paketini önce yerel bilgisayarınıza indirin, ardından manuel olarak `./storage/plugins` dizinine yükleyin ve çıkarın. Eklenti zaten etkinse, yükleme ve çıkarma işleminden sonra eklenti yükseltmesini tamamlamak için aşağıdaki komutu çalıştırın.
+
+> ⚠️ **Dikkat**: Önbellek sorunlarını önlemek için, çalıştırmadan önce NocoBase uygulamasının durdurulduğundan emin olun.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Eklentiyi Doğru Şekilde Çıkarma
+
+Aşağıdaki örnek, bir eklenti paketini belirtilen dizine doğru şekilde nasıl çıkaracağınızı göstermektedir:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Bu komut, eklentiyi belirtilen dizine, fazladan bir `package` dizin katmanı oluşturmadan çıkaracaktır.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Doğru Dizin Yapısı Örneği
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "कॉन्फ़िगरेशन निर्देश",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "टेम्पलेट सिंटैक्स"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "उन्नत सुविधाएँ"
+  },
+  {
+    "type": "custom-link",
+    "label": "अक्सर पूछे जाने वाले प्रश्न",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "उपयोग के परिदृश्य",
+    "link": "/template-print/scenes"
+  }
+]
