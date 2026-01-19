@@ -73,7 +73,7 @@ function useReadAction() {
   };
 }
 
-function useReadActionProps(props) {
+function useReadActionProps() {
   const record = useCollectionRecordData();
   return record.status
     ? {
@@ -109,15 +109,13 @@ function useReadAllActionProps(props) {
   };
 }
 
-function FlowContextProvider(props) {
+function FlowContextProvider() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const api = useAPIClient();
   const { id } = useCollectionRecordData() || {};
   const [flowContext, setFlowContext] = useState<any>(null);
   const [record, setRecord] = useState<any>(useCollectionRecordData());
   const [node, setNode] = useState<any>(null);
-  const flowEngine = useFlowEngine();
-  const viewCtx = useFlowViewContext();
 
   useEffect(() => {
     if (!id) {
@@ -353,22 +351,11 @@ function RecordTitle(props) {
   return get(record, props.dataIndex);
 }
 
-function ContentDetailWithTitle(props) {
-  return (
-    <ContentDetail
-      title={<RecordTitle dataIndex={['title', 'node.title']} />}
-      extra={<RecordTitle dataIndex={'workflow.title'} />}
-    />
-  );
-}
-
 function TaskItem() {
   const token = useAntdToken();
   const record = useCollectionRecordData();
   const navigate = useNavigate();
   const { setRecord } = usePopupRecordContext();
-  const flowEngine = useFlowEngine();
-  const viewCtx = useFlowViewContext();
 
   const onOpen = useCallback(
     (e: React.MouseEvent) => {
