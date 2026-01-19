@@ -275,22 +275,22 @@ describe('VariableTag', () => {
   it('should display full path when metaTreeNode has no parentTitles but metaTree is provided', async () => {
     const metaTree = [
       {
-        name: 'currentObject',
-        title: 'Current object',
+        name: 'item',
+        title: 'Current item',
         type: 'object',
-        paths: ['currentObject'],
+        paths: ['item'],
         children: [
           {
             name: 'value',
             title: 'Attributes',
             type: 'object',
-            paths: ['currentObject', 'value'],
+            paths: ['item', 'value'],
             children: [
               {
                 name: 'nickname',
                 title: 'Nickname',
                 type: 'string',
-                paths: ['currentObject', 'value', 'nickname'],
+                paths: ['item', 'value', 'nickname'],
               },
             ],
           },
@@ -302,13 +302,13 @@ describe('VariableTag', () => {
       name: 'nickname',
       title: 'Nickname',
       type: 'string',
-      paths: ['currentObject', 'value', 'nickname'],
+      paths: ['item', 'value', 'nickname'],
       // 没有 parentTitles 属性
     };
 
     renderWithCtx(
       <VariableTag
-        value="{{ ctx.currentObject.value.nickname }}"
+        value="{{ ctx.item.value.nickname }}"
         metaTreeNode={mockMetaTreeNode as any}
         metaTree={metaTree as any}
       />,
@@ -316,7 +316,7 @@ describe('VariableTag', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('Current object/Attributes/Nickname')).toBeInTheDocument();
+        expect(screen.getByText('Current item/Attributes/Nickname')).toBeInTheDocument();
       },
       { timeout: 3000 },
     );

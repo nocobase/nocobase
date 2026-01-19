@@ -575,13 +575,13 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
   });
 
-  it('only exposes ctx.currentObject under association target paths', async () => {
+  it('only exposes ctx.item under association target paths', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({});
 
     const blockModel: any = {
-      uid: 'form-assign-currentObject-scope',
+      uid: 'form-assign-item-scope',
       flowEngine: { emitter: engineEmitter },
       emitter: blockEmitter,
       dispatchEvent: vi.fn(),
@@ -592,7 +592,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     runtime.mount({ sync: true });
 
     const blockCtx = createFieldContext(runtime);
-    // 提供集合元信息，避免因 collection 缺失导致 currentObject 直接为 undefined 的短路逻辑误判。
+    // 提供集合元信息，避免因 collection 缺失导致 item 直接为 undefined 的短路逻辑误判。
     blockCtx.defineProperty('collection', { value: { getField: () => null } });
     blockModel.context = blockCtx;
 
@@ -604,7 +604,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: { logic: '$and', items: [] },
         value: {
-          code: "return typeof ctx.currentObject === 'undefined' ? 'YES' : 'NO'",
+          code: "return typeof ctx.item === 'undefined' ? 'YES' : 'NO'",
           version: 'v1',
         },
       },
@@ -613,7 +613,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('YES'));
   });
 
-  it('supports ctx.currentObject.index in condition for to-many subform list (fork models)', async () => {
+  it('supports ctx.item.index in condition for to-many subform list (fork models)', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({ users: [{ nickname: 'A' }, { nickname: 'B' }] });
@@ -630,7 +630,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     runtime.mount({ sync: true });
 
     const blockCtx = createFieldContext(runtime);
-    // 提供集合元信息：RuleEngine 需要依赖 rootCollection 来识别对多关联并计算 ctx.currentObject.index
+    // 提供集合元信息：RuleEngine 需要依赖 rootCollection 来识别对多关联并计算 ctx.item.index
     const userRowCollection: any = { getField: () => null };
     const usersField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: userRowCollection };
     const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
@@ -696,7 +696,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: {
           logic: '$and',
-          items: [{ path: '{{ ctx.currentObject.index }}', operator: '$eq', value: 1 }],
+          items: [{ path: '{{ ctx.item.index }}', operator: '$eq', value: 1 }],
         },
         value: 'Z',
       },
@@ -714,7 +714,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: {
           logic: '$and',
-          items: [{ path: '{{ ctx.currentObject.index }}', operator: '$eq', value: 1 }],
+          items: [{ path: '{{ ctx.item.index }}', operator: '$eq', value: 1 }],
         },
         value: 'Q',
       },
@@ -740,7 +740,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     runtime.mount({ sync: true });
 
     const blockCtx = createFieldContext(runtime);
-    // 提供集合元信息：识别对多关联，并计算 ctx.currentObject.index
+    // 提供集合元信息：识别对多关联，并计算 ctx.item.index
     const userRowCollection: any = { getField: () => null };
     const usersField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: userRowCollection };
     const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
@@ -806,7 +806,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'default',
         condition: {
           logic: '$and',
-          items: [{ path: '{{ ctx.currentObject.index }}', operator: '$eq', value: 1 }],
+          items: [{ path: '{{ ctx.item.index }}', operator: '$eq', value: 1 }],
         },
         value: 'Z',
       },
@@ -904,7 +904,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: {
           logic: '$and',
-          items: [{ path: '{{ ctx.currentObject.index }}', operator: '$eq', value: 1 }],
+          items: [{ path: '{{ ctx.item.index }}', operator: '$eq', value: 1 }],
         },
         value: 99,
       },
@@ -914,7 +914,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['users', 0, 'age'])).toBeUndefined();
   });
 
-  it('supports ctx.currentObject.parentObject.index for nested association under to-many', async () => {
+  it('supports ctx.item.parentItem.index for nested association under to-many', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({
@@ -985,7 +985,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: {
           logic: '$and',
-          items: [{ path: '{{ ctx.currentObject.parentObject.index }}', operator: '$eq', value: 1 }],
+          items: [{ path: '{{ ctx.item.parentItem.index }}', operator: '$eq', value: 1 }],
         },
         value: 'Z',
       },

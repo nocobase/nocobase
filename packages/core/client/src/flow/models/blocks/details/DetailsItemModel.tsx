@@ -119,8 +119,8 @@ export class DetailsItemModel extends DisplayItemModel<{
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
     const record = this.context.record;
-    const currentObject = this.context.currentObject;
-    const currentObjectOptions = this.context.getPropertyOptions('currentObject');
+    const item = this.context.item;
+    const itemOptions = this.context.getPropertyOptions('item');
 
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
@@ -134,10 +134,10 @@ export class DetailsItemModel extends DisplayItemModel<{
               get: () => record,
               cache: false,
             });
-            const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
-            fork.context.defineProperty('currentObject', {
+            const { value: _value, ...rest } = (itemOptions || {}) as any;
+            fork.context.defineProperty('item', {
               ...rest,
-              get: () => currentObject,
+              get: () => item,
               cache: false,
             });
             if (this.context.pattern) {
