@@ -50,24 +50,25 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
-        documentUrlType: {
-          title: `{{t("Full upload address format", { ns: "${NAMESPACE}" })}}`,
+        forcePathStyle: {
+          title: `{{t("Force Path Style", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
-          default: 'ignoreBucket',
+          default: 'ignore',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           'x-component-props': {
             direction: 'vertical',
           },
           enum: [
-            { label: `{{t("Ignore Bucket (Default)", { ns: "${NAMESPACE}" })}}`, value: 'ignoreBucket' },
-            { label: `{{t("Bucket as Sub-path", { ns: "${NAMESPACE}" })}}`, value: 'bucketAsSubPath' },
+            { label: `{{t("Virtual-hosted-style", { ns: "${NAMESPACE}" })}}`, value: 'virtual' },
+            { label: `{{t("Path-style", { ns: "${NAMESPACE}" })}}`, value: 'path' },
+            { label: `{{t("Ignore Bucket", { ns: "${NAMESPACE}" })}}`, value: 'ignore' },
           ],
           'x-reactions': {
             dependencies: ['options.bucket', 'baseUrl'],
             fulfill: {
               state: {
-                description: `{{ ($deps[1] || "").replace(/\\/+$/, "") + ($self.value === "bucketAsSubPath" ? "/" + ($deps[0] || "bucket") : "") + "/<object-key>" }}`,
+                description: `{{ ($deps[1] || "").replace(/\\/+$/, "") + ($self.value === "path" ? "/" + ($deps[0] || "bucket") : "") + "/<object-key>" }}`,
               },
             },
           },

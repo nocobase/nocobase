@@ -59,7 +59,11 @@ export default class extends StorageType {
         secretAccessKey,
       };
     }
-    if (options.endpoint) {
+    if (options.forcePathStyle === 'path' || options.documentUrlType === 'bucketAsSubPath') {
+      params.forcePathStyle = true;
+    } else if (options.forcePathStyle === 'virtual') {
+      params.forcePathStyle = false;
+    } else if (options.endpoint) {
       params.forcePathStyle = true;
     } else {
       params.endpoint = undefined;
@@ -156,13 +160,12 @@ export default class extends StorageType {
       return super.getFileURL(file, preview);
     }
 
-    const { bucket, endpoint, documentUrlType } = this.storage.options;
+    const { bucket, documentUrlType, forcePathStyle } = this.storage.options;
 
     let bucketInPath;
-    if (documentUrlType === 'bucketAsSubPath') {
-      const baseUrlHasBucket =
-        endpoint && this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
-      bucketInPath = endpoint && !baseUrlHasBucket ? bucket : undefined;
+    if (forcePathStyle === 'path' || documentUrlType === 'bucketAsSubPath') {
+      const baseUrlHasBucket = this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
+      bucketInPath = !baseUrlHasBucket ? bucket : undefined;
     }
 
     const keys = [
