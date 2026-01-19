@@ -15,7 +15,14 @@ import PluginAIServer from '../plugin';
 import { sendSSEError, parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, UserDecision } from '../types';
+import {
+  AIChatContext,
+  AIChatConversation,
+  AIMessage,
+  AIMessageInput,
+  UserDecision,
+  WorkContextHandler,
+} from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { DocumentSegmentedWithScore } from '../features';
 import { KnowledgeBaseGroup } from '../types';
@@ -121,7 +128,15 @@ export class AIEmployee {
     return { provider, model: modelSettings.model, service };
   }
 
-  async prepareChatStream(chatContext: AIChatContext, provider: LLMProvider) {
+  async prepareChatStream({
+    chatContext,
+    provider,
+    options,
+  }: {
+    chatContext: AIChatContext;
+    provider: LLMProvider;
+    options?: { configurable?: any };
+  }) {
     const controller = new AbortController();
     const { signal } = controller;
 
@@ -129,7 +144,7 @@ export class AIEmployee {
       const stream = await provider.getAgentStream(chatContext, {
         signal,
         streamMode: ['updates', 'messages', 'custom'],
-        configurable: { thread_id: this.sessionId },
+        configurable: options?.configurable ?? { thread_id: this.sessionId },
         context: { ctx: this.ctx },
       });
       this.plugin.aiEmployeesManager.conversationController.set(this.sessionId, controller);
@@ -143,11 +158,6 @@ export class AIEmployee {
     stream: any,
     options: {
       signal: AbortSignal;
-      messageId?: string;
-      model: string;
-      service: {
-        provider: string;
-      };
       provider: LLMProvider;
       allowEmpty?: boolean;
     },
@@ -190,8 +200,6 @@ export class AIEmployee {
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
           } else if (chunks.action === 'beforeToolCall') {
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
-          } else {
-            this.ctx.logger.warn(`Unknown custom action: `, chunks);
           }
         }
       }
@@ -594,24 +602,22 @@ export class AIEmployee {
   }) {
     try {
       const { provider, model, service } = await this.getLLMService();
+      const tools = await this.getTools();
+      const middleware = this.getMiddleware({ tools, model, service });
       const chatContext = await this.aiChatConversation.getChatContext({
         userMessages,
         userDecisions,
-        workContextHandler: this.plugin.workContextHandler,
-        provider,
-        model,
-        service,
+        tools,
+        middleware,
         getSystemPrompt: async () => this.getSystemPrompt(),
-        getTools: async () => this.getTools(),
-        getMiddleware: async (chatContext) => this.getMiddleware(chatContext),
+        formatMessages: async (messages) =>
+          this.formatMessages({ messages, provider, workContextHandler: this.plugin.workContextHandler }),
       });
-      const { stream, signal } = await this.prepareChatStream(chatContext, provider);
+      const { stream, signal } = await this.prepareChatStream({ chatContext, provider });
 
       await this.processChatStream(stream, {
         signal,
-        model,
         provider,
-        service,
       });
 
       return true;
@@ -624,26 +630,49 @@ export class AIEmployee {
 
   async resendMessages(messageId?: string) {
     try {
+      const prevMessage = await this.aiChatConversation.getPrevMessage(messageId);
+      const id = prevMessage?.metadata?.id;
       const { provider, model, service } = await this.getLLMService();
+      const tools = await this.getTools();
+      const middleware = this.getMiddleware({ tools, model, service, messageId });
       const chatContext = await this.aiChatConversation.getChatContext({
-        userMessages: [],
-        workContextHandler: this.plugin.workContextHandler,
-        provider,
-        model,
-        service,
-        messageId,
+        tools,
+        middleware,
         getSystemPrompt: async () => this.getSystemPrompt(),
-        getTools: async () => this.getTools(),
-        getMiddleware: async (chatContext) => this.getMiddleware(chatContext),
+        formatMessages: async (messages) =>
+          this.formatMessages({ messages, provider, workContextHandler: this.plugin.workContextHandler }),
       });
-      const { stream, signal } = await this.prepareChatStream(chatContext, provider);
+
+      const thread_id = this.sessionId;
+      const agent = provider.prepareAgent();
+      const snaps: { checkpoint_id: string; message_id: string }[] = [];
+      for await (const state of agent.graph.getStateHistory({ configurable: { thread_id } })) {
+        for (const message of _.reverse(state.values.messages)) {
+          snaps.push({
+            checkpoint_id: state.config.configurable?.checkpoint_id,
+            message_id: message.id,
+          });
+        }
+      }
+      const checkpoint_id = snaps.findLast((x) => x.message_id === id)?.checkpoint_id;
+      if (!checkpoint_id) {
+        throw new Error('Message not existed');
+      }
+
+      const { stream, signal } = await this.prepareChatStream({
+        chatContext,
+        provider,
+        options: {
+          configurable: {
+            thread_id,
+            checkpoint_id,
+          },
+        },
+      });
 
       await this.processChatStream(stream, {
         signal,
-        messageId,
-        model,
         provider,
-        service,
       });
 
       return true;
@@ -656,6 +685,86 @@ export class AIEmployee {
 
   removeAbortController() {
     this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
+  }
+
+  private async formatMessages({
+    messages,
+    provider,
+    workContextHandler,
+  }: {
+    messages: AIMessageInput[];
+    provider: LLMProvider;
+    workContextHandler: WorkContextHandler;
+  }) {
+    const formattedMessages = [];
+
+    // 截断过长的内容
+    const truncate = (text: string, maxLen = 50000) => {
+      if (!text || text.length <= maxLen) return text;
+      return text.slice(0, maxLen) + '\n...[truncated]';
+    };
+
+    for (const msg of messages) {
+      const attachments = msg.attachments;
+      const workContext = msg.workContext;
+      const userContent = msg.content;
+      let { content } = userContent ?? {};
+
+      // 截断消息内容
+      if (typeof content === 'string') {
+        content = truncate(content);
+      }
+      if (msg.role === 'user') {
+        if (typeof content === 'string') {
+          content = `<user_query>${content}</user_query>`;
+          if (workContext?.length) {
+            const workContextStr = (await workContextHandler.resolve(this.ctx, workContext))
+              .map((x) => `<work_context>${x}</work_context>`)
+              .join('\n');
+            content = workContextStr + '\n' + content;
+          }
+        }
+        const contents = [];
+        if (attachments?.length) {
+          for (const attachment of attachments) {
+            const parsed = await provider.parseAttachment(this.ctx, attachment);
+            contents.push(parsed);
+          }
+          if (content) {
+            contents.push({
+              type: 'text',
+              text: content,
+            });
+          }
+        }
+        formattedMessages.push({
+          role: 'user',
+          content: contents.length ? contents : content,
+          additional_kwargs: {
+            userContent,
+            attachments,
+            workContext,
+          },
+        });
+        continue;
+      }
+      if (msg.role === 'tool') {
+        formattedMessages.push({
+          role: 'tool',
+          content,
+          tool_call_id: msg.metadata?.toolCall?.id,
+        });
+        continue;
+      }
+      formattedMessages.push({
+        role: 'assistant',
+        content,
+        tool_calls: msg.toolCalls,
+        additional_kwargs: msg.metadata?.additional_kwargs,
+      });
+    }
+
+    return formattedMessages;
   }
 
   private getAutoSkillNames(): string[] {
@@ -736,12 +845,12 @@ export class AIEmployee {
     return tools;
   }
 
-  private async getMiddleware(chatContext: AIChatContext) {
-    const tools = await this.getTools();
+  private getMiddleware(options: { tools: ToolOptions[]; model: any; service: any; messageId?: string }) {
+    const { tools, model, service, messageId } = options;
     return [
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
-      conversationMiddleware(this, chatContext),
+      conversationMiddleware(this, { model, service, messageId }),
       debugMiddleware(this, this.ctx.logger),
     ];
   }

@@ -78,8 +78,8 @@ export abstract class LLMProvider {
     return chain;
   }
 
-  prepareAgent(context: AIChatContext) {
-    const toolDefinitions = context.tools.map(ToolDefinition.from('ToolOptions'));
+  prepareAgent(context?: AIChatContext) {
+    const toolDefinitions = context?.tools?.map(ToolDefinition.from('ToolOptions')) ?? [];
     let tools = [...this.builtInTools()];
     if (tools.length) {
       if (!this.isToolConflict() && toolDefinitions?.length) {
@@ -88,8 +88,8 @@ export abstract class LLMProvider {
     } else if (toolDefinitions?.length) {
       tools = toolDefinitions;
     }
-    const middleware = context.middleware;
-    const systemPrompt = context.systemPrompt;
+    const middleware = context?.middleware;
+    const systemPrompt = context?.systemPrompt;
     return createAgent({ model: this.chatModel, tools, middleware, systemPrompt, checkpointer });
   }
 
@@ -119,8 +119,10 @@ export abstract class LLMProvider {
         }),
         options,
       );
-    } else {
+    } else if (context.messages) {
       return agent.stream({ messages: context.messages }, options);
+    } else {
+      return agent.stream(null, options);
     }
   }
 

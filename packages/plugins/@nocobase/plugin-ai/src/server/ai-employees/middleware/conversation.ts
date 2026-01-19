@@ -9,13 +9,16 @@
 
 import { AIMessage, createMiddleware, HumanMessage, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
-import { AIChatContext, AIMessageInput } from '../../types';
+import { AIMessageInput } from '../../types';
 import { AIMessage as AIConversationMessage, AIMessageContent } from '../../types/ai-message.type';
 import z from 'zod';
 
-export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AIChatContext) => {
+export const conversationMiddleware = (
+  aiEmployee: AIEmployee,
+  options: { model: any; service: any; messageId?: string },
+) => {
+  const { model, service, messageId } = options;
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput => {
-    const { model, service } = chatContext;
     const message = aiMessage.content;
     const toolCalls = aiMessage.tool_calls;
     const skills = aiEmployee.skillSettings?.skills;
@@ -31,6 +34,7 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
         content: message,
       },
       metadata: {
+        id: aiMessage.id,
         model,
         provider: service.provider,
         usage_metadata: {},
@@ -61,8 +65,6 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
   };
 
   const convertHumanMessage = (aiMessage: HumanMessage): AIMessageInput => {
-    const { model, service } = chatContext;
-
     if (!aiMessage.additional_kwargs.userContent) {
       return null;
     }
@@ -71,6 +73,7 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
       role: 'user',
       content: aiMessage.additional_kwargs?.userContent as AIMessageContent,
       metadata: {
+        id: aiMessage.id,
         model,
         provider: service.provider,
       },
@@ -83,8 +86,6 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
   };
 
   const convertToolMessage = (message: ToolMessage): AIMessageInput => {
-    const { model, service } = chatContext;
-
     const values: AIMessageInput = {
       role: 'tool',
       content: {
@@ -92,6 +93,7 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
         content: message.content,
       },
       metadata: {
+        id: message.id,
         model,
         provider: service.provider,
         toolCallId: message.tool_call_id,
@@ -103,6 +105,9 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
 
   return createMiddleware({
     name: 'ConversationMiddleware',
+    contextSchema: z.object({
+      ctx: z.any(),
+    }),
     stateSchema: z.object({
       lastHumanMessageIndex: z.number().default(0),
       lastAIMessageIndex: z.number().default(0),
@@ -120,7 +125,7 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
         await aiEmployee.aiChatConversation.addMessages(userMessages);
       }
     },
-    beforeModel: async (state) => {
+    beforeModel: async (state, _runtime) => {
       const lastToolMessageIndex = state.lastToolMessageIndex;
       const toolMessages = state.messages
         .filter((x) => x.type === 'tool')
@@ -132,46 +137,47 @@ export const conversationMiddleware = (aiEmployee: AIEmployee, chatContext: AICh
       }
     },
     afterModel: async (state, runtime) => {
-      const newState = {
-        lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
-        lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
-        lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
-        lastMessageIndex: state.messages.length,
-      };
-      const lastMessage = state.messages.at(-1);
-      if (lastMessage?.type !== 'ai') {
-        return newState;
-      }
-
-      aiEmployee.removeAbortController();
-
-      const aiMessage = lastMessage as AIMessage;
-      const toolCalls = aiMessage.tool_calls;
-      if (toolCalls?.length) {
-        runtime.writer?.({ action: 'showToolCalls', body: toolCalls });
-      }
-
-      const values = convertAIMessage(aiMessage);
-      if (values) {
-        if (runtime.signal?.aborted) {
-          values.metadata.interrupted = true;
+      try {
+        const newState = {
+          lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
+          lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
+          lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
+          lastMessageIndex: state.messages.length,
+        };
+        const lastMessage = state.messages.at(-1);
+        if (lastMessage?.type !== 'ai') {
+          return newState;
         }
 
-        await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
-          const result: AIConversationMessage = await conversation.addMessages(values);
-          if (toolCalls?.length) {
-            await aiEmployee.initToolCall(transaction, result.messageId, toolCalls as any);
-          }
-        });
-      }
+        aiEmployee.removeAbortController();
 
-      return newState;
+        const aiMessage = lastMessage as AIMessage;
+        const toolCalls = aiMessage.tool_calls;
+        if (toolCalls?.length) {
+          runtime.writer?.({ action: 'showToolCalls', body: toolCalls });
+        }
+
+        const values = convertAIMessage(aiMessage);
+        if (values) {
+          if (runtime.signal?.aborted) {
+            values.metadata.interrupted = true;
+          }
+
+          await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
+            if (messageId && (await conversation.getMessage(messageId))) {
+              await conversation.removeMessages({ messageId });
+            }
+            const result: AIConversationMessage = await conversation.addMessages(values);
+            if (toolCalls?.length) {
+              await aiEmployee.initToolCall(transaction, result.messageId, toolCalls as any);
+            }
+          });
+        }
+
+        return newState;
+      } catch (e) {
+        runtime.context?.ctx?.logger?.error(e);
+      }
     },
-    afterAgent: (state) => ({
-      lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
-      lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
-      lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
-      lastMessageIndex: state.messages.length,
-    }),
   });
 };

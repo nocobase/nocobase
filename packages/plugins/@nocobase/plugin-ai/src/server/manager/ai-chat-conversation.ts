@@ -87,6 +87,10 @@ class AIChatConversationImpl implements AIChatConversation {
   async getMessage(messageId: string): Promise<AIMessage | null> {
     return await this.aiMessagesRepo.findByTargetKey(messageId);
   }
+  async getPrevMessage(messageId: string): Promise<AIMessage | null> {
+    const messages = await this.listMessages({ messageId });
+    return messages.length ? messages.at(-1) : null;
+  }
   async listMessages(query: AIMessageQuery): Promise<AIMessage[]> {
     const filter: Filter = {
       sessionId: this.sessionId,
@@ -115,104 +119,25 @@ class AIChatConversationImpl implements AIChatConversation {
     });
   }
 
-  async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
+  async getChatContext(options?: AIChatContextOptions): Promise<AIChatContext> {
     const {
       userMessages,
       userDecisions: decisions,
-      provider,
-      model,
-      service,
+      tools,
+      middleware,
       getSystemPrompt,
-      getTools,
-      getMiddleware,
-    } = options;
-    const messages = await this.formatMessages(userMessages, options);
-    const systemPrompt = await getSystemPrompt?.();
-    const tools = await getTools?.();
+      formatMessages,
+    } = options ?? {};
+    const messages = userMessages ? (await formatMessages?.(userMessages)) ?? [] : undefined;
+    const systemPrompt = (await getSystemPrompt?.()) ?? '';
     const chatContext: AIChatContext = {
-      provider,
-      model,
-      service,
       systemPrompt,
       messages,
       decisions,
       tools,
+      middleware,
     };
-    chatContext.middleware = await getMiddleware?.(chatContext);
     return chatContext;
-  }
-
-  private async formatMessages(messages: AIMessageInput[], options: AIChatContextOptions) {
-    const formattedMessages = [];
-    const { provider, workContextHandler } = options;
-
-    // 截断过长的内容
-    const truncate = (text: string, maxLen = 50000) => {
-      if (!text || text.length <= maxLen) return text;
-      return text.slice(0, maxLen) + '\n...[truncated]';
-    };
-
-    for (const msg of messages) {
-      const attachments = msg.attachments;
-      const workContext = msg.workContext;
-      const userContent = msg.content;
-      let { content } = userContent ?? {};
-
-      // 截断消息内容
-      if (typeof content === 'string') {
-        content = truncate(content);
-      }
-      if (msg.role === 'user') {
-        if (typeof content === 'string') {
-          content = `<user_query>${content}</user_query>`;
-          if (workContext?.length) {
-            const workContextStr = (await workContextHandler.resolve(this.ctx, workContext))
-              .map((x) => `<work_context>${x}</work_context>`)
-              .join('\n');
-            content = workContextStr + '\n' + content;
-          }
-        }
-        const contents = [];
-        if (attachments?.length) {
-          for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(this.ctx, attachment);
-            contents.push(parsed);
-          }
-          if (content) {
-            contents.push({
-              type: 'text',
-              text: content,
-            });
-          }
-        }
-        formattedMessages.push({
-          role: 'user',
-          content: contents.length ? contents : content,
-          additional_kwargs: {
-            userContent,
-            attachments,
-            workContext,
-          },
-        });
-        continue;
-      }
-      if (msg.role === 'tool') {
-        formattedMessages.push({
-          role: 'tool',
-          content,
-          tool_call_id: msg.metadata?.toolCall?.id,
-        });
-        continue;
-      }
-      formattedMessages.push({
-        role: 'assistant',
-        content,
-        tool_calls: msg.toolCalls,
-        additional_kwargs: msg.metadata?.additional_kwargs,
-      });
-    }
-
-    return formattedMessages;
   }
 
   private clone(): AIChatConversationImpl {
