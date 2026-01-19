@@ -13,7 +13,7 @@ import { FlowEngine } from '../flowEngine';
 import type { FlowView } from '../views/FlowView';
 import { createPopupMeta } from '../views/createViewMeta';
 
-describe('createViewMeta - popup variables', () => {
+describe('createPopupMeta - popup variables', () => {
   function makeCtx() {
     const engine = new FlowEngine();
     const ctx = new FlowContext();
@@ -138,5 +138,66 @@ describe('createViewMeta - popup variables', () => {
     expect(typeof props.record).toBe('function');
     expect((props.record as any).title).toBe('Current popup record');
     expect((props.record as any).hasChildren).toBe(true);
+  });
+
+  it('treats views with openerUids as popup (meta visible)', async () => {
+    const { ctx } = makeCtx();
+
+    // openerUids 作为路由栈缺失时的兜底标记：即使没有 navigation.viewStack，也应展示 ctx.popup 元信息
+    const anchorView: FlowView = {
+      type: 'dialog',
+      inputArgs: {
+        openerUids: ['opener-uid-1'],
+        viewUid: 'popup-uid',
+        dataSourceKey: 'main',
+        collectionName: 'posts',
+        filterByTk: 1,
+      },
+      Header: null,
+      Footer: null,
+      close: () => void 0,
+      update: () => void 0,
+    } as any;
+
+    const meta = (await createPopupMeta(ctx, anchorView)())!;
+    expect(typeof meta.hidden).toBe('function');
+    expect((meta.hidden as any)()).toBe(false);
+    expect(typeof meta.disabled).toBe('function');
+    expect((meta.disabled as any)()).toBe(false);
+
+    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+    expect(vars).toBeTruthy();
+    expect(vars.record).toEqual({
+      collection: 'posts',
+      dataSourceKey: 'main',
+      filterByTk: 1,
+      associationName: undefined,
+      sourceId: undefined,
+    });
+  });
+
+  it('does not expose popup.record without filterByTk', async () => {
+    const { ctx } = makeCtx();
+
+    const anchorView: FlowView = {
+      type: 'dialog',
+      inputArgs: {
+        openerUids: ['opener-uid-1'],
+        viewUid: 'popup-uid',
+        dataSourceKey: 'main',
+        collectionName: 'posts',
+        // filterByTk 缺失：不应展示“当前弹窗记录”变量
+      },
+      Header: null,
+      Footer: null,
+      close: () => void 0,
+      update: () => void 0,
+    } as any;
+
+    ctx.defineProperty('view', { value: anchorView });
+
+    const meta = (await createPopupMeta(ctx, anchorView)())!;
+    const props = typeof meta.properties === 'function' ? await (meta.properties as any)() : meta.properties || {};
+    expect(props.record).toBeUndefined();
   });
 });

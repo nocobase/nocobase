@@ -132,7 +132,6 @@ export function usePage() {
 
     ctx.defineProperty('view', {
       get: () => currentPage,
-      // meta: createViewMeta(ctx),
       // 仅当访问关联字段或前端无本地记录数据时，才交给服务端解析
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
