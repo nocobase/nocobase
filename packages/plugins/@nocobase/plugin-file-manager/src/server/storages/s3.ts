@@ -163,7 +163,20 @@ export default class extends StorageType {
     const { bucket, documentUrlType, forcePathStyle } = this.storage.options;
 
     let bucketInPath;
-    if (forcePathStyle === 'path' || documentUrlType === 'bucketAsSubPath') {
+    if (forcePathStyle === 'virtual' && this.storage.baseUrl) {
+      try {
+        const urlObj = new URL(this.storage.baseUrl);
+        if (!urlObj.hostname.startsWith(bucket + '.')) {
+          urlObj.hostname = `${bucket}.${urlObj.hostname}`;
+          // remove trailing slash to be consistent with other logic
+          // urlObj.toString() returns string with trailing slash if path is /
+          const urlStr = urlObj.toString();
+          this.storage.baseUrl = urlStr.replace(/\/+$/, '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    } else if (forcePathStyle === 'path' || documentUrlType === 'bucketAsSubPath') {
       const baseUrlHasBucket = this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
       bucketInPath = !baseUrlHasBucket ? bucket : undefined;
     }
