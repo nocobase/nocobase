@@ -73,20 +73,6 @@ export default defineConfig({
       siteUrl: `https://v2.docs.nocobase.com${lang === 'en' ? '' : `/${lang}`}`,
     }),
   ],
-  // locales: [
-  //   {
-  //     lang: 'en',
-  //     label: 'English',
-  //     title: 'NocoBase Documentation',
-  //     description: 'Helping you learn and master NocoBase quickly',
-  //   },
-  //   {
-  //     lang: 'cn',
-  //     label: '简体中文',
-  //     title: 'NocoBase 文档',
-  //     description: '帮助你快速学习和掌握 NocoBase',
-  //   },
-  // ],
   lang,
   themeConfig: {
     socialLinks: [
@@ -94,7 +80,7 @@ export default defineConfig({
         icon: 'github',
         mode: 'link',
         content: 'https://github.com/nocobase/nocobase',
-      },
+      }
     ],
   },
 });
