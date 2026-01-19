@@ -215,7 +215,7 @@ jobs:
             whoami
             env
             freebsd-version
-            yyarn install --frozen-lockfile
+            yarn install --frozen-lockfile
             yarn build
             rm -rf node_modules
             rm -rf target
