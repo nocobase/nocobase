@@ -120,6 +120,10 @@ export class PluginMobileClient extends Plugin {
     this.addScopes();
     this.addPermissionsSettingsUI();
 
+    if (this.options?.options?.deprecated) {
+      return;
+    }
+
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile (deprecated)'),
       icon: 'MobileOutlined',
