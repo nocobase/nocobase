@@ -13,7 +13,7 @@ import { FlowEngine } from '../flowEngine';
 import type { FlowView } from '../views/FlowView';
 import { createPopupMeta } from '../views/createViewMeta';
 
-describe('createViewMeta - popup variables', () => {
+describe('createPopupMeta - popup variables', () => {
   function makeCtx() {
     const engine = new FlowEngine();
     const ctx = new FlowContext();

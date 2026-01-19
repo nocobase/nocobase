@@ -25,24 +25,15 @@ export interface AssociationFieldNames {
 export type AssociationOption = Record<string, any>;
 export type PopupScrollEvent = Parameters<NonNullable<SelectProps<any>['onPopupScroll']>>[0];
 
-function readStringArray(val: unknown, name: string): string[] | undefined {
-  if (typeof val === 'undefined' || val === null) return undefined;
-  if (!Array.isArray(val)) {
-    throw new TypeError(`[FlowEngine] ${name} must be an array`);
-  }
-  for (const item of val) {
-    if (typeof item !== 'string') {
-      throw new TypeError(`[FlowEngine] ${name} must be string[]`);
-    }
-  }
-  return val as string[];
-}
-
 export function buildOpenerUids(ctx: FlowRuntimeContext, inputArgs: Record<string, unknown> = {}): string[] {
   // Keep consistent with `packages/core/client/src/flow/actions/openView.tsx`
   const isRouteManaged = !!(inputArgs as { navigation?: unknown }).navigation;
-  const viewOpenerUids = readStringArray(ctx.view?.inputArgs?.openerUids, 'view.inputArgs.openerUids');
-  const inputOpenerUids = readStringArray(inputArgs.openerUids, 'inputArgs.openerUids');
+  const toStringArray = (val: unknown): string[] | undefined => {
+    if (!Array.isArray(val)) return undefined;
+    return val.filter((item): item is string => typeof item === 'string' && !!item);
+  };
+  const viewOpenerUids = toStringArray(ctx.view?.inputArgs?.openerUids);
+  const inputOpenerUids = toStringArray(inputArgs.openerUids);
   const parentOpenerUids = viewOpenerUids || inputOpenerUids || [];
   if (isRouteManaged) {
     return (inputOpenerUids || parentOpenerUids).filter(Boolean);

@@ -71,66 +71,6 @@ function makeMetaFromValue(value: any, title?: string, seen?: WeakSet<any>): any
 }
 
 /**
- * Create a meta factory for ctx.view that includes:
- * - buildVariablesParams: { record } via inferRecordRef
- * - properties.record: full collection meta via buildRecordMeta
- * - type/preventClose/inputArgs/navigation fields for better variable selection UX
- */
-export function createViewMeta(ctx: FlowContext): PropertyMetaFactory {
-  const viewTitle = ctx.t('当前视图');
-  const factory: PropertyMetaFactory = async () => {
-    const view = ctx.view;
-    return {
-      type: 'object',
-      title: ctx.t('当前视图'),
-      buildVariablesParams: (c) => {
-        const params = inferViewRecordRef(c);
-        if (params) {
-          return {
-            record: params,
-          };
-        }
-        return undefined;
-      },
-      properties: async () => {
-        const props: Record<string, any> = {};
-        // 仅当能推断到当前记录引用时，才暴露“当前视图记录”，避免出现空子菜单
-        const refNow = inferViewRecordRef(ctx);
-        if (refNow && refNow.collection) {
-          const recordFactory: PropertyMetaFactory = async () => {
-            try {
-              const ref = inferViewRecordRef(ctx);
-              if (!ref?.collection) return null;
-              const dsKey = ref.dataSourceKey || 'main';
-              const ds = ctx.dataSourceManager?.getDataSource?.(dsKey);
-              const col = ds?.collectionManager?.getCollection?.(ref.collection);
-              if (!col) return null;
-              return (await buildRecordMeta(
-                () => col,
-                ctx.t('当前视图记录'),
-                (c) => inferViewRecordRef(c),
-              )) as PropertyMeta;
-            } catch (e) {
-              return null;
-            }
-          };
-          recordFactory.title = ctx.t('当前视图记录');
-          recordFactory.hasChildren = true;
-          props.record = recordFactory;
-        }
-        props.type = { type: 'string', title: ctx.t?.('类型') || '类型' };
-        props.preventClose = { type: 'boolean', title: ctx.t?.('是否允许关闭') || '是否允许关闭' };
-        props.inputArgs = makeMetaFromValue(view?.inputArgs, ctx.t?.('输入参数') || '输入参数');
-        return props;
-      },
-    } as PropertyMeta;
-  };
-  // 设置工厂函数的 title，让未加载前的占位标题就是“当前视图”
-  factory.title = viewTitle;
-  return factory;
-}
-
-/**
  * 为 ctx.popup 构建元信息：
  * - popup.record：当前弹窗记录（服务端解析）
  * - popup.resource：数据源信息（前端解析）

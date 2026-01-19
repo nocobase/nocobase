@@ -34,10 +34,6 @@ vi.mock('../utils/variablesParams', () => ({
   getViewRecordFromParent: vi.fn(),
 }));
 
-vi.mock('../createViewMeta', () => ({
-  registerPopupVariable: vi.fn(),
-}));
-
 vi.mock('../DialogComponent', () => ({
   default: ({ children }) => <div>{children}</div>,
 }));
