@@ -18,7 +18,7 @@ This applies only to the localization of the NocoBase system interface and plugi
 
 #### 1.2 Localization Content Overview
 NocoBase uses Git to manage its localization content. The primary repository is:
-https://github.com/nocobase/locales
+https://github.com/nocobase/nocobase/tree/main/locales
 
 Each language is represented by a JSON file named according to its language code (e.g., de-DE.json, fr-FR.json). The file structure is organized by plugin modules, using key-value pairs to store translations. For example:
 
@@ -328,7 +328,7 @@ If you want to contribute a new language translation to NocoBase, please follow 
 
 | Component | Repository | Branch | Notes |
 |-----------|------------|--------|-------|
-| System Interface | https://github.com/nocobase/locales | main | JSON locale files |
+| System Interface | https://github.com/nocobase/nocobase/tree/main/locales | main | JSON locale files |
 | Documentation (2.0) | https://github.com/nocobase/nocobase | develop / next | `docs/docs/<lang>/` directory |
 | Website | https://github.com/nocobase/website | main | See Section III |
 

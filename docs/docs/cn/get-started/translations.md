@@ -18,7 +18,7 @@ NocoBase 的默认语言是英语。目前，主应用程序支持英语、意�
 
 #### 1.2 本地化内容概述
 NocoBase 使用 Git 管理本地化内容。主要仓库为：
-https://github.com/nocobase/locales
+https://github.com/nocobase/nocobase/tree/main/locales
 
 每种语言由一个以语言代码命名的 JSON 文件表示（例如 de-DE.json、fr-FR.json）。文件结构按插件模块组织，使用键值对存储翻译。例如：
 
@@ -328,7 +328,7 @@ export const SUPPORTED_LANGUAGES = {
 
 | 组件 | 仓库 | 分支 | 备注 |
 |------|------|------|------|
-| 系统界面 | https://github.com/nocobase/locales | main | JSON 本地化文件 |
+| 系统界面 | https://github.com/nocobase/nocobase/tree/main/locales | main | JSON 本地化文件 |
 | 文档（2.0） | https://github.com/nocobase/nocobase | develop / next | `docs/docs/<lang>/` 目录 |
 | 官网 | https://github.com/nocobase/website | main | 参见第三节 |
 
