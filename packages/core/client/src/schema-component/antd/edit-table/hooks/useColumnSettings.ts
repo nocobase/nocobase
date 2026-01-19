@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCallback } from 'react';
 import { message } from 'antd';
+import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TableUidContext } from '../../../../block-provider/TableUidContext';
 
 export interface ColumnSettings {
   key: string;
@@ -32,7 +33,8 @@ export interface UseColumnSettingsResult {
  */
 export const useColumnSettings = (tableId: string): UseColumnSettingsResult => {
   const { t } = useTranslation();
-  const STORAGE_KEY = `nocobase_table_column_settings_${tableId}`;
+  const tableUid = useContext(TableUidContext);
+  const STORAGE_KEY = `nocobase_table_column_settings_${tableUid}`;
 
   const getSettings = useCallback((): ColumnSettings[] | null => {
     try {
@@ -54,7 +56,7 @@ export const useColumnSettings = (tableId: string): UseColumnSettingsResult => {
         const customEvent = new CustomEvent('nocobase-table-settings-changed', {
           detail: {
             key: STORAGE_KEY,
-            tableId: tableId,
+            tableId: tableUid,
             settings: settings,
           },
         });
@@ -64,7 +66,7 @@ export const useColumnSettings = (tableId: string): UseColumnSettingsResult => {
         message.error(t('Failed to save table settings'));
       }
     },
-    [STORAGE_KEY, tableId, t],
+    [STORAGE_KEY, tableUid, t],
   );
 
   const clearSettings = useCallback(() => {
@@ -75,7 +77,7 @@ export const useColumnSettings = (tableId: string): UseColumnSettingsResult => {
       const customEvent = new CustomEvent('nocobase-table-settings-changed', {
         detail: {
           key: STORAGE_KEY,
-          tableId: tableId,
+          tableId: tableUid,
           settings: null,
         },
       });
@@ -84,7 +86,7 @@ export const useColumnSettings = (tableId: string): UseColumnSettingsResult => {
       console.warn('Failed to clear table column settings from localStorage:', error);
       message.error(t('Failed to clear table settings'));
     }
-  }, [STORAGE_KEY, tableId, t]);
+  }, [STORAGE_KEY, tableUid, t]);
 
   return {
     getSettings,

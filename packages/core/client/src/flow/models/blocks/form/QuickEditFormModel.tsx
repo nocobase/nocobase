@@ -61,6 +61,7 @@ export class QuickEditFormModel extends FlowModel {
     filterByTk?: string;
     onSuccess?: (values: any) => void;
     fieldProps?: any;
+    sourceFieldModelUid?: string;
     onOk?: (values: any) => void;
   }) {
     const {
@@ -74,6 +75,7 @@ export class QuickEditFormModel extends FlowModel {
       onSuccess,
       fieldProps,
       onOk,
+      sourceFieldModelUid,
     } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditFormModel',
@@ -110,7 +112,7 @@ export class QuickEditFormModel extends FlowModel {
           <FlowModelRenderer
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            inputArgs={{ filterByTk, record }}
+            inputArgs={{ filterByTk, record, sourceFieldModelUid }}
           />
         );
       },
@@ -256,6 +258,7 @@ QuickEditFormModel.registerFlow({
             },
           });
           fieldModel.setProps({ ...collectionField.getComponentProps(), ...ctx.model._fieldProps });
+          fieldModel.setProps({ sourceFieldModelUid: ctx.inputArgs.sourceFieldModelUid });
           ctx.model.context.defineProperty('collectionField', {
             get: () => collectionField,
           });
