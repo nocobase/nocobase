@@ -12,4 +12,3 @@ export { useDrawer } from './useDrawer';
 export { usePage } from './usePage';
 export { usePopover } from './usePopover';
 export { ViewNavigation } from './ViewNavigation';
-export { createViewMeta } from './createViewMeta';
