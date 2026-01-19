@@ -40,7 +40,7 @@ import {
 import { appOptionsFactory } from './app-options-factory';
 import { PubSubManagerPublishOptions } from '../pub-sub-manager';
 import { Transaction, Transactionable } from '@nocobase/database';
-import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, getLoggerLevel, SystemLogger } from '@nocobase/logger';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -84,6 +84,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.logger = createSystemLogger({
       dirname: getLoggerFilePath('main'),
       filename: 'system',
+      level: getLoggerLevel(),
       seperateError: true,
       defaultMeta: {
         app: 'main',
