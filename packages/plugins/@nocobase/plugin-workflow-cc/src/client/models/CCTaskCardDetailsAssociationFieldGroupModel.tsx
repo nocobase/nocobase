@@ -11,10 +11,10 @@ import { DetailsAssociationFieldGroupModel } from '@nocobase/client';
 import { Collection, DisplayItemModel, FlowModelContext } from '@nocobase/flow-engine';
 
 // 禁止显示的字段（黑名单）
-const BLACKLIST = ['node', 'job', 'workflow', 'execution', 'user', 'node.*', 'job.*', 'workflow.*', 'execution.*'];
+const BLACKLIST = ['job', 'execution', 'user', 'node.*', 'job.*', 'workflow.*', 'execution.*'];
 
 // 允许显示的字段（白名单）
-const WHITELIST = ['workflow.title'];
+const WHITELIST = ['workflow.title', 'node.title'];
 
 const isExcluded = (fieldPath: string, { whitelist = [], blacklist = [] } = {}) => {
   const match = (patterns: string[]) => {
