@@ -1558,6 +1558,22 @@ describe('FlowModel', () => {
         expect(model.forks.size).toBe(1);
       });
 
+      test('should recreate cached fork after dispose to avoid state leakage', () => {
+        const fork1 = model.createFork({ foo: 'bar' }, 'cacheKey');
+        fork1.hidden = true;
+        fork1.setProps({ disabled: true });
+
+        fork1.dispose();
+
+        expect(model.getFork('cacheKey')).toBeUndefined();
+
+        const fork2 = model.createFork({}, 'cacheKey');
+
+        expect(fork2).not.toBe(fork1);
+        expect(fork2.hidden).toBe(false);
+        expect(fork2.localProps).toEqual({});
+      });
+
       test('should create different instances for different keys', () => {
         const fork1 = model.createFork({}, 'key1');
         const fork2 = model.createFork({}, 'key2');

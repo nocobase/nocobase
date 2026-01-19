@@ -148,7 +148,8 @@ export const linkageAction = async (
         ...field.stateOfLinkageRules,
         disabled: disableResult,
       };
-      field.disabled = last(disableResult);
+      field.data = field.data || {};
+      field.data.disabled = last(disableResult);
       field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
@@ -166,7 +167,8 @@ export const linkageAction = async (
         ...field.stateOfLinkageRules,
         disabled: disableResult,
       };
-      field.disabled = last(disableResult);
+      field.data = field.data || {};
+      field.data.disabled = last(disableResult);
       field.componentProps['disabled'] = last(disableResult);
       break;
     default:
@@ -177,7 +179,7 @@ export const linkageAction = async (
 export const setInitialActionState = (field) => {
   field.data = field.data || {};
   field.display = 'visible';
-  field.disabled = false;
   field.data.hidden = false;
+  field.data.disabled = false;
   field.componentProps['disabled'] = false;
 };
