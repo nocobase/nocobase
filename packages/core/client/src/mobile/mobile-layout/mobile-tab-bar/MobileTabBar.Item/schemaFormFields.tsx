@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '../../../schema-component';
+import { ISchema } from '../../../../application';
 
 export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string, ISchema> => ({
   title: {

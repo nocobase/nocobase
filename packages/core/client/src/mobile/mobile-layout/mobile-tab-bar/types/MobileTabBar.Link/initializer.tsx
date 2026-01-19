@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializerItemActionModalType } from '../../../../schema-component';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
+import { SchemaInitializerItemActionModalType } from '../../../../../application';
 
 export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'link',

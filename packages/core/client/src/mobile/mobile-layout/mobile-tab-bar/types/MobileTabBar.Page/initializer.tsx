@@ -8,7 +8,6 @@
  */
 
 import { uid } from '@formily/shared';
-import { SchemaInitializerItemActionModalType } from '../../../../schema-component';
 import { App } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { getMobilePageSchema } from '../../../../pages';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
+import { SchemaInitializerItemActionModalType } from '../../../../../application';
 
 export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'schema',

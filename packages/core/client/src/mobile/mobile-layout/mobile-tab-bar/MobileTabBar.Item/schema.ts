@@ -9,8 +9,8 @@
 
 import { upperFirst } from 'lodash';
 import { merge } from '@nocobase/utils/client';
-import { ISchema } from '../../../schema-component';
 import { MobileRouteItem } from '../../../mobile-providers';
+import { ISchema } from '../../../../application';
 
 export function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
   const schema = {
