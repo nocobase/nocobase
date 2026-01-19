@@ -35,10 +35,9 @@ import PluginWorkflowClient, {
   useAvailableUpstreams,
   usePopupRecordContext,
   useTasksCountsContext,
-  useTrigger,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
-import { FlowModel, FlowModelRenderer, useFlowEngine, useFlowViewContext } from '@nocobase/flow-engine';
+import { useFlowEngine, useFlowViewContext } from '@nocobase/flow-engine';
 
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
