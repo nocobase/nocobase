@@ -115,12 +115,12 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
-            const currentObjectOptions = this.context.getPropertyOptions('currentObject');
-            if (this.context.currentObject) {
-              const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
-              fork.context.defineProperty('currentObject', {
+            const itemOptions = this.context.getPropertyOptions('item');
+            if (this.context.item) {
+              const { value: _value, ...rest } = (itemOptions || {}) as any;
+              fork.context.defineProperty('item', {
                 ...rest,
-                get: () => this.context.currentObject,
+                get: () => this.context.item,
                 cache: false,
               });
             }
@@ -138,7 +138,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
-    const record = this.context.currentObject?.value || this.context.record;
+    const record = this.context.item?.value || this.context.record;
     return (
       <FormItem
         {...mergedPropsWithoutInitial}
@@ -225,7 +225,7 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'view',
           });
-          if (ctx.prefixFieldPath && ctx.currentObject) {
+          if (ctx.prefixFieldPath && ctx.item) {
             //子表单下的新增
             const createFieldAclResult = await ctx.aclCheck({
               dataSourceKey: ctx.dataSource?.key,
@@ -241,7 +241,8 @@ FormItemModel.registerFlow({
             }
           }
 
-          if (!resultView && !ctx.currentObject?.__is_new__) {
+          const isNew = ctx.item?.isNew ?? (ctx as any).currentObject?.__is_new__ ?? false;
+          if (!resultView && !isNew) {
             ctx.model.hidden = true;
             ctx.model.forbidden = {
               actionName: 'view',
@@ -268,7 +269,8 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'update',
           });
-          if (!result && !ctx.currentObject?.__is_stored__) {
+          const isStored = ctx.item?.isStored ?? (ctx as any).currentObject?.__is_stored__ ?? false;
+          if (!result && !isStored) {
             // 子表单中选择的记录
             ctx.model.hidden = true;
             ctx.model.forbidden = {

@@ -71,7 +71,7 @@ function toFilterByTk(value: unknown, primaryKey: string | string[]) {
 }
 
 /**
- * 创建一个用于“对象类变量”（如 formValues / currentObject）的 `resolveOnServer` 判定函数。
+ * 创建一个用于“对象类变量”（如 formValues / item）的 `resolveOnServer` 判定函数。
  * 仅当访问路径以“关联字段名”开头（且继续访问其子属性）时，返回 true 交由服务端解析；
  * 否则在前端解析即可。
  *
@@ -114,7 +114,7 @@ export function createAssociationSubpathResolver(
  *
  * @param collectionAccessor 获取集合对象，用于字段/元信息来源
  * @param title 变量组标题（用于 UI 展示）
- * @param valueAccessor 获取当前对象值（如 ctx.form.getFieldsValue() / ctx.currentObject）
+ * @param valueAccessor 获取当前对象值（如 ctx.form.getFieldsValue() / ctx.item）
  * @returns PropertyMetaFactory
  */
 export function createAssociationAwareObjectMetaFactory(

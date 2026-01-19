@@ -110,7 +110,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         isConfigMode={isConfigMode}
         filterTargetKey={this.collection.filterTargetKey}
         parentFieldIndex={this.context.fieldIndex}
-        parentCurrentObject={this.context.currentObject}
+        parentItem={this.context.item}
       />
     );
   }

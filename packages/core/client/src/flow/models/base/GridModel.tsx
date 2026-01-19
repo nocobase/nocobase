@@ -703,7 +703,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   // 切换关联字段（Select）时会出现取值永远不更新的问题。
                   // 同时需要透传 resolveOnServer/meta 等配置，避免关联字段子路径失去后端解析能力。
                   const recordOptions = this.context.getPropertyOptions?.('record');
-                  const currentObjectOptions = this.context.getPropertyOptions?.('currentObject');
+                  const itemOptions = this.context.getPropertyOptions?.('item');
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -723,14 +723,14 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                             resolveOnServer: recordOptions?.resolveOnServer,
                             serverOnlyWhenContextParams: recordOptions?.serverOnlyWhenContextParams,
                           });
-                          const { value: _value, ...rest } = (currentObjectOptions || {}) as any;
-                          fork.context.defineProperty('currentObject', {
+                          const { value: _value, ...rest } = (itemOptions || {}) as any;
+                          fork.context.defineProperty('item', {
                             ...rest,
-                            get: () => this.context.currentObject,
+                            get: () => this.context.item,
                             cache: false,
-                            meta: currentObjectOptions?.meta,
-                            resolveOnServer: currentObjectOptions?.resolveOnServer,
-                            serverOnlyWhenContextParams: currentObjectOptions?.serverOnlyWhenContextParams,
+                            meta: itemOptions?.meta,
+                            resolveOnServer: itemOptions?.resolveOnServer,
+                            serverOnlyWhenContextParams: itemOptions?.serverOnlyWhenContextParams,
                           });
                           return fork;
                         })();

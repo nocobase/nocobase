@@ -213,11 +213,11 @@ interface CellProps {
   parent: any;
   width?: number;
   parentFieldIndex?: any;
-  parentCurrentObject?: any;
+  parentItem?: any;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, width, parentFieldIndex, parentCurrentObject }) => {
+  ({ value, record, rowIdx, id, parent, width, parentFieldIndex, parentItem }) => {
     const baseFieldIndex = parentFieldIndex ?? parent?.parent?.context?.fieldIndex ?? parent?.context?.fieldIndex;
     const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
     const associationFieldPath =
@@ -236,15 +236,15 @@ const MemoCell: React.FC<CellProps> = React.memo(
         value: [...baseArr, `${associationKey}:${rowIndex}`],
       });
     }
-    rowFork.context.defineProperty('currentObject', {
+    rowFork.context.defineProperty('item', {
       get: () => {
-        const parentObject = (parentCurrentObject ?? parent?.context?.currentObject) as any;
+        const parentItemCtx = (parentItem ?? parent?.context?.item) as any;
         return {
           index: Number.isFinite(rowIndex) ? rowIndex : undefined,
           isNew: record?.isNew ?? record?.__is_new__,
           isStored: record?.isStored ?? record?.__is_stored__,
           value: record,
-          parentObject,
+          parentItem: parentItemCtx,
         };
       },
       cache: false,
@@ -289,8 +289,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
           const namePath = fieldPath.pop();
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', {
-            get: () => rowFork.context.currentObject,
+          fork.context.defineProperty('item', {
+            get: () => rowFork.context.item,
             cache: false,
           });
 
@@ -343,7 +343,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
       prev.id === next.id &&
       prev.width === next.width &&
       prev.parentFieldIndex === next.parentFieldIndex &&
-      prev.parentCurrentObject === next.parentCurrentObject
+      prev.parentItem === next.parentItem
     );
   },
 );
@@ -529,7 +529,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record, parentFieldIndex, parentCurrentObject } = props || {};
+      const { value, id, rowIdx, record, parentFieldIndex, parentItem } = props || {};
       return (
         <MemoCell
           value={value}
@@ -539,7 +539,7 @@ export class SubTableColumnModel<
           parent={this}
           width={this.props.width}
           parentFieldIndex={parentFieldIndex}
-          parentCurrentObject={parentCurrentObject}
+          parentItem={parentItem}
         />
       );
     };
