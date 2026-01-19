@@ -1,7 +1,7 @@
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
-import { pluginPreview } from '@rspress/plugin-preview';
+// import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginSitemap } from '@rspress/plugin-sitemap';
 import * as path from 'node:path';
 
@@ -9,12 +9,26 @@ const lang = process.env.DOCS_LANG || 'en';
 const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
 
+const locales = {
+  en: {
+    title: 'NocoBase Documentation',
+    description: 'Learn and master NocoBase quickly',
+  },
+  cn: {
+    title: 'NocoBase 文档',
+    description: '快速学习和掌握 NocoBase',
+  },
+}
+
+const currentLocale = locales[lang as keyof typeof locales] || locales.en;
+
 export default defineConfig({
   root: path.join(__dirname, `docs/${lang}`),
   outDir: path.join(__dirname, lang === 'en' ? 'dist' : `dist/${lang}`),
   themeDir: path.join(__dirname, 'theme'),
   base,
-  // title: 'NocoBase Documentation',
+  title: currentLocale.title,
+  description: currentLocale.description,
   icon: 'https://www.nocobase.com/images/favicon/apple-touch-icon.png',
   logo: {
     light: 'https://static-docs.nocobase.com/20260119193433.png',
