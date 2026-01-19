@@ -18,33 +18,34 @@ import { useSchemaInitializerRender } from '../../../../../../application/schema
 import { DndContext } from '../../../../../../schema-component/common/dnd-context';
 import { NocoBaseRecursionField } from '../../../../../../formily/NocoBaseRecursionField';
 
-export interface ActionBarProps {
+export interface MobileActionBarProps {
   style?: CSSProperties;
   className?: string;
   spaceProps?: SpaceProps;
+  layout?: string;
 }
 
-export interface ActionBarContextValue {
+export interface MobileActionBarContextValue {
   container?: Element | DocumentFragment;
-  forceProps?: ActionBarProps;
+  forceProps?: MobileActionBarProps;
   parentComponents?: string[];
 }
 
-const ActionBarContext = React.createContext<ActionBarContextValue>({
+const ActionBarContext = React.createContext<MobileActionBarContextValue>({
   container: undefined,
 });
 
-export const ActionBarProvider: React.FC<ActionBarContextValue> = ({ children, ...props }) => {
+export const MobileActionBarProvider: React.FC<MobileActionBarContextValue> = ({ children, ...props }) => {
   return <ActionBarContext.Provider value={props}>{children}</ActionBarContext.Provider>;
 };
 
-export const useActionBarContext = () => {
+export const useMobileActionBarContext = () => {
   return useContext(ActionBarContext);
 };
 
 export const MobileNavigationActionBar = withDynamicSchemaProps(
   observer((props: any) => {
-    const { forceProps = {} } = useActionBarContext();
+    const { forceProps = {} } = useMobileActionBarContext();
     const { style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
     const { position } = useSchemaToolbar();
 

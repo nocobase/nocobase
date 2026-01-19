@@ -21,7 +21,7 @@ import { Filter, useZIndexContext } from '../../schema-component';
 
 const OriginFilterAction = Filter.Action;
 
-export const FilterAction = withDynamicSchemaProps((props) => {
+export const MobileFilterAction = withDynamicSchemaProps((props) => {
   return (
     <OriginFilterAction
       {...props}
@@ -93,12 +93,12 @@ export const FilterAction = withDynamicSchemaProps((props) => {
   );
 });
 
-FilterAction.displayName = 'FilterAction';
+MobileFilterAction.displayName = 'MobileFilterAction';
 
 const originalFilterAction = Filter.Action;
 
 export const useToAdaptFilterActionToMobile = () => {
-  Filter.Action = FilterAction;
+  Filter.Action = MobileFilterAction;
 
   useEffect(() => {
     return () => {

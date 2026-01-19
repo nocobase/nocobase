@@ -2,7 +2,7 @@ import { ISchema } from '@formily/json-schema';
 import {
   CustomRouterContextProvider,
   Filter,
-  FilterAction,
+  MobileFilterAction,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
@@ -109,7 +109,7 @@ export default () => {
   return (
     <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
-        <SchemaComponentProvider components={{ FilterAction, Filter, Input }} scope={{ options }}>
+        <SchemaComponentProvider components={{ FilterAction: MobileFilterAction, Filter, Input }} scope={{ options }}>
           <SchemaComponent schema={schema} />
         </SchemaComponentProvider>
       </CustomRouterContextProvider>

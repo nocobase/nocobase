@@ -9,7 +9,7 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import {
-  ActionBarProvider,
+  MobileActionBarProvider,
   NocoBaseRecursionField,
   SortableItem,
   TabsContextProvider,
@@ -76,7 +76,7 @@ const InternalPage: React.FC = (props) => {
       return (
         <TabsContextProvider>
           {hasGlobalActions ? (
-            <ActionBarProvider
+            <MobileActionBarProvider
               container={
                 (typeof props.active !== 'undefined' ? props.active : true) && onlyInPage
                   ? document.getElementById('nb-position-container')
@@ -88,7 +88,7 @@ const InternalPage: React.FC = (props) => {
               }}
             >
               {props.children}
-            </ActionBarProvider>
+            </MobileActionBarProvider>
           ) : (
             props.children
           )}
