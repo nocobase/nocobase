@@ -1,0 +1,110 @@
+:::tip
+このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::
+
+
+# Git ソースからのインストール
+
+:::tip 前提条件
+
+- Git、Node.js 20+、Yarn 1.22.x がインストールされていること。
+- 必要なデータベース（MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ のいずれか）が設定され、起動していること。
+
+:::
+
+## 1. NocoBase をローカルにダウンロードする
+
+NocoBase のバージョンを選択し（[バージョン比較](../quickstart.md)）、対応するコマンドを実行してください。
+
+<Tabs>
+<Tab label="latest バージョン">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="beta バージョン">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="alpha バージョン">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. ディレクトリの移動
+
+```bash
+cd my-nocobase
+```
+
+## 3. 依存関係のインストール
+
+📢 ネットワーク環境やシステム構成などの要因により、このステップには10分以上かかる場合があります。
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. 環境変数の設定
+
+NocoBase に必要な環境変数は、ルートディレクトリの `.env` ファイルに保存されています。実際の状況に合わせて環境変数を変更してください。
+
+```bash
+TZ=Asia/Shanghai
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning 環境変数の説明
+
+- `TZ` はアプリケーションのタイムゾーンを設定するために使用され、デフォルトはオペレーティングシステムのタイムゾーンです。
+- `APP_KEY` はアプリケーションの秘密鍵であり、ユーザーのトークンなどを生成するために使用されます（`APP_KEY` が変更された場合、古いトークンは無効になります）。任意のランダムな文字列で構いません。ご自身の秘密鍵に変更し、外部に漏洩しないようにしてください。
+- `DB_*` はデータベース関連の設定です。例で示されているデフォルトのデータベースサービスを使用しない場合は、実際の状況に合わせて変更してください。
+
+:::
+
+## 5. NocoBase のインストール
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+## 6. NocoBase の起動
+
+**開発環境**
+
+```bash
+yarn dev
+```
+
+**本番環境（非推奨）**
+
+本番環境でソースから直接デプロイすることは推奨されません。本番環境へのデプロイについては、[本番環境へのデプロイ](../deployment/production.md) を参照してください。
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. NocoBase へのログイン
+
+ブラウザで [http://localhost:13000](http://localhost:13000) を開いてください。初期アカウントとパスワードは `admin@nocobase.com` と `admin123` です。
+
+:::warning アカウントセキュリティに関する注意
+
+初回ログイン後、システムセキュリティを確保するため、速やかにデフォルトパスワードを変更してください。
+
+:::

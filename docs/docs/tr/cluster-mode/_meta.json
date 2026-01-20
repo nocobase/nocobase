@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Küme Modu"
+  },
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Hazırlık",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes Dağıtımı",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Operasyon Süreçleri",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Servis Ayrıştırma",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Geliştirme Referansı",
+    "link": "/cluster-mode/development"
+  }
+]

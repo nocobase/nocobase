@@ -1,0 +1,116 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Hoe NocoBase werkt",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase installeren",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Installatie met Docker",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installatie met create-nocobase-app",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installatie vanuit Git-broncode",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Omgevingsvariabelen",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase upgraden",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Upgrade voor Docker-installatie",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Upgrade voor create-nocobase-app-installatie",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Upgrade voor Git-broncode-installatie",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Implementatie",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Implementatie in productie",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "Proxy voor statische bestanden",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "CDN",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Veelgebruikte operationele commando's",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker-compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Hoe sneller te implementeren",
+        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Plug-ins installeren en upgraden",
+    "link": "/get-started/install-upgrade-plugins"
+  }
+]

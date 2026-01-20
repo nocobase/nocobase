@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "การกำหนดเงื่อนไข",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "คุณสมบัติขั้นสูง",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

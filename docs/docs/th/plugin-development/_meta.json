@@ -1,0 +1,206 @@
+[
+  {
+    "type": "custom-link",
+    "label": "เริ่มต้นใช้งานฉบับย่อ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวมการพัฒนาปลั๊กอิน",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "การเขียนปลั๊กอินแรกของคุณ",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "โครงสร้างไดเรกทอรีโปรเจกต์",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การพัฒนาฝั่งเซิร์ฟเวอร์",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "ปลั๊กอิน",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "คอลเลกชัน",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "การดำเนินการฐานข้อมูล",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการแหล่งข้อมูล",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการทรัพยากร",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "การควบคุมการเข้าถึง (ACL)",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "มิดเดิลแวร์",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "แคช",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "เหตุการณ์",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "คอนเท็กซ์คำขอ",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "สคริปต์การย้ายข้อมูล",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "ล็อก",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "การทำให้เป็นสากล (I18n)",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "คำสั่ง",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการงานที่กำหนดเวลา",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "การทดสอบ",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การพัฒนาฝั่งไคลเอนต์",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "ปลั๊กอิน",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "คอนเท็กซ์",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "เราเตอร์",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "การควบคุมการเข้าถึง (ACL)",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการแหล่งข้อมูล",
+        "link": "/plugin-development/client/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ทรัพยากร",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "คำขอ",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "สไตล์และธีม",
+        "link": "/plugin-development/client/styles-themes"
+      },
+      {
+        "type": "custom-link",
+        "label": "ล็อก",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "การทำให้เป็นสากล (I18n)",
+        "link": "/plugin-development/client/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "การทดสอบ",
+        "link": "/plugin-development/client/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "อื่นๆ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "คู่มือการอัปเกรดปลั๊กอิน",
+        "link": "/plugin-development/plugin-upgrade-guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "รายการภาษา",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการ Dependencies",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "การสร้าง",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]
