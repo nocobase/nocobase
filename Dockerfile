@@ -25,8 +25,7 @@ SHELL ["/bin/bash", "-c"]
 
 RUN cd /tmp/docs && \
   yarn install && \
-  yarn build && \
-  yarn build --lang=cn && \
+  ./build-all.sh && \
   rm -rf /tmp/docs/node_modules && \
   cd /tmp && \
   yarn install && yarn build --no-dts && \
