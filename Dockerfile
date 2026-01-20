@@ -25,7 +25,7 @@ SHELL ["/bin/bash", "-c"]
 
 RUN cd /tmp/docs && \
   yarn install && \
-  yarn build --lang=all && \
+  yarn build-all && \
   yarn install && yarn build --no-dts && \
   rm -rf /tmp/docs/node_modules && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \

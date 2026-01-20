@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "node rspress.mjs build",
+    "build-all": "./build-all.sh",
     "check": "biome check --write",
     "dev": "node rspress.mjs dev",
     "format": "prettier --write .",
