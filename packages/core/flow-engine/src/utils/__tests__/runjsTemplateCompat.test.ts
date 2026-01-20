@@ -102,6 +102,39 @@ ctx.render(<div className="x">{name}</div>);
       expect(out).toMatch(/ctx\.resolveJsonTemplate/);
     });
 
+    it('injects ctx.libs ensure preamble for member access', async () => {
+      const src = `return ctx.libs.lodash;`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+      expect(out).toContain(`/* __runjs_ensure_libs */`);
+      expect(out).toContain(`await ctx.__ensureLibs(["lodash"]);`);
+    });
+
+    it('injects ctx.libs ensure preamble for bracket access with string literal', async () => {
+      const src = `return ctx.libs['lodash'];`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+      expect(out).toContain(`await ctx.__ensureLibs(["lodash"]);`);
+    });
+
+    it('injects ctx.libs ensure preamble for object destructuring', async () => {
+      const src = `const { lodash } = ctx.libs;\nreturn lodash;`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+      expect(out).toContain(`await ctx.__ensureLibs(["lodash"]);`);
+    });
+
+    it('does not inject ctx.libs preamble when ctx.libs only appears in string/comment', async () => {
+      const src = `// ctx.libs.lodash\nconst s = "ctx.libs.lodash";\nreturn s;`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+      expect(out).not.toContain(`__runjs_ensure_libs`);
+    });
+
+    it('is idempotent for already-prepared code', async () => {
+      const src = `return ctx.libs['lodash'];`;
+      const out1 = await prepareRunJsCode(src, { preprocessTemplates: false });
+      const out2 = await prepareRunJsCode(out1, { preprocessTemplates: false });
+      expect(out2).toBe(out1);
+      expect(out2.match(/__runjs_ensure_libs/g)?.length ?? 0).toBe(1);
+    });
+
     it('does not break JSX attribute string values when preprocessing templates', async () => {
       const src = `ctx.render(<Input title="{{ctx.user.name}}" />);`;
       const out = await prepareRunJsCode(src, { preprocessTemplates: true });
