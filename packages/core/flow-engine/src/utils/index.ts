@@ -75,6 +75,9 @@ export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, t
 // RunJS helpers
 export { resolveRunJSObjectValues } from './resolveRunJSObjectValues';
 
+// RunJS 代码兼容预处理（{{ }}）与 JSX 编译
+export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';
+
 // Ephemeral context helper（用于临时注入属性/方法，避免污染父级 ctx）
 export { createEphemeralContext } from './createEphemeralContext';
 

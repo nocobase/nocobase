@@ -14,7 +14,6 @@ import {
   createSafeWindow,
   createSafeNavigator,
   tExpr,
-  compileRunJs,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
@@ -101,6 +100,7 @@ JSItemModel.registerFlow({
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
+      useRawParams: true,
       uiSchema: {
         code: {
           type: 'string',
@@ -151,9 +151,8 @@ ctx.render(<JsItem />);
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
-          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            compiled,
+            code,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );
