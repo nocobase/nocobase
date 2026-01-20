@@ -21,7 +21,7 @@ const deps: Record<string, string> = {
   umzug: '3.x',
   'async-mutex': '0.5.x',
   '@formulajs/formulajs': '4.x',
-  mathjs: '10.x',
+  mathjs: '15.x',
   winston: '3.x',
   'winston-daily-rotate-file': '4.x',
   koa: '2.x',
