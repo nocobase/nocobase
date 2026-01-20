@@ -59,6 +59,10 @@ export default {
       type: 'belongsTo',
       name: 'node',
       target: 'flow_nodes',
+      uiSchema: {
+        type: 'object',
+        title: `{{t("CC node", { ns: "${NAMESPACE}" })}}`,
+      },
     },
     {
       type: 'belongsTo',
