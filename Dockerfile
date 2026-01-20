@@ -26,8 +26,9 @@ SHELL ["/bin/bash", "-c"]
 RUN cd /tmp/docs && \
   yarn install && \
   yarn build-all && \
-  yarn install && yarn build --no-dts && \
   rm -rf /tmp/docs/node_modules && \
+  cd /tmp && \
+  yarn install && yarn build --no-dts && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
   if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
