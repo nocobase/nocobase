@@ -142,7 +142,7 @@ const DEFAULT_RUNJS_LIBS: Array<{ name: string; cache: RunJSLibCache; loader: Ru
   { name: 'antdIcons', cache: 'global', loader: () => antdIcons },
   { name: 'lodash', cache: 'global', loader: () => import('lodash').then((m) => m.default || m) },
   { name: 'formula', cache: 'global', loader: () => import('@formulajs/formulajs').then((m) => m.default || m) },
-  { name: 'mathjs', cache: 'global', loader: () => import('mathjs').then((m) => m) },
+  { name: 'math', cache: 'global', loader: () => import('mathjs').then((m) => m) },
 ];
 
 let __defaultRunJSLibsRegistered = false;
