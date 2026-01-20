@@ -48,7 +48,6 @@ RUN yarn install && yarn build --no-dts && \
   cd /app/my-nocobase-app && \
   $BEFORE_PACK_NOCOBASE && \
   cd /app && \
-  ([ -f /tmp/docs/dist.tar.gz ] && cp /tmp/docs/dist.tar.gz /app/my-nocobase-app/docs-dist.tar.gz || true) && \
   rm -rf my-nocobase-app/packages/app/client/src/.umi && \
   rm -rf nocobase.tar.gz && \
   tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
@@ -76,6 +75,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+COPY --from=builder /tmp/docs/dist.tar.gz /app/nocobase-docs.tar.gz
 
 WORKDIR /app/nocobase
 
