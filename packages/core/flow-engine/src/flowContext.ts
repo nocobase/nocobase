@@ -13,6 +13,7 @@ import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
+import * as antdIcons from '@ant-design/icons';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
@@ -50,7 +51,6 @@ import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
-import { setupRunJSLibs } from './runjsLibs';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1785,6 +1785,16 @@ export type RunJSDocCompletionDoc = {
   insertText?: string;
 };
 
+export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);
+
+// `hidden` is the single visibility entrypoint for RunJSDoc property docs:
+// - boolean: hide the whole node and its subtree
+// - string[]: hide specific subpaths under the node (relative dot-paths)
+export type RunJSDocHiddenOrPathsDoc =
+  | boolean
+  | string[]
+  | ((ctx: any) => boolean | string[] | Promise<boolean | string[]>);
+
 export type RunJSDocPropertyDoc =
   | string
   | {
@@ -1794,6 +1804,7 @@ export type RunJSDocPropertyDoc =
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
       properties?: Record<string, RunJSDocPropertyDoc>;
+      hidden?: RunJSDocHiddenOrPathsDoc;
     };
 
 export type RunJSDocMethodDoc =
@@ -1803,6 +1814,7 @@ export type RunJSDocMethodDoc =
       detail?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      hidden?: RunJSDocHiddenDoc;
     };
 
 export type RunJSDocMeta = {
@@ -1830,6 +1842,126 @@ function __runjsDeepMerge(base: any, patch: any) {
   return out;
 }
 
+function __isPlainObject(val: any): val is Record<string, any> {
+  return !!val && typeof val === 'object' && !Array.isArray(val);
+}
+
+function __mergeRunJSDocDocRecord(base: any, patch: any, mergeDoc: (b: any, p: any) => any): any {
+  if (!__isPlainObject(patch)) return base;
+  // Important: preserve `null` markers when base is not an object (e.g. child class wants to delete parent keys).
+  // If we eagerly delete them here, the deletion intent is lost for later merges in the inheritance chain.
+  if (!__isPlainObject(base)) return patch;
+  const out: any = { ...base };
+  for (const k of Object.keys(patch)) {
+    const pv = patch[k];
+    if (pv === null) {
+      delete out[k];
+      continue;
+    }
+    const bv = __isPlainObject(base) ? base[k] : undefined;
+    const merged = mergeDoc(bv, pv);
+    if (typeof merged === 'undefined') delete out[k];
+    else out[k] = merged;
+  }
+  return out;
+}
+
+function __mergeRunJSDocPropertyDoc(base: any, patch: any): any {
+  if (patch === null) return undefined;
+
+  const baseIsObj = __isPlainObject(base);
+  const patchIsObj = __isPlainObject(patch);
+  const baseIsStr = typeof base === 'string';
+  const patchIsStr = typeof patch === 'string';
+
+  // Treat string docs as { description: string } when merging with object docs,
+  // to avoid "whole replacement" that drops base hidden/properties/completion.
+  if (patchIsStr) {
+    if (baseIsObj) {
+      return __mergeRunJSDocPropertyDoc(base, { description: patch });
+    }
+    return patch;
+  }
+
+  if (patchIsObj) {
+    const baseObj: any = baseIsObj ? base : baseIsStr ? { description: base } : undefined;
+    const out: any = { ...(baseObj || {}) };
+    for (const k of Object.keys(patch)) {
+      if (k === 'properties') {
+        const pv = (patch as any).properties;
+        if (pv === null) {
+          delete out.properties;
+          continue;
+        }
+        const mergedProps = __mergeRunJSDocDocRecord(baseObj?.properties, pv, __mergeRunJSDocPropertyDoc);
+        if (typeof mergedProps === 'undefined') delete out.properties;
+        else out.properties = mergedProps;
+        continue;
+      }
+      const mergedVal = __runjsDeepMerge(baseObj?.[k], (patch as any)[k]);
+      if (typeof mergedVal === 'undefined') delete out[k];
+      else out[k] = mergedVal;
+    }
+    return out;
+  }
+
+  return patch ?? base;
+}
+
+function __mergeRunJSDocMethodDoc(base: any, patch: any): any {
+  if (patch === null) return undefined;
+
+  const baseIsObj = __isPlainObject(base);
+  const patchIsObj = __isPlainObject(patch);
+  const baseIsStr = typeof base === 'string';
+  const patchIsStr = typeof patch === 'string';
+
+  if (patchIsStr) {
+    if (baseIsObj) {
+      return __mergeRunJSDocMethodDoc(base, { description: patch });
+    }
+    return patch;
+  }
+
+  if (patchIsObj) {
+    const baseObj: any = baseIsObj ? base : baseIsStr ? { description: base } : undefined;
+    const out: any = { ...(baseObj || {}) };
+    for (const k of Object.keys(patch)) {
+      const mergedVal = __runjsDeepMerge(baseObj?.[k], (patch as any)[k]);
+      if (typeof mergedVal === 'undefined') delete out[k];
+      else out[k] = mergedVal;
+    }
+    return out;
+  }
+
+  return patch ?? base;
+}
+
+function __mergeRunJSDocMeta(base: any, patch: any): RunJSDocMeta {
+  const baseObj: any = __isPlainObject(base) ? base : {};
+  const patchObj: any = __isPlainObject(patch) ? patch : {};
+  const out: any = { ...baseObj };
+
+  for (const k of Object.keys(patchObj)) {
+    if (k === 'properties') {
+      const mergedProps = __mergeRunJSDocDocRecord(baseObj.properties, patchObj.properties, __mergeRunJSDocPropertyDoc);
+      if (typeof mergedProps === 'undefined') delete out.properties;
+      else out.properties = mergedProps;
+      continue;
+    }
+    if (k === 'methods') {
+      const mergedMethods = __mergeRunJSDocDocRecord(baseObj.methods, patchObj.methods, __mergeRunJSDocMethodDoc);
+      if (typeof mergedMethods === 'undefined') delete out.methods;
+      else out.methods = mergedMethods;
+      continue;
+    }
+    const mergedVal = __runjsDeepMerge(baseObj[k], patchObj[k]);
+    if (typeof mergedVal === 'undefined') delete out[k];
+    else out[k] = mergedVal;
+  }
+
+  return out as RunJSDocMeta;
+}
 export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
@@ -1850,7 +1982,17 @@ export class FlowRunJSContext extends FlowContext {
     };
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
-    setupRunJSLibs(this);
+    // 为第三方/通用库提供统一命名空间：ctx.libs
+    // - 新增库应优先挂载到 ctx.libs.xxx
+    // - 同时保留顶层别名（如 ctx.React / ctx.antd），以兼容历史代码
+    const libs = Object.freeze({
+      React,
+      ReactDOM: ReactDOMShim,
+      antd,
+      dayjs,
+      antdIcons,
+    });
+    this.defineProperty('libs', { value: libs });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available
@@ -1919,11 +2061,11 @@ export class FlowRunJSContext extends FlowContext {
     if (locale) {
       const map = __runjsClassLocaleMeta.get(this) || new Map<string, RunJSDocMeta>();
       const prev = map.get(locale) || {};
-      map.set(locale, __runjsDeepMerge(prev, meta));
+      map.set(locale, __mergeRunJSDocMeta(prev, meta));
       __runjsClassLocaleMeta.set(this, map);
     } else {
       const prev = __runjsClassDefaultMeta.get(this) || {};
-      __runjsClassDefaultMeta.set(this, __runjsDeepMerge(prev, meta));
+      __runjsClassDefaultMeta.set(this, __mergeRunJSDocMeta(prev, meta));
     }
     __runjsDocCache.delete(this);
   }
@@ -1940,13 +2082,13 @@ export class FlowRunJSContext extends FlowContext {
     }
     let merged: RunJSDocMeta = {};
     for (const cls of chain) {
-      merged = __runjsDeepMerge(merged, __runjsClassDefaultMeta.get(cls) || {});
+      merged = __mergeRunJSDocMeta(merged, __runjsClassDefaultMeta.get(cls) || {});
     }
     if (locale) {
       for (const cls of chain) {
         const lmap = __runjsClassLocaleMeta.get(cls);
         if (lmap && lmap.has(locale)) {
-          merged = __runjsDeepMerge(merged, lmap.get(locale));
+          merged = __mergeRunJSDocMeta(merged, lmap.get(locale));
         }
       }
     }
