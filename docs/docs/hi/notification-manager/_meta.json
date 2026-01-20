@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "सूचना चैनल",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "इन-साइट संदेश",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "ईमेल",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "वीकॉम",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "विकास गाइड",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "सूचना चैनल प्रकार का विस्तार करें",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "सूचना API का विस्तार करें",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

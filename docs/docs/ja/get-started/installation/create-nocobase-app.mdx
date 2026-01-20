@@ -1,0 +1,233 @@
+:::tip
+このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::
+
+
+# create-nocobase-app インストール
+
+:::tip 前提条件
+
+- Node.js 20+、Yarn 1.22.x がインストールされていること
+- 必要なデータベース（MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ のいずれか）が設定され、起動していること
+- 国内のネットワーク環境によっては、国内ミラーへの切り替えをおすすめします（必須ではありません）。
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. NocoBase プロジェクトの作成
+
+NocoBase のバージョン（[バージョン比較](../quickstart.md)）とデータベースの種類を選択し、対応するコマンドを実行してください。
+
+<Tabs>
+<Tab label="最新バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="ベータ版">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="アルファ版">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+</Tabs>
+
+:::warning 環境変数について
+
+- `TZ` はアプリケーションのタイムゾーンを設定するために使用されます。デフォルトはオペレーティングシステムのタイムゾーンです。
+- `APP_KEY` はアプリケーションの秘密鍵で、ユーザーのトークン生成などに使用されます（`APP_KEY` を変更すると、古いトークンは無効になります）。任意のランダムな文字列で構いません。**ご自身の秘密鍵に変更し、外部に漏洩しないようにしてください。**
+- `DB_*` はデータベース関連の設定です。実際の状況に合わせて、ご自身のデータベース接続情報に変更してください。
+
+:::
+
+## 2. ディレクトリの移動
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. 依存関係のインストール
+
+📢 ネットワーク環境やシステム設定などの要因により、この手順には10分以上かかる場合があります。
+
+```bash
+yarn install
+```
+
+:::tip 本番環境でのヒント
+
+本番環境にデプロイする際は、サイズを削減するために必要な依存関係のみをインストールできます。
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. NocoBase のインストール
+
+```bash
+yarn nocobase install --lang=ja-JP
+```
+
+インストールプロセス中に、データベースのテーブル構造が自動的に作成され、初期データが設定されます。
+
+## 5. NocoBase の起動
+
+**開発環境**
+
+```bash
+yarn dev
+```
+
+**本番環境**
+
+```bash
+yarn start
+```
+
+## 6. NocoBase へのログイン
+
+ブラウザで [http://localhost:13000](http://localhost:13000) を開いてください。初期アカウントとパスワードは `admin@nocobase.com` と `admin123` です。
+
+:::warning アカウントセキュリティに関する注意
+
+初回ログイン後、システムセキュリティを確保するため、速やかにデフォルトパスワードを変更してください。
+
+:::

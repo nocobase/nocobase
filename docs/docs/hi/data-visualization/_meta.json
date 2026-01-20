@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "क्विक स्टार्ट",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "फ़ीचर परिचय",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "डेटा क्वेरी",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "चार्ट विकल्प",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "पूर्वावलोकन और सहेजें",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "संदर्भ पर्यावरण वैरिएबल का उपयोग करें",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "पेज फ़िल्टर और लिंकेज",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "उन्नत",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "SQL मोड में डेटा क्वेरी करें",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "कस्टम चार्ट कॉन्फ़िगरेशन",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "कस्टम इंटरैक्टिव इवेंट",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "अक्सर पूछे जाने वाले प्रश्न",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "सर्वोत्तम अभ्यास",
+    "link": "/data-visualization/best-practices"
+  }
+]

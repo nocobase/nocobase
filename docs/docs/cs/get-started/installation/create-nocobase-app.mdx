@@ -1,0 +1,227 @@
+:::tip
+Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::
+
+
+# Instalace create-nocobase-app
+
+:::tip Předpoklady
+
+- Máte nainstalované Node.js 20+ a Yarn 1.22.x.
+- Máte nakonfigurovanou a spuštěnou jednu z požadovaných databází: MySQL 8.0.17+, MariaDB 10.9+, nebo PostgreSQL 10+.
+
+:::
+
+## 1. Vytvoření projektu NocoBase
+
+Vyberte verzi NocoBase ([Porovnání verzí](../quickstart.md)) a typ databáze a poté spusťte odpovídající příkaz.
+
+<Tabs>
+<Tab label="nejnovější verze">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="verze beta">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="verze alpha">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+</Tabs>
+
+:::warning Vysvětlení proměnných prostředí
+
+- `TZ` slouží k nastavení časového pásma aplikace, které se standardně přebírá z operačního systému.
+- `APP_KEY` je tajný klíč aplikace, který se používá například pro generování uživatelských tokenů (pokud se `APP_KEY` změní, staré tokeny přestanou platit). Může to být libovolný náhodný řetězec. **Prosím, změňte jej na svůj vlastní tajný klíč a zajistěte, aby nebyl zveřejněn.**
+- `DB_*` jsou konfigurace související s databází. Upravte je prosím tak, aby odpovídaly vašim skutečným informacím o připojení k databázi.
+
+:::
+
+## 2. Změna adresáře
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. Instalace závislostí
+
+📢 V závislosti na vašem síťovém prostředí, konfiguraci systému a dalších faktorech může tento krok trvat i více než deset minut.
+
+```bash
+yarn install
+```
+
+:::tip Tip pro produkční prostředí
+
+Při nasazování v produkčním prostředí můžete pro snížení velikosti nainstalovat pouze nezbytné závislosti:
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. Instalace NocoBase
+
+```bash
+yarn nocobase install --lang=cs-CZ
+```
+
+Během instalačního procesu se automaticky vytvoří struktura databázových tabulek a inicializují se data.
+
+## 5. Spuštění NocoBase
+
+**Vývojové prostředí**
+
+```bash
+yarn dev
+```
+
+**Produkční prostředí**
+
+```bash
+yarn start
+```
+
+## 6. Přihlášení do NocoBase
+
+Otevřete ve svém prohlížeči [http://localhost:13000](http://localhost:13000). Počáteční účet a heslo jsou `admin@nocobase.com` a `admin123`.
+
+:::warning Tip pro zabezpečení účtu
+
+Po prvním přihlášení prosím okamžitě změňte výchozí heslo, abyste zajistili bezpečnost systému.
+
+:::

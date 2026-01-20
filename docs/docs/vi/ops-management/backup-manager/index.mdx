@@ -1,0 +1,210 @@
+:::tip
+Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Quản lý sao lưu
+
+## Giới thiệu
+
+Plugin quản lý sao lưu NocoBase cung cấp các tính năng sao lưu toàn bộ cơ sở dữ liệu NocoBase và các tệp người dùng đã tải lên, bao gồm sao lưu toàn bộ, sao lưu định kỳ, tải xuống, xóa và khôi phục bản sao lưu.
+
+:::warning
+Plugin Quản lý Sao lưu có sẵn trong các phiên bản Professional và Enterprise. Đối với người dùng phiên bản Community và Standard, bạn có thể sao lưu trực tiếp cơ sở dữ liệu; xem chi tiết tại: [`Cách sao lưu và khôi phục NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Cài đặt Client Cơ sở dữ liệu
+
+Trình quản lý sao lưu phụ thuộc vào client của cơ sở dữ liệu tương ứng. Trước khi sử dụng, vui lòng truy cập trang web chính thức để tải xuống client phù hợp với phiên bản cơ sở dữ liệu bạn đang dùng:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Đối với phiên bản Docker, bạn có thể trực tiếp viết một script trong thư mục `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Nội dung của `install-database-client.sh` như sau:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Sau đó khởi động lại container app
+
+```bash
+docker compose restart app
+# Xem nhật ký
+docker compose logs app
+```
+
+Kiểm tra số phiên bản client cơ sở dữ liệu, phải khớp với số phiên bản của máy chủ cơ sở dữ liệu
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Hướng dẫn sử dụng
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Tạo bản sao lưu mới
+
+Nhấp vào nút "Tạo bản sao lưu mới" để tạo một bản sao lưu mới dựa trên cấu hình sao lưu và hiển thị trạng thái sao lưu trong danh sách sao lưu.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Khôi phục bản sao lưu
+
+Hỗ trợ khôi phục bản sao lưu từ danh sách sao lưu hoặc tải lên tệp sao lưu cục bộ để khôi phục bản sao lưu.
+Không cho phép thực hiện thao tác khôi phục trong các trường hợp sau:
+
+- Khi phiên bản NocoBase hiện tại thấp hơn phiên bản NocoBase trong tệp sao lưu.
+- Khi cơ sở dữ liệu NocoBase hiện tại không nhất quán với các cấu hình sau trong tệp sao lưu:
+  - loại cơ sở dữ liệu dialect
+  - cấu hình trường underscored
+  - tiền tố bảng table prefix
+  - cấu trúc bảng schema
+- Khi chế độ `Tolerant mode` chưa được bật, và phiên bản cơ sở dữ liệu khi tạo bản sao lưu cao hơn phiên bản cơ sở dữ liệu ứng dụng hiện tại.
+
+> **Khôi phục là một thao tác toàn bộ cơ sở dữ liệu. Bạn nên sao lưu cơ sở dữ liệu hiện tại trước khi khôi phục bản sao lưu.**
+
+#### Khôi phục từ danh sách sao lưu
+
+Nhấp vào nút `Khôi phục` của mục sao lưu trong danh sách sao lưu, nhập mật khẩu mã hóa tệp sao lưu vào cửa sổ bật lên, sau đó nhấp 'Xác nhận' để khôi phục bản sao lưu.
+
+> Không cần nhập mật khẩu đối với tệp sao lưu không được mã hóa.
+
+> Nếu bạn cần khôi phục tệp sao lưu về phiên bản cơ sở dữ liệu thấp hơn, bạn cần bật chế độ Tolerant mode.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Khôi phục từ tệp sao lưu cục bộ
+
+Nhấp vào nút `Khôi phục từ bản sao lưu cục bộ`, chọn tệp sao lưu cục bộ trong cửa sổ bật lên, nhập mật khẩu mã hóa tệp sao lưu, sau đó nhấp 'Xác nhận' để khôi phục bản sao lưu.
+
+> Không cần nhập mật khẩu đối với tệp sao lưu không được mã hóa.
+
+> Nếu bạn cần khôi phục tệp sao lưu về phiên bản cơ sở dữ liệu thấp hơn, bạn cần bật chế độ Tolerant mode.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Tải xuống tệp sao lưu
+
+Nhấp vào nút `Tải xuống` của mục sao lưu trong danh sách sao lưu để tải xuống tệp sao lưu.
+
+#### Xóa bản sao lưu
+
+Nhấp vào nút `Xóa` của mục sao lưu trong danh sách sao lưu để xóa tệp sao lưu.
+
+## Cài đặt sao lưu
+
+Chuyển sang tab `Cài đặt`, sửa đổi các cài đặt sao lưu, sau đó nhấp `Lưu` để áp dụng.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Mô tả cài đặt sao lưu
+
+- `Sao lưu tự động`: Sau khi bật `Chạy sao lưu tự động theo lịch Cron`, bạn có thể thiết lập sao lưu tự động vào các thời điểm cụ thể.
+- `Số lượng bản sao lưu tối đa`: Đặt số lượng tệp sao lưu tối đa được lưu cục bộ. Khi vượt quá số lượng này, các tệp sao lưu cũ nhất sẽ tự động bị xóa.
+- `Đồng bộ hóa bản sao lưu lên bộ nhớ đám mây`: Thiết lập bộ nhớ đám mây nơi các tệp sao lưu sẽ tự động được tải lên sau khi sao lưu thành công.
+- `Sao lưu các tệp lưu trữ cục bộ`: Liệu có bao gồm các tệp người dùng đã tải lên bộ nhớ cục bộ của máy chủ (storage/uploads) vào bản sao lưu hay không.
+- `Mật khẩu khôi phục`: Nếu đã đặt mật khẩu khôi phục, bạn cần nhập mật khẩu này khi khôi phục bản sao lưu.
+
+> **Vui lòng giữ mật khẩu khôi phục cẩn thận. Quên mật khẩu sẽ khiến bạn không thể khôi phục tệp sao lưu.**

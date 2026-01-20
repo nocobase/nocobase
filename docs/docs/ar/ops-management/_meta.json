@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "إدارة الإصدارات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "نظرة عامة",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "المتغيرات والمفاتيح",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "إدارة النسخ الاحتياطي",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "إدارة الترحيل",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

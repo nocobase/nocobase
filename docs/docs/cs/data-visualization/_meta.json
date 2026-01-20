@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Rychlý start",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Představení funkcí",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Datový dotaz",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Možnosti grafu",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Náhled a uložení",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Použití kontextových proměnných prostředí",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Filtry stránky a propojení",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pokročilé",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Dotazování dat v SQL režimu",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vlastní konfigurace grafu",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vlastní interaktivní události",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Časté dotazy",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Osvědčené postupy",
+    "link": "/data-visualization/best-practices"
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "إعدادات المسؤول",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "عملية الإعداد",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "إعداد بريد Google",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "إعداد بريد Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "الأسئلة الشائعة",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "مقدمة عن الميزات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "مركز البريد",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "قالب البريد",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "توقيع البريد",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "قوالب البريد",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "متقدم",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ملاحظات البريد",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "مهام البريد",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "تصنيفات البريد",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "الإرسال المجمع",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "حفظ المسودة تلقائيًا",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "रिलीज़ प्रबंधन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "वैरिएबल और कुंजी",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "बैकअप प्रबंधन",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "माइग्रेशन प्रबंधन",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]
