@@ -49,7 +49,7 @@ export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, no
   const collectAssociation = (collectionName: string, title: string, key: string | number, type: string) => {
     const [dataSourceKey, target] = parseCollectionName(collectionName);
     if (!target) return;
-    const name = `${TEMP_ASSOCIATION_PREFIX}${type}_${sanitizeFieldKey(key || target)}`;
+    const name = `${TEMP_ASSOCIATION_PREFIX}${type}_${sanitizeFieldKey(key)}`;
     if (collection.getField(name)) {
       return;
     }
@@ -58,13 +58,13 @@ export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, no
   };
 
   if (workflow?.config?.collection) {
-    const key = workflow?.key ?? workflow?.id ?? 'workflow';
+    const key = 'workflow';
     collectAssociation(workflow.config.collection, workflow.title, key, 'workflow');
   }
 
   (nodes || []).forEach((node, index) => {
     if (!node?.config?.collection) return;
-    const key = node?.key ?? node?.id ?? index;
+    const key = node?.key;
     collectAssociation(node.config.collection, node.title, key, 'node');
   });
 

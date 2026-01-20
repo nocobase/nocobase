@@ -423,7 +423,6 @@ const StatusFilterMap = {
 };
 
 function useTodoActionParams(status) {
-  const { data: user } = useCurrentUserContext();
   const filter = StatusFilterMap[status] ?? {};
   return {
     filter,
@@ -434,6 +433,7 @@ function useTodoActionParams(status) {
       'workflow.id',
       'workflow.title',
       'workflow.enabled',
+      'workflow.config',
       'workflow.nodes',
       'workflow.nodes.title',
       'workflow.nodes.key',
