@@ -11,6 +11,7 @@ import { DetailsItemModel, parseCollectionName } from '@nocobase/client';
 import { Collection, CollectionField, FlowModelContext, tExpr } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../common/constants';
 
+// 注意：如果更改这里的值，会导致渲染错误
 const TEMP_ASSOCIATION_PREFIX = 'ccTempAssoc_';
 
 // 排除的字段
