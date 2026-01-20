@@ -418,7 +418,7 @@ export default {
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
         );
-        await aiEmployee.resendMessages(messageId);
+        await aiEmployee.processMessages({ messageId });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Chat error warning');

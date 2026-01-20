@@ -601,25 +601,55 @@ export class AIEmployee {
   }
 
   async processMessages({
+    messageId,
     userMessages = [],
     userDecisions,
   }: {
+    messageId?: string;
     userMessages?: AIMessageInput[];
     userDecisions?: UserDecision[];
   }) {
     try {
       const { provider, model, service } = await this.getLLMService();
-      const tools = await this.getTools();
-      const middleware = this.getMiddleware({ tools, model, service });
+      const prepareOptions = messageId
+        ? async () => {
+            const agentThread = await this.forkCurrentThread(provider);
+            const thread_id = agentThread.threadId;
+            const options = {
+              configurable: {
+                thread_id,
+              },
+            };
+            const tools = await this.getTools();
+            const middleware = this.getMiddleware({ tools, model, service, messageId, agentThread });
+            const historyMessages = await this.aiChatConversation.listMessages({ messageId });
+            const state = {
+              lastHumanMessageIndex: historyMessages.filter((x) => x.role === 'user').length,
+              lastAIMessageIndex: historyMessages.filter((x) => x.role === this.employee.username).length,
+              lastToolMessageIndex: historyMessages.filter((x) => x.role === 'tool').length,
+              lastMessageIndex: historyMessages.length,
+            };
+            return { historyMessages, tools, middleware, options, state };
+          }
+        : async () => {
+            const historyMessages = [];
+            let options;
+            let state;
+            const tools = await this.getTools();
+            const middleware = this.getMiddleware({ tools, model, service });
+            return { historyMessages, tools, middleware, options, state };
+          };
+      const { historyMessages, tools, middleware, options, state } = await prepareOptions();
+
       const chatContext = await this.aiChatConversation.getChatContext({
-        userMessages,
+        userMessages: [...historyMessages, ...userMessages],
         userDecisions,
         tools,
         middleware,
         getSystemPrompt: async () => this.getSystemPrompt(),
         formatMessages: async (messages) => this.formatMessages({ messages, provider }),
       });
-      const { stream, signal } = await this.prepareChatStream({ chatContext, provider });
+      const { stream, signal } = await this.prepareChatStream({ chatContext, provider, options, state });
 
       await this.processChatStream(stream, {
         signal,
@@ -630,52 +660,6 @@ export class AIEmployee {
     } catch (err) {
       this.ctx.log.error(err);
       this.sendErrorResponse(err.message || 'Chat error warning');
-      return false;
-    }
-  }
-
-  async resendMessages(messageId?: string) {
-    try {
-      const { provider, model, service } = await this.getLLMService();
-      const agentThread = await this.forkCurrentThread(provider);
-      const userMessages = await this.aiChatConversation.listMessages({ messageId });
-      const thread_id = agentThread.threadId;
-      const tools = await this.getTools();
-      const middleware = this.getMiddleware({ tools, model, service, messageId, agentThread });
-      const state = {
-        lastHumanMessageIndex: userMessages.filter((x) => x.role === 'user').length,
-        lastAIMessageIndex: userMessages.filter((x) => x.role === this.employee.username).length,
-        lastToolMessageIndex: userMessages.filter((x) => x.role === 'tool').length,
-        lastMessageIndex: userMessages.length,
-      };
-      const chatContext = await this.aiChatConversation.getChatContext({
-        userMessages,
-        tools,
-        middleware,
-        getSystemPrompt: async () => this.getSystemPrompt(),
-        formatMessages: async (messages) => this.formatMessages({ messages, provider }),
-      });
-
-      const { stream, signal } = await this.prepareChatStream({
-        chatContext,
-        provider,
-        options: {
-          configurable: {
-            thread_id,
-          },
-        },
-        state,
-      });
-
-      await this.processChatStream(stream, {
-        signal,
-        provider,
-      });
-
-      return true;
-    } catch (err) {
-      this.ctx.log.error(err);
-      this.sendErrorResponse(err.message);
       return false;
     }
   }
