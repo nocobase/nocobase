@@ -13,6 +13,7 @@
 import { RunJSContextRegistry } from './registry';
 import { FlowRunJSContext } from '../flowContext';
 import { defineBaseContextMeta } from './contexts/base';
+import { applyRunJSContextContributions, markRunJSContextsSetupDone } from './contributions';
 
 let done = false;
 export async function setupRunJSContexts() {
@@ -47,5 +48,7 @@ export async function setupRunJSContexts() {
   RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
   RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
   RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext, { scenes: ['table'] });
+  await applyRunJSContextContributions(v1);
   done = true;
+  markRunJSContextsSetupDone(v1);
 }
