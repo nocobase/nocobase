@@ -15,7 +15,24 @@ function buildBaseCompletions(): Completion[] {
   try {
     const doc = typeof (FlowRunJSContext as any)?.getDoc === 'function' ? (FlowRunJSContext as any).getDoc() : {};
     const options: Completion[] = [];
-    const toInfo = (value: any) => (typeof value === 'string' ? value : JSON.stringify(value));
+    const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
+    const toInfo = (value: any) => {
+      if (typeof value === 'string') return value;
+      if (!value || typeof value !== 'object') return String(value ?? '');
+      const description = value.description ?? value.detail ?? value.type ?? '';
+      const examples = Array.isArray(value.examples)
+        ? value.examples.filter((x) => typeof x === 'string' && x.trim())
+        : [];
+      if (!examples.length) return typeof description === 'string' ? description : String(description ?? '');
+      return [description, 'Examples:', ...examples].filter(Boolean).join('\n');
+    };
+    const buildAwaitedPopupExpr = (paths: string[]) => {
+      // ctx.popup is async; generate safe access expression using await + optional chaining.
+      if (!paths?.length || paths[0] !== 'popup') return `ctx.${(paths || []).join('.')}`;
+      if (paths.length === 1) return 'await ctx.popup';
+      const rest = paths.slice(1);
+      return rest.reduce((acc, seg) => `${acc}?.${seg}`, '(await ctx.popup)');
+    };
     if (doc?.label || doc?.properties || doc?.methods) {
       options.push({
         label: 'ctx',
@@ -31,21 +48,22 @@ function buildBaseCompletions(): Completion[] {
         const path = [...parentPath, key];
         const ctxLabel = `ctx.${path.join('.')}`;
         const depth = path.length;
-        let description: any = value;
+        const root = path[0];
         let detail: string | undefined;
         let completionSpec: any;
         let children: Record<string, any> | undefined;
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-          description = value.description ?? value.detail ?? value.type ?? value;
           detail = value.detail ?? value.type ?? 'ctx property';
           completionSpec = value.completion;
           children = value.properties as Record<string, any> | undefined;
         }
-        const apply = completionSpec?.insertText
+        const insertText =
+          completionSpec?.insertText ?? (path?.[0] === 'popup' ? buildAwaitedPopupExpr(path) : undefined);
+        const apply = insertText
           ? (view: any, _completion: any, from: number, to: number) => {
               view.dispatch({
-                changes: { from, to, insert: completionSpec.insertText },
-                selection: { anchor: from + completionSpec.insertText.length },
+                changes: { from, to, insert: insertText },
+                selection: { anchor: from + insertText.length },
                 scrollIntoView: true,
               });
             }
@@ -54,8 +72,8 @@ function buildBaseCompletions(): Completion[] {
           label: ctxLabel,
           type: 'property',
           detail: detail || 'ctx property',
-          info: toInfo(description),
-          boost: Math.max(90 - depth * 5, 10),
+          info: toInfo(value),
+          boost: Math.max(90 - depth * 5, 10) + (priorityRoots.has(root) ? 10 : 0),
           apply,
         } as Completion);
         if (children) collectProperties(children, path);
@@ -66,11 +84,9 @@ function buildBaseCompletions(): Completion[] {
     const methods = doc?.methods || {};
     for (const key of Object.keys(methods)) {
       const methodDoc = methods[key];
-      let description: any = methodDoc;
       let detail = 'ctx method';
       let completionSpec: any;
       if (methodDoc && typeof methodDoc === 'object' && !Array.isArray(methodDoc)) {
-        description = methodDoc.description ?? methodDoc.detail ?? methodDoc;
         detail = methodDoc.detail ?? detail;
         completionSpec = methodDoc.completion;
       }
@@ -79,7 +95,7 @@ function buildBaseCompletions(): Completion[] {
         label: `ctx.${key}()` as any,
         type: 'function',
         detail,
-        info: toInfo(description),
+        info: toInfo(methodDoc),
         boost: 95,
         apply: (view: any, _completion: any, from: number, to: number) => {
           view.dispatch({

@@ -30,6 +30,49 @@ export async function buildRunJSCompletions(
   completions: Completion[];
   entries: SnippetEntry[];
 }> {
+  const toInfo = (doc: any) => {
+    if (typeof doc === 'string') return doc;
+    if (!doc || typeof doc !== 'object') return String(doc ?? '');
+    const description = doc.description ?? doc.detail ?? doc.type ?? '';
+    const examples = Array.isArray(doc.examples) ? doc.examples.filter((x) => typeof x === 'string' && x.trim()) : [];
+    if (!examples.length) return typeof description === 'string' ? description : String(description ?? '');
+    return [description, 'Examples:', ...examples].filter(Boolean).join('\n');
+  };
+
+  const toTitle = (node: any) => {
+    try {
+      return String(node?.title ?? '');
+    } catch (_) {
+      return '';
+    }
+  };
+
+  const resolveMetaNodes = async (maybe: any): Promise<any[]> => {
+    if (!maybe) return [];
+    if (typeof maybe === 'function') {
+      try {
+        const v = await maybe();
+        return Array.isArray(v) ? v : [];
+      } catch (_) {
+        return [];
+      }
+    }
+    return Array.isArray(maybe) ? maybe : [];
+  };
+
+  const resolveChildren = async (node: any): Promise<any[]> => {
+    if (!node) return [];
+    return resolveMetaNodes(node.children);
+  };
+
+  const buildAwaitedPopupExpr = (paths: string[]) => {
+    // ctx.popup is async; generate safe access expression using await + optional chaining.
+    if (!paths?.length || paths[0] !== 'popup') return `ctx.${(paths || []).join('.')}`;
+    if (paths.length === 1) return 'await ctx.popup';
+    const rest = paths.slice(1);
+    return rest.reduce((acc, seg) => `${acc}?.${seg}`, '(await ctx.popup)');
+  };
+
   // Ensure RunJS contexts are registered (lazy, avoids static cycles)
   try {
     await setupRunJSContexts();
@@ -39,7 +82,72 @@ export async function buildRunJSCompletions(
   // 当 hostCtx 不存在时，传入空对象以获取通用（*）上下文的文档
   const doc = getRunJSDocFor((hostCtx as any) || ({} as any), { version });
   const completions: Completion[] = [];
-  const toMd = (v: any) => (typeof v === 'string' ? v : JSON.stringify(v));
+  const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
+  const hiddenDecisionCache = new Map<string, { hideSelf: boolean; hideSubpaths: string[] }>();
+  const hiddenPathPrefixes = new Set<string>();
+
+  const isHiddenByPaths = (label: string) => {
+    if (!label || typeof label !== 'string') return false;
+    const normalized = label.endsWith('()') ? label.slice(0, -2) : label;
+    if (!normalized.startsWith('ctx.')) return false;
+    const parts = normalized.split('.').filter(Boolean);
+    if (parts[0] !== 'ctx') return false;
+    while (parts.length) {
+      const prefix = parts.join('.');
+      if (hiddenPathPrefixes.has(prefix)) return true;
+      parts.pop();
+    }
+    return false;
+  };
+
+  const resolveHiddenDecision = async (
+    node: any,
+    cacheKey: string,
+    parentPath: string[],
+  ): Promise<{ hideSelf: boolean; hideSubpaths: string[] }> => {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return { hideSelf: false, hideSubpaths: [] };
+    if (hiddenDecisionCache.has(cacheKey)) return hiddenDecisionCache.get(cacheKey) as any;
+
+    const raw = (node as any).hidden;
+    let hideSelf = false;
+    let list: any = [];
+    try {
+      if (typeof raw === 'boolean') hideSelf = raw;
+      else if (Array.isArray(raw)) list = raw;
+      else if (typeof raw === 'function') {
+        const v = await raw(hostCtx);
+        if (typeof v === 'boolean') hideSelf = v;
+        else if (Array.isArray(v)) list = v;
+      }
+    } catch (_) {
+      // Fail-open: if we cannot determine, do not hide.
+      hideSelf = false;
+      list = [];
+    }
+
+    const hideSubpaths: string[] = [];
+    if (Array.isArray(list)) {
+      for (const p of list) {
+        if (typeof p !== 'string') continue;
+        const s = p.trim();
+        if (!s) continue;
+        // Only relative paths are supported. Ignore "ctx.xxx" absolute style to avoid ambiguity.
+        if (s === 'ctx' || s.startsWith('ctx.')) continue;
+        if (/\s/.test(s)) continue;
+        const segs = s
+          .split('.')
+          .map((x) => x.trim())
+          .filter(Boolean);
+        if (!segs.length) continue;
+        if (segs[0] === 'ctx') continue;
+        hideSubpaths.push(['ctx', ...parentPath, ...segs].join('.'));
+      }
+    }
+
+    const decision = { hideSelf, hideSubpaths };
+    hiddenDecisionCache.set(cacheKey, decision);
+    return decision;
+  };
 
   if (doc?.label || doc?.properties || doc?.methods) {
     completions.push({
@@ -51,27 +159,33 @@ export async function buildRunJSCompletions(
     } as Completion);
   }
 
-  const collectProperties = (props: Record<string, any> | undefined, parentPath: string[] = []) => {
+  const collectProperties = async (props: Record<string, any> | undefined, parentPath: string[] = []) => {
     if (!props) return;
     for (const [key, value] of Object.entries(props)) {
       const path = [...parentPath, key];
       const ctxLabel = `ctx.${path.join('.')}`;
       const depth = path.length;
-      let description: any = value;
+      const root = path[0];
+      if (isHiddenByPaths(ctxLabel)) continue;
+      const decision = await resolveHiddenDecision(value, `p:${path.join('.')}`, path);
+      if (decision.hideSelf) continue;
+      for (const prefix of decision.hideSubpaths) hiddenPathPrefixes.add(prefix);
+
       let detail: string | undefined;
       let children: Record<string, any> | undefined;
       let completionSpec: any;
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        description = value.description ?? value.detail ?? value.type ?? value;
         detail = value.detail ?? value.type ?? 'ctx property';
         completionSpec = value.completion;
         children = value.properties as Record<string, any> | undefined;
       }
-      const apply = completionSpec?.insertText
+      const insertText =
+        completionSpec?.insertText ?? (path?.[0] === 'popup' ? buildAwaitedPopupExpr(path) : undefined);
+      const apply = insertText
         ? (view: EditorView, _completion: Completion, from: number, to: number) => {
             view.dispatch({
-              changes: { from, to, insert: completionSpec.insertText },
-              selection: { anchor: from + completionSpec.insertText.length },
+              changes: { from, to, insert: insertText },
+              selection: { anchor: from + insertText.length },
               scrollIntoView: true,
             });
           }
@@ -79,26 +193,26 @@ export async function buildRunJSCompletions(
       completions.push({
         label: ctxLabel,
         type: 'property',
-        info: toMd(description),
+        info: toInfo(value),
         detail: detail || 'ctx property',
-        boost: Math.max(90 - depth * 5, 10),
+        boost: Math.max(90 - depth * 5, 10) + (priorityRoots.has(root) ? 10 : 0),
         apply,
       } as Completion);
       if (children) {
-        collectProperties(children, path);
+        await collectProperties(children, path);
       }
     }
   };
 
-  collectProperties(doc?.properties || {});
+  await collectProperties(doc?.properties || {});
   const methods = doc?.methods || {};
   for (const k of Object.keys(methods)) {
     const methodDoc = methods[k];
-    let description: any = methodDoc;
+    const decision = await resolveHiddenDecision(methodDoc, `m:${k}`, []);
+    if (decision.hideSelf) continue;
     let detail = 'ctx method';
     let completionSpec: any;
     if (methodDoc && typeof methodDoc === 'object' && !Array.isArray(methodDoc)) {
-      description = methodDoc.description ?? methodDoc.detail ?? methodDoc;
       detail = methodDoc.detail ?? detail;
       completionSpec = methodDoc.completion;
     }
@@ -106,7 +220,7 @@ export async function buildRunJSCompletions(
     completions.push({
       label: `ctx.${k}()` as any,
       type: 'function',
-      info: toMd(description),
+      info: toInfo(methodDoc),
       detail,
       boost: 95,
       apply: (view: EditorView, _c: Completion, from: number, to: number) => {
@@ -176,6 +290,72 @@ export async function buildRunJSCompletions(
         });
       },
     });
+  }
+
+  // Build additional completions from FlowContext variable meta (record/formValues/popup...).
+  // This is especially useful for ctx.record.<field> and ctx.formValues.<field> where fields are dynamic.
+  try {
+    if (hostCtx && typeof hostCtx.getPropertyMetaTree === 'function') {
+      const popupDecision = await resolveHiddenDecision((doc as any)?.properties?.popup, 'p:popup', ['popup']);
+      const roots = popupDecision.hideSelf ? ['record', 'formValues'] : ['record', 'formValues', 'popup'];
+      const maxDepthAfterRoot = 2; // record.xxx(.yyy) / formValues.xxx(.yyy) / popup.record.xxx
+      const maxTotal = 240;
+      let added = 0;
+
+      const addMetaCompletion = (node: any) => {
+        if (!node?.paths?.length) return;
+        const paths: string[] = Array.isArray(node.paths) ? node.paths.map(String) : [];
+        if (!paths.length) return;
+        const root = paths[0];
+        if (!roots.includes(root)) return;
+        const depthAfterRoot = Math.max(0, paths.length - 1);
+        if (depthAfterRoot > maxDepthAfterRoot) return;
+        const label = `ctx.${paths.join('.')}`;
+        if (isHiddenByPaths(label)) return;
+        // Avoid flooding with too many meta-derived entries.
+        if (added >= maxTotal) return;
+
+        const info = toTitle(node) || label;
+        const insertText = root === 'popup' ? buildAwaitedPopupExpr(paths) : label;
+        completions.push({
+          label,
+          type: 'property',
+          detail: root === 'popup' ? 'popup (await)' : 'context value',
+          info,
+          boost: 70,
+          apply: (view: EditorView, _c: Completion, from: number, to: number) => {
+            view.dispatch({
+              changes: { from, to, insert: insertText },
+              selection: { anchor: from + insertText.length },
+              scrollIntoView: true,
+            });
+          },
+        } as Completion);
+        added += 1;
+      };
+
+      const walk = async (nodes: any[], depthAfterRoot: number) => {
+        for (const n of nodes) {
+          addMetaCompletion(n);
+          if (added >= maxTotal) return;
+          if (depthAfterRoot >= maxDepthAfterRoot) continue;
+          const children = await resolveChildren(n);
+          if (children.length) {
+            await walk(children, depthAfterRoot + 1);
+            if (added >= maxTotal) return;
+          }
+        }
+      };
+
+      for (const root of roots) {
+        if (added >= maxTotal) break;
+        const maybe = hostCtx.getPropertyMetaTree(`{{ ctx.${root} }}`);
+        const nodes = await resolveMetaNodes(maybe);
+        await walk(nodes, 1);
+      }
+    }
+  } catch (_) {
+    // ignore meta completion failures
   }
 
   return { completions, entries: filteredEntries };
