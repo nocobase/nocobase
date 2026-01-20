@@ -269,7 +269,7 @@ describe('ReferenceBlockModel', () => {
 
         await referenceBlockModel.dispatchEvent('beforeRender');
 
-        expect((referenceBlockModel as any)?.context?.collection?.name).toBe('mock-collection');
+        expect(referenceBlockModel.context.collection.name).toBe('mock-collection');
       },
       TEST_TIMEOUT,
     );
