@@ -87,6 +87,12 @@ function getSubModelItems(model: unknown): unknown[] {
   const subModels = record.subModels;
   if (!subModels || typeof subModels !== 'object') return [];
 
+  // Support both:
+  // - FormBlockModel-like: root.subModels.grid.subModels.items
+  // - FormGridModel-like:  root.subModels.items
+  const directItems = (subModels as Record<string, unknown>).items;
+  if (Array.isArray(directItems)) return directItems;
+
   const grid = (subModels as Record<string, unknown>).grid;
   if (!grid || typeof grid !== 'object') return [];
 
