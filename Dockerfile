@@ -38,7 +38,6 @@ RUN yarn install && yarn build --no-dts && \
   yarn nocobase client:upload && \
   yarn release:force --registry $VERDACCIO_URL && \
   yarn config set registry $VERDACCIO_URL && \
-  rm -rf /tmp/node_modules && \
   mkdir /app && \
   cd /app && \
   yarn config set network-timeout 600000 -g && \
