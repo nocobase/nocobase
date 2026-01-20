@@ -138,5 +138,5 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
 }
 
 CCTaskCardDetailsAssociationFieldGroupModel.define({
-  label: '{{t("Other information", { ns: "' + NAMESPACE + '" })}}',
+  label: `{{t("Other information", { ns: "${NAMESPACE}" })}}`,
 });
