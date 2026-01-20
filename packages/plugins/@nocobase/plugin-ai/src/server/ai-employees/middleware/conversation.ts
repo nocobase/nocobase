@@ -15,9 +15,9 @@ import z from 'zod';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
-  options: { model: any; service: any; messageId?: string },
+  options: { model: any; service: any; messageId?: string; agentThread?: { sessionId: string; thread: number } },
 ) => {
-  const { model, service, messageId } = options;
+  const { model, service, messageId, agentThread } = options;
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput => {
     const message = aiMessage.content;
     const toolCalls = aiMessage.tool_calls;
@@ -121,9 +121,17 @@ export const conversationMiddleware = (
         .slice(lastHumanMessageIndex)
         .map((x) => x as HumanMessage)
         .map(convertHumanMessage);
-      if (userMessages.length) {
-        await aiEmployee.aiChatConversation.addMessages(userMessages);
-      }
+      await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
+        if (agentThread) {
+          await aiEmployee.updateThread(transaction, agentThread);
+        }
+        if (messageId && (await conversation.getMessage(messageId))) {
+          await conversation.removeMessages({ messageId });
+        }
+        if (userMessages.length) {
+          await conversation.addMessages(userMessages);
+        }
+      });
     },
     beforeModel: async (state, _runtime) => {
       const lastToolMessageIndex = state.lastToolMessageIndex;
@@ -164,9 +172,6 @@ export const conversationMiddleware = (
           }
 
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
-            if (messageId && (await conversation.getMessage(messageId))) {
-              await conversation.removeMessages({ messageId });
-            }
             const result: AIConversationMessage = await conversation.addMessages(values);
             if (toolCalls?.length) {
               await aiEmployee.initToolCall(transaction, result.messageId, toolCalls as any);

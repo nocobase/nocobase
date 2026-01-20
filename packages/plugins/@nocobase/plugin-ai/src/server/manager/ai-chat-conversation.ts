@@ -87,10 +87,7 @@ class AIChatConversationImpl implements AIChatConversation {
   async getMessage(messageId: string): Promise<AIMessage | null> {
     return await this.aiMessagesRepo.findByTargetKey(messageId);
   }
-  async getPrevMessage(messageId: string): Promise<AIMessage | null> {
-    const messages = await this.listMessages({ messageId });
-    return messages.length ? messages.at(-1) : null;
-  }
+
   async listMessages(query: AIMessageQuery): Promise<AIMessage[]> {
     const filter: Filter = {
       sessionId: this.sessionId,

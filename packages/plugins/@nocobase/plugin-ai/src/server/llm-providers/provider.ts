@@ -103,7 +103,7 @@ export abstract class LLMProvider {
     return chain.streamEvents(context.messages, options);
   }
 
-  async getAgentStream(context: AIChatContext, options?: any) {
+  async getAgentStream(context: AIChatContext, options?: any, state?: any) {
     if (!isCheckPointerInit) {
       isCheckPointerInit = true;
       await checkpointer.setup();
@@ -120,7 +120,7 @@ export abstract class LLMProvider {
         options,
       );
     } else if (context.messages) {
-      return agent.stream({ messages: context.messages }, options);
+      return agent.stream({ messages: context.messages, ...state }, options);
     } else {
       return agent.stream(null, options);
     }

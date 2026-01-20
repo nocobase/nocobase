@@ -73,6 +73,7 @@ export default {
             skillSettings,
             conversationSettings,
           },
+          thread: 1,
         },
       });
       await next();

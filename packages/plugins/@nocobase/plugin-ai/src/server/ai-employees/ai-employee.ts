@@ -132,21 +132,28 @@ export class AIEmployee {
     chatContext,
     provider,
     options,
+    state,
   }: {
     chatContext: AIChatContext;
     provider: LLMProvider;
     options?: { configurable?: any };
+    state?: any;
   }) {
     const controller = new AbortController();
     const { signal } = controller;
 
     try {
-      const stream = await provider.getAgentStream(chatContext, {
-        signal,
-        streamMode: ['updates', 'messages', 'custom'],
-        configurable: options?.configurable ?? { thread_id: this.sessionId },
-        context: { ctx: this.ctx },
-      });
+      const { threadId } = await this.getCurrentThread();
+      const stream = await provider.getAgentStream(
+        chatContext,
+        {
+          signal,
+          streamMode: ['updates', 'messages', 'custom'],
+          configurable: options?.configurable ?? { thread_id: threadId },
+          context: { ctx: this.ctx },
+        },
+        state,
+      );
       this.plugin.aiEmployeesManager.conversationController.set(this.sessionId, controller);
       return { stream, controller, signal };
     } catch (error) {
@@ -610,8 +617,7 @@ export class AIEmployee {
         tools,
         middleware,
         getSystemPrompt: async () => this.getSystemPrompt(),
-        formatMessages: async (messages) =>
-          this.formatMessages({ messages, provider, workContextHandler: this.plugin.workContextHandler }),
+        formatMessages: async (messages) => this.formatMessages({ messages, provider }),
       });
       const { stream, signal } = await this.prepareChatStream({ chatContext, provider });
 
@@ -630,34 +636,25 @@ export class AIEmployee {
 
   async resendMessages(messageId?: string) {
     try {
-      const prevMessage = await this.aiChatConversation.getPrevMessage(messageId);
-      const id = prevMessage?.metadata?.id;
       const { provider, model, service } = await this.getLLMService();
+      const agentThread = await this.forkCurrentThread(provider);
+      const userMessages = await this.aiChatConversation.listMessages({ messageId });
+      const thread_id = agentThread.threadId;
       const tools = await this.getTools();
-      const middleware = this.getMiddleware({ tools, model, service, messageId });
+      const middleware = this.getMiddleware({ tools, model, service, messageId, agentThread });
+      const state = {
+        lastHumanMessageIndex: userMessages.filter((x) => x.role === 'user').length,
+        lastAIMessageIndex: userMessages.filter((x) => x.role === this.employee.username).length,
+        lastToolMessageIndex: userMessages.filter((x) => x.role === 'tool').length,
+        lastMessageIndex: userMessages.length,
+      };
       const chatContext = await this.aiChatConversation.getChatContext({
+        userMessages,
         tools,
         middleware,
         getSystemPrompt: async () => this.getSystemPrompt(),
-        formatMessages: async (messages) =>
-          this.formatMessages({ messages, provider, workContextHandler: this.plugin.workContextHandler }),
+        formatMessages: async (messages) => this.formatMessages({ messages, provider }),
       });
-
-      const thread_id = this.sessionId;
-      const agent = provider.prepareAgent();
-      const snaps: { checkpoint_id: string; message_id: string }[] = [];
-      for await (const state of agent.graph.getStateHistory({ configurable: { thread_id } })) {
-        for (const message of _.reverse(state.values.messages)) {
-          snaps.push({
-            checkpoint_id: state.config.configurable?.checkpoint_id,
-            message_id: message.id,
-          });
-        }
-      }
-      const checkpoint_id = snaps.findLast((x) => x.message_id === id)?.checkpoint_id;
-      if (!checkpoint_id) {
-        throw new Error('Message not existed');
-      }
 
       const { stream, signal } = await this.prepareChatStream({
         chatContext,
@@ -665,9 +662,9 @@ export class AIEmployee {
         options: {
           configurable: {
             thread_id,
-            checkpoint_id,
           },
         },
+        state,
       });
 
       await this.processChatStream(stream, {
@@ -683,20 +680,26 @@ export class AIEmployee {
     }
   }
 
+  async updateThread(transaction: Transaction, { sessionId, thread }: { sessionId: string; thread: number }) {
+    await this.aiConversationsRepo.update({
+      values: { thread },
+      filter: {
+        sessionId,
+        thread: {
+          $lt: thread,
+        },
+      },
+      transaction,
+    });
+  }
+
   removeAbortController() {
     this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
   }
 
-  private async formatMessages({
-    messages,
-    provider,
-    workContextHandler,
-  }: {
-    messages: AIMessageInput[];
-    provider: LLMProvider;
-    workContextHandler: WorkContextHandler;
-  }) {
+  private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
     const formattedMessages = [];
+    const workContextHandler = this.plugin.workContextHandler;
 
     // 截断过长的内容
     const truncate = (text: string, maxLen = 50000) => {
@@ -752,7 +755,7 @@ export class AIEmployee {
         formattedMessages.push({
           role: 'tool',
           content,
-          tool_call_id: msg.metadata?.toolCall?.id,
+          tool_call_id: msg.metadata?.toolCallId,
         });
         continue;
       }
@@ -774,18 +777,6 @@ export class AIEmployee {
 
   private getSkills(): { name: string; autoCall?: boolean }[] {
     return this.employee.skillSettings?.skills ?? [];
-  }
-
-  private async getToolCallList(messageId: string): Promise<
-    Array<{
-      id: string;
-      args: unknown;
-      name: string;
-      type: string;
-    }>
-  > {
-    const { toolCalls } = await this.aiMessagesRepo.findByTargetKey(messageId);
-    return toolCalls;
   }
 
   private async getToolCallMap(messageId: string): Promise<
@@ -845,20 +836,52 @@ export class AIEmployee {
     return tools;
   }
 
-  private getMiddleware(options: { tools: ToolOptions[]; model: any; service: any; messageId?: string }) {
-    const { tools, model, service, messageId } = options;
+  private getMiddleware(options: {
+    tools: ToolOptions[];
+    model: any;
+    service: any;
+    messageId?: string;
+    agentThread?: AgentThread;
+  }) {
+    const { tools, model, service, messageId, agentThread } = options;
     return [
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
-      conversationMiddleware(this, { model, service, messageId }),
+      conversationMiddleware(this, { model, service, messageId, agentThread }),
       debugMiddleware(this, this.ctx.logger),
     ];
+  }
+
+  private async getCurrentThread(): Promise<AgentThread> {
+    const aiConversation = await this.aiConversationsRepo.findByTargetKey(this.sessionId);
+    if (!aiConversation) {
+      throw new Error('Conversation not existed');
+    }
+    return AgentThread.newThread(aiConversation.sessionId, aiConversation.thread);
+  }
+
+  private async forkCurrentThread(provider: LLMProvider): Promise<AgentThread> {
+    let retTry = 3;
+    const agent = provider.prepareAgent();
+    let currentThread = await this.getCurrentThread();
+    do {
+      currentThread = currentThread.fork();
+      const existedState = await agent.graph.getState({ configurable: { thread_id: currentThread.threadId } });
+      if (!existedState.config.configurable?.checkpoint_id) {
+        return currentThread;
+      }
+    } while (retTry-- > 0);
+    throw new Error('Fail to create new agent thread');
   }
 
   private async getToolMap() {
     const toolGroupList = await this.plugin.aiManager.toolManager.listTools(false);
     const toolList = toolGroupList.flatMap(({ tools }) => tools);
     return new Map(toolList.map((tool) => [tool.name, tool]));
+  }
+
+  private get aiConversationsRepo() {
+    return this.ctx.db.getRepository('aiConversations');
   }
 
   private get aiMessagesRepo() {
@@ -871,5 +894,32 @@ export class AIEmployee {
 
   private get aiToolMessagesModel() {
     return this.ctx.db.getModel('aiToolMessages');
+  }
+}
+
+class AgentThread {
+  constructor(
+    private readonly _sessionId: string,
+    private readonly _thread: number,
+  ) {}
+
+  static newThread(sessionId: string, thread: number) {
+    return new AgentThread(sessionId, thread);
+  }
+
+  get sessionId() {
+    return this._sessionId;
+  }
+
+  get thread() {
+    return this._thread;
+  }
+
+  get threadId() {
+    return `${this._sessionId}:${this._thread}`;
+  }
+
+  fork(): AgentThread {
+    return new AgentThread(this._sessionId, this._thread + 1);
   }
 }
