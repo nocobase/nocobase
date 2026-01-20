@@ -50,6 +50,9 @@ export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, no
     const [dataSourceKey, target] = parseCollectionName(collectionName);
     if (!target) return;
     const name = `${TEMP_ASSOCIATION_PREFIX}${type}_${sanitizeFieldKey(key || target)}`;
+    if (collection.getField(name)) {
+      return;
+    }
     const resolvedTitle = title || target;
     associations.push({ name, title: resolvedTitle, dataSourceKey: dataSourceKey || 'main', target });
   };
@@ -64,11 +67,6 @@ export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, no
     const key = node?.key ?? node?.id ?? index;
     collectAssociation(node.config.collection, node.title, key, 'node');
   });
-
-  collection
-    .getFields()
-    .filter((field) => field.name.startsWith(TEMP_ASSOCIATION_PREFIX))
-    .forEach((field) => collection.removeField(field.name));
 
   if (!associations.length) {
     return;
@@ -96,12 +94,6 @@ export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, no
 
 export class CCTaskCardDetailsItemModel extends DetailsItemModel {
   static defineChildren(ctx: FlowModelContext) {
-    updateWorkflowCcTaskAssociationFields({
-      flowEngine: ctx.model.flowEngine,
-      workflow: ctx.model.context.workflow,
-      nodes: ctx.model.context.nodes,
-    });
-
     const collection = ctx.collection as Collection;
 
     return collection
