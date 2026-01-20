@@ -24,6 +24,7 @@ export async function setupRunJSContexts() {
   const [
     { JSBlockRunJSContext },
     { JSFieldRunJSContext },
+    { JSEditableFieldRunJSContext },
     { JSItemRunJSContext },
     { JSColumnRunJSContext },
     { FormJSFieldItemRunJSContext },
@@ -32,6 +33,7 @@ export async function setupRunJSContexts() {
   ] = await Promise.all([
     import('./contexts/JSBlockRunJSContext'),
     import('./contexts/JSFieldRunJSContext'),
+    import('./contexts/JSEditableFieldRunJSContext'),
     import('./contexts/JSItemRunJSContext'),
     import('./contexts/JSColumnRunJSContext'),
     import('./contexts/FormJSFieldItemRunJSContext'),
@@ -43,6 +45,7 @@ export async function setupRunJSContexts() {
   RunJSContextRegistry.register(v1, '*', FlowRunJSContext);
   RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
   RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
+  RunJSContextRegistry.register(v1, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
   RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
   RunJSContextRegistry.register(v1, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
   RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
