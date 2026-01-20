@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { capitalize, debounce } from 'lodash';
 import {
@@ -27,7 +27,7 @@ import {
   FlowModelProvider,
   FlowErrorFallback,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Input } from 'antd';
+import { TableColumnProps, Tooltip, Input, Space } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
@@ -121,7 +121,11 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
       return <Input value={inputValue} disabled={disabled} />;
     } else {
-      return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
+      return (
+        <Space>
+          <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} /> <EditOutlined className="edit-icon" />
+        </Space>
+      );
     }
   }, [collectionField.interface, defaultValue, fieldModel]);
   return (
@@ -210,6 +214,23 @@ const MemoCell: React.FC<CellProps> = React.memo(
         className={css`
           .ant-form-item-explain-error {
             white-space: break-spaces;
+          }
+          .edit-icon {
+            position: absolute;
+            display: none;
+            color: #1890ff;
+            margin-left: 8px;
+            cursor: pointer;
+            z-index: 100;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+          }
+          &:hover {
+            background: rgba(24, 144, 255, 0.1) !important;
+          }
+          &:hover .edit-icon {
+            display: inline-flex;
           }
         `}
       >
