@@ -18,11 +18,84 @@ export function defineBaseContextMeta() {
         'Ant Design global message API for displaying temporary messages. Example: `ctx.message.success("Operation completed")`',
       notification:
         'Ant Design notification API for displaying notification boxes. Example: `ctx.notification.open({ message: "Title", description: "Content" })`',
-      resource: 'Data resource accessible based on current user permissions',
+      resource: {
+        description:
+          'FlowResource instance for accessing and manipulating data. You MUST call ctx.useResource(...) first to create ctx.resource in most scenarios.',
+        detail: 'FlowResource',
+        examples: [
+          "ctx.useResource('MultiRecordResource');",
+          "ctx.resource.setResourceName('users');",
+          'await ctx.resource.refresh();',
+          'const rows = ctx.resource.getData();',
+        ],
+        properties: {
+          // FlowResource
+          getData: {
+            description: 'Get current resource data.',
+            detail: '() => any',
+            completion: { insertText: 'ctx.resource.getData()' },
+          },
+          setData: {
+            description: 'Set current resource data (client-side only).',
+            detail: '(value: any) => this',
+            completion: { insertText: 'ctx.resource.setData(value)' },
+          },
+          refresh: {
+            description: 'Refresh data from server (available on API-backed resources).',
+            detail: '() => Promise<any>',
+            completion: { insertText: 'await ctx.resource.refresh()' },
+          },
+          on: {
+            description: 'Subscribe resource events (e.g., refresh).',
+            detail: '(event: string, callback: (...args) => void) => void',
+            completion: { insertText: "ctx.resource.on('refresh', () => {})" },
+          },
+          off: {
+            description: 'Unsubscribe resource events.',
+            detail: '(event: string, callback: (...args) => void) => void',
+            completion: { insertText: "ctx.resource.off('refresh', handler)" },
+          },
+          // BaseRecordResource / SingleRecordResource / MultiRecordResource helpers (common)
+          setResourceName: {
+            description: 'Set resource name (e.g., "users" or "users.profile").',
+            detail: '(resourceName: string) => this',
+            completion: { insertText: "ctx.resource.setResourceName('users')" },
+          },
+          setFilterByTk: {
+            description: 'Set primary key or filterByTk for record resources.',
+            detail: '(filterByTk: any) => this',
+            completion: { insertText: 'ctx.resource.setFilterByTk(filterByTk)' },
+          },
+          runAction: {
+            description: 'Run a resource action (create/update/destroy/custom actions).',
+            detail: '(action: string, options: any) => Promise<any>',
+            completion: { insertText: "await ctx.resource.runAction('create', { data: {} })" },
+          },
+          selectedRows: {
+            description:
+              'Selected rows in table resources (typically for collection/table actions). Availability depends on resource type.',
+            detail: 'any[]',
+          },
+          pagination: {
+            description:
+              'Pagination info in list resources. Availability depends on resource type (e.g., MultiRecordResource).',
+            detail: 'Record<string, any>',
+          },
+        },
+      },
       urlSearchParams: 'URLSearchParams object containing query parameters from the current URL',
       token: 'API authentication token for the current session',
       role: 'Current user role information',
-      auth: 'Authentication context containing locale, role, user, and token information',
+      auth: {
+        description: 'Authentication context containing locale, role, user, and token information.',
+        detail: 'AuthContext',
+        properties: {
+          locale: 'Current locale code (e.g., "en-US", "zh-CN").',
+          roleName: 'Current role name.',
+          token: 'Current API token.',
+          user: 'Current user info object (if available).',
+        },
+      },
       api: {
         description: 'APIClient instance for making HTTP requests.',
         detail: 'APIClient',
@@ -35,6 +108,93 @@ export function defineBaseContextMeta() {
               insertText: `await ctx.api.request({ url: '', method: 'get', params: {} })`,
             },
           },
+          auth: {
+            description: 'Authentication info bound to the API client (token/role/locale).',
+            detail: 'APIClient.auth',
+            properties: {
+              token: 'Current API token.',
+              role: 'Current role name.',
+              locale: 'Current locale code.',
+            },
+          },
+        },
+      },
+      viewer: {
+        description:
+          'FlowViewer instance providing view helpers (drawer/dialog/popover/embed). Useful for interactions in RunJS.',
+        detail: 'FlowViewer',
+        examples: [
+          "await ctx.viewer.drawer({ width: '56%', content: <div>Hello</div> });",
+          'await ctx.viewer.dialog({ content: <div>Confirm</div> });',
+        ],
+        properties: {
+          drawer: {
+            description: 'Open a drawer view. Parameters: (props: ViewProps) => any',
+            detail: '(props) => any',
+            completion: { insertText: "await ctx.viewer.drawer({ width: '56%', content: <div /> })" },
+          },
+          dialog: {
+            description: 'Open a dialog/modal view. Parameters: (props: ViewProps) => any',
+            detail: '(props) => any',
+            completion: { insertText: 'await ctx.viewer.dialog({ content: <div /> })' },
+          },
+          popover: {
+            description: 'Open a popover view. Parameters: (props: PopoverProps) => any',
+            detail: '(props) => any',
+            completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+          },
+          embed: {
+            description: 'Open an embed view. Parameters: (props: ViewProps & TargetProps) => any',
+            detail: '(props) => any',
+            completion: { insertText: 'await ctx.viewer.embed({ target: document.body, content: <div /> })' },
+          },
+        },
+      },
+      record: {
+        description:
+          'Current record object (read-only). Field-level completions (ctx.record.<field>) can be derived from collection meta in the editor when available.',
+        detail: 'Record<string, any>',
+        examples: ['const id = ctx.record?.id;', 'const status = ctx.record?.status;'],
+      },
+      formValues: {
+        description: 'Snapshot of current form values (object). Available in form contexts (CreateForm/EditForm).',
+        detail: 'Record<string, any>',
+        examples: ['const { name, status } = ctx.formValues || {};'],
+      },
+      popup: {
+        description:
+          'Popup context when current view is opened as a popup/drawer. NOTE: ctx.popup is async; use `const popup = await ctx.popup`.',
+        detail: 'Promise<PopupContext | undefined>',
+        hidden: async (ctx: any) => {
+          try {
+            const popup = await (ctx as any)?.popup;
+            return !popup?.uid;
+          } catch (_) {
+            // Fail-open: if we cannot determine, do not hide.
+            return false;
+          }
+        },
+        examples: [
+          'const popup = await ctx.popup;',
+          'const id = popup?.record?.id;',
+          'const parentId = popup?.parent?.record?.id;',
+        ],
+        properties: {
+          uid: 'Popup view uid (string).',
+          record: 'Current popup record (object).',
+          sourceRecord: 'Parent/source record inferred from sourceId/associationName (object).',
+          resource: {
+            description: 'Data source info of the popup record.',
+            detail: 'PopupResourceInfo',
+            properties: {
+              dataSourceKey: 'Data source key (e.g., "main").',
+              collectionName: 'Collection name.',
+              associationName: 'Association resource name (optional).',
+              filterByTk: 'Record primary key / filterByTk.',
+              sourceId: 'Source id (optional).',
+            },
+          },
+          parent: 'Parent popup info (object). You can access parent.parent... at runtime if available.',
         },
       },
       i18n: {
@@ -50,8 +210,7 @@ export function defineBaseContextMeta() {
         'ReactDOM client API including createRoot for rendering React components. Also available via `ctx.libs.ReactDOM`.',
       antd: 'Ant Design component library. Recommended access path: `ctx.libs.antd`.',
       libs: {
-        description:
-          'Namespace for third-party and shared libraries. Includes React, ReactDOM, Ant Design, dayjs, lodash, math.js, and formula.js.',
+        description: 'Namespace for third-party and shared libraries. Includes React, ReactDOM, Ant Design, and dayjs.',
         detail: 'Libraries namespace',
         properties: {
           React: 'React namespace (same as ctx.React).',
@@ -59,14 +218,18 @@ export function defineBaseContextMeta() {
           antd: 'Ant Design component library (same as ctx.antd).',
           dayjs: 'dayjs date-time utility library.',
           antdIcons: 'Ant Design icons library. Example: `ctx.libs.antdIcons.PlusOutlined`.',
-          lodash: 'Lodash utility library. Example: `ctx.libs.lodash.get(obj, "a.b.c")`.',
-          math: 'Math.js library for mathematical operations. Example: `ctx.libs.math.evaluate("2 + 3 * 4")`.',
-          formula: 'Formula.js library for spreadsheet-like formulas. Example: `ctx.libs.formula.SUM([1, 2, 3])`.',
         },
       },
     },
     methods: {
       t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {name}", { name: "World" })`',
+      useResource: {
+        description:
+          'Define ctx.resource as a FlowResource instance by class name. Common values: "MultiRecordResource", "SingleRecordResource", "SQLResource".',
+        detail: '(className) => void',
+        completion: { insertText: "ctx.useResource('MultiRecordResource')" },
+        examples: ["ctx.useResource('MultiRecordResource'); ctx.resource.setResourceName('users');"],
+      },
       render: {
         description:
           'Render into container. Accepts ReactElement, DOM Node/Fragment, or HTML string. Parameters: (vnode: ReactElement | Node | DocumentFragment | string, container?: HTMLElement|ElementProxy) => Root|null. Example: `ctx.render(<div>Hello</div>)` or `ctx.render("<b>hi</b>")`',
@@ -121,11 +284,79 @@ export function defineBaseContextMeta() {
         message: 'Ant Design 全局消息 API，用于显示临时提示。示例：`ctx.message.success("操作成功")`',
         notification:
           'Ant Design 通知 API，用于显示通知框。示例：`ctx.notification.open({ message: "标题", description: "内容" })`',
-        resource: '基于当前用户权限可访问的数据资源',
+        resource: {
+          description: '数据资源（FlowResource）。多数场景需要先调用 ctx.useResource(...) 创建 ctx.resource。',
+          detail: 'FlowResource',
+          examples: [
+            "ctx.useResource('MultiRecordResource');",
+            "ctx.resource.setResourceName('users');",
+            'await ctx.resource.refresh();',
+            'const rows = ctx.resource.getData();',
+          ],
+          properties: {
+            getData: {
+              description: '获取资源当前数据。',
+              detail: '() => any',
+              completion: { insertText: 'ctx.resource.getData()' },
+            },
+            setData: {
+              description: '设置资源当前数据（仅前端）。',
+              detail: '(value: any) => this',
+              completion: { insertText: 'ctx.resource.setData(value)' },
+            },
+            refresh: {
+              description: '从后端刷新数据（APIResource/RecordResource 等可用）。',
+              detail: '() => Promise<any>',
+              completion: { insertText: 'await ctx.resource.refresh()' },
+            },
+            on: {
+              description: '订阅资源事件（例如 refresh）。',
+              detail: '(event: string, callback: (...args) => void) => void',
+              completion: { insertText: "ctx.resource.on('refresh', () => {})" },
+            },
+            off: {
+              description: '取消订阅资源事件。',
+              detail: '(event: string, callback: (...args) => void) => void',
+              completion: { insertText: "ctx.resource.off('refresh', handler)" },
+            },
+            setResourceName: {
+              description: '设置资源名称（例如 "users" 或 "users.profile"）。',
+              detail: '(resourceName: string) => this',
+              completion: { insertText: "ctx.resource.setResourceName('users')" },
+            },
+            setFilterByTk: {
+              description: '设置主键/过滤键 filterByTk（记录资源常用）。',
+              detail: '(filterByTk: any) => this',
+              completion: { insertText: 'ctx.resource.setFilterByTk(filterByTk)' },
+            },
+            runAction: {
+              description: '执行资源动作（create/update/destroy/自定义 action）。',
+              detail: '(action: string, options: any) => Promise<any>',
+              completion: { insertText: "await ctx.resource.runAction('create', { data: {} })" },
+            },
+            selectedRows: {
+              description: '列表资源的选中行（通常用于表格动作；是否存在取决于资源类型）。',
+              detail: 'any[]',
+            },
+            pagination: {
+              description: '列表资源的分页信息（是否存在取决于资源类型）。',
+              detail: 'Record<string, any>',
+            },
+          },
+        },
         urlSearchParams: '当前 URL 的查询参数（URLSearchParams 对象）',
         token: '当前会话的 API 认证 token',
         role: '当前用户角色信息',
-        auth: '认证上下文，包含 locale、role、user、token 等信息',
+        auth: {
+          description: '认证上下文，包含 locale、role、user、token 等信息',
+          detail: 'AuthContext',
+          properties: {
+            locale: '当前 locale（例如 "en-US"、"zh-CN"）。',
+            roleName: '当前角色名。',
+            token: '当前 API token。',
+            user: '当前用户信息对象（若可用）。',
+          },
+        },
         api: {
           description: '用于发起 HTTP 请求的 APIClient 实例',
           detail: 'APIClient',
@@ -137,6 +368,83 @@ export function defineBaseContextMeta() {
                 insertText: `await ctx.api.request({ url: '', method: 'get', params: {} })`,
               },
             },
+            auth: {
+              description: 'APIClient 上的认证信息（token/role/locale）。',
+              detail: 'APIClient.auth',
+              properties: {
+                token: '当前 API token。',
+                role: '当前角色名。',
+                locale: '当前 locale。',
+              },
+            },
+          },
+        },
+        viewer: {
+          description: '视图控制器（FlowViewer），提供 drawer/dialog/popover/embed 等交互能力。',
+          detail: 'FlowViewer',
+          examples: [
+            "await ctx.viewer.drawer({ width: '56%', content: <div /> });",
+            'await ctx.viewer.dialog({ content: <div /> });',
+          ],
+          properties: {
+            drawer: {
+              description: '打开抽屉视图。参数：(props: ViewProps) => any',
+              detail: '(props) => any',
+              completion: { insertText: "await ctx.viewer.drawer({ width: '56%', content: <div /> })" },
+            },
+            dialog: {
+              description: '打开对话框视图。参数：(props: ViewProps) => any',
+              detail: '(props) => any',
+              completion: { insertText: 'await ctx.viewer.dialog({ content: <div /> })' },
+            },
+            popover: {
+              description: '打开气泡卡片视图。参数：(props: PopoverProps) => any',
+              detail: '(props) => any',
+              completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+            },
+            embed: {
+              description: '打开内嵌视图。参数：(props: ViewProps & TargetProps) => any',
+              detail: '(props) => any',
+              completion: { insertText: 'await ctx.viewer.embed({ target: document.body, content: <div /> })' },
+            },
+          },
+        },
+        record: {
+          description:
+            '当前记录对象（只读）。编辑器可在可用时基于 collection meta 提供字段级补全（ctx.record.<field>）。',
+          detail: 'Record<string, any>',
+          examples: ['const id = ctx.record?.id;', 'const status = ctx.record?.status;'],
+        },
+        formValues: {
+          description: '当前表单值快照（对象）。仅表单相关上下文可用（Create/Edit Form）。',
+          detail: 'Record<string, any>',
+          examples: ['const { name, status } = ctx.formValues || {};'],
+        },
+        popup: {
+          description:
+            '弹窗上下文（在当前视图以弹窗/抽屉打开时可用）。注意：ctx.popup 为异步值，建议 `const popup = await ctx.popup`。',
+          detail: 'Promise<PopupContext | undefined>',
+          examples: [
+            'const popup = await ctx.popup;',
+            'const id = popup?.record?.id;',
+            'const parentId = popup?.parent?.record?.id;',
+          ],
+          properties: {
+            uid: '弹窗 view uid（string）',
+            record: '当前弹窗记录（object）',
+            sourceRecord: '根据 sourceId/associationName 推断的上级记录（object）',
+            resource: {
+              description: '弹窗记录的数据源信息。',
+              detail: 'PopupResourceInfo',
+              properties: {
+                dataSourceKey: '数据源 key（例如 "main"）。',
+                collectionName: '集合名称。',
+                associationName: '关联资源名（可选）。',
+                filterByTk: '记录主键/过滤键 filterByTk。',
+                sourceId: 'sourceId（可选）。',
+              },
+            },
+            parent: '上级弹窗信息（object）。运行时若存在可访问 parent.parent... 链。',
           },
         },
         i18n: {
@@ -151,7 +459,7 @@ export function defineBaseContextMeta() {
         antd: 'Ant Design 组件库（RunJS 环境中可用）。推荐使用 `ctx.libs.antd` 访问。',
         libs: {
           description:
-            '第三方/通用库的统一命名空间，包含 React、ReactDOM、Ant Design、dayjs、lodash、math.js、formula.js 等。后续新增库会优先挂在此处。',
+            '第三方/通用库的统一命名空间，包含 React、ReactDOM、Ant Design、dayjs 等。后续新增库会优先挂在此处。',
           detail: '通用库命名空间',
           properties: {
             React: 'React 命名空间（等价于 ctx.React）。',
@@ -159,14 +467,18 @@ export function defineBaseContextMeta() {
             antd: 'Ant Design 组件库（等价于 ctx.antd）。',
             dayjs: 'dayjs 日期时间工具库。',
             antdIcons: 'Ant Design 图标库。 例如：`ctx.libs.antdIcons.PlusOutlined`。',
-            lodash: 'Lodash 工具库。例如：`ctx.libs.lodash.get(obj, "a.b.c")`。',
-            math: 'Math.js 数学运算库。例如：`ctx.libs.math.evaluate("2 + 3 * 4")`。',
-            formula: 'Formula.js 电子表格公式库。例如：`ctx.libs.formula.SUM([1, 2, 3])`。',
           },
         },
       },
       methods: {
         t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {name}", { name: "世界" })`',
+        useResource: {
+          description:
+            '通过资源类名创建 ctx.resource。常用值："MultiRecordResource"、"SingleRecordResource"、"SQLResource"。',
+          detail: '(className) => void',
+          completion: { insertText: "ctx.useResource('MultiRecordResource')" },
+          examples: ["ctx.useResource('MultiRecordResource'); ctx.resource.setResourceName('users');"],
+        },
         render: {
           description:
             '渲染到容器。vnode 支持 ReactElement、DOM 节点/片段、或 HTML 字符串。参数：(vnode: ReactElement | Node | DocumentFragment | string, container?: HTMLElement|ElementProxy) => Root|null。示例：`ctx.render(<div />)` 或 `ctx.render("<b>hi</b>")`',
