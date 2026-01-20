@@ -467,7 +467,7 @@ export function CCInterfaceConfig({ children }) {
 }
 
 // V2: Task Card Drawer Content
-function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow }) {
+function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nodes }) {
   const flowEngine = useFlowEngine();
   const viewCtx = useFlowViewContext();
   const { data: model, loading } = useRequest(
@@ -507,6 +507,10 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow }) {
         });
         model.context.defineProperty('workflow', {
           get: () => workflow,
+          cache: false,
+        });
+        model.context.defineProperty('nodes', {
+          get: () => nodes ?? [],
           cache: false,
         });
         if (!uid) {
@@ -578,10 +582,11 @@ export function CCTaskCardConfigButton() {
           onUidChange={onUidChange}
           formDisabled={form.disabled}
           workflow={flowContext.workflow}
+          nodes={flowContext.nodes}
         />
       ),
     });
-  }, [ctx, taskCardUid, form.disabled, flowContext.workflow, onUidChange, t]);
+  }, [ctx, taskCardUid, form.disabled, flowContext.workflow, flowContext.nodes, onUidChange, t]);
 
   return (
     <Button icon={<CreditCardOutlined />} type="default" onClick={openConfig} disabled={false}>

@@ -9,6 +9,7 @@
 
 import { DetailsAssociationFieldGroupModel } from '@nocobase/client';
 import { Collection, DisplayItemModel, FlowModelContext } from '@nocobase/flow-engine';
+import { NAMESPACE } from '../../common/constants';
 
 // 禁止显示的字段（黑名单）
 const BLACKLIST = ['job', 'execution', 'user', 'node.*', 'job.*', 'workflow.*', 'execution.*'];
@@ -137,5 +138,5 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
 }
 
 CCTaskCardDetailsAssociationFieldGroupModel.define({
-  label: '{{t("Display association fields")}}',
+  label: '{{t("Other information", { ns: "' + NAMESPACE + '" })}}',
 });

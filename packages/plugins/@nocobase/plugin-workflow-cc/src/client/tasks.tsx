@@ -125,7 +125,17 @@ function FlowContextProvider() {
       .resource('workflowCcTasks')
       .get?.({
         filterByTk: id,
-        appends: ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
+        appends: [
+          'node',
+          'job',
+          'workflow',
+          'workflow.nodes',
+          'workflow.nodes.title',
+          'workflow.nodes.key',
+          'workflow.nodes.config',
+          'execution',
+          'execution.jobs',
+        ],
       })
       .then(({ data }) => {
         const { node, workflow: { nodes = [], ...workflow } = {}, execution } = data?.data ?? {};
@@ -380,6 +390,10 @@ function TaskItem() {
         get: () => record.workflow,
         cache: false,
       });
+      model.context.defineProperty('nodes', {
+        get: () => record.workflow?.nodes ?? [],
+        cache: false,
+      });
     },
     [record, onOpen],
   );
@@ -430,6 +444,10 @@ function useTodoActionParams(status) {
       'workflow.id',
       'workflow.title',
       'workflow.enabled',
+      'workflow.nodes',
+      'workflow.nodes.title',
+      'workflow.nodes.key',
+      'workflow.nodes.config',
       'execution.id',
       'execution.status',
     ],
