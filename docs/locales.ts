@@ -2,7 +2,7 @@ export const locales = [
   {
     code: 'en',
     label: 'English',
-    href: '/en/',
+    href: '/',
   },
   {
     code: 'cn',
