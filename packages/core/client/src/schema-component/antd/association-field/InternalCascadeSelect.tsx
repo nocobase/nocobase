@@ -295,7 +295,7 @@ export const InternalCascadeSelect = observer(
             selectForm.setValuesIn('select_array', [{}]);
           });
         } else {
-          selectForm.reset();
+          selectForm.setValuesIn(fieldSchema.name, null);
         }
       }
     }, [form.values?.[fieldSchema.name]]);
@@ -368,7 +368,6 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
-
     return (
       !loading &&
       associationDataFlag && (
