@@ -24,7 +24,14 @@ import {
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
-import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  CopyOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
@@ -1089,6 +1096,7 @@ const LinkageRulesUI = observer(
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
+    const assignPriorityTip = t('Assignment takes precedence over form field assignment');
 
     // 创建新规则的默认值
     const createNewRule = (): LinkageRule => ({
@@ -1330,6 +1338,14 @@ const LinkageRulesUI = observer(
                         >
                           <span style={{ fontWeight: 500, color: '#262626' }}>
                             {t(actionDef.title)}
+                            {action.name === 'linkageAssignField' || action.name === 'subFormLinkageAssignField' ? (
+                              <Tooltip title={assignPriorityTip}>
+                                <QuestionCircleOutlined
+                                  style={{ marginInlineStart: 4 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </Tooltip>
+                            ) : null}
                             <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                           </span>
                           <Tooltip title={t('Delete action')}>
