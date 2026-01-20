@@ -70,15 +70,8 @@ export function collectFieldAssignCascaderOptions(options: {
   t: (key: string) => string;
   /** 子表单模型递归深度（FormItemModel 层级）；默认不限制（只受实际配置与循环引用约束） */
   maxFormItemDepth?: number;
-  /** 是否展开关联字段的 nested 属性（如 `user.name`） */
-  includeAssociationSubfields?: boolean;
 }): FieldAssignCascaderOption[] {
-  const {
-    formBlockModel,
-    t,
-    maxFormItemDepth = Number.POSITIVE_INFINITY,
-    includeAssociationSubfields = true,
-  } = options;
+  const { formBlockModel, t, maxFormItemDepth = Number.POSITIVE_INFINITY } = options;
 
   const rootItems = formBlockModel?.subModels?.grid?.subModels?.items || [];
 
@@ -111,10 +104,10 @@ export function collectFieldAssignCascaderOptions(options: {
 
       // 1) 子表单/子表单列表：递归展开已配置字段（支持无限深度）。
       //
-      // includeAssociationSubfields=true 时，不预先递归/展开 target collection 字段，改为由 Cascader 的 loadData 异步加载，
+      // 对于关联字段，不预先递归/展开 target collection 字段，改为由 Cascader 的 loadData 异步加载，
       // 以支持无限层级（含循环引用）且避免一次性构建巨大树。
       if (Array.isArray(childItems)) {
-        if (includeAssociationSubfields && isAssociation && hasTargetCollection) {
+        if (isAssociation && hasTargetCollection) {
           node.isLeaf = false;
           // children 留空：由 loadData 动态填充（包含已配置与未配置字段）
         } else {
@@ -131,10 +124,10 @@ export function collectFieldAssignCascaderOptions(options: {
       }
 
       // 2) record picker 等：允许选择关联记录的属性字段（`user.name`），并支持无限嵌套（含对多/循环引用）
-      if (includeAssociationSubfields && isAssociation && hasTargetCollection) {
+      if (isAssociation && hasTargetCollection) {
         node.isLeaf = false;
       } else {
-        // 对多关系本身作为字段值（数组/关联集合）允许被选择，但不展开子属性
+        // 非关联字段作为叶子节点
         node.isLeaf = true;
       }
 
