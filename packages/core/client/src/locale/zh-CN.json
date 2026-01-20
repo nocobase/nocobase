@@ -591,6 +591,7 @@
   "Feedback": "反馈问题",
   "Field": "字段",
   "Field Linkage rules": "字段联动规则",
+  "Assignment takes precedence over form field assignment": "赋值优先级高于表单字段赋值",
   "Field assignment": "字段赋值",
   "Field component": "字段组件",
   "Field display name": "字段名称",
