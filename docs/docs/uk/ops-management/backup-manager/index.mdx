@@ -1,0 +1,211 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
+```yaml
+pkg: '@nocobase/plugin-backups'
+---
+
+# Менеджер резервних копій
+
+## Вступ
+
+Плагін NocoBase "Менеджер резервних копій" надає функції повного резервного копіювання бази даних NocoBase та файлів, завантажених користувачами, включаючи планування, завантаження, видалення та відновлення резервних копій.
+
+:::warning
+Плагін "Менеджер резервних копій" входить до професійної та корпоративної версій. Користувачі версій Community та Standard можуть безпосередньо створювати резервні копії бази даних; детальніше дивіться за посиланням: [`Як створити резервну копію та відновити NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Встановлення клієнта бази даних
+
+Менеджер резервних копій залежить від клієнта відповідної бази даних. Перед використанням, будь ласка, відвідайте офіційний вебсайт, щоб завантажити клієнт, який відповідає версії вашої бази даних:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Для версій Docker ви можете безпосередньо створити скрипт у каталозі `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Вміст файлу `install-database-client.sh` такий:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Потім перезапустіть контейнер app
+
+```bash
+docker compose restart app
+# Переглянути логи
+docker compose logs app
+```
+
+Перевірте номер версії клієнта бази даних, який повинен відповідати номеру версії сервера бази даних
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Інструкції з використання
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Створення нової резервної копії
+
+Натисніть кнопку "Створити резервну копію", щоб створити нову резервну копію відповідно до налаштувань резервного копіювання та відобразити її статус у списку резервних копій.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Відновлення резервної копії
+
+Підтримується відновлення резервних копій зі списку резервних копій або завантаження локальних файлів резервних копій для відновлення.
+Операції відновлення не дозволені у наступних випадках:
+
+- Коли поточна версія NocoBase нижча за версію NocoBase у файлі резервної копії.
+- Коли поточна база даних NocoBase несумісна з наступними конфігураціями у файлі резервної копії:
+  - діалект бази даних
+  - underscored
+  - префікс таблиці
+  - схема таблиці
+- Коли `режим толерантності` не увімкнено, і версія бази даних під час створення резервної копії вища за поточну версію бази даних програми.
+
+> **Відновлення є повною операцією з базою даних. Рекомендується створити резервну копію поточної бази даних перед відновленням.**
+
+#### Відновлення зі списку резервних копій
+
+Натисніть кнопку `Відновити` для елемента резервної копії у списку резервних копій, у спливаючому вікні введіть пароль шифрування файлу резервної копії та натисніть `Підтвердити`, щоб відновити резервну копію.
+
+> Для незашифрованої резервної копії пароль вводити не потрібно.
+
+> Якщо вам потрібно відновити резервну копію до старішої версії бази даних, вам потрібно увімкнути режим толерантності.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Відновлення з локального файлу резервної копії
+
+Натисніть кнопку `Відновити з локальної резервної копії`, у спливаючому вікні виберіть локальний файл резервної копії, введіть пароль шифрування файлу резервної копії та натисніть `Підтвердити`, щоб відновити резервну копію.
+
+> Для незашифрованої резервної копії пароль вводити не потрібно.
+
+> Якщо вам потрібно відновити резервну копію до старішої версії бази даних, вам потрібно увімкнути режим толерантності.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Завантаження файлу резервної копії
+
+Натисніть кнопку `Завантажити` для елемента резервної копії у списку резервних копій, щоб завантажити файл резервної копії.
+
+#### Видалення резервної копії
+
+Натисніть кнопку `Видалити` для елемента резервної копії у списку резервних копій, щоб видалити файл резервної копії.
+
+## Налаштування резервного копіювання
+
+Перейдіть на вкладку `Налаштування`, змініть налаштування резервного копіювання та натисніть `Зберегти`, щоб застосувати зміни.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Опис налаштувань резервного копіювання
+
+- `Автоматичне резервне копіювання`: Після увімкнення `Запускати автоматичне резервне копіювання за розкладом Cron` ви можете налаштувати автоматичне резервне копіювання у вказаний час.
+- `Максимальна кількість резервних копій`: Встановіть максимальну кількість локально збережених файлів резервних копій. Після перевищення цієї кількості найстаріші локальні файли резервних копій будуть автоматично видалені.
+- `Синхронізувати резервну копію з хмарним сховищем`: Налаштуйте хмарне сховище, куди файли резервних копій автоматично завантажуються після успішного створення резервної копії.
+- `Резервне копіювання файлів локального сховища`: Чи включати до резервної копії файли, завантажені користувачами до локального сховища сервера (storage/uploads).
+- `Пароль для відновлення`: Якщо встановлено пароль для відновлення, його необхідно ввести під час відновлення резервної копії.
+
+> **Будь ласка, зберігайте пароль для відновлення в безпеці. Забувши пароль, ви не зможете відновити файл резервної копії.**

@@ -1,0 +1,110 @@
+:::tip
+Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::
+
+
+# Instalace ze zdrojového kódu Git
+
+:::tip Předpoklady
+
+- Máte nainstalované Git, Node.js 20+ a Yarn 1.22.x.
+- Máte nakonfigurovanou a spuštěnou jednu z požadovaných databází: MySQL 8.0.17+, MariaDB 10.9+, nebo PostgreSQL 10+.
+
+:::
+
+## 1. Stáhněte NocoBase lokálně
+
+Vyberte verzi NocoBase ([Porovnání verzí](../quickstart.md)) a spusťte odpovídající příkaz.
+
+<Tabs>
+<Tab label="nejnovější verze">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="beta verze">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="alpha verze">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. Změňte adresář
+
+```bash
+cd my-nocobase
+```
+
+## 3. Nainstalujte závislosti
+
+📢 Tento krok může trvat déle než deset minut v závislosti na vašem síťovém prostředí, konfiguraci systému a dalších faktorech.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. Nastavte proměnné prostředí
+
+Proměnné prostředí, které NocoBase potřebuje, jsou uloženy v souboru `.env` v kořenovém adresáři. Upravte proměnné prostředí podle vaší aktuální situace.
+
+```bash
+TZ=Asia/Shanghai
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning Popis proměnných prostředí
+
+- `TZ` slouží k nastavení časové zóny aplikace, která se standardně nastaví na časovou zónu operačního systému.
+- `APP_KEY` je tajný klíč aplikace, používaný například pro generování uživatelských tokenů (pokud se `APP_KEY` změní, staré tokeny se stanou neplatnými). Může to být libovolný náhodný řetězec. Změňte jej prosím na svůj vlastní tajný klíč a zajistěte, aby nebyl zveřejněn.
+- `DB_*` se týkají databáze. Pokud nepoužíváte výchozí databázovou službu z příkladu, upravte je prosím podle vaší aktuální situace.
+
+:::
+
+## 5. Nainstalujte NocoBase
+
+```bash
+yarn nocobase install --lang=en-US
+```
+
+## 6. Spusťte NocoBase
+
+**Vývojové prostředí**
+
+```bash
+yarn dev
+```
+
+**Produkční prostředí (nedoporučeno)**
+
+Nedoporučuje se nasazovat ze zdrojového kódu přímo v produkčním prostředí. Pro produkční nasazení se prosím podívejte na [Nasazení do produkce](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. Přihlaste se do NocoBase
+
+Otevřete [http://localhost:13000](http://localhost:13000) ve svém prohlížeči. Počáteční účet a heslo jsou `admin@nocobase.com` a `admin123`.
+
+:::warning Upozornění na zabezpečení účtu
+
+Po prvním přihlášení prosím neprodleně změňte výchozí heslo, abyste zajistili bezpečnost systému.
+
+:::

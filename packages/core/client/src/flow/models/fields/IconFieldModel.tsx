@@ -25,6 +25,7 @@ interface IconPickerProps {
   suffix?: React.ReactNode;
   iconSize?: number;
   searchable?: boolean;
+  onChangeComplete?: (value: string) => void;
 }
 
 const groupByIconName = (data) => {
@@ -39,7 +40,7 @@ function IconPicker(props: IconPickerProps) {
   const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
-  const { value, onChange, disabled, iconSize = fontSizeXL, searchable = true } = props;
+  const { value, onChange, disabled, iconSize = fontSizeXL, searchable = true, onChangeComplete } = props;
   const [visible, setVisible] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const [type, setType] = useState('Outlined');
@@ -96,6 +97,7 @@ function IconPicker(props: IconPickerProps) {
                   onClick={() => {
                     onChange(key);
                     setVisible(false);
+                    onChangeComplete?.(key); // 提交最终值
                   }}
                 >
                   <Icon type={key} />

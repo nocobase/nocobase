@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Przegląd",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Szybki start",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Wprowadzenie do funkcji",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zapytania danych",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Opcje wykresu",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Podgląd i zapis",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Użycie zmiennych środowiskowych",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Filtry strony i interakcje",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Zaawansowane",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zapytania w trybie SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Niestandardowa konfiguracja wykresu",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Niestandardowe zdarzenia interaktywne",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Dobre praktyki",
+    "link": "/data-visualization/best-practices"
+  }
+]

@@ -2,28 +2,24 @@
 pkg: "@nocobase/plugin-email-manager"
 ---
 
-# Email Templates
+# Email Template
 
 ## Template Configuration
 
-Go to the Email Management Center and click the settings button:
+Go to the Email Management Center and click the Settings button.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
+Switch to the Template panel.
 
-Switch to the templates panel:
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_12_PM.png)
 
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_53_PM.png)
+Here you can manage templates.
 
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM.png)
 
-You can manage templates here:
+## Template Usage
 
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM.png)
+In the email compose box, click the template icon to select the desired template.
 
-
-## Using Templates
-
-In the email body box, click the template icon to select the desired template:
-
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM%20(1)
-.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM%20(1).png)

@@ -1,0 +1,227 @@
+:::tip
+이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::
+
+
+# create-nocobase-app 설치
+
+:::tip 전제 조건
+
+-   Node.js 20+ 및 Yarn 1.22.x가 설치되어 있어야 합니다.
+-   필요한 데이터베이스 중 하나(MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+ 중 택 1)가 구성 및 실행 중이어야 합니다.
+
+:::
+
+## 1. NocoBase 프로젝트 생성
+
+NocoBase 버전([버전 비교](../quickstart.md))과 데이터베이스 유형을 선택한 다음, 해당 명령을 실행합니다.
+
+<Tabs>
+<Tab label="latest 버전">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="beta 버전">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="alpha 버전">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+</Tabs>
+
+:::warning 환경 변수 설명
+
+-   `TZ`는 애플리케이션의 시간대를 설정하는 데 사용되며, 기본값은 운영 체제의 시간대입니다.
+-   `APP_KEY`는 사용자 토큰 생성 등에 사용되는 애플리케이션의 비밀 키입니다. (`APP_KEY`가 변경되면 이전 토큰은 무효화됩니다.) 임의의 문자열을 사용할 수 있습니다. **자신만의 비밀 키로 변경하고 외부에 노출되지 않도록 주의하십시오.**
+-   `DB_*`는 데이터베이스 관련 설정입니다. 실제 상황에 맞게 데이터베이스 연결 정보로 수정하십시오.
+
+:::
+
+## 2. 디렉터리 변경
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. 의존성 설치
+
+📢 네트워크 환경, 시스템 구성 및 기타 요인에 따라 이 단계는 10분 이상 소요될 수 있습니다.
+
+```bash
+yarn install
+```
+
+:::tip 운영 환경 팁
+
+운영 환경에 배포할 때, 용량을 줄이기 위해 필요한 의존성만 설치할 수 있습니다.
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. NocoBase 설치
+
+```bash
+yarn nocobase install --lang=en-US
+```
+
+설치 과정에서 데이터베이스 테이블 구조가 자동으로 생성되고 데이터가 초기화됩니다.
+
+## 5. NocoBase 시작
+
+**개발 환경**
+
+```bash
+yarn dev
+```
+
+**운영 환경**
+
+```bash
+yarn start
+```
+
+## 6. NocoBase 로그인
+
+브라우저에서 [http://localhost:13000](http://localhost:13000)을 엽니다. 초기 계정과 비밀번호는 `admin@nocobase.com`과 `admin123`입니다.
+
+:::warning 계정 보안 팁
+
+첫 로그인 후, 시스템 보안을 위해 기본 비밀번호를 즉시 변경해 주십시오.
+
+:::

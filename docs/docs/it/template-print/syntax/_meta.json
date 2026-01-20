@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Uso di Base",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Cicli",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Strumenti di Formattazione"
+  }
+]
