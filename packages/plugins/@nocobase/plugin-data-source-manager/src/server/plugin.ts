@@ -735,12 +735,12 @@ export class PluginDataSourceManagerServer extends Plugin {
           if (dataSource.name === 'main') {
             collection.on('field.afterAdd', async (field) => {
               const doc = getFieldDocument(dataSource.name, collection.name, field);
-              await index.addAsync(doc.id, doc.text);
+              await index.add(doc.id, doc.text);
             });
             collection.on('field.afterRemove', async (field) => {
               const doc = getFieldDocument(dataSource.name, collection.name, field);
               try {
-                await index.removeAsync(doc.id);
+                await index.remove(doc.id);
               } catch (err) {
                 // ignore
               }
@@ -749,11 +749,11 @@ export class PluginDataSourceManagerServer extends Plugin {
             for (const [_, field] of collection.fields) {
               const doc = getFieldDocument(dataSource.name, collection.name, field);
               try {
-                await index.removeAsync(doc.id);
+                await index.remove(doc.id);
               } catch (err) {
                 // ignore
               }
-              await index.addAsync(doc.id, doc.text);
+              await index.add(doc.id, doc.text);
             }
           }
         });

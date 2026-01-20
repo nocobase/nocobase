@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
-import { DocumentManager } from './document-manager';
+import { FlowModel } from '@nocobase/flow-engine';
 
-export class AIManager {
-  documentManager: DocumentManager;
+type FlowCtx = FlowModel['context'];
 
-  constructor(app: Application) {
-    this.documentManager = new DocumentManager(app);
-  }
+export function onRefReady(ctx: FlowCtx, cb: (el: HTMLElement) => void) {
+  ctx.onRefReady(ctx.ref, (el) => {
+    cb(el as HTMLElement);
+  });
 }

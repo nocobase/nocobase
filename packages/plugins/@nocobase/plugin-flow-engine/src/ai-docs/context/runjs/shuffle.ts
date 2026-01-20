@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
-import { DocumentManager } from './document-manager';
+import { FlowModel } from '@nocobase/flow-engine';
 
-export class AIManager {
-  documentManager: DocumentManager;
+type FlowCtx = FlowModel['context'];
 
-  constructor(app: Application) {
-    this.documentManager = new DocumentManager(app);
-  }
+export async function shuffleArray(ctx: FlowCtx, values: any[]) {
+  const result = await ctx.runjs(`return _.shuffle(values);`, {
+    _: await ctx.requireAsync('lodash-es'),
+    values,
+  });
+  return result;
 }

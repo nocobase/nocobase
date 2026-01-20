@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
-import { DocumentManager } from './document-manager';
+import { FlowModel } from '@nocobase/flow-engine';
 
-export class AIManager {
-  documentManager: DocumentManager;
+type FlowCtx = FlowModel['context'];
 
-  constructor(app: Application) {
-    this.documentManager = new DocumentManager(app);
-  }
+export function logLifecycle(ctx: FlowCtx) {
+  ctx.logger.info('step started');
+}
+
+export function logError(ctx: FlowCtx, error: Error) {
+  ctx.logger.error(error.message, { stack: error.stack });
 }

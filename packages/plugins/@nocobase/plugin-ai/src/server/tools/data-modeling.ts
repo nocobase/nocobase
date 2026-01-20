@@ -553,12 +553,12 @@ export const searchFieldMetadata: ToolOptions = {
       }
 
       let isSuggest = false;
-      let result = await index.searchAsync(query, {
+      let result = await index.search(query, {
         limit: Math.min(limit * 3, 20),
       });
 
       if (!result?.length) {
-        result = await index.searchAsync(query, {
+        result = await index.search(query, {
           suggest: true,
           limit: Math.min(limit * 3, 20),
         });

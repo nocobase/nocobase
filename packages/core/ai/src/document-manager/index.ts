@@ -1,17 +1,15 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-import { Document, DocumentOptions, Index, IndexOptions } from 'flexsearch';
+import { Document, DocumentOptions, IndexOptions } from 'flexsearch';
+import { Index } from './search-index';
+import { Application } from '@nocobase/server';
+import { createDocsIndexCommand } from './index-command';
 
 export class DocumentManager {
   indexes: Map<string, Index> = new Map();
   documents: Map<string, Document> = new Map();
+
+  constructor(app: Application) {
+    createDocsIndexCommand(app);
+  }
 
   addIndex(name: string, options?: IndexOptions) {
     const index = new Index(options);
