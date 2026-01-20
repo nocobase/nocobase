@@ -125,17 +125,7 @@ function FlowContextProvider() {
       .resource('workflowCcTasks')
       .get?.({
         filterByTk: id,
-        appends: [
-          'node',
-          'job',
-          'workflow',
-          'workflow.nodes',
-          'workflow.nodes.title',
-          'workflow.nodes.key',
-          'workflow.nodes.config',
-          'execution',
-          'execution.jobs',
-        ],
+        appends: ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
       })
       .then(({ data }) => {
         const { node, workflow: { nodes = [], ...workflow } = {}, execution } = data?.data ?? {};
