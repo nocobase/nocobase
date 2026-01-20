@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Zarządzanie systemem",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie wtyczkami",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ustawienia systemowe",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Własny branding",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Edytor motywów",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ustawienia języka",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie lokalizacją",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

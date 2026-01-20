@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Мульти-додаток",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Мульти-простір",
+    "link": "/multi-app/multi-space"
+  }
+]

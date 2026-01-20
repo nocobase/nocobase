@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "क्विक स्टार्ट",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "परिचय",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "एक फ़ील्ड Plugin लिखें",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

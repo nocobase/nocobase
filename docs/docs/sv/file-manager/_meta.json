@@ -1,0 +1,62 @@
+[
+  {
+    "type": "section-header",
+    "label": "Filhanterare"
+  },
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lagringsmotor",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lokal lagring",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Filtabeller",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "Bilagefält",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "Utökningsutveckling",
+    "link": "/file-manager/development/index"
+  }
+]

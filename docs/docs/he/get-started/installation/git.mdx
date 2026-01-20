@@ -1,0 +1,110 @@
+:::tip
+מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::
+
+
+# התקנה מקוד המקור של Git
+
+:::tip תנאים מקדימים
+
+- Git, Node.js 20+ ו-Yarn 1.22.x מותקנים.
+- אחד ממסדי הנתונים הנדרשים מוגדר ופועל: MySQL 8.0.17+, MariaDB 10.9+ או PostgreSQL 10+.
+
+:::
+
+## 1. הורידו את NocoBase למחשב המקומי שלכם
+
+בחרו גרסת NocoBase ([השוואת גרסאות](../quickstart.md)) והריצו את הפקודה המתאימה.
+
+<Tabs>
+<Tab label="גרסה יציבה (latest)">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="גרסת בטא (beta)">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="גרסת אלפא (alpha)">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. עברו לתיקייה
+
+```bash
+cd my-nocobase
+```
+
+## 3. התקינו תלויות
+
+📢 שלב זה עשוי לארוך למעלה מעשר דקות, בהתאם לסביבת הרשת, תצורת המערכת וגורמים נוספים.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. הגדירו משתני סביבה
+
+משתני הסביבה הנדרשים על ידי NocoBase מאוחסנים בקובץ `.env` שבתיקיית השורש. עדכנו את משתני הסביבה בהתאם למצבכם בפועל.
+
+```bash
+TZ=Asia/Shanghai
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning הסבר על משתני הסביבה
+
+- `TZ` משמש להגדרת אזור הזמן של היישום, ובברירת מחדל הוא אזור הזמן של מערכת ההפעלה.
+- `APP_KEY` הוא מפתח הסוד של היישום, המשמש ליצירת אסימוני משתמש (tokens) ועוד (אם `APP_KEY` ישתנה, אסימונים ישנים יהפכו ללא חוקיים). הוא יכול להיות כל מחרוזת אקראית. אנא שנו אותו למפתח סוד משלכם וודאו שהוא אינו נחשף.
+- `DB_*` קשורים למסד הנתונים. אם אינכם משתמשים בשירות מסד הנתונים המוגדר כברירת מחדל בדוגמה, אנא עדכנו אותם בהתאם למצבכם בפועל.
+
+:::
+
+## 5. התקינו את NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+## 6. הפעילו את NocoBase
+
+**סביבת פיתוח**
+
+```bash
+yarn dev
+```
+
+**סביבת ייצור (לא מומלץ)**
+
+לא מומלץ לפרוס ישירות מקוד המקור בסביבת ייצור. עבור סביבת ייצור, אנא עיינו ב[פריסה בסביבת ייצור](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. התחברו ל-NocoBase
+
+פתחו את [http://localhost:13000](http://localhost:13000) בדפדפן שלכם. שם המשתמש והסיסמה הראשוניים הם `admin@nocobase.com` ו-`admin123`.
+
+:::warning אזהרת אבטחת חשבון
+
+לאחר הכניסה הראשונה, אנא שנו את סיסמת ברירת המחדל בהקדם כדי להבטיח את אבטחת המערכת.
+
+:::

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Multi-Aplikasi",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Multi-Ruang",
+    "link": "/multi-app/multi-space"
+  }
+]

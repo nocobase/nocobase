@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "دليل الأمان",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "سياسة Token",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "سياسة كلمة المرور",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "سياسة كلمة المرور",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "قفل المستخدم",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "قيود IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "سجل التدقيق",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "المصادقة الثنائية (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "تشفير الحقول",
+    "link": "/data-sources/field-encryption"
+  }
+]

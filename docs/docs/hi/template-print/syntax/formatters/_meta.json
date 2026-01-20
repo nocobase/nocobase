@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "टेक्स्ट फ़ॉर्मेटिंग",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "संख्या फ़ॉर्मेटिंग",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "मुद्रा फ़ॉर्मेटिंग",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "तिथि फ़ॉर्मेटिंग",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "समय अंतराल फ़ॉर्मेटिंग",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Array फ़ॉर्मेटिंग",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

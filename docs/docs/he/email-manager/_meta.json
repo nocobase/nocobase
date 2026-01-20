@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "הגדרות מנהל מערכת",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "תהליך הגדרה",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "הגדרות דוא'ל גוגל",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "הגדרות דוא'ל מיקרוסופט",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "שאלות נפוצות",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "מבוא לתכונות",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "מרכז דוא'ל",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "בלוקי דוא'ל",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "חתימת דוא'ל",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "תבניות דוא'ל",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "מתקדם",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "הערות דוא'ל",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "משימות דוא'ל",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "תגיות דוא'ל",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "שליחה בכמות גדולה",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "שמירת טיוטה אוטומטית",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

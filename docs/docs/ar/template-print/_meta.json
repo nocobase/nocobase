@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "تعليمات الإعداد",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "بناء جملة القالب"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "ميزات متقدمة"
+  },
+  {
+    "type": "custom-link",
+    "label": "الأسئلة الشائعة",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "سيناريوهات التطبيق",
+    "link": "/template-print/scenes"
+  }
+]

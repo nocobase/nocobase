@@ -36,7 +36,7 @@ The JS Field runtime code can directly use the following context capabilities:
 - `ctx.openView(options)`: Open a configured view (popup/drawer/page).
 - `ctx.i18n.t()` / `ctx.t()`: Internationalization.
 - `ctx.onRefReady(ctx.ref, cb)`: Render after the container is ready.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Built-in React, ReactDOM, Ant Design, Ant Design icons, and dayjs libraries for JSX rendering and date-time utilities. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Built-in React, ReactDOM, Ant Design, Ant Design icons, dayjs, lodash, math.js, and formula.js libraries for JSX rendering, date-time utilities, data manipulation, and mathematical operations. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
 - `ctx.render(vnode)`: Renders a React element, HTML string, or DOM node into the default container `ctx.element`. Repeated rendering will reuse the Root and overwrite the existing content of the container.
 
 Specific to Editable type (JSEditableField):
