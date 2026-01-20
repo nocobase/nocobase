@@ -113,6 +113,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   async create(data: TDataItem, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
     const res = await this.runAction('create', config);
+    this.markDataSourceDirty();
     this.emit('saved', data);
     if (options?.refresh !== false) {
       await this.refresh();
@@ -145,6 +146,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
       options,
     );
     await this.runAction('update', config);
+    this.markDataSourceDirty();
     this.emit('saved', data);
     await this.refresh();
   }
@@ -170,6 +172,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
       options,
     );
     await this.runAction('destroy', config);
+    this.markDataSourceDirty();
     const currentPage = this.getPage();
     const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
     if (currentPage > lastPage) {

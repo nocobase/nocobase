@@ -25,6 +25,7 @@ export function useDialog() {
   const holderRef = React.useRef(null);
 
   const open = (config, flowContext) => {
+    const openerEngine = flowContext?.engine as any;
     uuid += 1;
     const dialogRef = React.createRef<{
       destroy: () => void;
@@ -95,6 +96,8 @@ export function useDialog() {
         dialogRef.current?.destroy();
         closeFunc?.();
         resolvePromise?.(result);
+        // Notify opener view that it becomes active again.
+        openerEngine?.emitter?.emit?.('view:activated', { type: 'dialog', viewUid: currentDialog?.inputArgs?.viewUid });
         // 关闭时修正 previous/next 指针
         scopedEngine.unlinkFromStack();
       },
@@ -189,6 +192,9 @@ export function useDialog() {
     );
 
     closeFunc = holderRef.current?.patchElement(dialog);
+
+    // Notify opener view that it is being covered by a new view.
+    openerEngine?.emitter?.emit?.('view:deactivated', { type: 'dialog', viewUid: currentDialog?.inputArgs?.viewUid });
     return Object.assign(promise, currentDialog);
   };
 

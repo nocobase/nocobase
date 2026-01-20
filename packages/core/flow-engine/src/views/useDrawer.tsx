@@ -54,6 +54,7 @@ export function useDrawer() {
   RenderNestedDrawer.displayName = 'RenderNestedDrawer';
 
   const open = (config, flowContext: FlowEngineContext) => {
+    const openerEngine = flowContext?.engine as any;
     const drawerRef = React.createRef<{
       destroy: () => void;
       update: (config: any) => void;
@@ -124,6 +125,8 @@ export function useDrawer() {
         drawerRef.current?.destroy();
         closeFunc?.();
         resolvePromise?.(result);
+        // Notify opener view that it becomes active again.
+        openerEngine?.emitter?.emit?.('view:activated', { type: 'drawer', viewUid: currentDrawer?.inputArgs?.viewUid });
         // 关闭时修正 previous/next 指针
         scopedEngine.unlinkFromStack();
       },
@@ -220,6 +223,9 @@ export function useDrawer() {
     RenderDrawer.displayName = 'RenderDrawer';
 
     closeFunc = holderRef.current?.patchElement(RenderDrawer);
+
+    // Notify opener view that it is being covered by a new view.
+    openerEngine?.emitter?.emit?.('view:deactivated', { type: 'drawer', viewUid: currentDrawer?.inputArgs?.viewUid });
     return Object.assign(promise, currentDrawer);
   };
 

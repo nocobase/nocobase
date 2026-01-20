@@ -136,6 +136,29 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this.resourceName;
   }
 
+  /**
+   * Mark current resource as dirty on the root FlowEngine.
+   * Used to coordinate "refresh on active" across view stacks.
+   */
+  protected markDataSourceDirty(resourceName?: string) {
+    try {
+      const engine = (this.context as any)?.engine;
+      if (!engine || typeof engine.markDataSourceDirty !== 'function') return;
+
+      const dataSourceKey = this.getDataSourceKey?.() || 'main';
+      const resName = resourceName || this.getResourceName?.();
+      if (!resName) return;
+
+      engine.markDataSourceDirty(dataSourceKey, resName);
+      // Optional safety: association resources like "users.profile" may impact parent collection views.
+      if (typeof resName === 'string' && resName.includes('.')) {
+        engine.markDataSourceDirty(dataSourceKey, resName.split('.')[0]);
+      }
+    } catch (e) {
+      // Never block write paths due to dirty-marking failures.
+    }
+  }
+
   setSourceId(sourceId: string | number) {
     this.sourceId = sourceId;
     return this;

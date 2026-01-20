@@ -36,11 +36,34 @@ type PageModelStructure = {
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
+  private viewActivatedListener?: (payload?: any) => void;
 
   onMount(): void {
     super.onMount();
     this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
+
+    // When a nested view (popup/page) is closed, the opener view becomes active again.
+    // We align this with the existing tab lifecycle by invoking `onActive` for the current tab blocks.
+    if (!this.viewActivatedListener) {
+      this.viewActivatedListener = () => {
+        const activeKey = this.context.view?.navigation?.viewParams
+          ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
+          : this.props.tabActiveKey || this.getFirstTab()?.uid;
+        if (activeKey) {
+          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+        }
+      };
+      this.flowEngine?.emitter?.on?.('view:activated', this.viewActivatedListener);
+    }
+  }
+
+  protected onUnmount(): void {
+    if (this.viewActivatedListener) {
+      this.flowEngine?.emitter?.off?.('view:activated', this.viewActivatedListener);
+      this.viewActivatedListener = undefined;
+    }
+    super.onUnmount();
   }
 
   invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive') {

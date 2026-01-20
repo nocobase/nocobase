@@ -35,6 +35,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   isManualRefresh = false;
   collectionRequired = true;
   private previousBeforeRenderHash; // qs 变化后为了防止区块依赖qs, 因此重跑beforeRender, task-1357
+  private lastSeenDirtyVersion: number | null = null;
+  private dirtyRefreshing = false;
 
   protected onMount() {
     super.onMount();
@@ -46,9 +48,46 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       this.rerender();
       return;
     }
-    if (!this.hidden) {
-      this.resource?.refresh();
+
+    if (this.hidden) return;
+    if (this.isManualRefresh) return;
+
+    const resource: any = this.resource as any;
+    if (!resource?.refresh) return;
+
+    const engine: any = this.context.engine as any;
+    const dataSourceKey =
+      (typeof resource?.getDataSourceKey === 'function' && resource.getDataSourceKey()) ||
+      this.getResourceSettingsInitParams?.()?.dataSourceKey ||
+      'main';
+    const resourceName =
+      (typeof resource?.getResourceName === 'function' && resource.getResourceName()) ||
+      this.getResourceSettingsInitParams?.()?.associationName ||
+      this.getResourceSettingsInitParams?.()?.collectionName;
+
+    // Fallback to previous behavior if engine does not support dirty registry.
+    if (!engine?.getDataSourceDirtyVersion || !resourceName) {
+      void resource.refresh();
+      return;
     }
+
+    const currentVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+    const shouldRefresh = this.lastSeenDirtyVersion === null || currentVersion !== this.lastSeenDirtyVersion;
+    if (!shouldRefresh) return;
+
+    // Avoid firing multiple refreshes during rapid activate toggles.
+    if (this.dirtyRefreshing) return;
+    this.dirtyRefreshing = true;
+    void Promise.resolve(resource.refresh())
+      .then(() => {
+        this.lastSeenDirtyVersion = currentVersion;
+      })
+      .catch(() => {
+        // keep lastSeenDirtyVersion unchanged so next activate can retry
+      })
+      .finally(() => {
+        this.dirtyRefreshing = false;
+      });
   }
 
   /**

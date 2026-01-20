@@ -68,7 +68,8 @@ const PopoverComponent = React.forwardRef<any, any>(({ afterClose, content, plac
 export function usePopover() {
   const holderRef = React.useRef<any>(null);
 
-  const open = (config) => {
+  const open = (config, flowContext?: any) => {
+    const openerEngine = flowContext?.engine as any;
     uuid += 1;
     const { target, placement = 'rightTop', content, ...rest } = config;
     const popoverRef = React.createRef<any>();
@@ -111,12 +112,17 @@ export function usePopover() {
         afterClose={() => {
           closeFunc?.();
           config.onClose?.();
+          // Notify opener view that it becomes active again.
+          openerEngine?.emitter?.emit?.('view:activated', { type: 'popover', viewUid: config?.inputArgs?.viewUid });
           resolvePromise?.(config.result);
         }}
         {...rest}
       />
     );
     closeFunc = holderRef.current?.patchElement(popover);
+
+    // Notify opener view that it is being covered by a new view.
+    openerEngine?.emitter?.emit?.('view:deactivated', { type: 'popover', viewUid: config?.inputArgs?.viewUid });
 
     return Object.assign(promise, currentPopover);
   };
@@ -125,7 +131,7 @@ export function usePopover() {
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
       const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
       return <>{elements}</>;
     }),
   );

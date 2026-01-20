@@ -40,6 +40,7 @@ export function usePage() {
   const globalEmbedActiveRef = React.useRef<null | { destroy: () => void }>(null);
 
   const open = (config, flowContext) => {
+    const openerEngine = flowContext?.engine as any;
     uuid += 1;
     const pageRef = React.createRef<{
       destroy: () => void;
@@ -126,6 +127,13 @@ export function usePage() {
 
         if (isGlobalEmbedContainer) {
           globalEmbedActiveRef.current = null;
+        }
+
+        // Notify opener view that it becomes active again.
+        const isReplacing =
+          isGlobalEmbedContainer && target instanceof HTMLElement && target.dataset?.[EMBED_REPLACING_DATA_KEY] === '1';
+        if (!isReplacing) {
+          openerEngine?.emitter?.emit?.('view:activated', { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
         }
 
         // 关闭时修正 previous/next 指针
@@ -226,6 +234,11 @@ export function usePage() {
 
     if (isGlobalEmbedContainer) {
       globalEmbedActiveRef.current = { destroy: currentPage.destroy };
+    }
+
+    // Notify opener view that it is being covered by a new view.
+    if (!isGlobalEmbedContainer) {
+      openerEngine?.emitter?.emit?.('view:deactivated', { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
     }
 
     return Object.assign(promise, currentPage);

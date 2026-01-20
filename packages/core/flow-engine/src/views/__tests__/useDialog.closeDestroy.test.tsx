@@ -50,6 +50,9 @@ describe('useDialog - close/destroy logic', () => {
     const ctx = new FlowContext();
     ctx.engine = {
       context: new FlowContext(),
+      emitter: {
+        emit: vi.fn(),
+      },
     };
     return ctx;
   };
@@ -124,5 +127,17 @@ describe('useDialog - close/destroy logic', () => {
     expect(backMock).toHaveBeenCalled();
     // Should not call destroy directly, let router handle it
     expect(mockCloseFunc).not.toHaveBeenCalled();
+  });
+
+  it('should emit view active/inactive events on opener engine', () => {
+    const api = renderUseDialog();
+    const flowContext = createMockFlowContext();
+    const emitSpy = flowContext.engine.emitter.emit;
+
+    const dialog = api.open({ inputArgs: { viewUid: 'child-view' } }, flowContext);
+    expect(emitSpy).toHaveBeenCalledWith('view:deactivated', expect.anything());
+
+    dialog.close();
+    expect(emitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
   });
 });
