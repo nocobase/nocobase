@@ -23,12 +23,7 @@ COPY . /tmp
 
 SHELL ["/bin/bash", "-c"]
 
-RUN cd /tmp/docs && \
-  yarn install && \
-  ./build-all.sh && \
-  rm -rf /tmp/docs/node_modules && \
-  cd /tmp && \
-  yarn install && yarn build --no-dts && \
+RUN yarn install && yarn build --no-dts && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
   if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
