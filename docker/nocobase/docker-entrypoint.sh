@@ -24,6 +24,9 @@ fi
 if [ ! -f "/app/nocobase/package.json" ]; then
   echo 'copying...'
   tar -zxf /app/nocobase.tar.gz --absolute-names -C /app/nocobase
+  if [ -f "/app/nocobase/docs-dist.tar.gz" ]; then
+    tar -zxf /app/nocobase/docs-dist.tar.gz --absolute-names -C /app/nocobase/docs
+  fi
   touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
 fi
 

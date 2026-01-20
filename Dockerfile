@@ -48,7 +48,7 @@ RUN yarn install && yarn build --no-dts && \
   cd /app/my-nocobase-app && \
   $BEFORE_PACK_NOCOBASE && \
   cd /app && \
-  cp -r /tmp/docs/dist /app/my-nocobase-app/docs && \
+  ([ -f /tmp/docs/dist.tar.gz ] && cp /tmp/docs/dist.tar.gz /app/my-nocobase-app/docs-dist.tar.gz || true) && \
   rm -rf my-nocobase-app/packages/app/client/src/.umi && \
   rm -rf nocobase.tar.gz && \
   tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
