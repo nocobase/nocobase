@@ -39,42 +39,42 @@ DB_PASSWORD=nocobase
 #### Docker でのインストール
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # ユーザーのトークンなどを生成するためのアプリケーションキーです。
-      # APP_KEY を変更すると、古いトークンは無効になります。
-      # 任意のランダムな文字列を使用し、外部に漏洩しないようにしてください。
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # データベースの種類
+      # Database type
       - DB_DIALECT=kingbase
-      # データベースホスト。既存のデータベースサーバーの IP に置き換えることができます。
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # データベース名
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # データベースユーザー
+      # Database user
       - DB_USER=nocobase
-      # データベースパスワード
+      # Database password
       - DB_PASSWORD=nocobase
-      # タイムゾーン
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # テスト目的のみの Kingbase サービス
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -85,10 +85,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # 「no」に設定する必要があります
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # pg のみ
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

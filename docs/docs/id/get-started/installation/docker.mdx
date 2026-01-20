@@ -30,7 +30,7 @@ Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jenis basis da
 
 - **Pilih Image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - Untuk lingkungan produksi, disarankan untuk menggunakan nomor versi spesifik agar terhindar dari pembaruan otomatis yang tidak disengaja. [Lihat semua versi](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Image Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Image Alibaba Cloud: `nocobase/nocobase:latest-full`
   - Image Docker Hub: `nocobase/nocobase:latest-full`
   - **Image full** mencakup klien PostgreSQL 16/17, klien MySQL 8.0, klien Oracle 19.25 yang diperlukan untuk plugin manajemen cadangan dan migrasi, serta LibreOffice yang dibutuhkan untuk pencetakan templat (PDF).
   - Jika Anda perlu membuat image sendiri, Anda dapat merujuk pada [Dockerfile (versi ringkas)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) dan [Dockerfile-full (versi lengkap)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) resmi.
@@ -51,7 +51,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +85,7 @@ services:
 
   # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan postgres.
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +109,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +144,7 @@ services:
 
   # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mysql.
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +168,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +203,7 @@ services:
 
   # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mariadb.
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

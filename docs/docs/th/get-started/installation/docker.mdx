@@ -30,7 +30,7 @@ vi docker-compose.yml
 
 - **เลือกอิมเมจ (Image)**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - สำหรับสภาพแวดล้อมการใช้งานจริง (Production) แนะนำให้ระบุเวอร์ชันที่เป็นตัวเลขที่แน่นอน เพื่อหลีกเลี่ยงการอัปเกรดอัตโนมัติโดยไม่ตั้งใจครับ/ค่ะ [ดูเวอร์ชันทั้งหมด](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - อิมเมจบน Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - อิมเมจบน Alibaba Cloud: `nocobase/nocobase:latest-full`
   - อิมเมจบน Docker Hub: `nocobase/nocobase:latest-full`
   - **อิมเมจแบบ full** จะรวมถึงไคลเอนต์ PostgreSQL 16/17, ไคลเอนต์ MySQL 8.0, ไคลเอนต์ Oracle 19.25 ที่จำเป็นสำหรับปลั๊กอินการจัดการสำรองข้อมูลและการย้ายข้อมูล รวมถึง LibreOffice ที่จำเป็นสำหรับการพิมพ์เทมเพลต (PDF) ครับ/ค่ะ
   - หากคุณต้องการสร้างอิมเมจเอง สามารถอ้างอิงจาก [Dockerfile (เวอร์ชันย่อ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) และ [Dockerfile-full (เวอร์ชันเต็ม)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) ที่ทาง NocoBase จัดเตรียมไว้ให้ได้เลยครับ/ค่ะ
@@ -51,7 +51,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +85,7 @@ services:
 
   # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน postgres ได้ครับ/ค่ะ
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +109,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +144,7 @@ services:
 
   # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mysql ได้ครับ/ค่ะ
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +168,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +203,7 @@ services:
 
   # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mariadb ได้ครับ/ค่ะ
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

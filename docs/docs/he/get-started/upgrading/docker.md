@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # מומלץ להשתמש באימג' של Alibaba Cloud (רשת יציבה יותר בסין)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # ניתן גם להשתמש בגרסת כינוי (עלול לשדרג אוטומטית, השתמשו בזהירות בסביבת ייצור)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (עלול להיות איטי/להיכשל בסין)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase אינה תומכת בשדרוג גרסה לאחור. אם אתם צר�
 
 **ש: משיכת אימג' איטית או נכשלה**
 
-השתמשו בהאצת אימג'ים, או השתמשו באימג' של Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`
+השתמשו בהאצת אימג'ים, או השתמשו באימג' של Alibaba Cloud: `nocobase/nocobase:<tag>`
 
 **ש: הגרסה לא השתנתה**
 

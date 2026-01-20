@@ -30,7 +30,7 @@ vi docker-compose.yml
 
 - **Вибір образу**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - Для виробничих середовищ рекомендується фіксувати конкретний номер версії, щоб уникнути ненавмисних автоматичних оновлень. [Переглянути всі версії](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Образ Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Образ Alibaba Cloud: `nocobase/nocobase:latest-full`
   - Образ Docker Hub: `nocobase/nocobase:latest-full`
   - **Повний образ** містить клієнти PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, необхідні для плагінів керування резервним копіюванням та міграцією, а також LibreOffice для друку шаблонів (PDF).
   - Якщо вам потрібно створити власний образ, ви можете звернутися до офіційних [Dockerfile (спрощена версія)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) та [Dockerfile-full (повна версія)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
@@ -51,7 +51,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +85,7 @@ services:
 
   # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати postgres.
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +109,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +144,7 @@ services:
 
   # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mysql.
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +168,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +203,7 @@ services:
 
   # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mariadb.
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

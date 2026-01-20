@@ -79,7 +79,7 @@ services:
 
   # If you use an existing database service, you can skip starting postgres
   postgres:
-    image: nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -138,7 +138,7 @@ services:
 
   # If you use an existing database service, you can skip starting mysql
   mysql:
-    image: nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -197,7 +197,7 @@ services:
 
   # If you use an existing database service, you can skip starting mariadb
   mariadb:
-    image: nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

@@ -38,42 +38,42 @@ DB_PASSWORD=nocobase
 #### การติดตั้งด้วย Docker
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าจะใช้งานไม่ได้
-      # สามารถเป็นสตริงสุ่มใดก็ได้ และต้องแน่ใจว่าไม่รั่วไหลสู่ภายนอก
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # ประเภทฐานข้อมูล
+      # Database type
       - DB_DIALECT=kingbase
-      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # ชื่อฐานข้อมูล
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # ผู้ใช้ฐานข้อมูล
+      # Database user
       - DB_USER=nocobase
-      # รหัสผ่านฐานข้อมูล
+      # Database password
       - DB_PASSWORD=nocobase
-      # เขตเวลา
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # บริการ Kingbase สำหรับการทดสอบเท่านั้น
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -84,10 +84,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # ต้องตั้งค่าเป็น no
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # เฉพาะ pg เท่านั้น
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

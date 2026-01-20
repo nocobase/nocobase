@@ -38,10 +38,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Nên sử dụng image của Alibaba Cloud (mạng nội địa ổn định hơn)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Bạn cũng có thể sử dụng phiên bản bí danh (có thể tự động nâng cấp, hãy thận trọng khi dùng trong môi trường sản xuất)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (có thể chậm/thất bại ở Trung Quốc)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -72,7 +72,7 @@ NocoBase không hỗ trợ hạ cấp. Nếu bạn cần khôi phục, vui lòng
 
 **Hỏi: Kéo image chậm hoặc thất bại**
 
-Sử dụng dịch vụ tăng tốc image, hoặc sử dụng image của Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`
+Sử dụng dịch vụ tăng tốc image, hoặc sử dụng image của Alibaba Cloud: `nocobase/nocobase:<tag>`
 
 **Hỏi: Phiên bản chưa thay đổi**
 

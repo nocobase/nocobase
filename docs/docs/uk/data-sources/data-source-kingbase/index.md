@@ -38,42 +38,42 @@ DB_PASSWORD=nocobase
 #### Встановлення за допомогою Docker
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # Ключ програми для генерації токенів користувачів тощо.
-      # Якщо APP_KEY змінено, старі токени стануть недійсними.
-      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # Тип бази даних
+      # Database type
       - DB_DIALECT=kingbase
-      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # Назва бази даних
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # Користувач бази даних
+      # Database user
       - DB_USER=nocobase
-      # Пароль бази даних
+      # Database password
       - DB_PASSWORD=nocobase
-      # Часовий пояс
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # Сервіс Kingbase лише для тестування
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -84,10 +84,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # Має бути "no"
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # Тільки pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Empfehlung: Verwenden Sie das Aliyun-Image (stabileres Netzwerk in China)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Sie können auch eine Alias-Version verwenden (kann automatisch aktualisiert werden, mit Vorsicht in der Produktion einsetzen)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (in China möglicherweise langsamer/fehlerhaft)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase unterstützt keine Downgrades. Wenn Sie ein Rollback durchführen müss
 
 **F: Image-Pull langsam oder fehlgeschlagen**
 
-Verwenden Sie einen Image-Beschleuniger oder das Aliyun-Image `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`.
+Verwenden Sie einen Image-Beschleuniger oder das Aliyun-Image `nocobase/nocobase:<tag>`.
 
 **F: Version hat sich nicht geändert**
 

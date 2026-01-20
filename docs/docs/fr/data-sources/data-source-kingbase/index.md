@@ -38,42 +38,42 @@ DB_PASSWORD=nocobase
 #### Installation Docker
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # Clé de l'application, utilisée pour générer les jetons utilisateur, etc.
-      # Si APP_KEY est modifiée, les anciens jetons deviendront invalides.
-      # Utilisez une chaîne de caractères aléatoire et assurez-vous qu'elle ne soit pas divulguée.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # Type de base de données
+      # Database type
       - DB_DIALECT=kingbase
-      # Hôte de la base de données, peut être remplacé par l'adresse IP d'un serveur de base de données existant
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # Nom de la base de données
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # Utilisateur de la base de données
+      # Database user
       - DB_USER=nocobase
-      # Mot de passe de la base de données
+      # Database password
       - DB_PASSWORD=nocobase
-      # Fuseau horaire
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # Service Kingbase uniquement à des fins de test
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -84,10 +84,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # Doit être défini sur no
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # Uniquement pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

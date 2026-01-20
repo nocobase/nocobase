@@ -38,10 +38,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Рекомендується використовувати образ Alibaba Cloud (стабільніша мережа в Китаї)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Також можна використовувати версію-псевдоніми (може оновлюватися автоматично, використовуйте з обережністю у виробничому середовищі)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (у Китаї може бути повільним/невдалим)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -72,7 +72,7 @@ NocoBase не підтримує зниження версії. Якщо вам 
 
 **З: Повільне або невдале завантаження образу**
 
-Використовуйте прискорення образів або образ Alibaba Cloud `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`.
+Використовуйте прискорення образів або образ Alibaba Cloud `nocobase/nocobase:<tag>`.
 
 **З: Версія не змінилася**
 
