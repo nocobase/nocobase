@@ -11,7 +11,7 @@ import { DetailsItemModel, parseCollectionName } from '@nocobase/client';
 import { Collection, CollectionField, FlowModelContext, tExpr } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../common/constants';
 
-const TEMP_ASSOCIATION_PREFIX = 'ccTaskTempAssociation_';
+const TEMP_ASSOCIATION_PREFIX = 'ccTempAssoc_';
 
 // 排除的字段
 const EXCLUDED_FIELDS = ['node', 'job', 'workflow', 'execution', 'user'];
