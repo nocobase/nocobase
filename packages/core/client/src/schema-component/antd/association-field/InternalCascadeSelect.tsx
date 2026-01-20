@@ -379,6 +379,9 @@ export const InternalCascadeSelect = observer(
                 ...fieldSchema,
                 default: initialValue,
                 title: '',
+                'x-decorator-props': {
+                  feedbackLayout: 'none',
+                },
                 'x-component': AssociationCascadeSelect,
                 'x-component-props': {
                   ...props,
