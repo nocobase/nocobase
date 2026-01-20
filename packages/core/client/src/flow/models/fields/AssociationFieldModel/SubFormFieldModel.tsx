@@ -243,7 +243,8 @@ const ArrayNester = ({
                               gridFork.mapSubModels('items', (item) => {
                                 const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
                                 // 同时销毁子模型的 fork
-                                item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                                // 使用模板字符串把数组展开
+                                item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose();
                                 item.getFork(cacheKey)?.dispose();
                               });
                               gridFork.dispose();
