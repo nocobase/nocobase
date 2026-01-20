@@ -23,7 +23,11 @@ COPY . /tmp
 
 SHELL ["/bin/bash", "-c"]
 
-RUN yarn install && yarn build --no-dts && \
+RUN cd /tmp/docs && \
+  yarn install && \
+  yarn build --lang=all && \
+  yarn install && yarn build --no-dts && \
+  rm -rf /tmp/docs/node_modules && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
   if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
@@ -38,9 +42,6 @@ RUN yarn install && yarn build --no-dts && \
   yarn nocobase client:upload && \
   yarn release:force --registry $VERDACCIO_URL && \
   yarn config set registry $VERDACCIO_URL && \
-  cd /tmp/docs && \
-  yarn install && \
-  yarn build --lang=all && \
   rm -rf /tmp/node_modules && \
   mkdir /app && \
   cd /app && \
