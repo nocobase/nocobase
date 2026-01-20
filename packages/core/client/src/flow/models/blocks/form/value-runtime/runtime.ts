@@ -14,7 +14,7 @@ import _ from 'lodash';
 import { evaluateCondition } from './conditions';
 import { createFormValuesProxy } from './deps';
 import { createFormPatcher } from './form-patch';
-import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
+import { namePathToPathKey, pathKeyToNamePath, resolveDynamicNamePath } from './path';
 import { RuleEngine } from './rules';
 import type { FormAssignRuleItem, FormValuesChangePayload, NamePath, Patch, SetOptions, ValueSource } from './types';
 import { createTxId, MAX_WRITES_PER_PATH_PER_TX } from './utils';
@@ -494,60 +494,8 @@ export class FormValueRuntime {
   }
 
   private tryResolveNamePath(callerCtx: any, path: string | NamePath): NamePath | null {
-    const segs = Array.isArray(path) ? [...path] : parsePathString(path);
-
-    // fieldIndex 形如 ["products:0", "products:2"]，顺序对应从外到内的嵌套层级；
-    // 不能用 { [name]: index } 映射，否则同名数组字段会被覆盖（导致多层嵌套默认值/赋值失效）。
     const fieldIndex = callerCtx?.model?.context?.fieldIndex ?? callerCtx?.fieldIndex;
-    const fieldIndexArr = Array.isArray(fieldIndex) ? fieldIndex : [];
-    const entries: Array<{ name: string; index: number }> = [];
-    for (const it of fieldIndexArr) {
-      if (typeof it !== 'string') continue;
-      const [k, v] = it.split(':');
-      const n = Number(v);
-      if (!k || Number.isNaN(n)) continue;
-      entries.push({ name: k, index: n });
-    }
-
-    const resolved: NamePath = [];
-    let idxPtr = 0;
-
-    for (let i = 0; i < segs.length; i++) {
-      const seg = segs[i] as any;
-
-      // 显式占位符：xxx[placeholder] → 使用当前上下文同层级的 index
-      if (typeof seg === 'object' && seg && 'placeholder' in seg) {
-        const prev = resolved[resolved.length - 1];
-        const owner = typeof prev === 'string' ? prev : undefined;
-        if (!owner) return null;
-
-        while (idxPtr < entries.length && entries[idxPtr].name !== owner) idxPtr++;
-        if (idxPtr >= entries.length) return null;
-
-        resolved.push(entries[idxPtr].index);
-        idxPtr++;
-        continue;
-      }
-
-      // 普通段
-      resolved.push(seg);
-
-      // 自动补齐对多 index：products.id → products[ctxIndex].id
-      if (typeof seg === 'string' && idxPtr < entries.length && entries[idxPtr].name === seg) {
-        const next = segs[i + 1] as any;
-        if (typeof next === 'number') {
-          // 已显式指定 index（products[0]），仍需消耗一个 entries 以保持嵌套层级对齐
-          idxPtr++;
-        } else if (typeof next === 'object' && next && 'placeholder' in next) {
-          // 由占位符分支负责插入 index，这里不消耗
-        } else {
-          resolved.push(entries[idxPtr].index);
-          idxPtr++;
-        }
-      }
-    }
-
-    return resolved;
+    return resolveDynamicNamePath(path, fieldIndex);
   }
 
   private bumpChangeTick() {
