@@ -39,42 +39,42 @@ DB_PASSWORD=nocobase
 #### Instalacja Docker
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Zmiana APP_KEY unieważnia stare tokeny.
-      # Może być dowolnym losowym ciągiem znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # Typ bazy danych
+      # Database type
       - DB_DIALECT=kingbase
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # Nazwa bazy danych
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # Użytkownik bazy danych
+      # Database user
       - DB_USER=nocobase
-      # Hasło do bazy danych
+      # Database password
       - DB_PASSWORD=nocobase
-      # Strefa czasowa
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # Usługa Kingbase wyłącznie do celów testowych
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -85,10 +85,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # Musi być ustawione na 'no'
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # Tylko pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

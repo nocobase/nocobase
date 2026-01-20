@@ -38,10 +38,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Doporučujeme použít image z Alibaba Cloud (pro stabilnější síť v Číně)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Můžete také použít verzi s aliasem (může se automaticky aktualizovat, v produkčním prostředí používejte s opatrností)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (v Číně může být pomalý/selhat)
     # image: nocobase/nocobase:1.7.14-full
 # ...

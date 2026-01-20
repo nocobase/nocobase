@@ -30,7 +30,7 @@ Proszę wybrać wersję NocoBase ([Porównanie wersji](../quickstart.md)) oraz t
 
 - **Wybór obrazu**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - W środowiskach produkcyjnych zaleca się używanie konkretnego numeru wersji, aby uniknąć nieplanowanych automatycznych aktualizacji. [Zobacz wszystkie wersje](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Obraz z Aliyun: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Obraz z Aliyun: `nocobase/nocobase:latest-full`
   - Obraz z Docker Hub: `nocobase/nocobase:latest-full`
   - **Obraz `full`** zawiera klientów PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, niezbędnych dla wtyczek do zarządzania kopiami zapasowymi i migracjami, a także LibreOffice do drukowania szablonów (PDF).
   - Jeśli chcą Państwo zbudować własny obraz, mogą Państwo skorzystać z oficjalnych plików [Dockerfile (wersja uproszczona)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) oraz [Dockerfile-full (wersja pełna)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
@@ -51,7 +51,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +85,7 @@ services:
 
   # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie postgres.
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +109,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +144,7 @@ services:
 
   # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mysql.
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +168,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +203,7 @@ services:
 
   # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mariadb.
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Nous vous recommandons d'utiliser l'image d'Aliyun (pour une meilleure stabilité réseau en Chine)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Vous pouvez également utiliser une version d'alias (peut se mettre à jour automatiquement, à utiliser avec prudence en production)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (peut être lent ou échouer en Chine)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase ne prend pas en charge les rétrogradations. Si vous devez restaurer un
 
 **Q : Le téléchargement de l'image est lent ou échoue**
 
-Utilisez un accélérateur de miroir Docker, ou utilisez l'image Aliyun `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`.
+Utilisez un accélérateur de miroir Docker, ou utilisez l'image Aliyun `nocobase/nocobase:<tag>`.
 
 **Q : La version n'a pas changé**
 

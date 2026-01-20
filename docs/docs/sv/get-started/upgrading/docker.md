@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Rekommenderar att använda Alibaba Cloud-avbildningen (för stabilare nätverk i Kina)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Ni kan också använda en aliasversion (kan uppgraderas automatiskt, använd med försiktighet i produktion)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (kan vara långsamt/misslyckas i Kina)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase stöder inte nedgradering. Om ni behöver återställa, vänligen åter
 
 **F: Långsam eller misslyckad hämtning av avbildning**
 
-Använd en spegel för att accelerera hämtningen, eller använd Alibaba Cloud-avbildningen `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`.
+Använd en spegel för att accelerera hämtningen, eller använd Alibaba Cloud-avbildningen `nocobase/nocobase:<tag>`.
 
 **F: Versionen har inte ändrats**
 

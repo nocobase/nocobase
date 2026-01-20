@@ -38,10 +38,10 @@ cd C:\your\path\my-project
 services:
   app:
     # แนะนำให้ใช้ Image ของ Alibaba Cloud (อาจช่วยให้ดาวน์โหลดได้เร็วขึ้น)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # สามารถใช้เวอร์ชันแบบนามแฝงได้ (อาจมีการอัปเกรดอัตโนมัติ โปรดใช้ด้วยความระมัดระวังในสภาพแวดล้อม Production)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (อาจช้าหรือไม่สำเร็จในบางภูมิภาค)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -72,7 +72,7 @@ NocoBase ไม่รองรับการดาวน์เกรดคร�
 
 **Q: การดึง Image ช้าหรือไม่สำเร็จ**
 
-ลองใช้ตัวเร่งความเร็ว Image (Image accelerator) หรือใช้ Image ของ Alibaba Cloud ที่ `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>` ครับ/ค่ะ
+ลองใช้ตัวเร่งความเร็ว Image (Image accelerator) หรือใช้ Image ของ Alibaba Cloud ที่ `nocobase/nocobase:<tag>` ครับ/ค่ะ
 
 **Q: เวอร์ชันไม่เปลี่ยนแปลง**
 

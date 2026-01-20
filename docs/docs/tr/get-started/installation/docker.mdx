@@ -30,7 +30,7 @@ Bir NocoBase sürümü ([Sürüm Karşılaştırması](../quickstart.md)) ve ver
 
 - **İmaj Seçimi**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - Üretim ortamları için, istenmeyen otomatik güncellemeleri önlemek amacıyla belirli bir sürüm numarasını sabitlemeniz önerilir. [Tüm sürümleri görüntüleyin](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Aliyun imajı: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Aliyun imajı: `nocobase/nocobase:latest-full`
   - Docker Hub imajı: `nocobase/nocobase:latest-full`
   - **`full` imajı**, yedekleme yönetimi ve geçiş yönetimi eklentileri için gerekli olan PostgreSQL 16/17 istemcisi, MySQL 8.0 istemcisi, Oracle 19.25 istemcisi ve şablon yazdırma (PDF) için gerekli olan LibreOffice'i içerir.
   - Kendi imajınızı oluşturmanız gerekirse, resmi olarak sağlanan [Dockerfile (basit sürüm)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) ve [Dockerfile-full (tam sürüm)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) dosyalarına başvurabilirsiniz.
@@ -51,7 +51,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +85,7 @@ services:
 
   # Mevcut bir veritabanı servisi kullanıyorsanız, postgres'i başlatmayabilirsiniz
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +109,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +144,7 @@ services:
 
   # Mevcut bir veritabanı servisi kullanıyorsanız, mysql'i başlatmayabilirsiniz
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +168,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +203,7 @@ services:
 
   # Mevcut bir veritabanı servisi kullanıyorsanız, mariadb'yi başlatmayabilirsiniz
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase

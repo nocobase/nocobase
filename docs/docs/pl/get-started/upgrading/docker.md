@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Zalecamy użycie obrazu z Alibaba Cloud (dla stabilniejszej sieci)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Można również użyć wersji aliasowej (może automatycznie się uaktualnić, używać ostrożnie w środowisku produkcyjnym)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (w Polsce może być wolniej/niepowodzenie)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase nie obsługuje obniżania wersji. Jeśli zajdzie potrzeba wycofania zmi
 
 **P: Wolne lub nieudane pobieranie obrazu**
 
-Może to być spowodowane problemami z siecią. Proszę spróbować skonfigurować przyspieszenie pobierania obrazów Docker lub użyć obrazu z Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`. Można też spróbować ponownie później.
+Może to być spowodowane problemami z siecią. Proszę spróbować skonfigurować przyspieszenie pobierania obrazów Docker lub użyć obrazu z Alibaba Cloud: `nocobase/nocobase:<tag>`. Można też spróbować ponownie później.
 
 **P: Wersja nie uległa zmianie**
 

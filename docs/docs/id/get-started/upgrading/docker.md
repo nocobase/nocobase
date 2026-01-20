@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Direkomendasikan menggunakan mirror Aliyun (jaringan di Indonesia mungkin lebih stabil)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Anda juga bisa menggunakan versi alias (mungkin otomatis diperbarui, gunakan dengan hati-hati di lingkungan produksi)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (di Indonesia mungkin lambat/gagal)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase tidak mendukung penurunan versi. Jika Anda perlu melakukan rollback, ha
 
 **Q: Penarikan image lambat atau gagal**
 
-Gunakan akselerator mirror, atau gunakan mirror Aliyun `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`. Ini sering disebabkan oleh masalah jaringan.
+Gunakan akselerator mirror, atau gunakan mirror Aliyun `nocobase/nocobase:<tag>`. Ini sering disebabkan oleh masalah jaringan.
 
 **Q: Versi belum berubah**
 

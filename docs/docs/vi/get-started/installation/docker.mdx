@@ -30,7 +30,7 @@ Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và lo�
 
 - **Chọn image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - Đối với môi trường sản xuất, bạn nên cố định một phiên bản cụ thể để tránh việc tự động nâng cấp không mong muốn. [Xem tất cả các phiên bản](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Image từ Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Image từ Alibaba Cloud: `nocobase/nocobase:latest-full`
   - Image từ Docker Hub: `nocobase/nocobase:latest-full`
   - **Image full** bao gồm các client PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 cần thiết cho các **plugin** quản lý sao lưu và di chuyển, cũng như LibreOffice cần thiết để in mẫu (PDF).
   - Nếu bạn muốn tự xây dựng image, bạn có thể tham khảo [Dockerfile (phiên bản rút gọn)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) và [Dockerfile-full (phiên bản đầy đủ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) do NocoBase cung cấp.
@@ -51,7 +51,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +85,7 @@ services:
 
   # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động postgres
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +109,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +144,7 @@ services:
 
   # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mysql
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +168,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +203,7 @@ services:
 
   # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mariadb
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
