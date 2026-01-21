@@ -121,6 +121,10 @@ export default class PluginFieldSequenceServer extends Plugin {
       for (const [collectionName, sequencesList] of Object.entries(groupedSequences)) {
         tasks.push(async () => {
           const collection = app.db.getCollection(collectionName);
+          if (!collection) {
+            app.log.warn(`Collection [${collectionName}] not exist. Skipping sequences refresh.`);
+            return;
+          }
           const fields: Field[] = collection.getFields();
           const fieldMap = Object.fromEntries<Field>(fields.map((field) => [field.name, field]));
 

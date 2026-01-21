@@ -28,7 +28,10 @@ export type InstructionInterface = {
   run: Runner;
   resume?: Runner;
   getScope?: (node: FlowNodeModel, data: any, processor: Processor) => any;
-  duplicateConfig?: (node: FlowNodeModel, options: Transactionable) => object | Promise<object>;
+  duplicateConfig?: (
+    node: FlowNodeModel,
+    options: Transactionable & { origin?: FlowNodeModel },
+  ) => object | Promise<object>;
   test?: (config: Record<string, any>) => IJob | Promise<IJob>;
 };
 

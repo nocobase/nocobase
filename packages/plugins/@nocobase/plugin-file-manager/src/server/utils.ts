@@ -8,23 +8,81 @@
  */
 
 import { uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import path from 'path';
 import urlJoin from 'url-join';
 
+function normalizeOriginalname(file) {
+  const originalname = file?.originalname;
+  if (!originalname) {
+    return '';
+  }
+  if (Buffer.isBuffer(originalname)) {
+    return originalname.toString('utf8');
+  }
+  const decoded = Buffer.from(originalname, 'binary').toString('utf8');
+  if (decoded.includes('\uFFFD')) {
+    return originalname;
+  }
+  return decoded;
+}
+
 export function getFilename(req, file, cb) {
-  const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
+  const originalname = normalizeOriginalname(file);
   // Filename in Windows cannot contain the following characters: < > ? * | : " \ /
   const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), path.extname(originalname));
   cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
 
+function getOriginalFilename(file) {
+  const originalname = normalizeOriginalname(file);
+  const extname = path.extname(originalname);
+  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), extname);
+  return `${baseName}${extname}`;
+}
+
 export const cloudFilenameGetter = (storage) => (req, file, cb) => {
+  const renameMode = storage.renameMode;
+  if (renameMode === 'random') {
+    crypto.randomBytes(16, function (err, raw) {
+      if (err) {
+        return cb(err);
+      }
+      const filename = `${raw.toString('hex')}${path.extname(normalizeOriginalname(file))}`;
+      cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
+    });
+    return;
+  }
+  if (renameMode === 'none') {
+    const filename = getOriginalFilename(file);
+    cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
+    return;
+  }
   getFilename(req, file, (err, filename) => {
     if (err) {
       return cb(err);
     }
     cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
   });
+};
+
+export const diskFilenameGetter = (storage) => (req, file, cb) => {
+  const renameMode = storage.renameMode;
+  if (renameMode === 'random') {
+    crypto.randomBytes(16, function (err, raw) {
+      if (err) {
+        return cb(err);
+      }
+      const filename = `${raw.toString('hex')}${path.extname(normalizeOriginalname(file))}`;
+      cb(null, filename);
+    });
+    return;
+  }
+  if (renameMode === 'none') {
+    cb(null, getOriginalFilename(file));
+    return;
+  }
+  getFilename(req, file, cb);
 };
 
 export function getFileKey(record) {

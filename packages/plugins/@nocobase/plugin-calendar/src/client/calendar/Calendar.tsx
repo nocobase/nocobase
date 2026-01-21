@@ -308,13 +308,39 @@ export const Calendar: any = withDynamicSchemaProps(
           },
           agendaDateFormat: (date, culture, local) => {
             return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+            local.format(
+              date,
+              locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru' ? 'LLLL yyyy' : 'MMM yyyy',
+              locales[locale],
+            ),
+          dayHeaderFormat: (date, culture, local) => {
+            return local.format(
+              date,
+              props.locale === 'zh-CN' ? 'eee, M/d' : props.locale === 'ru' ? 'EEE, d MMM' : 'EEE, MMM d',
+              locales[locale],
+            );
+          },
+          agendaDateFormat: (date, culture, local) => {
+            return local.format(
+              date,
+              props.locale === 'zh-CN' ? 'M月d日' : props.locale === 'ru' ? 'd MMM' : 'M-dd',
+              locales[locale],
+            );
           },
 
           dayRangeHeaderFormat: ({ start, end }, culture, local) => {
             if (start.getMonth() === end.getMonth()) {
-              return local.format(start, culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy', culture);
+              return local.format(
+                start,
+                locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru' ? 'LLLL yyyy' : 'MMM yyyy',
+                locale,
+              );
             }
-            return `${local.format(start, culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy', culture)} - ${local.format(
+            return `${local.format(
+              start,
+              locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru' ? 'LLLL yyyy' : 'MMM yyyy',
+              locale,
+            )} - ${local.format(
               end,
               culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
               culture,

@@ -67,6 +67,26 @@ class PluginCollectionTreeServer extends Plugin {
             });
           });
 
+          //afterBulkCreate
+          this.db.on(`${collection.name}.afterBulkCreate`, async (instances: Model[], options) => {
+            const { transaction } = options;
+            const tk = collection.filterTargetKey as string;
+            const records = [];
+            for (const model of instances) {
+              let path = `/${model.get(tk)}`;
+              path = await this.getTreePath(model, path, collection, name, transaction);
+              const rootPk = path.split('/')[1] || null;
+              records.push({
+                nodePk: model.get(tk),
+                path,
+                rootPk,
+              });
+            }
+            await this.app.db.getModel(name).bulkCreate(records, {
+              transaction,
+            });
+          });
+
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
             const tk = collection.filterTargetKey;

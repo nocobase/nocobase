@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-tree",
-  "version": "1.9.26",
+  "version": "1.9.39",
   "displayName": "Collection: Tree",
   "displayName.ru-RU": "Древовидная Коллекция",
   "displayName.zh-CN": "数据表：树",

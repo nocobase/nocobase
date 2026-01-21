@@ -372,6 +372,7 @@ export class Action {
     const handlers = [
       ...this.resource.resourcer.getMiddlewares(),
       ...this.getMiddlewareHandlers(),
+      ...this.resource.resourcer.getRegisteredPreActionHandlers(this.resource.getName(), this.name),
       this.getHandler(),
     ].filter(Boolean);
 

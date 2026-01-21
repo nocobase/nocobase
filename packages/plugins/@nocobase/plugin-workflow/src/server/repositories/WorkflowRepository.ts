@@ -49,7 +49,7 @@ export default class WorkflowRepository extends Repository {
         transaction,
       });
       if (trigger && typeof trigger.duplicateConfig === 'function') {
-        const newConfig = await trigger.duplicateConfig(instance, { transaction });
+        const newConfig = await trigger.duplicateConfig(instance, { origin, transaction });
         await instance.update({ config: newConfig }, { transaction });
       }
 
@@ -66,15 +66,16 @@ export default class WorkflowRepository extends Repository {
           {
             type: node.type,
             key: node.key,
-            config:
-              typeof instruction.duplicateConfig === 'function'
-                ? await instruction.duplicateConfig(node, { transaction })
-                : node.config,
+            config: node.config,
             title: node.title,
             branchIndex: node.branchIndex,
           },
           { transaction },
         );
+        if (typeof instruction.duplicateConfig === 'function') {
+          const newConfig = await instruction.duplicateConfig(newNode, { origin: node, transaction });
+          await newNode.update({ config: newConfig }, { transaction });
+        }
         // NOTE: keep original node references for later replacement
         oldToNew.set(node.id, newNode);
         newToOld.set(newNode.id, node);

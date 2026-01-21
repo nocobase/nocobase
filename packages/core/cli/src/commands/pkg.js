@@ -202,6 +202,7 @@ class PackageManager {
         responseType: 'json',
       });
       this.token = res1.data.token;
+      logger.info('Login success');
     } catch (error) {
       if (error?.response?.data?.error === 'license not valid') {
         showLicenseInfo(LicenseKeyError.notValid);
@@ -260,9 +261,11 @@ class PackageManager {
         await this.removePackage(pkg);
       }
     }
+    logger.info(`Download plugins...`);
     for (const pkg of licensed_plugins) {
       await this.getPackage(pkg).download({ version });
     }
+    logger.info('Download plugins done');
   }
 }
 
@@ -280,7 +283,12 @@ module.exports = (cli) => {
         NOCOBASE_PKG_URL = 'https://pkg.nocobase.com/',
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
+        DISABLE_PKG_DOWNLOAD,
       } = process.env;
+      if (DISABLE_PKG_DOWNLOAD === 'true') {
+        logger.info('Package download is disabled.');
+        return;
+      }
       let accessKeyId;
       let accessKeySecret;
       try {

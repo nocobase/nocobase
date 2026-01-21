@@ -218,6 +218,8 @@ export function parseQuery(input: string): any {
   const query = qs.parse(input, {
     // 原始 query string 中如果一个键连等号“=”都没有可以被认为是 null 类型
     strictNullHandling: true,
+    // 允许更大的数组长度，避免像 appends[] 这种参数在超过默认 20 个时被转换成对象
+    arrayLimit: 100,
     // 逗号分隔转换为数组
     // comma: true,
   });

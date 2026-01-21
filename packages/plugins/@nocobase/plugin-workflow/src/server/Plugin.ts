@@ -314,6 +314,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
+      instance_id: this.app.instanceId,
     });
   }
 
@@ -327,6 +328,9 @@ export default class PluginWorkflowServer extends Plugin {
     this.initTriggers(options.triggers);
     this.initInstructions(options.instructions);
     initFunctions(this, options.functions);
+    this.functions.register('instanceId', () => this.app.instanceId);
+    this.functions.register('epoch', () => 1605024000);
+    this.functions.register('genSnowflakeId', () => this.app.snowflakeIdGenerator.generate());
 
     this.loggerCache = new LRUCache({
       max: 20,

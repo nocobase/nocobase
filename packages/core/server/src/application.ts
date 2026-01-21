@@ -204,7 +204,12 @@ type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | '
 
 export type MaintainingCommandStatus = {
   command: {
+    components?: {
+      maintaining: string;
+      maintainingDialog: string;
+    };
     name: string;
+    [key: string]: any;
   };
   status: MaintainingStatus;
   error?: Error;
