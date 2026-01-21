@@ -67,6 +67,7 @@ export const RichText = connect(
           }
         }}
         readOnly={disabled}
+        bounds={'.quill'}
       />,
     );
   },
