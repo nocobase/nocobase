@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Modo Cluster"
+  },
+  {
+    "type": "custom-link",
+    "label": "Visão Geral",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Preparação",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Implantação com Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Processo de Operações",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Divisão de Serviços",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Referência de Desenvolvimento",
+    "link": "/cluster-mode/development"
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "type": "section-header",
+    "label": "مدير الملفات"
+  },
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "محرك التخزين",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "نظرة عامة",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "تخزين محلي",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "جدول الملفات",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "حقل المرفقات",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "معاينة الملفات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "نظرة عامة",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "معاينة ملفات Office",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "تطوير الإضافات",
+    "link": "/file-manager/development/index"
+  }
+]

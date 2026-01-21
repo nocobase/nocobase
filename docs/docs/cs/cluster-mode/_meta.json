@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Režim clusteru"
+  },
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Příprava",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Nasazení na Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Provozní postupy",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Rozdělení služeb",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Reference pro vývojáře",
+    "link": "/cluster-mode/development"
+  }
+]

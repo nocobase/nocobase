@@ -38,10 +38,6 @@ RUN yarn install && yarn build --no-dts && \
   yarn nocobase client:upload && \
   yarn release:force --registry $VERDACCIO_URL && \
   yarn config set registry $VERDACCIO_URL && \
-  cd /tmp/docs && \
-  yarn install && \
-  yarn cross-env CHECK_DEAD_LINKS=false rspress build && \
-  rm -rf /tmp/node_modules && \
   mkdir /app && \
   cd /app && \
   yarn config set network-timeout 600000 -g && \
@@ -52,7 +48,6 @@ RUN yarn install && yarn build --no-dts && \
   cd /app/my-nocobase-app && \
   $BEFORE_PACK_NOCOBASE && \
   cd /app && \
-  cp -r /tmp/docs/dist /app/my-nocobase-app/docs && \
   rm -rf my-nocobase-app/packages/app/client/src/.umi && \
   rm -rf nocobase.tar.gz && \
   tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
@@ -80,6 +75,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+COPY --from=builder /tmp/docs/dist.tar.gz /app/nocobase-docs.tar.gz
 
 WORKDIR /app/nocobase
 

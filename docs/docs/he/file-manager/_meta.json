@@ -1,0 +1,83 @@
+[
+  {
+    "type": "section-header",
+    "label": "מנהל קבצים"
+  },
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "מנוע אחסון",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "סקירה כללית",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "אחסון מקומי",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "טבלת קבצים",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "שדה קובץ מצורף",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "תצוגה מקדימה של קובץ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "סקירה כללית",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "תצוגה מקדימה של קבצי Office",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "פיתוח הרחבות",
+    "link": "/file-manager/development/index"
+  }
+]

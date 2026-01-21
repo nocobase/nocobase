@@ -197,8 +197,10 @@ jobs:
           environment_variables: 'DEBUG RUSTUP_IO_THREADS'
           shell: bash
           run: |
-            sudo pkg install -y -f curl node libnghttp2 npm openssl
+            sudo pkg install -y -f curl node libnghttp2 npm openssl ca_root_nss
             sudo npm install -g yarn --ignore-scripts
+            export SSL_CERT_FILE=/usr/local/share/certs/ca-root-nss.crt
+            export RUSTUP_INIT_SKIP_PATH_CHECK=yes
             curl https://sh.rustup.rs -sSf --output rustup.sh
             sh rustup.sh -y --profile minimal --default-toolchain beta
             source "$HOME/.cargo/env"
@@ -213,7 +215,7 @@ jobs:
             whoami
             env
             freebsd-version
-            yarn install
+            yarn install --frozen-lockfile
             yarn build
             rm -rf node_modules
             rm -rf target

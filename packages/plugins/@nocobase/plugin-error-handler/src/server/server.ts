@@ -65,23 +65,68 @@ export class PluginErrorHandlerServer extends Plugin {
       },
     );
 
-    this.errorHandler.register(
-      (err) => {
-        const e = err?.original || err;
+    const unwrapSqlError = (error) => {
+      return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
+    };
 
-        // MySQL / MariaDB
-        if (e?.errno === 1064) return true;
-
-        // PostgreSQL
-        if (e?.code === '42601') return true;
-
-        // SQLite
-        if (e?.code === 'SQLITE_ERROR' && /syntax error/i.test(e?.message)) {
-          return true;
-        }
-
+    const isSqlSyntaxError = (error) => {
+      const err = unwrapSqlError(error);
+      if (!err) {
         return false;
-      },
+      }
+
+      const message = typeof err.message === 'string' ? err.message : '';
+
+      // MySQL / MariaDB
+      if (err?.errno === 1064) {
+        return true;
+      }
+
+      // PostgreSQL
+      if (err?.code === '42601') {
+        return true;
+      }
+
+      // SQLite
+      if (err?.code === 'SQLITE_ERROR' && /syntax error/i.test(message)) {
+        return true;
+      }
+
+      return false;
+    };
+
+    const isSqlReferenceError = (error) => {
+      const err = unwrapSqlError(error);
+      if (!err) {
+        return false;
+      }
+
+      const message = typeof err.message === 'string' ? err.message : '';
+
+      // MySQL / MariaDB unknown table/column/ambiguous column
+      if ([1054, 1051, 1146, 1052].includes(err?.errno)) {
+        return true;
+      }
+
+      // PostgreSQL unknown/ambiguous column or table
+      if (['42703', '42P01', '42702'].includes(err?.code)) {
+        return true;
+      }
+
+      // SQLite and other engines rely on the error message content
+      if (
+        /(unknown column|no such column|has no column named|no such table|unknown table|ambiguous column)/i.test(
+          message,
+        )
+      ) {
+        return true;
+      }
+
+      return false;
+    };
+
+    this.errorHandler.register(
+      (err) => isSqlSyntaxError(err),
       (err, ctx) => {
         ctx.body = {
           errors: [
@@ -91,6 +136,20 @@ export class PluginErrorHandlerServer extends Plugin {
           ],
         };
         ctx.status = 500;
+      },
+    );
+
+    this.errorHandler.register(
+      (err) => isSqlReferenceError(err),
+      (err, ctx) => {
+        ctx.body = {
+          errors: [
+            {
+              message: 'Invalid SQL column or table reference',
+            },
+          ],
+        };
+        ctx.status = 400;
       },
     );
   }

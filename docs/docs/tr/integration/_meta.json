@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API Anahtarları",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API Belgeleri",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kullanım Senaryoları",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "İş Akışları",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP İsteği",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Harici Veri Kaynakları",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Gömülü İçerik",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe Bloku",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gömme",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

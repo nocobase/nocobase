@@ -39,6 +39,33 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
+function resolveCorsOrigin(ctx: any) {
+  const origin = ctx.get('origin');
+  const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+  const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
+
+  if (!origin && disallowNoOrigin) {
+    return false;
+  }
+
+  if (!whitelistString) {
+    return origin;
+  }
+
+  const whitelist = new Set(
+    whitelistString
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+
+  if (whitelist.has(origin)) {
+    return origin;
+  }
+
+  return false;
+}
+
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
   app.use(
     async function generateReqId(ctx, next) {
@@ -55,9 +82,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],
-      origin(ctx) {
-        return ctx.get('origin');
-      },
+      origin: resolveCorsOrigin,
       ...options.cors,
     }),
     {

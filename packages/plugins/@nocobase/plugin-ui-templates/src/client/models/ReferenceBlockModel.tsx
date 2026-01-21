@@ -113,6 +113,19 @@ export class ReferenceBlockModel extends BlockModel {
       get: () => this._targetModel,
       cache: false,
     });
+
+    // 事件流/过滤器等配置 UI（如 setTargetDataScope 的 VariableFilterItem）依赖 model.context.collection/resource 等
+    // 来构建可选字段列表。但 ReferenceBlockModel 只是一个壳：真正的 collection/resource 在目标区块模型上。
+    // 这里桥接相关上下文属性到目标模型，避免“能找到模型实例但字段下拉为空”。
+    const contextKeys = ['collection', 'dataSource', 'resource', 'association', 'resourceName'] as const;
+    type ContextKey = (typeof contextKeys)[number];
+    const getTargetContext = () => this._targetModel?.context;
+    contextKeys.forEach((key: ContextKey) => {
+      this.context.defineProperty(key, {
+        cache: false,
+        get: () => getTargetContext()?.[key],
+      });
+    });
   }
 
   private _getTargetUidFromParams(): string | undefined {

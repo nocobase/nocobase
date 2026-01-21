@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Snelstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introductie",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Een actie-plug-in schrijven",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ElementProxy,
-  tExpr,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  compileRunJs,
-} from '@nocobase/flow-engine';
+import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
@@ -145,6 +138,7 @@ JSEditableFieldModel.registerFlow({
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
+      useRawParams: true,
       uiSchema: {
         code: {
           type: 'string',
@@ -209,9 +203,8 @@ JSEditableFieldModel.registerFlow({
           ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
           ctx.defineProperty('readOnly', { get: () => !!ctx.model.props?.readOnly, cache: false });
           const navigator = createSafeNavigator();
-          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            compiled,
+            code,
             {
               window: createSafeWindow({ navigator }),
               document: createSafeDocument(),

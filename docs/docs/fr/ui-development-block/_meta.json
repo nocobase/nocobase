@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Démarrage rapide",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introduction",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Créer un plugin de bloc",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "السجلات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "سجلات الخادم",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "سجلات الخادم، سجلات التدقيق، السجلات التاريخية",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "القياس عن بعد",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "تعليمات الاستخدام",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "المصدر",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

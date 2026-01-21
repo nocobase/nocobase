@@ -277,6 +277,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   filterByTk: this.collection.getFilterByTK(record),
                   record: record,
                   fieldProps: { ...model.props, ...model.subModels.field.props },
+                  sourceFieldModelUid: model.subModels.field.uid,
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
