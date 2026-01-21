@@ -161,3 +161,64 @@ FlowRunJSContext.define({
 ```
 
 说明：CodeEditor 始终启用基于实际 `ctx` 的补全过滤（fail-open，不抛错）。
+
+## 5. 运行时 meta 与 `ctx.getInfos()`（面向补全与大模型）
+
+除了通过 `FlowRunJSContext.define()`（静态）维护 `ctx` 文档外，你也可以在运行时通过 `FlowContext.defineProperty/defineMethod` 注入带 meta 的能力，并通过 `ctx.getInfos()` 输出**静态可序列化**的上下文信息，供：
+
+- CodeEditor 自动补全（优先使用 `getInfos()`）
+- 大模型在生成/理解 JS*Model 代码时获取可用 API、参数、示例与文档链接
+
+### 5.1 `defineMethod(name, fn, meta?)`
+
+`meta` 支持（均可选）：
+
+- `description` / `detail` / `examples`
+- `completion: { insertText }`
+- `ref: string | { url: string; title?: string }`
+- `params` / `returns`（JSDoc-like）
+- `hidden` / `disabled` / `disabledReason`（支持函数/async 函数，基于运行时 `ctx` 计算）
+
+示例：为 `ctx.refreshTargets()` 提供补全与文档链接
+
+```ts
+ctx.defineMethod('refreshTargets', async () => {
+  // ...
+}, {
+  description: '刷新目标区块的数据',
+  detail: '() => Promise<void>',
+  completion: { insertText: 'await ctx.refreshTargets()' },
+  ref: { url: 'https://docs.nocobase.com/', title: 'Docs' },
+});
+```
+
+### 5.2 `defineProperty(key, { meta })`
+
+`meta` 在原有 `title/type/properties` 等字段基础上，额外支持：
+
+- `description` / `detail` / `examples`
+- `completion: { insertText }`
+- `ref: string | { url: string; title?: string }`
+- `params` / `returns`
+- `hidden` / `disabled` / `disabledReason`（支持函数/async 函数）
+
+### 5.3 `await ctx.getInfos(options?)`
+
+用于输出“可用的上下文能力信息”，返回结构：
+
+```ts
+type FlowContextInfos = {
+  methods: Record<string, any>;
+  properties: Record<string, any>;
+};
+```
+
+常用参数：
+
+- `maxDepth`：限制属性展开层级（默认 3）
+- `path: string | string[]`：只收集指定路径子树（剪裁，减少 token）
+- `version`：RunJS 文档版本（默认 `v1`）
+
+注意：`getInfos()` 会计算/过滤 `hidden`，并计算 `disabled/disabledReason`，且返回结果不包含函数，适合直接序列化传给大模型。
+
+另外：以下划线 `_` 开头的方法/属性会被视为私有成员，不会出现在 `getInfos()` 的输出中。

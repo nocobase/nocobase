@@ -47,7 +47,7 @@ import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { inferRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
-import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
 import { setupRunJSLibs } from './runjsLibs';
@@ -130,6 +130,21 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
+export type FlowContextDocRef = string | { url: string; title?: string };
+
+export type FlowContextDocParam = {
+  name: string;
+  description?: string;
+  type?: string;
+  optional?: boolean;
+  default?: JSONValue;
+};
+
+export type FlowContextDocReturn = {
+  description?: string;
+  type?: string;
+};
+
 export interface MetaTreeNode {
   name: string;
   title: string;
@@ -149,6 +164,18 @@ export interface MetaTreeNode {
 }
 
 export interface PropertyMeta {
+  /**
+   * JSDoc-like 信息（可选）：用于 RunJS 自动补全与大模型上下文提示。
+   * 说明：这些字段不会影响 VariableInput/FlowContextSelector 的既有行为。
+   */
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+
   type: string;
   title: string;
   interface?: string;
@@ -159,11 +186,11 @@ export interface PropertyMeta {
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
   // 变量禁用控制：若 disabled 为真（或函数返回真）则禁用
-  disabled?: boolean | (() => boolean);
+  disabled?: boolean | (() => boolean | Promise<boolean>);
   // 禁用原因（用于 UI 小问号提示），可为函数
-  disabledReason?: string | (() => string | undefined);
+  disabledReason?: string | (() => string | undefined | Promise<string | undefined>);
   // 显示控制：当 hidden 为 true（或函数返回 true）时，不在变量选择器中展示该节点
-  hidden?: boolean | (() => boolean);
+  hidden?: boolean | (() => boolean | Promise<boolean>);
   // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
   // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
   buildVariablesParams?: (
@@ -205,6 +232,71 @@ export interface PropertyOptions {
   serverOnlyWhenContextParams?: boolean;
 }
 
+export type FlowContextMethodMeta = {
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  hidden?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+  disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+  disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
+};
+
+export type FlowContextMethodInfo = {
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
+export type FlowContextPropertyInfo = {
+  title?: string;
+  type?: string;
+  interface?: string;
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  disabled?: boolean;
+  disabledReason?: string;
+  properties?: Record<string, FlowContextPropertyInfo>;
+};
+
+export type FlowContextInfos = {
+  methods: Record<string, FlowContextMethodInfo>;
+  properties: Record<string, FlowContextPropertyInfo>;
+};
+
+export type FlowContextGetInfosOptions = {
+  /**
+   * 最大展开层级（默认 3）。
+   * - 当不传 path 时，top-level property depth=1。
+   * - 当传 path 时，path 对应节点 depth=1。
+   */
+  maxDepth?: number;
+  /**
+   * 剪裁：仅收集指定 path 下的上下文信息。
+   * - string 形式支持：'record'、'record.id'、'ctx.record'、'{{ ctx.record }}'
+   * - string[] 表示多个剪裁路径合并
+   */
+  path?: string | string[];
+  /**
+   * RunJS 文档版本（默认 v1）。用于从 RunJSContextRegistry 取静态 doc 进行合并。
+   */
+  version?: RunJSVersion;
+};
+
 type RouteOptions = {
   name?: string; // 路由唯一标识
   path?: string; // 路由模板
@@ -215,6 +307,7 @@ type RouteOptions = {
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
+  _methodMetas: Record<string, FlowContextMethodMeta> = {};
   protected _cache: Record<string, any> = {};
   protected _observableCache: Record<string, any> = observable.shallow({});
   protected _delegates: FlowContext[] = [];
@@ -299,8 +392,15 @@ export class FlowContext {
     });
   }
 
-  defineMethod(name: string, fn: (...args: any[]) => any, des?: string) {
+  defineMethod(name: string, fn: (...args: any[]) => any, meta?: string | FlowContextMethodMeta) {
     this._methods[name] = fn;
+    if (typeof meta === 'string') {
+      this._methodMetas[name] = { description: meta };
+    } else if (meta && typeof meta === 'object') {
+      this._methodMetas[name] = meta;
+    } else {
+      delete this._methodMetas[name];
+    }
     Object.defineProperty(this, name, {
       configurable: true,
       enumerable: false,
@@ -476,6 +576,490 @@ export class FlowContext {
       return sb - sa;
     });
     return sorted.map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
+  }
+
+  /**
+   * 获取可序列化的上下文信息（面向大模型/编辑器等工具）。
+   *
+   * - 返回静态 plain object（不包含函数）
+   * - 支持合并 RunJSContextRegistry 的静态 doc 与运行时 defineProperty/defineMethod 注入信息
+   * - 支持计算/过滤 hidden，并计算 disabled/disabledReason（允许函数/异步函数）
+   * - 支持 maxDepth（默认 3）与 path 剪裁
+   */
+  async getInfos(options: FlowContextGetInfosOptions = {}): Promise<FlowContextInfos> {
+    const maxDepthRaw = options.maxDepth ?? 3;
+    const maxDepth = Number.isFinite(maxDepthRaw) ? Math.max(1, Math.floor(maxDepthRaw)) : 3;
+    const version = (options.version as RunJSVersion) || ('v1' as RunJSVersion);
+    const evalCtx = this.createProxy();
+
+    const isPrivateKey = (key: string) => typeof key === 'string' && key.startsWith('_');
+
+    const isPromiseLike = (v: any): v is Promise<any> =>
+      !!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as any).then === 'function';
+
+    const normalizePath = (raw: string): string | undefined => {
+      if (typeof raw !== 'string') return undefined;
+      const s = raw.trim();
+      if (!s) return undefined;
+      const extracted = extractPropertyPath(s);
+      if (Array.isArray(extracted) && extracted.length > 0) {
+        return extracted.join('.');
+      }
+      if (s === 'ctx') return '';
+      if (s.startsWith('ctx.')) return s.slice(4).trim();
+      return s;
+    };
+
+    const paths = (() => {
+      const p = options.path;
+      const list = typeof p === 'string' ? [p] : Array.isArray(p) ? p : [];
+      return list
+        .map((x) => normalizePath(String(x)))
+        .filter((x): x is string => typeof x === 'string' && x.length > 0);
+    })();
+
+    const hasRootPath = (() => {
+      const p = options.path;
+      if (typeof p === 'string') return normalizePath(p) === '';
+      if (Array.isArray(p)) return p.some((x) => normalizePath(String(x)) === '');
+      return false;
+    })();
+
+    const collectKeysDeep = (ctx: FlowContext, out: Set<string>, key: '_props' | '_methods', visited: WeakSet<any>) => {
+      if (!ctx || typeof ctx !== 'object') return;
+      if (visited.has(ctx as any)) return;
+      visited.add(ctx as any);
+      try {
+        const bag = (ctx as any)[key];
+        if (bag && typeof bag === 'object') {
+          for (const k of Object.keys(bag)) out.add(k);
+        }
+      } catch (_) {
+        // ignore
+      }
+      try {
+        const delegates = (ctx as any)._delegates;
+        if (Array.isArray(delegates)) {
+          for (const d of delegates) collectKeysDeep(d, out, key, visited);
+        }
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    const getRunJSDoc = (): any => {
+      const modelClass = getModelClassName(this);
+      const Ctor = RunJSContextRegistry.resolve(version, modelClass) || RunJSContextRegistry.resolve(version, '*');
+      if (!Ctor) return {};
+      const locale = (this as any)?.api?.auth?.locale || (this as any)?.i18n?.language || (this as any)?.locale;
+      try {
+        if ((Ctor as any)?.getDoc?.length) {
+          return (Ctor as any).getDoc(locale) || {};
+        }
+        return (Ctor as any)?.getDoc?.() || {};
+      } catch (_) {
+        return {};
+      }
+    };
+
+    const doc = getRunJSDoc();
+    const docMethods = __isPlainObject(doc?.methods) ? (doc.methods as Record<string, any>) : {};
+    const docProps = __isPlainObject(doc?.properties) ? (doc.properties as Record<string, any>) : {};
+
+    const toDocObject = (node: any): any | undefined => {
+      if (typeof node === 'string') return { description: node };
+      if (__isPlainObject(node)) return node;
+      return undefined;
+    };
+
+    const evalBool = async (raw: any, call: (fn: Function) => any): Promise<boolean | undefined> => {
+      if (typeof raw === 'undefined') return undefined;
+      if (typeof raw === 'boolean') return raw;
+      if (typeof raw === 'function') {
+        try {
+          const v = call(raw);
+          return isPromiseLike(v) ? !!(await v) : !!v;
+        } catch (_) {
+          return false;
+        }
+      }
+      return !!raw;
+    };
+
+    const evalString = async (raw: any, call: (fn: Function) => any): Promise<string | undefined> => {
+      if (typeof raw === 'undefined' || raw === null) return undefined;
+      if (typeof raw === 'string') return raw;
+      if (typeof raw === 'function') {
+        try {
+          const v = call(raw);
+          const resolved = isPromiseLike(v) ? await v : v;
+          if (typeof resolved === 'string') return resolved;
+          return typeof resolved === 'undefined' || resolved === null ? undefined : String(resolved);
+        } catch (_) {
+          return undefined;
+        }
+      }
+      return String(raw);
+    };
+
+    const evalRunJSHidden = async (
+      raw: any,
+    ): Promise<{
+      hideSelf: boolean;
+      hideSubpaths: string[];
+    }> => {
+      let hideSelf = false;
+      let list: any = [];
+      try {
+        if (typeof raw === 'boolean') hideSelf = raw;
+        else if (Array.isArray(raw)) list = raw;
+        else if (typeof raw === 'function') {
+          const v = raw(evalCtx);
+          const resolved = isPromiseLike(v) ? await v : v;
+          if (typeof resolved === 'boolean') hideSelf = resolved;
+          else if (Array.isArray(resolved)) list = resolved;
+        }
+      } catch (_) {
+        hideSelf = false;
+        list = [];
+      }
+
+      const hideSubpaths: string[] = [];
+      if (Array.isArray(list)) {
+        for (const p of list) {
+          if (typeof p !== 'string') continue;
+          const s = p.trim();
+          if (!s) continue;
+          // Only relative paths are supported. Ignore "ctx.xxx" absolute style to avoid ambiguity.
+          if (s === 'ctx' || s.startsWith('ctx.')) continue;
+          if (/\s/.test(s)) continue;
+          hideSubpaths.push(s);
+        }
+      }
+      return { hideSelf: !!hideSelf, hideSubpaths };
+    };
+
+    const isHiddenByPrefixes = (path: string, hiddenPrefixes: Set<string>) => {
+      if (!path) return false;
+      const parts = path.split('.').filter(Boolean);
+      while (parts.length) {
+        if (hiddenPrefixes.has(parts.join('.'))) return true;
+        parts.pop();
+      }
+      return false;
+    };
+
+    const pickMethodInfo = (obj: any): Partial<FlowContextMethodInfo> => {
+      const src = toDocObject(obj);
+      if (!src) return {};
+      const out: any = {};
+      for (const k of ['description', 'detail', 'examples', 'completion', 'ref', 'params', 'returns']) {
+        const v = (src as any)[k];
+        if (typeof v !== 'undefined') out[k] = v;
+      }
+      if (Array.isArray(out.examples)) {
+        out.examples = out.examples.filter((x: any) => typeof x === 'string' && x.trim());
+      }
+      return out;
+    };
+
+    const pickPropertyInfo = (obj: any): Partial<FlowContextPropertyInfo> => {
+      const src = toDocObject(obj);
+      if (!src) return {};
+      const out: any = {};
+      for (const k of [
+        'title',
+        'type',
+        'interface',
+        'description',
+        'detail',
+        'examples',
+        'completion',
+        'ref',
+        'params',
+        'returns',
+      ]) {
+        const v = (src as any)[k];
+        if (typeof v !== 'undefined') out[k] = v;
+      }
+      if (Array.isArray(out.examples)) {
+        out.examples = out.examples.filter((x: any) => typeof x === 'string' && x.trim());
+      }
+      return out;
+    };
+
+    const getMethodMetaFromChain = (name: string): FlowContextMethodMeta | undefined => {
+      const visited = new WeakSet<any>();
+      const walk = (ctx: FlowContext): FlowContextMethodMeta | undefined => {
+        if (!ctx || typeof ctx !== 'object') return undefined;
+        if (visited.has(ctx as any)) return undefined;
+        visited.add(ctx as any);
+        if (Object.prototype.hasOwnProperty.call((ctx as any)._methodMetas || {}, name)) {
+          return (ctx as any)._methodMetas?.[name] as FlowContextMethodMeta;
+        }
+        const delegates = (ctx as any)._delegates;
+        if (Array.isArray(delegates)) {
+          for (const d of delegates) {
+            const found = walk(d);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+      return walk(this);
+    };
+
+    const hasMethodInChain = (name: string): boolean => {
+      const visited = new WeakSet<any>();
+      const walk = (ctx: FlowContext): boolean => {
+        if (!ctx || typeof ctx !== 'object') return false;
+        if (visited.has(ctx as any)) return false;
+        visited.add(ctx as any);
+        if (Object.prototype.hasOwnProperty.call((ctx as any)._methods || {}, name)) return true;
+        const delegates = (ctx as any)._delegates;
+        if (Array.isArray(delegates)) {
+          for (const d of delegates) {
+            if (walk(d)) return true;
+          }
+        }
+        return false;
+      };
+      return walk(this);
+    };
+
+    const buildMethodInfo = async (name: string): Promise<FlowContextMethodInfo | undefined> => {
+      if (isPrivateKey(name)) return undefined;
+      const docNode = docMethods[name];
+      const meta = getMethodMetaFromChain(name);
+      const exists = typeof docNode !== 'undefined' || typeof meta !== 'undefined' || hasMethodInChain(name);
+      if (!exists) return undefined;
+
+      const docObj = toDocObject(docNode);
+      const docHidden = await evalBool((docObj as any)?.hidden, (fn) => fn(evalCtx));
+      const metaHidden = await evalBool(meta?.hidden, (fn) => fn(evalCtx));
+      if (!!docHidden || !!metaHidden) return undefined;
+
+      const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
+      const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
+      const metaDisabled = await evalBool(meta?.disabled, (fn) => fn(evalCtx));
+      const metaDisabledReason = await evalString(meta?.disabledReason, (fn) => fn(evalCtx));
+      const disabled = typeof metaDisabled !== 'undefined' ? metaDisabled : docDisabled;
+      const disabledReason = typeof metaDisabledReason !== 'undefined' ? metaDisabledReason : docDisabledReason;
+
+      let out: FlowContextMethodInfo = {};
+      out = { ...out, ...pickMethodInfo(docObj) };
+      out = { ...out, ...pickMethodInfo(meta) };
+      if (typeof disabled !== 'undefined') out.disabled = !!disabled;
+      if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
+      return out;
+    };
+
+    const buildPropertyInfoFromNodes = async (args: {
+      docNode?: any;
+      metaNode?: PropertyMeta;
+      depth: number;
+      pathFromRoot: string[];
+      hiddenPrefixes: Set<string>;
+    }): Promise<FlowContextPropertyInfo | undefined> => {
+      const { docNode, metaNode, depth, pathFromRoot, hiddenPrefixes } = args;
+      const relPath = pathFromRoot.join('.');
+      if (isHiddenByPrefixes(relPath, hiddenPrefixes)) return undefined;
+
+      const docObj = toDocObject(docNode);
+      const { hideSelf, hideSubpaths } = await evalRunJSHidden((docObj as any)?.hidden);
+      if (hideSelf) return undefined;
+      const metaHidden = await evalBool(metaNode?.hidden, (fn) => fn());
+      if (metaHidden) return undefined;
+
+      const childHiddenPrefixes = new Set(hiddenPrefixes);
+      for (const sub of hideSubpaths) {
+        const normalized = sub.trim();
+        if (!normalized) continue;
+        const stripped = normalized === 'ctx' ? '' : normalized.startsWith('ctx.') ? normalized.slice(4) : normalized;
+        if (!stripped) continue;
+        const abs = relPath ? `${relPath}.${stripped}` : stripped;
+        childHiddenPrefixes.add(abs);
+      }
+
+      const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
+      const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
+      const metaDisabled = await evalBool(metaNode?.disabled, (fn) => fn());
+      const metaDisabledReason = await evalString(metaNode?.disabledReason, (fn) => fn());
+      const disabled = typeof metaDisabled !== 'undefined' ? metaDisabled : docDisabled;
+      const disabledReason = typeof metaDisabledReason !== 'undefined' ? metaDisabledReason : docDisabledReason;
+
+      let out: FlowContextPropertyInfo = {};
+      out = { ...out, ...pickPropertyInfo(docObj) };
+      if (metaNode) {
+        if (typeof metaNode.title !== 'undefined') out.title = metaNode.title;
+        if (typeof metaNode.type !== 'undefined') out.type = metaNode.type;
+        if (typeof metaNode.interface !== 'undefined') out.interface = metaNode.interface;
+      }
+      out = { ...out, ...pickPropertyInfo(metaNode) };
+      if (typeof disabled !== 'undefined') out.disabled = !!disabled;
+      if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
+
+      if (depth >= maxDepth) return out;
+
+      const docChildren = __isPlainObject((docObj as any)?.properties)
+        ? ((docObj as any).properties as any as Record<string, any>)
+        : undefined;
+
+      let metaChildren: Record<string, PropertyMeta> | undefined;
+      if (metaNode?.properties) {
+        try {
+          const props = metaNode.properties;
+          if (typeof props === 'function') {
+            const resolved = await props();
+            metaNode.properties = resolved;
+            metaChildren = resolved as Record<string, PropertyMeta>;
+          } else if (__isPlainObject(props)) {
+            metaChildren = props as Record<string, PropertyMeta>;
+          }
+        } catch (_) {
+          metaChildren = undefined;
+        }
+      }
+
+      const keys = new Set<string>();
+      if (docChildren) for (const k of Object.keys(docChildren)) keys.add(k);
+      if (metaChildren) for (const k of Object.keys(metaChildren)) keys.add(k);
+      if (!keys.size) return out;
+
+      const childrenOut: Record<string, FlowContextPropertyInfo> = {};
+      for (const k of keys) {
+        if (isPrivateKey(k)) continue;
+        const child = await buildPropertyInfoFromNodes({
+          docNode: docChildren?.[k],
+          metaNode: metaChildren?.[k],
+          depth: depth + 1,
+          pathFromRoot: [...pathFromRoot, k],
+          hiddenPrefixes: childHiddenPrefixes,
+        });
+        if (child) childrenOut[k] = child;
+      }
+      if (Object.keys(childrenOut).length) out.properties = childrenOut;
+      return out;
+    };
+
+    const resolvePropertyMetaAtPath = async (segments: string[]): Promise<PropertyMeta | undefined> => {
+      if (!segments.length) return undefined;
+      const [first, ...rest] = segments;
+      const opt = this.getPropertyOptions(first);
+      if (!opt?.meta) return undefined;
+      try {
+        const rootMeta: any = typeof opt.meta === 'function' ? await (opt.meta as any)() : opt.meta;
+        if (!rootMeta) return undefined;
+        if (!rest.length) return rootMeta as PropertyMeta;
+        return await this.#resolvePathInMetaAsync(rootMeta as PropertyMeta, rest);
+      } catch (_) {
+        return undefined;
+      }
+    };
+
+    const resolveDocNodeAtPath = (segments: string[]): any => {
+      if (!segments.length) return undefined;
+      let cur: any = docProps[segments[0]];
+      for (let i = 1; i < segments.length; i++) {
+        const obj = toDocObject(cur);
+        if (!__isPlainObject(obj)) return undefined;
+        const props = (obj as any).properties;
+        if (!__isPlainObject(props)) return undefined;
+        cur = (props as any)[segments[i]];
+      }
+      return cur;
+    };
+
+    // path 剪裁：每个 path 独立返回一个根节点
+    if (!hasRootPath && paths.length) {
+      const methodsOut: Record<string, FlowContextMethodInfo> = {};
+      const propertiesOut: Record<string, FlowContextPropertyInfo> = {};
+
+      for (const p of paths) {
+        const segments = p
+          .split('.')
+          .map((x) => x.trim())
+          .filter(Boolean);
+        if (segments.some((s) => isPrivateKey(s))) continue;
+        if (!segments.length) continue;
+
+        // 同时支持剪裁 methods 与 properties（同名时两者都返回）
+        if (segments.length === 1) {
+          const name = segments[0];
+          const mi = await buildMethodInfo(name);
+          if (mi) methodsOut[name] = mi;
+
+          const docNode = docProps[name];
+          const metaNode = await resolvePropertyMetaAtPath([name]);
+          const existsProp =
+            typeof docNode !== 'undefined' || typeof metaNode !== 'undefined' || !!this.getPropertyOptions(name);
+          if (existsProp) {
+            const pi = await buildPropertyInfoFromNodes({
+              docNode,
+              metaNode,
+              depth: 1,
+              pathFromRoot: [],
+              hiddenPrefixes: new Set(),
+            });
+            if (pi) propertiesOut[name] = pi;
+          }
+          continue;
+        }
+
+        const docNode = resolveDocNodeAtPath(segments);
+        const metaNode = await resolvePropertyMetaAtPath(segments);
+        const pi = await buildPropertyInfoFromNodes({
+          docNode,
+          metaNode,
+          depth: 1,
+          pathFromRoot: [],
+          hiddenPrefixes: new Set(),
+        });
+        if (pi) propertiesOut[p] = pi;
+      }
+
+      return { methods: methodsOut, properties: propertiesOut };
+    }
+
+    // 全量输出：合并 doc + 运行时 defineProperty/defineMethod
+    const propKeys = new Set<string>();
+    const methodKeys = new Set<string>();
+    for (const k of Object.keys(docProps)) propKeys.add(k);
+    for (const k of Object.keys(docMethods)) methodKeys.add(k);
+    collectKeysDeep(this, propKeys, '_props', new WeakSet<any>());
+    collectKeysDeep(this, methodKeys, '_methods', new WeakSet<any>());
+
+    const propertiesOut: Record<string, FlowContextPropertyInfo> = {};
+    for (const key of propKeys) {
+      if (isPrivateKey(key)) continue;
+      const docNode = docProps[key];
+      const opt = this.getPropertyOptions(key);
+      let metaNode: PropertyMeta | undefined;
+      if (opt?.meta) {
+        try {
+          metaNode = (typeof opt.meta === 'function' ? await (opt.meta as any)() : opt.meta) as any;
+        } catch (_) {
+          metaNode = undefined;
+        }
+      }
+      const pi = await buildPropertyInfoFromNodes({
+        docNode,
+        metaNode,
+        depth: 1,
+        pathFromRoot: [key],
+        hiddenPrefixes: new Set(),
+      });
+      if (pi) propertiesOut[key] = pi;
+    }
+
+    const methodsOut: Record<string, FlowContextMethodInfo> = {};
+    for (const key of methodKeys) {
+      if (isPrivateKey(key)) continue;
+      const mi = await buildMethodInfo(key);
+      if (mi) methodsOut[key] = mi;
+    }
+
+    return { methods: methodsOut, properties: propertiesOut };
   }
 
   #createChildNodes(
@@ -723,9 +1307,16 @@ export class FlowContext {
     const computeStateFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string; hidden: boolean } => {
       if (!m) return { disabled: false, hidden: false };
       const disabledVal = typeof m.disabled === 'function' ? m.disabled() : m.disabled;
-      const reason = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
+      const reasonVal = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
       const hiddenVal = typeof m.hidden === 'function' ? m.hidden() : m.hidden;
-      return { disabled: !!disabledVal, reason, hidden: !!hiddenVal };
+      const disabledIsPromise = disabledVal && typeof (disabledVal as any).then === 'function';
+      const reasonIsPromise = reasonVal && typeof (reasonVal as any).then === 'function';
+      const hiddenIsPromise = hiddenVal && typeof (hiddenVal as any).then === 'function';
+      // getPropertyMetaTree 为同步 API：遇到 Promise 时 fail-open（不隐藏/不禁用）
+      const disabled = disabledIsPromise ? false : !!disabledVal;
+      const reason = reasonIsPromise ? undefined : (reasonVal as any);
+      const hidden = hiddenIsPromise ? false : !!hiddenVal;
+      return { disabled, reason, hidden };
     };
 
     if (typeof metaOrFactory === 'function') {
@@ -1803,8 +2394,13 @@ export type RunJSDocPropertyDoc =
       type?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
       properties?: Record<string, RunJSDocPropertyDoc>;
       hidden?: RunJSDocHiddenOrPathsDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMethodDoc =
@@ -1814,7 +2410,12 @@ export type RunJSDocMethodDoc =
       detail?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
       hidden?: RunJSDocHiddenDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMeta = {

@@ -34,9 +34,65 @@ export async function buildRunJSCompletions(
     if (typeof doc === 'string') return doc;
     if (!doc || typeof doc !== 'object') return String(doc ?? '');
     const description = doc.description ?? doc.detail ?? doc.type ?? '';
+    const params = Array.isArray(doc.params) ? doc.params : [];
+    const returns = doc.returns;
+    const ref = doc.ref;
+    const disabled = doc.disabled;
+    const disabledReason = doc.disabledReason;
+
+    const formatRef = (v: any): string => {
+      if (!v) return '';
+      if (typeof v === 'string') return v;
+      if (v && typeof v === 'object') {
+        const url = typeof v.url === 'string' ? v.url : '';
+        const title = typeof v.title === 'string' ? v.title : '';
+        if (title && url) return `${title}: ${url}`;
+        return url || title;
+      }
+      return String(v);
+    };
+
+    const formatParam = (p: any): string => {
+      if (!p || typeof p !== 'object') return '';
+      const name = typeof p.name === 'string' ? p.name : '';
+      if (!name) return '';
+      const type = typeof p.type === 'string' ? p.type : '';
+      const optional = p.optional ? '?' : '';
+      const def =
+        typeof p.default === 'undefined'
+          ? ''
+          : ` = ${typeof p.default === 'string' ? JSON.stringify(p.default) : String(p.default)}`;
+      const desc = typeof p.description === 'string' ? p.description : '';
+      const sig = `${name}${optional}${type ? `: ${type}` : ''}${def}`;
+      return desc ? `${sig} - ${desc}` : sig;
+    };
+
+    const formatReturn = (r: any): string => {
+      if (!r || typeof r !== 'object') return '';
+      const type = typeof r.type === 'string' ? r.type : '';
+      const desc = typeof r.description === 'string' ? r.description : '';
+      if (type && desc) return `${type} - ${desc}`;
+      return type || desc;
+    };
+
     const examples = Array.isArray(doc.examples) ? doc.examples.filter((x) => typeof x === 'string' && x.trim()) : [];
-    if (!examples.length) return typeof description === 'string' ? description : String(description ?? '');
-    return [description, 'Examples:', ...examples].filter(Boolean).join('\n');
+    const lines: string[] = [];
+    if (typeof description === 'string' && description.trim()) lines.push(description);
+    if (params.length) {
+      const ps = params.map(formatParam).filter(Boolean);
+      if (ps.length) lines.push('Params:', ...ps.map((x) => `- ${x}`));
+    }
+    const ret = formatReturn(returns);
+    if (ret) lines.push('Returns:', `- ${ret}`);
+    const refText = formatRef(ref);
+    if (refText) lines.push('Ref:', `- ${refText}`);
+    if (disabled) {
+      const reason = typeof disabledReason === 'string' ? disabledReason : '';
+      lines.push('Disabled:', `- ${reason || 'true'}`);
+    }
+    if (examples.length) lines.push('Examples:', ...examples);
+    if (!lines.length) return '';
+    return lines.join('\n');
   };
 
   const toTitle = (node: any) => {
@@ -81,6 +137,16 @@ export async function buildRunJSCompletions(
   }
   // 当 hostCtx 不存在时，传入空对象以获取通用（*）上下文的文档
   const doc = getRunJSDocFor((hostCtx as any) || ({} as any), { version });
+  let infos: any = null;
+  try {
+    if (hostCtx && typeof (hostCtx as any).getInfos === 'function') {
+      infos = await (hostCtx as any).getInfos({ version });
+    }
+  } catch (_) {
+    infos = null;
+  }
+  const propsSource = (infos as any)?.properties || (doc as any)?.properties || {};
+  const methodsSource = (infos as any)?.methods || (doc as any)?.methods || {};
   const completions: Completion[] = [];
   const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
   const hiddenDecisionCache = new Map<string, { hideSelf: boolean; hideSubpaths: string[] }>();
@@ -149,6 +215,32 @@ export async function buildRunJSCompletions(
     return decision;
   };
 
+  // When we use ctx.getInfos() as source, it may no longer carry `hidden` definitions.
+  // Pre-compute hidden path prefixes from the RunJS doc so meta-derived completions can still be filtered.
+  const precomputeHiddenPrefixesFromDoc = async (
+    props: Record<string, any> | undefined,
+    parentPath: string[] = [],
+  ): Promise<void> => {
+    if (!props) return;
+    for (const [key, value] of Object.entries(props)) {
+      const path = [...parentPath, key];
+      const ctxLabel = `ctx.${path.join('.')}`;
+      if (isHiddenByPaths(ctxLabel)) continue;
+      const decision = await resolveHiddenDecision(value, `p:${path.join('.')}`, path);
+      if (decision.hideSelf) continue;
+      for (const prefix of decision.hideSubpaths) hiddenPathPrefixes.add(prefix);
+      let children: any;
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        children = (value as any).properties as Record<string, any> | undefined;
+      }
+      if (children && typeof children === 'object') {
+        await precomputeHiddenPrefixesFromDoc(children, path);
+      }
+    }
+  };
+
+  await precomputeHiddenPrefixesFromDoc((doc as any)?.properties || {});
+
   if (doc?.label || doc?.properties || doc?.methods) {
     completions.push({
       label: 'ctx',
@@ -204,10 +296,9 @@ export async function buildRunJSCompletions(
     }
   };
 
-  await collectProperties(doc?.properties || {});
-  const methods = doc?.methods || {};
-  for (const k of Object.keys(methods)) {
-    const methodDoc = methods[k];
+  await collectProperties(propsSource || {});
+  for (const k of Object.keys(methodsSource || {})) {
+    const methodDoc = (methodsSource as any)[k];
     const decision = await resolveHiddenDecision(methodDoc, `m:${k}`, []);
     if (decision.hideSelf) continue;
     let detail = 'ctx method';

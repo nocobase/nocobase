@@ -52,3 +52,36 @@ FlowEngineContext（全局上下文）
   ```
 
 这种双模式设计，既保证了运行时的数据可用性，也方便了配置时的变量引用和表达式生成，提升了流引擎的灵活性和易用性。
+
+---
+
+## 上下文信息：`ctx.getInfos()`
+
+在某些场景下（例如 JS*Model 的 RunJS 代码编辑、AI coding），需要让“调用方”在不执行代码的前提下了解：当前 `ctx` 下有哪些属性/方法、它们的用途、参数、示例、以及文档链接。
+
+为此，`FlowContext` 提供了异步 API：`await ctx.getInfos(options?)`，用于返回**静态可序列化**的上下文信息（不包含函数）。
+
+### 返回结构
+
+- `methods`: `{ [name]: MethodInfo }`
+- `properties`: `{ [name]: PropertyInfo }`
+
+其中 `MethodInfo/PropertyInfo` 至少可包含（均为可选）：
+
+- `description` / `detail` / `examples`
+- `completion.insertText`（用于编辑器补全插入）
+- `ref`（支持 `string | { url: string; title?: string }`）
+- `params` / `returns`（JSDoc-like）
+- `disabled` / `disabledReason`（已计算后的静态值）
+
+### 常用参数
+
+- `maxDepth`：属性展开最大层级（默认 3）
+- `path: string | string[]`：剪裁，只输出指定路径下的能力信息（适合减少 token）
+- `version`：RunJS 文档版本（默认 `v1`）
+
+### 计算/过滤规则
+
+- `hidden`：支持函数/async 函数，会基于运行时 `ctx` 计算并过滤隐藏节点
+- `disabled/disabledReason`：支持函数/async 函数，会基于运行时 `ctx` 计算并返回静态值
+- 以下划线 `_` 开头的方法/属性会被视为私有成员，不会出现在 `getInfos()` 的输出中
