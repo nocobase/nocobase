@@ -1,13 +1,14 @@
 import { NoSSR, useLang } from '@rspress/core/runtime';
-import { Badge, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
+import { Badge, SwitchAppearance as BaseSwitchAppearance, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useNavigate, usePageData, usePages, useSite } from '@rspress/runtime';
+import { useFrontmatter, useLocation, useNavigate, usePageData, usePages } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
+import { locales } from '../locales';
 import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
@@ -53,6 +54,127 @@ export interface HomeLayoutProps {
   afterHeroActions?: React.ReactNode;
   beforeFeatures?: React.ReactNode;
   afterFeatures?: React.ReactNode;
+}
+
+
+interface Language {
+  code: string;
+  label: string;
+  href: string;
+}
+
+const LANGUAGES: Language[] = locales;
+
+function LanguageDropdown() {
+  const lang = useLang();
+  const currentLanguage = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
+  const { pathname, search } = useLocation();
+  const getLanguageHref = (targetLang: string) => {
+    return targetLang === 'en' ? `${pathname}${search}` : `/${targetLang}${pathname}${search}`;
+  };
+
+  return (
+    <div
+      style={{ position: 'relative', zIndex: 1000 }}
+      className="language-dropdown translation rp-flex rp-text-sm rp-font-bold rp-items-center rp-px-3 rp-py-2"
+    >
+      <div>
+        <div
+          className="rspress-nav-menu-group-button rp-flex rp-justify-center rp-items-center rp-font-medium rp-text-sm rp-text-text-1 hover:rp-text-text-2 rp-transition-colors rp-duration-200 rp-cursor-pointer"
+          role="button"
+          aria-haspopup="true"
+          aria-label="Language selector"
+          tabIndex={0}
+        >
+          <span className="rp-text-sm rp-font-medium rp-flex rp-break-keep" style={{ marginRight: '2px' }}>
+            <svg width="18" height="18" viewBox="0 0 32 32" style={{ width: '18px', height: '18px' }}>
+              <path
+                fill="currentColor"
+                d="M27.85 29H30l-6-15h-2.35l-6 15h2.15l1.6-4h6.85zm-7.65-6 2.62-6.56L25.45 23zM18 7V5h-7V2H9v3H2v2h10.74a14.7 14.7 0 0 1-3.19 6.18A13.5 13.5 0 0 1 7.26 9h-2.1a16.5 16.5 0 0 0 3 5.58A16.8 16.8 0 0 1 3 18l.75 1.86A18.5 18.5 0 0 0 9.53 16a16.9 16.9 0 0 0 5.76 3.84L16 18a14.5 14.5 0 0 1-5.12-3.37A17.64 17.64 0 0 0 14.8 7z"
+              />
+            </svg>
+          </span>
+          <svg
+            width="1em"
+            height="1em"
+            viewBox="0 0 32 32"
+            className="dropdown-arrow"
+            style={{ transition: 'transform 0.2s ease' }}
+          >
+            <path fill="currentColor" d="M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z" />
+          </svg>
+        </div>
+        <div
+          className="rspress-nav-menu-group-content rp-absolute rp-mx-0.8 rp-transition-opacity rp-duration-300"
+          style={{
+            opacity: 0,
+            visibility: 'hidden',
+            right: '0px',
+            top: '32px',
+            pointerEvents: 'none'
+          }}
+          role="menu"
+        >
+          <div
+            className="rp-p-3 rp-pr-2 rp-w-full rp-h-full rp-max-h-100vh rp-whitespace-nowrap"
+            style={{
+              boxShadow: 'var(--rp-shadow-3)',
+              zIndex: 100,
+              border: '1px solid var(--rp-c-divider-light)',
+              borderRadius: 'var(--rp-radius-large)',
+              background: 'var(--rp-c-bg)',
+            }}
+          >
+            {LANGUAGES.map((language) => {
+              const href = getLanguageHref(language.code);
+              
+              if (language.code === currentLanguage.code) {
+                return (
+                  <div key={language.code}>
+                    <div
+                      className="rp-rounded-2xl rp-my-1 rp-flex"
+                      style={{ padding: '0.4rem 1.5rem 0.4rem 0.75rem' }}
+                    >
+                      <a href={href} className="rp-text-brand">{currentLanguage.label}</a>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={language.code}>
+                  <div className="rp-font-medium rp-my-1">
+                    <a
+                      href={href}
+                      className="rp-link"
+                      role="menuitem"
+                    >
+                      <div
+                        className="rp-rounded-2xl hover:rp-bg-mute"
+                        style={{ padding: '0.4rem 1.5rem 0.4rem 0.75rem' }}
+                      >
+                        <div className="rp-flex">
+                          <span>{language.label}</span>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SwitchAppearance(props: any) {
+  return (
+    <div className="rp-flex rp-items-center rp-justify-center rp-h-14">
+      <LanguageDropdown />
+      <BaseSwitchAppearance {...props} />
+    </div>
+  );
 }
 
 export function HomeLayout(props: HomeLayoutProps) {

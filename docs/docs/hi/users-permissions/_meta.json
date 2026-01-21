@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "उपयोगकर्ता",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "भूमिकाएँ और अनुमतियाँ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "भूमिका कॉन्फ़िगरेशन",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "अनुमति कॉन्फ़िगरेशन",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI में लागू करें",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "भूमिका यूनियन",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "विकास गाइड",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "अनुमति कॉन्फ़िगरेशन बार का विस्तार करें",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "विभाग",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "विभाग प्रबंधन",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "विभाग भूमिका प्रबंधन",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "उपयोगकर्ता डेटा सिंक",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "सिंक प्रबंधन",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "डेटा सोर्स",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "वीकॉम",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "विकास गाइड",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "सिंक डेटा स्रोत का विस्तार करें",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "सिंक लक्ष्य संसाधन का विस्तार करें",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

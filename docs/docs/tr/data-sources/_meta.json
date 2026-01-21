@@ -1,0 +1,460 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Veri Kaynakları",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Veri Kaynağı Yönetimi",
+        "link": "/data-sources/data-source-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ana Veri Kaynağı",
+        "link": "/data-sources/data-source-main/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Harici Veri Kaynakları (Veritabanı)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Giriş",
+            "link": "/data-sources/data-source-manager/external-database"
+          },
+          {
+            "type": "custom-link",
+            "label": "Harici MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Harici MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Harici PostgreSQL",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Harici MSSQL",
+            "link": "/data-sources/data-source-external-mssql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Harici Oracle",
+            "link": "/data-sources/data-source-external-oracle/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Ana ve Harici Veritabanı Karşılaştırması",
+        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "REST API Veri Kaynağı",
+        "link": "/data-sources/data-source-rest-api/"
+      },
+      {
+        "type": "custom-link",
+        "label": "KingbaseES Veri Kaynağı",
+        "link": "/data-sources/data-source-kingbase/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Veri Tabloları",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel Bakış",
+        "link": "/data-sources/data-modeling/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Standart Tablo",
+        "link": "/data-sources/data-source-main/general-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kalıtım Tablosu",
+        "link": "/data-sources/data-source-main/inheritance-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dosya Tablosu",
+        "link": "/data-sources/file-manager/file-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ağaç Tablosu",
+        "link": "/data-sources/collection-tree/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Takvim Tablosu",
+        "link": "/data-sources/calendar/calendar-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yorum Tablosu",
+        "link": "/data-sources/collection-comment/"
+      },
+      {
+        "type": "custom-link",
+        "label": "İfade Tablosu",
+        "link": "/data-sources/collection-expression/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "SQL Tablosu",
+        "link": "/data-sources/collection-sql/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Veritabanı Görünümleri",
+        "link": "/data-sources/collection-view/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Veri Tablosu Alanları",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel Bakış",
+        "link": "/data-sources/data-modeling/collection-fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alan Doğrulaması",
+        "link": "/data-sources/data-modeling/collection-fields/validation"
+      },
+      {
+        "type": "custom-link",
+        "label": "Temel Türler",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tek Satırlı Metin",
+            "link": "/data-sources/data-modeling/collection-fields/basic/input"
+          },
+          {
+            "type": "custom-link",
+            "label": "Çok Satırlı Metin",
+            "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cep Telefonu",
+            "link": "/data-sources/data-modeling/collection-fields/basic/phone"
+          },
+          {
+            "type": "custom-link",
+            "label": "E-posta",
+            "link": "/data-sources/data-modeling/collection-fields/basic/email"
+          },
+          {
+            "type": "custom-link",
+            "label": "URL",
+            "link": "/data-sources/data-modeling/collection-fields/basic/url"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tam Sayı",
+            "link": "/data-sources/data-modeling/collection-fields/basic/integer"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sayı",
+            "link": "/data-sources/data-modeling/collection-fields/basic/number"
+          },
+          {
+            "type": "custom-link",
+            "label": "Yüzde",
+            "link": "/data-sources/data-modeling/collection-fields/basic/percent"
+          },
+          {
+            "type": "custom-link",
+            "label": "Parola",
+            "link": "/data-sources/data-modeling/collection-fields/basic/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "Renk",
+            "link": "/data-sources/data-modeling/collection-fields/basic/color"
+          },
+          {
+            "type": "custom-link",
+            "label": "Simge",
+            "link": "/data-sources/data-modeling/collection-fields/basic/icon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Seçim Türleri",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Onay Kutusu",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
+          },
+          {
+            "type": "custom-link",
+            "label": "Açılır Menü (Tek Seçim)",
+            "link": "/data-sources/data-modeling/collection-fields/choices/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Açılır Menü (Çoklu Seçim)",
+            "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Radyo Düğmesi",
+            "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "Onay Kutuları",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Multimedya",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/data-sources/data-modeling/collection-fields/media/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown (Vditor)",
+            "link": "/data-sources/field-markdown-vditor/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zengin Metin",
+            "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ek (İlişki)",
+            "link": "/data-sources/file-manager/field-attachment"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ek (URL)",
+            "link": "/data-sources/field-attachment-url/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Tarih ve Saat",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Genel Bakış",
+            "link": "/data-sources/data-modeling/collection-fields/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tarih/Saat (Zaman Dilimli)",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tarih/Saat (Zaman Dilimsiz)",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
+          },
+          {
+            "type": "custom-link",
+            "label": "Unix Zaman Damgası",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tarih (Saatsiz)",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/date"
+          },
+          {
+            "type": "custom-link",
+            "label": "Saat",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/time"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Geometrik Şekiller",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Nokta",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/point"
+          },
+          {
+            "type": "custom-link",
+            "label": "Çizgi",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/line"
+          },
+          {
+            "type": "custom-link",
+            "label": "Daire",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
+          },
+          {
+            "type": "custom-link",
+            "label": "Poligon",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Gelişmiş Türler",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "UUID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nano ID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/nano-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sıralama",
+            "link": "/data-sources/field-sort/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formül",
+            "link": "/data-sources/field-formula/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Otomatik Kodlama",
+            "link": "/data-sources/field-sequence/"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/json"
+          },
+          {
+            "type": "custom-link",
+            "label": "Veri Tablosu Seçici",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Şifreleme",
+            "link": "/data-sources/field-encryption/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Sistem Bilgileri",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Oluşturma Tarihi",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "Son Değiştirme Tarihi",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "Oluşturan",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Son Değiştiren",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Çalışma Alanı",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tablo OID",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "İlişki Türleri",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Genel Bakış",
+            "link": "/data-sources/data-modeling/collection-fields/associations"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bire Bir",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bire Çok",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "Çoka Bir",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "Çoka Çok",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "Çoka Çok (Dizi)",
+            "link": "/data-sources/field-m2m-array/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Geliştirme",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel Bakış",
+        "link": "/data-sources/development"
+      }
+    ]
+  }
+]

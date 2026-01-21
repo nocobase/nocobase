@@ -1,0 +1,255 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
+# Instalación de Docker
+
+:::tip Requisitos previos
+
+- Tener [Docker](https://docs.docker.com/get-docker/) y Docker Compose instalados.
+- Asegurarse de que el servicio de Docker esté en ejecución.
+
+:::
+
+## 1. Crear `docker-compose.yml`
+
+```bash
+# Cree una carpeta llamada my-project (o el nombre que prefiera) para almacenar los archivos del sistema generados por NocoBase.
+mkdir my-project && cd my-project
+
+# Cree un archivo docker-compose.yml vacío.
+vi docker-compose.yml
+```
+
+## 2. Configurar `docker-compose.yml`
+
+Elija una versión de NocoBase ([Comparación de versiones](../quickstart.md)) y el tipo de base de datos, luego copie la configuración correspondiente en el archivo docker-compose.yml.
+
+:::tip Notas de configuración
+
+- **Seleccione una imagen**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Para entornos de producción, le recomendamos fijar un número de versión específico para evitar actualizaciones automáticas no deseadas. [Ver todas las versiones](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Imagen de Alibaba Cloud: `nocobase/nocobase:latest-full`
+  - Imagen de Docker Hub: `nocobase/nocobase:latest-full`
+  - La **imagen full** incluye el cliente de PostgreSQL 16/17, el cliente de MySQL 8.0, el cliente de Oracle 19.25, necesarios para los plugins de gestión de copias de seguridad y migración, así como LibreOffice, requerido para la impresión de plantillas (PDF).
+  - Si necesita construir su propia imagen, puede consultar los [Dockerfile (versión ligera)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) y [Dockerfile-full (versión completa)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) oficiales.
+- **Modifique `APP_KEY`**: Reemplace `your-secret-key` con una cadena aleatoria, que se utiliza para cifrar información sensible como los tokens de usuario.
+- **Utilice una base de datos existente**: Si ya dispone de un servicio de base de datos, modifique `DB_HOST` con la dirección del servidor de su base de datos y elimine o comente la configuración del servicio de base de datos (por ejemplo, los servicios `postgres`, `mysql`, `mariadb`).
+- **Mapeo de puertos**: Por defecto, el puerto 80 del contenedor se mapea al puerto 13000 del host. Puede modificarlo según sus necesidades.
+
+:::
+
+<Tabs>
+
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Clave de la aplicación, utilizada para generar tokens de usuario, etc.
+      # Si se modifica APP_KEY, los tokens antiguos dejarán de ser válidos.
+      # Puede ser cualquier cadena aleatoria y debe asegurarse de que no se filtre.
+      - APP_KEY=your-secret-key
+      # Tipo de base de datos, compatible con postgres, mysql, mariadb.
+      - DB_DIALECT=postgres
+      # Host de la base de datos, puede reemplazarse por la IP de un servidor de base de datos existente.
+      - DB_HOST=postgres
+      # Puerto de la base de datos
+      - DB_PORT=5432
+      # Nombre de la base de datos
+      - DB_DATABASE=nocobase
+      # Usuario de la base de datos
+      - DB_USER=nocobase
+      # Contraseña de la base de datos
+      - DB_PASSWORD=nocobase
+      # Zona horaria
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Si utiliza un servicio de base de datos existente, puede omitir el inicio de postgres.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Clave de la aplicación, utilizada para generar tokens de usuario, etc.
+      # Si se modifica APP_KEY, los tokens antiguos dejarán de ser válidos.
+      # Puede ser cualquier cadena aleatoria y debe asegurarse de que no se filtre.
+      - APP_KEY=your-secret-key
+      # Tipo de base de datos, compatible con postgres, mysql, mariadb.
+      - DB_DIALECT=mysql
+      # Host de la base de datos, puede reemplazarse por la IP de un servidor de base de datos existente.
+      - DB_HOST=mysql
+      # Puerto de la base de datos
+      - DB_PORT=3306
+      # Nombre de la base de datos
+      - DB_DATABASE=nocobase
+      # Usuario de la base de datos
+      - DB_USER=root
+      # Contraseña de la base de datos
+      - DB_PASSWORD=nocobase
+      # Indica si los nombres de tablas y campos de la base de datos se convierten a formato snake_case.
+      - DB_UNDERSCORED=true
+      # Zona horaria
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Si utiliza un servicio de base de datos existente, puede omitir el inicio de mysql.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Clave de la aplicación, utilizada para generar tokens de usuario, etc.
+      # Si se modifica APP_KEY, los tokens antiguos dejarán de ser válidos.
+      # Puede ser cualquier cadena aleatoria y debe asegurarse de que no se filtre.
+      - APP_KEY=your-secret-key
+      # Tipo de base de datos, compatible con postgres, mysql, mariadb.
+      - DB_DIALECT=mariadb
+      # Host de la base de datos, puede reemplazarse por la IP de un servidor de base de datos existente.
+      - DB_HOST=mariadb
+      # Puerto de la base de datos
+      - DB_PORT=3306
+      # Nombre de la base de datos
+      - DB_DATABASE=nocobase
+      # Usuario de la base de datos
+      - DB_USER=root
+      # Contraseña de la base de datos
+      - DB_PASSWORD=nocobase
+      # Indica si los nombres de tablas y campos de la base de datos se convierten a formato snake_case.
+      - DB_UNDERSCORED=true
+      # Zona horaria
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Si utiliza un servicio de base de datos existente, puede omitir el inicio de mariadb.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+
+## 3. Instalar e iniciar NocoBase
+
+```bash
+# Descargue la última imagen
+docker compose pull
+
+# Ejecute en segundo plano (la instalación se realizará automáticamente la primera vez)
+docker compose up -d
+
+# Vea los registros de instalación y ejecución
+docker compose logs -f app
+
+app-postgres-app-1  | nginx started
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-postgres-app-1  | Done in 2.72s.
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
+```
+
+## 4. Iniciar sesión en NocoBase
+
+Abra [http://localhost:13000](http://localhost:13000) en su navegador. La cuenta y contraseña iniciales son `admin@nocobase.com` y `admin123`.
+
+:::warning Aviso de seguridad de la cuenta
+
+Después de iniciar sesión por primera vez, cambie la contraseña predeterminada de inmediato para garantizar la seguridad del sistema.
+
+:::

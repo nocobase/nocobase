@@ -21,6 +21,7 @@ JS Action 用于按钮点击时执行 JavaScript，自定义任意业务行为�
 
 - `ctx.requireAsync(url)`：按 URL 异步加载 AMD/UMD 库；
 - `ctx.importAsync(url)`：按 URL 动态导入 ESM 模块；
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`：内置 React / ReactDOM / Ant Design / Ant Design 图标 / dayjs / lodash / math.js / formula.js 等通用库，用于 JSX 渲染、时间处理、数据操作与数学运算。
 
 > 实际可用变量会随按钮所在位置不同而有所差异，以上为常见能力概览。
 

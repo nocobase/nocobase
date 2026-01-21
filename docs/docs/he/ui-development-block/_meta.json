@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "התחלה מהירה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "מבוא",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "כתיבת Plugin בלוק",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

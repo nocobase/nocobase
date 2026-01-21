@@ -50,7 +50,8 @@ export function defineBaseContextMeta() {
         'ReactDOM client API including createRoot for rendering React components. Also available via `ctx.libs.ReactDOM`.',
       antd: 'Ant Design component library. Recommended access path: `ctx.libs.antd`.',
       libs: {
-        description: 'Namespace for third-party and shared libraries. Includes React, ReactDOM, Ant Design, and dayjs.',
+        description:
+          'Namespace for third-party and shared libraries. Includes React, ReactDOM, Ant Design, dayjs, lodash, math.js, and formula.js.',
         detail: 'Libraries namespace',
         properties: {
           React: 'React namespace (same as ctx.React).',
@@ -58,6 +59,9 @@ export function defineBaseContextMeta() {
           antd: 'Ant Design component library (same as ctx.antd).',
           dayjs: 'dayjs date-time utility library.',
           antdIcons: 'Ant Design icons library. Example: `ctx.libs.antdIcons.PlusOutlined`.',
+          lodash: 'Lodash utility library. Example: `ctx.libs.lodash.get(obj, "a.b.c")`.',
+          math: 'Math.js library for mathematical operations. Example: `ctx.libs.math.evaluate("2 + 3 * 4")`.',
+          formula: 'Formula.js library for spreadsheet-like formulas. Example: `ctx.libs.formula.SUM([1, 2, 3])`.',
         },
       },
     },
@@ -147,7 +151,7 @@ export function defineBaseContextMeta() {
         antd: 'Ant Design 组件库（RunJS 环境中可用）。推荐使用 `ctx.libs.antd` 访问。',
         libs: {
           description:
-            '第三方/通用库的统一命名空间，包含 React、ReactDOM、Ant Design、dayjs 等。后续新增库会优先挂在此处。',
+            '第三方/通用库的统一命名空间，包含 React、ReactDOM、Ant Design、dayjs、lodash、math.js、formula.js 等。后续新增库会优先挂在此处。',
           detail: '通用库命名空间',
           properties: {
             React: 'React 命名空间（等价于 ctx.React）。',
@@ -155,6 +159,9 @@ export function defineBaseContextMeta() {
             antd: 'Ant Design 组件库（等价于 ctx.antd）。',
             dayjs: 'dayjs 日期时间工具库。',
             antdIcons: 'Ant Design 图标库。 例如：`ctx.libs.antdIcons.PlusOutlined`。',
+            lodash: 'Lodash 工具库。例如：`ctx.libs.lodash.get(obj, "a.b.c")`。',
+            math: 'Math.js 数学运算库。例如：`ctx.libs.math.evaluate("2 + 3 * 4")`。',
+            formula: 'Formula.js 电子表格公式库。例如：`ctx.libs.formula.SUM([1, 2, 3])`。',
           },
         },
       },

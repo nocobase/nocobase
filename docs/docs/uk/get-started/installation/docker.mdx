@@ -1,0 +1,255 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
+# Встановлення Docker
+
+:::tip Передумови
+
+- Встановлено [Docker](https://docs.docker.com/get-docker/) та Docker Compose
+- Переконайтеся, що служба Docker запущена
+
+:::
+
+## 1. Створення `docker-compose.yml`
+
+```bash
+# Створіть папку з назвою my-project (або будь-якою іншою) для зберігання системних файлів, згенерованих NocoBase
+mkdir my-project && cd my-project
+
+# Створіть порожній файл docker-compose.yml
+vi docker-compose.yml
+```
+
+## 2. Налаштування `docker-compose.yml`
+
+Оберіть версію NocoBase ([Порівняння версій](../quickstart.md)) та тип бази даних, потім скопіюйте відповідну конфігурацію до файлу `docker-compose.yml`.
+
+:::tip Примітки щодо конфігурації
+
+- **Вибір образу**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Для виробничих середовищ рекомендується фіксувати конкретний номер версії, щоб уникнути ненавмисних автоматичних оновлень. [Переглянути всі версії](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Образ Alibaba Cloud: `nocobase/nocobase:latest-full`
+  - Образ Docker Hub: `nocobase/nocobase:latest-full`
+  - **Повний образ** містить клієнти PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, необхідні для плагінів керування резервним копіюванням та міграцією, а також LibreOffice для друку шаблонів (PDF).
+  - Якщо вам потрібно створити власний образ, ви можете звернутися до офіційних [Dockerfile (спрощена версія)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) та [Dockerfile-full (повна версія)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
+- **Зміна `APP_KEY`**: Будь ласка, замініть `your-secret-key` на випадковий рядок, який використовується для шифрування конфіденційної інформації, такої як токени користувачів.
+- **Використання наявної бази даних**: Якщо у вас вже є служба бази даних, змініть `DB_HOST` на адресу сервера бази даних та видаліть або закоментуйте конфігурацію служби бази даних (наприклад, служби `postgres`, `mysql`, `mariadb`).
+- **Мапінг портів**: За замовчуванням порт 80 контейнера мапується на порт 13000 хоста. Ви можете змінити це за потреби.
+
+:::
+
+<Tabs>
+
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=postgres
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=postgres
+      # Порт бази даних
+      - DB_PORT=5432
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=nocobase
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати postgres.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=mysql
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=mysql
+      # Порт бази даних
+      - DB_PORT=3306
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=root
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Чи перетворювати імена таблиць та полів у стиль snake_case.
+      - DB_UNDERSCORED=true
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mysql.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=mariadb
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=mariadb
+      # Порт бази даних
+      - DB_PORT=3306
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=root
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Чи перетворювати імена таблиць та полів у стиль snake_case.
+      - DB_UNDERSCORED=true
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mariadb.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+
+## 3. Встановлення та запуск NocoBase
+
+```bash
+# Завантажити останній образ
+docker compose pull
+
+# Запустити у фоновому режимі (перший запуск автоматично виконає встановлення)
+docker compose up -d
+
+# Переглянути журнали встановлення та роботи
+docker compose logs -f app
+
+app-postgres-app-1  | nginx started
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-postgres-app-1  | Done in 2.72s.
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
+```
+
+## 4. Вхід до NocoBase
+
+Відкрийте [http://localhost:13000](http://localhost:13000) у своєму браузері. Початкові облікові дані: `admin@nocobase.com` та `admin123`.
+
+:::warning Попередження щодо безпеки облікового запису
+
+Після першого входу, будь ласка, негайно змініть пароль за замовчуванням, щоб забезпечити безпеку системи.
+
+:::

@@ -1,0 +1,233 @@
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::
+
+
+# Instalacja create-nocobase-app
+
+:::tip Wymagania wstępne
+
+- Zainstalowany Node.js 20+ oraz Yarn 1.22.x
+- Skonfigurowana i uruchomiona jedna z wymaganych baz danych: MySQL 8.0.17+, MariaDB 10.9+ lub PostgreSQL 10+
+- Ze względu na środowisko sieciowe w Chinach, zalecamy zmianę na krajowe repozytorium lustrzane (nie jest to obowiązkowe).
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. Tworzenie projektu NocoBase
+
+Proszę wybrać wersję NocoBase ([Porównanie wersji](../quickstart.md)) oraz typ bazy danych, a następnie wykonać odpowiednie polecenie.
+
+<Tabs>
+<Tab label="najnowsza wersja">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="wersja beta">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="wersja alpha">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+</Tabs>
+
+:::warning Zmienne środowiskowe
+
+- Zmienna `TZ` służy do ustawienia strefy czasowej aplikacji, która domyślnie przyjmuje strefę czasową systemu operacyjnego.
+- Zmienna `APP_KEY` to klucz tajny aplikacji, używany do generowania tokenów użytkownika itp. (Jeśli `APP_KEY` zostanie zmieniony, stare tokeny staną się nieważne). Może to być dowolny losowy ciąg znaków. **Proszę zmienić go na własny klucz tajny i upewnić się, że nie zostanie on ujawniony.**
+- Zmienne `DB_*` to konfiguracje związane z bazą danych. Proszę je zmodyfikować, aby odpowiadały Państwa rzeczywistym informacjom połączeniowym z bazą danych.
+
+:::
+
+## 2. Zmiana katalogu
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. Instalacja zależności
+
+📢 W zależności od środowiska sieciowego, konfiguracji systemu i innych czynników, ten krok może zająć kilkanaście minut.
+
+```bash
+yarn install
+```
+
+:::tip Wskazówka dla środowiska produkcyjnego
+
+Podczas wdrażania w środowisku produkcyjnym, aby zmniejszyć rozmiar, można zainstalować tylko niezbędne zależności:
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. Instalacja NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+Proces instalacji automatycznie utworzy strukturę tabel bazy danych i zainicjuje dane.
+
+## 5. Uruchamianie NocoBase
+
+**Środowisko deweloperskie**
+
+```bash
+yarn dev
+```
+
+**Środowisko produkcyjne**
+
+```bash
+yarn start
+```
+
+## 6. Logowanie do NocoBase
+
+Proszę otworzyć [http://localhost:13000](http://localhost:13000) w przeglądarce. Początkowe dane logowania to `admin@nocobase.com` i `admin123`.
+
+:::warning Wskazówka dotycząca bezpieczeństwa konta
+
+Po pierwszym zalogowaniu, proszę natychmiast zmienić domyślne hasło, aby zapewnić bezpieczeństwo systemu.
+
+:::

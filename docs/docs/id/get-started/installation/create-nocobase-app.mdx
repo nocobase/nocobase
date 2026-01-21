@@ -1,0 +1,232 @@
+:::tip
+Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::
+
+
+# Instalasi create-nocobase-app
+
+:::tip Prasyarat
+
+-   Node.js 20+ dan Yarn 1.22.x sudah terinstal.
+-   Salah satu database yang diperlukan sudah dikonfigurasi dan berjalan: MySQL 8.0.17+, MariaDB 10.9+, atau PostgreSQL 10+.
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. Buat Proyek NocoBase
+
+Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jenis database, lalu jalankan perintah yang sesuai.
+
+<Tabs>
+<Tab label="versi terbaru">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="versi beta">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="versi alpha">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+</Tabs>
+
+:::warning Penjelasan Variabel Lingkungan
+
+-   `TZ` digunakan untuk mengatur zona waktu aplikasi, yang secara default mengikuti zona waktu sistem operasi.
+-   `APP_KEY` adalah kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. (Jika `APP_KEY` diubah, token lama akan menjadi tidak valid). Ini bisa berupa string acak apa pun. **Mohon ubah ke kunci rahasia Anda sendiri dan pastikan tidak bocor ke publik.**
+-   `DB_*` adalah konfigurasi terkait database. Mohon modifikasi sesuai dengan informasi koneksi database Anda yang sebenarnya.
+
+:::
+
+## 2. Ganti Direktori
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. Instal Dependensi
+
+📢 Tergantung pada lingkungan jaringan, konfigurasi sistem, dan faktor lainnya, langkah ini mungkin memerlukan waktu lebih dari sepuluh menit.
+
+```bash
+yarn install
+```
+
+:::tip Tips Lingkungan Produksi
+
+Saat melakukan deployment di lingkungan produksi, Anda dapat menginstal hanya dependensi yang diperlukan untuk mengurangi ukuran:
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. Instal NocoBase
+
+```bash
+yarn nocobase install --lang=id-ID
+```
+
+Proses instalasi akan secara otomatis membuat struktur tabel database dan menginisialisasi data.
+
+## 5. Mulai NocoBase
+
+**Lingkungan Pengembangan**
+
+```bash
+yarn dev
+```
+
+**Lingkungan Produksi**
+
+```bash
+yarn start
+```
+
+## 6. Masuk ke NocoBase
+
+Buka [http://localhost:13000](http://localhost:13000) di browser Anda. Akun dan kata sandi awal adalah `admin@nocobase.com` dan `admin123`.
+
+:::warning Tips Keamanan Akun
+
+Setelah login pertama Anda, mohon segera ubah kata sandi default untuk memastikan keamanan sistem.
+
+:::

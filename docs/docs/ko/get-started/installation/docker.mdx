@@ -1,0 +1,253 @@
+:::tip
+이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::
+
+
+# Docker 설치
+
+:::tip 필수 조건
+
+- [Docker](https://docs.docker.com/get-docker/)와 Docker Compose가 설치되어 있어야 합니다.
+- Docker 서비스가 실행 중인지 확인하세요.
+
+:::
+
+## 1. `docker-compose.yml` 파일 생성
+
+```bash
+# NocoBase가 생성할 시스템 파일을 저장할 'my-project' (다른 이름도 가능합니다) 폴더를 생성합니다.
+mkdir my-project && cd my-project
+
+# 빈 `docker-compose.yml` 파일을 생성합니다.
+vi docker-compose.yml
+```
+
+## 2. `docker-compose.yml` 설정
+
+NocoBase 버전([버전 비교](../quickstart.md))과 데이터베이스 유형을 선택한 다음, 해당 설정을 `docker-compose.yml` 파일에 복사하세요.
+
+:::tip 설정 안내
+
+- **이미지 선택**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - 프로덕션 환경에서는 의도치 않은 자동 업그레이드를 방지하기 위해 특정 버전 번호를 고정하는 것을 권장합니다. [모든 버전 보기](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Docker Hub 이미지: `nocobase/nocobase:latest-full`
+  - **full 이미지**에는 백업 관리 및 마이그레이션 관리 플러그인에 필요한 PostgreSQL 16/17 클라이언트, MySQL 8.0 클라이언트, Oracle 19.25 클라이언트와 템플릿 인쇄(PDF)에 필요한 LibreOffice가 포함되어 있습니다.
+  - 자체 이미지를 빌드해야 하는 경우, 공식 [Dockerfile (경량 버전)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile)과 [Dockerfile-full (전체 버전)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)을 참조할 수 있습니다.
+- **`APP_KEY` 수정**: `your-secret-key`를 임의의 문자열로 변경하세요. 이 키는 사용자 토큰과 같은 민감한 정보를 암호화하는 데 사용됩니다.
+- **기존 데이터베이스 사용**: 이미 데이터베이스 서비스가 있는 경우, `DB_HOST`를 데이터베이스 서버 주소로 변경하고 데이터베이스 서비스 설정(예: `postgres`, `mysql`, `mariadb` 서비스)을 삭제하거나 주석 처리하세요.
+- **포트 매핑**: 기본적으로 컨테이너의 80번 포트는 호스트의 13000번 포트에 매핑됩니다. 필요에 따라 수정할 수 있습니다.
+
+:::
+
+<Tabs>
+
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # 애플리케이션 키. 사용자 토큰 등을 생성하는 데 사용됩니다.
+      # APP_KEY가 변경되면 이전 토큰도 무효화됩니다.
+      # 임의의 무작위 문자열이 될 수 있으며, 외부에 유출되지 않도록 주의하세요.
+      - APP_KEY=your-secret-key
+      # 데이터베이스 유형. postgres, mysql, mariadb를 지원합니다.
+      - DB_DIALECT=postgres
+      # 데이터베이스 호스트. 기존 데이터베이스 서버 IP로 대체할 수 있습니다.
+      - DB_HOST=postgres
+      # 데이터베이스 포트
+      - DB_PORT=5432
+      # 데이터베이스 이름
+      - DB_DATABASE=nocobase
+      # 데이터베이스 사용자
+      - DB_USER=nocobase
+      # 데이터베이스 비밀번호
+      - DB_PASSWORD=nocobase
+      # 시간대. 필요에 따라 현지 시간대로 변경하세요. (예: Asia/Seoul)
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 기존 데이터베이스 서비스를 사용하는 경우, postgres를 시작하지 않아도 됩니다.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # 애플리케이션 키. 사용자 토큰 등을 생성하는 데 사용됩니다.
+      # APP_KEY가 변경되면 이전 토큰도 무효화됩니다.
+      # 임의의 무작위 문자열이 될 수 있으며, 외부에 유출되지 않도록 주의하세요.
+      - APP_KEY=your-secret-key
+      # 데이터베이스 유형. postgres, mysql, mariadb를 지원합니다.
+      - DB_DIALECT=mysql
+      # 데이터베이스 호스트. 기존 데이터베이스 서버 IP로 대체할 수 있습니다.
+      - DB_HOST=mysql
+      # 데이터베이스 포트
+      - DB_PORT=3306
+      # 데이터베이스 이름
+      - DB_DATABASE=nocobase
+      # 데이터베이스 사용자
+      - DB_USER=root
+      # 데이터베이스 비밀번호
+      - DB_PASSWORD=nocobase
+      # 데이터베이스 테이블 및 필드 이름을 스네이크 케이스 스타일로 변환할지 여부
+      - DB_UNDERSCORED=true
+      # 시간대. 필요에 따라 현지 시간대로 변경하세요. (예: Asia/Seoul)
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 기존 데이터베이스 서비스를 사용하는 경우, mysql을 시작하지 않아도 됩니다.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # 애플리케이션 키. 사용자 토큰 등을 생성하는 데 사용됩니다.
+      # APP_KEY가 변경되면 이전 토큰도 무효화됩니다.
+      # 임의의 무작위 문자열이 될 수 있으며, 외부에 유출되지 않도록 주의하세요.
+      - APP_KEY=your-secret-key
+      # 데이터베이스 유형. postgres, mysql, mariadb를 지원합니다.
+      - DB_DIALECT=mariadb
+      # 데이터베이스 호스트. 기존 데이터베이스 서버 IP로 대체할 수 있습니다.
+      - DB_HOST=mariadb
+      # 데이터베이스 포트
+      - DB_PORT=3306
+      # 데이터베이스 이름
+      - DB_DATABASE=nocobase
+      # 데이터베이스 사용자
+      - DB_USER=root
+      # 데이터베이스 비밀번호
+      - DB_PASSWORD=nocobase
+      # 데이터베이스 테이블 및 필드 이름을 스네이크 케이스 스타일로 변환할지 여부
+      - DB_UNDERSCORED=true
+      # 시간대. 필요에 따라 현지 시간대로 변경하세요. (예: Asia/Seoul)
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 기존 데이터베이스 서비스를 사용하는 경우, mariadb를 시작하지 않아도 됩니다.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 3. NocoBase 설치 및 시작
+
+```bash
+# 최신 이미지를 가져옵니다.
+docker compose pull
+
+# 백그라운드에서 실행합니다. (첫 실행 시 자동으로 설치가 진행됩니다)
+docker compose up -d
+
+# 설치 및 실행 로그를 확인합니다.
+docker compose logs -f app
+
+app-postgres-app-1  | nginx started
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-postgres-app-1  | Done in 2.72s.
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
+```
+
+## 4. NocoBase 로그인
+
+브라우저에서 [http://localhost:13000](http://localhost:13000)을 엽니다. 초기 계정은 `admin@nocobase.com`이고 비밀번호는 `admin123`입니다.
+
+:::warning 계정 보안 알림
+
+처음 로그인한 후에는 시스템 보안을 위해 기본 비밀번호를 즉시 변경해 주세요.
+
+:::

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "בדיקת תנאי",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "תכונות מתקדמות",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

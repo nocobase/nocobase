@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createCurrentRecordMetaFactory, FlowModel, useFlowModel } from '@nocobase/flow-engine';
+import {
+  createCurrentRecordMetaFactory,
+  FlowModel,
+  useFlowModel,
+  type FlowRuntimeContext,
+} from '@nocobase/flow-engine';
 import type { SelectProps } from 'antd';
 import React from 'react';
 import { omit } from 'lodash';
@@ -19,6 +24,30 @@ export interface AssociationFieldNames {
 
 export type AssociationOption = Record<string, any>;
 export type PopupScrollEvent = Parameters<NonNullable<SelectProps<any>['onPopupScroll']>>[0];
+
+export function buildOpenerUids(ctx: FlowRuntimeContext, inputArgs: Record<string, unknown> = {}): string[] {
+  // Keep consistent with `packages/core/client/src/flow/actions/openView.tsx`
+  const isRouteManaged = !!(inputArgs as { navigation?: unknown }).navigation;
+  const toStringArray = (val: unknown): string[] | undefined => {
+    if (!Array.isArray(val)) return undefined;
+    return val.filter((item): item is string => typeof item === 'string' && !!item);
+  };
+  const viewOpenerUids = toStringArray(ctx.view?.inputArgs?.openerUids);
+  const inputOpenerUids = toStringArray(inputArgs.openerUids);
+  const parentOpenerUids = viewOpenerUids || inputOpenerUids || [];
+  if (isRouteManaged) {
+    return (inputOpenerUids || parentOpenerUids).filter(Boolean);
+  }
+  const viewUidFromView = (ctx.view?.inputArgs as { viewUid?: unknown } | undefined)?.viewUid;
+  const viewUidFromModel = (ctx.model.context?.inputArgs as { viewUid?: unknown } | undefined)?.viewUid;
+  const openerUid =
+    typeof viewUidFromView === 'string' && viewUidFromView
+      ? viewUidFromView
+      : typeof viewUidFromModel === 'string' && viewUidFromModel
+        ? viewUidFromModel
+        : ctx.model.uid;
+  return [...parentOpenerUids, openerUid].filter(Boolean);
+}
 
 export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'options' | 'value' | 'onChange'> {
   fieldNames: AssociationFieldNames;

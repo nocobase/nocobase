@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "मल्टी-ऐप",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "मल्टी-स्पेस",
+    "link": "/multi-app/multi-space"
+  }
+]

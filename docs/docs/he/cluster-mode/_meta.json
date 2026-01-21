@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "מצב אשכול"
+  },
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "הכנה",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "פריסת Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "תהליך תפעול ותחזוקה",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "פיצול שירותים",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "הפניה למפתחים",
+    "link": "/cluster-mode/development"
+  }
+]

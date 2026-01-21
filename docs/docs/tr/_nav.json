@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Başlangıç",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "text": "Kılavuz",
+    "link": "/guide/"
+  },
+  {
+    "text": "Geliştirme",
+    "link": "/development/"
+  },
+  {
+    "text": "Eklentiler",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  }
+]

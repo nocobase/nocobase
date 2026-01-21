@@ -6,23 +6,20 @@ pkg: "@nocobase/plugin-email-manager"
 
 ## Signature Configuration
 
-Go to the Email Management Center and click the settings button:
+Go to the Email Management Center and click the Settings button.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
+Switch to the Signature panel.
 
-Switch to the signature panel:
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM%20(1).png)
 
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_51_PM.png)
+Here you can manage signatures. Check the option before a signature to set it as the default signature.
 
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_09_PM.png)
 
-You can manage signatures here. Check the option before a signature to set it as the default:
+## Signature Usage
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_37_PM.png)
+In the email compose box, click the signature icon to select the desired signature.
 
-
-## Using Signatures
-
-In the email body, click the signature icon to select your desired signature:
-
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_40_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_11_PM.png)

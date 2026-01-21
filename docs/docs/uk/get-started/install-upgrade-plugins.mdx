@@ -1,0 +1,111 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
+# Встановлення та оновлення плагінів
+
+## Вбудовані плагіни
+
+Вбудовані плагіни NocoBase автоматично оновлюються разом з основною версією ядра, тому ручні дії не потрібні.
+
+## Комерційні плагіни
+
+Будь ласка, увійдіть до NocoBase Service та зверніться до документації, щоб дізнатися, як встановлювати та оновлювати комерційні плагіни.
+
+## Сторонні плагіни
+
+### Онлайн встановлення плагінів
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Увага
+
+NocoBase підтримує онлайн встановлення плагінів через інтерфейс, але поточний досвід не є ідеальним. Причини цього включають:
+
+- Через обмеження механізму виконання процесів Node.js, після встановлення або оновлення плагінів необхідно зупинити процес, а потім виконати команду `upgrade`, щоб зміни набули чинності;
+- У сценаріях з кількома застосунками онлайн-встановлення має труднощі з одночасною синхронізацією плагінів для багатьох підзастосунків;
+- Не підтримується пакетне оновлення плагінів;
+- Онлайн встановлення або оновлення плагінів може легко призвести до аномального завершення процесу застосунку.
+
+Тому рекомендується використовувати командний рядок або ручне завантаження для встановлення та оновлення плагінів. Радимо інтегрувати це з робочими процесами CI/CD, використовуючи командний рядок для завантаження, розпакування та оновлення плагінів, забезпечуючи послідовність та надійність кожного розгортання оновлень.
+
+:::
+
+### Встановлення плагінів за допомогою командного рядка
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Якщо плагін вже встановлено і його потрібно оновити, виконайте таку команду:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Ручне завантаження та розпакування
+
+Спочатку завантажте пакет плагіна на свій локальний комп'ютер, потім вручну завантажте та розпакуйте його в директорію `./storage/plugins`. Якщо плагін вже активовано, після завантаження та розпакування виконайте таку команду, щоб завершити оновлення плагіна.
+
+> ⚠️ **Увага**: Щоб уникнути проблем з кешем, переконайтеся, що застосунок NocoBase зупинено перед виконанням.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Правильний спосіб розпакування плагіна
+
+Нижче наведено приклад, який демонструє, як правильно розпакувати пакет плагіна в зазначену директорію:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Ця команда розпакує плагін у вказану директорію, не створюючи зайвого рівня директорії `package`.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Приклад правильної структури директорій
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

@@ -45,13 +45,13 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/mail-1733818619419.png)
 
-3. 搜索 "mail"
+3. 搜索 **mail**
 
 ![](https://static-docs.nocobase.com/mail-1733818619810.png)
 
 ![](https://static-docs.nocobase.com/mail-1733818620020.png)
 
-4. 点击 "ENABLE" 按钮，开启 Gmail API
+4. 点击 **ENABLE** 按钮启用 Gmail API
 
 ![](https://static-docs.nocobase.com/mail-1733818620589.png)
 
@@ -63,7 +63,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/mail-1733818621104.png)
 
-2. 选择 "External"
+2. 选择 **External**
 
 ![](https://static-docs.nocobase.com/mail-1733818621322.png)
 
@@ -95,7 +95,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ### 创建凭证 Credentials
 
-1. 点击左侧 "Credentials" 菜单
+1. 点击左侧 **Credentials** 菜单
 
 ![](https://static-docs.nocobase.com/mail-1733818623168.png)
 
@@ -151,7 +151,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/mail-1735633687283.png)
 
-5. 点击底部 "UPDATE" 按钮进行保存
+5. 点击底部 **UPDATE** 按钮进行保存
 
 ![](https://static-docs.nocobase.com/mail-1735633687536.png)
 
@@ -163,7 +163,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/mail-1735633688075.png)
 
-7. 点击 "PUBLISH APP" 按钮后出现发布确认页面，罗列了发布需要提供的相关内容。随后点击 "CONFIRM" 按钮
+7. 点击 **PUBLISH APP** 按钮后出现发布确认页面，列出了发布所需提供的相关信息。随后点击 **CONFIRM** 按钮
 
 ![](https://static-docs.nocobase.com/mail-1735633688257.png)
 

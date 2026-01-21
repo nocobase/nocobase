@@ -1,0 +1,111 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
+# Instalação a partir do Código-Fonte Git
+
+:::tip Pré-requisitos
+
+- Você tem o Git, Node.js 20+ e Yarn 1.22.x instalados.
+- Um banco de dados necessário está configurado e em execução: MySQL 8.0.17+, MariaDB 10.9+ ou PostgreSQL 10+.
+
+:::
+
+## 1. Baixe o NocoBase para sua máquina local
+
+Escolha uma versão do NocoBase ([Comparação de Versões](../quickstart.md)) e execute o comando correspondente.
+
+<Tabs>
+<Tab label="versão mais recente">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="versão beta">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="versão alpha">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. Mude o diretório
+
+```bash
+cd my-nocobase
+```
+
+## 3. Instale as dependências
+
+📢 Atenção: Dependendo do seu ambiente de rede, configuração do sistema e outros fatores, esta etapa pode levar mais de dez minutos.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. Configure as variáveis de ambiente
+
+As variáveis de ambiente necessárias para o NocoBase são armazenadas no arquivo `.env` na raiz do diretório. Modifique as variáveis de ambiente de acordo com sua situação real.
+
+```bash
+TZ=UTC
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning Descrição das Variáveis de Ambiente
+
+- `TZ` é usada para definir o fuso horário da aplicação, que por padrão é o fuso horário do sistema operacional.
+- `APP_KEY` é a chave secreta da aplicação, usada para gerar tokens de usuário, etc. (Se a `APP_KEY` for alterada, os tokens antigos se tornarão inválidos). Pode ser qualquer string aleatória. Por favor, altere para sua própria chave secreta e certifique-se de que ela não seja exposta.
+- `DB_*` são variáveis relacionadas ao banco de dados. Se você não estiver usando o serviço de banco de dados padrão do exemplo, por favor, modifique-as de acordo com sua situação real.
+
+:::
+
+## 5. Instale o NocoBase
+
+```bash
+yarn nocobase install --lang=pt-BR
+```
+
+## 6. Inicie o NocoBase
+
+
+**Ambiente de desenvolvimento**
+
+```bash
+yarn dev
+```
+
+**Ambiente de produção (não recomendado)**
+
+Não é recomendado implantar diretamente a partir do código-fonte em um ambiente de produção. Para implantação em produção, consulte [Implantação em Produção](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. Faça login no NocoBase
+
+Abra [http://localhost:13000](http://localhost:13000) no seu navegador. A conta e senha iniciais são `admin@nocobase.com` e `admin123`.
+
+:::warning Aviso de Segurança da Conta
+
+Após o primeiro login, altere a senha padrão imediatamente para garantir a segurança do sistema.
+
+:::

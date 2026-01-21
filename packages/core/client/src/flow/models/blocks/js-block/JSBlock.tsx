@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ElementProxy,
-  tExpr,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  compileRunJs,
-} from '@nocobase/flow-engine';
+import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
@@ -70,6 +63,7 @@ JSBlockModel.registerFlow({
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
+      useRawParams: true,
       uiSchema: {
         code: {
           type: 'string',
@@ -169,9 +163,8 @@ ctx.element.innerHTML = \`
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
-          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            compiled,
+            code,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

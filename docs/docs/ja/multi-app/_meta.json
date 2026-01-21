@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "複数アプリ",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "複数スペース",
+    "link": "/multi-app/multi-space"
+  }
+]

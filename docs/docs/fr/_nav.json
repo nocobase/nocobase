@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Démarrer",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "text": "Manuel",
+    "link": "/guide/"
+  },
+  {
+    "text": "Développement",
+    "link": "/development/"
+  },
+  {
+    "text": "Plugins",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  }
+]

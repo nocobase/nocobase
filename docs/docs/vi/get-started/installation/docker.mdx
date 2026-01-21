@@ -1,0 +1,254 @@
+:::tip
+Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::
+
+
+# Cài đặt Docker
+
+:::tip Điều kiện tiên quyết
+
+- Đã cài đặt [Docker](https://docs.docker.com/get-docker/) và Docker Compose
+- Đảm bảo dịch vụ Docker đang chạy
+
+:::
+
+## 1. Tạo tệp `docker-compose.yml`
+
+```bash
+# Tạo một thư mục tên là my-project (hoặc tên khác tùy ý) để lưu trữ các tệp hệ thống do NocoBase tạo ra
+mkdir my-project && cd my-project
+
+# Tạo một tệp docker-compose.yml trống
+vi docker-compose.yml
+```
+
+## 2. Cấu hình `docker-compose.yml`
+
+Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và loại cơ sở dữ liệu, sau đó sao chép cấu hình tương ứng vào tệp `docker-compose.yml`.
+
+:::tip Lưu ý cấu hình
+
+- **Chọn image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Đối với môi trường sản xuất, bạn nên cố định một phiên bản cụ thể để tránh việc tự động nâng cấp không mong muốn. [Xem tất cả các phiên bản](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Image từ Alibaba Cloud: `nocobase/nocobase:latest-full`
+  - Image từ Docker Hub: `nocobase/nocobase:latest-full`
+  - **Image full** bao gồm các client PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 cần thiết cho các **plugin** quản lý sao lưu và di chuyển, cũng như LibreOffice cần thiết để in mẫu (PDF).
+  - Nếu bạn muốn tự xây dựng image, bạn có thể tham khảo [Dockerfile (phiên bản rút gọn)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) và [Dockerfile-full (phiên bản đầy đủ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) do NocoBase cung cấp.
+- **Sửa đổi `APP_KEY`**: Vui lòng thay thế `your-secret-key` bằng một chuỗi ngẫu nhiên. Chuỗi này được dùng để mã hóa các thông tin nhạy cảm như token người dùng.
+- **Sử dụng cơ sở dữ liệu hiện có**: Nếu bạn đã có dịch vụ cơ sở dữ liệu, vui lòng thay đổi `DB_HOST` thành địa chỉ máy chủ cơ sở dữ liệu của bạn, và xóa hoặc ghi chú (comment) cấu hình dịch vụ cơ sở dữ liệu (ví dụ: các dịch vụ `postgres`, `mysql`, `mariadb`).
+- **Ánh xạ cổng**: Mặc định, cổng 80 của container được ánh xạ tới cổng 13000 của máy chủ. Bạn có thể thay đổi nếu cần.
+
+:::
+
+<Tabs>
+
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # Máy chủ cơ sở dữ liệu, có thể thay thế bằng IP máy chủ cơ sở dữ liệu hiện có
+      - DB_HOST=postgres
+      # Cổng cơ sở dữ liệu
+      - DB_PORT=5432
+      # Tên cơ sở dữ liệu
+      - DB_DATABASE=nocobase
+      # Người dùng cơ sở dữ liệu
+      - DB_USER=nocobase
+      # Mật khẩu cơ sở dữ liệu
+      - DB_PASSWORD=nocobase
+      # Múi giờ
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động postgres
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mysql
+      # Máy chủ cơ sở dữ liệu, có thể thay thế bằng IP máy chủ cơ sở dữ liệu hiện có
+      - DB_HOST=mysql
+      # Cổng cơ sở dữ liệu
+      - DB_PORT=3306
+      # Tên cơ sở dữ liệu
+      - DB_DATABASE=nocobase
+      # Người dùng cơ sở dữ liệu
+      - DB_USER=root
+      # Mật khẩu cơ sở dữ liệu
+      - DB_PASSWORD=nocobase
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mysql
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mariadb
+      # Máy chủ cơ sở dữ liệu, có thể thay thế bằng IP máy chủ cơ sở dữ liệu hiện có
+      - DB_HOST=mariadb
+      # Cổng cơ sở dữ liệu
+      - DB_PORT=3306
+      # Tên cơ sở dữ liệu
+      - DB_DATABASE=nocobase
+      # Người dùng cơ sở dữ liệu
+      - DB_USER=root
+      # Mật khẩu cơ sở dữ liệu
+      - DB_PASSWORD=nocobase
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mariadb
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 3. Cài đặt và khởi động NocoBase
+
+```bash
+# Tải image mới nhất
+docker compose pull
+
+# Chạy ở chế độ nền (lần chạy đầu tiên sẽ tự động thực hiện cài đặt)
+docker compose up -d
+
+# Xem nhật ký cài đặt và hoạt động
+docker compose logs -f app
+
+app-postgres-app-1  | nginx started
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-postgres-app-1  | Done in 2.72s.
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
+```
+
+## 4. Đăng nhập NocoBase
+
+Mở [http://localhost:13000](http://localhost:13000) trong trình duyệt của bạn. Tài khoản và mật khẩu ban đầu là `admin@nocobase.com` và `admin123`.
+
+:::warning Lưu ý về bảo mật tài khoản
+
+Sau khi đăng nhập lần đầu, vui lòng thay đổi mật khẩu mặc định ngay lập tức để đảm bảo an toàn cho hệ thống.
+
+:::

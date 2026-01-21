@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Publiceringshantering",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabler & hemligheter",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Backup-hantering",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migreringshantering",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]
