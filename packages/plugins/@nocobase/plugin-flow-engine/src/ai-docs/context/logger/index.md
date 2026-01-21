@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/logger/basic.ts` illustrates logging at different levels (`info`, `error`) during a model’s execution.
+- `@nocobase/plugin-flow-engine/context/logger/basic.md` illustrates logging at different levels (`info`, `error`) during a model’s execution.

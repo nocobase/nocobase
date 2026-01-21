@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/location/basic.ts` inspects `ctx.location.pathname` and `ctx.location.search`, then updates the router state based on flow decisions.
+- `@nocobase/plugin-flow-engine/context/location/basic.md` inspects `ctx.location.pathname` and `ctx.location.search`, then updates the router state based on flow decisions.

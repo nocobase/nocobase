@@ -4,5 +4,5 @@
 
 ## Examples
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/runjs/shuffle.ts` injects Lodash helpers and executes ad-hoc functions to randomize data.
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/runjs/echarts.ts` loads ECharts dynamically and renders charts by running snippets returned from the flow.
+- `@nocobase/plugin-flow-engine/context/runjs/shuffle.md` injects Lodash helpers and executes ad-hoc functions to randomize data.
+- `@nocobase/plugin-flow-engine/context/runjs/echarts.md` loads ECharts dynamically and renders charts by running snippets returned from the flow.

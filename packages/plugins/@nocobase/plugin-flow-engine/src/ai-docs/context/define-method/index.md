@@ -4,7 +4,7 @@
 
 ## Usage Patterns
 
-- **Register helpers** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-method/basic.ts` → `registerMethod`) binds an `add(a, b)` function to the context.
-- **Invoke helpers** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-method/basic.ts` → `callDefinedMethod`) fetches `ctx.methods.add` and executes it with runtime values.
+- **Register helpers** (`@nocobase/plugin-flow-engine/context/define-method/basic.md` → `registerMethod`) binds an `add(a, b)` function to the context.
+- **Invoke helpers** (`@nocobase/plugin-flow-engine/context/define-method/basic.md` → `callDefinedMethod`) fetches `ctx.methods.add` and executes it with runtime values.
 
 Methods automatically bind to the current context, so `this` and `ctx` references inside the handler are safe. Use this mechanism to expose computed utilities to templates, child views, or downstream delegates.

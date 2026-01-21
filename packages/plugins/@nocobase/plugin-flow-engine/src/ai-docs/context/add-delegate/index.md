@@ -4,9 +4,9 @@
 
 ## Usage Patterns
 
-- **Attach or detach delegates** (`@nocobase/plugin-flow-engine/src/ai-docs/context/add-delegate/basic.ts`):
+- **Attach or detach delegates** (`@nocobase/plugin-flow-engine/context/add-delegate/basic.md`):
   - `attachDelegate` calls `ctx.addDelegate`
   - `detachDelegate` calls `ctx.removeDelegate`
-- **Build a delegate chain** (`@nocobase/plugin-flow-engine/src/ai-docs/context/add-delegate/basic.ts` → `chainDelegates`) to model `root → view → widget` relationships; later delegates override earlier values.
+- **Build a delegate chain** (`@nocobase/plugin-flow-engine/context/add-delegate/basic.md` → `chainDelegates`) to model `root → view → widget` relationships; later delegates override earlier values.
 
 Delegates are prioritized by the order they are added: the most recently added context resolves first. Remove delegates when the scoped object unmounts to avoid stale references.

@@ -13,6 +13,6 @@ type RouteOptions = {
 
 ## Examples
 
-- **Basic navigation** (`@nocobase/plugin-flow-engine/src/ai-docs/context/route/basic.ts`) pushes to another page with params.
-- **Route reaction** (`@nocobase/plugin-flow-engine/src/ai-docs/context/route/reaction.ts`) watches route changes and reacts inside the model.
-- **Advanced reactions** (`@nocobase/plugin-flow-engine/src/ai-docs/context/route/reaction2.ts`) demonstrates unsubscribing and multiple listeners.
+- **Basic navigation** (`@nocobase/plugin-flow-engine/context/route/basic.md`) pushes to another page with params.
+- **Route reaction** (`@nocobase/plugin-flow-engine/context/route/reaction.md`) watches route changes and reacts inside the model.
+- **Advanced reactions** (`@nocobase/plugin-flow-engine/context/route/reaction2.md`) demonstrates unsubscribing and multiple listeners.

@@ -10,4 +10,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/api/example.ts` demonstrates GET/POST requests through `ctx.api.request`.
+- `@nocobase/plugin-flow-engine/context/api/example.md` demonstrates GET/POST requests through `ctx.api.request`.

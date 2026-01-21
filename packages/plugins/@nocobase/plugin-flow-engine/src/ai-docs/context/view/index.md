@@ -7,8 +7,8 @@
 
 ## Usage Patterns
 
-- **Hook access** (`@nocobase/plugin-flow-engine/src/ai-docs/context/view/dialog-hook.tsx`): use `useFlowView()` to grab `Header`, `Footer`, and `close`.
-- **Parameter passing** (`@nocobase/plugin-flow-engine/src/ai-docs/context/view/input-args.tsx`): read `ctx.view.inputArgs` to drive the content.
-- **Delegating FlowViewContext** (`@nocobase/plugin-flow-engine/src/ai-docs/context/view/model.tsx`): forward the view context to another model via `delegate` when you instantiate sub-models.
+- **Hook access** (`@nocobase/plugin-flow-engine/context/view/dialog-hook.md`): use `useFlowView()` to grab `Header`, `Footer`, and `close`.
+- **Parameter passing** (`@nocobase/plugin-flow-engine/context/view/input-args.md`): read `ctx.view.inputArgs` to drive the content.
+- **Delegating FlowViewContext** (`@nocobase/plugin-flow-engine/context/view/model.md`): forward the view context to another model via `delegate` when you instantiate sub-models.
 
 When opening a view, keep the `uid` stable (e.g., `${ctx.model.uid}-drawer`) so repeated opens reuse the same sub-model and state.

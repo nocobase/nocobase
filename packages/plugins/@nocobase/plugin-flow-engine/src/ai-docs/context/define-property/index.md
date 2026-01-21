@@ -23,15 +23,15 @@ ctx.defineProperty({
 
 ## Usage Patterns
 
-- **Sync value** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/sync-value.ts`): basic synchronous getter returning a string literal.
-- **Async value** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/async-value.ts`): demonstrates awaiting an asynchronous getter result.
-- **Concurrent async** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/concurrent-async.ts`): shows that parallel reads share the cached promise.
-- **Cache control** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/cache.ts`, `@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/remove-cache.ts`, `@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/no-cache.ts`): enable/disable caching and clear cache entries explicitly.
-- **Observable property** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/observable.ts`): toggles `observable: true` so observers react to changes.
-- **Observable ref & box** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/observable-ref-box.ts`): compares `observable.ref()` with `observable.box()` for writable state.
-- **Async value without cache** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/no-cache.ts`): forces re-computation for each access when `cache: false`.
-- **Once-only definition** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/once.ts`): enforces `once: true` so the first declaration wins.
-- **Metadata tree** (`@nocobase/plugin-flow-engine/src/ai-docs/context/define-property/meta.ts`): inspects `ctx.meta()` to list available context properties.
+- **Sync value** (`@nocobase/plugin-flow-engine/context/define-property/sync-value.md`): basic synchronous getter returning a string literal.
+- **Async value** (`@nocobase/plugin-flow-engine/context/define-property/async-value.md`): demonstrates awaiting an asynchronous getter result.
+- **Concurrent async** (`@nocobase/plugin-flow-engine/context/define-property/concurrent-async.md`): shows that parallel reads share the cached promise.
+- **Cache control** (`@nocobase/plugin-flow-engine/context/define-property/cache.md`, `@nocobase/plugin-flow-engine/context/define-property/remove-cache.md`, `@nocobase/plugin-flow-engine/context/define-property/no-cache.md`): enable/disable caching and clear cache entries explicitly.
+- **Observable property** (`@nocobase/plugin-flow-engine/context/define-property/observable.md`): toggles `observable: true` so observers react to changes.
+- **Observable ref & box** (`@nocobase/plugin-flow-engine/context/define-property/observable-ref-box.md`): compares `observable.ref()` with `observable.box()` for writable state.
+- **Async value without cache** (`@nocobase/plugin-flow-engine/context/define-property/no-cache.md`): forces re-computation for each access when `cache: false`.
+- **Once-only definition** (`@nocobase/plugin-flow-engine/context/define-property/once.md`): enforces `once: true` so the first declaration wins.
+- **Metadata tree** (`@nocobase/plugin-flow-engine/context/define-property/meta.md`): inspects `ctx.meta()` to list available context properties.
 
 :::tip
 Need writable semantics? Return `observable.ref(value)` or `observable.box(value)` so callers can update via `.value`, `.get()`, or `.set()` while observers stay in sync.

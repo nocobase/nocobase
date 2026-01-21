@@ -4,7 +4,8 @@ JSItemModel renders helper UI inside CreateForm/EditForm blocks. It is not bound
 
 ## Useful context
 
-- `ctx.element`: container for your HTML and events.
+- `ctx.element`: container for your HTML, React nodes, and events.
+- `ctx.React` / `ctx.libs.React`: render JSX without importing React.
 - `ctx.form`: AntD Form instance (read/write field values, trigger validation).
 - `ctx.blockModel`: listen to `formValuesChange` to rerender.
 - `ctx.viewer`: open drawers/dialogs for previews.
@@ -12,6 +13,6 @@ JSItemModel renders helper UI inside CreateForm/EditForm blocks. It is not bound
 
 ## Example
 
-- Real-time total preview: `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-item/preview.ts`
+- Real-time total preview: `@nocobase/plugin-flow-engine/js-model/example/js-item/preview.md`
 
 JSItemModel is read-only by design. For writable inputs, use **JSEditableFieldModel** instead.

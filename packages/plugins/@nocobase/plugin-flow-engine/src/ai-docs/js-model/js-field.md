@@ -6,14 +6,17 @@ JSFieldModel renders read-only content inside DetailsBlock or TableBlock cells. 
 
 - `ctx.element`: sandboxed container (write HTML, bind events).
 - `ctx.value`: current field value; use `ctx.record` for other columns.
+- `ctx.React` / `ctx.libs.React`: render custom components without importing React.
 - `ctx.viewer`, `ctx.openView`: open drawers/dialogs/popovers.
 - `ctx.api`: fetch remote data before rendering.
 - `ctx.t`: translate inline labels.
 
 ## Examples
 
-- Amount formatter + discount summary: `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-field/formatter.ts`
-- Link field to open another view: `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-field/open-view.ts`
+- Amount formatter + discount summary: `@nocobase/plugin-flow-engine/js-model/example/js-field/formatter.md`
+- Link field to open another view: `@nocobase/plugin-flow-engine/js-model/example/js-field/open-view.md`
+
+Examples are stored as plain JavaScript snippets; copy the code as-is and avoid adding `import React` or TypeScript-only syntax.
 
 If you need editable controls, switch to **JSEditableFieldModel**.
 

@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/requirejs/basic.ts` shows how to load a module via `ctx.requirejs(['pkg'], callback)` and await the result.
+- `@nocobase/plugin-flow-engine/context/requirejs/basic.md` shows how to load a module via `ctx.requirejs(['pkg'], callback)` and await the result.

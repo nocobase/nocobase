@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/model/basic.ts` reads `ctx.model.props`, updates data through `ctx.model.setProps`, and triggers events on the running model.
+- `@nocobase/plugin-flow-engine/context/model/basic.md` reads `ctx.model.props`, updates data through `ctx.model.setProps`, and triggers events on the running model.

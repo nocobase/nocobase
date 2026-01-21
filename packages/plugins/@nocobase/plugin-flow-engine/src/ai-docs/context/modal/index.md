@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/modal/examples.ts` demonstrates `ctx.modal.confirm/info` for destructive actions and status displays.
+- `@nocobase/plugin-flow-engine/context/modal/examples.md` demonstrates `ctx.modal.confirm/info` for destructive actions and status displays.

@@ -5,5 +5,5 @@
 
 ## Examples
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/ref/ref.ts` demonstrates subscribing to `ctx.onRefReady` and using `ctx.ref.current`.
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/ref/fork-model.ts` shows how forked child models share and react to refs.
+- `@nocobase/plugin-flow-engine/context/ref/ref.md` demonstrates subscribing to `ctx.onRefReady` and using `ctx.ref.current`.
+- `@nocobase/plugin-flow-engine/context/ref/fork-model.md` shows how forked child models share and react to refs.

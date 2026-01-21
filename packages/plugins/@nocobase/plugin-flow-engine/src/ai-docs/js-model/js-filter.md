@@ -5,17 +5,18 @@ There is no dedicated `JSFilterModel`. Filter logic usually lives inside a `JSBl
 - Render a toolbar directly inside the block that hosts the JS script.
 - Call `targetModel.resource.addFilterGroup(ctx.model.uid, filter)` to push filters to another block.
 - Avoid external icon libraries by relying on simple emoji/text badges.
+- All snippets already use plain JavaScript; do **not** import FlowModel or React.
 
 ## Available presets
 
-Each file exports a single `setup*FilterToolbar` function. Copy the entire file or just the function into your block, change `targetBlockUid`, and tweak the filter definitions.
+Each file contains a ready-to-run snippet. Copy it directly into your block, tweak `targetBlockUid`, and adjust filters. `ctx.React` is not required here; everything is vanilla DOM.
 
-- Accounts dashboard – `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-filter/accounts_filter_ant_style.ts`
-- Contacts board – `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-filter/contacts_filter_ant_style.ts`
-- Leads queue – `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-filter/leads_filter_ant_style.ts`
-- Opportunity pipeline – `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-filter/opportunities_filter_ant_style.ts`
-- Product catalog – `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-filter/product_categories_ant_style.ts`
-- Ticket triage – `@nocobase/plugin-flow-engine/src/ai-docs/js-model/example/js-filter/tickets_filter_ant_style.ts`
+- Accounts dashboard – `@nocobase/plugin-flow-engine/js-model/example/js-filter/accounts_filter_ant_style.md`
+- Contacts board – `@nocobase/plugin-flow-engine/js-model/example/js-filter/contacts_filter_ant_style.md`
+- Leads queue – `@nocobase/plugin-flow-engine/js-model/example/js-filter/leads_filter_ant_style.md`
+- Opportunity pipeline – `@nocobase/plugin-flow-engine/js-model/example/js-filter/opportunities_filter_ant_style.md`
+- Product catalog – `@nocobase/plugin-flow-engine/js-model/example/js-filter/product_categories_ant_style.md`
+- Ticket triage – `@nocobase/plugin-flow-engine/js-model/example/js-filter/tickets_filter_ant_style.md`
 
 ## Usage checklist
 

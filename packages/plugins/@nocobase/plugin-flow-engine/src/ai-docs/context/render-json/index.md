@@ -10,5 +10,5 @@
 
 ## Examples
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/render-json/full.ts` resolves nested objects/arrays against synchronous context properties.
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/render-json/async.ts` highlights how async getters are awaited automatically before being injected into the template.
+- `@nocobase/plugin-flow-engine/context/render-json/full.md` resolves nested objects/arrays against synchronous context properties.
+- `@nocobase/plugin-flow-engine/context/render-json/async.md` highlights how async getters are awaited automatically before being injected into the template.

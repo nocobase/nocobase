@@ -47,6 +47,7 @@ import { AICodingManager } from './manager/ai-coding-manager';
 import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
 import { suggestions } from './tools/suggestions';
+import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocIndexKeys } from './tools/docs';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -80,6 +81,7 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
+    await loadDocsIndexes();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
@@ -110,6 +112,7 @@ export class PluginAIServer extends Plugin {
     const workflowGroupName = 'workflowCaller';
     const codeEditorGroupName = 'codeEditor';
     const dataSourceGroupName = 'dataSource';
+    const docsGroupName = 'docs';
     toolManager.registerToolGroup({
       groupName: frontendGroupName,
       title: '{{t("Frontend")}}',
@@ -135,6 +138,13 @@ export class PluginAIServer extends Plugin {
       title: '{{t("DataSource")}}',
       description: '{{t("Data source query")}}',
     });
+    toolManager.registerToolGroup({
+      groupName: docsGroupName,
+      title: '{{t("Docs")}}',
+      description: '{{t("Search and read generated documentation indexes")}}',
+    });
+
+    const docsIndexesDescription = describeDocIndexKeys('Docs indexes unavailable. Run ai:create-docs-index first.');
 
     this.aiManager.toolManager.registerTools([
       {
@@ -187,6 +197,14 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataSourceGroupName,
         tool: dataSourceQuery,
+      },
+      {
+        groupName: docsGroupName,
+        tool: createDocsSearchTool({ description: docsIndexesDescription }),
+      },
+      {
+        groupName: docsGroupName,
+        tool: createReadDocEntryTool({ description: docsIndexesDescription }),
       },
     ]);
 

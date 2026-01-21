@@ -15,9 +15,9 @@ type RunSQLOptions = {
 
 ## Usage Patterns
 
-- **Select rows** (`@nocobase/plugin-flow-engine/src/ai-docs/context/runsql/examples.ts` → `selectRows`): returns an array of rows.
-- **Select a single row** (`@nocobase/plugin-flow-engine/src/ai-docs/context/runsql/examples.ts` → `selectRow`): pass `type: 'selectRow'` plus bind parameters.
-- **Select a single value** (`@nocobase/plugin-flow-engine/src/ai-docs/context/runsql/examples.ts` → `selectVar`): returns scalar results.
-- **Apply filters** (`@nocobase/plugin-flow-engine/src/ai-docs/context/runsql/examples.ts` → `selectWithFilter`): leverage filter protocol to build WHERE clauses server-side.
+- **Select rows** (`@nocobase/plugin-flow-engine/context/runsql/examples.md` → `selectRows`): returns an array of rows.
+- **Select a single row** (`@nocobase/plugin-flow-engine/context/runsql/examples.md` → `selectRow`): pass `type: 'selectRow'` plus bind parameters.
+- **Select a single value** (`@nocobase/plugin-flow-engine/context/runsql/examples.md` → `selectVar`): returns scalar results.
+- **Apply filters** (`@nocobase/plugin-flow-engine/context/runsql/examples.md` → `selectWithFilter`): leverage filter protocol to build WHERE clauses server-side.
 
 Bind variables with `$param` placeholders in your SQL, and keep `uid` stable across deployments so production can reference the stored query without debug mode.

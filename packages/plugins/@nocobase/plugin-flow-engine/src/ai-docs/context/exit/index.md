@@ -4,4 +4,4 @@ Call `ctx.exit()` inside a flow step to stop subsequent steps from running. Typi
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/exit/examples.ts` shows a delete handler that confirms, shows a toast, and calls `ctx.exit()` when cancelled.
+- `@nocobase/plugin-flow-engine/context/exit/examples.md` shows a delete handler that confirms, shows a toast, and calls `ctx.exit()` when cancelled.

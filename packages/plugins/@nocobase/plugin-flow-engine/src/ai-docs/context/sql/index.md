@@ -11,7 +11,7 @@
 
 ## Examples
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/sql/examples.ts` demonstrates:
+- `@nocobase/plugin-flow-engine/context/sql/examples.md` demonstrates:
   - `runInlineQuery` to execute inline SQL with bind parameters.
   - `saveSqlSnippet` to persist queries.
   - `runById` to reuse saved SQL in production.

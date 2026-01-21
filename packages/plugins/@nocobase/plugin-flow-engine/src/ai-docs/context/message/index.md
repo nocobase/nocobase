@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/message/examples.ts` triggers `ctx.message.loading`, `ctx.message.success`, and `ctx.message.error` around an async task.
+- `@nocobase/plugin-flow-engine/context/message/examples.md` triggers `ctx.message.loading`, `ctx.message.success`, and `ctx.message.error` around an async task.

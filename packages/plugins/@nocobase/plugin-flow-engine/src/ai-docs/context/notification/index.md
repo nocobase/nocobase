@@ -4,4 +4,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/notification/examples.ts` invokes `ctx.notification.success/error` to reflect flow outcomes.
+- `@nocobase/plugin-flow-engine/context/notification/examples.md` invokes `ctx.notification.success/error` to reflect flow outcomes.

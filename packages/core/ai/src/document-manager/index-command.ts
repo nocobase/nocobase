@@ -71,7 +71,7 @@ async function buildDocsIndex(packageName: string): Promise<BuildResult> {
     return { created: false, reason: 'docs directory not found' };
   }
 
-  const files = await fg(['**/*.md', '**/*.ts', '**/*.tsx'], {
+  const files = await fg(['**/*.md'], {
     cwd: docsDir,
     onlyFiles: true,
     absolute: true,
@@ -87,6 +87,8 @@ async function buildDocsIndex(packageName: string): Promise<BuildResult> {
   await fs.remove(outputDir);
   await fs.ensureDir(outputDir);
   const docsOutputDir = path.join(outputDir, 'docs');
+
+  const indexDocs = files.filter((file) => path.basename(file).toLowerCase() === 'index.md');
 
   const index = new FlexSearchIndex();
 
@@ -107,16 +109,16 @@ async function buildDocsIndex(packageName: string): Promise<BuildResult> {
     if (!markdownExt.has(ext)) {
       continue;
     }
-
-    const content = await fs.readFile(file, 'utf8');
-    if (!content.trim()) {
-      continue;
+    if (path.basename(file).toLowerCase() === 'index.md') {
+      const content = await fs.readFile(file, 'utf8');
+      if (!content.trim()) {
+        continue;
+      }
+      const docId = currentId++;
+      await index.addAsync(docId, content);
+      fileMap[docId] = path.posix.join(packageName, normalizedRelativePath);
+      indexedDocs++;
     }
-
-    const docId = currentId++;
-    await index.addAsync(docId, content);
-    fileMap[docId] = path.posix.join(packageName, normalizedRelativePath);
-    indexedDocs++;
   }
 
   if (!indexedDocs) {

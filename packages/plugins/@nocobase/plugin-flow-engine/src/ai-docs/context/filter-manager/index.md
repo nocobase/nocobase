@@ -14,4 +14,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/filter-manager/basic.ts` shows how to register filter configs and refresh linked targets.
+- `@nocobase/plugin-flow-engine/context/filter-manager/basic.md` shows how to register filter configs and refresh linked targets.

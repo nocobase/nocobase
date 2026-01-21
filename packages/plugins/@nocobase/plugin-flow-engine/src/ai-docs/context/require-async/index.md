@@ -9,4 +9,4 @@
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/require-async/echarts.ts` downloads ECharts on demand and returns the loaded module.
+- `@nocobase/plugin-flow-engine/context/require-async/echarts.md` downloads ECharts on demand and returns the loaded module.

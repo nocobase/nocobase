@@ -4,7 +4,7 @@
 
 ## Usage Patterns
 
-- **Translate keys** (`@nocobase/plugin-flow-engine/src/ai-docs/context/i18n/basic.ts` → `translate`) with optional interpolation parameters.
-- **Switch languages** (`@nocobase/plugin-flow-engine/src/ai-docs/context/i18n/basic.ts` → `setLanguage`) by assigning to `ctx.i18n.language`.
+- **Translate keys** (`@nocobase/plugin-flow-engine/context/i18n/basic.md` → `translate`) with optional interpolation parameters.
+- **Switch languages** (`@nocobase/plugin-flow-engine/context/i18n/basic.md` → `setLanguage`) by assigning to `ctx.i18n.language`.
 
 The context inherits the app’s locale, so translations stay in sync with the client UI.

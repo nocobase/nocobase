@@ -14,4 +14,4 @@ Access the spawned view via `ctx.view`, and read inbound parameters from `ctx.vi
 
 ## Example
 
-- `@nocobase/plugin-flow-engine/src/ai-docs/context/open-view/example.ts` opens a drawer, injects custom context properties, and waits for the view to resolve.
+- `@nocobase/plugin-flow-engine/context/open-view/example.md` opens a drawer, injects custom context properties, and waits for the view to resolve.
