@@ -164,18 +164,6 @@ export interface MetaTreeNode {
 }
 
 export interface PropertyMeta {
-  /**
-   * JSDoc-like 信息（可选）：用于 RunJS 自动补全与大模型上下文提示。
-   * 说明：这些字段不会影响 VariableInput/FlowContextSelector 的既有行为。
-   */
-  description?: string;
-  detail?: string;
-  examples?: string[];
-  completion?: RunJSDocCompletionDoc;
-  ref?: FlowContextDocRef;
-  params?: FlowContextDocParam[];
-  returns?: FlowContextDocReturn;
-
   type: string;
   title: string;
   interface?: string;
@@ -222,6 +210,12 @@ export interface PropertyOptions {
   cache?: boolean;
   observable?: boolean; // 是否为 observable 属性
   meta?: PropertyMetaOrFactory; // 支持静态、函数和异步函数（工厂函数可带 title/sort）
+  /**
+   * 上下文信息
+   * - 若未提供 info 但提供了 meta，getInfos() 可基于 meta 推断最小结构性信息
+   * - 若同时提供，getInfos() 将深合并且同名字段以 info 优先
+   */
+  info?: FlowContextPropertyInfoOrFactory;
   // 标记该属性是否在服务端解析：
   // - boolean: true 表示整个顶层变量交给服务端；false 表示仅前端解析
   // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
@@ -232,7 +226,7 @@ export interface PropertyOptions {
   serverOnlyWhenContextParams?: boolean;
 }
 
-export type FlowContextMethodMeta = {
+export type FlowContextMethodInfoInput = {
   description?: string;
   detail?: string;
   examples?: string[];
@@ -256,6 +250,26 @@ export type FlowContextMethodInfo = {
   disabled?: boolean;
   disabledReason?: string;
 };
+
+export type FlowContextPropertyInfoObjectInput = Omit<
+  FlowContextPropertyInfo,
+  'disabled' | 'disabledReason' | 'properties'
+> & {
+  properties?:
+    | Record<string, FlowContextPropertyInfoInput>
+    | (() => Promise<Record<string, FlowContextPropertyInfoInput>>);
+  hidden?: RunJSDocHiddenOrPathsDoc;
+  disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+  disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
+};
+
+export type FlowContextPropertyInfoInput = string | FlowContextPropertyInfoObjectInput;
+
+export type FlowContextPropertyInfoFactory = {
+  (): FlowContextPropertyInfoInput | Promise<FlowContextPropertyInfoInput | null> | null;
+};
+
+export type FlowContextPropertyInfoOrFactory = FlowContextPropertyInfoInput | FlowContextPropertyInfoFactory;
 
 export type FlowContextPropertyInfo = {
   title?: string;
@@ -307,7 +321,7 @@ type RouteOptions = {
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
-  _methodMetas: Record<string, FlowContextMethodMeta> = {};
+  _methodInfos: Record<string, FlowContextMethodInfoInput> = {};
   protected _cache: Record<string, any> = {};
   protected _observableCache: Record<string, any> = observable.shallow({});
   protected _delegates: FlowContext[] = [];
@@ -392,14 +406,14 @@ export class FlowContext {
     });
   }
 
-  defineMethod(name: string, fn: (...args: any[]) => any, meta?: string | FlowContextMethodMeta) {
+  defineMethod(name: string, fn: (...args: any[]) => any, info?: string | FlowContextMethodInfoInput) {
     this._methods[name] = fn;
-    if (typeof meta === 'string') {
-      this._methodMetas[name] = { description: meta };
-    } else if (meta && typeof meta === 'object') {
-      this._methodMetas[name] = meta;
+    if (typeof info === 'string') {
+      this._methodInfos[name] = { description: info };
+    } else if (info && typeof info === 'object') {
+      this._methodInfos[name] = info;
     } else {
-      delete this._methodMetas[name];
+      delete this._methodInfos[name];
     }
     Object.defineProperty(this, name, {
       configurable: true,
@@ -788,14 +802,14 @@ export class FlowContext {
       return out;
     };
 
-    const getMethodMetaFromChain = (name: string): FlowContextMethodMeta | undefined => {
+    const getMethodInfoFromChain = (name: string): FlowContextMethodInfoInput | undefined => {
       const visited = new WeakSet<any>();
-      const walk = (ctx: FlowContext): FlowContextMethodMeta | undefined => {
+      const walk = (ctx: FlowContext): FlowContextMethodInfoInput | undefined => {
         if (!ctx || typeof ctx !== 'object') return undefined;
         if (visited.has(ctx as any)) return undefined;
         visited.add(ctx as any);
-        if (Object.prototype.hasOwnProperty.call((ctx as any)._methodMetas || {}, name)) {
-          return (ctx as any)._methodMetas?.[name] as FlowContextMethodMeta;
+        if (Object.prototype.hasOwnProperty.call((ctx as any)._methodInfos || {}, name)) {
+          return (ctx as any)._methodInfos?.[name] as FlowContextMethodInfoInput;
         }
         const delegates = (ctx as any)._delegates;
         if (Array.isArray(delegates)) {
@@ -830,49 +844,55 @@ export class FlowContext {
     const buildMethodInfo = async (name: string): Promise<FlowContextMethodInfo | undefined> => {
       if (isPrivateKey(name)) return undefined;
       const docNode = docMethods[name];
-      const meta = getMethodMetaFromChain(name);
-      const exists = typeof docNode !== 'undefined' || typeof meta !== 'undefined' || hasMethodInChain(name);
+      const info = getMethodInfoFromChain(name);
+      const exists = typeof docNode !== 'undefined' || typeof info !== 'undefined' || hasMethodInChain(name);
       if (!exists) return undefined;
 
       const docObj = toDocObject(docNode);
       const docHidden = await evalBool((docObj as any)?.hidden, (fn) => fn(evalCtx));
-      const metaHidden = await evalBool(meta?.hidden, (fn) => fn(evalCtx));
-      if (!!docHidden || !!metaHidden) return undefined;
+      const infoHidden = await evalBool(info?.hidden, (fn) => fn(evalCtx));
+      if (!!docHidden || !!infoHidden) return undefined;
 
       const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
       const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
-      const metaDisabled = await evalBool(meta?.disabled, (fn) => fn(evalCtx));
-      const metaDisabledReason = await evalString(meta?.disabledReason, (fn) => fn(evalCtx));
-      const disabled = typeof metaDisabled !== 'undefined' ? metaDisabled : docDisabled;
-      const disabledReason = typeof metaDisabledReason !== 'undefined' ? metaDisabledReason : docDisabledReason;
+      const infoDisabled = await evalBool(info?.disabled, (fn) => fn(evalCtx));
+      const infoDisabledReason = await evalString(info?.disabledReason, (fn) => fn(evalCtx));
+      const disabled = typeof infoDisabled !== 'undefined' ? infoDisabled : docDisabled;
+      const disabledReason = typeof infoDisabledReason !== 'undefined' ? infoDisabledReason : docDisabledReason;
 
       let out: FlowContextMethodInfo = {};
       out = { ...out, ...pickMethodInfo(docObj) };
-      out = { ...out, ...pickMethodInfo(meta) };
+      out = { ...out, ...pickMethodInfo(info) };
       if (typeof disabled !== 'undefined') out.disabled = !!disabled;
       if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
+      if (!Object.keys(out).length) return undefined;
       return out;
     };
 
     const buildPropertyInfoFromNodes = async (args: {
       docNode?: any;
       metaNode?: PropertyMeta;
+      infoNode?: FlowContextPropertyInfoInput;
       depth: number;
       pathFromRoot: string[];
       hiddenPrefixes: Set<string>;
     }): Promise<FlowContextPropertyInfo | undefined> => {
-      const { docNode, metaNode, depth, pathFromRoot, hiddenPrefixes } = args;
+      const { docNode, metaNode, infoNode, depth, pathFromRoot, hiddenPrefixes } = args;
       const relPath = pathFromRoot.join('.');
       if (isHiddenByPrefixes(relPath, hiddenPrefixes)) return undefined;
 
       const docObj = toDocObject(docNode);
-      const { hideSelf, hideSubpaths } = await evalRunJSHidden((docObj as any)?.hidden);
-      if (hideSelf) return undefined;
-      const metaHidden = await evalBool(metaNode?.hidden, (fn) => fn());
+      const infoObj = toDocObject(infoNode);
+
+      const docHiddenDecision = await evalRunJSHidden((docObj as any)?.hidden);
+      if (docHiddenDecision.hideSelf) return undefined;
+      const infoHiddenDecision = await evalRunJSHidden((infoObj as any)?.hidden);
+      if (infoHiddenDecision.hideSelf) return undefined;
+      const metaHidden = await evalBool(metaNode?.hidden, (fn) => (fn as any).call(metaNode, evalCtx));
       if (metaHidden) return undefined;
 
       const childHiddenPrefixes = new Set(hiddenPrefixes);
-      for (const sub of hideSubpaths) {
+      for (const sub of [...docHiddenDecision.hideSubpaths, ...infoHiddenDecision.hideSubpaths]) {
         const normalized = sub.trim();
         if (!normalized) continue;
         const stripped = normalized === 'ctx' ? '' : normalized.startsWith('ctx.') ? normalized.slice(4) : normalized;
@@ -883,23 +903,33 @@ export class FlowContext {
 
       const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
       const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
-      const metaDisabled = await evalBool(metaNode?.disabled, (fn) => fn());
-      const metaDisabledReason = await evalString(metaNode?.disabledReason, (fn) => fn());
-      const disabled = typeof metaDisabled !== 'undefined' ? metaDisabled : docDisabled;
-      const disabledReason = typeof metaDisabledReason !== 'undefined' ? metaDisabledReason : docDisabledReason;
+      const metaDisabled = await evalBool(metaNode?.disabled, (fn) => (fn as any).call(metaNode, evalCtx));
+      const metaDisabledReason = await evalString(metaNode?.disabledReason, (fn) =>
+        (fn as any).call(metaNode, evalCtx),
+      );
+      const infoDisabled = await evalBool((infoObj as any)?.disabled, (fn) => fn(evalCtx));
+      const infoDisabledReason = await evalString((infoObj as any)?.disabledReason, (fn) => fn(evalCtx));
+      const disabled =
+        typeof infoDisabled !== 'undefined'
+          ? infoDisabled
+          : typeof metaDisabled !== 'undefined'
+            ? metaDisabled
+            : docDisabled;
+      const disabledReason =
+        typeof infoDisabledReason !== 'undefined'
+          ? infoDisabledReason
+          : typeof metaDisabledReason !== 'undefined'
+            ? metaDisabledReason
+            : docDisabledReason;
 
       let out: FlowContextPropertyInfo = {};
       out = { ...out, ...pickPropertyInfo(docObj) };
-      if (metaNode) {
-        if (typeof metaNode.title !== 'undefined') out.title = metaNode.title;
-        if (typeof metaNode.type !== 'undefined') out.type = metaNode.type;
-        if (typeof metaNode.interface !== 'undefined') out.interface = metaNode.interface;
-      }
       out = { ...out, ...pickPropertyInfo(metaNode) };
+      out = { ...out, ...pickPropertyInfo(infoObj) };
       if (typeof disabled !== 'undefined') out.disabled = !!disabled;
       if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
 
-      if (depth >= maxDepth) return out;
+      if (depth >= maxDepth) return Object.keys(out).length ? out : undefined;
 
       const docChildren = __isPlainObject((docObj as any)?.properties)
         ? ((docObj as any).properties as any as Record<string, any>)
@@ -910,7 +940,7 @@ export class FlowContext {
         try {
           const props = metaNode.properties;
           if (typeof props === 'function') {
-            const resolved = await props();
+            const resolved = await (props as any).call(metaNode, evalCtx);
             metaNode.properties = resolved;
             metaChildren = resolved as Record<string, PropertyMeta>;
           } else if (__isPlainObject(props)) {
@@ -921,10 +951,27 @@ export class FlowContext {
         }
       }
 
+      let infoChildren: Record<string, FlowContextPropertyInfoInput> | undefined;
+      if (__isPlainObject(infoObj) && (infoObj as any)?.properties) {
+        try {
+          const props = (infoObj as any).properties;
+          if (typeof props === 'function') {
+            const resolved = await (props as any).call(infoObj, evalCtx);
+            (infoObj as any).properties = resolved;
+            infoChildren = resolved as Record<string, FlowContextPropertyInfoInput>;
+          } else if (__isPlainObject(props)) {
+            infoChildren = props as Record<string, FlowContextPropertyInfoInput>;
+          }
+        } catch (_) {
+          infoChildren = undefined;
+        }
+      }
+
       const keys = new Set<string>();
       if (docChildren) for (const k of Object.keys(docChildren)) keys.add(k);
       if (metaChildren) for (const k of Object.keys(metaChildren)) keys.add(k);
-      if (!keys.size) return out;
+      if (infoChildren) for (const k of Object.keys(infoChildren)) keys.add(k);
+      if (!keys.size) return Object.keys(out).length ? out : undefined;
 
       const childrenOut: Record<string, FlowContextPropertyInfo> = {};
       for (const k of keys) {
@@ -932,6 +979,7 @@ export class FlowContext {
         const child = await buildPropertyInfoFromNodes({
           docNode: docChildren?.[k],
           metaNode: metaChildren?.[k],
+          infoNode: infoChildren?.[k],
           depth: depth + 1,
           pathFromRoot: [...pathFromRoot, k],
           hiddenPrefixes: childHiddenPrefixes,
@@ -939,6 +987,7 @@ export class FlowContext {
         if (child) childrenOut[k] = child;
       }
       if (Object.keys(childrenOut).length) out.properties = childrenOut;
+      if (!Object.keys(out).length) return undefined;
       return out;
     };
 
@@ -948,10 +997,41 @@ export class FlowContext {
       const opt = this.getPropertyOptions(first);
       if (!opt?.meta) return undefined;
       try {
-        const rootMeta: any = typeof opt.meta === 'function' ? await (opt.meta as any)() : opt.meta;
+        const rootMeta: any =
+          typeof opt.meta === 'function' ? await (opt.meta as any).call(evalCtx, evalCtx) : opt.meta;
         if (!rootMeta) return undefined;
         if (!rest.length) return rootMeta as PropertyMeta;
         return await this.#resolvePathInMetaAsync(rootMeta as PropertyMeta, rest);
+      } catch (_) {
+        return undefined;
+      }
+    };
+
+    const resolvePropertyInfoAtPath = async (segments: string[]): Promise<FlowContextPropertyInfoInput | undefined> => {
+      if (!segments.length) return undefined;
+      const [first, ...rest] = segments;
+      const opt = this.getPropertyOptions(first);
+      if (!opt?.info) return undefined;
+
+      try {
+        let cur: any = typeof opt.info === 'function' ? await (opt.info as any).call(evalCtx, evalCtx) : opt.info;
+        if (!rest.length) return cur as FlowContextPropertyInfoInput;
+
+        for (const key of rest) {
+          const obj = toDocObject(cur);
+          if (!__isPlainObject(obj)) return undefined;
+          let props: any = (obj as any)?.properties;
+          if (!props) return undefined;
+          if (typeof props === 'function') {
+            const resolved = await props.call(obj, evalCtx);
+            (obj as any).properties = resolved;
+            props = resolved;
+          }
+          if (!__isPlainObject(props)) return undefined;
+          cur = (props as any)[key];
+        }
+
+        return cur as FlowContextPropertyInfoInput;
       } catch (_) {
         return undefined;
       }
@@ -991,12 +1071,17 @@ export class FlowContext {
 
           const docNode = docProps[name];
           const metaNode = await resolvePropertyMetaAtPath([name]);
+          const infoNode = await resolvePropertyInfoAtPath([name]);
           const existsProp =
-            typeof docNode !== 'undefined' || typeof metaNode !== 'undefined' || !!this.getPropertyOptions(name);
+            typeof docNode !== 'undefined' ||
+            typeof metaNode !== 'undefined' ||
+            typeof infoNode !== 'undefined' ||
+            !!this.getPropertyOptions(name);
           if (existsProp) {
             const pi = await buildPropertyInfoFromNodes({
               docNode,
               metaNode,
+              infoNode,
               depth: 1,
               pathFromRoot: [],
               hiddenPrefixes: new Set(),
@@ -1008,9 +1093,11 @@ export class FlowContext {
 
         const docNode = resolveDocNodeAtPath(segments);
         const metaNode = await resolvePropertyMetaAtPath(segments);
+        const infoNode = await resolvePropertyInfoAtPath(segments);
         const pi = await buildPropertyInfoFromNodes({
           docNode,
           metaNode,
+          infoNode,
           depth: 1,
           pathFromRoot: [],
           hiddenPrefixes: new Set(),
@@ -1037,14 +1124,27 @@ export class FlowContext {
       let metaNode: PropertyMeta | undefined;
       if (opt?.meta) {
         try {
-          metaNode = (typeof opt.meta === 'function' ? await (opt.meta as any)() : opt.meta) as any;
+          metaNode = (
+            typeof opt.meta === 'function' ? await (opt.meta as any).call(evalCtx, evalCtx) : opt.meta
+          ) as any;
         } catch (_) {
           metaNode = undefined;
+        }
+      }
+      let infoNode: FlowContextPropertyInfoInput | undefined;
+      if (opt?.info) {
+        try {
+          infoNode = (
+            typeof opt.info === 'function' ? await (opt.info as any).call(evalCtx, evalCtx) : opt.info
+          ) as any;
+        } catch (_) {
+          infoNode = undefined;
         }
       }
       const pi = await buildPropertyInfoFromNodes({
         docNode,
         metaNode,
+        infoNode,
         depth: 1,
         pathFromRoot: [key],
         hiddenPrefixes: new Set(),
@@ -1644,12 +1744,24 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     dataSourceManager.addDataSource(mainDataSource);
     this.defineProperty('engine', {
       value: this.engine,
+      info: {
+        description: 'FlowEngine instance.',
+        detail: 'FlowEngine',
+      },
     });
     this.defineProperty('sql', {
       get: () => new FlowSQLRepository(this),
+      info: {
+        description: 'SQL helper (FlowSQLRepository).',
+        detail: 'FlowSQLRepository',
+      },
     });
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
+      info: {
+        description: 'DataSourceManager instance.',
+        detail: 'DataSourceManager',
+      },
     });
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
@@ -1843,25 +1955,25 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         return this.resolveJsonTemplate(`{{ ctx.${s} }}` as any);
       },
       {
-        description: 'Resolve a ctx variable by path and return its runtime value.',
-        detail: '(path: string) => Promise<any>',
+        description: 'Resolve a ctx variable value by relative path string.',
         params: [
           {
             name: 'path',
             type: 'string',
-            description: 'Relative path under ctx (e.g. "record.id").',
+            description: 'Relative path under ctx (e.g. "record.id", "record.roles[0].id").',
           },
         ],
-        returns: { type: 'Promise<any>', description: 'Resolved variable value.' },
+        returns: { type: 'Promise<any>' },
         completion: { insertText: "await ctx.getVar('record.id')" },
-        examples: [
-          "const id = await ctx.getVar('record.id');",
-          "const roleId = await ctx.getVar('record.roles[0].id');",
-        ],
+        examples: ["const id = await ctx.getVar('record.id');"],
       },
     );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
+      info: {
+        description: 'RequireJS runtime loader (if available).',
+        detail: 'any',
+      },
     });
     // Expose API token and current role as top-level variables for VariableInput.
     // Front-end only: no resolveOnServer flag. Mark cache: false to reflect runtime changes.
@@ -1941,23 +2053,33 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
-    this.defineMethod('loadCSS', async (url: string) => {
-      return new Promise((resolve, reject) => {
-        // Check if CSS is already loaded
-        const existingLink = document.querySelector(`link[href="${url}"]`);
-        if (existingLink) {
-          resolve(null);
-          return;
-        }
+    this.defineMethod(
+      'loadCSS',
+      async (url: string) => {
+        return new Promise((resolve, reject) => {
+          // Check if CSS is already loaded
+          const existingLink = document.querySelector(`link[href="${url}"]`);
+          if (existingLink) {
+            resolve(null);
+            return;
+          }
 
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = url;
-        link.onload = () => resolve(null);
-        link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
-        document.head.appendChild(link);
-      });
-    });
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = url;
+          link.onload = () => resolve(null);
+          link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
+          document.head.appendChild(link);
+        });
+      },
+      {
+        description: 'Load a CSS file by URL (browser only).',
+        params: [{ name: 'url', type: 'string', description: 'CSS URL.' }],
+        returns: { type: 'Promise<void>' },
+        completion: { insertText: "await ctx.loadCSS('https://example.com/style.css')" },
+        examples: ["await ctx.loadCSS('https://example.com/style.css');"],
+      },
+    );
     this.defineMethod('requireAsync', async (url: string) => {
       return new Promise((resolve, reject) => {
         if (!this.requirejs) {
@@ -2120,6 +2242,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const acl = new ACL(this.engine);
         return acl;
       },
+      info: {
+        description: 'ACL helper bound to the FlowEngine.',
+        detail: 'ACL',
+      },
     });
     this.defineMethod('aclCheck', function (params) {
       return this.acl.aclCheck(params);
@@ -2157,6 +2283,10 @@ export class FlowModelContext extends BaseFlowModelContext {
     });
     this.defineProperty('model', {
       value: model,
+      info: {
+        description: 'Current FlowModel instance.',
+        detail: 'FlowModel',
+      },
     });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
@@ -2164,6 +2294,10 @@ export class FlowModelContext extends BaseFlowModelContext {
       get: () => {
         this.model['_refCreated'] = true;
         return stableRef;
+      },
+      info: {
+        description: 'Stable React ref for the view container.',
+        detail: 'React.RefObject<HTMLDivElement>',
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
@@ -2224,7 +2358,9 @@ export class FlowModelContext extends BaseFlowModelContext {
         preventClose: !!opts?.preventClose,
         engineCtx: this.engine.context,
       };
-      model.context.defineProperty('view', { value: pendingView });
+      model.context.defineProperty('view', {
+        value: pendingView,
+      });
       await model.dispatchEvent(
         'click',
         {
@@ -2291,6 +2427,10 @@ export class FlowForkModelContext extends BaseFlowModelContext {
     });
     this.defineProperty('model', {
       get: () => this.fork,
+      info: {
+        description: 'Current ForkFlowModel instance (as model).',
+        detail: 'ForkFlowModel',
+      },
     });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
@@ -2298,6 +2438,10 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       get: () => {
         this.fork['_refCreated'] = true;
         return stableRef;
+      },
+      info: {
+        description: 'Stable React ref for the view container.',
+        detail: 'React.RefObject<HTMLDivElement>',
       },
     });
   }
@@ -2599,7 +2743,9 @@ export class FlowRunJSContext extends FlowContext {
     this.addDelegate(delegate);
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
-    this.defineProperty('dayjs', { value: dayjs });
+    this.defineProperty('dayjs', {
+      value: dayjs,
+    });
     // 为 JS 运行时代码提供带有 antd/App/ConfigProvider 包裹的 React 根
     // 保持与 ReactDOMClient 接口一致，优先覆盖 createRoot，其余方法透传
     const ReactDOMShim: any = {

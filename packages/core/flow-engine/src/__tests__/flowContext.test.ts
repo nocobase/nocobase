@@ -754,7 +754,7 @@ describe('FlowContext properties and methods', () => {
 });
 
 describe('FlowContext.getInfos', () => {
-  it('should support defineMethod meta (string as description)', async () => {
+  it('should support defineMethod info (string as description)', async () => {
     const ctx = new FlowContext();
     ctx.defineMethod('foo', () => 1, 'do something');
     expect(ctx.foo()).toBe(1);
@@ -763,7 +763,7 @@ describe('FlowContext.getInfos', () => {
     expect(infos.methods.foo?.description).toBe('do something');
   });
 
-  it('should support defineMethod meta object (completion/ref)', async () => {
+  it('should support defineMethod info object (completion/ref)', async () => {
     const ctx = new FlowContext();
     ctx.defineMethod('bar', () => 2, {
       description: 'Bar',
@@ -783,6 +783,8 @@ describe('FlowContext.getInfos', () => {
       meta: {
         type: 'string',
         title: 'Token',
+      },
+      info: {
         description: 'Token string',
         completion: { insertText: 'ctx.token' },
         ref: 'docs/token',
@@ -877,6 +879,16 @@ describe('FlowContext.getInfos', () => {
     expect(infos.properties.disabledProp?.disabledReason).toBe('not available');
     expect(infos.methods.disabledMethod?.disabled).toBe(true);
     expect(infos.methods.disabledMethod?.disabledReason).toBe('nope');
+  });
+
+  it('should not return empty method/property infos (no meta/doc)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('plainProp', { value: 1 });
+    ctx.defineMethod('plainMethod', () => 1);
+
+    const infos = await ctx.getInfos();
+    expect(infos.properties.plainProp).toBeUndefined();
+    expect(infos.methods.plainMethod).toBeUndefined();
   });
 
   it('should not return keys starting with underscore', async () => {

@@ -14,10 +14,138 @@ export function defineBaseContextMeta() {
     label: 'RunJS base',
     properties: {
       logger: 'Pino logger instance for structured logging. Example: `ctx.logger.info({ foo: 1 }, "message")`',
-      message:
-        'Ant Design global message API for displaying temporary messages. Example: `ctx.message.success("Operation completed")`',
-      notification:
-        'Ant Design notification API for displaying notification boxes. Example: `ctx.notification.open({ message: "Title", description: "Content" })`',
+      message: {
+        description: 'Ant Design global message API for displaying temporary messages.',
+        detail: 'MessageInstance',
+        hidden: (ctx: any) => !(ctx as any)?.message,
+        examples: ['ctx.message.success("Operation completed")'],
+        properties: {
+          info: {
+            type: 'function',
+            description: 'Show an info message.',
+            detail: '(content: any, duration?: number) => void',
+            completion: { insertText: `ctx.message.info('Info')` },
+          },
+          success: {
+            type: 'function',
+            description: 'Show a success message.',
+            detail: '(content: any, duration?: number) => void',
+            completion: { insertText: `ctx.message.success('Success')` },
+          },
+          error: {
+            type: 'function',
+            description: 'Show an error message.',
+            detail: '(content: any, duration?: number) => void',
+            completion: { insertText: `ctx.message.error('Error')` },
+          },
+          warning: {
+            type: 'function',
+            description: 'Show a warning message.',
+            detail: '(content: any, duration?: number) => void',
+            completion: { insertText: `ctx.message.warning('Warning')` },
+          },
+          loading: {
+            type: 'function',
+            description: 'Show a loading message.',
+            detail: '(content: any, duration?: number) => void',
+            completion: { insertText: `ctx.message.loading('Loading...')` },
+          },
+          open: {
+            type: 'function',
+            description: 'Open a message with custom config.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.message.open({ type: 'info', content: 'Hello' })` },
+          },
+          destroy: {
+            type: 'function',
+            description: 'Destroy all messages.',
+            detail: '() => void',
+            completion: { insertText: `ctx.message.destroy()` },
+          },
+        },
+      },
+      notification: {
+        description: 'Ant Design notification API for displaying notification boxes.',
+        detail: 'NotificationInstance',
+        hidden: (ctx: any) => !(ctx as any)?.notification,
+        examples: ['ctx.notification.open({ message: "Title", description: "Content" })'],
+        properties: {
+          open: {
+            type: 'function',
+            description: 'Open a notification with config.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.notification.open({ message: 'Title', description: 'Content' })` },
+          },
+          success: {
+            type: 'function',
+            description: 'Open a success notification.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.notification.success({ message: 'Success' })` },
+          },
+          info: {
+            type: 'function',
+            description: 'Open an info notification.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.notification.info({ message: 'Info' })` },
+          },
+          warning: {
+            type: 'function',
+            description: 'Open a warning notification.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.notification.warning({ message: 'Warning' })` },
+          },
+          error: {
+            type: 'function',
+            description: 'Open an error notification.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.notification.error({ message: 'Error' })` },
+          },
+          destroy: {
+            type: 'function',
+            description: 'Destroy all notifications.',
+            detail: '(key?: string) => void',
+            completion: { insertText: `ctx.notification.destroy()` },
+          },
+        },
+      },
+      modal: {
+        description: 'Ant Design modal API (HookAPI) for opening modal dialogs.',
+        detail: 'HookAPI',
+        hidden: (ctx: any) => !(ctx as any)?.modal,
+        examples: [`ctx.modal.confirm({ title: 'Confirm', content: 'Are you sure?' })`],
+        properties: {
+          info: {
+            type: 'function',
+            description: 'Open an info modal.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.modal.info({ title: 'Info', content: '...' })` },
+          },
+          success: {
+            type: 'function',
+            description: 'Open a success modal.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.modal.success({ title: 'Success', content: '...' })` },
+          },
+          error: {
+            type: 'function',
+            description: 'Open an error modal.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.modal.error({ title: 'Error', content: '...' })` },
+          },
+          warning: {
+            type: 'function',
+            description: 'Open a warning modal.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.modal.warning({ title: 'Warning', content: '...' })` },
+          },
+          confirm: {
+            type: 'function',
+            description: 'Open a confirm modal.',
+            detail: '(config: any) => void',
+            completion: { insertText: `ctx.modal.confirm({ title: 'Confirm', content: '...' })` },
+          },
+        },
+      },
       resource: {
         description:
           'FlowResource instance for accessing and manipulating data. You MUST call ctx.useResource(...) first to create ctx.resource in most scenarios.',
@@ -204,6 +332,13 @@ export function defineBaseContextMeta() {
           language: 'Current active language code.',
         },
       },
+      dayjs: {
+        type: 'function',
+        description: 'dayjs date-time utility library (callable).',
+        detail: 'dayjs',
+        completion: { insertText: 'ctx.dayjs()' },
+        examples: ["const now = ctx.dayjs().format('YYYY-MM-DD HH:mm:ss');"],
+      },
       React:
         'React namespace providing React library functions and hooks (available in RunJS environment). Recommended access path: `ctx.libs.React`.',
       ReactDOM:
@@ -242,6 +377,28 @@ export function defineBaseContextMeta() {
         'Asynchronously load external libraries from URL. Parameters: (url: string) => Promise<any>. Example: `const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
       importAsync:
         'Dynamically import ESM module by URL. Parameters: (url: string) => Promise<Module>. Example: `const mod = await ctx.importAsync("https://cdn.jsdelivr.net/npm/lit-html@2/+esm")`',
+      loadCSS: {
+        description: 'Load a CSS file by URL (browser only).',
+        detail: '(url: string) => Promise<void>',
+        completion: { insertText: "await ctx.loadCSS('https://example.com/style.css')" },
+        params: [{ name: 'url', type: 'string', description: 'CSS URL.' }],
+        returns: { type: 'Promise<void>' },
+        examples: ["await ctx.loadCSS('https://example.com/style.css');"],
+      },
+      getVar: {
+        description: 'Resolve a ctx variable value by relative path string.',
+        detail: '(path: string) => Promise<any>',
+        completion: { insertText: "await ctx.getVar('record.id')" },
+        params: [
+          {
+            name: 'path',
+            type: 'string',
+            description: 'Relative path under ctx (e.g. "record.id", "record.roles[0].id").',
+          },
+        ],
+        returns: { type: 'Promise<any>' },
+        examples: ["const id = await ctx.getVar('record.id');"],
+      },
       resolveJsonTemplate:
         'Resolve JSON templates containing variable expressions with {{ }} syntax. Parameters: (template: any, context?: object) => any',
       runAction: {
@@ -281,9 +438,138 @@ export function defineBaseContextMeta() {
       label: 'RunJS 基础',
       properties: {
         logger: 'Pino 日志实例（结构化日志）。示例：`ctx.logger.info({ foo: 1 }, "message")`',
-        message: 'Ant Design 全局消息 API，用于显示临时提示。示例：`ctx.message.success("操作成功")`',
-        notification:
-          'Ant Design 通知 API，用于显示通知框。示例：`ctx.notification.open({ message: "标题", description: "内容" })`',
+        message: {
+          description: 'Ant Design 全局消息 API，用于显示临时提示。',
+          detail: 'MessageInstance',
+          hidden: (ctx: any) => !(ctx as any)?.message,
+          examples: ['ctx.message.success("操作成功")'],
+          properties: {
+            info: {
+              type: 'function',
+              description: '显示信息提示。',
+              detail: '(content: any, duration?: number) => void',
+              completion: { insertText: `ctx.message.info('提示')` },
+            },
+            success: {
+              type: 'function',
+              description: '显示成功提示。',
+              detail: '(content: any, duration?: number) => void',
+              completion: { insertText: `ctx.message.success('成功')` },
+            },
+            error: {
+              type: 'function',
+              description: '显示错误提示。',
+              detail: '(content: any, duration?: number) => void',
+              completion: { insertText: `ctx.message.error('错误')` },
+            },
+            warning: {
+              type: 'function',
+              description: '显示警告提示。',
+              detail: '(content: any, duration?: number) => void',
+              completion: { insertText: `ctx.message.warning('警告')` },
+            },
+            loading: {
+              type: 'function',
+              description: '显示加载提示。',
+              detail: '(content: any, duration?: number) => void',
+              completion: { insertText: `ctx.message.loading('加载中...')` },
+            },
+            open: {
+              type: 'function',
+              description: '使用自定义配置打开消息。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.message.open({ type: 'info', content: 'Hello' })` },
+            },
+            destroy: {
+              type: 'function',
+              description: '销毁所有消息。',
+              detail: '() => void',
+              completion: { insertText: `ctx.message.destroy()` },
+            },
+          },
+        },
+        notification: {
+          description: 'Ant Design 通知 API，用于显示通知框。',
+          detail: 'NotificationInstance',
+          hidden: (ctx: any) => !(ctx as any)?.notification,
+          examples: ['ctx.notification.open({ message: "标题", description: "内容" })'],
+          properties: {
+            open: {
+              type: 'function',
+              description: '打开通知。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.notification.open({ message: '标题', description: '内容' })` },
+            },
+            success: {
+              type: 'function',
+              description: '打开成功通知。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.notification.success({ message: '成功' })` },
+            },
+            info: {
+              type: 'function',
+              description: '打开信息通知。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.notification.info({ message: '提示' })` },
+            },
+            warning: {
+              type: 'function',
+              description: '打开警告通知。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.notification.warning({ message: '警告' })` },
+            },
+            error: {
+              type: 'function',
+              description: '打开错误通知。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.notification.error({ message: '错误' })` },
+            },
+            destroy: {
+              type: 'function',
+              description: '销毁通知。',
+              detail: '(key?: string) => void',
+              completion: { insertText: `ctx.notification.destroy()` },
+            },
+          },
+        },
+        modal: {
+          description: 'Ant Design modal API（HookAPI），用于打开对话框。',
+          detail: 'HookAPI',
+          hidden: (ctx: any) => !(ctx as any)?.modal,
+          examples: [`ctx.modal.confirm({ title: '确认', content: '确定继续？' })`],
+          properties: {
+            info: {
+              type: 'function',
+              description: '打开信息对话框。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.modal.info({ title: '提示', content: '...' })` },
+            },
+            success: {
+              type: 'function',
+              description: '打开成功对话框。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.modal.success({ title: '成功', content: '...' })` },
+            },
+            error: {
+              type: 'function',
+              description: '打开错误对话框。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.modal.error({ title: '错误', content: '...' })` },
+            },
+            warning: {
+              type: 'function',
+              description: '打开警告对话框。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.modal.warning({ title: '警告', content: '...' })` },
+            },
+            confirm: {
+              type: 'function',
+              description: '打开确认对话框。',
+              detail: '(config: any) => void',
+              completion: { insertText: `ctx.modal.confirm({ title: '确认', content: '...' })` },
+            },
+          },
+        },
         resource: {
           description: '数据资源（FlowResource）。多数场景需要先调用 ctx.useResource(...) 创建 ctx.resource。',
           detail: 'FlowResource',
@@ -454,6 +740,13 @@ export function defineBaseContextMeta() {
             language: '当前激活的语言代码',
           },
         },
+        dayjs: {
+          type: 'function',
+          description: 'dayjs 日期时间工具库（可调用）。',
+          detail: 'dayjs',
+          completion: { insertText: 'ctx.dayjs()' },
+          examples: ["const now = ctx.dayjs().format('YYYY-MM-DD HH:mm:ss');"],
+        },
         React: 'React 命名空间，提供 React 函数与 hooks（RunJS 环境中可用）。推荐使用 `ctx.libs.React` 访问。',
         ReactDOM: 'ReactDOM 客户端 API，含 createRoot 等渲染方法。推荐通过 `ctx.libs.ReactDOM` 访问。',
         antd: 'Ant Design 组件库（RunJS 环境中可用）。推荐使用 `ctx.libs.antd` 访问。',
@@ -491,6 +784,28 @@ export function defineBaseContextMeta() {
           '按 URL 异步加载外部库。参数：(url: string) => Promise<any>。示例：`const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
         importAsync:
           '按 URL 动态导入 ESM 模块（开发/生产均可用）。参数：(url: string) => Promise<Module>。示例：`const mod = await ctx.importAsync("https://cdn.jsdelivr.net/npm/lit-html@2/+esm")`',
+        loadCSS: {
+          description: '按 URL 加载 CSS（仅浏览器环境）。',
+          detail: '(url: string) => Promise<void>',
+          completion: { insertText: "await ctx.loadCSS('https://example.com/style.css')" },
+          params: [{ name: 'url', type: 'string', description: 'CSS 地址。' }],
+          returns: { type: 'Promise<void>' },
+          examples: ["await ctx.loadCSS('https://example.com/style.css');"],
+        },
+        getVar: {
+          description: '通过相对路径字符串获取 ctx 下变量的运行时值。',
+          detail: '(path: string) => Promise<any>',
+          completion: { insertText: "await ctx.getVar('record.id')" },
+          params: [
+            {
+              name: 'path',
+              type: 'string',
+              description: 'ctx 下的相对路径（例如 "record.id" / "record.roles[0].id"）。',
+            },
+          ],
+          returns: { type: 'Promise<any>' },
+          examples: ["const id = await ctx.getVar('record.id');"],
+        },
         resolveJsonTemplate: '解析含 {{ }} 变量表达式的 JSON 模板。参数：(template: any, context?: object) => any',
         runAction: {
           description:

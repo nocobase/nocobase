@@ -61,6 +61,11 @@ FlowEngineContext（全局上下文）
 
 为此，`FlowContext` 提供了异步 API：`await ctx.getInfos(options?)`，用于返回**静态可序列化**的上下文信息（不包含函数）。
 
+你可以通过以下方式为上下文补充的信息：
+
+- `ctx.defineMethod(name, fn, info?)`：为方法补充描述、参数、示例、补全插入、文档链接等；
+- `ctx.defineProperty(key, { meta?, info? })`：其中 `meta` 面向变量选择器 UI（`getPropertyMetaTree`），`info` 面向 `getInfos()`/补全/大模型（不影响变量选择器 UI）。
+
 如果你需要在运行时通过“变量路径字符串”取值（例如来自配置/用户输入），可以使用：`await ctx.getVar(path)`。
 
 ### 返回结构

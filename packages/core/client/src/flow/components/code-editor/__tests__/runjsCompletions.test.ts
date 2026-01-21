@@ -77,7 +77,7 @@ describe('buildRunJSCompletions', () => {
     expect(completions.some((c: any) => c.label === 'ctx.foo')).toBe(true);
     const apiProp = completions.find((c: any) => c.label === 'ctx.api');
     expect(apiProp).toBeTruthy();
-    const apiReq = completions.find((c: any) => c.label === 'ctx.api.request');
+    const apiReq = completions.find((c: any) => c.label === 'ctx.api.request()');
     expect(apiReq).toBeTruthy();
     const mockView = { dispatch: vi.fn() } as any;
     (apiReq as any).apply?.(mockView, apiReq, 0, 0);

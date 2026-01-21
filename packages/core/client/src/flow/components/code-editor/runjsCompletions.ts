@@ -129,6 +129,20 @@ export async function buildRunJSCompletions(
     return rest.reduce((acc, seg) => `${acc}?.${seg}`, '(await ctx.popup)');
   };
 
+  const isFunctionLikeDocNode = (node: any, completionSpec: any): boolean => {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return false;
+    const type = typeof (node as any).type === 'string' ? String((node as any).type) : '';
+    if (type === 'function' || type === 'method') return true;
+    if (Array.isArray((node as any).params) && (node as any).params.length) return true;
+    if ((node as any).returns) return true;
+
+    // Heuristic: if completion.insertText looks like a ctx.<...>(...) call, treat it as callable.
+    const insertText = completionSpec?.insertText;
+    if (typeof insertText === 'string' && /\bctx\.[\w$.]+\s*\(/.test(insertText)) return true;
+
+    return false;
+  };
+
   // Ensure RunJS contexts are registered (lazy, avoids static cycles)
   try {
     await setupRunJSContexts();
@@ -258,6 +272,7 @@ export async function buildRunJSCompletions(
       const ctxLabel = `ctx.${path.join('.')}`;
       const depth = path.length;
       const root = path[0];
+      const isPopupPath = root === 'popup';
       if (isHiddenByPaths(ctxLabel)) continue;
       const decision = await resolveHiddenDecision(value, `p:${path.join('.')}`, path);
       if (decision.hideSelf) continue;
@@ -271,8 +286,10 @@ export async function buildRunJSCompletions(
         completionSpec = value.completion;
         children = value.properties as Record<string, any> | undefined;
       }
+      const isCallable = !isPopupPath && isFunctionLikeDocNode(value, completionSpec);
       const insertText =
-        completionSpec?.insertText ?? (path?.[0] === 'popup' ? buildAwaitedPopupExpr(path) : undefined);
+        completionSpec?.insertText ??
+        (isPopupPath ? buildAwaitedPopupExpr(path) : isCallable ? `${ctxLabel}()` : undefined);
       const apply = insertText
         ? (view: EditorView, _completion: Completion, from: number, to: number) => {
             view.dispatch({
@@ -282,11 +299,12 @@ export async function buildRunJSCompletions(
             });
           }
         : undefined;
+      const label = isCallable ? `${ctxLabel}()` : ctxLabel;
       completions.push({
-        label: ctxLabel,
-        type: 'property',
+        label,
+        type: isCallable ? 'function' : 'property',
         info: toInfo(value),
-        detail: detail || 'ctx property',
+        detail: detail || (isCallable ? 'ctx function' : 'ctx property'),
         boost: Math.max(90 - depth * 5, 10) + (priorityRoots.has(root) ? 10 : 0),
         apply,
       } as Completion);

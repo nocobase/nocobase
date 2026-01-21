@@ -162,16 +162,16 @@ FlowRunJSContext.define({
 
 说明：CodeEditor 始终启用基于实际 `ctx` 的补全过滤（fail-open，不抛错）。
 
-## 5. 运行时 meta 与 `ctx.getInfos()`（面向补全与大模型）
+## 5. 运行时 `info/meta` 与 `ctx.getInfos()`
 
-除了通过 `FlowRunJSContext.define()`（静态）维护 `ctx` 文档外，你也可以在运行时通过 `FlowContext.defineProperty/defineMethod` 注入带 meta 的能力，并通过 `ctx.getInfos()` 输出**静态可序列化**的上下文信息，供：
+除了通过 `FlowRunJSContext.define()`（静态）维护 `ctx` 文档外，你也可以在运行时通过 `FlowContext.defineProperty/defineMethod` 注入 **info/meta**，并通过 `ctx.getInfos()` 输出**静态可序列化**的上下文信息，供：
 
 - CodeEditor 自动补全（优先使用 `getInfos()`）
 - 大模型在生成/理解 JS*Model 代码时获取可用 API、参数、示例与文档链接
 
-### 5.1 `defineMethod(name, fn, meta?)`
+### 5.1 `defineMethod(name, fn, info?)`
 
-`meta` 支持（均可选）：
+`info` 支持（均可选）：
 
 - `description` / `detail` / `examples`
 - `completion: { insertText }`
@@ -192,15 +192,14 @@ ctx.defineMethod('refreshTargets', async () => {
 });
 ```
 
-### 5.2 `defineProperty(key, { meta })`
+### 5.2 `defineProperty(key, { meta?, info? })`
 
-`meta` 在原有 `title/type/properties` 等字段基础上，额外支持：
+- `meta`：用于变量选择器 UI（`getPropertyMetaTree` / `FlowContextSelector`），决定是否展示、树结构、禁用等（支持函数/async）。
+  - 常用字段：`title` / `type` / `properties` / `sort` / `hidden` / `disabled` / `disabledReason` / `buildVariablesParams`
+- `info`：用于补全与大模型（`getInfos` / code-editor），不影响变量选择器 UI（支持函数/async）。
+  - 常用字段：`description` / `detail` / `examples` / `completion` / `ref` / `params` / `returns` / `hidden` / `disabled` / `disabledReason`
 
-- `description` / `detail` / `examples`
-- `completion: { insertText }`
-- `ref: string | { url: string; title?: string }`
-- `params` / `returns`
-- `hidden` / `disabled` / `disabledReason`（支持函数/async 函数）
+当未提供 `info` 但提供了 `meta` 时，`getInfos()` 会基于 `meta` 推断最小结构性信息（例如 `title/type` 与可展开的子级 key）。若两者都提供，则深合并并以 `info` 优先。
 
 ### 5.3 `await ctx.getInfos(options?)`
 
