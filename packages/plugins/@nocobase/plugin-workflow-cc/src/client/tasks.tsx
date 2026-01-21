@@ -441,7 +441,7 @@ function useTodoActionParams(status) {
       'execution.id',
       'execution.status',
     ],
-    except: ['workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
+    except: ['workflow.options', 'execution.context', 'execution.output'],
   };
 }
 

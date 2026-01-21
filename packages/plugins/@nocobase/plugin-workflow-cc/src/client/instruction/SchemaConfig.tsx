@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { uid } from '@formily/shared';
 import { ISchema, observer, useField, useForm } from '@formily/react';
 import { Button, Dropdown, Modal, Spin, Typography } from 'antd';
 import { CreditCardOutlined, DeleteOutlined, DownOutlined, SettingOutlined } from '@ant-design/icons';
+import isEqual from 'lodash/isEqual';
 
 import {
   ActionContextProvider,
@@ -46,6 +47,10 @@ import {
 } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../common/constants';
 import { lang, usePluginTranslation } from '../locale';
+import {
+  updateWorkflowCcTaskAssociationFields,
+  type CCTaskTempAssociationFieldConfig,
+} from '../models/CCTaskCardDetailsItemModel';
 
 function useTriggerInitializers(): SchemaInitializerItemType | null {
   const { workflow } = useFlowContext();
@@ -467,9 +472,18 @@ export function CCInterfaceConfig({ children }) {
 }
 
 // V2: Task Card Drawer Content
-function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nodes }) {
+function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nodes, form, node, setFormValueChanged }) {
   const flowEngine = useFlowEngine();
   const viewCtx = useFlowViewContext();
+  const syncTempAssociationFields = useCallback(
+    (fields: CCTaskTempAssociationFieldConfig[]) => {
+      if (formDisabled || !form || !node) return;
+      if (isEqual(form.values.tempAssociationFields, fields)) return;
+      form.setValuesIn('tempAssociationFields', fields);
+      setFormValueChanged?.(true);
+    },
+    [form, formDisabled, node, setFormValueChanged],
+  );
   const { data: model, loading } = useRequest(
     async () => {
       const model: FlowModel = await flowEngine.loadOrCreateModel({
@@ -513,6 +527,10 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
           get: () => nodes ?? [],
           cache: false,
         });
+        model.context.defineProperty('ccTaskTempAssociationSync', {
+          get: () => syncTempAssociationFields,
+          cache: false,
+        });
         if (!uid) {
           onUidChange?.(model.uid);
         }
@@ -521,9 +539,17 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
       return model;
     },
     {
-      refreshDeps: [uid, formDisabled],
+      refreshDeps: [uid, formDisabled, syncTempAssociationFields],
     },
   );
+
+  useEffect(() => {
+    updateWorkflowCcTaskAssociationFields({
+      flowEngine,
+      workflow,
+      nodes,
+    });
+  }, [flowEngine, nodes, workflow]);
 
   if (loading) {
     return <Spin />;
@@ -551,6 +577,7 @@ export function CCTaskCardConfigButton() {
   const form = useForm();
   const ctx = useFlowEngineContext();
   const flowContext = useFlowContext();
+  const node = useNodeContext();
   const { setFormValueChanged } = useActionContext();
   const t = ctx.t;
 
@@ -583,10 +610,23 @@ export function CCTaskCardConfigButton() {
           formDisabled={form.disabled}
           workflow={flowContext.workflow}
           nodes={flowContext.nodes}
+          form={form}
+          node={node}
+          setFormValueChanged={setFormValueChanged}
         />
       ),
     });
-  }, [ctx, taskCardUid, form.disabled, flowContext.workflow, flowContext.nodes, onUidChange, t]);
+  }, [
+    ctx.viewer,
+    flowContext.nodes,
+    flowContext.workflow,
+    form,
+    node,
+    onUidChange,
+    setFormValueChanged,
+    t,
+    taskCardUid,
+  ]);
 
   return (
     <Button icon={<CreditCardOutlined />} type="default" onClick={openConfig} disabled={false}>

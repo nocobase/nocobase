@@ -11,11 +11,71 @@ import { SettingOutlined } from '@ant-design/icons';
 import { DetailsGridModel } from '@nocobase/client';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
+import type { CCTaskTempAssociationFieldConfig } from './CCTaskCardDetailsItemModel';
+import { getWorkflowCcTaskAssociationMetadata, TEMP_ASSOCIATION_PREFIX } from './CCTaskCardDetailsItemModel';
 
 /**
  * 抄送任务卡片详情的字段网格
  */
 export class CCTaskCardGridModel extends DetailsGridModel {
+  private lastTempAssociationSnapshot?: string;
+  private readonly tempAssociationSyncHandler = () => {
+    this.syncTempAssociationFields();
+  };
+
+  onMount(): void {
+    super.onMount();
+    this.emitter.on('onSubModelAdded', this.tempAssociationSyncHandler);
+    this.emitter.on('onSubModelDestroyed', this.tempAssociationSyncHandler);
+    this.syncTempAssociationFields();
+  }
+
+  onUnmount(): void {
+    this.emitter.off('onSubModelAdded', this.tempAssociationSyncHandler);
+    this.emitter.off('onSubModelDestroyed', this.tempAssociationSyncHandler);
+    super.onUnmount();
+  }
+
+  private getTempAssociationFieldNames() {
+    const fieldNames = this.mapSubModels('items', (item) => {
+      const fieldPath = item.getStepParams('fieldSettings', 'init')?.fieldPath;
+      if (!fieldPath) return null;
+      const baseField = fieldPath.split('.')[0];
+      if (!baseField.startsWith(TEMP_ASSOCIATION_PREFIX)) return null;
+      return baseField;
+    }).filter(Boolean) as string[];
+
+    return Array.from(new Set(fieldNames));
+  }
+
+  private syncTempAssociationFields() {
+    if (!this.context.flowSettingsEnabled) return;
+    const sync = this.context.ccTaskTempAssociationSync as
+      | ((fields: CCTaskTempAssociationFieldConfig[]) => void)
+      | undefined;
+    if (typeof sync !== 'function') return;
+
+    const associationMetadata = getWorkflowCcTaskAssociationMetadata({
+      workflow: this.context.workflow,
+      nodes: this.context.nodes,
+    });
+    const metadataMap = new Map(associationMetadata.map((association) => [association.fieldName, association]));
+    const selectedFields = this.getTempAssociationFieldNames();
+    const configs = selectedFields
+      .map((fieldName) => metadataMap.get(fieldName))
+      .filter(Boolean)
+      .map((association) => ({
+        fieldName: association.fieldName,
+        nodeId: association.nodeId,
+        nodeType: association.nodeType,
+      }))
+      .sort((a, b) => a.fieldName.localeCompare(b.fieldName));
+    const snapshot = JSON.stringify(configs);
+    if (snapshot === this.lastTempAssociationSnapshot) return;
+    this.lastTempAssociationSnapshot = snapshot;
+    sync(configs);
+  }
+
   renderAddSubModelButton() {
     if (!this.context.flowSettingsEnabled) {
       return null;

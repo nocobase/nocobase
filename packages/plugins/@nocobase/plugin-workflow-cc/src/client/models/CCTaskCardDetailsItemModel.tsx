@@ -12,7 +12,7 @@ import { Collection, CollectionField, FlowModelContext, tExpr } from '@nocobase/
 import { NAMESPACE } from '../../common/constants';
 
 // 注意：如果更改这里的值，会导致渲染错误
-const TEMP_ASSOCIATION_PREFIX = 'ccTempAssoc_';
+export const TEMP_ASSOCIATION_PREFIX = 'ccTempAssoc_';
 
 // 排除的字段
 const EXCLUDED_FIELDS = ['node', 'job', 'workflow', 'execution', 'user'];
@@ -34,52 +34,81 @@ type CCTaskAssociationContext = {
   nodes?: any[];
 };
 
-export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, nodes }: CCTaskAssociationContext) => {
-  if (!flowEngine) return;
-  const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
-  if (!collection) return;
+export type CCTaskTempAssociationFieldConfig = {
+  fieldName: string;
+  nodeId: string | number;
+  nodeType: 'workflow' | 'node';
+  timestamp?: number;
+};
 
-  const associations = [] as Array<{
-    name: string;
-    title?: string;
-    dataSourceKey: string;
-    target: string;
-  }>;
+type CCTaskAssociationMetadata = CCTaskTempAssociationFieldConfig & {
+  title?: string;
+  dataSourceKey: string;
+  target: string;
+};
 
-  const collectAssociation = (collectionName: string, title: string, key: string | number, type: string) => {
+export const getWorkflowCcTaskAssociationMetadata = ({
+  workflow,
+  nodes,
+  collection,
+}: Pick<CCTaskAssociationContext, 'workflow' | 'nodes'> & { collection?: Collection }): CCTaskAssociationMetadata[] => {
+  const associations: CCTaskAssociationMetadata[] = [];
+
+  const collectAssociation = (
+    collectionName: string,
+    title: string | undefined,
+    key: string | number,
+    nodeId: string | number,
+    nodeType: CCTaskTempAssociationFieldConfig['nodeType'],
+  ) => {
     const [dataSourceKey, target] = parseCollectionName(collectionName);
     if (!target) return;
-    const name = `${TEMP_ASSOCIATION_PREFIX}${type}_${sanitizeFieldKey(key)}`;
-    if (collection.getField(name)) {
+    const fieldName = `${TEMP_ASSOCIATION_PREFIX}${nodeType}_${sanitizeFieldKey(key)}`;
+    if (collection?.getField(fieldName)) {
       return;
     }
     const resolvedTitle = title || target;
-    associations.push({ name, title: resolvedTitle, dataSourceKey: dataSourceKey || 'main', target });
+    associations.push({
+      fieldName,
+      nodeId,
+      nodeType,
+      title: resolvedTitle,
+      dataSourceKey: dataSourceKey || 'main',
+      target,
+    });
   };
 
   if (workflow?.config?.collection) {
     const key = 'workflow';
-    collectAssociation(workflow.config.collection, workflow.title, key, 'workflow');
+    const nodeId = workflow?.id ?? key;
+    collectAssociation(workflow.config.collection, workflow.title, key, nodeId, 'workflow');
   }
 
-  (nodes || []).forEach((node, index) => {
+  (nodes || []).forEach((node) => {
     if (!node?.config?.collection) return;
-    const key = node?.key;
-    collectAssociation(node.config.collection, node.title, key, 'node');
+    const key = node?.key ?? node?.id;
+    const nodeId = node?.id ?? key;
+    collectAssociation(node.config.collection, node.title, key, nodeId, 'node');
   });
+
+  return associations;
+};
+
+export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, nodes }: CCTaskAssociationContext) => {
+  if (!flowEngine) return;
+  const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
+  if (!collection) return;
+  const associations = getWorkflowCcTaskAssociationMetadata({ workflow, nodes, collection });
 
   if (!associations.length) {
     return;
   }
 
   associations.forEach((association) => {
-    if (collection.getField(association.name)) {
-      return;
-    }
     collection.addField(
       new CCTaskCardTempAssociationField({
         type: 'belongsTo',
-        name: association.name,
+        name: association.fieldName,
         dataSourceKey: association.dataSourceKey,
         target: association.target,
         interface: 'm2o',
@@ -95,7 +124,6 @@ export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, no
 export class CCTaskCardDetailsItemModel extends DetailsItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
-
     return collection
       .getFields()
       .map((field) => {
