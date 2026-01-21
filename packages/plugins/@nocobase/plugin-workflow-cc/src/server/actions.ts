@@ -64,35 +64,84 @@ const getRecordKey = (record: any, primaryKey?: string) => {
   return undefined;
 };
 
+const setTaskFieldValue = (task: any, fieldName: string, value: any) => {
+  if (task && typeof task.setDataValue === 'function') {
+    task.setDataValue(fieldName, value);
+    return;
+  }
+  task[fieldName] = value;
+};
+
 const mergeAppends = (appends: string[] | undefined, required: string[]) => {
   const result = new Set([...(appends || [])]);
   required.forEach((item) => result.add(item));
   return Array.from(result);
 };
 
+const normalizeNodeConfig = (config: any) => {
+  if (!config) return undefined;
+  if (typeof config === 'string') {
+    try {
+      return JSON.parse(config);
+    } catch (error) {
+      return undefined;
+    }
+  }
+  return config;
+};
+
 async function appendTempAssociationFields(context: Context) {
-  const bodyData = context.body?.data;
+  const body = context.body;
+  const bodyData = Array.isArray(body) ? body : body?.rows;
   if (!Array.isArray(bodyData) || bodyData.length === 0) {
     return;
   }
 
   const tasksWithConfig = new Map<any, TempAssociationFieldMetadata[]>();
   const executionIds = new Set<number>();
-  const nodeConfigCache = new Map<string | number, TempAssociationFieldMetadata[]>();
+  const tasksByNodeId = new Map<string | number, any[]>();
+  const ccNodeConfigMap = new Map<string | number, any>();
+  const ccNodeIdsToFetch = new Set<string | number>();
 
   bodyData.forEach((task) => {
     const nodeId = task?.node?.id ?? task?.nodeId;
     if (nodeId == null) return;
-    let configs = nodeConfigCache.get(nodeId);
-    if (!configs) {
-      configs = normalizeTempAssociationConfigs(task?.node?.config?.tempAssociationFields);
-      nodeConfigCache.set(nodeId, configs);
+    const tasks = tasksByNodeId.get(nodeId) || [];
+    tasks.push(task);
+    tasksByNodeId.set(nodeId, tasks);
+    if (task?.node?.config) {
+      ccNodeConfigMap.set(nodeId, normalizeNodeConfig(task.node.config));
+    } else {
+      ccNodeIdsToFetch.add(nodeId);
     }
-    if (!configs.length) return;
-    tasksWithConfig.set(task, configs);
     if (task.executionId) {
       executionIds.add(task.executionId);
     }
+  });
+
+  if (ccNodeIdsToFetch.size) {
+    const nodeRepo = context.app.db.getRepository('flow_nodes');
+    const nodes = await nodeRepo.find({
+      filter: { id: Array.from(ccNodeIdsToFetch) },
+    });
+    nodes.forEach((node) => {
+      ccNodeConfigMap.set(node.id, normalizeNodeConfig(node.config) || {});
+    });
+  }
+
+  const referencedNodeIds = new Set<string | number>();
+  tasksByNodeId.forEach((tasks, nodeId) => {
+    const config = normalizeNodeConfig(ccNodeConfigMap.get(nodeId));
+    const configs = normalizeTempAssociationConfigs(config?.tempAssociationFields);
+    if (!configs.length) return;
+    configs.forEach((item) => {
+      if (item.nodeType === 'node') {
+        referencedNodeIds.add(item.nodeId);
+      }
+    });
+    tasks.forEach((task) => {
+      tasksWithConfig.set(task, configs);
+    });
   });
 
   if (!tasksWithConfig.size) return;
@@ -136,7 +185,7 @@ async function appendTempAssociationFields(context: Context) {
     : [];
   const executionMap = new Map<number, any>(executions.map((execution) => [execution.id, execution]));
 
-  const workflowNodeMap = new Map<number, Map<string, any>>();
+  const workflowNodeMap = new Map<string | number, any>();
   const collectionCache = new Map<
     string,
     {
@@ -155,16 +204,18 @@ async function appendTempAssociationFields(context: Context) {
     }
   >();
 
-  const resolveWorkflowNodeMap = (workflow) => {
-    if (!workflow?.id) return new Map();
-    if (workflowNodeMap.has(workflow.id)) {
-      return workflowNodeMap.get(workflow.id) as Map<string, any>;
-    }
-    const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
-    const nodeMap = new Map<string, any>(nodes.map((node) => [String(node.id), node]));
-    workflowNodeMap.set(workflow.id, nodeMap);
-    return nodeMap;
-  };
+  if (referencedNodeIds.size) {
+    const nodeRepo = context.app.db.getRepository('flow_nodes');
+    const nodes = await nodeRepo.find({
+      filter: { id: Array.from(referencedNodeIds) },
+    });
+    nodes.forEach((node) => {
+      workflowNodeMap.set(String(node.id), {
+        ...node,
+        config: normalizeNodeConfig(node.config),
+      });
+    });
+  }
 
   const getRepository = (dataSourceName: string, collectionName: string) => {
     const cacheKey = `${dataSourceName}:${collectionName}`;
@@ -185,7 +236,6 @@ async function appendTempAssociationFields(context: Context) {
   for (const [task, configs] of tasksWithConfig.entries()) {
     const execution = executionMap.get(task.executionId);
     const workflow = task.workflow;
-    const nodeMap = resolveWorkflowNodeMap(workflow);
 
     configs.forEach((config) => {
       let collectionConfig;
@@ -195,37 +245,37 @@ async function appendTempAssociationFields(context: Context) {
         collectionConfig = workflow?.config?.collection;
         recordData = pickRecordData(execution?.context?.data);
       } else {
-        const node = nodeMap.get(String(config.nodeId));
+        const node = workflowNodeMap.get(String(config.nodeId));
         collectionConfig = node?.config?.collection;
         const job = execution?.jobs?.find((item) => String(item.nodeId) === String(config.nodeId));
         recordData = pickRecordData(job?.result);
       }
 
       if (!collectionConfig) {
-        task[config.fieldName] = null;
+        setTaskFieldValue(task, config.fieldName, null);
         return;
       }
 
       const [dataSourceName, collectionName] = parseCollectionName(collectionConfig);
       if (!dataSourceName || !collectionName) {
-        task[config.fieldName] = null;
+        setTaskFieldValue(task, config.fieldName, null);
         return;
       }
 
       const repoEntry = getRepository(dataSourceName, collectionName);
       if (!repoEntry) {
-        task[config.fieldName] = null;
+        setTaskFieldValue(task, config.fieldName, null);
         return;
       }
 
       const recordKey = getRecordKey(recordData, repoEntry.collection?.model?.primaryKeyAttribute);
       if (recordKey == null) {
-        task[config.fieldName] = recordData ? toPlainObject(recordData) : null;
+        setTaskFieldValue(task, config.fieldName, recordData ? toPlainObject(recordData) : null);
         return;
       }
 
       if (Array.isArray(repoEntry.filterTargetKey)) {
-        task[config.fieldName] = recordData ? toPlainObject(recordData) : null;
+        setTaskFieldValue(task, config.fieldName, recordData ? toPlainObject(recordData) : null);
         return;
       }
 
@@ -246,14 +296,14 @@ async function appendTempAssociationFields(context: Context) {
     const repoEntry = getRepository(group.dataSourceName, group.collectionName);
     if (!repoEntry) {
       group.references.forEach(({ task, fieldName }) => {
-        task[fieldName] = null;
+        setTaskFieldValue(task, fieldName, null);
       });
       continue;
     }
     const filterTargetKey = repoEntry.filterTargetKey as string | undefined;
     if (!filterTargetKey) {
       group.references.forEach(({ task, fieldName }) => {
-        task[fieldName] = null;
+        setTaskFieldValue(task, fieldName, null);
       });
       continue;
     }
@@ -264,7 +314,7 @@ async function appendTempAssociationFields(context: Context) {
     });
     const recordMap = new Map(records.map((record) => [toPlainObject(record)[filterTargetKey], toPlainObject(record)]));
     group.references.forEach(({ task, fieldName, recordKey }) => {
-      task[fieldName] = recordMap.get(recordKey) ?? null;
+      setTaskFieldValue(task, fieldName, recordMap.get(recordKey) ?? null);
     });
   }
 }
