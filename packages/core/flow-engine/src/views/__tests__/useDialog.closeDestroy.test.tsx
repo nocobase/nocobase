@@ -14,22 +14,24 @@ import { useDialog } from '../useDialog';
 import { FlowContext } from '../../flowContext';
 
 // Mock dependencies
-vi.mock('../provider', () => ({
+vi.mock('../../provider', () => ({
   FlowEngineProvider: ({ children }) => children,
 }));
 
-vi.mock('../FlowContextProvider', () => ({
+vi.mock('../../FlowContextProvider', () => ({
   FlowViewContextProvider: ({ children }) => children,
 }));
 
-vi.mock('../ViewScopedFlowEngine', () => ({
+vi.mock('../../ViewScopedFlowEngine', () => ({
   createViewScopedEngine: (engine) => ({
     context: new FlowContext(),
     unlinkFromStack: vi.fn(),
+    // mimic real view stack linkage: previousEngine points to the last engine in chain
+    previousEngine: (engine as any)?.nextEngine || engine,
   }),
 }));
 
-vi.mock('../utils/variablesParams', () => ({
+vi.mock('../../utils/variablesParams', () => ({
   createViewRecordResolveOnServer: vi.fn(),
   getViewRecordFromParent: vi.fn(),
 }));
@@ -48,6 +50,7 @@ vi.mock('../usePatchElement', () => ({
 describe('useDialog - close/destroy logic', () => {
   const createMockFlowContext = () => {
     const ctx = new FlowContext();
+    ctx.defineMethod('t', (key: string) => key);
     ctx.engine = {
       context: new FlowContext(),
       emitter: {
@@ -139,5 +142,21 @@ describe('useDialog - close/destroy logic', () => {
 
     dialog.close();
     expect(emitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
+  });
+
+  it('should emit view events on immediate opener engine (previousEngine) when present', () => {
+    const api = renderUseDialog();
+    const flowContext = createMockFlowContext();
+    const rootEmitSpy = flowContext.engine.emitter.emit;
+    const openerEmitSpy = vi.fn();
+    (flowContext.engine as any).nextEngine = { emitter: { emit: openerEmitSpy }, __NOCOBASE_ENGINE_SCOPE__: 'view' };
+
+    const dialog = api.open({ inputArgs: { viewUid: 'child-view' } }, flowContext);
+    expect(openerEmitSpy).toHaveBeenCalledWith('view:deactivated', expect.anything());
+    expect(rootEmitSpy).not.toHaveBeenCalledWith('view:deactivated', expect.anything());
+
+    dialog.close();
+    expect(openerEmitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
+    expect(rootEmitSpy).not.toHaveBeenCalledWith('view:activated', expect.anything());
   });
 });

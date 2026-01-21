@@ -15,6 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
+import { bumpViewActivatedVersion, resolveOpenerEngine, type EngineLike } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -54,7 +55,7 @@ export function useDrawer() {
   RenderNestedDrawer.displayName = 'RenderNestedDrawer';
 
   const open = (config, flowContext: FlowEngineContext) => {
-    const openerEngine = flowContext?.engine as any;
+    const parentEngine: EngineLike = flowContext.engine;
     const drawerRef = React.createRef<{
       destroy: () => void;
       update: (config: any) => void;
@@ -106,6 +107,8 @@ export function useDrawer() {
     const ctx = new FlowContext();
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
+    const openerEngine = resolveOpenerEngine(parentEngine, scopedEngine);
+
     // 先将引擎暴露给视图上下文，再按需继承父上下文
     ctx.defineProperty('engine', { value: scopedEngine });
     ctx.addDelegate(scopedEngine.context);
@@ -126,7 +129,9 @@ export function useDrawer() {
         closeFunc?.();
         resolvePromise?.(result);
         // Notify opener view that it becomes active again.
-        openerEngine?.emitter?.emit?.('view:activated', { type: 'drawer', viewUid: currentDrawer?.inputArgs?.viewUid });
+        const openerEmitter = openerEngine?.emitter;
+        bumpViewActivatedVersion(openerEmitter);
+        openerEmitter?.emit?.('view:activated', { type: 'drawer', viewUid: currentDrawer?.inputArgs?.viewUid });
         // 关闭时修正 previous/next 指针
         scopedEngine.unlinkFromStack();
       },

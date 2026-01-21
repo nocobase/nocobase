@@ -11,6 +11,7 @@ import { Popover } from 'antd';
 import DOMPurify from 'dompurify';
 import * as React from 'react';
 import usePatchElement from './usePatchElement';
+import { bumpViewActivatedVersion, type EngineLike } from './viewEvents';
 
 let uuid = 0;
 
@@ -69,7 +70,7 @@ export function usePopover() {
   const holderRef = React.useRef<any>(null);
 
   const open = (config, flowContext?: any) => {
-    const openerEngine = flowContext?.engine as any;
+    const openerEngine = flowContext?.engine as EngineLike | undefined;
     uuid += 1;
     const { target, placement = 'rightTop', content, ...rest } = config;
     const popoverRef = React.createRef<any>();
@@ -113,7 +114,9 @@ export function usePopover() {
           closeFunc?.();
           config.onClose?.();
           // Notify opener view that it becomes active again.
-          openerEngine?.emitter?.emit?.('view:activated', { type: 'popover', viewUid: config?.inputArgs?.viewUid });
+          const openerEmitter = openerEngine?.emitter;
+          bumpViewActivatedVersion(openerEmitter);
+          openerEmitter?.emit?.('view:activated', { type: 'popover', viewUid: config?.inputArgs?.viewUid });
           resolvePromise?.(config.result);
         }}
         {...rest}

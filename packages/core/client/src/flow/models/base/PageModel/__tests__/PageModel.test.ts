@@ -21,6 +21,8 @@ vi.mock('@nocobase/flow-engine', () => ({
       this.props = options.props || {};
       this.context = options.context || {};
     }
+    onMount() {}
+    onUnmount() {}
     setProps(key: string, value: any) {
       this.props[key] = value;
     }
@@ -39,7 +41,7 @@ vi.mock('@nocobase/flow-engine', () => ({
   FlowModelRenderer: () => null,
   Droppable: ({ children }: any) => children,
   DragHandler: () => null,
-  getPageActive: () => false,
+  getPageActive: (ctx: any) => !!ctx?.view?.inputArgs?.pageActive,
   CreateModelOptions: class {},
 }));
 
@@ -151,6 +153,67 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
+    });
+  });
+
+  describe('dirty refresh signal', () => {
+    it('should invoke current tab onActive when dataSource:dirty is emitted and page is active', async () => {
+      const listeners: Record<string, any> = {};
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+
+      (pageModel as any).flowEngine = {
+        emitter: {
+          on: vi.fn((event: string, cb: any) => {
+            listeners[event] = cb;
+          }),
+          off: vi.fn(),
+        },
+      };
+      // @ts-ignore
+      pageModel.context = {
+        view: {
+          navigation: null,
+          inputArgs: { tabUid: 'tab1', pageActive: true },
+        },
+      } as any;
+
+      pageModel.onMount();
+
+      expect(typeof listeners['dataSource:dirty']).toBe('function');
+      listeners['dataSource:dirty']({ dataSourceKey: 'main', resourceNames: ['posts'] });
+      await Promise.resolve();
+
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+    });
+
+    it('should invoke current tab onActive on mount when view:activated happened before PageModel mounted', () => {
+      const listeners: Record<string, any> = {};
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      const VIEW_ACTIVATED_VERSION = Symbol.for('__NOCOBASE_VIEW_ACTIVATED_VERSION__');
+
+      const emitter: any = {
+        on: vi.fn((event: string, cb: any) => {
+          listeners[event] = cb;
+        }),
+        off: vi.fn(),
+      };
+      emitter[VIEW_ACTIVATED_VERSION] = 1;
+
+      (pageModel as any).flowEngine = {
+        emitter,
+      };
+      // @ts-ignore
+      pageModel.context = {
+        view: {
+          navigation: null,
+          inputArgs: { tabUid: 'tab1', pageActive: true },
+        },
+      } as any;
+
+      pageModel.onMount();
+
+      expect(typeof listeners['view:activated']).toBe('function');
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
     });
   });
 });

@@ -15,6 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
+import { bumpViewActivatedVersion, resolveOpenerEngine, type EngineLike } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -40,7 +41,7 @@ export function usePage() {
   const globalEmbedActiveRef = React.useRef<null | { destroy: () => void }>(null);
 
   const open = (config, flowContext) => {
-    const openerEngine = flowContext?.engine as any;
+    const parentEngine = flowContext?.engine as EngineLike | undefined;
     uuid += 1;
     const pageRef = React.createRef<{
       destroy: () => void;
@@ -106,6 +107,8 @@ export function usePage() {
     const ctx = new FlowContext();
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
+    const openerEngine = resolveOpenerEngine(parentEngine, scopedEngine);
+
     ctx.defineProperty('engine', { value: scopedEngine });
     ctx.addDelegate(scopedEngine.context);
     if (inheritContext) {
@@ -133,7 +136,9 @@ export function usePage() {
         const isReplacing =
           isGlobalEmbedContainer && target instanceof HTMLElement && target.dataset?.[EMBED_REPLACING_DATA_KEY] === '1';
         if (!isReplacing) {
-          openerEngine?.emitter?.emit?.('view:activated', { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
+          const openerEmitter = openerEngine?.emitter;
+          bumpViewActivatedVersion(openerEmitter);
+          openerEmitter?.emit?.('view:activated', { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
         }
 
         // 关闭时修正 previous/next 指针
