@@ -12,7 +12,7 @@ import PluginFileManagerServer from '../server';
 
 import { STORAGE_TYPE_LOCAL } from '../../constants';
 
-import { getFileKey } from '../utils';
+import { cloudFilenameGetter, getFileKey } from '../utils';
 
 describe('file manager > utils', () => {
   let app;
@@ -43,8 +43,54 @@ describe('file manager > utils', () => {
   });
 
   describe('getFileKey', () => {
-    it('path as null should works', async () => {
+    it('handles null path', async () => {
       expect(getFileKey({ path: null, filename: 'test.jpg' })).toBe('test.jpg');
+    });
+  });
+
+  describe('cloudFilenameGetter', () => {
+    const testFilename = '[]中文报告! 1%~50.4% (123) {$#}.txt';
+    const asciiFilename = 'report.txt';
+    const getFilename = (storage, originalname) =>
+      new Promise<string>((resolve, reject) => {
+        cloudFilenameGetter(storage)(null, { originalname }, (err, filename) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(filename);
+        });
+      });
+
+    it('keeps utf8 filename as-is', async () => {
+      const storage = { renameMode: 'none', path: 'uploads/' };
+      const filename = await getFilename(storage, testFilename);
+      expect(filename).toBe(`uploads/${testFilename}`);
+    });
+
+    it('decodes binary-encoded filename', async () => {
+      const storage = { renameMode: 'none', path: '' };
+      const originalname = Buffer.from(testFilename, 'utf8').toString('binary');
+      const filename = await getFilename(storage, originalname);
+      expect(filename).toBe(testFilename);
+    });
+
+    it('keeps ascii filename when renameMode is none', async () => {
+      const storage = { renameMode: 'none', path: 'uploads' };
+      const filename = await getFilename(storage, asciiFilename);
+      expect(filename).toBe(`uploads/${asciiFilename}`);
+    });
+
+    it('uses random name when renameMode is random', async () => {
+      const storage = { renameMode: 'random', path: 'uploads' };
+      const filename = await getFilename(storage, asciiFilename);
+      expect(filename).toMatch(/^uploads\/[a-f0-9]{32}\.txt$/);
+    });
+
+    it('adds uid suffix when renameMode is default', async () => {
+      const storage = { path: 'uploads' };
+      const filename = await getFilename(storage, asciiFilename);
+      expect(filename).toMatch(/^uploads\/report-[0-9a-z]{6}\.txt$/);
     });
   });
 });
