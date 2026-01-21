@@ -208,7 +208,6 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   getColumns() {
-    const isConfigMode = !!this.context.flowSettingsEnabled;
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
@@ -216,7 +215,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       .concat({
         key: 'empty',
       });
-    if (isConfigMode) {
+    if (this.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
@@ -278,6 +277,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   filterByTk: this.collection.getFilterByTK(record),
                   record: record,
                   fieldProps: { ...model.props, ...model.subModels.field.props },
+                  sourceFieldModelUid: model.subModels.field.uid,
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];

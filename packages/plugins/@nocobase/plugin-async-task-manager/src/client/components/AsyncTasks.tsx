@@ -98,6 +98,7 @@ const AsyncTasksButton = (props) => {
 
           switch (status) {
             case TASK_STATUS.PENDING:
+            case TASK_STATUS.CANCELED:
               return <Alert showIcon={false} message={compile(label)} banner />;
             case TASK_STATUS.RUNNING:
               return (

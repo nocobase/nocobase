@@ -14,6 +14,7 @@ import type { TargetKey } from '@nocobase/database';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
 import { adjustSelectsForCollection } from './selects';
+import { fetchRecordOrRecordsJson, getExtraKeyFieldsForSelect, mergeFieldsWithExtras } from './records';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -183,6 +184,7 @@ async function fetchRecordWithRequestCache(
   filterByTk: unknown,
   fields?: string[],
   appends?: string[],
+  strictSelects?: boolean,
   preferFullRecord?: boolean,
   associationName?: string,
   sourceId?: unknown,
@@ -211,21 +213,38 @@ async function fetchRecordWithRequestCache(
     // 确保查询字段包含主键（仅当模型存在明确主键且该属性存在于 rawAttributes 中时）
     const modelInfo = (
       repo as unknown as {
-        collection?: { model?: { primaryKeyAttribute?: string; rawAttributes?: Record<string, unknown> } };
+        collection?: {
+          filterTargetKey?: string | string[];
+          model?: { primaryKeyAttribute?: string; rawAttributes?: Record<string, unknown> };
+        };
       }
     ).collection?.model;
     const pkAttr = modelInfo?.primaryKeyAttribute;
     const pkIsValid =
       pkAttr && modelInfo?.rawAttributes && Object.prototype.hasOwnProperty.call(modelInfo.rawAttributes, pkAttr);
-    const fieldsWithPk =
-      Array.isArray(fields) && fields.length > 0 && pkIsValid
-        ? Array.from(new Set<string>([...fields, pkAttr as string]))
-        : fields;
+    const collectionInfo = (repo as unknown as { collection?: { filterTargetKey?: string | string[] } })?.collection;
+    const filterTargetKey = collectionInfo?.filterTargetKey;
+
+    // 仅在非 strictSelects 模式下追加 filterTargetKey，用于 filterByTk 数组时“按输入顺序”对齐结果
+    // strictSelects=true 场景下尽量不额外扩大选择范围（避免意外解析/覆盖未显式选择的字段）。
+    const extraKeys = getExtraKeyFieldsForSelect(filterByTk, {
+      filterTargetKey,
+      pkAttr,
+      pkIsValid,
+      rawAttributes: (modelInfo?.rawAttributes as Record<string, unknown>) || undefined,
+    });
+    const effectiveExtras =
+      strictSelects && Array.isArray(extraKeys) && extraKeys.length ? extraKeys.filter((k) => k === pkAttr) : extraKeys;
+    const fieldsWithExtras = mergeFieldsWithExtras(fields, effectiveExtras);
 
     // 对于需要完整记录的场景（preferFullRecord 为 true，例如模板中出现 xxx.record），
     // 缓存键不再区分 fields/appends，只按“全量记录”维度缓存。
     const cacheKeyFields =
-      preferFullRecord && pkIsValid ? undefined : Array.isArray(fieldsWithPk) ? [...fieldsWithPk].sort() : undefined;
+      preferFullRecord && pkIsValid
+        ? undefined
+        : Array.isArray(fieldsWithExtras)
+          ? [...fieldsWithExtras].sort()
+          : undefined;
     const cacheKeyAppends = preferFullRecord ? undefined : Array.isArray(appends) ? [...appends].sort() : undefined;
     const keyObj: {
       ds: string;
@@ -252,70 +271,71 @@ async function fetchRecordWithRequestCache(
         return cache.get(key);
       }
       // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）。
-      // 对于 preferFullRecord=true 的情况，只要缓存项标记为 full 即可复用（与 fields/appends 无关）。
-      // 注意：若 needFields 中某路径已被 cachedAppends 的前缀覆盖（例如 needFields: ['roles.name'] 且 cachedAppends: ['roles']），
-      // 则认为该字段已被关联载入，可视为满足。
-      const needFields = !preferFullRecord && Array.isArray(fieldsWithPk) ? [...new Set(fieldsWithPk)] : undefined;
-      const needAppends = !preferFullRecord && Array.isArray(appends) ? new Set(appends) : undefined;
-      for (const [cacheKey, cacheVal] of cache.entries()) {
-        const parsed = JSON.parse(cacheKey) as {
-          ds: string;
-          c: string;
-          tk: unknown;
-          f?: string[];
-          a?: string[];
-          full?: boolean;
-          assoc?: string;
-          sid?: unknown;
-        };
-        if (
-          !parsed ||
-          parsed.ds !== keyObj.ds ||
-          parsed.c !== keyObj.c ||
-          parsed.tk !== keyObj.tk ||
-          parsed.assoc !== keyObj.assoc ||
-          parsed.sid !== keyObj.sid
-        )
-          continue;
-        const cachedFields = new Set(parsed.f || []);
-        const cachedAppends = new Set(parsed.a || []);
+      // - 对于 preferFullRecord=true 的情况，只要缓存项标记为 full 即可复用（与 fields/appends 无关）。
+      // - 对于 strictSelects=true：仅复用“完全相同 key”的缓存（上面已命中）；禁止使用超集复用，避免泄露/覆盖不在选择范围内的字段。
+      if (!strictSelects) {
+        // 注意：若 needFields 中某路径已被 cachedAppends 的前缀覆盖（例如 needFields: ['roles.name'] 且 cachedAppends: ['roles']），
+        // 则认为该字段已被关联载入，可视为满足。
+        const needFields =
+          !preferFullRecord && Array.isArray(fieldsWithExtras) ? [...new Set(fieldsWithExtras)] : undefined;
+        const needAppends = !preferFullRecord && Array.isArray(appends) ? new Set(appends) : undefined;
+        for (const [cacheKey, cacheVal] of cache.entries()) {
+          const parsed = JSON.parse(cacheKey) as {
+            ds: string;
+            c: string;
+            tk: unknown;
+            f?: string[];
+            a?: string[];
+            full?: boolean;
+            assoc?: string;
+            sid?: unknown;
+          };
+          if (
+            !parsed ||
+            parsed.ds !== keyObj.ds ||
+            parsed.c !== keyObj.c ||
+            !_.isEqual(parsed.tk, keyObj.tk) ||
+            parsed.assoc !== keyObj.assoc ||
+            !_.isEqual(parsed.sid, keyObj.sid)
+          )
+            continue;
+          const cachedFields = new Set(parsed.f || []);
+          const cachedAppends = new Set(parsed.a || []);
 
-        const fieldCoveredByAppends = (fieldPath: string) => {
-          // 归一化，防御空串
-          const p = String(fieldPath || '');
-          // 若某个 append 是字段路径的前缀，则认为覆盖
-          // 例如 append: 'roles' 覆盖 'roles.name' / 'roles.users.id'
-          for (const a of cachedAppends) {
-            if (!a) continue;
-            if (p === a || p.startsWith(a + '.')) return true;
+          const fieldCoveredByAppends = (fieldPath: string) => {
+            // 归一化，防御空串
+            const p = String(fieldPath || '');
+            // 若某个 append 是字段路径的前缀，则认为覆盖
+            // 例如 append: 'roles' 覆盖 'roles.name' / 'roles.users.id'
+            for (const a of cachedAppends) {
+              if (!a) continue;
+              if (p === a || p.startsWith(a + '.')) return true;
+            }
+            return false;
+          };
+
+          const fieldsOk = needFields
+            ? needFields.every((f) => cachedFields.has(f) || fieldCoveredByAppends(f))
+            : parsed.f === undefined;
+          const appendsOk = !needAppends || [...needAppends].every((a) => cachedAppends.has(a));
+          const fullOk = preferFullRecord ? parsed.full === true : true;
+          if (fieldsOk && appendsOk && fullOk) {
+            return cacheVal;
           }
-          return false;
-        };
-
-        const fieldsOk = needFields
-          ? needFields.every((f) => cachedFields.has(f) || fieldCoveredByAppends(f))
-          : parsed.f === undefined;
-        const appendsOk = !needAppends || [...needAppends].every((a) => cachedAppends.has(a));
-        const fullOk = preferFullRecord ? parsed.full === true : true;
-        if (fieldsOk && appendsOk && fullOk) {
-          return cacheVal;
         }
       }
     }
     // 当 preferFullRecord 为 true 时，无论之前如何推导字段/关联，都以“完整记录”维度查询，
     // 确保 ctx.xxx.record 返回的是完整 JSON 记录，而非仅包含部分字段的切片。
-    const rec = await repo.findOne(
-      preferFullRecord
-        ? {
-            filterByTk: filterByTk as TargetKey,
-          }
-        : {
-            filterByTk: filterByTk as TargetKey,
-            fields: fieldsWithPk,
-            appends,
-          },
-    );
-    const json = rec ? rec.toJSON() : undefined;
+    const json = await fetchRecordOrRecordsJson(repo, {
+      filterByTk: filterByTk as TargetKey,
+      preferFullRecord,
+      fields: fieldsWithExtras,
+      appends,
+      filterTargetKey,
+      pkAttr,
+      pkIsValid,
+    });
     if (cache) cache.set(key, json);
     return json;
   } catch (e: unknown) {
@@ -343,6 +363,8 @@ function isRecordParams(val: unknown): val is {
   dataSourceKey?: string;
   associationName?: string;
   sourceId?: unknown;
+  fields?: string[];
+  appends?: string[];
 } {
   return val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val;
 }
@@ -367,13 +389,55 @@ function attachGenericRecordVariables(
     const usedPaths = usage[varName] || [];
     const topParams = _.get(contextParams, varName);
 
+    // Deep record params: varName.<a>.<b>[.<c>...] is record (e.g., view.record / popup.parent.record)
+    type RecordParams = {
+      collection: string;
+      filterByTk: unknown;
+      dataSourceKey?: string;
+      associationName?: string;
+      sourceId?: unknown;
+      fields?: string[];
+      appends?: string[];
+    };
+    const deepRecordMap = new Map<string, RecordParams>(); // relativePath -> recordParams
+    const cp = contextParams;
+    if (cp && typeof cp === 'object') {
+      const cpRec = cp as Record<string, unknown>;
+      for (const key of Object.keys(cpRec)) {
+        if (!key || (key !== varName && !key.startsWith(`${varName}.`))) continue;
+        if (key === varName) continue;
+        const val = cpRec[key];
+        if (!isRecordParams(val)) continue;
+        const relative = key.slice(varName.length + 1); // e.g. 'parent.record'
+        if (!relative) continue;
+        deepRecordMap.set(relative, val);
+      }
+    }
+
     // Top-level record-like
     if (isRecordParams(topParams)) {
-      const { generatedAppends, generatedFields } = inferSelectsFromUsage(usedPaths, topParams);
-      const hasDirectRefTop = (usedPaths || []).some((p) => p === '');
+      // If there are deep record params (e.g. contextParams['x.profile'] is a record),
+      // exclude those paths from the base record's selects inference to avoid fetching
+      // invalid/irrelevant appends on the base collection.
+      const usedPathsForBase = deepRecordMap.size
+        ? (usedPaths || []).filter((p) => {
+            if (!p) return true;
+            for (const relative of deepRecordMap.keys()) {
+              if (!relative) continue;
+              if (p === relative || p.startsWith(relative + '.') || p.startsWith(relative + '[')) return false;
+            }
+            return true;
+          })
+        : usedPaths || [];
+
+      const hasDirectRefTop = usedPathsForBase.some((p) => p === '');
       flowCtx.defineProperty(varName, {
         get: async () => {
           const dataSourceKey = topParams?.dataSourceKey || 'main';
+          const strictSelects = Array.isArray(topParams?.fields) || Array.isArray(topParams?.appends);
+          let { generatedAppends, generatedFields } = inferSelectsFromUsage(usedPathsForBase, topParams);
+          if (Array.isArray(topParams?.fields)) generatedFields = topParams.fields;
+          if (Array.isArray(topParams?.appends)) generatedAppends = topParams.appends;
           const fixed = adjustSelectsForCollection(
             koaCtx,
             dataSourceKey,
@@ -381,21 +445,85 @@ function attachGenericRecordVariables(
             generatedFields,
             generatedAppends,
           );
-          return await fetchRecordWithRequestCache(
+          const base = await fetchRecordWithRequestCache(
             koaCtx,
             dataSourceKey,
             topParams.collection,
             topParams.filterByTk,
             fixed.fields,
             fixed.appends,
+            strictSelects,
             hasDirectRefTop,
             topParams.associationName,
             topParams.sourceId,
           );
+          if (!deepRecordMap.size) return base;
+
+          // Merge: return a shallow-cloned record object with nested record getters injected as Promises.
+          // This allows both ctx[varName].field (from base record) and ctx[varName].nested.xxx (from subpath params).
+          const merged: any =
+            base && typeof base === 'object' && !Array.isArray(base) ? { ...(base as Record<string, any>) } : {};
+
+          const setClonedPath = (obj: Record<string, any>, path: string, value: any) => {
+            const segs = String(path || '')
+              .split('.')
+              .filter(Boolean);
+            if (!segs.length) return;
+            if (segs.length === 1) {
+              obj[segs[0]] = value;
+              return;
+            }
+            let cur: Record<string, any> = obj;
+            for (let i = 0; i < segs.length - 1; i++) {
+              const seg = segs[i];
+              const prev = cur[seg];
+              const next = prev && typeof prev === 'object' && !Array.isArray(prev) ? { ...(prev as any) } : {};
+              cur[seg] = next;
+              cur = next;
+            }
+            cur[segs[segs.length - 1]] = value;
+          };
+
+          const buildNestedPromise = (recordParams: RecordParams, relative: string): Promise<unknown> => {
+            const subPaths = (usedPaths || [])
+              .map((p) => (p === relative ? '' : p.startsWith(relative + '.') ? p.slice(relative.length + 1) : ''))
+              .filter((x) => x !== '');
+            const hasDirectRef = (usedPaths || []).some((p) => p === relative);
+            const dataSourceKey = recordParams?.dataSourceKey || 'main';
+            const strictSelects = Array.isArray(recordParams?.fields) || Array.isArray(recordParams?.appends);
+            let { generatedAppends, generatedFields } = inferSelectsFromUsage(subPaths, recordParams);
+            if (Array.isArray(recordParams?.fields)) generatedFields = recordParams.fields;
+            if (Array.isArray(recordParams?.appends)) generatedAppends = recordParams.appends;
+            const fixed = adjustSelectsForCollection(
+              koaCtx,
+              dataSourceKey,
+              recordParams.collection,
+              generatedFields,
+              generatedAppends,
+            );
+            return fetchRecordWithRequestCache(
+              koaCtx,
+              dataSourceKey,
+              recordParams.collection,
+              recordParams.filterByTk,
+              fixed.fields,
+              fixed.appends,
+              strictSelects,
+              hasDirectRef,
+              recordParams.associationName,
+              recordParams.sourceId,
+            );
+          };
+
+          for (const [relative, recordParams] of deepRecordMap.entries()) {
+            setClonedPath(merged, relative, buildNestedPromise(recordParams, relative));
+          }
+
+          return merged;
         },
         cache: true,
       });
-      continue; // If top-level is record, nested processing under same varName is unnecessary
+      continue; // Top-level record handled (including deepRecordMap merge)
     }
 
     // Group paths by first segment（支持首段后直接跟数字索引，如 record[0].name）
@@ -440,23 +568,6 @@ function attachGenericRecordVariables(
       return isRecordParams(nestedObj) || isRecordParams(dotted);
     });
 
-    // 2) 深层 record：varName.<a>.<b>[.<c>...] 是记录（如 popup.parent.record / popup.parent.parent.record）
-    type RecordParams = { collection: string; filterByTk: unknown; dataSourceKey?: string };
-    const deepRecordMap = new Map<string, RecordParams>(); // relativePath -> recordParams
-    const cp = contextParams;
-    if (cp && typeof cp === 'object') {
-      const cpRec = cp as Record<string, unknown>;
-      for (const key of Object.keys(cpRec)) {
-        if (!key || (key !== varName && !key.startsWith(`${varName}.`))) continue;
-        if (key === varName) continue;
-        const val = cpRec[key];
-        if (!isRecordParams(val)) continue;
-        const relative = key.slice(varName.length + 1); // e.g. 'parent.record'
-        if (!relative) continue;
-        deepRecordMap.set(relative, val);
-      }
-    }
-
     if (!oneLevelRecordChildren.length && deepRecordMap.size === 0) continue;
 
     flowCtx.defineProperty(varName, {
@@ -474,11 +585,16 @@ function attachGenericRecordVariables(
             dataSourceKey?: string;
             associationName?: string;
             sourceId?: unknown;
+            fields?: string[];
+            appends?: string[];
           },
           subPaths: string[] = [],
           preferFull?: boolean,
         ) => {
-          const { generatedAppends, generatedFields } = inferSelectsFromUsage(subPaths, recordParams);
+          const strictSelects = Array.isArray(recordParams?.fields) || Array.isArray(recordParams?.appends);
+          let { generatedAppends, generatedFields } = inferSelectsFromUsage(subPaths, recordParams);
+          if (Array.isArray(recordParams?.fields)) generatedFields = recordParams.fields;
+          if (Array.isArray(recordParams?.appends)) generatedAppends = recordParams.appends;
           container.defineProperty(key, {
             get: async () => {
               const dataSourceKey = recordParams?.dataSourceKey || 'main';
@@ -496,6 +612,7 @@ function attachGenericRecordVariables(
                 recordParams.filterByTk,
                 fixed.fields,
                 fixed.appends,
+                strictSelects,
                 preferFull || (subPaths?.length ?? 0) === 0,
                 recordParams.associationName,
                 recordParams.sourceId,
@@ -607,6 +724,7 @@ function registerBuiltInVariables(reg: VariableRegistry) {
             uid,
             generatedFields,
             generatedAppends,
+            false,
             undefined,
             undefined,
             undefined,

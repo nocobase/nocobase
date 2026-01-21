@@ -96,9 +96,6 @@ export abstract class LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
       const res = await axios.get(`${baseURL}/models`, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -106,7 +103,16 @@ export abstract class LLMProvider {
       });
       return { models: res?.data.data };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      const status = e.response?.status || 500;
+      const data = e.response?.data;
+      const errorMsg =
+        data?.error?.message ||
+        data?.message ||
+        (typeof data?.error === 'string' ? data.error : undefined) ||
+        (typeof data === 'string' ? data : undefined) ||
+        e.response?.statusText ||
+        e.message;
+      return { code: status, errMsg: errorMsg };
     }
   }
 

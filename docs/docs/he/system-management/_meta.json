@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ניהול מערכת",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ניהול Plugin-ים",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "הגדרות מערכת",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "מיתוג מותאם אישית",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "עורך ערכות נושא",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "הגדרות שפה",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ניהול לוקליזציה",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

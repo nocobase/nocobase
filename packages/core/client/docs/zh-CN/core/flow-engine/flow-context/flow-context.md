@@ -35,7 +35,6 @@
     ```ts
     ctx.defineProperty('view', {
       get: () => currentView,
-      meta: createViewMeta(ctx, () => currentView),
       resolveOnServer: (p) => p === 'record' || p.startsWith('record.'),
     });
     ```

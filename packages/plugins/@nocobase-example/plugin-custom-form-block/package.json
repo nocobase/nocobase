@@ -2,7 +2,7 @@
   "private": true,
   "name": "@nocobase-example/plugin-custom-form-block",
   "displayName": "Plugin example: Custom form block",
-  "version": "2.0.0-beta.6",
+  "version": "2.0.0-beta.13",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

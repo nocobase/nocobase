@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { VectorStore } from '@langchain/core/vectorstores';
 import { VectorStoreProp } from '../types';
 
 export interface VectorStoreProviderFeature {
@@ -20,8 +19,8 @@ export interface VectorStoreProvider {
   createVectorStoreService(vectorStoreProps?: VectorStoreProp[]): Promise<VectorStoreService>;
 }
 
-export interface VectorStoreService {
-  getVectorStore(): Promise<VectorStore>;
+export interface VectorStoreService<VS = any> {
+  getVectorStore(): Promise<VS>;
   search(query: string, options?: VectorStoreSearchOptions): Promise<DocumentSegmentedWithScore[]>;
 }
 

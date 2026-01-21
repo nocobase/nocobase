@@ -1,0 +1,255 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
+# Docker Kurulumu
+
+:::tip Ön Koşullar
+
+- [Docker](https://docs.docker.com/get-docker/) ve Docker Compose kurulu olmalı
+- Docker servisinin çalıştığından emin olun
+
+:::
+
+## 1. `docker-compose.yml` Dosyasını Oluşturma
+
+```bash
+# NocoBase tarafından oluşturulan sistem dosyalarını depolamak için `my-project` (veya başka bir isim) adında bir klasör oluşturun
+mkdir my-project && cd my-project
+
+# Boş bir `docker-compose.yml` dosyası oluşturun
+vi docker-compose.yml
+```
+
+## 2. `docker-compose.yml` Dosyasını Yapılandırma
+
+Bir NocoBase sürümü ([Sürüm Karşılaştırması](../quickstart.md)) ve veritabanı türü seçin, ardından ilgili yapılandırmayı `docker-compose.yml` dosyanıza kopyalayın.
+
+:::tip Yapılandırma Notları
+
+- **İmaj Seçimi**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Üretim ortamları için, istenmeyen otomatik güncellemeleri önlemek amacıyla belirli bir sürüm numarasını sabitlemeniz önerilir. [Tüm sürümleri görüntüleyin](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Aliyun imajı: `nocobase/nocobase:latest-full`
+  - Docker Hub imajı: `nocobase/nocobase:latest-full`
+  - **`full` imajı**, yedekleme yönetimi ve geçiş yönetimi eklentileri için gerekli olan PostgreSQL 16/17 istemcisi, MySQL 8.0 istemcisi, Oracle 19.25 istemcisi ve şablon yazdırma (PDF) için gerekli olan LibreOffice'i içerir.
+  - Kendi imajınızı oluşturmanız gerekirse, resmi olarak sağlanan [Dockerfile (basit sürüm)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) ve [Dockerfile-full (tam sürüm)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) dosyalarına başvurabilirsiniz.
+- **`APP_KEY`'i Değiştirin**: Lütfen `your-secret-key` değerini, kullanıcı token'ları gibi hassas bilgileri şifrelemek için kullanılan rastgele bir dizeyle değiştirin.
+- **Mevcut Bir Veritabanı Kullanın**: Zaten bir veritabanı servisiniz varsa, lütfen `DB_HOST` değerini veritabanı sunucusu adresiyle değiştirin ve veritabanı servis yapılandırmasını (örneğin `postgres`, `mysql`, `mariadb` servisleri) silin veya yorum satırı yapın.
+- **Port Eşlemesi**: Varsayılan olarak, kapsayıcının 80 numaralı portu ana bilgisayarın 13000 numaralı portuna eşlenir. İhtiyaçlarınıza göre değiştirebilirsiniz.
+
+:::
+
+<Tabs>
+
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=postgres
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=postgres
+      # Veritabanı portu
+      - DB_PORT=5432
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=nocobase
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, postgres'i başlatmayabilirsiniz
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=mysql
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=mysql
+      # Veritabanı portu
+      - DB_PORT=3306
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=root
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Veritabanı tablo ve alan adlarının snake_case stiline dönüştürülüp dönüştürülmeyeceği
+      - DB_UNDERSCORED=true
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, mysql'i başlatmayabilirsiniz
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=mariadb
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=mariadb
+      # Veritabanı portu
+      - DB_PORT=3306
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=root
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Veritabanı tablo ve alan adlarının snake_case stiline dönüştürülüp dönüştürülmeyeceği
+      - DB_UNDERSCORED=true
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, mariadb'yi başlatmayabilirsiniz
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+
+## 3. NocoBase'i Kurma ve Başlatma
+
+```bash
+# En son imajı çekin
+docker compose pull
+
+# Arka planda çalıştırın (ilk çalıştırmada kurulum otomatik olarak gerçekleştirilecektir)
+docker compose up -d
+
+# Kurulum ve çalışma günlüklerini görüntüleyin
+docker compose logs -f app
+
+app-postgres-app-1  | nginx started
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-postgres-app-1  | Done in 2.72s.
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
+```
+
+## 4. NocoBase'e Giriş Yapma
+
+Tarayıcınızda [http://localhost:13000](http://localhost:13000) adresini açın. Başlangıçtaki hesap ve parola `admin@nocobase.com` ve `admin123`'tür.
+
+:::warning Hesap Güvenliği Uyarısı
+
+İlk kez giriş yaptıktan sonra, sistem güvenliğini sağlamak için lütfen varsayılan parolayı hemen değiştirin.
+
+:::

@@ -46,6 +46,7 @@ export interface Point {
 export interface GridLayoutData {
   rows: Record<string, string[][]>;
   sizes: Record<string, number[]>;
+  rowOrder?: string[];
 }
 
 export interface ColumnSlot {
@@ -141,6 +142,49 @@ export interface LayoutSnapshot {
   slots: LayoutSlot[];
   containerRect: Rect;
 }
+
+const deriveRowOrder = (rows: Record<string, string[][]>, provided?: string[]) => {
+  const order: string[] = [];
+  const used = new Set<string>();
+
+  (provided || Object.keys(rows)).forEach((rowId) => {
+    if (rows[rowId] && !used.has(rowId)) {
+      order.push(rowId);
+      used.add(rowId);
+    }
+  });
+
+  Object.keys(rows).forEach((rowId) => {
+    if (!used.has(rowId)) {
+      order.push(rowId);
+      used.add(rowId);
+    }
+  });
+
+  return order;
+};
+
+const normalizeRowsWithOrder = (rows: Record<string, string[][]>, order: string[]) => {
+  const next: Record<string, string[][]> = {};
+  order.forEach((rowId) => {
+    if (rows[rowId]) {
+      next[rowId] = rows[rowId];
+    }
+  });
+  Object.keys(rows).forEach((rowId) => {
+    if (!next[rowId]) {
+      next[rowId] = rows[rowId];
+    }
+  });
+  return next;
+};
+
+const ensureRowOrder = (layout: GridLayoutData) => {
+  const order = deriveRowOrder(layout.rows, layout.rowOrder);
+  layout.rowOrder = order;
+  layout.rows = normalizeRowsWithOrder(layout.rows, order);
+  return order;
+};
 
 export interface BuildLayoutSnapshotOptions {
   container: HTMLElement | null;
@@ -465,10 +509,12 @@ const removeItemFromLayout = (layout: GridLayoutData, uidValue: string) => {
   if (columns.length === 0) {
     delete layout.rows[rowId];
     delete layout.sizes[rowId];
+    ensureRowOrder(layout);
     return;
   }
 
   normalizeRowSizes(rowId, layout);
+  ensureRowOrder(layout);
 };
 
 const toIntSizes = (weights: number[], count: number): number[] => {
@@ -592,8 +638,10 @@ export const simulateLayoutForSlot = ({
   const cloned: GridLayoutData = {
     rows: _.cloneDeep(layout.rows),
     sizes: _.cloneDeep(layout.sizes),
+    rowOrder: layout.rowOrder ? [...layout.rowOrder] : undefined,
   };
 
+  ensureRowOrder(cloned);
   removeItemFromLayout(cloned, sourceUid);
 
   const createRowId = generateRowId ?? uid;
@@ -638,8 +686,16 @@ export const simulateLayoutForSlot = ({
     case 'row-gap': {
       const newRowId = createRowId();
       const rowPosition: 'before' | 'after' = slot.position === 'above' ? 'before' : 'after';
+      const currentOrder = deriveRowOrder(cloned.rows, cloned.rowOrder);
       cloned.rows = insertRow(cloned.rows, slot.targetRowId, newRowId, rowPosition, [[sourceUid]]);
       cloned.sizes[newRowId] = [DEFAULT_GRID_COLUMNS];
+      const targetIndex = currentOrder.indexOf(slot.targetRowId);
+      const insertIndex =
+        targetIndex === -1 ? currentOrder.length : rowPosition === 'before' ? targetIndex : targetIndex + 1;
+      const nextOrder = [...currentOrder];
+      nextOrder.splice(insertIndex, 0, newRowId);
+      cloned.rowOrder = nextOrder;
+      cloned.rows = normalizeRowsWithOrder(cloned.rows, nextOrder);
       break;
     }
     case 'empty-row': {
@@ -649,11 +705,15 @@ export const simulateLayoutForSlot = ({
         [newRowId]: [[sourceUid]],
       };
       cloned.sizes[newRowId] = [DEFAULT_GRID_COLUMNS];
+      const currentOrder = deriveRowOrder(cloned.rows, cloned.rowOrder);
+      cloned.rowOrder = [...currentOrder.filter((id) => id !== newRowId), newRowId];
+      cloned.rows = normalizeRowsWithOrder(cloned.rows, cloned.rowOrder);
       break;
     }
     default:
       break;
   }
 
+  ensureRowOrder(cloned);
   return cloned;
 };

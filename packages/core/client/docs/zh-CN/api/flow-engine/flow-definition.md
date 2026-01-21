@@ -15,7 +15,7 @@ interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   // 2) 等价地，你也可以显式声明 on: 'beforeRender' 将其作为“渲染前生命周期事件”流；
   manual?: boolean; // 可选：是否仅手动执行
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
-  on?: { eventName: string }; // 可选：事件触发配置
+  on?: FlowEvent<TModel>; // 可选：事件触发配置
   steps: Record<string, StepDefinition<TModel>>; // 流步骤定义
   /**
    * Flow 级默认参数：在模型创建（createModel）时填充步骤参数，仅填补缺失、不覆盖已有。
@@ -47,6 +47,69 @@ interface InlineStepDefinition<TModel extends FlowModel = FlowModel> {
 ```
 
 ---
+
+## on（事件触发配置）
+
+`on` 用于声明该 Flow 可以被 `model.dispatchEvent('<eventName>')` 触发：
+
+- `on: '<eventName>'`
+- `on: { eventName: '<eventName>', ... }`
+
+简化类型如下：
+
+```ts
+type FlowEventName =
+  | 'click'
+  | 'submit'
+  | 'reset'
+  | 'remove'
+  | 'openView'
+  | 'dropdownOpen'
+  | 'popupScroll'
+  | 'search'
+  | 'customRequest'
+  | 'collapseToggle'
+  // 也支持任意自定义事件名
+  | (string & {});
+
+type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+type FlowEvent =
+  | FlowEventName
+  | {
+      eventName: FlowEventName;
+      /** 事件步骤（event step）的默认参数，会与事件定义的 defaultParams 合并 */
+      defaultParams?: Record<string, any>;
+      /**
+       * 执行时机：把该事件流插入到“内置静态流”的指定位置。
+       * - 缺省/`beforeAllFlows`：保持现有行为（默认在所有内置静态流之前执行）
+       */
+      phase?: FlowEventPhase;
+      /** phase 为 beforeFlow/afterFlow/beforeStep/afterStep 时使用 */
+      flowKey?: string;
+      /** phase 为 beforeStep/afterStep 时使用 */
+      stepKey?: string;
+    };
+```
+
+### phase（执行时机）
+
+当同一个事件存在多条事件流时，可以用 `phase / flowKey / stepKey` 指定该事件流插入到内置静态流的哪个位置执行：
+
+| phase | 含义 | 需要的字段 |
+| --- | --- | --- |
+| `beforeAllFlows`（默认） | 在所有内置静态流之前执行 | - |
+| `afterAllFlows` | 在所有内置静态流之后执行 | - |
+| `beforeFlow` | 在某条内置静态流开始前执行 | `flowKey` |
+| `afterFlow` | 在某条内置静态流结束后执行 | `flowKey` |
+| `beforeStep` | 在某条内置静态流的某个 step 开始前执行 | `flowKey` + `stepKey` |
+| `afterStep` | 在某条内置静态流的某个 step 结束后执行 | `flowKey` + `stepKey` |
 
 ## 定义流方式
 

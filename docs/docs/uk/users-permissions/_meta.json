@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Користувач",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Ролі та дозволи",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Налаштування ролей",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Налаштування дозволів",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Застосування в UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Об'єднання ролей",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Посібник розробника",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Розширення панелі налаштування дозволів",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Відділ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Керування відділами",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Керування ролями відділу",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Синхронізація даних користувачів",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Керування синхронізацією",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Джерело даних",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Посібник розробника",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Розширення джерел даних для синхронізації",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Розширення цільових ресурсів для синхронізації",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

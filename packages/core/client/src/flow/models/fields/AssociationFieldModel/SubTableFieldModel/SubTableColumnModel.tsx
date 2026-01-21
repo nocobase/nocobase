@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { capitalize } from 'lodash';
+import { capitalize, debounce } from 'lodash';
 import {
   DisplayItemModel,
   DragHandler,
@@ -27,7 +27,7 @@ import {
   FlowModelProvider,
   FlowErrorFallback,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Input } from 'antd';
+import { TableColumnProps, Tooltip, Input, Space } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
@@ -74,12 +74,17 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
   const FieldModelRendererCom = (props) => {
     const { model, onChange, ...rest } = props;
-    const handelChange = (val) => {
-      others.onChange(val);
-      onChange(val);
-    };
 
-    return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
+    const handleChange = useMemo(
+      () =>
+        debounce((val) => {
+          if (props.onChange) props.onChange(val);
+          if (onChange) onChange(val);
+        }, 200),
+      [props.onChange, onChange],
+    );
+
+    return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
   };
   const handleClick = async (e) => {
     if (disabled) {
@@ -116,7 +121,11 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
       return <Input value={inputValue} disabled={disabled} />;
     } else {
-      return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
+      return (
+        <Space>
+          <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} /> <EditOutlined className="edit-icon" />
+        </Space>
+      );
     }
   }, [collectionField.interface, defaultValue, fieldModel]);
   return (
@@ -149,6 +158,136 @@ const handleModelName = (modelName) => {
   }
   return modelName;
 };
+
+const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
+  return prev.value === next.value && prev.model === next.model;
+});
+
+const FieldModelRendererOptimize = React.memo((props: any) => {
+  const { model, onChange, value, ...rest } = props;
+  const pendingValueRef = React.useRef<any>(props?.value);
+
+  const handleChange = React.useCallback(
+    (value: any) => {
+      pendingValueRef.current = value;
+    },
+    [model],
+  );
+
+  const handleCommit = React.useCallback(() => {
+    onChange?.(pendingValueRef.current);
+  }, [onChange]);
+  return (
+    <div onBlur={handleCommit}>
+      <MemoFieldRenderer
+        {...rest}
+        value={value}
+        model={model}
+        onChange={handleChange}
+        onChangeComplete={() => {
+          onChange?.(pendingValueRef.current);
+        }}
+      />
+    </div>
+  );
+});
+
+interface CellProps {
+  value: any;
+  record: any;
+  rowIdx: number;
+  id: string | number;
+  parent: any;
+}
+
+const MemoCell: React.FC<CellProps> = React.memo(
+  ({ value, record, rowIdx, id, parent }) => {
+    return (
+      <div
+        style={{
+          width: parent.props.width,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+        title={value}
+        className={css`
+          .ant-form-item-explain-error {
+            white-space: break-spaces;
+          }
+          .edit-icon {
+            position: absolute;
+            display: none;
+            color: #1890ff;
+            margin-left: 8px;
+            cursor: pointer;
+            z-index: 100;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+          }
+          &:hover {
+            background: rgba(24, 144, 255, 0.1) !important;
+          }
+          &:hover .edit-icon {
+            display: inline-flex;
+          }
+        `}
+      >
+        {parent.mapSubModels('field', (action: FieldModel) => {
+          const fieldPath = action.context.fieldPath.split('.');
+          const namePath = fieldPath.pop();
+
+          const fork: any = action.createFork({}, `${id}`);
+          fork.context.defineProperty('currentObject', { get: () => record });
+
+          if (parent.props.readPretty) {
+            fork.setProps({ value });
+            return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
+          }
+
+          if (parent.props.aclViewDisabled && !record.__is_new__) return null;
+
+          return (
+            <FormItem
+              {...parent.props}
+              key={id}
+              name={[...fieldPath, rowIdx, namePath]}
+              style={{ marginBottom: 0 }}
+              showLabel={false}
+              disabled={
+                parent.props.disabled ||
+                (!record.__is_new__ && parent.props.aclDisabled) ||
+                (record.__is_new__ && parent.props.aclCreateDisabled)
+              }
+            >
+              {fork.constructor.isLargeField ? (
+                <LargeFieldEdit
+                  model={fork}
+                  params={{
+                    fieldPath: [(parent as any).context.fieldPath, rowIdx, namePath],
+                    index: id,
+                  }}
+                  defaultValue={value}
+                  disabled={
+                    parent.props.disabled ||
+                    (!record.__is_new__ && parent.props.aclDisabled) ||
+                    (record.__is_new__ && parent.props.aclCreateDisabled)
+                  }
+                />
+              ) : (
+                <FieldModelRendererOptimize model={fork} id={[(parent as any).context.fieldPath, rowIdx]} />
+              )}
+            </FormItem>
+          );
+        })}
+      </div>
+    );
+  },
+  (prev, next) => {
+    return prev.value === next.value && prev.id === next.id;
+  },
+);
 
 export interface SubTableColumnModelStructure {
   parent: SubTableFieldModel;
@@ -251,6 +390,7 @@ export class SubTableColumnModel<
               sort: 1,
             },
           ]}
+          enabled={this.context.flowSettingsEnabled}
         >
           <div
             className={css`
@@ -331,69 +471,7 @@ export class SubTableColumnModel<
   renderItem(): any {
     return (props) => {
       const { value, id, rowIdx, record } = props;
-      return (
-        <div
-          style={{
-            width: this.props.width,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-          title={value}
-          className={css`
-            .ant-form-item-explain-error {
-              white-space: break-spaces;
-            }
-          `}
-        >
-          {this.mapSubModels('field', (action: FieldModel) => {
-            const fieldPath = action.context.fieldPath.split('.');
-            const namePath = fieldPath.pop();
-
-            const fork: any = action.createFork({}, `${id}`);
-            if (this.props.readPretty) {
-              fork.setProps({
-                value: value,
-              });
-              return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
-            } else {
-              return this.props.aclViewDisabled && !record.isNew ? null : (
-                <FormItem
-                  {...this.props}
-                  key={id}
-                  name={[...fieldPath, rowIdx, namePath]}
-                  style={{ marginBottom: 0 }}
-                  showLabel={false}
-                  // initialValue={value}
-                  disabled={
-                    this.props.disabled ||
-                    (!record.isNew && this.props.aclDisabled) ||
-                    (record.isNew && this.props.aclCreateDisabled)
-                  }
-                >
-                  {fork.constructor.isLargeField ? (
-                    <LargeFieldEdit
-                      model={fork}
-                      params={{
-                        fieldPath: [(this.parent as FieldModel).context.fieldPath, rowIdx, namePath],
-                        index: id,
-                      }}
-                      defaultValue={value}
-                      disabled={
-                        this.props.disabled ||
-                        (!record.isNew && this.props.aclDisabled) ||
-                        (record.isNew && this.props.aclCreateDisabled)
-                      }
-                    />
-                  ) : (
-                    <FieldModelRenderer model={fork} id={[(this.parent as FieldModel).context.fieldPath, rowIdx]} />
-                  )}
-                </FormItem>
-              );
-            }
-          })}
-        </div>
-      );
+      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} />;
     };
   }
 }

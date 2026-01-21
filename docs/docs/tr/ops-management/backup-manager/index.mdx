@@ -1,0 +1,211 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
+```yaml
+pkg: '@nocobase/plugin-backups'
+---
+
+# Yedekleme Yönetimi
+
+## Giriş
+
+NocoBase yedekleme yöneticisi eklentisi, NocoBase veritabanının ve kullanıcıların yüklediği dosyaların tam yedeklemesini, zamanlanmış yedeklemeyi, yedeklemelerin indirilmesini, silinmesini ve geri yüklenmesini sağlayan özellikler sunar.
+
+:::warning
+Yedekleme Yöneticisi eklentisi, Profesyonel ve Kurumsal sürümlere dahildir. Topluluk ve Standart sürüm kullanıcıları için veritabanını doğrudan yedekleyebilirsiniz; ayrıntılar için bakınız: [`NocoBase Nasıl Yedeklenir ve Geri Yüklenir`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Veritabanı İstemcisini Kurma
+
+Yedekleme Yöneticisi, ilgili veritabanının istemcisine bağlıdır. Kullanmadan önce, lütfen kullandığınız veritabanı sürümüne uygun istemciyi indirmek için resmi web sitesini ziyaret edin:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Docker sürümleri için, doğrudan `./storage/scripts` dizininde bir betik yazabilirsiniz:
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+`install-database-client.sh` dosyasının içeriği aşağıdaki gibidir:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Ardından uygulama kapsayıcısını yeniden başlatın:
+
+```bash
+docker compose restart app
+# Logları görüntüle
+docker compose logs app
+```
+
+Veritabanı istemci sürüm numarasını kontrol edin, bu numara veritabanı sunucusu sürüm numarasıyla eşleşmelidir:
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Kullanım Talimatları
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Yeni Yedek Oluşturma
+
+"Yeni yedekleme" düğmesine tıklayarak, yedekleme yapılandırmasına göre yeni bir yedekleme oluşturabilir ve yedekleme listesinde yedekleme durumunu görüntüleyebilirsiniz.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Yedeklemeyi Geri Yükleme
+
+Yedekleme listesinden yedeklemeleri geri yüklemeyi veya yerel yedekleme dosyalarını yükleyerek yedeklemeleri geri yüklemeyi destekler.
+Aşağıdaki senaryolarda geri yükleme işlemlerine izin verilmez:
+
+- Mevcut NocoBase sürümü, yedekleme dosyasındaki NocoBase sürümünden düşük olduğunda.
+- Mevcut NocoBase veritabanı, yedekleme dosyasındaki aşağıdaki yapılandırmalarla tutarsız olduğunda:
+  - diyalekt
+  - underscored
+  - tablo öneki
+  - şema
+- `Tolerans modu` etkinleştirilmediğinde ve yedekleme oluşturulurken veritabanı sürümü mevcut uygulama veritabanı sürümünden yüksek olduğunda.
+
+> **Geri yükleme, tam bir veritabanı işlemidir. Yedeklemeyi geri yüklemeden önce mevcut veritabanınızı yedeklemeniz önerilir.**
+
+#### Yedekleme Listesinden Geri Yükleme
+
+Yedekleme listesindeki yedekleme öğesinin `Geri Yükle` düğmesine tıklayın, açılan pencerede yedekleme dosyası şifreleme parolasını girin ve yedeklemeyi geri yüklemek için `Onayla` düğmesine tıklayın.
+
+> Şifrelenmemiş yedeklemeler için parola girmenize gerek yoktur.
+
+> Yedekleme dosyasını daha düşük bir veritabanı sürümüne geri yüklemeniz gerekiyorsa, tolerans modunu etkinleştirmeniz gerekir.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Yerel Yedekleme Dosyasından Geri Yükleme
+
+`Yerel yedeklemeden geri yükle` düğmesine tıklayın, açılan pencerede yerel yedekleme dosyasını seçin, yedekleme dosyası şifreleme parolasını girin ve yedeklemeyi geri yüklemek için `Onayla` düğmesine tıklayın.
+
+> Şifrelenmemiş yedeklemeler için parola girmenize gerek yoktur.
+
+> Yedekleme dosyasını daha düşük bir veritabanı sürümüne geri yüklemeniz gerekiyorsa, tolerans modunu etkinleştirmeniz gerekir.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Yedekleme Dosyasını İndirme
+
+Yedekleme listesindeki yedekleme öğesinin `İndir` düğmesine tıklayarak yedekleme dosyasını indirebilirsiniz.
+
+#### Yedeklemeyi Silme
+
+Yedekleme listesindeki yedekleme öğesinin `Sil` düğmesine tıklayarak yedekleme dosyasını silebilirsiniz.
+
+## Yedekleme Ayarları
+
+`Ayarlar` sekmesine geçin, yedekleme ayarlarını değiştirin ve kaydetmek için `Kaydet` düğmesine tıklayın.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Yedekleme Ayarları Açıklaması
+
+- `Otomatik yedekleme`: `Cron zamanlamasına göre otomatik yedeklemeyi çalıştır` seçeneğini etkinleştirdikten sonra, belirtilen zamanlarda otomatik yedeklemeler ayarlayabilirsiniz.
+- `Maksimum yedekleme sayısı`: Yerel olarak kaydedilecek maksimum yedekleme dosyası sayısını ayarlayın. Bu sayıyı aştıktan sonra, en eski yerel yedekleme dosyaları otomatik olarak silinecektir.
+- `Yedeklemeyi bulut depolamaya senkronize et`: Yedekleme dosyalarının başarılı bir yedeklemeden sonra otomatik olarak yükleneceği bulut depolamayı ayarlayın.
+- `Yerel depolama dosyalarını yedekle`: Kullanıcılar tarafından sunucunun yerel depolama alanına (storage/uploads) yüklenen dosyaların yedeklemeye dahil edilip edilmeyeceği.
+- `Geri yükleme parolası`: Bir geri yükleme parolası ayarlanmışsa, yedeklemeyi geri yüklerken bu parolanın girilmesi gerekir.
+
+> **Geri yükleme parolasını güvenli bir yerde saklayın. Parolayı unutmanız durumunda yedekleme dosyasını geri yüklemeniz mümkün olmayacaktır.**

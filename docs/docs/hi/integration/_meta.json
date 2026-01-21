@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API कुंजी",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API डॉक्यूमेंटेशन",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "उपयोग परिदृश्य",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "वर्कफ़्लो",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP रिक्वेस्ट",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "बाहरी डेटा सोर्स",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "एम्बेडेड कंटेंट",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe ब्लॉक",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "एम्बेड करें",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

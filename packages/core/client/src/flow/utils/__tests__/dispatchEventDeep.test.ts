@@ -40,6 +40,18 @@ describe('dispatchEventDeep', () => {
       }
     }
 
+    TestRoot.registerFlow({
+      key: 'onPageChangeRoot',
+      on: 'paginationChange',
+      steps: {
+        mark: {
+          handler(ctx) {
+            received.push(ctx.model);
+          },
+        },
+      },
+    });
+
     engine.registerModels({ TestRoot, TestChild });
 
     const root = engine.createModel<TestRoot>({
@@ -55,6 +67,6 @@ describe('dispatchEventDeep', () => {
     await dispatchEventDeep(root, 'paginationChange');
 
     const forkFlags = received.map((m) => Boolean((m as any)?.isFork)).sort();
-    expect(forkFlags).toEqual([false, true]);
+    expect(forkFlags).toEqual([false, false, true]);
   });
 });

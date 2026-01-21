@@ -72,7 +72,7 @@
       "prettier --write"
     ],
     "*.ts?(x)": [
-      "eslint --fix"
+      "eslint --fix --cache --cache-location node_modules/.cache/eslint/"
     ]
   },
   "devDependencies": {
@@ -81,6 +81,7 @@
     "@commitlint/prompt-cli": "^16.1.0",
     "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
+    "ali-oss": "^6.1.0",
     "auto-changelog": "^2.4.0",
     "eslint-plugin-jest-dom": "^5.0.1",
     "eslint-plugin-prettier": "^5.5.4",

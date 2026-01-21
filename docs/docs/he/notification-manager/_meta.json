@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "ערוצי התראות",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "הודעה פנימית",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "דוא'ל",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "מדריך למפתחים",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "הרחבת סוגי ערוצי התראות",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "הרחבת Notification API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

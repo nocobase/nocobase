@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Керування релізами",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Огляд",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Змінні та ключі",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Керування резервними копіями",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Керування міграціями",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

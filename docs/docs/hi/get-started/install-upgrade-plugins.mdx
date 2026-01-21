@@ -1,0 +1,111 @@
+:::tip
+यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
+:::
+
+
+# प्लगइन इंस्टॉल और अपग्रेड करें
+
+## बिल्ट-इन प्लगइन
+
+NocoBase के बिल्ट-इन प्लगइन कोर वर्ज़न के साथ अपने आप अपडेट हो जाते हैं, इनके लिए आपको मैन्युअल रूप से कुछ भी करने की ज़रूरत नहीं होती है।
+
+## कमर्शियल प्लगइन
+
+कमर्शियल प्लगइन को इंस्टॉल और अपग्रेड करने का तरीका जानने के लिए, कृपया NocoBase सर्विस में लॉग इन करें और संबंधित डॉक्यूमेंटेशन देखें।
+
+## थर्ड-पार्टी प्लगइन
+
+### ऑनलाइन प्लगइन इंस्टॉल करना
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning ध्यान दें
+
+NocoBase इंटरफ़ेस के ज़रिए ऑनलाइन प्लगइन इंस्टॉल करने की सुविधा देता है, लेकिन अभी इसका अनुभव उतना अच्छा नहीं है। इसके कुछ कारण इस प्रकार हैं:
+
+- Node.js प्रोसेस के रनटाइम की सीमाओं के कारण, प्लगइन इंस्टॉल या अपडेट करने के बाद, बदलावों को लागू करने के लिए आपको प्रोसेस को रोकना होगा और फिर `upgrade` कमांड चलानी होगी;
+- मल्टी-ऐप सिनेरियो में, ऑनलाइन इंस्टॉलेशन से एक साथ कई सब-एप्लिकेशन में प्लगइन सिंक्रोनाइज़ेशन को मैनेज करना मुश्किल होता है;
+- बैच में प्लगइन अपडेट करने की सुविधा नहीं है;
+- ऑनलाइन प्लगइन इंस्टॉल या अपडेट करने से एप्लिकेशन प्रोसेस अचानक बंद हो सकता है।
+
+इसलिए, प्लगइन इंस्टॉल और अपग्रेड करने के लिए कमांड-लाइन या मैन्युअल अपलोड तरीकों का इस्तेमाल करने की सलाह दी जाती है। हम सुझाव देते हैं कि आप इसे CI/CD वर्कफ़्लो के साथ इंटीग्रेट करें, ताकि कमांड-लाइन तरीकों का इस्तेमाल करके प्लगइन को डाउनलोड, एक्सट्रेक्ट और अपग्रेड किया जा सके। इससे हर अपडेट डिप्लॉयमेंट में कंसिस्टेंसी और विश्वसनीयता बनी रहेगी।
+
+:::
+
+### कमांड-लाइन के ज़रिए प्लगइन इंस्टॉल करना
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+अगर प्लगइन पहले से इंस्टॉल है और उसे अपग्रेड करने की ज़रूरत है, तो यह कमांड चलाएँ:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### मैन्युअल अपलोड और एक्सट्रेक्ट करना
+
+सबसे पहले प्लगइन पैकेज को अपनी लोकल मशीन पर डाउनलोड करें, फिर उसे मैन्युअल रूप से अपलोड करें और `./storage/plugins` डायरेक्टरी में एक्सट्रेक्ट करें। अगर प्लगइन पहले से एनेबल है, तो अपलोड और एक्सट्रेक्ट करने के बाद प्लगइन अपग्रेड पूरा करने के लिए यह कमांड चलाएँ।
+
+> ⚠️ **ध्यान दें**: कैश से जुड़ी समस्याओं से बचने के लिए, कृपया यह पक्का कर लें कि NocoBase एप्लिकेशन को चलाने से पहले वह बंद हो।
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### प्लगइन को सही तरीके से एक्सट्रेक्ट करना
+
+नीचे दिया गया उदाहरण दिखाता है कि प्लगइन पैकेज को सही तरीके से तय की गई डायरेक्टरी में कैसे एक्सट्रेक्ट किया जाए:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+यह कमांड प्लगइन को तय की गई डायरेक्टरी में एक्सट्रेक्ट कर देगी और इससे कोई अतिरिक्त `package` डायरेक्टरी लेयर नहीं बनेगी।
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### सही डायरेक्टरी स्ट्रक्चर का उदाहरण
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

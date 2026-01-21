@@ -27,6 +27,7 @@ import MultiConditionsInstruction from './nodes/multi-conditions';
 import CreateInstruction from './nodes/create';
 import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
+import OutputInstruction from './nodes/output';
 import QueryInstruction from './nodes/query';
 import UpdateInstruction from './nodes/update';
 import { BindWorkflowConfig } from './settings/BindWorkflowConfig';
@@ -48,6 +49,14 @@ import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 import { Tooltip } from 'antd';
 import React from 'react';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import { NodeDetailsModel, NodeValueModel } from './models';
+import { Collection } from '@nocobase/flow-engine';
+import workflows from '../common/collections/workflows';
+import flow_nodes from '../common/collections/flow_nodes';
+import executions from '../common/collections/executions';
+import workflowCategories from '../common/collections/workflowCategories';
+import workflowStats from '../common/collections/workflowStats';
+import workflowVersionStats from '../common/collections/workflowVersionStats';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -120,6 +129,14 @@ export default class PluginWorkflowClient extends Plugin {
 
   registerTaskType(key: string, option: TaskTypeOptions) {
     this.taskTypes.register(key, { ...option, key });
+  }
+
+  registerCollectionsToDataSource(collectionOptions: any[]) {
+    collectionOptions.forEach((option) => {
+      this.flowEngine.dataSourceManager
+        .getDataSource('main')
+        .addCollection(new Collection({ ...option, hidden: true }));
+    });
   }
 
   async load() {
@@ -196,6 +213,7 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('multi-conditions', MultiConditionsInstruction);
 
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
 
     this.registerInstruction('query', QueryInstruction);
     this.registerInstruction('create', CreateInstruction);
@@ -235,6 +253,20 @@ export default class PluginWorkflowClient extends Plugin {
       ),
       value: 'genSnowflakeId',
     });
+
+    this.flowEngine.registerModels({
+      NodeDetailsModel,
+      NodeValueModel,
+    });
+
+    this.registerCollectionsToDataSource([
+      workflows,
+      flow_nodes,
+      executions,
+      workflowCategories,
+      workflowStats,
+      workflowVersionStats,
+    ]);
   }
 }
 
@@ -252,3 +284,4 @@ export * from './utils';
 export * from './variable';
 export { usePopupRecordContext, useTasksCountsContext } from './WorkflowTasks';
 export { createTriggerWorkflowsSchema } from './flows/triggerWorkflows';
+export { NodeDetailsModel, NodeValueModel };

@@ -33,15 +33,15 @@ pkg: "@nocobase/plugin-email-manager"
 
 ### 获取 Client ID
 
-1. 点击顶部菜单，选择 "Microsoft Entra ID"
+1. 点击顶部菜单，选择 **Microsoft Entra ID**
 
 ![](https://static-docs.nocobase.com/mail-1733818626871.png)
 
-2. 选择左侧 "App registrations"
+2. 选择左侧 **App registrations**
 
 ![](https://static-docs.nocobase.com/mail-1733818627097.png)
 
-3. 点击顶部 "New registration"
+3. 点击顶部 **New registration**
 
 ![](https://static-docs.nocobase.com/mail-1733818627309.png)
 
@@ -57,15 +57,15 @@ pkg: "@nocobase/plugin-email-manager"
 
 ### API 授权
 
-1. 打开右侧 "API permissions" 菜单
+1. 打开右侧 **API permissions** 菜单
 
 ![](https://static-docs.nocobase.com/mail-1733818628178.png)
 
-2. 点击 "Add a permisson" 按钮
+2. 点击 **Add a permission** 按钮
 
 ![](https://static-docs.nocobase.com/mail-1733818628448.png)
 
-3. 点击 "Microsoft Graph"
+3. 点击 **Microsoft Graph**
 
 ![](https://static-docs.nocobase.com/mail-1733818628725.png)
 
@@ -84,11 +84,11 @@ pkg: "@nocobase/plugin-email-manager"
 
 ### 获取秘钥
 
-1. 点击左侧 "Certificates & secrets"
+1. 点击左侧 **Certificates & secrets**
 
 ![](https://static-docs.nocobase.com/mail-1733818629369.png)
 
-2. 点击 "New client secret" 按钮
+2. 点击 **New client secret** 按钮
 
 ![](https://static-docs.nocobase.com/mail-1733818629554.png)
 

@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Yapılandırma Açıklaması",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Şablon Sözdizimi"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Gelişmiş Özellikler"
+  },
+  {
+    "type": "custom-link",
+    "label": "Sıkça Sorulan Sorular",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kullanım Senaryoları",
+    "link": "/template-print/scenes"
+  }
+]

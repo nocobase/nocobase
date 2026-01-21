@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "क्विक स्टार्ट",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "परिचय",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "एक ब्लॉक Plugin लिखें",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

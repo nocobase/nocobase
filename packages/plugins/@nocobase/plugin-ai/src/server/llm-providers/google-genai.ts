@@ -58,9 +58,6 @@ export class GoogleGenAIProvider extends LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
       const res = await axios.get(`${baseURL}/models?key=${apiKey}`);
       return {
         models: res?.data?.models.map((model) => ({

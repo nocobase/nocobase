@@ -130,7 +130,6 @@ export function useDialog() {
 
     ctx.defineProperty('view', {
       get: () => currentDialog,
-      // meta: createViewMeta(ctx),
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
@@ -164,9 +163,9 @@ export function useDialog() {
             className="nb-dialog-overflow-hidden"
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
-            {...config}
             footer={currentFooter}
             header={currentHeader}
+            {...config}
             onCancel={() => {
               currentDialog.close(config.result);
             }}

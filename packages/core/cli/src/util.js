@@ -295,7 +295,8 @@ function buildIndexHtml(force = false) {
     fs.copyFileSync(file, tpl);
   }
   const data = fs.readFileSync(tpl, 'utf-8');
-  const replacedData = data
+  let replacedData = data
+    .replace(/\{\{env.CDN_BASE_URL\}\}/g, process.env.CDN_BASE_URL)
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
     .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
@@ -304,6 +305,14 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+
+  if (process.env.CDN_BASE_URL) {
+    const appBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+    const appPublicPath = process.env.APP_PUBLIC_PATH.replace(/\/+$/, '');
+    const re1 = new RegExp(`src="${appPublicPath}/`, 'g');
+    const re2 = new RegExp(`href="${appPublicPath}/`, 'g');
+    replacedData = replacedData.replace(re1, `src="${appBaseUrl}/`).replace(re2, `href="${appBaseUrl}/`);
+  }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
 
@@ -385,6 +394,8 @@ exports.initEnv = function initEnv() {
     PLUGIN_STATICS_PATH: '/static/plugins/',
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
+    APP_BASE_URL: '',
+    CDN_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
     WATCH_FILE: resolve(process.cwd(), 'storage/app.watch.ts'),
   };
@@ -438,6 +449,16 @@ exports.initEnv = function initEnv() {
   if (!process.env.__env_modified__ && process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
     process.env.API_BASE_URL = process.env.APP_SERVER_BASE_URL + process.env.API_BASE_PATH;
     process.env.__env_modified__ = true;
+  }
+
+  if (!process.env.CDN_BASE_URL && process.env.APP_PUBLIC_PATH !== '/') {
+    process.env.CDN_BASE_URL = process.env.APP_PUBLIC_PATH;
+  }
+
+  if (process.env.CDN_BASE_URL.includes('http') && process.env.CDN_VERSION === 'auto') {
+    const version = require('../package.json').version;
+    process.env.CDN_BASE_URL = process.env.CDN_BASE_URL.replace(/\/+$/, '') + '/' + version + '/';
+    process.env.CDN_VERSION = '';
   }
 
   if (!process.env.TZ) {

@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "सुरक्षा गाइड",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Token नीति",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "पासवर्ड नीति",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "पासवर्ड नीति",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "उपयोगकर्ता लॉक",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP प्रतिबंध",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "ऑडिट लॉग",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "टू-फ़ैक्टर ऑथेंटिकेशन (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "फ़ील्ड एन्क्रिप्शन",
+    "link": "/data-sources/field-encryption"
+  }
+]

@@ -9,6 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { recalculateGridSizes } from '../GridModel';
+import { EMPTY_COLUMN_UID } from '@nocobase/flow-engine';
 
 const basePosition = { rowId: 'row1', itemIndex: 0 } as const;
 
@@ -45,5 +46,22 @@ describe('recalculateGridSizes', () => {
 
     expect(moveDistance).toBe(0);
     expect(newSizes.row1).toEqual([24]);
+  });
+
+  it('should not remove empty left column when shrunk to zero', () => {
+    const { newSizes, newRows } = recalculateGridSizes({
+      position: { ...basePosition, columnIndex: 1 },
+      direction: 'left',
+      resizeDistance: -120,
+      prevMoveDistance: 0,
+      oldSizes: { row1: [12, 12] },
+      oldRows: { row1: [['a'], ['b']] },
+      gridContainerWidth: 240,
+      gutter: 0,
+      columnCount: 24,
+    });
+
+    expect(newRows.row1.length).toBe(2);
+    expect(newSizes.row1.length).toBe(2);
   });
 });

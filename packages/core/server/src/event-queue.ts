@@ -24,6 +24,7 @@ export type QueueCallbackOptions = {
   id?: string;
   retried?: number;
   signal?: AbortSignal;
+  queueOptions?: QueueMessageOptions;
 };
 
 export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void>;
@@ -302,6 +303,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         id,
         retried,
         signal: AbortSignal.timeout(timeout),
+        queueOptions: message.options,
       }))()
       .then(() => {
         logger.debug(`memory queue (${channel}) consumed message (${id})`);
