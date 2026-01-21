@@ -141,44 +141,29 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
    * Used to coordinate "refresh on active" across view stacks.
    */
   protected markDataSourceDirty(resourceName?: string) {
-    type DirtyEngine = {
-      markDataSourceDirty: (dataSourceKey: string, resourceName: string) => number;
-      emitter?: { emit?: (event: string, payload: unknown) => void };
-      logger?: { warn?: (obj: unknown, msg?: string) => void };
-    };
+    const engine = (this.context as any)?.engine as any;
+    if (!engine || typeof engine.markDataSourceDirty !== 'function') return;
 
-    let engine: DirtyEngine | undefined;
-    try {
-      engine = Reflect.get(this.context as object, 'engine') as DirtyEngine | undefined;
-      if (!engine || typeof engine.markDataSourceDirty !== 'function') return;
+    const dataSourceKey = this.getDataSourceKey?.() || 'main';
+    const resName = resourceName || this.getResourceName?.();
+    if (!resName) return;
 
-      const dataSourceKey = this.getDataSourceKey?.() || 'main';
-      const resName = resourceName || this.getResourceName?.();
-      if (!resName) return;
-
-      const affectedResourceNames = new Set<string>([String(resName)]);
-      // Optional safety: association resources like "users.profile" may impact parent collection views.
-      if (typeof resName === 'string' && resName.includes('.')) {
-        affectedResourceNames.add(resName.split('.')[0]);
-      }
-
-      for (const name of affectedResourceNames) {
-        engine.markDataSourceDirty(dataSourceKey, name);
-      }
-
-      // Signal current view to re-evaluate dirty blocks (e.g., same-view sibling refresh).
-      // This is emitted on the *current* engine emitter (view-scoped) so it won't affect other views.
-      engine?.emitter?.emit?.('dataSource:dirty', {
-        dataSourceKey,
-        resourceNames: Array.from(affectedResourceNames),
-      });
-    } catch (e) {
-      // Never block write paths due to dirty-marking failures.
-      engine?.logger?.warn?.(
-        { error: e, dataSourceKey: this.getDataSourceKey?.(), resourceName },
-        'markDataSourceDirty failed',
-      );
+    const affectedResourceNames = new Set<string>([String(resName)]);
+    // Optional safety: association resources like "users.profile" may impact parent collection views.
+    if (typeof resName === 'string' && resName.includes('.')) {
+      affectedResourceNames.add(resName.split('.')[0]);
     }
+
+    for (const name of affectedResourceNames) {
+      engine.markDataSourceDirty(dataSourceKey, name);
+    }
+
+    // Signal current view to re-evaluate dirty blocks (e.g., same-view sibling refresh).
+    // This is emitted on the *current* engine emitter (view-scoped) so it won't affect other views.
+    engine?.emitter?.emit?.('dataSource:dirty', {
+      dataSourceKey,
+      resourceNames: Array.from(affectedResourceNames),
+    });
   }
 
   setSourceId(sourceId: string | number) {

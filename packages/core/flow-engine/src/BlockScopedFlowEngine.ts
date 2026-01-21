@@ -9,8 +9,6 @@
 
 import { FlowEngine } from './flowEngine';
 
-const ENGINE_SCOPE_KEY = '__NOCOBASE_ENGINE_SCOPE__';
-
 /**
  * BlockScopedFlowEngine（区块作用域引擎）
  *
@@ -26,13 +24,21 @@ const ENGINE_SCOPE_KEY = '__NOCOBASE_ENGINE_SCOPE__';
  */
 export function createBlockScopedEngine(parent: FlowEngine): FlowEngine {
   const local = new FlowEngine();
-  // Mark for view-stack traversal (used by view activation events).
-  Object.defineProperty(local, ENGINE_SCOPE_KEY, { value: 'block', configurable: true });
   if (parent.modelRepository) {
     local.setModelRepository(parent.modelRepository);
   }
   // 继承父级上下文能力
   local.context.addDelegate(parent.context);
+
+  // 覆盖 unlinkFromStack：BlockScoped 引擎被移除时，修复前后指针，避免“截断”后续视图/作用域
+  local.unlinkFromStack = function () {
+    const prev = (local as any)._previousEngine as FlowEngine | undefined;
+    const next = (local as any)._nextEngine as FlowEngine | undefined;
+    if (prev) (prev as any)._nextEngine = next;
+    if (next) (next as any)._previousEngine = prev;
+    (local as any)._previousEngine = undefined;
+    (local as any)._nextEngine = undefined;
+  };
 
   // 默认全部代理到父引擎，只有少数字段（实例/缓存/执行器/上下文/链表指针）使用本地值
   const localOnly = new Set<keyof FlowEngine | string>([
@@ -40,7 +46,6 @@ export function createBlockScopedEngine(parent: FlowEngine): FlowEngine {
     '_applyFlowCache',
     'executor',
     'context',
-    ENGINE_SCOPE_KEY,
     'previousEngine',
     'nextEngine',
     // 栈指针维护方法需要在本地执行，而非代理到父引擎

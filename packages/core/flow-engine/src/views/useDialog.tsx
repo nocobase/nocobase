@@ -15,7 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
-import { bumpViewActivatedVersion, resolveOpenerEngine, type EngineLike } from './viewEvents';
+import { bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -26,7 +26,7 @@ export function useDialog() {
   const holderRef = React.useRef(null);
 
   const open = (config, flowContext) => {
-    const parentEngine = flowContext?.engine as EngineLike | undefined;
+    const parentEngine = flowContext?.engine;
     uuid += 1;
     const dialogRef = React.createRef<{
       destroy: () => void;

@@ -15,7 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
-import { bumpViewActivatedVersion, resolveOpenerEngine, type EngineLike } from './viewEvents';
+import { bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -55,7 +55,7 @@ export function useDrawer() {
   RenderNestedDrawer.displayName = 'RenderNestedDrawer';
 
   const open = (config, flowContext: FlowEngineContext) => {
-    const parentEngine: EngineLike = flowContext.engine;
+    const parentEngine = flowContext.engine;
     const drawerRef = React.createRef<{
       destroy: () => void;
       update: (config: any) => void;
