@@ -55,7 +55,7 @@ FlowEngineContext（全局上下文）
 
 ---
 
-## 🤖 面向大模型的上下文信息：`ctx.getInfos()`
+## 上下文信息：`ctx.getInfos()`
 
 在某些场景下（例如 JS*Model 的 RunJS 代码编辑、AI coding），需要让“调用方”在不执行代码的前提下了解：当前 `ctx` 下有哪些属性/方法、它们的用途、参数、示例、以及文档链接。
 
@@ -74,7 +74,6 @@ FlowEngineContext（全局上下文）
 - `completion.insertText`（用于编辑器补全插入）
 - `ref`（支持 `string | { url: string; title?: string }`）
 - `params` / `returns`（JSDoc-like）
-- `disabled` / `disabledReason`（已计算后的静态值）
 
 ### 常用参数
 
