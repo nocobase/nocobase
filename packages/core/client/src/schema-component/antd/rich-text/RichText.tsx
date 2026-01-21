@@ -21,6 +21,7 @@ const ReactQuill = lazy(() => import('react-quill'));
 export const RichText = connect(
   (props) => {
     const { wrapSSR, hashId, componentCls } = useStyles();
+    const quillContainerRef = React.useRef(null);
     const modules = {
       toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
     };
@@ -52,23 +53,25 @@ export const RichText = connect(
     `;
 
     return wrapSSR(
-      <ReactQuill
-        className={classNames(componentCls, hashId, quillDisabled, {
-          'is-disabled': disabled,
-        })}
-        modules={propsModules || modules}
-        formats={propsFormats || formats}
-        value={resultValue}
-        onChange={(value) => {
-          if (value === '<p><br></p>') {
-            onChange('');
-          } else {
-            onChange(value);
-          }
-        }}
-        readOnly={disabled}
-        bounds={'.quill'}
-      />,
+      <div ref={quillContainerRef}>
+        <ReactQuill
+          className={classNames(componentCls, hashId, quillDisabled, {
+            'is-disabled': disabled,
+          })}
+          modules={propsModules || modules}
+          formats={propsFormats || formats}
+          value={resultValue}
+          onChange={(value) => {
+            if (value === '<p><br></p>') {
+              onChange('');
+            } else {
+              onChange(value);
+            }
+          }}
+          readOnly={disabled}
+          bounds={quillContainerRef.current}
+        />
+      </div>,
     );
   },
   mapProps({

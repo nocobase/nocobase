@@ -28,6 +28,7 @@ const ReactQuill = lazy(async () => {
 
 export const RichTextField = (props) => {
   const richTextClass = useRichTextStyles();
+  const quillContainerRef = React.useRef(null);
   const modules = {
     toolbar: [
       [
@@ -84,21 +85,23 @@ export const RichTextField = (props) => {
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
 
   return (
-    <ReactQuill
-      className={richTextClass}
-      modules={propsModules || modules}
-      formats={propsFormats || formats}
-      value={value}
-      onChange={(value) => {
-        if (value === '<p><br></p>') {
-          onChange('');
-        } else {
-          onChange(value);
-        }
-      }}
-      readOnly={disabled}
-      bounds={'.quill'}
-    />
+    <div ref={quillContainerRef}>
+      <ReactQuill
+        className={richTextClass}
+        modules={propsModules || modules}
+        formats={propsFormats || formats}
+        value={value}
+        onChange={(value) => {
+          if (value === '<p><br></p>') {
+            onChange('');
+          } else {
+            onChange(value);
+          }
+        }}
+        readOnly={disabled}
+        bounds={quillContainerRef.current}
+      />
+    </div>
   );
 };
 
