@@ -221,4 +221,11 @@ type FlowContextInfos = {
 
 注意：`getInfos()` 会计算/过滤 `hidden`，并计算 `disabled/disabledReason`，且返回结果不包含函数，适合直接序列化传给大模型。
 
+### 5.4 `await ctx.getVar(path)`
+
+当你只有一个“变量路径字符串”（例如来自配置/用户输入），希望直接拿到该变量的运行时值时，可以使用 `getVar`：
+
+- 示例：`const v = await ctx.getVar('record.roles.id')`
+- `path` 为 `ctx` 下的相对路径（例如 `record.id` / `record.roles[0].id`）
+
 另外：以下划线 `_` 开头的方法/属性会被视为私有成员，不会出现在 `getInfos()` 的输出中。

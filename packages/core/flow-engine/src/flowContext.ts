@@ -1563,6 +1563,7 @@ class BaseFlowEngineContext extends FlowContext {
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare getVar: (path: string) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -1830,6 +1831,35 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
       return resolveExpressions(serverResolved, this);
     });
+
+    // Helper: resolve a single ctx variable by path, with full resolveJsonTemplate behavior.
+    // Example: await ctx.getVar('record.id')
+    this.defineMethod(
+      'getVar',
+      async function (this: BaseFlowEngineContext, varPath: string) {
+        const raw = typeof varPath === 'string' ? varPath : String(varPath ?? '');
+        const s = raw.trim();
+        if (!s) return undefined;
+        return this.resolveJsonTemplate(`{{ ctx.${s} }}` as any);
+      },
+      {
+        description: 'Resolve a ctx variable by path and return its runtime value.',
+        detail: '(path: string) => Promise<any>',
+        params: [
+          {
+            name: 'path',
+            type: 'string',
+            description: 'Relative path under ctx (e.g. "record.id").',
+          },
+        ],
+        returns: { type: 'Promise<any>', description: 'Resolved variable value.' },
+        completion: { insertText: "await ctx.getVar('record.id')" },
+        examples: [
+          "const id = await ctx.getVar('record.id');",
+          "const roleId = await ctx.getVar('record.roles[0].id');",
+        ],
+      },
+    );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
     });

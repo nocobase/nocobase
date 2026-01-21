@@ -55,11 +55,13 @@ FlowEngineContext（全局上下文）
 
 ---
 
-## 上下文信息：`ctx.getInfos()`
+## 🤖 面向大模型的上下文信息：`ctx.getInfos()`
 
 在某些场景下（例如 JS*Model 的 RunJS 代码编辑、AI coding），需要让“调用方”在不执行代码的前提下了解：当前 `ctx` 下有哪些属性/方法、它们的用途、参数、示例、以及文档链接。
 
 为此，`FlowContext` 提供了异步 API：`await ctx.getInfos(options?)`，用于返回**静态可序列化**的上下文信息（不包含函数）。
+
+如果你需要在运行时通过“变量路径字符串”取值（例如来自配置/用户输入），可以使用：`await ctx.getVar(path)`。
 
 ### 返回结构
 

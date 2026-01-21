@@ -957,6 +957,17 @@ describe('FlowEngine context', () => {
     expect(engine.context.appName).toBe('NocoBase');
   });
 
+  it('engine.context.getVar should resolve variable by path', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('foo', { value: { bar: 1 } });
+
+    const v1 = await (engine.context as any).getVar('foo.bar');
+    expect(v1).toBe(1);
+
+    const infos = await (engine.context as any).getInfos({ path: 'getVar' });
+    expect(infos.methods.getVar?.completion?.insertText).toContain('getVar');
+  });
+
   it('engine.context.runAction should resolve action from engine.getAction', async () => {
     const engine = new FlowEngine();
 
