@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/logger",
-  "version": "1.9.38",
+  "version": "1.9.39",
   "description": "nocobase logging library",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",

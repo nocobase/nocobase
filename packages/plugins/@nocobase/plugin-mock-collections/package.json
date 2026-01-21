@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-mock-collections",
   "displayName": "mock-collections",
   "description": "mock-collections",
-  "version": "1.9.38",
+  "version": "1.9.39",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "peerDependencies": {
