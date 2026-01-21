@@ -1,3 +1,8 @@
+---
+title: "Async Value"
+description: "Register an asynchronous property that resolves after I/O."
+---
+
 # Async Value
 
 ## Register Async Value

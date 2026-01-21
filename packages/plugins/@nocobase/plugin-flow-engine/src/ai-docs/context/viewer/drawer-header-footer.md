@@ -1,3 +1,8 @@
+---
+title: "Drawer Header/Footer"
+description: "Use ctx.viewer.drawer to implement Drawer Header/Footer."
+---
+
 # Drawer Header/Footer
 
 ## custom layout

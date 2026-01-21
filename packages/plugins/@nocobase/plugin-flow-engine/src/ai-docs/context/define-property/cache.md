@@ -1,3 +1,8 @@
+---
+title: "Cache"
+description: "Cached properties execute the getter once and reuse the stored value."
+---
+
 # Cache
 
 ## Register Cached Property

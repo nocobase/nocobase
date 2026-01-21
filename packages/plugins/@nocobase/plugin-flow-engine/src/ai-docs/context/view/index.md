@@ -7,9 +7,3 @@
 - `useFlowView()` is the easiest way to retrieve the active view helpers inside React.
 - Keep `viewUid` stable when opening views so nested models persist state.
 - Combine `ctx.view.inputArgs` with `ctx.viewer`'s `inputArgs` option to pass parameters.
-
-## Examples
-
-- Hook access (`@nocobase/plugin-flow-engine/context/view/dialog-hook.md`)
-- Parameter passing (`@nocobase/plugin-flow-engine/context/view/input-args.md`)
-- Delegation (`@nocobase/plugin-flow-engine/context/view/model.md`)

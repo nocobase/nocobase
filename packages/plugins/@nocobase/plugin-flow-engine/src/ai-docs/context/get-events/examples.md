@@ -1,3 +1,8 @@
+---
+title: "Inspect Events"
+description: "Inspect Events implementation for Get Events."
+---
+
 # Examples
 
 ## Inspect Events

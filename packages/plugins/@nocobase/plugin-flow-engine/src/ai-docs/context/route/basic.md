@@ -1,3 +1,8 @@
+---
+title: "Navigate To Post"
+description: "Navigate to post."
+---
+
 # Basic
 
 ## Navigate To Post

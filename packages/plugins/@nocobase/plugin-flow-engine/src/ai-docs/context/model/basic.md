@@ -1,3 +1,8 @@
+---
+title: "Update Model Props"
+description: "Use ctx.model.setProps/dispatchEvent to update model props."
+---
+
 # Basic
 
 ## Update Model Props

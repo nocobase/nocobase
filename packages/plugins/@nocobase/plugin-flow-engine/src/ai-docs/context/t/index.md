@@ -4,8 +4,4 @@
 
 ## Usage Patterns
 
-- **Inside models** (`@nocobase/plugin-flow-engine/context/t/examples.md` → `translateInModel`): render localized strings with namespaces and interpolation.
-- **Inside steps** (`@nocobase/plugin-flow-engine/context/t/examples.md` → `translateInStep`): translate during handler execution to produce messages or logs.
-- **Plugins / utilities** (`@nocobase/plugin-flow-engine/context/t/examples.md` → `translateInPlugin`): reuse the same `t` helper when you only have the application context.
-
 The returned function is already bound to the current locale, so you just pass the translation key plus optional `{ ns, ...variables }`.

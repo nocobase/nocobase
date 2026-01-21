@@ -1,3 +1,8 @@
+---
+title: "Concurrent Async"
+description: "Demonstrates that concurrent reads execute the async getter only once."
+---
+
 # Concurrent Async
 
 ## Register Concurrent Async

@@ -4,13 +4,11 @@
 
 ## Usage Patterns
 
-- **Collection permissions** (`@nocobase/plugin-flow-engine/context/acl/basic.md`):
   - `canListUsers`: `action: 'list'`
   - `canGetUser`: `action: 'get'` with `filterByTk`
   - `canCreateUser`: `action: 'create'`
   - `canUpdateUser`: `action: 'update'`
   - `canDestroyUsers`: `action: 'destroy'` (bulk or single record)
-- **Field-level permissions** (`@nocobase/plugin-flow-engine/context/acl/basic.md`):
   - `canReadFields`: set `fields` for read checks
   - `canWriteFields`: set `fields` for write checks
 

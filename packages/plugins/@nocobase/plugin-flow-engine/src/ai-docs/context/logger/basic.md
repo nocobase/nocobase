@@ -1,3 +1,8 @@
+---
+title: "Log Lifecycle"
+description: "Use ctx.logger.info/error to log lifecycle."
+---
+
 # Basic
 
 ## Log Lifecycle

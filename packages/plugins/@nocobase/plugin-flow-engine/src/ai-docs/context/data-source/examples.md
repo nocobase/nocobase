@@ -1,3 +1,8 @@
+---
+title: "Read Data Source Key"
+description: "Read Data Source Key implementation for Data Source."
+---
+
 # Examples
 
 ## Read Data Source Key

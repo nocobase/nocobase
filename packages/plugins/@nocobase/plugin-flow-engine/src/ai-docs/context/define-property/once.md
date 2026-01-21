@@ -1,3 +1,8 @@
+---
+title: "Once"
+description: "Once: true keeps the first definition and ignores later calls."
+---
+
 # Once
 
 ## Register Once Property

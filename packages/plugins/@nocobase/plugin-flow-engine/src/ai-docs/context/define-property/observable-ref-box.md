@@ -1,3 +1,8 @@
+---
+title: "Observable Ref Box"
+description: "Observable.ref exposes a .value field that can be reassigned."
+---
+
 # Observable Ref Box
 
 ## Register Observable Ref

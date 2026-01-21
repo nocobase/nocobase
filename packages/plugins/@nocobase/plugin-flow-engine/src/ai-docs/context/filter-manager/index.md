@@ -13,5 +13,3 @@
 - `refreshTargetsByFilter(filterId | filterId[])` recomputes target filters for specific filter blocks.
 
 ## Example
-
-- `@nocobase/plugin-flow-engine/context/filter-manager/basic.md` shows how to register filter configs and refresh linked targets.

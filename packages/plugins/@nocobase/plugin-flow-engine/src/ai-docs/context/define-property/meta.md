@@ -1,3 +1,8 @@
+---
+title: "Meta"
+description: "Register meta enabled properties."
+---
+
 # Meta
 
 ## Register Meta Enabled Properties

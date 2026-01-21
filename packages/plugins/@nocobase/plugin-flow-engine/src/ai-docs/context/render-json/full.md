@@ -1,3 +1,8 @@
+---
+title: "Full"
+description: "Resolve object."
+---
+
 # Full
 
 ## Resolve Object

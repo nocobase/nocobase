@@ -1,3 +1,8 @@
+---
+title: "Concurrency"
+description: "Use ctx.viewer.dialog to implement Concurrency."
+---
+
 # Concurrency
 
 ## open multiple views

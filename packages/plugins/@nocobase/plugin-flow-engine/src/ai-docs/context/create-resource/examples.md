@@ -1,3 +1,8 @@
+---
+title: "Create Multi Record Resource"
+description: "Create Multi Record Resource implementation for Create Resource."
+---
+
 # Examples
 
 ## Create Multi Record Resource

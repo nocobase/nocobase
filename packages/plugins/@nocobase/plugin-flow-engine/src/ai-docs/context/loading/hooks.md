@@ -1,3 +1,8 @@
+---
+title: "Hooks"
+description: "Shared helpers used by the following snippets."
+---
+
 # Hooks
 
 ## Setup

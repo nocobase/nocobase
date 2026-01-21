@@ -1,3 +1,8 @@
+---
+title: "Translate"
+description: "Use ctx.i18n.t/language to translate."
+---
+
 # Basic
 
 ## Translate

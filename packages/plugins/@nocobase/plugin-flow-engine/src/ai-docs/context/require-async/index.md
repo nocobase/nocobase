@@ -8,5 +8,3 @@
 - Fetch helpers that are too heavy to bundle eagerly.
 
 ## Example
-
-- `@nocobase/plugin-flow-engine/context/require-async/echarts.md` downloads ECharts on demand and returns the loaded module.

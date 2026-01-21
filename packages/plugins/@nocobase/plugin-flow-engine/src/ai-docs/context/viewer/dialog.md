@@ -1,3 +1,8 @@
+---
+title: "Dialog"
+description: "Use ctx.viewer.dialog to implement Dialog."
+---
+
 # Dialog
 
 ## open dialog

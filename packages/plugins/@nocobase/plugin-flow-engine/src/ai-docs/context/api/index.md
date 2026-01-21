@@ -7,7 +7,3 @@
 - Build REST calls with `{ method, url, params, data }`.
 - Await the Promise to get `{ data, status }` and hydrate your model or context.
 - Works anywhere you have access to the FlowContext (models, steps, hooks).
-
-## Example
-
-- `@nocobase/plugin-flow-engine/context/api/example.md` demonstrates GET/POST requests through `ctx.api.request`.

@@ -1,3 +1,8 @@
+---
+title: "Observable"
+description: "Observable properties notify every observer when the cached value is refreshed."
+---
+
 # Observable
 
 ## Register Observable

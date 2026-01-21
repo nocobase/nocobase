@@ -1,3 +1,8 @@
+---
+title: "Shuffle"
+description: "Shuffle array."
+---
+
 # Shuffle
 
 ## Shuffle Array

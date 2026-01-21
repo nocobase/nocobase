@@ -1,3 +1,8 @@
+---
+title: "Use Multi Record Resource"
+description: "Use multi record resource."
+---
+
 # Basic
 
 ## Use Multi Record Resource

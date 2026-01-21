@@ -1,3 +1,8 @@
+---
+title: "Dialog Hook"
+description: "Use useFlowView() inside the dialog content to grab chrome helpers and close the view."
+---
+
 # Dialog Hook
 
 ## access Header/Footer

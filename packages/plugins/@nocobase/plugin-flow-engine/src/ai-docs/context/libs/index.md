@@ -13,7 +13,6 @@ Flow run-time injects React, ReactDOM, Ant Design, dayjs, and icons directly int
 
 ## Usage patterns
 
-- Render a modal-editable table using only `ctx.React`, `ctx.libs.antd`, and `ctx.render`: `@nocobase/plugin-flow-engine/js-model/example/js-block/editable-modal-table.md`.
 - Build live previews inside fields/items by combining `ctx.React` with `ctx.message` for feedback.
 - When you need plain DOM (no React), still call `ctx.render('<div>raw HTML</div>')` so the engine manages unmounting safely.
 

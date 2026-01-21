@@ -10,9 +10,3 @@ type RouteOptions = {
   params?: Record<string, any>;
 };
 ```
-
-## Examples
-
-- **Basic navigation** (`@nocobase/plugin-flow-engine/context/route/basic.md`) pushes to another page with params.
-- **Route reaction** (`@nocobase/plugin-flow-engine/context/route/reaction.md`) watches route changes and reacts inside the model.
-- **Advanced reactions** (`@nocobase/plugin-flow-engine/context/route/reaction2.md`) demonstrates unsubscribing and multiple listeners.

@@ -1,3 +1,8 @@
+---
+title: "Embed"
+description: "Use ctx.viewer.embed to implement Embed."
+---
+
 # Embed
 
 ## inline view

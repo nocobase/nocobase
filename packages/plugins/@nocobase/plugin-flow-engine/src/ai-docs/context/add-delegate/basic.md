@@ -1,3 +1,8 @@
+---
+title: "Attach Delegate"
+description: "Attach delegate."
+---
+
 # Basic
 
 ## Attach Delegate

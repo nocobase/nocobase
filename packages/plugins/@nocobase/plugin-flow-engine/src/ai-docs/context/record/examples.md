@@ -1,3 +1,8 @@
+---
+title: "Inspect Record"
+description: "Inspect Record implementation for Record."
+---
+
 # Examples
 
 ## Inspect Record

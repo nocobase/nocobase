@@ -1,3 +1,8 @@
+---
+title: "Confirm And Exit"
+description: "Confirm and exit."
+---
+
 # Examples
 
 ## Confirm And Exit

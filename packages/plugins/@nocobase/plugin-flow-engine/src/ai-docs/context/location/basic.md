@@ -1,3 +1,8 @@
+---
+title: "Get Location"
+description: "Use ctx.location.pathname to get location."
+---
+
 # Basic
 
 ## Get Location

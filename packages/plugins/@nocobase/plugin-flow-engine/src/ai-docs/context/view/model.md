@@ -1,3 +1,8 @@
+---
+title: "Model Delegation"
+description: "Spawn another FlowModel and delegate the view context so nested components share the same helpers."
+---
+
 # Model Delegation
 
 ## delegate child model

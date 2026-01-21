@@ -1,3 +1,8 @@
+---
+title: "Dialog Header/Footer"
+description: "Use ctx.viewer.dialog to implement Dialog Header/Footer."
+---
+
 # Dialog Header/Footer
 
 ## custom chrome

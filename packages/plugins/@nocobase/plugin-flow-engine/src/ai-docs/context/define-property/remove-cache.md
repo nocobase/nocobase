@@ -1,3 +1,8 @@
+---
+title: "Remove Cache"
+description: "Clear cache manually when data changes externally."
+---
+
 # Remove Cache
 
 ## Register Manual Cache

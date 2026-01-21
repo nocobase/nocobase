@@ -1,3 +1,8 @@
+---
+title: "Fetch Collection"
+description: "Fetch Collection implementation for Data Source Manager."
+---
+
 # Examples
 
 ## Fetch Collection

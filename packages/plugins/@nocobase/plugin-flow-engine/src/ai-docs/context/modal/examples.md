@@ -1,3 +1,8 @@
+---
+title: "Confirm Action"
+description: "Use ctx.modal.confirm/info to confirm action."
+---
+
 # Examples
 
 ## Confirm Action

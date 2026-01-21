@@ -1,3 +1,8 @@
+---
+title: "Run Inline Query"
+description: "Use ctx.sql.run/save/runById/destroy to run inline query."
+---
+
 # Examples
 
 ## Run Inline Query

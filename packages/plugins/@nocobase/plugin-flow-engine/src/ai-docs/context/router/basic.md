@@ -1,3 +1,8 @@
+---
+title: "Navigate To"
+description: "Use ctx.router.navigate/replace/location to navigate to."
+---
+
 # Basic
 
 ## Navigate To

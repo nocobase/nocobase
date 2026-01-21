@@ -1,3 +1,8 @@
+---
+title: "Dialog Hook"
+description: "Dialog Hook implementation for Viewer."
+---
+
 # Dialog Hook
 
 ## useFlowView helper

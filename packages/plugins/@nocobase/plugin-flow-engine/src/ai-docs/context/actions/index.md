@@ -10,8 +10,4 @@
 
 ## Usage Patterns
 
-- **Invoke an action** (`@nocobase/plugin-flow-engine/context/actions/basic.md` → `runAction`).
-- **Inspect a single action** (`@nocobase/plugin-flow-engine/context/actions/basic.md` → `getActionDefinition`).
-- **List all actions** (`@nocobase/plugin-flow-engine/context/actions/basic.md` → `listActions`).
-
 Use these helpers to decide which action to run dynamically, inspect capabilities before calling them, or execute nested flows.

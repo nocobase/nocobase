@@ -1,3 +1,8 @@
+---
+title: "No Cache"
+description: "Disable cache so every read evaluates the getter again."
+---
+
 # No Cache
 
 ## Register No Cache Property

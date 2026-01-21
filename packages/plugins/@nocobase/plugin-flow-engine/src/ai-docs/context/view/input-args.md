@@ -1,3 +1,8 @@
+---
+title: "Input Args"
+description: "Ctx.view.inputArgs mirrors the payload passed to ctx.viewer.*."
+---
+
 # Input Args
 
 ## read parameters

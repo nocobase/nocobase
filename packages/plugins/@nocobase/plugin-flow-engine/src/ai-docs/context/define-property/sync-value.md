@@ -1,3 +1,8 @@
+---
+title: "Sync Value"
+description: "Define a synchronous property that reads immediately without awaiting."
+---
+
 # Sync Value
 
 ## Register Sync Value

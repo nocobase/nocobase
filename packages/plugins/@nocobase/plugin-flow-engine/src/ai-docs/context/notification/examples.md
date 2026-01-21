@@ -1,3 +1,8 @@
+---
+title: "Notify Success"
+description: "Use ctx.notification.success/error to notify success."
+---
+
 # Examples
 
 ## Notify Success

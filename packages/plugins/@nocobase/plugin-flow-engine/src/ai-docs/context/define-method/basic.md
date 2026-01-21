@@ -1,3 +1,8 @@
+---
+title: "Register Method"
+description: "Register method."
+---
+
 # Basic
 
 ## Register Method

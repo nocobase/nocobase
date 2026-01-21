@@ -1,3 +1,8 @@
+---
+title: "Setup"
+description: "Shared helpers used by the following snippets."
+---
+
 # Examples
 
 ## Setup

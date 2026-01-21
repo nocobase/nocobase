@@ -1,3 +1,8 @@
+---
+title: "Embed Header/Footer"
+description: "Use ctx.viewer.embed to implement Embed Header/Footer."
+---
+
 # Embed Header/Footer
 
 ## chrome in embed

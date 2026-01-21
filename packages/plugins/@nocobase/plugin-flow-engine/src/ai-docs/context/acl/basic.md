@@ -1,3 +1,8 @@
+---
+title: "Can List Users"
+description: "Use ctx.acl.can to can list users."
+---
+
 # Basic
 
 ## Can List Users
