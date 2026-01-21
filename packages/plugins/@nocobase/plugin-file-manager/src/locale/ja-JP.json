@@ -25,7 +25,7 @@
   "File storage": "ファイルストレージ",
   "File type allowed (in MIME type format)": "許可されているファイルタイプ（MIME形式）",
   "Filename": "ファイル名",
-  "Force Path Style": "完全なアップロードアドレス形式",
+  "Full access URL style": "完全なアップロードアドレス形式",
   "Ignore Bucket": "バケットを無視 (デフォルト)",
   "Path-style": "バケットをサブパスとして使用",
   "Virtual-hosted-style": "バケットをサブドメインとして使用",

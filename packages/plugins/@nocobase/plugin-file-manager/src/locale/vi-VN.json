@@ -19,7 +19,7 @@
   "File storage": "File storage",
   "File type (in MIME type format)": "File type (in MIME type format)",
   "Filename": "Filename",
-  "Force Path Style": "Định dạng địa chỉ tải lên đầy đủ",
+  "Full access URL style": "Định dạng địa chỉ tải lên đầy đủ",
   "Ignore Bucket": "Bỏ qua Bucket (Mặc định)",
   "Path-style": "Bucket dưới dạng đường dẫn con",
   "Virtual-hosted-style": "Bucket dưới dạng tên miền phụ",

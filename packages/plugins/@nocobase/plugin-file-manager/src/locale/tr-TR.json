@@ -25,7 +25,7 @@
   "File storage": "File storage",
   "File type allowed (in MIME type format)": "İzin verilen dosya türü (MIME türü formatında)",
   "Filename": "Dosya adı",
-  "Force Path Style": "Tam yükleme adresi formatı",
+  "Full access URL style": "Tam yükleme adresi formatı",
   "Ignore Bucket": "Bucket'ı Yoksay (Varsayılan)",
   "Path-style": "Bucket alt yol olarak",
   "Virtual-hosted-style": "Bucket alt alan adı olarak",

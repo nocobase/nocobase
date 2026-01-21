@@ -19,7 +19,7 @@
   "File storage": "Penyimpanan file",
   "File type (in MIME type format)": "Tipe file (dalam format tipe MIME)",
   "Filename": "Nama file",
-  "Force Path Style": "Format alamat unggahan lengkap",
+  "Full access URL style": "Format alamat unggahan lengkap",
   "Ignore Bucket": "Abaikan Bucket (Default)",
   "Path-style": "Bucket sebagai sub-jalur",
   "Virtual-hosted-style": "Bucket sebagai sub-domain",

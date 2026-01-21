@@ -23,7 +23,7 @@
   "File storage": "文件存储器",
   "File type allowed (in MIME type format)": "允许的文件类型（MIME 格式）",
   "Filename": "文件名",
-  "Force Path Style": "完整的上传地址格式",
+  "Full access URL style": "完整的上传地址格式",
   "Ignore Bucket": "忽略存储桶（默认）",
   "Path-style": "存储桶作为子路径",
   "Virtual-hosted-style": "存储桶作为子域名",

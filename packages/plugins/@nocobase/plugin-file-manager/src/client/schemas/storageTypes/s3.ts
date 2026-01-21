@@ -51,7 +51,7 @@ export default {
           required: true,
         },
         forcePathStyle: {
-          title: `{{t("Force Path Style", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("Full access URL style", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           default: 'ignore',
           'x-decorator': 'FormItem',

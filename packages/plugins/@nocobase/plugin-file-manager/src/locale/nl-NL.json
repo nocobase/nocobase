@@ -25,7 +25,7 @@
   "File storage": "Bestandsopslag",
   "File type allowed (in MIME type format)": "Toegestane bestandstypen (in MIME-type formaat)",
   "Filename": "Bestandsnaam",
-  "Force Path Style": "Volledig uploadadresformaat",
+  "Full access URL style": "Volledig uploadadresformaat",
   "Ignore Bucket": "Bucket negeren (Standaard)",
   "Path-style": "Bucket als subpad",
   "Virtual-hosted-style": "Bucket als subdomein",

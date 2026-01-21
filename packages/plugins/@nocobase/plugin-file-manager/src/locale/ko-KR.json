@@ -25,7 +25,7 @@
   "File storage": "파일 저장소",
   "File type allowed (in MIME type format)": "허용된 파일 유형 (MIME 타입 형식)",
   "Filename": "파일명",
-  "Force Path Style": "전체 업로드 주소 형식",
+  "Full access URL style": "전체 업로드 주소 형식",
   "Ignore Bucket": "버킷 무시 (기본값)",
   "Path-style": "버킷을 하위 경로로 사용",
   "Virtual-hosted-style": "버킷을 하위 도메인으로 사용",

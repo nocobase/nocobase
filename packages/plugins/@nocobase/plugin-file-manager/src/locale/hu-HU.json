@@ -19,7 +19,7 @@
   "File storage": "Fájltárolás",
   "File type (in MIME type format)": "Fájltípus (MIME típus formátumban)",
   "Filename": "Fájlnév",
-  "Force Path Style": "Teljes feltöltési cím formátum",
+  "Full access URL style": "Teljes feltöltési cím formátum",
   "Ignore Bucket": "Bucket figyelmen kívül hagyása (Alapértelmezett)",
   "Path-style": "Bucket mint elérési út",
   "Virtual-hosted-style": "Bucket mint aldomain",

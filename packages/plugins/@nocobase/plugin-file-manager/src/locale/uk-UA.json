@@ -25,7 +25,7 @@
   "File storage": "File storage",
   "File type allowed (in MIME type format)": "File type allowed (in MIME type format)",
   "Filename": "Filename",
-  "Force Path Style": "Повний формат адреси завантаження",
+  "Full access URL style": "Повний формат адреси завантаження",
   "Ignore Bucket": "Ігнорувати бакет (за замовчуванням)",
   "Path-style": "Бакет як підшлях",
   "Virtual-hosted-style": "Бакет як піддомен",

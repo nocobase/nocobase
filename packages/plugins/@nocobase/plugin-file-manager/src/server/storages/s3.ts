@@ -160,29 +160,30 @@ export default class extends StorageType {
       return super.getFileURL(file, preview);
     }
 
-    const { bucket, documentUrlType, forcePathStyle } = this.storage.options;
+    const { bucket, forcePathStyle } = this.storage.options;
+    let baseUrl = this.storage.baseUrl;
 
     let bucketInPath;
-    if (forcePathStyle === 'virtual' && this.storage.baseUrl) {
+    if (forcePathStyle === 'virtual' && baseUrl) {
       try {
-        const urlObj = new URL(this.storage.baseUrl);
+        const urlObj = new URL(baseUrl);
         if (!urlObj.hostname.startsWith(bucket + '.')) {
           urlObj.hostname = `${bucket}.${urlObj.hostname}`;
           // remove trailing slash to be consistent with other logic
           // urlObj.toString() returns string with trailing slash if path is /
           const urlStr = urlObj.toString();
-          this.storage.baseUrl = urlStr.replace(/\/+$/, '');
+          baseUrl = urlStr.replace(/\/+$/, '');
         }
       } catch (e) {
         // ignore
       }
-    } else if (forcePathStyle === 'path' || documentUrlType === 'bucketAsSubPath') {
-      const baseUrlHasBucket = this.storage.baseUrl && new RegExp(`/${bucket}/?$`).test(this.storage.baseUrl);
+    } else if (forcePathStyle === 'path') {
+      const baseUrlHasBucket = baseUrl && new RegExp(`/${bucket}/?$`).test(baseUrl);
       bucketInPath = !baseUrlHasBucket ? bucket : undefined;
     }
 
     const keys = [
-      this.storage.baseUrl,
+      baseUrl,
       bucketInPath,
       file.path && encodeURI(file.path),
       ensureUrlEncoded(file.filename),

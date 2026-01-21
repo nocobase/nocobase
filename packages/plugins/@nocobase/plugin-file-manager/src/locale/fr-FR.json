@@ -25,7 +25,7 @@
   "File storage": "File storage",
   "File type allowed (in MIME type format)": "Type de fichier autorisé (au format MIME)",
   "Filename": "Nom de fichier",
-  "Force Path Style": "Format complet de l'adresse de téléchargement",
+  "Full access URL style": "Format complet de l'adresse de téléchargement",
   "Ignore Bucket": "Ignorer le Bucket (Défaut)",
   "Path-style": "Bucket comme sous-chemin",
   "Virtual-hosted-style": "Bucket comme sous-domaine",
