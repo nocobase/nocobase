@@ -265,7 +265,23 @@ export class Gateway extends EventEmitter {
       return;
     }
 
+    const supervisor = AppSupervisor.getInstance();
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    } catch (error) {
+      this.getLogger('main', res).error('Failed to get handle app name', { error });
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
+
     if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
@@ -277,6 +293,12 @@ export class Gateway extends EventEmitter {
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       await compress(req, res);
       const packageName = getPackageNameByExposeUrl(pathname);
       // /static/plugins/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
@@ -295,6 +317,12 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      if (handleApp !== 'main') {
+        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
@@ -303,15 +331,6 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    let handleApp = 'main';
-    const supervisor = AppSupervisor.getInstance();
-    try {
-      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
-    } catch (error) {
-      console.log(error);
-      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
-      return;
-    }
     if (handleApp !== 'main') {
       const isProxy = await supervisor.proxyWeb(handleApp, req, res);
       if (isProxy) {
