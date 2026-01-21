@@ -277,9 +277,10 @@ export class FlowEngine {
   public unlinkFromStack(): void {
     const prev = this._previousEngine;
     const next = this._nextEngine;
-    if (prev) {
-      prev._nextEngine = undefined;
-    }
+    if (prev) prev._nextEngine = next;
+    if (next) next._previousEngine = prev;
+    this._previousEngine = undefined;
+    this._nextEngine = undefined;
   }
 
   // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API

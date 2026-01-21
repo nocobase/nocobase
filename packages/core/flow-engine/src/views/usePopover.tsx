@@ -124,9 +124,6 @@ export function usePopover() {
     );
     closeFunc = holderRef.current?.patchElement(popover);
 
-    // Notify opener view that it is being covered by a new view.
-    openerEngine?.emitter?.emit?.('view:deactivated', { type: 'popover', viewUid: config?.inputArgs?.viewUid });
-
     return Object.assign(promise, currentPopover);
   };
 

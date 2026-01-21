@@ -241,11 +241,6 @@ export function usePage() {
       globalEmbedActiveRef.current = { destroy: currentPage.destroy };
     }
 
-    // Notify opener view that it is being covered by a new view.
-    if (!isGlobalEmbedContainer) {
-      openerEngine?.emitter?.emit?.('view:deactivated', { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
-    }
-
     return Object.assign(promise, currentPage);
   };
 

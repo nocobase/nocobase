@@ -228,9 +228,6 @@ export function useDrawer() {
     RenderDrawer.displayName = 'RenderDrawer';
 
     closeFunc = holderRef.current?.patchElement(RenderDrawer);
-
-    // Notify opener view that it is being covered by a new view.
-    openerEngine?.emitter?.emit?.('view:deactivated', { type: 'drawer', viewUid: currentDrawer?.inputArgs?.viewUid });
     return Object.assign(promise, currentDrawer);
   };
 

@@ -34,19 +34,6 @@ export function createBlockScopedEngine(parent: FlowEngine): FlowEngine {
   // 继承父级上下文能力
   local.context.addDelegate(parent.context);
 
-  // 覆盖 unlinkFromStack：BlockScoped 引擎被移除时，修复前后指针，避免“截断”后续视图/作用域
-  local.unlinkFromStack = function () {
-    // 修复指针：prev -> next，next -> prev，然后清理自身指针
-    // 若不这么做，移除位于中间的 block 引擎会导致后续整段链丢失
-    const localLinks = local as unknown as { _previousEngine?: FlowEngine; _nextEngine?: FlowEngine };
-    const prev = localLinks._previousEngine;
-    const next = localLinks._nextEngine;
-    if (prev) (prev as unknown as { _nextEngine?: FlowEngine })._nextEngine = next;
-    if (next) (next as unknown as { _previousEngine?: FlowEngine })._previousEngine = prev;
-    localLinks._previousEngine = undefined;
-    localLinks._nextEngine = undefined;
-  };
-
   // 默认全部代理到父引擎，只有少数字段（实例/缓存/执行器/上下文/链表指针）使用本地值
   const localOnly = new Set<keyof FlowEngine | string>([
     '_modelInstances',

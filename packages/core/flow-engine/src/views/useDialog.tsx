@@ -197,9 +197,6 @@ export function useDialog() {
     );
 
     closeFunc = holderRef.current?.patchElement(dialog);
-
-    // Notify opener view that it is being covered by a new view.
-    openerEngine?.emitter?.emit?.('view:deactivated', { type: 'dialog', viewUid: currentDialog?.inputArgs?.viewUid });
     return Object.assign(promise, currentDialog);
   };
 

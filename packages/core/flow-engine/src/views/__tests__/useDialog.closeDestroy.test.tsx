@@ -132,13 +132,12 @@ describe('useDialog - close/destroy logic', () => {
     expect(mockCloseFunc).not.toHaveBeenCalled();
   });
 
-  it('should emit view active/inactive events on opener engine', () => {
+  it('should emit view activated event on opener engine', () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
     const emitSpy = flowContext.engine.emitter.emit;
 
     const dialog = api.open({ inputArgs: { viewUid: 'child-view' } }, flowContext);
-    expect(emitSpy).toHaveBeenCalledWith('view:deactivated', expect.anything());
 
     dialog.close();
     expect(emitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
@@ -152,8 +151,6 @@ describe('useDialog - close/destroy logic', () => {
     (flowContext.engine as any).nextEngine = { emitter: { emit: openerEmitSpy }, __NOCOBASE_ENGINE_SCOPE__: 'view' };
 
     const dialog = api.open({ inputArgs: { viewUid: 'child-view' } }, flowContext);
-    expect(openerEmitSpy).toHaveBeenCalledWith('view:deactivated', expect.anything());
-    expect(rootEmitSpy).not.toHaveBeenCalledWith('view:deactivated', expect.anything());
 
     dialog.close();
     expect(openerEmitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
