@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Office File Previewer",
+  "Configuration": "Configuration",
+  "Preview Type": "Preview Type",
+  "Microsoft Online": "Microsoft Online (default)",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "KKFileView URL",
+  "KKFileView server address (e.g., http://localhost:8012)": "KKFileView server address (e.g., http://localhost:8012)",
+  "Open in new window": "Open in new window",
+  "Download": "Download",
+  "Close": "Close",
+  "Save": "Save",
+  "Settings saved successfully": "Settings saved successfully",
+  "Failed to save settings": "Failed to save settings",
+  "Select preview type": "Select preview type"
+}
