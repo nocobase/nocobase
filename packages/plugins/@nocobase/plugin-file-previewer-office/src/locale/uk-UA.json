@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Переглядач файлів Office",
+  "Configuration": "Конфігурація",
+  "Preview Type": "Тип попереду",
+  "Microsoft Online": "Microsoft Online (за замовчуванням)",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "URL KKFileView",
+  "KKFileView server address (e.g., http://localhost:8012)": "Адреса сервера KKFileView (наприклад, http://localhost:8012)",
+  "Open in new window": "Відкрити в новому вікні",
+  "Download": "Завантажити",
+  "Close": "Закрити",
+  "Save": "Зберегти",
+  "Settings saved successfully": "Налаштування успішно збережено",
+  "Failed to save settings": "Помилка при збереженні налаштувань",
+  "Select preview type": "Виберіть тип попереду"
+}
