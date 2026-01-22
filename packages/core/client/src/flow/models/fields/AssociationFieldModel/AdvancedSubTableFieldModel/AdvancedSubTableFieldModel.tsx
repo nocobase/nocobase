@@ -276,6 +276,9 @@ const DisplayTable = (props) => {
       dataSource={tableData}
       columns={columns}
       pagination={pagination}
+      locale={{
+        emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
+      }}
       className={css`
         .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
           display: inline;
@@ -452,16 +455,16 @@ AdvancedSubTableFieldModel.registerFlow({
         await ctx.model.applySubModelsBeforeRenderFlows('subTableColumns');
       },
     },
-    // quickEdit: {
-    //   title: tExpr('Enable quick edit'),
-    //   uiMode: { type: 'switch', key: 'editable' },
-    //   defaultParams: {
-    //     editable: false,
-    //   },
-    //   handler(ctx, params) {
-    //     ctx.model.setProps('editable', params.editable);
-    //   },
-    // },
+    quickEdit: {
+      title: tExpr('Enable quick edit'),
+      uiMode: { type: 'switch', key: 'editable' },
+      defaultParams: {
+        editable: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('editable', params.editable);
+      },
+    },
     pageSize: {
       title: tExpr('Page size'),
       uiMode: {
