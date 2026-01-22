@@ -368,7 +368,7 @@ SubTableFieldModel.registerFlow({
 });
 
 SubTableFieldModel.define({
-  label: tExpr('Sub-table'),
+  label: tExpr('Subtable (Inline editing)'),
 });
 export { SubTableColumnModel };
 

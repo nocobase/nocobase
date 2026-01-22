@@ -823,7 +823,7 @@ AdvancedSubTableFieldModel.registerFlow({
 });
 
 AdvancedSubTableFieldModel.define({
-  label: tExpr('Sub-table(Advanced)'),
+  label: tExpr('Sub-table (Popup editing)'),
 });
 
 EditableItemModel.bindModelToInterface('AdvancedSubTableFieldModel', ['m2m', 'o2m', 'mbm']);
