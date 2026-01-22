@@ -217,6 +217,7 @@ TableActionsColumnModel.define({
     },
   },
   hide(ctx) {
-    return ctx.blockModel instanceof FormBlockModel;
+    //子表格中隐藏这个Action
+    return ctx.disableFieldClickToOpen;
   },
 });

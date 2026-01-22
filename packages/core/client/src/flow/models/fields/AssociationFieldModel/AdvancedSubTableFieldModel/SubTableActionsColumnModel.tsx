@@ -204,6 +204,6 @@ SubTableActionsColumnModel.define({
     },
   },
   hide(ctx) {
-    return ctx.blockModel instanceof TableBlockModel;
+    return !ctx.disableFieldClickToOpen;
   },
 });
