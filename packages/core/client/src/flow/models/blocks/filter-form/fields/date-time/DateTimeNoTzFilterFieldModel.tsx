@@ -13,7 +13,10 @@ import { DateFilterDynamicComponent } from './components/DateFilterDynamicCompon
 
 const DateTimeNoTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', showTime, picker = 'date', ...rest } = props;
-  return <DateFilterDynamicComponent {...rest} value={value} format={format} picker={picker} showTime={showTime} />;
+  // When showTime is true, use date-only format to avoid duplication
+  // because getDateTimeFormat will append time format automatically
+  const dateFormat = showTime && picker === 'date' ? 'YYYY-MM-DD' : format;
+  return <DateFilterDynamicComponent {...rest} value={value} format={dateFormat} picker={picker} showTime={showTime} />;
 };
 
 export class DateTimeNoTzFilterFieldModel extends DateTimeFilterFieldModel {
