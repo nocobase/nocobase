@@ -27,7 +27,7 @@ import { ccTodo } from './tasks';
 import { CCChildPageModel } from './models/CCChildPageModel';
 import { CCChildPageTabModel } from './models/CCChildPageTabModel';
 import { CCBlockGridModel } from './models/CCBlockGridModel';
-import { TriggerBlockGridModel } from './models/TriggerBlockGridModel';
+import { CCTriggerBlockGridModel } from './models/CCTriggerBlockGridModel';
 import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
 import { CCTaskCardGridModel } from './models/CCTaskCardGridModel';
 import { CCTaskCardDetailsItemModel } from './models/CCTaskCardDetailsItemModel';
@@ -52,7 +52,7 @@ export class PluginWorkflowCCClient extends Plugin {
       CCChildPageModel,
       CCChildPageTabModel,
       CCBlockGridModel,
-      TriggerBlockGridModel,
+      CCTriggerBlockGridModel,
       // Task card 相关
       CCTaskCardDetailsModel,
       CCTaskCardGridModel,

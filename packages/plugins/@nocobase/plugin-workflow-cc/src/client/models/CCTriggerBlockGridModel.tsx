@@ -12,7 +12,7 @@ import { BlockGridModel } from '@nocobase/client';
 import { AddSubModelButton, FlowSettingsButton, SubModelItem, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 
-export class TriggerBlockGridModel extends BlockGridModel {
+export class CCTriggerBlockGridModel extends BlockGridModel {
   renderAddSubModelButton() {
     if (!this.context.flowSettingsEnabled) {
       return null;
