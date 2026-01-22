@@ -29,8 +29,13 @@ import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 import { bulkEditFormBlockSettings } from './BulkEditFormBlockSettings';
 import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
+import * as models from './models';
+
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
+    // 注册 Flow 模型以支持新版流程引擎按钮动作
+    this.app.flowEngine.registerModels(models);
+
     this.app.addComponents({ BulkEditField, BulkEditActionDecorator });
     this.app.addScopes({ useCustomizeBulkEditActionProps });
     this.app.schemaSettingsManager.add(bulkEditFormBlockSettings);
