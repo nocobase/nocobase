@@ -8,21 +8,21 @@
  */
 
 import { tExpr } from '@nocobase/flow-engine';
-import type { ButtonProps } from 'antd/es/button';
 import { onFieldInputValueChange } from '@formily/core';
-import { ISchema, connect, mapProps, useField, useFieldSchema, useForm } from '@formily/react';
+import { connect, mapProps, useForm } from '@formily/react';
 import { ActionModel, ActionSceneEnum, openViewFlow } from '@nocobase/client';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getCollectionState } from './utils';
 
 const Tree = connect(
   AntdTree,
-  mapProps((props, field: any) => {
+  mapProps((props: any, field: any) => {
     useEffect(() => {
       field.value = props.defaultCheckedKeys || [];
     }, []);
+    const [dataSource, setDataSource] = useState(props?.treeData || []);
     const [checkedKeys, setCheckedKeys] = useState(props.defaultCheckedKeys || []);
     const onCheck = (checkedKeys) => {
       setCheckedKeys(checkedKeys);
@@ -30,13 +30,16 @@ const Tree = connect(
     };
     field.onCheck = onCheck;
     const form = useForm();
-    const treeData = props?.treeData || [];
-    console.log(treeData);
+    useEffect(() => {
+      const data = props.getEnableFieldTree(form.values.collection);
+      setDataSource(data);
+    }, [form.values.collection]);
+
     return {
       ...props,
       checkedKeys,
       onCheck,
-      treeData: treeData.map((v: any) => {
+      treeData: dataSource.map((v: any) => {
         if (form.values.duplicateMode === 'quickDulicate') {
           const children = v?.children?.map((k) => {
             return {
@@ -134,7 +137,6 @@ DuplicateActionModel.registerFlow({
         );
 
         ctx.model.flowEngine.flowSettings.registerScopes({
-          getEnableFieldTree,
           collectionName: ctx.record?.__collection || ctx.blockModel.collection.name,
           currentCollection: ctx.record?.__collection || ctx.blockModel.collection.name,
           getOnLoadData,
@@ -276,6 +278,7 @@ DuplicateActionModel.registerFlow({
               selectable: false,
               loadData: '{{ getOnLoadData($self) }}',
               onCheck: '{{ getOnCheck($self) }}',
+              getEnableFieldTree,
               rootStyle: {
                 padding: '8px 0',
                 border: '1px solid #d9d9d9',
@@ -288,13 +291,10 @@ DuplicateActionModel.registerFlow({
 
             'x-reactions': [
               {
-                dependencies: ['.collection', '.duplicateMode'],
+                dependencies: ['.collection'],
                 fulfill: {
                   state: {
                     disabled: '{{ !$deps[0] }}',
-                    componentProps: {
-                      treeData: '{{ getEnableFieldTree($deps[0]) }}',
-                    },
                   },
                 },
               },

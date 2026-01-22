@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { Tag } from 'antd';
-import { useField } from '@formily/react';
-import { useCompile } from '@nocobase/client';
 
 const TreeNode = (props) => {
   const { tag, type, displayType = true } = props;
