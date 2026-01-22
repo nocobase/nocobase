@@ -521,7 +521,6 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps({
           titleField: params.label,
-          ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
     },
