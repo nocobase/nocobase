@@ -17,7 +17,10 @@ export type DepCollector = {
   deps: Set<string>;
   wildcard: boolean;
 };
-
+function shouldProxyObjectValue(val: any) {
+  if (!val || typeof val !== 'object') return false;
+  return Array.isArray(val) || _.isPlainObject(val);
+}
 export function recordDep(namePath: NamePath, collector: DepCollector | undefined) {
   if (!collector) return;
   for (const k of buildAncestorKeys(namePath)) {
@@ -101,7 +104,7 @@ export function createFormValuesProxy(options: {
       }
 
       if (finalVal == null || typeof finalVal !== 'object') return finalVal;
-      return asProxy(nextPath);
+      return shouldProxyObjectValue(finalVal) ? asProxy(nextPath) : finalVal;
     },
     ownKeys() {
       if (collector) collector.wildcard = true;
