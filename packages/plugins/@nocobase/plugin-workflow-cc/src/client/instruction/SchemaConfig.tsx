@@ -593,20 +593,13 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
   );
 
   useEffect(() => {
-    const selectedSources = form?.values?.tempAssociationFields?.length
-      ? form.values.tempAssociationFields
-          .map((field) =>
-            tempAssociationSources.find((item) => item.nodeId === field.nodeId && item.nodeKey === field.nodeKey),
-          )
-          .filter(Boolean)
-      : undefined;
     updateWorkflowCcTaskAssociationFields({
       flowEngine,
       workflow,
       nodes,
-      tempAssociationSources: selectedSources?.length ? selectedSources : tempAssociationSources,
+      tempAssociationSources,
     });
-  }, [flowEngine, nodes, workflow, form?.values?.tempAssociationFields, tempAssociationSources]);
+  }, [flowEngine, nodes, workflow, tempAssociationSources]);
 
   if (loading) {
     return <Spin />;

@@ -25,6 +25,7 @@ CCChildPageModel.registerFlow({
       handler(ctx, params) {
         ctx.model.context.defineProperty('collection', {
           get: () => ctx.engine.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName),
+          cache: false,
         });
       },
     },

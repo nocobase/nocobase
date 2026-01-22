@@ -12,7 +12,7 @@ import { DetailsGridModel } from '@nocobase/client';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import type { CCTaskTempAssociationFieldConfig } from './CCTaskCardDetailsItemModel';
-import { getEligibleTempAssociationSources, getWorkflowCcTaskAssociationMetadata } from './CCTaskCardDetailsItemModel';
+import { getEligibleTempAssociationSources } from './CCTaskCardDetailsItemModel';
 import { TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
 
 /**
@@ -56,13 +56,7 @@ export class CCTaskCardGridModel extends DetailsGridModel {
       | undefined;
     if (typeof sync !== 'function') return;
 
-    const shouldUseSources = typeof this.context.tempAssociationSources !== 'undefined';
-    const associationMetadata = shouldUseSources
-      ? getEligibleTempAssociationSources(this.context.tempAssociationSources || [])
-      : getWorkflowCcTaskAssociationMetadata({
-          workflow: this.context.workflow,
-          nodes: this.context.nodes,
-        });
+    const associationMetadata = getEligibleTempAssociationSources(this.context.tempAssociationSources || []);
     const metadataMap = new Map(associationMetadata.map((association) => [association.fieldName, association]));
     const selectedFields = this.getTempAssociationFieldNames();
     const configs = selectedFields

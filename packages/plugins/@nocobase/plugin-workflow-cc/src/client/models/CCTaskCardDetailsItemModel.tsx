@@ -50,60 +50,11 @@ type CCTaskAssociationMetadata = CCTaskTempAssociationFieldConfig & {
   target: string;
 };
 
-export const getWorkflowCcTaskAssociationMetadata = ({
-  workflow,
-  nodes,
-  collection,
-}: Pick<CCTaskAssociationContext, 'workflow' | 'nodes'> & { collection?: Collection }): CCTaskAssociationMetadata[] => {
-  const associations: CCTaskAssociationMetadata[] = [];
-
-  const collectAssociation = (
-    collectionName: string,
-    title: string | undefined,
-    key: string | number,
-    nodeId: string | number,
-    nodeType: CCTaskTempAssociationFieldConfig['nodeType'],
-  ) => {
-    const [dataSourceKey, target] = parseCollectionName(collectionName);
-    if (!target) return;
-    const fieldName = buildTempAssociationFieldName(nodeType, key);
-    if (collection?.getField(fieldName)) {
-      return;
-    }
-    const resolvedTitle = title || target;
-    associations.push({
-      fieldName,
-      nodeId,
-      nodeKey: String(key),
-      nodeType,
-      title: resolvedTitle,
-      dataSourceKey: dataSourceKey || 'main',
-      target,
-    });
-  };
-
-  if (workflow?.config?.collection) {
-    const key = 'workflow';
-    const nodeId = workflow?.id ?? key;
-    collectAssociation(workflow.config.collection, workflow.title, key, nodeId, 'workflow');
-  }
-
-  (nodes || []).forEach((node) => {
-    if (!node?.config?.collection) return;
-    const key = node?.key ?? node?.id;
-    if (!key) return;
-    const nodeId = node?.id ?? key;
-    collectAssociation(node.config.collection, node.title, key, nodeId, 'node');
-  });
-
-  return associations;
-};
-
-export const getEligibleTempAssociationSources = (sources: TempAssociationSource[] = []) => {
+export const getEligibleTempAssociationSources = (sources: TempAssociationSource[] = [], collection?: Collection) => {
   const unique = new Map<string, CCTaskAssociationMetadata>();
   sources.forEach((source) => {
     const fieldName = buildTempAssociationFieldName(source.nodeType, source.nodeKey);
-    if (unique.has(fieldName)) return;
+    if (unique.has(fieldName) || collection?.getField(fieldName)) return;
     const [dataSourceKey, target] = parseCollectionName(source.collection);
     if (!target) return;
     unique.set(fieldName, {
@@ -128,30 +79,35 @@ export const updateWorkflowCcTaskAssociationFields = ({
   if (!flowEngine) return;
   const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
   if (!collection) return;
-  const shouldUseSources = typeof tempAssociationSources !== 'undefined';
-  const associations = shouldUseSources
-    ? getEligibleTempAssociationSources(tempAssociationSources || [])
-    : getWorkflowCcTaskAssociationMetadata({ workflow, nodes, collection });
+  const associations = getEligibleTempAssociationSources(tempAssociationSources || [], collection);
 
   if (!associations.length) {
     return;
   }
 
-  associations.forEach((association) => {
-    collection.addField(
-      new CCTaskCardTempAssociationField({
-        type: 'belongsTo',
-        name: association.fieldName,
-        dataSourceKey: association.dataSourceKey,
-        target: association.target,
-        interface: 'm2o',
-        isAssociation: true,
-        uiSchema: {
-          title: association.title || association.target,
-        },
-      }),
-    );
-  });
+  associations
+    .map((item) => {
+      const title = [workflow, ...(nodes || [])].find((node) => node.id === item.nodeId)?.title;
+      return {
+        ...item,
+        title: title || item.nodeKey,
+      };
+    })
+    .forEach((association) => {
+      collection.addField(
+        new CCTaskCardTempAssociationField({
+          type: 'belongsTo',
+          name: association.fieldName,
+          dataSourceKey: association.dataSourceKey,
+          target: association.target,
+          interface: 'm2o',
+          isAssociation: true,
+          uiSchema: {
+            title: association.title || association.target,
+          },
+        }),
+      );
+    });
 };
 
 export class CCTaskCardDetailsItemModel extends DetailsItemModel {
