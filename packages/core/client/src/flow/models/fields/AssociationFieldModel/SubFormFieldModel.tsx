@@ -274,7 +274,10 @@ const ArrayNester = ({
                       {t('Add new')}
                     </Button>
                   ) : (
-                    <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <ActionWithoutPermission
+                      message={t('No permission to add new')}
+                      forbidden={{ actionName: 'create' }}
+                    >
                       <Button type="link" disabled>
                         <PlusOutlined />
                         {t('Add new')}
@@ -492,9 +495,9 @@ SubFormListFieldModel.registerFlow({
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===
-                    self.findIndex(
-                      (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
-                    ) || row.__is_new__,
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.__is_new__,
                 );
                 ctx.model.selectedRows.value = unique;
               },

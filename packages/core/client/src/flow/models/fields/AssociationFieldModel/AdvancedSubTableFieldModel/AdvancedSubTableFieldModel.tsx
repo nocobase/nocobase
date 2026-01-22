@@ -326,7 +326,7 @@ const DisplayTable = (props) => {
                   {t('Add new')}
                 </Button>
               ) : (
-                <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                <ActionWithoutPermission message={t('No permission to add new')} forbidden={{ actionName: 'create' }}>
                   <Button type="link" disabled>
                     <PlusOutlined />
                     {t('Add new')}

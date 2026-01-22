@@ -1586,5 +1586,6 @@
   "Edit add new popup": "编辑新增数据弹窗",
   "Edit select record popup": "编辑选择数据弹窗",
   "Sub-table (Inline editing)":"子表格（行内编辑）",
-  "Sub-table (Popup editing)":"子表格（弹窗编辑）"
+  "Sub-table (Popup editing)":"子表格（弹窗编辑）",
+  "No permission to add new":"没有添加权限"
 }
