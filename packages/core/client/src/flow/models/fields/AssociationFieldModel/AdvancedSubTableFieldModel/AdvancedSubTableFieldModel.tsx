@@ -849,16 +849,26 @@ AdvancedSubTableFieldModel.registerFlow({
 
 AdvancedSubTableFieldModel.define({
   label: tExpr('Subtable (Popup editing)'),
-  createModelOptions: () => ({
+  createModelOptions: {
     use: 'AdvancedSubTableFieldModel',
     subModels: {
       subTableColumns: [
         {
           use: 'SubTableActionsColumnModel',
+          subModels: {
+            actions: [
+              {
+                use: 'SubTableEditActionModel',
+              },
+              {
+                use: 'SubTableRecordDeleteActionModel',
+              },
+            ],
+          },
         },
       ],
     },
-  }),
+  },
 });
 
 EditableItemModel.bindModelToInterface('AdvancedSubTableFieldModel', ['m2m', 'o2m', 'mbm'], {

@@ -177,6 +177,7 @@ export class SubTableEditActionModel extends SubTableRecordAction {
   selectedRows = observable.ref([]);
   defaultPopupTitle = tExpr('Edit');
   defaultProps: ButtonProps = {
+    type: 'link',
     title: tExpr('Edit'),
   };
 
