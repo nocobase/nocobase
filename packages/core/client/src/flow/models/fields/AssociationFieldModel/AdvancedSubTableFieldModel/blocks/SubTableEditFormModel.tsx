@@ -45,7 +45,7 @@ export class SubTableEditFormModel extends FormBlockModel {
         const recordData = this.context.view?.inputArgs?.record || {};
         return recordData;
       },
-      cache: true,
+      cache: false,
     });
   }
 
