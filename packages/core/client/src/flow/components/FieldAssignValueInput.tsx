@@ -263,34 +263,33 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     };
   }, [collection, dataSource, blockModel, fieldPath, fieldName, flowCtx, placeholder, resolved, cf, itemModel]);
 
-  // 同步 value/onChange 到临时根与字段模型
-  React.useEffect(() => {
-    if (!tempRoot) return;
-    tempRoot.setProps?.({
-      value,
-      onChange: (ev: any) => onChange?.(normalizeEventValue(ev)),
-    });
-    const fm = tempRoot?.subModels?.fields?.[0];
-    fm?.setProps?.({
-      value,
-      onChange: (ev: any) => onChange?.(normalizeEventValue(ev)),
-    });
-  }, [tempRoot, value, onChange, normalizeEventValue]);
-
   // 常量/空值的两个占位渲染器
   const ConstantValueEditor = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => {
       React.useEffect(() => {
         const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
-        tempRoot?.setProps?.({
-          ...inputProps,
-          value: coercedValue,
-          onChange: (ev: any) => inputProps?.onChange?.(normalizeEventValue(ev)),
-        });
+        const handleChange = (ev: any) => {
+          const nextRaw = normalizeEventValue(ev);
+          const nextValue = coerceEmptyValueForRenderer(nextRaw);
+          // 关键：同步更新临时字段的受控 value，避免每次输入都“先渲染旧值、effect 再写新值”导致光标跳到末尾
+          tempRoot?.setProps?.({ value: nextValue });
+          const fmInner = tempRoot?.subModels?.fields?.[0];
+          fmInner?.setProps?.({ value: nextValue });
+          inputProps?.onChange?.(nextRaw);
+        };
         const fm = tempRoot?.subModels?.fields?.[0];
         fm?.setProps?.({
           value: coercedValue,
-          onChange: (ev: any) => inputProps?.onChange?.(normalizeEventValue(ev)),
+          onChange: handleChange,
+          onCompositionStart: inputProps?.onCompositionStart,
+          onCompositionUpdate: inputProps?.onCompositionUpdate,
+          onCompositionEnd: inputProps?.onCompositionEnd,
+        });
+        // 将 VariableInput 的受控属性透传到临时根模型上，兼容部分字段组件依赖 blockModel.props 的场景
+        tempRoot?.setProps?.({
+          ...inputProps,
+          value: coercedValue,
+          onChange: handleChange,
         });
       }, [inputProps]);
 
