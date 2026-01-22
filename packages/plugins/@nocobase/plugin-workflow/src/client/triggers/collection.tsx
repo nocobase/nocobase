@@ -16,6 +16,7 @@ import { getCollectionFieldOptions, useGetDataSourceCollectionManager } from '..
 import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
 import { TriggerCollectionRecordSelect } from '../components/TriggerCollectionRecordSelect';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -223,6 +224,41 @@ export default class extends Trigger {
       dataPath: '$context.data',
     };
   }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ config }): SubModelItem {
+    return {
+      key: 'triggerData',
+      label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: config.collection,
+              dataPath: '$context.data',
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'DetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
+    };
+  }
+
   useTempAssociationSource(config, workflow) {
     if (!config?.collection || !workflow?.id) {
       return null;

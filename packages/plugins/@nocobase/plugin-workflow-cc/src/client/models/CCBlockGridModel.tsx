@@ -12,6 +12,7 @@ import { BlockGridModel, usePlugin } from '@nocobase/client';
 import { AddSubModelButton, FlowSettingsButton, SubModelItem, tExpr } from '@nocobase/flow-engine';
 import React, { useMemo } from 'react';
 import WorkflowPlugin from '@nocobase/plugin-workflow/client';
+import _ from 'lodash';
 
 const CCAddBlockButton = ({ model }: { model: CCBlockGridModel }) => {
   const { t } = model.context;
@@ -24,7 +25,7 @@ const CCAddBlockButton = ({ model }: { model: CCBlockGridModel }) => {
     const dataBlocksChildren: SubModelItem[] = [];
 
     // Trigger Data
-    const triggerData = trigger.getCreateModelMenuItem?.({ config: workflow.config })?.filter(Boolean);
+    const triggerData = _.castArray(trigger.getCreateModelMenuItem?.({ config: workflow.config })).filter(Boolean);
     if (triggerData?.length) {
       dataBlocksChildren.push({
         key: 'triggers',
