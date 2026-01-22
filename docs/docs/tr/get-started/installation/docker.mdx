@@ -42,6 +42,373 @@ Bir NocoBase sürümü ([Sürüm Karşılaştırması](../quickstart.md)) ve ver
 
 <Tabs>
 
+<Tab label="Beta sürümü (2.0-beta)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=postgres
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=postgres
+      # Veritabanı portu
+      - DB_PORT=5432
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=nocobase
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, postgres'i başlatmayabilirsiniz
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=mysql
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=mysql
+      # Veritabanı portu
+      - DB_PORT=3306
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=root
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Veritabanı tablo ve alan adlarının snake_case stiline dönüştürülüp dönüştürülmeyeceği
+      - DB_UNDERSCORED=true
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, mysql'i başlatmayabilirsiniz
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=mariadb
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=mariadb
+      # Veritabanı portu
+      - DB_PORT=3306
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=root
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Veritabanı tablo ve alan adlarının snake_case stiline dönüştürülüp dönüştürülmeyeceği
+      - DB_UNDERSCORED=true
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, mariadb'yi başlatmayabilirsiniz
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha sürümü (2.0-alpha)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=postgres
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=postgres
+      # Veritabanı portu
+      - DB_PORT=5432
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=nocobase
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, postgres'i başlatmayabilirsiniz
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=mysql
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=mysql
+      # Veritabanı portu
+      - DB_PORT=3306
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=root
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Veritabanı tablo ve alan adlarının snake_case stiline dönüştürülüp dönüştürülmeyeceği
+      - DB_UNDERSCORED=true
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, mysql'i başlatmayabilirsiniz
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Uygulama anahtarı, kullanıcı token'ları vb. oluşturmak için kullanılır.
+      # APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir.
+      # Herhangi bir rastgele dize olabilir ve dışarı sızdırılmadığından emin olun.
+      - APP_KEY=your-secret-key
+      # Veritabanı türü, postgres, mysql, mariadb destekler
+      - DB_DIALECT=mariadb
+      # Veritabanı ana bilgisayarı, mevcut bir veritabanı sunucusu IP'si ile değiştirilebilir
+      - DB_HOST=mariadb
+      # Veritabanı portu
+      - DB_PORT=3306
+      # Veritabanı adı
+      - DB_DATABASE=nocobase
+      # Veritabanı kullanıcısı
+      - DB_USER=root
+      # Veritabanı şifresi
+      - DB_PASSWORD=nocobase
+      # Veritabanı tablo ve alan adlarının snake_case stiline dönüştürülüp dönüştürülmeyeceği
+      - DB_UNDERSCORED=true
+      # Saat dilimi
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Mevcut bir veritabanı servisi kullanıyorsanız, mariadb'yi başlatmayabilirsiniz
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Latest sürümü (1.9)">
+
+<Tabs>
 <Tab label="PostgreSQL">
 
 ```yml
@@ -217,6 +584,10 @@ services:
 ```
 
 </Tab>
+</Tabs>
+
+</Tab>
+
 </Tabs>
 
 
