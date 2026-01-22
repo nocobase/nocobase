@@ -127,7 +127,7 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormFieldModel.define({
-  label: tExpr('Sub-form'),
+  label: tExpr('Subform'),
   createModelOptions: {
     use: 'SubFormFieldModel',
     subModels: {
@@ -345,7 +345,7 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormListFieldModel.define({
-  label: tExpr('Sub-form'),
+  label: tExpr('Subform'),
   createModelOptions: {
     use: 'SubFormListFieldModel',
     subModels: {
@@ -542,9 +542,11 @@ FormItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho', 'o
     }
     return true;
   },
+  order: 100,
 });
 
 FormItemModel.bindModelToInterface('SubFormListFieldModel', ['m2m', 'o2m', 'mbm'], {
+  order: 100,
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

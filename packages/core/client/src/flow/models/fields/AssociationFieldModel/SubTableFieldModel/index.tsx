@@ -373,6 +373,7 @@ SubTableFieldModel.define({
 export { SubTableColumnModel };
 
 FormItemModel.bindModelToInterface('SubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
+  order: 200,
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

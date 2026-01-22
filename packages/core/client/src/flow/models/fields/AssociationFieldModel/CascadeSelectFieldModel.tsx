@@ -560,19 +560,21 @@ CascadeSelectInnerFieldModel.registerFlow({
 });
 
 CascadeSelectFieldModel.define({
-  label: escapeT('Cascade select'),
+  label: escapeT('Cascade'),
 });
 
 CascadeSelectListFieldModel.define({
-  label: escapeT('Cascade select'),
+  label: escapeT('Cascade'),
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
   when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
+  order: 60,
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
+  order: 60,
 });

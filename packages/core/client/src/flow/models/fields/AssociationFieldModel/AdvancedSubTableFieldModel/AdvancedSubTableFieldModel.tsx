@@ -848,7 +848,7 @@ AdvancedSubTableFieldModel.registerFlow({
 });
 
 AdvancedSubTableFieldModel.define({
-  label: tExpr('Sub-table (Popup editing)'),
+  label: tExpr('Subtable (Popup editing)'),
   createModelOptions: () => ({
     use: 'AdvancedSubTableFieldModel',
     subModels: {
@@ -861,4 +861,12 @@ AdvancedSubTableFieldModel.define({
   }),
 });
 
-EditableItemModel.bindModelToInterface('AdvancedSubTableFieldModel', ['m2m', 'o2m', 'mbm']);
+EditableItemModel.bindModelToInterface('AdvancedSubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
+  order: 300,
+  when: (ctx, field) => {
+    if (field.targetCollection) {
+      return field.targetCollection.template !== 'file';
+    }
+    return true;
+  },
+});
