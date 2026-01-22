@@ -354,7 +354,6 @@ const workflowCcTasks = {
     });
     await actions.list(context, next);
     await appendTempAssociationFields(context);
-    return;
   },
 
   async read(context: Context, next) {
