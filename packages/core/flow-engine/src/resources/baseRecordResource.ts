@@ -12,6 +12,7 @@ import _ from 'lodash';
 import { APIResource } from './apiResource';
 import { FilterItem } from './filterItem';
 import { ResourceError } from './flowResource';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
   protected resourceName: string;
@@ -141,11 +142,11 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
    * Used to coordinate "refresh on active" across view stacks.
    */
   protected markDataSourceDirty(resourceName?: string) {
-    const engine = (this.context as any)?.engine as any;
-    if (!engine || typeof engine.markDataSourceDirty !== 'function') return;
+    const engine = getDirtyRegistryEngineFromContext(this.context);
+    if (!engine) return;
 
-    const dataSourceKey = this.getDataSourceKey?.() || 'main';
-    const resName = resourceName || this.getResourceName?.();
+    const dataSourceKey = this.getDataSourceKey() || 'main';
+    const resName = resourceName || this.getResourceName();
     if (!resName) return;
 
     const affectedResourceNames = new Set<string>([String(resName)]);
@@ -160,7 +161,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
     // Signal current view to re-evaluate dirty blocks (e.g., same-view sibling refresh).
     // This is emitted on the *current* engine emitter (view-scoped) so it won't affect other views.
-    engine?.emitter?.emit?.('dataSource:dirty', {
+    engine.emitter?.emit?.(DATA_SOURCE_DIRTY_EVENT, {
       dataSourceKey,
       resourceNames: Array.from(affectedResourceNames),
     });
@@ -318,4 +319,18 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   abstract refresh(): Promise<void>;
+}
+
+type DirtyRegistryEngine = {
+  markDataSourceDirty: (dataSourceKey: string, resourceName: string) => number;
+  emitter?: { emit?: (event: string, payload?: unknown) => unknown };
+};
+
+function getDirtyRegistryEngineFromContext(context: unknown): DirtyRegistryEngine | null {
+  if (!context || (typeof context !== 'object' && typeof context !== 'function')) return null;
+  const engine = Reflect.get(context as object, 'engine') as unknown;
+  if (!engine || (typeof engine !== 'object' && typeof engine !== 'function')) return null;
+  const mark = Reflect.get(engine as object, 'markDataSourceDirty') as unknown;
+  if (typeof mark !== 'function') return null;
+  return engine as DirtyRegistryEngine;
 }

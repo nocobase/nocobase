@@ -8,8 +8,7 @@
  */
 
 import { FlowEngine } from './flowEngine';
-
-const ENGINE_SCOPE_KEY = '__NOCOBASE_ENGINE_SCOPE__';
+import { ENGINE_SCOPE_KEY, VIEW_ENGINE_SCOPE } from './views/viewEvents';
 
 /**
  * ViewScopedFlowEngine（视图作用域引擎）
@@ -27,7 +26,7 @@ const ENGINE_SCOPE_KEY = '__NOCOBASE_ENGINE_SCOPE__';
 export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
   const local = new FlowEngine();
   // Mark for view-stack traversal (used by view activation events).
-  Object.defineProperty(local, ENGINE_SCOPE_KEY, { value: 'view', configurable: true });
+  Object.defineProperty(local, ENGINE_SCOPE_KEY, { value: VIEW_ENGINE_SCOPE, configurable: true });
   if (parent.modelRepository) {
     local.setModelRepository(parent.modelRepository);
   }

@@ -15,7 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
-import { bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
+import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -102,7 +102,7 @@ export function useDialog() {
         // Notify opener view that it becomes active again.
         const openerEmitter = openerEngine?.emitter;
         bumpViewActivatedVersion(openerEmitter);
-        openerEmitter?.emit?.('view:activated', { type: 'dialog', viewUid: currentDialog?.inputArgs?.viewUid });
+        openerEmitter?.emit?.(VIEW_ACTIVATED_EVENT, { type: 'dialog', viewUid: currentDialog?.inputArgs?.viewUid });
         // 关闭时修正 previous/next 指针
         scopedEngine.unlinkFromStack();
       },

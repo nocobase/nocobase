@@ -18,6 +18,7 @@ import {
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
+import type { FlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { createDefaultCollectionBlockTitle } from '../../utils/blockUtils';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
@@ -52,33 +53,24 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     if (this.hidden) return;
     if (this.isManualRefresh) return;
 
-    const resource: any = this.resource as any;
-    if (!resource?.refresh) return;
+    const resource = this.context.resource as BaseRecordResource | undefined;
+    if (!resource) return;
 
-    const engine: any = this.context.engine as any;
-    const dataSourceKey =
-      (typeof resource?.getDataSourceKey === 'function' && resource.getDataSourceKey()) ||
-      this.getResourceSettingsInitParams?.()?.dataSourceKey ||
-      'main';
-    const resourceName =
-      (typeof resource?.getResourceName === 'function' && resource.getResourceName()) ||
-      this.getResourceSettingsInitParams?.()?.associationName ||
-      this.getResourceSettingsInitParams?.()?.collectionName;
+    const params = this.getResourceSettingsInitParams();
+    const dataSourceKey = resource.getDataSourceKey() || params.dataSourceKey || 'main';
+    const resourceName = resource.getResourceName() || params.associationName || params.collectionName;
 
-    // Fallback to previous behavior if engine does not support dirty registry.
-    if (!engine?.getDataSourceDirtyVersion || !resourceName) {
-      void resource.refresh();
-      return;
-    }
-
+    const engine = this.context.engine as FlowEngine;
     const currentVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+
     const shouldRefresh = this.lastSeenDirtyVersion === null || currentVersion !== this.lastSeenDirtyVersion;
     if (!shouldRefresh) return;
 
     // Avoid firing multiple refreshes during rapid activate toggles.
     if (this.dirtyRefreshing) return;
     this.dirtyRefreshing = true;
-    void Promise.resolve(resource.refresh())
+    void resource
+      .refresh()
       .then(() => {
         this.lastSeenDirtyVersion = currentVersion;
       })

@@ -12,38 +12,50 @@ import { PageModel } from '../PageModel';
 import { DragEndEvent } from '@dnd-kit/core';
 
 // Mock FlowModel and other dependencies
-vi.mock('@nocobase/flow-engine', () => ({
-  FlowModel: class {
-    props: any;
-    context: any;
-    subModels: any = {};
-    constructor(options: any = {}) {
-      this.props = options.props || {};
-      this.context = options.context || {};
-    }
-    onMount() {}
-    onUnmount() {}
-    setProps(key: string, value: any) {
-      this.props[key] = value;
-    }
-    mapSubModels(key: string, callback: any) {
-      if (this.subModels[key]) {
-        return this.subModels[key].map(callback);
+vi.mock('@nocobase/flow-engine', () => {
+  const VIEW_ACTIVATED_VERSION = Symbol.for('__NOCOBASE_VIEW_ACTIVATED_VERSION__');
+  return {
+    FlowModel: class {
+      props: any;
+      context: any;
+      subModels: any = {};
+      constructor(options: any = {}) {
+        this.props = options.props || {};
+        this.context = options.context || {};
       }
-      return [];
-    }
-    static registerFlow() {}
-  },
-  tExpr: (str: string) => str,
-  DndProvider: ({ children }: any) => children,
-  AddSubModelButton: () => null,
-  FlowSettingsButton: () => null,
-  FlowModelRenderer: () => null,
-  Droppable: ({ children }: any) => children,
-  DragHandler: () => null,
-  getPageActive: (ctx: any) => !!ctx?.view?.inputArgs?.pageActive,
-  CreateModelOptions: class {},
-}));
+      onMount() {}
+      onUnmount() {}
+      setProps(key: string, value: any) {
+        this.props[key] = value;
+      }
+      mapSubModels(key: string, callback: any) {
+        if (this.subModels[key]) {
+          return this.subModels[key].map(callback);
+        }
+        return [];
+      }
+      static registerFlow() {}
+    },
+    tExpr: (str: string) => str,
+    DndProvider: ({ children }: any) => children,
+    AddSubModelButton: () => null,
+    FlowSettingsButton: () => null,
+    FlowModelRenderer: () => null,
+    Droppable: ({ children }: any) => children,
+    DragHandler: () => null,
+    getPageActive: (ctx: any) => ctx?.view?.inputArgs?.pageActive,
+    getEmitterViewActivatedVersion: (emitter: unknown): number => {
+      if (!emitter || (typeof emitter !== 'object' && typeof emitter !== 'function')) return 0;
+      const raw = Reflect.get(emitter as object, VIEW_ACTIVATED_VERSION);
+      const num = typeof raw === 'number' ? raw : Number(raw);
+      return Number.isFinite(num) && num > 0 ? num : 0;
+    },
+    CreateModelOptions: class {},
+    VIEW_ACTIVATED_VERSION,
+    VIEW_ACTIVATED_EVENT: 'view:activated',
+    DATA_SOURCE_DIRTY_EVENT: 'dataSource:dirty',
+  };
+});
 
 vi.mock('antd', () => ({
   Tabs: (props: any) => null,

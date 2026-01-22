@@ -14,28 +14,22 @@ import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
   CreateModelOptions,
+  DATA_SOURCE_DIRTY_EVENT,
   DndProvider,
   DragHandler,
   Droppable,
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
+  getEmitterViewActivatedVersion,
   getPageActive,
   tExpr,
+  VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React, { ReactNode } from 'react';
 import { BasePageTabModel } from './PageTabModel';
-
-const VIEW_ACTIVATED_VERSION = Symbol.for('__NOCOBASE_VIEW_ACTIVATED_VERSION__');
-
-function getEmitterViewActivatedVersion(emitter: unknown): number {
-  if (!emitter || (typeof emitter !== 'object' && typeof emitter !== 'function')) return 0;
-  const raw = Reflect.get(emitter as object, VIEW_ACTIVATED_VERSION);
-  const num = typeof raw === 'number' ? raw : Number(raw);
-  return Number.isFinite(num) && num > 0 ? num : 0;
-}
 
 type PageModelStructure = {
   subModels: {
@@ -93,7 +87,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
           this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
         }
       };
-      this.flowEngine?.emitter?.on?.('view:activated', this.viewActivatedListener);
+      this.flowEngine?.emitter?.on?.(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
     }
 
     // Handle activation events that occurred before PageModel was mounted (e.g. hidden views opened by router replay).
@@ -114,18 +108,18 @@ export class PageModel extends FlowModel<PageModelStructure> {
       this.dataSourceDirtyListener = (_payload?: unknown) => {
         this.scheduleActiveLifecycleRefresh();
       };
-      this.flowEngine?.emitter?.on?.('dataSource:dirty', this.dataSourceDirtyListener);
+      this.flowEngine?.emitter?.on?.(DATA_SOURCE_DIRTY_EVENT, this.dataSourceDirtyListener);
     }
   }
 
   protected onUnmount(): void {
     this.unmounted = true;
     if (this.viewActivatedListener) {
-      this.flowEngine?.emitter?.off?.('view:activated', this.viewActivatedListener);
+      this.flowEngine?.emitter?.off?.(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
       this.viewActivatedListener = undefined;
     }
     if (this.dataSourceDirtyListener) {
-      this.flowEngine?.emitter?.off?.('dataSource:dirty', this.dataSourceDirtyListener);
+      this.flowEngine?.emitter?.off?.(DATA_SOURCE_DIRTY_EVENT, this.dataSourceDirtyListener);
       this.dataSourceDirtyListener = undefined;
     }
     super.onUnmount();

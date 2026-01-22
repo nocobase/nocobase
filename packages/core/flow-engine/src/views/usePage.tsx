@@ -15,7 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
-import { bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
+import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -138,7 +138,7 @@ export function usePage() {
         if (!isReplacing) {
           const openerEmitter = openerEngine?.emitter;
           bumpViewActivatedVersion(openerEmitter);
-          openerEmitter?.emit?.('view:activated', { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
+          openerEmitter?.emit?.(VIEW_ACTIVATED_EVENT, { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
         }
 
         // 关闭时修正 previous/next 指针
