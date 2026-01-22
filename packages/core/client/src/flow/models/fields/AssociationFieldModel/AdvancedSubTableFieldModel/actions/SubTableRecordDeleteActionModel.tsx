@@ -14,11 +14,11 @@ import { SubTableRecordAction } from './SubTableEditActionModel';
 export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: tExpr('Delete'),
+    title: tExpr('Remove'),
   };
 
   getAclActionName() {
-    return 'update';
+    return 'Remove';
   }
 
   async onDispatchEventStart(eventName: string) {
@@ -77,8 +77,8 @@ SubTableRecordDeleteActionModel.registerFlow({
       use: 'confirm',
       defaultParams: {
         enable: true,
-        title: tExpr('Delete record'),
-        content: tExpr('Are you sure you want to delete it?'),
+        title: tExpr('Remove record'),
+        content: tExpr('Are you sure you want to remove it?'),
       },
     },
     delete: {
