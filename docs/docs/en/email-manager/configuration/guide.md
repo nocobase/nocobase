@@ -2,10 +2,11 @@
 pkg: "@nocobase/plugin-email-manager"
 ---
 
-# Configuration Process
+# Configuration Guide
 
 ## Overview
-After enabling the Email plugin, administrators must first complete the necessary configuration before users can connect their email accounts to NocoBase. (Currently, only authorization for Outlook and Gmail accounts is supported; direct login with Microsoft and Google accounts is not yet available).
+
+After enabling the email plugin, administrators need to complete the related configuration first before regular users can integrate their email accounts into NocoBase (currently only Outlook and Gmail email accounts support authorization login; Microsoft accounts and Google accounts are not supported for direct integration).
 
 The core of the configuration lies in the authentication settings for the email service provider's API calls. Administrators need to complete the following steps to ensure the plugin functions correctly:
 

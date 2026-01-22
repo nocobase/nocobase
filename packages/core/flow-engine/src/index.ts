@@ -13,6 +13,8 @@ export * from './types';
 // 工具函数
 export * from './utils';
 export { compileRunJs } from './utils/jsxTransform';
+export { registerRunJSLib } from './runjsLibs';
+export type { RunJSLibCache, RunJSLibLoader } from './runjsLibs';
 
 // 资源类
 export * from './resources';

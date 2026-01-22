@@ -35,19 +35,18 @@ DB_PASSWORD=nocobase
 #### Docker Installation
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
       # Application key for generating user tokens, etc.
       # Changing APP_KEY invalidates old tokens
@@ -57,6 +56,7 @@ networks:
       - DB_DIALECT=kingbase
       # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
+      - DB_PORT=54321
       # Database name
       - DB_DATABASE=kingbase
       # Database user
@@ -68,7 +68,7 @@ networks:
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
   # Kingbase service for testing purposes only
   kingbase:

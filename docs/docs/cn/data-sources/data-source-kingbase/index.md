@@ -35,42 +35,42 @@ DB_PASSWORD=nocobase
 #### Docker 安装
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # 应用的密钥，用于生成用户 token 等
-      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
-      # 可以是任意随机字符串，并确保不对外泄露
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # 数据库类型
+      # Database type
       - DB_DIALECT=kingbase
-      # 数据库主机，可以替换为已有的数据库服务器 IP
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # 数据库名
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # 数据库用户
+      # Database user
       - DB_USER=nocobase
-      # 数据库密码
+      # Database password
       - DB_PASSWORD=nocobase
-      # 时区
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # 仅用于测试的 kingbase 服务
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -81,10 +81,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # 必须用是 no
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # 仅限于 pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

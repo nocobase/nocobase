@@ -20,7 +20,7 @@ When creating a workflow, select "Custom Action Event":
 
 ### Context Type
 
-> v.1.6.0+
+> v1.6.0+
 
 The context type determines which block buttons the workflow can be bound to:
 
@@ -56,7 +56,7 @@ The configuration of action buttons in different blocks varies depending on the 
 
 ### No Context
 
-> v.1.6.0+
+> v1.6.0+
 
 In the Action Bar and other data blocks, you can add a "Trigger Workflow" button:
 
@@ -116,7 +116,7 @@ Afterward, clicking this button will trigger the custom action event:
 
 ### Multiple Records
 
-> v.1.6.0+
+> v1.6.0+
 
 In the action bar of a table block, when adding a "Trigger Workflow" button, there is an additional option to select the context type: "No Context" or "Multiple Records":
 
@@ -208,6 +208,21 @@ At this point, a simple custom action event is complete. Similarly, for business
 
 The triggering of custom action events is not limited to user interface actions; it can also be triggered via HTTP API calls. Specifically, custom action events provide a new action type for all collection actions to trigger workflows: `trigger`, which can be called using NocoBase's standard action API.
 
+:::info{title="Tip"}
+Since external calls also need to be based on user identity, when calling via HTTP API, just like requests sent from the regular interface, you need to provide authentication information. This includes the `Authorization` request header or `token` parameter (the token obtained upon login), and the `X-Role` request header (the user's current role name).
+:::
+
+### No Context
+
+No-context workflows need to be triggered on the workflows resource:
+
+```bash
+curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
+  "http://localhost:3000/api/workflows:trigger?triggerWorkflows=workflowKey"
+```
+
+### Single Record
+
 A workflow triggered by a button, as in the example, can be called like this:
 
 ```bash
@@ -223,7 +238,7 @@ If it's called for a form (such as for creating or updating), you can omit the I
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger?triggerWorkflows=workflowKey"
 ```
@@ -234,7 +249,7 @@ For an update form, you need to pass both the ID of the data row and the updated
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
@@ -252,19 +267,6 @@ Additionally, the URL parameter `triggerWorkflows` is the workflow's key; multip
 
 
 After a successful call, the custom action event for the corresponding `samples` collection will be triggered.
-
-:::info{title="Tip"}
-Since external calls also need to be based on user identity, when calling via HTTP API, just like requests sent from the regular interface, you need to provide authentication information. This includes the `Authorization` request header or `token` parameter (the token obtained upon login), and the `X-Role` request header (the user's current role name).
-:::
-
-If you need to trigger an event for a to-one association data (to-many is not currently supported) in this action, you can use `!` in the parameter to specify the trigger data of the association field:
-
-```bash
-curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
-  "http://localhost:3000/api/posts:trigger/<:id>?triggerWorkflows=workflowKey!category"
-```
-
-After a successful call, the custom action event for the corresponding `categories` collection will be triggered.
 
 :::info{title="Tip"}
 When triggering an action event via an HTTP API call, you also need to pay attention to the workflow's enabled status and whether the collection configuration matches; otherwise, the call may not succeed or may result in an error.

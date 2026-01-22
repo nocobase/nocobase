@@ -1,0 +1,83 @@
+[
+  {
+    "type": "section-header",
+    "label": "फ़ाइल मैनेजर"
+  },
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "स्टोरेज इंजन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "लोकल स्टोरेज",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "अलीबाबा क्लाउड OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent क्लाउड COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "फ़ाइल टेबल",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "अटैचमेंट फ़ील्ड",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "फ़ाइल पूर्वावलोकन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Office फ़ाइल पूर्वावलोकन",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "एक्सटेंशन विकास",
+    "link": "/file-manager/development/index"
+  }
+]

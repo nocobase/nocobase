@@ -1,0 +1,210 @@
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Back-upbeheer
+
+## Introductie
+
+De NocoBase back-upbeheer plugin biedt functionaliteit voor het volledig back-uppen van de NocoBase database en door gebruikers geüploade bestanden, inclusief het plannen, downloaden, verwijderen en herstellen van back-ups.
+
+:::warning
+De back-upbeheer plugin is inbegrepen in de Professional en Enterprise edities. Gebruikers van de Community en Standard edities kunnen de database direct back-uppen; zie de details op: [`Hoe u NocoBase back-upt en herstelt`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Databaseclient installeren
+
+De back-upbeheerder is afhankelijk van de client voor de corresponderende database. Voordat u de back-upbeheerder gebruikt, dient u de officiële website te bezoeken om de client te downloaden die overeenkomt met uw databaseversie:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Voor Docker-versies kunt u direct een script schrijven in de map `./storage/scripts`.
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+De inhoud van `install-database-client.sh` is als volgt:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Start vervolgens de app-container opnieuw op.
+
+```bash
+docker compose restart app
+# Bekijk logboeken
+docker compose logs app
+```
+
+Controleer het versienummer van de databaseclient; dit moet overeenkomen met het versienummer van de databaseserver.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Gebruiksaanwijzing
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Nieuwe back-up maken
+
+Klik op de knop "Nieuwe back-up" om een nieuwe back-up te maken op basis van de back-upconfiguratie. De status van de back-up wordt vervolgens weergegeven in de back-uplijst.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Back-up herstellen
+
+U kunt back-ups herstellen vanuit de back-uplijst of door lokale back-upbestanden te uploaden.
+Herstelbewerkingen zijn niet toegestaan in de volgende scenario's:
+
+- Wanneer de huidige NocoBase-versie lager is dan de NocoBase-versie in het back-upbestand.
+- Wanneer de huidige NocoBase database niet consistent is met de volgende configuraties in het back-upbestand:
+  - dialect
+  - underscored
+  - tabelprefix
+  - schema
+- Wanneer de `tolerante modus` niet is ingeschakeld en de databaseversie bij het maken van de back-up hoger is dan de huidige applicatie-databaseversie.
+
+> **Het herstellen van een back-up is een volledige databasebewerking. Het wordt aanbevolen om een back-up te maken van de huidige database voordat u een herstel uitvoert.**
+
+#### Herstellen vanuit de back-uplijst
+
+Klik op de knop `Herstellen` bij het back-upitem in de back-uplijst, voer het versleutelingswachtwoord van het back-upbestand in het pop-upvenster in en klik op `Bevestigen` om de back-up te herstellen.
+
+> Voor niet-versleutelde back-upbestanden hoeft u geen wachtwoord in te voeren.
+
+> Als u het back-upbestand wilt herstellen naar een database met een lagere versie, dient u de tolerante modus in te schakelen.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Herstellen vanuit een lokaal back-upbestand
+
+Klik op de knop `Herstellen vanuit lokaal back-upbestand`, selecteer het lokale back-upbestand in het pop-upvenster, voer het versleutelingswachtwoord van het back-upbestand in en klik op `Bevestigen` om de back-up te herstellen.
+
+> Voor niet-versleutelde back-upbestanden hoeft u geen wachtwoord in te voeren.
+
+> Als u het back-upbestand wilt herstellen naar een database met een lagere versie, dient u de tolerante modus in te schakelen.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Back-upbestand downloaden
+
+Klik op de knop `Downloaden` bij het back-upitem in de back-uplijst om het back-upbestand te downloaden.
+
+#### Back-up verwijderen
+
+Klik op de knop `Verwijderen` bij het back-upitem in de back-uplijst om het back-upbestand te verwijderen.
+
+## Back-upinstellingen
+
+Schakel over naar het tabblad `Instellingen`, wijzig de back-upinstellingen en klik op `Opslaan` om de wijzigingen toe te passen.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Beschrijving van back-upinstellingen
+
+- `Automatische back-up`: Nadat u `Automatische back-up uitvoeren volgens Cron-schema` hebt ingeschakeld, kunt u automatische back-ups instellen op specifieke tijden.
+- `Maximaal aantal back-ups`: Stel het maximale aantal lokaal opgeslagen back-upbestanden in. Wanneer dit aantal wordt overschreden, worden de oudste lokale back-upbestanden automatisch verwijderd.
+- `Back-up synchroniseren met cloudopslag`: Stel de cloudopslag in waarnaar de back-upbestanden automatisch worden geüpload na een succesvolle back-up.
+- `Back-up van lokale opslagbestanden`: Bepaal of bestanden die door gebruikers zijn geüpload naar de lokale opslag van de server (storage/uploads) moeten worden opgenomen in de back-up.
+- `Herstelwachtwoord`: Als er een herstelwachtwoord is ingesteld, moet dit worden ingevoerd bij het herstellen van de back-up.
+
+> **Bewaar het herstelwachtwoord zorgvuldig. Als u het wachtwoord vergeet, kunt u het back-upbestand niet herstellen.**

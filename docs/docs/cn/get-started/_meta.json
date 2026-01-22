@@ -117,5 +117,10 @@
     "type": "custom-link",
     "label": "安装与升级插件",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "翻译贡献",
+    "link": "/get-started/translations"
   }
 ]

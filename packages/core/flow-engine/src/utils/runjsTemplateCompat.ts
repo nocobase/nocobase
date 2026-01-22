@@ -15,10 +15,12 @@ type PrepareRunJsCodeOptions = {
 
 const RESOLVE_JSON_TEMPLATE_CALL = 'ctx.resolveJsonTemplate';
 const CTX_TEMPLATE_MARKER_RE = /\{\{\s*ctx(?:\.|\[|\?\.)/;
+const CTX_LIBS_MARKER_RE = /\bctx(?:\?\.|\.)libs\b/;
 const STRINGIFY_HELPER_BASE_NAME = '__runjs_templateValueToString';
 const BARE_PLACEHOLDER_VAR_RE = /\b__runjs_ctx_tpl_\d+\b/;
 const STRINGIFY_HELPER_RE = /\b__runjs_templateValueToString(?:_\d+)?\b/;
 const PREPROCESSED_MARKER_RE = /\b__runjs_ctx_tpl_\d+\b|\b__runjs_templateValueToString(?:_\d+)?\b/;
+const ENSURE_LIBS_MARKER_RE = /\b__runjs_ensure_libs\b/;
 const PREPARE_RUNJS_CODE_CACHE_LIMIT = 256;
 
 const PREPARE_RUNJS_CODE_CACHE = {
@@ -167,6 +169,395 @@ function skipWhitespaceBackward(code: string, start: number): number {
   let i = start;
   while (i >= 0 && /\s/.test(code[i])) i -= 1;
   return i;
+}
+
+function skipSpaceAndCommentsForward(code: string, start: number): number {
+  let i = start;
+  for (;;) {
+    i = skipWhitespaceForward(code, i);
+    const ch = code[i];
+    const next = code[i + 1];
+    if (ch === '/' && next === '/') {
+      i = readLineComment(code, i);
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      i = readBlockComment(code, i);
+      continue;
+    }
+    return i;
+  }
+}
+
+function isIdentStartChar(ch: string | undefined): boolean {
+  return !!ch && /[A-Za-z_$]/.test(ch);
+}
+
+function readIdentifier(code: string, start: number): { name: string; end: number } | null {
+  const first = code[start];
+  if (!isIdentStartChar(first)) return null;
+  let i = start + 1;
+  while (i < code.length && isIdentChar(code[i])) i += 1;
+  return { name: code.slice(start, i), end: i };
+}
+
+function readSimpleStringLiteralValue(
+  code: string,
+  start: number,
+  quote: "'" | '"',
+): { value: string; end: number } | null {
+  if (code[start] !== quote) return null;
+  let i = start + 1;
+  let value = '';
+  while (i < code.length) {
+    const ch = code[i];
+    if (ch === '\\') {
+      const n = code[i + 1];
+      if (typeof n === 'undefined') break;
+      value += n;
+      i += 2;
+      continue;
+    }
+    if (ch === quote) {
+      return { value, end: i + 1 };
+    }
+    value += ch;
+    i += 1;
+  }
+  return null;
+}
+
+function readsCtxLibsBase(code: string, index: number): number | null {
+  if (!code.startsWith('ctx', index)) return null;
+  const before = index > 0 ? code[index - 1] : '';
+  const after = code[index + 3] || '';
+  if (isIdentChar(before) || isIdentChar(after)) return null;
+
+  const tail = code.slice(index + 3);
+  if (tail.startsWith('.libs')) return index + 3 + 5; // ".libs"
+  if (tail.startsWith('?.libs')) return index + 3 + 6; // "?.libs"
+  return null;
+}
+
+function tryReadCtxLibAccess(code: string, index: number): { end: number; key?: string } | null {
+  const baseEnd = readsCtxLibsBase(code, index);
+  if (baseEnd === null) return null;
+  let i = skipSpaceAndCommentsForward(code, baseEnd);
+
+  const ch = code[i];
+  const next = code[i + 1];
+  const next2 = code[i + 2];
+
+  // Optional chaining computed: ctx.libs?.['x']
+  if (ch === '?' && next === '.' && next2 === '[') {
+    i = skipSpaceAndCommentsForward(code, i + 3);
+    const q = code[i];
+    if (q === "'" || q === '"') {
+      const parsed = readSimpleStringLiteralValue(code, i, q);
+      if (!parsed) return { end: i + 1 };
+      let j = skipSpaceAndCommentsForward(code, parsed.end);
+      if (code[j] === ']') j += 1;
+      return { end: j, key: parsed.value };
+    }
+    return { end: i };
+  }
+
+  // Computed: ctx.libs['x']
+  if (ch === '[') {
+    i = skipSpaceAndCommentsForward(code, i + 1);
+    const q = code[i];
+    if (q === "'" || q === '"') {
+      const parsed = readSimpleStringLiteralValue(code, i, q);
+      if (!parsed) return { end: i + 1 };
+      let j = skipSpaceAndCommentsForward(code, parsed.end);
+      if (code[j] === ']') j += 1;
+      return { end: j, key: parsed.value };
+    }
+    return { end: i };
+  }
+
+  // Optional chaining dot: ctx.libs?.x
+  if (ch === '?' && next === '.') {
+    i = skipSpaceAndCommentsForward(code, i + 2);
+    const ident = readIdentifier(code, i);
+    if (!ident) return { end: i };
+    return { end: ident.end, key: ident.name };
+  }
+
+  // Dot: ctx.libs.x
+  if (ch === '.') {
+    i = skipSpaceAndCommentsForward(code, i + 1);
+    const ident = readIdentifier(code, i);
+    if (!ident) return { end: i };
+    return { end: ident.end, key: ident.name };
+  }
+
+  return { end: baseEnd };
+}
+
+function parseDestructuredKeysFromObjectPattern(pattern: string): string[] {
+  const out: string[] = [];
+  const src = String(pattern ?? '');
+  let itemStart = 0;
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let parenDepth = 0;
+
+  const pushItem = (raw: string) => {
+    const s = String(raw ?? '').trim();
+    if (!s) return;
+    if (s.startsWith('...')) return;
+
+    // Find first top-level ":" or "=" to isolate key part.
+    let keyPart = s;
+    let i = 0;
+    let b = 0;
+    let br = 0;
+    let p = 0;
+    while (i < s.length) {
+      const ch = s[i];
+      const next = s[i + 1];
+
+      if (ch === '/' && next === '/') {
+        // comment until end
+        break;
+      }
+      if (ch === '/' && next === '*') {
+        const end = s.indexOf('*/', i + 2);
+        i = end === -1 ? s.length : end + 2;
+        continue;
+      }
+      if (ch === "'" || ch === '"') {
+        // skip strings inside default expressions
+        let j = i + 1;
+        while (j < s.length) {
+          const c = s[j];
+          if (c === '\\') {
+            j += 2;
+            continue;
+          }
+          j += 1;
+          if (c === ch) break;
+        }
+        i = j;
+        continue;
+      }
+      if (ch === '`') {
+        // skip template literal (including ${} roughly by skipping to next backtick)
+        let j = i + 1;
+        while (j < s.length) {
+          const c = s[j];
+          if (c === '\\') {
+            j += 2;
+            continue;
+          }
+          j += 1;
+          if (c === '`') break;
+        }
+        i = j;
+        continue;
+      }
+
+      if (ch === '{') b += 1;
+      else if (ch === '}') b -= 1;
+      else if (ch === '[') br += 1;
+      else if (ch === ']') br -= 1;
+      else if (ch === '(') p += 1;
+      else if (ch === ')') p -= 1;
+
+      if (b === 0 && br === 0 && p === 0) {
+        if (ch === ':') {
+          keyPart = s.slice(0, i).trim();
+          break;
+        }
+        if (ch === '=') {
+          keyPart = s.slice(0, i).trim();
+          break;
+        }
+      }
+
+      i += 1;
+    }
+
+    if (!keyPart) return;
+    if (keyPart.startsWith("'") || keyPart.startsWith('"')) {
+      const q = keyPart[0] as "'" | '"';
+      const parsed = readSimpleStringLiteralValue(keyPart, 0, q);
+      if (parsed) out.push(parsed.value);
+      return;
+    }
+
+    const m = keyPart.match(/^[A-Za-z_$][A-Za-z0-9_$]*/);
+    if (m) out.push(m[0]);
+  };
+
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    const next = src[i + 1];
+    if (ch === '/' && next === '/') {
+      break;
+    }
+    if (ch === '/' && next === '*') {
+      const end = src.indexOf('*/', i + 2);
+      i = end === -1 ? src.length : end + 2;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      i = readQuotedString(src, i, ch);
+      continue;
+    }
+    if (ch === '`') {
+      i = readTemplateLiteral(src, i);
+      continue;
+    }
+
+    if (ch === '{') braceDepth += 1;
+    else if (ch === '}') braceDepth -= 1;
+    else if (ch === '[') bracketDepth += 1;
+    else if (ch === ']') bracketDepth -= 1;
+    else if (ch === '(') parenDepth += 1;
+    else if (ch === ')') parenDepth -= 1;
+
+    if (braceDepth === 0 && bracketDepth === 0 && parenDepth === 0 && ch === ',') {
+      pushItem(src.slice(itemStart, i));
+      itemStart = i + 1;
+    }
+
+    i += 1;
+  }
+  pushItem(src.slice(itemStart));
+
+  return out;
+}
+
+function extractUsedCtxLibKeys(code: string): string[] {
+  if (!CTX_LIBS_MARKER_RE.test(code)) return [];
+  const out = new Set<string>();
+
+  const scanTemplateExpression = (start: number): number => {
+    let i = start;
+    let braceDepth = 1;
+    while (i < code.length && braceDepth > 0) {
+      const ch = code[i];
+      const next = code[i + 1];
+      if (ch === '/' && next === '/') {
+        i = readLineComment(code, i);
+        continue;
+      }
+      if (ch === '/' && next === '*') {
+        i = readBlockComment(code, i);
+        continue;
+      }
+      if (ch === "'" || ch === '"') {
+        i = readQuotedString(code, i, ch);
+        continue;
+      }
+      if (ch === '`') {
+        i = scanTemplateLiteral(i + 1);
+        continue;
+      }
+
+      const access = tryReadCtxLibAccess(code, i);
+      if (access) {
+        if (access.key) out.add(access.key);
+        i = access.end;
+        continue;
+      }
+
+      if (ch === '{') braceDepth += 1;
+      else if (ch === '}') braceDepth -= 1;
+
+      i += 1;
+    }
+    return i;
+  };
+
+  const scanTemplateLiteral = (start: number): number => {
+    let i = start;
+    while (i < code.length) {
+      const ch = code[i];
+      const next = code[i + 1];
+      if (ch === '\\') {
+        i += 2;
+        continue;
+      }
+      if (ch === '`') return i + 1;
+      if (ch === '$' && next === '{') {
+        i = scanTemplateExpression(i + 2);
+        continue;
+      }
+      i += 1;
+    }
+    return i;
+  };
+
+  let i = 0;
+  while (i < code.length) {
+    const ch = code[i];
+    const next = code[i + 1];
+    if (ch === '/' && next === '/') {
+      i = readLineComment(code, i);
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      i = readBlockComment(code, i);
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      i = readQuotedString(code, i, ch);
+      continue;
+    }
+    if (ch === '`') {
+      i = scanTemplateLiteral(i + 1);
+      continue;
+    }
+
+    const access = tryReadCtxLibAccess(code, i);
+    if (access) {
+      if (access.key) out.add(access.key);
+      i = access.end;
+      continue;
+    }
+
+    // Destructuring: { a, b } = ctx.libs
+    if (ch === '=' && next !== '=' && next !== '>' && next !== '<') {
+      const right = skipSpaceAndCommentsForward(code, i + 1);
+      const rhsBaseEnd = readsCtxLibsBase(code, right);
+      if (rhsBaseEnd !== null) {
+        const leftEnd = skipWhitespaceBackward(code, i - 1);
+        if (code[leftEnd] === '}') {
+          let depth = 0;
+          let j = leftEnd;
+          while (j >= 0) {
+            const c = code[j];
+            if (c === '}') depth += 1;
+            else if (c === '{') {
+              depth -= 1;
+              if (depth === 0) break;
+            }
+            j -= 1;
+          }
+          if (j >= 0 && code[j] === '{') {
+            const inner = code.slice(j + 1, leftEnd);
+            for (const k of parseDestructuredKeysFromObjectPattern(inner)) out.add(k);
+          }
+        }
+      }
+    }
+
+    i += 1;
+  }
+
+  return Array.from(out);
+}
+
+function injectEnsureLibsPreamble(code: string): string {
+  if (!CTX_LIBS_MARKER_RE.test(code)) return code;
+  if (ENSURE_LIBS_MARKER_RE.test(code)) return code;
+  const keys = extractUsedCtxLibKeys(code);
+  if (!keys.length) return code;
+  return `/* __runjs_ensure_libs */\nawait ctx.__ensureLibs(${JSON.stringify(keys)});\n${code}`;
 }
 
 function isObjectLikeKeyPosition(code: string, tokenStart: number, tokenEnd: number): boolean {
@@ -413,14 +804,16 @@ export async function prepareRunJsCode(code: string, options: PrepareRunJsCodeOp
   if (cached) return await cached;
 
   const task = (async () => {
-    if (!preprocessTemplates) return await compileRunJs(src);
+    if (!preprocessTemplates) return injectEnsureLibsPreamble(await compileRunJs(src));
 
     // 阶段 1：仅重写“裸”的 {{ ... }} 占位符，保持代码可解析（尤其是在 JSX 转换前）。
     const preBare = preprocessRunJsTemplates(src, { processStringLiterals: false });
     // 阶段 2：JSX -> JS。
     const jsxCompiled = await compileRunJs(preBare);
     // 阶段 3：对纯 JS 输出重写字符串/模板字面量（避免破坏 JSX 属性语法）。
-    return preprocessRunJsTemplates(jsxCompiled, { processBarePlaceholders: false });
+    const out = preprocessRunJsTemplates(jsxCompiled, { processBarePlaceholders: false });
+    // 阶段 4：为 ctx.libs 注入按需加载 preamble（保持用户同步访问语义）。
+    return injectEnsureLibsPreamble(out);
   })();
 
   lruSet(cache, src, task, PREPARE_RUNJS_CODE_CACHE_LIMIT);

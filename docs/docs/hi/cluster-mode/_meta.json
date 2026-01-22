@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "क्लस्टर मोड"
+  },
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "तैयारी",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes डिप्लॉयमेंट",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "O&M प्रक्रिया",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "सर्विस स्प्लिटिंग",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "विकास संदर्भ",
+    "link": "/cluster-mode/development"
+  }
+]

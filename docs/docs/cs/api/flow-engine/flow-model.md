@@ -1,0 +1,12 @@
+:::tip
+Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::
+
+
+# FlowModel
+
+## uid
+
+## registerFlow()
+
+## define()
