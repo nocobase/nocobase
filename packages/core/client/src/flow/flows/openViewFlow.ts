@@ -24,7 +24,7 @@ export const openViewFlow = defineFlow<FlowModel>({
           return false;
         }
         if (clickToOpen === undefined) {
-          return !ctx.collectionField?.isAssociationField() || ctx.model.parent.subKey === 'subTableColumns';
+          return !ctx.collectionField?.isAssociationField() || ctx.disableFieldClickToOpen;
         }
         return clickToOpen === false;
       },

@@ -262,7 +262,7 @@ ClickableFieldModel.registerFlow({
       title: tExpr('Enable click-to-open'),
       uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
-        if (ctx.model.parent.subKey === 'subTableColumns') {
+        if (ctx.disableFieldClickToOpen) {
           return {
             clickToOpen: false,
           };
@@ -272,7 +272,7 @@ ClickableFieldModel.registerFlow({
         };
       },
       hideInSettings(ctx) {
-        return ctx.model.parent.subKey === 'subTableColumns';
+        return ctx.disableFieldClickToOpen;
       },
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });

@@ -376,6 +376,10 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
       },
     });
 
+    this.context.defineProperty('disableFieldClickToOpen', {
+      value: true,
+    });
+
     if (this.parent.context.actionName) {
       this.context.defineProperty('actionName', {
         get: () => 'view',
@@ -613,7 +617,7 @@ AdvancedSubTableFieldModel.registerFlow({
           target: ctx.layoutContentElement,
           inputArgs: {
             parentId: ctx.model.uid,
-            scene: 'editInFront',
+            scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
