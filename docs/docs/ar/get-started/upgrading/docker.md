@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # يوصى باستخدام صورة Alibaba Cloud (شبكة داخلية أكثر استقرارًا)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # يمكنك أيضًا استخدام إصدار الاسم المستعار (قد يتم الترقية تلقائيًا، استخدمه بحذر في بيئات الإنتاج)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (قد يكون بطيئًا/فاشلاً في الشبكات المحلية)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ docker compose logs -f app
 
 **س: سحب الصورة (Image Pull) بطيء أو فاشل**
 
-استخدم تسريع الصور (image acceleration)، أو استخدم صورة Alibaba Cloud `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`.
+استخدم تسريع الصور (image acceleration)، أو استخدم صورة Alibaba Cloud `nocobase/nocobase:<tag>`.
 
 **س: لم يتغير الإصدار**
 

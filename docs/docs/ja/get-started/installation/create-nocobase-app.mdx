@@ -23,55 +23,8 @@ $ yarn config set registry https://registry.npmmirror.com/
 NocoBase のバージョン（[バージョン比較](../quickstart.md)）とデータベースの種類を選択し、対応するコマンドを実行してください。
 
 <Tabs>
-<Tab label="最新バージョン">
 
-<Tabs>
-<Tab label="PostgreSQL">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d postgres \
-   -e DB_HOST=localhost \
-   -e DB_PORT=5432 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-
-<Tab label="MySQL">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d mysql \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3306 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-
-<Tab label="MariaDB">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d mariadb \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3306 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-</Tabs>
-
-</Tab>
-
-<Tab label="ベータ版">
+<Tab label="Beta バージョン (2.0-beta)">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -119,7 +72,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="アルファ版">
+<Tab label="Alpha バージョン (2.0-alpha)">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -166,6 +119,55 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 </Tabs>
 
 </Tab>
+
+<Tab label="Latest バージョン (1.9)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
 </Tabs>
 
 :::warning 環境変数について

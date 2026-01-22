@@ -39,42 +39,42 @@ DB_PASSWORD=nocobase
 #### التثبيت باستخدام Docker
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # مفتاح التطبيق المستخدم لتوليد رموز المستخدم (tokens) وما إلى ذلك.
-      # إذا تم تغيير APP_KEY، فستصبح الرموز القديمة غير صالحة.
-      # يمكن أن يكون أي سلسلة عشوائية، وتأكد من عدم تسريبها.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # نوع قاعدة البيانات
+      # Database type
       - DB_DIALECT=kingbase
-      # مضيف قاعدة البيانات، يمكن استبداله بعنوان IP لخادم قاعدة بيانات موجود.
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # اسم قاعدة البيانات
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # مستخدم قاعدة البيانات
+      # Database user
       - DB_USER=nocobase
-      # كلمة مرور قاعدة البيانات
+      # Database password
       - DB_PASSWORD=nocobase
-      # المنطقة الزمنية
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # خدمة Kingbase لأغراض الاختبار فقط
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -85,10 +85,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # يجب أن تكون "no"
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # pg فقط
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

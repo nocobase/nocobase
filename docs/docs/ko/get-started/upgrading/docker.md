@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # 알리윈(Aliyun) 미러 사용을 권장합니다 (중국 내 네트워크 안정성 향상).
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # 별칭 버전도 사용할 수 있습니다 (자동 업그레이드될 수 있으므로 프로덕션 환경에서는 주의해서 사용하세요).
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (중국 내에서는 느리거나 실패할 수 있습니다)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase는 다운그레이드를 지원하지 않습니다. 롤백이 필요한
 
 **Q: 이미지 가져오기(pull)가 느리거나 실패합니다.**
 
-미러 가속기를 사용하거나, 알리윈(Aliyun) 미러 `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`를 사용해 보세요.
+미러 가속기를 사용하거나, 알리윈(Aliyun) 미러 `nocobase/nocobase:<tag>`를 사용해 보세요.
 
 **Q: 버전이 변경되지 않았습니다.**
 

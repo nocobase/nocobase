@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Alibaba Cloudのイメージの使用を推奨します（国内ネットワークがより安定しています）
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # エイリアスバージョンも使用できます（自動アップグレードされる可能性があるため、本番環境での使用は慎重に）
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub（国内では遅い/失敗する可能性があります）
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ NocoBase はダウングレードをサポートしていません。ロール�
 
 **Q：イメージのプルが遅い、または失敗する**
 
-イメージアクセラレータを使用するか、Alibaba Cloudのイメージ `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>` を使用してください。
+イメージアクセラレータを使用するか、Alibaba Cloudのイメージ `nocobase/nocobase:<tag>` を使用してください。
 
 **Q：バージョンが変更されていない**
 

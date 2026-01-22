@@ -38,10 +38,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Alibaba Cloud (Aliyun) imajını kullanmanız önerilir (yerel ağlar için daha kararlı).
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Takma ad sürümlerini de kullanabilirsiniz (otomatik olarak yükseltilebilir, üretimde dikkatli kullanın).
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (yerel olarak yavaş veya başarısız olabilir)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -72,7 +72,7 @@ NocoBase düşürmeyi desteklemez. Geri almanız gerekirse, lütfen yükseltme �
 
 **S: İmaj çekme yavaş veya başarısız oluyor**
 
-İmaj hızlandırma kullanın veya Alibaba Cloud (Aliyun) imajını kullanın: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`
+İmaj hızlandırma kullanın veya Alibaba Cloud (Aliyun) imajını kullanın: `nocobase/nocobase:<tag>`
 
 **S: Sürüm değişmedi**
 

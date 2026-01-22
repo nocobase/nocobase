@@ -30,7 +30,7 @@ NocoBase のバージョン（[バージョン比較](../quickstart.md)）とデ
 
 - **イメージの選択**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - 本番環境では、意図しない自動アップグレードを避けるため、特定のバージョン番号に固定することをお勧めします。[全バージョンを表示](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Alibaba Cloud イメージ: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Alibaba Cloud イメージ: `nocobase/nocobase:latest-full`
   - Docker Hub イメージ: `nocobase/nocobase:latest-full`
   - **`full` イメージ**には、バックアップ管理、移行管理プラグインに必要な PostgreSQL 16/17 クライアント、MySQL 8.0 クライアント、Oracle 19.25 クライアント、およびテンプレート印刷（PDF）に必要な LibreOffice が含まれています。
   - 独自のイメージを構築する必要がある場合は、公式の [Dockerfile（スリム版）](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) および [Dockerfile-full（フル版）](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) を参照してください。
@@ -42,6 +42,9 @@ NocoBase のバージョン（[バージョン比較](../quickstart.md)）とデ
 
 <Tabs>
 
+<Tab label="Beta バージョン (2.0-beta)">
+
+<Tabs>
 <Tab label="PostgreSQL">
 
 ```yml
@@ -51,7 +54,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +88,7 @@ services:
 
   # 既存のデータベースサービスを使用する場合は、postgres を起動しないことも可能です。
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +112,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +147,7 @@ services:
 
   # 既存のデータベースサービスを使用する場合は、mysql を起動しないことも可能です。
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +171,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +206,7 @@ services:
 
   # 既存のデータベースサービスを使用する場合は、mariadb を起動しないことも可能です。
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -217,6 +220,374 @@ services:
 ```
 
 </Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha バージョン (2.0-alpha)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # アプリケーションのキー。ユーザーのトークンなどを生成するために使用されます。
+      # `APP_KEY` を変更すると、古いトークンは無効になります。
+      # 任意のランダムな文字列で構いません。外部に漏洩しないように注意してください。
+      - APP_KEY=your-secret-key
+      # データベースタイプ。postgres, mysql, mariadb をサポートしています。
+      - DB_DIALECT=postgres
+      # データベースホスト。既存のデータベースサーバーの IP アドレスに置き換えることができます。
+      - DB_HOST=postgres
+      # データベースポート
+      - DB_PORT=5432
+      # データベース名
+      - DB_DATABASE=nocobase
+      # データベースユーザー
+      - DB_USER=nocobase
+      # データベースパスワード
+      - DB_PASSWORD=nocobase
+      # タイムゾーン
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 既存のデータベースサービスを使用する場合は、postgres を起動しないことも可能です。
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # アプリケーションのキー。ユーザーのトークンなどを生成するために使用されます。
+      # `APP_KEY` を変更すると、古いトークンは無効になります。
+      # 任意のランダムな文字列で構いません。外部に漏洩しないように注意してください。
+      - APP_KEY=your-secret-key
+      # データベースタイプ。postgres, mysql, mariadb をサポートしています。
+      - DB_DIALECT=mysql
+      # データベースホスト。既存のデータベースサーバーの IP アドレスに置き換えることができます。
+      - DB_HOST=mysql
+      # データベースポート
+      - DB_PORT=3306
+      # データベース名
+      - DB_DATABASE=nocobase
+      # データベースユーザー
+      - DB_USER=root
+      # データベースパスワード
+      - DB_PASSWORD=nocobase
+      # データベースのテーブル名、フィールド名をスネークケース形式に変換するかどうか。
+      - DB_UNDERSCORED=true
+      # タイムゾーン
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 既存のデータベースサービスを使用する場合は、mysql を起動しないことも可能です。
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # アプリケーションのキー。ユーザーのトークンなどを生成するために使用されます。
+      # `APP_KEY` を変更すると、古いトークンは無効になります。
+      # 任意のランダムな文字列で構いません。外部に漏洩しないように注意してください。
+      - APP_KEY=your-secret-key
+      # データベースタイプ。postgres, mysql, mariadb をサポートしています。
+      - DB_DIALECT=mariadb
+      # データベースホスト。既存のデータベースサーバーの IP アドレスに置き換えることができます。
+      - DB_HOST=mariadb
+      # データベースポート
+      - DB_PORT=3306
+      # データベース名
+      - DB_DATABASE=nocobase
+      # データベースユーザー
+      - DB_USER=root
+      # データベースパスワード
+      - DB_PASSWORD=nocobase
+      # データベースのテーブル名、フィールド名をスネークケース形式に変換するかどうか。
+      - DB_UNDERSCORED=true
+      # タイムゾーン
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 既存のデータベースサービスを使用する場合は、mariadb を起動しないことも可能です。
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Latest バージョン (1.9)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # アプリケーションのキー。ユーザーのトークンなどを生成するために使用されます。
+      # `APP_KEY` を変更すると、古いトークンは無効になります。
+      # 任意のランダムな文字列で構いません。外部に漏洩しないように注意してください。
+      - APP_KEY=your-secret-key
+      # データベースタイプ。postgres, mysql, mariadb をサポートしています。
+      - DB_DIALECT=postgres
+      # データベースホスト。既存のデータベースサーバーの IP アドレスに置き換えることができます。
+      - DB_HOST=postgres
+      # データベースポート
+      - DB_PORT=5432
+      # データベース名
+      - DB_DATABASE=nocobase
+      # データベースユーザー
+      - DB_USER=nocobase
+      # データベースパスワード
+      - DB_PASSWORD=nocobase
+      # タイムゾーン
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 既存のデータベースサービスを使用する場合は、postgres を起動しないことも可能です。
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # アプリケーションのキー。ユーザーのトークンなどを生成するために使用されます。
+      # `APP_KEY` を変更すると、古いトークンは無効になります。
+      # 任意のランダムな文字列で構いません。外部に漏洩しないように注意してください。
+      - APP_KEY=your-secret-key
+      # データベースタイプ。postgres, mysql, mariadb をサポートしています。
+      - DB_DIALECT=mysql
+      # データベースホスト。既存のデータベースサーバーの IP アドレスに置き換えることができます。
+      - DB_HOST=mysql
+      # データベースポート
+      - DB_PORT=3306
+      # データベース名
+      - DB_DATABASE=nocobase
+      # データベースユーザー
+      - DB_USER=root
+      # データベースパスワード
+      - DB_PASSWORD=nocobase
+      # データベースのテーブル名、フィールド名をスネークケース形式に変換するかどうか。
+      - DB_UNDERSCORED=true
+      # タイムゾーン
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 既存のデータベースサービスを使用する場合は、mysql を起動しないことも可能です。
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # アプリケーションのキー。ユーザーのトークンなどを生成するために使用されます。
+      # `APP_KEY` を変更すると、古いトークンは無効になります。
+      # 任意のランダムな文字列で構いません。外部に漏洩しないように注意してください。
+      - APP_KEY=your-secret-key
+      # データベースタイプ。postgres, mysql, mariadb をサポートしています。
+      - DB_DIALECT=mariadb
+      # データベースホスト。既存のデータベースサーバーの IP アドレスに置き換えることができます。
+      - DB_HOST=mariadb
+      # データベースポート
+      - DB_PORT=3306
+      # データベース名
+      - DB_DATABASE=nocobase
+      # データベースユーザー
+      - DB_USER=root
+      # データベースパスワード
+      - DB_PASSWORD=nocobase
+      # データベースのテーブル名、フィールド名をスネークケース形式に変換するかどうか。
+      - DB_UNDERSCORED=true
+      # タイムゾーン
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 既存のデータベースサービスを使用する場合は、mariadb を起動しないことも可能です。
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
 </Tabs>
 
 ## 3. NocoBase をインストールして起動する
