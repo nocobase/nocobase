@@ -40,9 +40,12 @@ export class SubTableEditFormModel extends FormBlockModel {
     this.context.defineProperty('resourceName', {
       get: () => this.context.collection.name,
     });
-    const recordData = this.context.view.inputArgs.record || {};
     this.context.defineProperty('record', {
-      get: () => recordData,
+      get: () => {
+        const recordData = this.context.view?.inputArgs?.record || {};
+        return recordData;
+      },
+      cache: true,
     });
   }
 

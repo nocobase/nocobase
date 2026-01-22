@@ -1591,5 +1591,7 @@
   "Popup select": "弹窗选择",
   "File picker": "文件选择",
   "Cascade": "级联选择",
-  "Subform":"子表单"
+  "Subform":"子表单",
+  "Edit popup (Add new)":"编辑弹窗（添加）",
+  "Edit popup (Select record)":"编辑弹窗（选择纪录）"
 }

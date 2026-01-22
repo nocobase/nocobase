@@ -409,7 +409,7 @@ SubFormListFieldModel.registerFlow({
   sort: 300,
   steps: {
     openView: {
-      title: tExpr('Edit popup'),
+      title: tExpr('Edit popup (Select record)'),
       hideInSettings(ctx) {
         const allowSelectExistingRecord = ctx.model.getStepParams?.('subFormListSettings', 'allowSelectExistingRecord')
           ?.allowSelectExistingRecord;

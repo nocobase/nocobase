@@ -36,7 +36,7 @@ export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
 }
 
 SubTableRecordDeleteActionModel.define({
-  label: tExpr('Delete'),
+  label: tExpr('Remove'),
 });
 SubTableRecordDeleteActionModel.registerFlow({
   key: 'subTableRemoveActionSettings',
