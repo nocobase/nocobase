@@ -22,35 +22,61 @@ const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
+    const canEdit = typeof props.onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
     }, [ctx.model]);
 
-    // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示
-    const mergedValue = React.useMemo(() => {
-      const legacyDefaults = collectLegacyDefaultValueRulesFromFilterFormModel(ctx.model);
-      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-    }, [ctx.model, props.value]);
+    const legacyDefaults = React.useMemo(() => {
+      return collectLegacyDefaultValueRulesFromFilterFormModel(ctx.model);
+    }, [ctx.model]);
 
-    // 仅在首次打开时，把合并结果写回到当前 step 表单状态，便于用户在此处编辑/删除后统一保存
+    // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示。
+    // 仅在首次打开时合并，后续以当前 step 表单值为准（便于用户在此处编辑/删除后统一保存）。
     const hasInitializedMergeRef = React.useRef(false);
-    React.useEffect(() => {
+    const [hasInitializedMerge, setHasInitializedMerge] = React.useState(false);
+    const markInitialized = React.useCallback(() => {
       if (hasInitializedMergeRef.current) return;
       hasInitializedMergeRef.current = true;
-      if (typeof props.onChange !== 'function') return;
-      if (!isEqual(props.value || [], mergedValue || [])) {
-        props.onChange(mergedValue);
+      setHasInitializedMerge(true);
+    }, []);
+
+    const value = React.useMemo(() => {
+      if (!canEdit || !hasInitializedMerge) {
+        return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
       }
-    }, [mergedValue, props.onChange, props.value]);
+      return Array.isArray(props.value) ? props.value : [];
+    }, [canEdit, hasInitializedMerge, legacyDefaults, props.value]);
+
+    const handleChange = React.useCallback(
+      (next: FieldAssignRuleItem[]) => {
+        if (!canEdit) return;
+        markInitialized();
+        props.onChange?.(next);
+      },
+      [canEdit, markInitialized, props.onChange],
+    );
+
+    // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并。
+    React.useEffect(() => {
+      if (hasInitializedMergeRef.current) return;
+      if (!canEdit) return;
+
+      const nextValue = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+      if (!isEqual(props.value || [], nextValue || [])) {
+        props.onChange?.(nextValue);
+      }
+      markInitialized();
+    }, [canEdit, legacyDefaults, markInitialized, props.onChange, props.value]);
 
     return (
       <FieldAssignRulesEditor
         t={t}
         fieldOptions={fieldOptions}
         rootCollection={getCollectionFromModel(ctx.model)}
-        value={mergedValue}
-        onChange={props.onChange}
+        value={value}
+        onChange={handleChange}
         fixedMode="default"
         showCondition={false}
         showValueEditorWhenNoField
