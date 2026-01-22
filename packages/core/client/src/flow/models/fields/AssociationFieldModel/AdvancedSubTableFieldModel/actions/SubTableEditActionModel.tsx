@@ -206,6 +206,9 @@ SubTableEditActionModel.registerFlow({
           resourceName: ctx.collectionField?.target,
           actionName: ctx.actionName,
         });
+        if (!ctx.actionName) {
+          return;
+        }
         if (!result && !ctx.record.__is_new__) {
           ctx.model.hidden = true;
           ctx.model.forbidden = {

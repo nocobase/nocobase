@@ -464,6 +464,24 @@ AdvancedSubTableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps('editable', params.editable);
       },
+      async afterParamsSave(ctx, params, previousParams) {
+        if (params?.editable === previousParams?.editable) return;
+
+        const blockModel = ctx.model;
+        blockModel.mapSubModels('subTableColumns', (column: any) => {
+          const flow = column?.getFlow?.('tableColumnSettings');
+          if (!flow?.getStep?.('quickEdit')) return;
+
+          const quickEditParams = column.getStepParams?.('tableColumnSettings', 'quickEdit');
+          if (quickEditParams && Object.prototype.hasOwnProperty.call(quickEditParams, 'editable')) {
+            return;
+          }
+
+          const isReadonly = !!column?.collectionField?.readonly;
+          const hasAssociationPath = !!column?.associationPathName;
+          column.setProps('editable', isReadonly || hasAssociationPath ? false : !!params.editable);
+        });
+      },
     },
     pageSize: {
       title: tExpr('Page size'),
