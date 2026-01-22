@@ -179,4 +179,15 @@ export default class extends Instruction {
       },
     };
   }
+  useTempAssociationSource(node) {
+    if (!node?.config?.collection) {
+      return null;
+    }
+    return {
+      collection: node.config.collection,
+      nodeId: node.id,
+      nodeKey: node.key,
+      nodeType: 'node' as const,
+    };
+  }
 }

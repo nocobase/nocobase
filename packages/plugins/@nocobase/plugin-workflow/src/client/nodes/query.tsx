@@ -223,4 +223,15 @@ export default class extends Instruction {
       },
     };
   }
+  useTempAssociationSource(node) {
+    if (!node?.config?.collection || node?.config?.multiple) {
+      return null;
+    }
+    return {
+      collection: node.config.collection,
+      nodeId: node.id,
+      nodeKey: node.key,
+      nodeType: 'node' as const,
+    };
+  }
 }

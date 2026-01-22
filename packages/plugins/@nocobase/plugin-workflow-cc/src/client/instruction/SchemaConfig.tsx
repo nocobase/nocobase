@@ -58,6 +58,13 @@ function useTriggerInitializers(): SchemaInitializerItemType | null {
   return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
 }
 
+function useTriggerTempAssociationSource() {
+  const { workflow } = useFlowContext();
+  const trigger = useTrigger();
+  if (!workflow || !trigger?.useTempAssociationSource) return null;
+  return trigger.useTempAssociationSource(workflow.config, workflow);
+}
+
 export const addBlockButton = new SchemaInitializer({
   name: 'workflowCc:popup:configureUserInterface:addBlock',
   wrap: gridRowColWrap,
@@ -117,6 +124,16 @@ function SchemaContent({ value, onChange }) {
   const executed = useWorkflowExecuted();
   const node = useNodeContext();
   const nodes = useAvailableUpstreams(node);
+  const triggerSource = useTriggerTempAssociationSource();
+  const nodeTempAssociationSources = nodes
+    .map((item) => {
+      const instruction = workflowPlugin.instructions.get(item.type);
+      return instruction?.useTempAssociationSource?.(item);
+    })
+    .filter(Boolean);
+  const tempAssociationSources = triggerSource
+    ? [triggerSource, ...nodeTempAssociationSources]
+    : nodeTempAssociationSources;
 
   const { data, loading } = useRequest(
     async () => {
@@ -182,6 +199,7 @@ function SchemaContent({ value, onChange }) {
           useReadAction() {
             return { run() {} };
           },
+          tempAssociationSources,
         }}
         components={{
           SimpleDesigner,
@@ -475,14 +493,41 @@ export function CCInterfaceConfig({ children }) {
 function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nodes, form, node, setFormValueChanged }) {
   const flowEngine = useFlowEngine();
   const viewCtx = useFlowViewContext();
+  const api = useAPIClient();
+  const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const tempAssociationSources = React.useMemo(() => {
+    const triggerSource = workflow?.config?.collection
+      ? {
+          collection: workflow.config.collection,
+          nodeId: workflow.id,
+          nodeKey: 'workflow',
+          nodeType: 'workflow' as const,
+        }
+      : null;
+    const upstreamSources = (nodes || [])
+      .map((item) => {
+        const instruction = workflowPlugin.instructions.get(item.type);
+        return instruction?.useTempAssociationSource?.(item) || null;
+      })
+      .filter(Boolean);
+    return triggerSource ? [triggerSource, ...upstreamSources] : upstreamSources;
+  }, [nodes, workflow, workflowPlugin]);
   const syncTempAssociationFields = useCallback(
     (fields: CCTaskTempAssociationFieldConfig[]) => {
       if (formDisabled || !form || !node) return;
       if (isEqual(form.values.tempAssociationFields, fields)) return;
       form.setValuesIn('tempAssociationFields', fields);
       setFormValueChanged?.(true);
+      updateNodeConfig({
+        api,
+        nodeId: node.id,
+        config: {
+          ...form.values,
+          tempAssociationFields: fields,
+        },
+      });
     },
-    [form, formDisabled, node, setFormValueChanged],
+    [api, form, formDisabled, node, setFormValueChanged],
   );
   const { data: model, loading } = useRequest(
     async () => {
@@ -527,6 +572,10 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
           get: () => nodes ?? [],
           cache: false,
         });
+        model.context.defineProperty('tempAssociationSources', {
+          get: () => tempAssociationSources,
+          cache: false,
+        });
         model.context.defineProperty('ccTaskTempAssociationSync', {
           get: () => syncTempAssociationFields,
           cache: false,
@@ -544,12 +593,20 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
   );
 
   useEffect(() => {
+    const selectedSources = form?.values?.tempAssociationFields?.length
+      ? form.values.tempAssociationFields
+          .map((field) =>
+            tempAssociationSources.find((item) => item.nodeId === field.nodeId && item.nodeKey === field.nodeKey),
+          )
+          .filter(Boolean)
+      : undefined;
     updateWorkflowCcTaskAssociationFields({
       flowEngine,
       workflow,
       nodes,
+      tempAssociationSources: selectedSources?.length ? selectedSources : tempAssociationSources,
     });
-  }, [flowEngine, nodes, workflow]);
+  }, [flowEngine, nodes, workflow, form?.values?.tempAssociationFields, tempAssociationSources]);
 
   if (loading) {
     return <Spin />;
@@ -578,6 +635,7 @@ export function CCTaskCardConfigButton() {
   const ctx = useFlowEngineContext();
   const flowContext = useFlowContext();
   const node = useNodeContext();
+  const upstreamNodes = useAvailableUpstreams(node);
   const { setFormValueChanged } = useActionContext();
   const t = ctx.t;
 
@@ -609,24 +667,14 @@ export function CCTaskCardConfigButton() {
           onUidChange={onUidChange}
           formDisabled={form.disabled}
           workflow={flowContext.workflow}
-          nodes={flowContext.nodes}
+          nodes={upstreamNodes}
           form={form}
           node={node}
           setFormValueChanged={setFormValueChanged}
         />
       ),
     });
-  }, [
-    ctx.viewer,
-    flowContext.nodes,
-    flowContext.workflow,
-    form,
-    node,
-    onUidChange,
-    setFormValueChanged,
-    t,
-    taskCardUid,
-  ]);
+  }, [ctx.viewer, flowContext.workflow, form, node, onUidChange, setFormValueChanged, t, taskCardUid, upstreamNodes]);
 
   return (
     <Button icon={<CreditCardOutlined />} type="default" onClick={openConfig} disabled={false}>

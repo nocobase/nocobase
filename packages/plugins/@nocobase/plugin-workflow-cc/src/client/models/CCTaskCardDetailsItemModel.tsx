@@ -10,14 +10,10 @@
 import { DetailsItemModel, parseCollectionName } from '@nocobase/client';
 import { Collection, CollectionField, FlowModelContext, tExpr } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../common/constants';
-
-// 注意：如果更改这里的值，会导致渲染错误
-export const TEMP_ASSOCIATION_PREFIX = 'ccTempAssoc_';
+import { buildTempAssociationFieldName, TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
 
 // 排除的字段
 const EXCLUDED_FIELDS = ['node', 'job', 'workflow', 'execution', 'user'];
-
-const sanitizeFieldKey = (value: string | number) => String(value ?? '').replace(/[^a-zA-Z0-9_]/g, '_');
 
 class CCTaskCardTempAssociationField extends CollectionField {
   get targetCollection() {
@@ -34,14 +30,21 @@ type CCTaskAssociationContext = {
   nodes?: any[];
 };
 
-export type CCTaskTempAssociationFieldConfig = {
-  fieldName: string;
+type TempAssociationSource = {
+  collection: string;
   nodeId: string | number;
+  nodeKey: string;
   nodeType: 'workflow' | 'node';
-  timestamp?: number;
+};
+
+export type CCTaskTempAssociationFieldConfig = {
+  nodeId: string | number;
+  nodeKey: string;
+  nodeType: 'workflow' | 'node';
 };
 
 type CCTaskAssociationMetadata = CCTaskTempAssociationFieldConfig & {
+  fieldName: string;
   title?: string;
   dataSourceKey: string;
   target: string;
@@ -63,7 +66,7 @@ export const getWorkflowCcTaskAssociationMetadata = ({
   ) => {
     const [dataSourceKey, target] = parseCollectionName(collectionName);
     if (!target) return;
-    const fieldName = `${TEMP_ASSOCIATION_PREFIX}${nodeType}_${sanitizeFieldKey(key)}`;
+    const fieldName = buildTempAssociationFieldName(nodeType, key);
     if (collection?.getField(fieldName)) {
       return;
     }
@@ -71,6 +74,7 @@ export const getWorkflowCcTaskAssociationMetadata = ({
     associations.push({
       fieldName,
       nodeId,
+      nodeKey: String(key),
       nodeType,
       title: resolvedTitle,
       dataSourceKey: dataSourceKey || 'main',
@@ -87,6 +91,7 @@ export const getWorkflowCcTaskAssociationMetadata = ({
   (nodes || []).forEach((node) => {
     if (!node?.config?.collection) return;
     const key = node?.key ?? node?.id;
+    if (!key) return;
     const nodeId = node?.id ?? key;
     collectAssociation(node.config.collection, node.title, key, nodeId, 'node');
   });
@@ -94,11 +99,39 @@ export const getWorkflowCcTaskAssociationMetadata = ({
   return associations;
 };
 
-export const updateWorkflowCcTaskAssociationFields = ({ flowEngine, workflow, nodes }: CCTaskAssociationContext) => {
+export const getEligibleTempAssociationSources = (sources: TempAssociationSource[] = []) => {
+  const unique = new Map<string, CCTaskAssociationMetadata>();
+  sources.forEach((source) => {
+    const fieldName = buildTempAssociationFieldName(source.nodeType, source.nodeKey);
+    if (unique.has(fieldName)) return;
+    const [dataSourceKey, target] = parseCollectionName(source.collection);
+    if (!target) return;
+    unique.set(fieldName, {
+      fieldName,
+      nodeId: source.nodeId,
+      nodeKey: source.nodeKey,
+      nodeType: source.nodeType,
+      title: source.nodeKey,
+      dataSourceKey: dataSourceKey || 'main',
+      target,
+    });
+  });
+  return Array.from(unique.values());
+};
+
+export const updateWorkflowCcTaskAssociationFields = ({
+  flowEngine,
+  workflow,
+  nodes,
+  tempAssociationSources,
+}: CCTaskAssociationContext & { tempAssociationSources?: TempAssociationSource[] }) => {
   if (!flowEngine) return;
   const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
   if (!collection) return;
-  const associations = getWorkflowCcTaskAssociationMetadata({ workflow, nodes, collection });
+  const shouldUseSources = typeof tempAssociationSources !== 'undefined';
+  const associations = shouldUseSources
+    ? getEligibleTempAssociationSources(tempAssociationSources || [])
+    : getWorkflowCcTaskAssociationMetadata({ workflow, nodes, collection });
 
   if (!associations.length) {
     return;
@@ -180,6 +213,7 @@ export class CCTaskCardDetailsItemModel extends DetailsItemModel {
             flowEngine: this.flowEngine,
             workflow: this.context.workflow,
             nodes: this.context.nodes,
+            tempAssociationSources: this.context.tempAssociationSources,
           });
           const refreshedField = this.context.dataSourceManager.getCollectionField(
             `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,

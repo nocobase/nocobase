@@ -79,7 +79,18 @@ export abstract class Trigger {
   useInitializers?(config): SchemaInitializerItemType | null;
   initializers?: any;
   isActionTriggerable_deprecated?: boolean | ((config: object, context?: object) => boolean);
+  /**
+   * @experimental
+   */
+  useTempAssociationSource?(config, workflow): TriggerTempAssociationSource | null;
 }
+
+export type TriggerTempAssociationSource = {
+  collection: string;
+  nodeId: string | number;
+  nodeKey: string;
+  nodeType: 'workflow';
+};
 
 function TriggerExecution() {
   const compile = useCompile();

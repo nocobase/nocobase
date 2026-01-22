@@ -9,18 +9,20 @@
 
 import actions, { Context } from '@nocobase/actions';
 import { parseCollectionName } from '@nocobase/data-source-manager';
+import { buildTempAssociationFieldName, TEMP_ASSOCIATION_PREFIX } from '../common/tempAssociation';
 
 const TEMP_ASSOCIATION_FIELDS_LIMIT = 50;
 
 type TempAssociationFieldConfig = {
-  fieldName: string;
   nodeId: string | number;
+  nodeKey: string;
   nodeType?: 'workflow' | 'node';
+  fieldName?: string;
 };
 
 type TempAssociationFieldMetadata = {
-  fieldName: string;
   nodeId: string | number;
+  nodeKey: string;
   nodeType: 'workflow' | 'node';
 };
 
@@ -35,16 +37,24 @@ const normalizeTempAssociationConfigs = (configs: unknown): TempAssociationField
   if (!Array.isArray(configs)) return [];
   return configs
     .filter((config): config is TempAssociationFieldConfig => !!config && typeof config === 'object')
-    .map((config) => ({
-      fieldName: config.fieldName,
-      nodeId: config.nodeId,
-      nodeType: config.nodeType,
-    }))
+    .map((config) => {
+      const parsed =
+        !config.nodeKey && typeof config.fieldName === 'string'
+          ? config.fieldName.replace(TEMP_ASSOCIATION_PREFIX, '').split('_')
+          : [];
+      const parsedType = parsed[0] as 'workflow' | 'node' | undefined;
+      const parsedKey = parsed.length > 1 ? parsed.slice(1).join('_') : undefined;
+      return {
+        nodeId: config.nodeId,
+        nodeKey: config.nodeKey || parsedKey,
+        nodeType: config.nodeType || parsedType,
+      };
+    })
     .filter(
       (config): config is TempAssociationFieldMetadata =>
-        typeof config.fieldName === 'string' &&
-        config.fieldName.length > 0 &&
         config.nodeId !== undefined &&
+        typeof config.nodeKey === 'string' &&
+        config.nodeKey.length > 0 &&
         (config.nodeType === 'workflow' || config.nodeType === 'node'),
     )
     .slice(0, TEMP_ASSOCIATION_FIELDS_LIMIT);
@@ -102,6 +112,7 @@ async function appendTempAssociationFields(context: Context) {
   const tasksByNodeId = new Map<string | number, any[]>();
   const ccNodeConfigMap = new Map<string | number, any>();
   const ccNodeIdsToFetch = new Set<string | number>();
+  const workflowIds = new Set<number>();
 
   bodyData.forEach((task) => {
     const nodeId = task?.node?.id ?? task?.nodeId;
@@ -116,6 +127,10 @@ async function appendTempAssociationFields(context: Context) {
     }
     if (task.executionId) {
       executionIds.add(task.executionId);
+    }
+    const workflowId = task.workflowId ?? task.workflow?.id;
+    if (workflowId) {
+      workflowIds.add(workflowId);
     }
   });
 
@@ -238,6 +253,7 @@ async function appendTempAssociationFields(context: Context) {
     const workflow = task.workflow;
 
     configs.forEach((config) => {
+      const fieldName = buildTempAssociationFieldName(config.nodeType, config.nodeKey);
       let collectionConfig;
       let recordData;
 
@@ -252,30 +268,30 @@ async function appendTempAssociationFields(context: Context) {
       }
 
       if (!collectionConfig) {
-        setTaskFieldValue(task, config.fieldName, null);
+        setTaskFieldValue(task, fieldName, null);
         return;
       }
 
       const [dataSourceName, collectionName] = parseCollectionName(collectionConfig);
       if (!dataSourceName || !collectionName) {
-        setTaskFieldValue(task, config.fieldName, null);
+        setTaskFieldValue(task, fieldName, null);
         return;
       }
 
       const repoEntry = getRepository(dataSourceName, collectionName);
       if (!repoEntry) {
-        setTaskFieldValue(task, config.fieldName, null);
+        setTaskFieldValue(task, fieldName, null);
         return;
       }
 
       const recordKey = getRecordKey(recordData, repoEntry.collection?.model?.primaryKeyAttribute);
       if (recordKey == null) {
-        setTaskFieldValue(task, config.fieldName, recordData ? toPlainObject(recordData) : null);
+        setTaskFieldValue(task, fieldName, recordData ? toPlainObject(recordData) : null);
         return;
       }
 
       if (Array.isArray(repoEntry.filterTargetKey)) {
-        setTaskFieldValue(task, config.fieldName, recordData ? toPlainObject(recordData) : null);
+        setTaskFieldValue(task, fieldName, recordData ? toPlainObject(recordData) : null);
         return;
       }
 
@@ -287,7 +303,7 @@ async function appendTempAssociationFields(context: Context) {
         references: [],
       };
       group.recordKeys.add(recordKey);
-      group.references.push({ task, fieldName: config.fieldName, recordKey });
+      group.references.push({ task, fieldName, recordKey });
       pendingGroups.set(groupKey, group);
     });
   }

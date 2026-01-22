@@ -120,12 +120,6 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
                     })
                     .filter(Boolean),
                 },
-                {
-                  key: `${fPath}-children-associationField`,
-                  label: 'Display association fields',
-                  type: 'group',
-                  children: (displayAssociationFields(field.targetCollection, fPath, depth + 1) || []).filter(Boolean),
-                },
               ].filter((item) => item.children.length > 0);
             },
           };

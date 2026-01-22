@@ -33,6 +33,8 @@ hello@nocobase.com
 
 - `/api/workflowCcTasks:listMine` may include temporary association fields when a CC task card uses them.
 - Temporary association field configuration is stored in the CC node config under `tempAssociationFields`.
-- Field configuration entries contain `fieldName`, `nodeId`, and `nodeType`.
+- Field configuration entries contain `nodeId`, `nodeKey`, and `nodeType`.
+- Field names are derived at runtime from `nodeKey` (shared builder on client and server).
 - Fields are auto-synced when users add or remove fields in task cards.
 - Existing CC nodes populate `tempAssociationFields` after opening and saving task card settings.
+- Only upstream nodes that expose `useTempAssociationSource` are eligible for temporary association fields.

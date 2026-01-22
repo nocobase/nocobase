@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAntdToken } from 'antd-style';
 import { Card, ConfigProvider, Descriptions, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -116,6 +116,17 @@ function FlowContextProvider() {
   const [flowContext, setFlowContext] = useState<any>(null);
   const [record, setRecord] = useState<any>(useCollectionRecordData());
   const [node, setNode] = useState<any>(null);
+  const currentNode = flowContext?.nodes?.find((item) => item.id === node?.id) ?? node;
+  const availableUpstreams = useAvailableUpstreams(currentNode);
+  const tempAssociationSources = useMemo(() => {
+    if (!flowContext?.workflow) return [];
+    const trigger = workflowPlugin.triggers.get(flowContext.workflow.type);
+    const triggerSource = trigger?.useTempAssociationSource?.(flowContext.workflow.config, flowContext.workflow);
+    const nodeSources = availableUpstreams
+      .map((item) => workflowPlugin.instructions.get(item.type)?.useTempAssociationSource?.(item))
+      .filter(Boolean);
+    return triggerSource ? [triggerSource, ...nodeSources] : nodeSources;
+  }, [availableUpstreams, flowContext?.workflow, workflowPlugin]);
 
   useEffect(() => {
     if (!id) {
@@ -145,7 +156,7 @@ function FlowContextProvider() {
   const ccUid = node?.config?.ccUid;
   if (ccUid && node && flowContext) {
     const trigger = workflowPlugin.triggers.get(flowContext.workflow.type);
-    const upstreams = flowContext.nodes.filter((item) => item.id !== node.id);
+    const upstreams = availableUpstreams;
 
     return (
       <CollectionRecordProvider record={record}>
@@ -166,6 +177,15 @@ function FlowContextProvider() {
                     },
                   },
                 });
+                model.context.defineProperty('workflow', {
+                  value: flowContext.workflow,
+                });
+                model.context.defineProperty('nodes', {
+                  value: flowContext.nodes,
+                });
+                model.context.defineProperty('tempAssociationSources', {
+                  value: tempAssociationSources,
+                });
               }}
             />
           </NodeContext.Provider>
@@ -176,7 +196,7 @@ function FlowContextProvider() {
 
   // V1: 使用 RemoteSchemaComponent 渲染
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node?.id));
+  const upstreams = availableUpstreams;
   const nodeComponents = upstreams.reduce(
     (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
     {},

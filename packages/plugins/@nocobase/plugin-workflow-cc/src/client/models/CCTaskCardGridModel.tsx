@@ -12,7 +12,8 @@ import { DetailsGridModel } from '@nocobase/client';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import type { CCTaskTempAssociationFieldConfig } from './CCTaskCardDetailsItemModel';
-import { getWorkflowCcTaskAssociationMetadata, TEMP_ASSOCIATION_PREFIX } from './CCTaskCardDetailsItemModel';
+import { getEligibleTempAssociationSources, getWorkflowCcTaskAssociationMetadata } from './CCTaskCardDetailsItemModel';
+import { TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
 
 /**
  * 抄送任务卡片详情的字段网格
@@ -55,21 +56,24 @@ export class CCTaskCardGridModel extends DetailsGridModel {
       | undefined;
     if (typeof sync !== 'function') return;
 
-    const associationMetadata = getWorkflowCcTaskAssociationMetadata({
-      workflow: this.context.workflow,
-      nodes: this.context.nodes,
-    });
+    const shouldUseSources = typeof this.context.tempAssociationSources !== 'undefined';
+    const associationMetadata = shouldUseSources
+      ? getEligibleTempAssociationSources(this.context.tempAssociationSources || [])
+      : getWorkflowCcTaskAssociationMetadata({
+          workflow: this.context.workflow,
+          nodes: this.context.nodes,
+        });
     const metadataMap = new Map(associationMetadata.map((association) => [association.fieldName, association]));
     const selectedFields = this.getTempAssociationFieldNames();
     const configs = selectedFields
       .map((fieldName) => metadataMap.get(fieldName))
       .filter(Boolean)
       .map((association) => ({
-        fieldName: association.fieldName,
         nodeId: association.nodeId,
+        nodeKey: association.nodeKey,
         nodeType: association.nodeType,
       }))
-      .sort((a, b) => a.fieldName.localeCompare(b.fieldName));
+      .sort((a, b) => a.nodeKey.localeCompare(b.nodeKey));
     const snapshot = JSON.stringify(configs);
     if (snapshot === this.lastTempAssociationSnapshot) return;
     this.lastTempAssociationSnapshot = snapshot;
