@@ -536,9 +536,6 @@ CollectionBlockModel.registerFlow({
         if (filterManager) {
           filterManager.bindToTarget(ctx.model.uid);
         }
-        if (!ctx.model.resource) {
-          return;
-        }
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {

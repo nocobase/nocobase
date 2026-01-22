@@ -285,7 +285,7 @@ SubTableEditActionModel.registerFlow({
           target: ctx.layoutContentElement,
           inputArgs: {
             parentId: ctx.model.uid,
-            scene: 'editInFront',
+            scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,

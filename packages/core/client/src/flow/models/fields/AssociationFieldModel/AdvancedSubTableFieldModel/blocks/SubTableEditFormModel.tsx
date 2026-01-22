@@ -25,7 +25,7 @@ import { BlockSceneEnum } from '../../../../base';
 import { FormBlockModel, FormComponent } from '../../../../blocks/form/FormBlockModel';
 
 export class SubTableEditFormModel extends FormBlockModel {
-  static scene = BlockSceneEnum.editInFront;
+  static scene = BlockSceneEnum.subForm;
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
   private actionExtraToolbarItems = [
     {
