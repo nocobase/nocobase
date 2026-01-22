@@ -17,10 +17,6 @@ export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
     title: tExpr('Remove'),
   };
 
-  getAclActionName() {
-    return 'Remove';
-  }
-
   async onDispatchEventStart(eventName: string) {
     if (eventName === 'beforeRender') {
       this.onClick = (event) => {
