@@ -162,7 +162,7 @@ FlowRunJSContext.define({
 
 说明：CodeEditor 始终启用基于实际 `ctx` 的补全过滤（fail-open，不抛错）。
 
-## 5. 运行时 `info/meta` 与 `ctx.getInfos()`
+## 5. 运行时 `info/meta` 与 `ctx.getInfos()`（面向补全与大模型）
 
 除了通过 `FlowRunJSContext.define()`（静态）维护 `ctx` 文档外，你也可以在运行时通过 `FlowContext.defineProperty/defineMethod` 注入 **info/meta**，并通过 `ctx.getInfos()` 输出**静态可序列化**的上下文信息，供：
 
@@ -209,6 +209,20 @@ ctx.defineMethod('refreshTargets', async () => {
 type FlowContextInfos = {
   methods: Record<string, any>;
   properties: Record<string, any>;
+  envs: {
+    isInPopup: boolean;
+    blockModel: string;
+    flowModel: string;
+    currentPopupRecord?: 'ctx.popup.record';
+    record?: 'ctx.record';
+    resource?: {
+      collectionName?: any;
+      dataSourceKey?: any;
+      associationName?: any;
+      filterByTk?: any;
+      sourceId?: any;
+    };
+  };
 };
 ```
 

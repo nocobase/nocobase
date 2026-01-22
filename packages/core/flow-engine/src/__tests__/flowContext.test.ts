@@ -960,6 +960,33 @@ describe('FlowContext.getInfos', () => {
     expect(infos.properties.root?.properties?.a).toBeTruthy();
     expect(infos.properties.root?.properties?.b).toBeUndefined();
   });
+
+  it('should return envs (popup/model labels/resource/filterByTk)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', { value: { title: 'FlowModelLabel' } });
+    ctx.defineProperty('blockModel', { value: { title: 'BlockModelLabel' } });
+    ctx.defineProperty('popup', {
+      value: Promise.resolve({
+        uid: 'p1',
+        resource: {
+          collectionName: 'posts',
+          dataSourceKey: 'main',
+          associationName: 'comments',
+          filterByTk: 1,
+          sourceId: 2,
+        },
+      }),
+    });
+
+    const infos = await ctx.getInfos();
+    expect(infos.envs.isInPopup).toBe(true);
+    expect(infos.envs.flowModel).toBe('FlowModelLabel');
+    expect(infos.envs.blockModel).toBe('BlockModelLabel');
+    expect(infos.envs.currentPopupRecord).toBe('ctx.popup.record');
+    expect(infos.envs.record).toBe('ctx.record');
+    expect(infos.envs.resource?.collectionName).toBe('posts');
+    expect(infos.envs.resource?.filterByTk).toBe(1);
+  });
 });
 
 describe('FlowEngine context', () => {

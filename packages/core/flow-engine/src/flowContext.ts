@@ -287,9 +287,43 @@ export type FlowContextPropertyInfo = {
   properties?: Record<string, FlowContextPropertyInfo>;
 };
 
+export type FlowContextInfosEnvs = {
+  /**
+   * 是否在弹窗/抽屉等 popup 容器中
+   */
+  isInPopup: boolean;
+  /**
+   * 当前区块模型（一般可通过 ctx.blockModel 获取）的 FlowModel meta.label（通常为翻译后的标题）
+   */
+  blockModel: string;
+  /**
+   * 当前模型（通过 ctx.model 获取）的 FlowModel meta.label（通常为翻译后的标题）
+   */
+  flowModel: string;
+  /**
+   * 若在弹窗内，提供弹窗记录引用路径
+   */
+  currentPopupRecord?: 'ctx.popup.record';
+  /**
+   * 若存在 filterByTk，提供当前记录引用路径
+   */
+  record?: 'ctx.record';
+  /**
+   * 当前资源上下文信息（若可推断）
+   */
+  resource?: {
+    collectionName?: any;
+    dataSourceKey?: any;
+    associationName?: any;
+    filterByTk?: any;
+    sourceId?: any;
+  };
+};
+
 export type FlowContextInfos = {
   methods: Record<string, FlowContextMethodInfo>;
   properties: Record<string, FlowContextPropertyInfo>;
+  envs: FlowContextInfosEnvs;
 };
 
 export type FlowContextGetInfosOptions = {
@@ -610,6 +644,140 @@ export class FlowContext {
 
     const isPromiseLike = (v: any): v is Promise<any> =>
       !!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as any).then === 'function';
+
+    const toSerializableValue = (v: any): any => {
+      if (typeof v === 'undefined') return undefined;
+      if (v === null) return null;
+      const t = typeof v;
+      if (t === 'string' || t === 'number' || t === 'boolean') return v;
+      if (t === 'bigint') {
+        try {
+          return Number(v);
+        } catch (_) {
+          return String(v);
+        }
+      }
+      try {
+        return JSON.parse(JSON.stringify(v));
+      } catch (_) {
+        try {
+          return String(v);
+        } catch (_) {
+          return undefined;
+        }
+      }
+    };
+
+    const getModelLabelFromLike = (modelLike: any): string => {
+      if (!modelLike || typeof modelLike !== 'object') return '';
+      try {
+        const title = (modelLike as any).title;
+        if (typeof title === 'string' && title.trim()) return title;
+      } catch (_) {
+        // ignore
+      }
+      try {
+        const rawLabel =
+          (modelLike as any)?.constructor?.meta?.label ?? (modelLike as any)?.constructor?.['meta']?.label;
+        if (typeof rawLabel === 'string' && rawLabel.trim()) {
+          const translate = (modelLike as any).translate;
+          if (typeof translate === 'function') {
+            try {
+              const translated = translate(rawLabel);
+              if (typeof translated === 'string' && translated.trim()) return translated;
+            } catch (_) {
+              // ignore
+            }
+          }
+          return rawLabel;
+        }
+      } catch (_) {
+        // ignore
+      }
+      return '';
+    };
+
+    const buildEnvs = async (): Promise<FlowContextInfosEnvs> => {
+      let popupVal: any;
+      let isInPopup = false;
+      try {
+        const raw = (evalCtx as any).popup;
+        popupVal = isPromiseLike(raw) ? await raw : raw;
+        isInPopup = !!popupVal?.uid;
+      } catch (_) {
+        popupVal = undefined;
+        isInPopup = false;
+      }
+
+      const flowModelLabel = getModelLabelFromLike((evalCtx as any).model);
+      const blockModelLabel = getModelLabelFromLike((evalCtx as any).blockModel);
+
+      const pickResourceLike = (src: any): FlowContextInfosEnvs['resource'] | undefined => {
+        if (!src || typeof src !== 'object' || Array.isArray(src)) return undefined;
+        const out: any = {};
+        for (const k of ['collectionName', 'dataSourceKey', 'associationName', 'filterByTk', 'sourceId']) {
+          const v = toSerializableValue((src as any)[k]);
+          if (typeof v !== 'undefined') out[k] = v;
+        }
+        return Object.keys(out).length ? out : undefined;
+      };
+
+      // Prefer popup.resource when available; fallback to view.inputArgs / inputArgs
+      let resource = pickResourceLike(popupVal?.resource);
+      if (!resource) {
+        try {
+          const view = (evalCtx as any).view;
+          const inputArgs = view?.inputArgs ?? (evalCtx as any).inputArgs;
+          resource = pickResourceLike(inputArgs);
+        } catch (_) {
+          resource = undefined;
+        }
+      }
+      // Fallback: derive from ctx.resource (if available)
+      if (!resource) {
+        try {
+          const r = (evalCtx as any).resource;
+          if (r && typeof r === 'object') {
+            const out: any = {};
+            if (typeof (r as any).getDataSourceKey === 'function') {
+              out.dataSourceKey = toSerializableValue((r as any).getDataSourceKey());
+            }
+            if (typeof (r as any).getFilterByTk === 'function') {
+              out.filterByTk = toSerializableValue((r as any).getFilterByTk());
+            }
+            if (typeof (r as any).getSourceId === 'function') {
+              out.sourceId = toSerializableValue((r as any).getSourceId());
+            }
+            if (typeof (r as any).getResourceName === 'function') {
+              const rn = (r as any).getResourceName();
+              if (typeof rn === 'string' && rn.trim()) {
+                const [collectionName, ...rest] = rn.split('.').filter(Boolean);
+                if (collectionName) out.collectionName = collectionName;
+                if (rest.length) out.associationName = rest.join('.');
+              }
+            }
+            resource = pickResourceLike(out);
+          }
+        } catch (_) {
+          resource = undefined;
+        }
+      }
+
+      const filterByTk = (resource as any)?.filterByTk;
+      const hasFilterByTk = !(typeof filterByTk === 'undefined' || filterByTk === null || filterByTk === '');
+
+      const envs: FlowContextInfosEnvs = {
+        isInPopup,
+        blockModel: blockModelLabel || '',
+        flowModel: flowModelLabel || '',
+      };
+
+      if (isInPopup) envs.currentPopupRecord = 'ctx.popup.record';
+      if (hasFilterByTk) envs.record = 'ctx.record';
+      if (resource) envs.resource = resource;
+
+      return envs;
+    };
 
     const normalizePath = (raw: string): string | undefined => {
       if (typeof raw !== 'string') return undefined;
@@ -1052,6 +1220,7 @@ export class FlowContext {
 
     // path 剪裁：每个 path 独立返回一个根节点
     if (!hasRootPath && paths.length) {
+      const envs = await buildEnvs();
       const methodsOut: Record<string, FlowContextMethodInfo> = {};
       const propertiesOut: Record<string, FlowContextPropertyInfo> = {};
 
@@ -1105,10 +1274,11 @@ export class FlowContext {
         if (pi) propertiesOut[p] = pi;
       }
 
-      return { methods: methodsOut, properties: propertiesOut };
+      return { methods: methodsOut, properties: propertiesOut, envs };
     }
 
     // 全量输出：合并 doc + 运行时 defineProperty/defineMethod
+    const envs = await buildEnvs();
     const propKeys = new Set<string>();
     const methodKeys = new Set<string>();
     for (const k of Object.keys(docProps)) propKeys.add(k);
@@ -1159,7 +1329,7 @@ export class FlowContext {
       if (mi) methodsOut[key] = mi;
     }
 
-    return { methods: methodsOut, properties: propertiesOut };
+    return { methods: methodsOut, properties: propertiesOut, envs };
   }
 
   #createChildNodes(

@@ -55,13 +55,13 @@ FlowEngineContext（全局上下文）
 
 ---
 
-## 上下文信息：`ctx.getInfos()`
+## 🤖 面向大模型的上下文信息：`ctx.getInfos()`
 
 在某些场景下（例如 JS*Model 的 RunJS 代码编辑、AI coding），需要让“调用方”在不执行代码的前提下了解：当前 `ctx` 下有哪些属性/方法、它们的用途、参数、示例、以及文档链接。
 
 为此，`FlowContext` 提供了异步 API：`await ctx.getInfos(options?)`，用于返回**静态可序列化**的上下文信息（不包含函数）。
 
-你可以通过以下方式为上下文补充的信息：
+你可以通过以下方式为上下文补充“面向补全/大模型”的信息：
 
 - `ctx.defineMethod(name, fn, info?)`：为方法补充描述、参数、示例、补全插入、文档链接等；
 - `ctx.defineProperty(key, { meta?, info? })`：其中 `meta` 面向变量选择器 UI（`getPropertyMetaTree`），`info` 面向 `getInfos()`/补全/大模型（不影响变量选择器 UI）。
@@ -72,6 +72,13 @@ FlowEngineContext（全局上下文）
 
 - `methods`: `{ [name]: MethodInfo }`
 - `properties`: `{ [name]: PropertyInfo }`
+- `envs`: `{ isInPopup, blockModel, flowModel, record?, currentPopupRecord?, resource? }`
+  - `isInPopup`: 是否在弹窗/抽屉等 popup 容器中
+  - `blockModel`: 当前区块模型（通常可通过 `ctx.blockModel` 获取）的 label（若不可用则为空字符串）
+  - `flowModel`: 当前模型（`ctx.model`）的 label（若不可用则为空字符串）
+  - `currentPopupRecord`: 若在 popup 内，值为 `'ctx.popup.record'`
+  - `record`: 若存在 `filterByTk`，值为 `'ctx.record'`
+  - `resource`: 当前资源上下文（如可推断）：`collectionName/dataSourceKey/associationName/filterByTk/sourceId`
 
 其中 `MethodInfo/PropertyInfo` 至少可包含（均为可选）：
 
@@ -79,6 +86,7 @@ FlowEngineContext（全局上下文）
 - `completion.insertText`（用于编辑器补全插入）
 - `ref`（支持 `string | { url: string; title?: string }`）
 - `params` / `returns`（JSDoc-like）
+- `disabled` / `disabledReason`（已计算后的静态值）
 
 ### 常用参数
 
