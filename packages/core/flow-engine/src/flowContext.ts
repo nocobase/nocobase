@@ -211,7 +211,7 @@ export interface PropertyOptions {
   observable?: boolean; // 是否为 observable 属性
   meta?: PropertyMetaOrFactory; // 支持静态、函数和异步函数（工厂函数可带 title/sort）
   /**
-   * 上下文信息
+   * 面向大模型/编辑器的上下文信息（不影响变量选择器 UI）。
    * - 若未提供 info 但提供了 meta，getInfos() 可基于 meta 推断最小结构性信息
    * - 若同时提供，getInfos() 将深合并且同名字段以 info 优先
    */
@@ -287,42 +287,52 @@ export type FlowContextPropertyInfo = {
   properties?: Record<string, FlowContextPropertyInfo>;
 };
 
+export type FlowContextApiInfo = {
+  title?: string;
+  type?: string;
+  interface?: string;
+  description?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  disabled?: boolean;
+  disabledReason?: string;
+  properties?: Record<string, FlowContextApiInfo>;
+};
+
+export type FlowContextInfosEnvNode = {
+  /**
+   * 说明（面向人/大模型）。建议为一句话。
+   */
+  description?: string;
+  /**
+   * 可用于 `await ctx.getVar(getVar)` 的表达式字符串，推荐以 `ctx.` 开头。
+   * 例如：'ctx.popup'、'ctx.resource.collectionName'
+   */
+  getVar?: string;
+  /**
+   * 已解析/可序列化的静态值（用于 prompt 直接使用）。
+   * 注意：应保持小体积，避免放入 record 等大对象。
+   */
+  value?: JSONValue;
+  /**
+   * 子节点（用于表达 popup.resource.xxx 等层级结构）。
+   */
+  properties?: Record<string, FlowContextInfosEnvNode>;
+};
+
 export type FlowContextInfosEnvs = {
-  /**
-   * 是否在弹窗/抽屉等 popup 容器中
-   */
-  isInPopup: boolean;
-  /**
-   * 当前区块模型（一般可通过 ctx.blockModel 获取）的 FlowModel meta.label（通常为翻译后的标题）
-   */
-  blockModel: string;
-  /**
-   * 当前模型（通过 ctx.model 获取）的 FlowModel meta.label（通常为翻译后的标题）
-   */
-  flowModel: string;
-  /**
-   * 若在弹窗内，提供弹窗记录引用路径
-   */
-  currentPopupRecord?: 'ctx.popup.record';
-  /**
-   * 若存在 filterByTk，提供当前记录引用路径
-   */
-  record?: 'ctx.record';
-  /**
-   * 当前资源上下文信息（若可推断）
-   */
-  resource?: {
-    collectionName?: any;
-    dataSourceKey?: any;
-    associationName?: any;
-    filterByTk?: any;
-    sourceId?: any;
-  };
+  popup?: FlowContextInfosEnvNode;
+  block?: FlowContextInfosEnvNode;
+  flowModel?: FlowContextInfosEnvNode;
+  resource?: FlowContextInfosEnvNode;
+  record?: FlowContextInfosEnvNode;
 };
 
 export type FlowContextInfos = {
-  methods: Record<string, FlowContextMethodInfo>;
-  properties: Record<string, FlowContextPropertyInfo>;
+  apis: Record<string, FlowContextApiInfo>;
   envs: FlowContextInfosEnvs;
 };
 
@@ -645,136 +655,488 @@ export class FlowContext {
     const isPromiseLike = (v: any): v is Promise<any> =>
       !!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as any).then === 'function';
 
-    const toSerializableValue = (v: any): any => {
-      if (typeof v === 'undefined') return undefined;
-      if (v === null) return null;
-      const t = typeof v;
-      if (t === 'string' || t === 'number' || t === 'boolean') return v;
-      if (t === 'bigint') {
-        try {
-          return Number(v);
-        } catch (_) {
-          return String(v);
+    const buildEnvs = async (): Promise<FlowContextInfosEnvs> => {
+      const envs: FlowContextInfosEnvs = {};
+
+      const firstDefined = <T>(...candidates: Array<T | undefined>): T | undefined => {
+        for (const v of candidates) {
+          if (typeof v !== 'undefined') return v;
         }
-      }
-      try {
-        return JSON.parse(JSON.stringify(v));
-      } catch (_) {
+        return undefined;
+      };
+
+      const omitUndefined = (obj: Record<string, any>): Record<string, any> => {
+        const out: Record<string, any> = {};
+        for (const [k, v] of Object.entries(obj || {})) {
+          if (typeof v !== 'undefined') out[k] = v;
+        }
+        return out;
+      };
+
+      const getMaybe = <T = any>(fn: () => T): T | undefined => {
         try {
-          return String(v);
+          return fn();
         } catch (_) {
           return undefined;
         }
-      }
-    };
+      };
 
-    const getModelLabelFromLike = (modelLike: any): string => {
-      if (!modelLike || typeof modelLike !== 'object') return '';
-      try {
-        const title = (modelLike as any).title;
-        if (typeof title === 'string' && title.trim()) return title;
-      } catch (_) {
-        // ignore
-      }
-      try {
-        const rawLabel =
-          (modelLike as any)?.constructor?.meta?.label ?? (modelLike as any)?.constructor?.['meta']?.label;
-        if (typeof rawLabel === 'string' && rawLabel.trim()) {
-          const translate = (modelLike as any).translate;
-          if (typeof translate === 'function') {
-            try {
-              const translated = translate(rawLabel);
-              if (typeof translated === 'string' && translated.trim()) return translated;
-            } catch (_) {
-              // ignore
-            }
-          }
-          return rawLabel;
+      const hasSnapshotValue = (v: any): boolean => {
+        if (typeof v === 'undefined' || v === null) return false;
+        if (typeof v === 'string') return v.trim().length > 0;
+        if (Array.isArray(v)) return v.length > 0;
+        return true;
+      };
+
+      const safeCall = <T = any>(fn: () => T): T | undefined => {
+        try {
+          return fn();
+        } catch (_) {
+          return undefined;
         }
-      } catch (_) {
-        // ignore
-      }
-      return '';
-    };
+      };
 
-    const buildEnvs = async (): Promise<FlowContextInfosEnvs> => {
-      let popupVal: any;
-      let isInPopup = false;
-      try {
-        const raw = (evalCtx as any).popup;
-        popupVal = isPromiseLike(raw) ? await raw : raw;
-        isInPopup = !!popupVal?.uid;
-      } catch (_) {
-        popupVal = undefined;
-        isInPopup = false;
-      }
-
-      const flowModelLabel = getModelLabelFromLike((evalCtx as any).model);
-      const blockModelLabel = getModelLabelFromLike((evalCtx as any).blockModel);
-
-      const pickResourceLike = (src: any): FlowContextInfosEnvs['resource'] | undefined => {
-        if (!src || typeof src !== 'object' || Array.isArray(src)) return undefined;
+      const getResourceSnapshot = (
+        res: any,
+      ): Partial<{
+        dataSourceKey: any;
+        collectionName: any;
+        associationName: any;
+        filterByTk: any;
+        sourceId: any;
+      }> => {
         const out: any = {};
-        for (const k of ['collectionName', 'dataSourceKey', 'associationName', 'filterByTk', 'sourceId']) {
-          const v = toSerializableValue((src as any)[k]);
-          if (typeof v !== 'undefined') out[k] = v;
-        }
-        return Object.keys(out).length ? out : undefined;
-      };
+        if (!res) return out;
 
-      // Prefer popup.resource when available; fallback to view.inputArgs / inputArgs
-      let resource = pickResourceLike(popupVal?.resource);
-      if (!resource) {
-        try {
-          const view = (evalCtx as any).view;
-          const inputArgs = view?.inputArgs ?? (evalCtx as any).inputArgs;
-          resource = pickResourceLike(inputArgs);
-        } catch (_) {
-          resource = undefined;
+        // Direct fields (popup/view inputArgs style)
+        for (const k of ['dataSourceKey', 'collectionName', 'associationName', 'filterByTk', 'sourceId']) {
+          const v = (res as any)?.[k];
+          if (hasSnapshotValue(v)) out[k] = v;
         }
-      }
-      // Fallback: derive from ctx.resource (if available)
-      if (!resource) {
-        try {
-          const r = (evalCtx as any).resource;
-          if (r && typeof r === 'object') {
-            const out: any = {};
-            if (typeof (r as any).getDataSourceKey === 'function') {
-              out.dataSourceKey = toSerializableValue((r as any).getDataSourceKey());
+
+        // FlowResource-like methods (BaseRecordResource/SQLResource)
+        if (!('dataSourceKey' in out)) {
+          const v = safeCall(() => (res as any).getDataSourceKey?.());
+          if (hasSnapshotValue(v)) out.dataSourceKey = v;
+        }
+        if (!('filterByTk' in out)) {
+          const v = safeCall(() => (res as any).getFilterByTk?.());
+          if (hasSnapshotValue(v)) out.filterByTk = v;
+        }
+        if (!('filterByTk' in out)) {
+          const v = safeCall(() => (res as any).getMeta?.('currentFilterByTk'));
+          if (hasSnapshotValue(v)) out.filterByTk = v;
+        }
+        if (!('sourceId' in out)) {
+          const v = safeCall(() => (res as any).getSourceId?.());
+          if (hasSnapshotValue(v)) out.sourceId = v;
+        }
+
+        // Infer collection/association from resourceName when not provided
+        if (!('collectionName' in out) || !('associationName' in out)) {
+          const rn = safeCall(() => (res as any).getResourceName?.());
+          const resourceName = typeof rn === 'string' ? rn.trim() : '';
+          if (resourceName) {
+            const parts = resourceName
+              .split('.')
+              .map((x) => x.trim())
+              .filter(Boolean);
+            if (parts.length === 1) {
+              if (!('collectionName' in out)) out.collectionName = parts[0];
+            } else if (parts.length >= 2) {
+              if (!('collectionName' in out)) out.collectionName = parts[0];
+              if (!('associationName' in out)) out.associationName = parts.slice(1).join('.');
             }
-            if (typeof (r as any).getFilterByTk === 'function') {
-              out.filterByTk = toSerializableValue((r as any).getFilterByTk());
-            }
-            if (typeof (r as any).getSourceId === 'function') {
-              out.sourceId = toSerializableValue((r as any).getSourceId());
-            }
-            if (typeof (r as any).getResourceName === 'function') {
-              const rn = (r as any).getResourceName();
-              if (typeof rn === 'string' && rn.trim()) {
-                const [collectionName, ...rest] = rn.split('.').filter(Boolean);
-                if (collectionName) out.collectionName = collectionName;
-                if (rest.length) out.associationName = rest.join('.');
-              }
-            }
-            resource = pickResourceLike(out);
           }
-        } catch (_) {
-          resource = undefined;
         }
-      }
 
-      const filterByTk = (resource as any)?.filterByTk;
-      const hasFilterByTk = !(typeof filterByTk === 'undefined' || filterByTk === null || filterByTk === '');
-
-      const envs: FlowContextInfosEnvs = {
-        isInPopup,
-        blockModel: blockModelLabel || '',
-        flowModel: flowModelLabel || '',
+        return out;
       };
 
-      if (isInPopup) envs.currentPopupRecord = 'ctx.popup.record';
-      if (hasFilterByTk) envs.record = 'ctx.record';
-      if (resource) envs.resource = resource;
+      // Resolve popup (may be Promise)
+      const popup = await (async () => {
+        try {
+          const raw = (evalCtx as any).popup;
+          return isPromiseLike(raw) ? await raw : raw;
+        } catch (_) {
+          return undefined;
+        }
+      })();
+
+      const model = getMaybe(() => (evalCtx as any).model);
+      const blockModel = getMaybe(() => (evalCtx as any).blockModel);
+      const inputArgs = getMaybe(() => (evalCtx as any).view?.inputArgs);
+      const ctxResource = getMaybe(() => (evalCtx as any).resource);
+
+      const popupResource = popup?.resource;
+      const popupResourceSnap = getResourceSnapshot(popupResource);
+
+      const blockOwner = blockModel;
+      const blockOwnerExpr = blockModel ? 'ctx.blockModel' : undefined;
+      const blockResourceBaseExpr = blockOwnerExpr ? `${blockOwnerExpr}.resource` : undefined;
+      const blockResource = blockOwner?.resource;
+      const blockResourceSnap = getResourceSnapshot(blockResource);
+      const inputArgsSnap = getResourceSnapshot(inputArgs);
+      const ctxResourceSnap = getResourceSnapshot(ctxResource);
+
+      // Resource snapshot (for prompt)
+      const pickWithGetVar = <T>(
+        pairs: Array<{
+          value: T | undefined;
+          getVar: string;
+        }>,
+      ): { value: T; getVar: string } | undefined => {
+        for (const p of pairs) {
+          if (hasSnapshotValue(p.value)) return { value: p.value as T, getVar: p.getVar };
+        }
+        return undefined;
+      };
+
+      const hasAnyResourceValuesIn = (snap: any): boolean =>
+        hasSnapshotValue(snap?.collectionName) ||
+        hasSnapshotValue(snap?.dataSourceKey) ||
+        hasSnapshotValue(snap?.associationName);
+
+      const resourceBaseExpr: string | undefined = hasAnyResourceValuesIn(popupResourceSnap)
+        ? 'ctx.popup.resource'
+        : hasAnyResourceValuesIn(blockResourceSnap)
+          ? blockResourceBaseExpr
+          : hasAnyResourceValuesIn(inputArgsSnap)
+            ? 'ctx.view.inputArgs'
+            : hasAnyResourceValuesIn(ctxResourceSnap)
+              ? 'ctx.resource'
+              : undefined;
+
+      const collectionNamePick = pickWithGetVar([
+        { value: popupResourceSnap?.collectionName, getVar: 'ctx.popup.resource.collectionName' },
+        { value: blockResourceSnap?.collectionName, getVar: `${blockResourceBaseExpr}.collectionName` },
+        { value: inputArgsSnap?.collectionName, getVar: 'ctx.view.inputArgs.collectionName' },
+        { value: ctxResourceSnap?.collectionName, getVar: 'ctx.resource.collectionName' },
+      ]);
+      const dataSourceKeyPick = pickWithGetVar([
+        { value: popupResourceSnap?.dataSourceKey, getVar: 'ctx.popup.resource.dataSourceKey' },
+        { value: blockResourceSnap?.dataSourceKey, getVar: `${blockResourceBaseExpr}.dataSourceKey` },
+        { value: inputArgsSnap?.dataSourceKey, getVar: 'ctx.view.inputArgs.dataSourceKey' },
+        { value: ctxResourceSnap?.dataSourceKey, getVar: 'ctx.resource.dataSourceKey' },
+      ]);
+      const associationNamePick = pickWithGetVar([
+        { value: popupResourceSnap?.associationName, getVar: 'ctx.popup.resource.associationName' },
+        { value: blockResourceSnap?.associationName, getVar: `${blockResourceBaseExpr}.associationName` },
+        { value: inputArgsSnap?.associationName, getVar: 'ctx.view.inputArgs.associationName' },
+        { value: ctxResourceSnap?.associationName, getVar: 'ctx.resource.associationName' },
+      ]);
+      const filterByTkPick = pickWithGetVar([
+        { value: popupResourceSnap?.filterByTk, getVar: 'ctx.popup.resource.filterByTk' },
+        { value: blockResourceSnap?.filterByTk, getVar: `${blockResourceBaseExpr}.filterByTk` },
+        { value: inputArgsSnap?.filterByTk, getVar: 'ctx.view.inputArgs.filterByTk' },
+        { value: ctxResourceSnap?.filterByTk, getVar: 'ctx.resource.filterByTk' },
+      ]);
+      const sourceIdPick = pickWithGetVar([
+        { value: popupResourceSnap?.sourceId, getVar: 'ctx.popup.resource.sourceId' },
+        { value: blockResourceSnap?.sourceId, getVar: `${blockResourceBaseExpr}.sourceId` },
+        { value: inputArgsSnap?.sourceId, getVar: 'ctx.view.inputArgs.sourceId' },
+        { value: ctxResourceSnap?.sourceId, getVar: 'ctx.resource.sourceId' },
+      ]);
+
+      const resourceProps: Record<string, FlowContextInfosEnvNode> = {};
+      let hasResourceValues = false;
+      if (hasSnapshotValue(collectionNamePick?.value)) {
+        resourceProps.collectionName = {
+          description: 'Collection name',
+          getVar: collectionNamePick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.collectionName` : undefined),
+          value: collectionNamePick?.value as any,
+        };
+        hasResourceValues = true;
+      }
+      if (hasSnapshotValue(dataSourceKeyPick?.value)) {
+        resourceProps.dataSourceKey = {
+          description: 'Data source key',
+          getVar: dataSourceKeyPick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.dataSourceKey` : undefined),
+          value: dataSourceKeyPick?.value as any,
+        };
+        hasResourceValues = true;
+      }
+      if (hasSnapshotValue(associationNamePick?.value)) {
+        resourceProps.associationName = {
+          description: 'Association name',
+          getVar: associationNamePick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.associationName` : undefined),
+          value: associationNamePick?.value as any,
+        };
+        hasResourceValues = true;
+      }
+
+      // Only include envs.resource when snapshot contains at least one resource value.
+      // Optional fields like filterByTk/sourceId are included (without value) only when envs.resource exists.
+      if (hasResourceValues) {
+        if (hasSnapshotValue(filterByTkPick?.value)) {
+          resourceProps.filterByTk = {
+            description: 'Record filterByTk',
+            getVar: filterByTkPick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.filterByTk` : undefined),
+          };
+        }
+        if (hasSnapshotValue(sourceIdPick?.value)) {
+          resourceProps.sourceId = {
+            description: 'Source record ID (sourceId)',
+            getVar: sourceIdPick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.sourceId` : undefined),
+          };
+        }
+
+        envs.resource = {
+          description: 'Resource information',
+          getVar: resourceBaseExpr,
+          properties: resourceProps,
+        };
+      }
+
+      // Record (only when filterByTk is available)
+      if (hasSnapshotValue(filterByTkPick?.value)) {
+        envs.record = {
+          description: 'Current record',
+          getVar: 'ctx.record',
+        };
+      }
+
+      const pickLabel = (obj: any): string | undefined => {
+        try {
+          const t = obj?.title;
+          if (typeof t === 'string' && t.trim()) return t;
+        } catch (_) {
+          // ignore
+        }
+        try {
+          const label = obj?.constructor?.meta?.label;
+          if (typeof label === 'string' && label.trim()) return label;
+        } catch (_) {
+          // ignore
+        }
+        return undefined;
+      };
+
+      // FlowModel (when ctx.model exists)
+      if (model) {
+        const modelLabel = pickLabel(model);
+        const modelResource = model?.resource;
+        const modelResourceSnap = getResourceSnapshot(modelResource);
+        const modelResourceProps: Record<string, FlowContextInfosEnvNode> = {};
+        let hasModelResourceValues = false;
+        if (hasSnapshotValue(modelResourceSnap?.collectionName)) {
+          modelResourceProps.collectionName = {
+            description: 'Collection name',
+            getVar: 'ctx.model.resource.collectionName',
+            value: modelResourceSnap.collectionName as any,
+          };
+          hasModelResourceValues = true;
+        }
+        if (hasSnapshotValue(modelResourceSnap?.dataSourceKey)) {
+          modelResourceProps.dataSourceKey = {
+            description: 'Data source key',
+            getVar: 'ctx.model.resource.dataSourceKey',
+            value: modelResourceSnap.dataSourceKey as any,
+          };
+          hasModelResourceValues = true;
+        }
+        if (hasSnapshotValue(modelResourceSnap?.associationName)) {
+          modelResourceProps.associationName = {
+            description: 'Association name',
+            getVar: 'ctx.model.resource.associationName',
+            value: modelResourceSnap.associationName as any,
+          };
+          hasModelResourceValues = true;
+        }
+
+        envs.flowModel = {
+          description: 'Current FlowModel information',
+          getVar: 'ctx.model',
+          properties: {
+            ...(hasSnapshotValue(modelLabel)
+              ? { label: { description: 'Flow model label', value: modelLabel as any } }
+              : {}),
+            ...(hasSnapshotValue((model as any)?.uid)
+              ? { uid: { description: 'Flow model uid', getVar: 'ctx.model.uid', value: (model as any)?.uid as any } }
+              : {}),
+            ...(hasModelResourceValues
+              ? {
+                  resource: {
+                    description: 'Resource information',
+                    getVar: 'ctx.model.resource',
+                    properties: {
+                      ...modelResourceProps,
+                      ...(hasSnapshotValue(modelResourceSnap?.filterByTk)
+                        ? {
+                            filterByTk: {
+                              description: 'Record filterByTk',
+                              getVar: 'ctx.model.resource.filterByTk',
+                            },
+                          }
+                        : {}),
+                      ...(hasSnapshotValue(modelResourceSnap?.sourceId)
+                        ? {
+                            sourceId: {
+                              description: 'Source record ID (sourceId)',
+                              getVar: 'ctx.model.resource.sourceId',
+                            },
+                          }
+                        : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+        };
+      }
+
+      // Block (when ctx.blockModel exists)
+      if (blockOwner && blockOwnerExpr) {
+        const blockResourceProps: Record<string, FlowContextInfosEnvNode> = {};
+        let hasBlockResourceValues = false;
+        if (hasSnapshotValue(blockResourceSnap?.collectionName)) {
+          blockResourceProps.collectionName = {
+            description: 'Collection name',
+            getVar: `${blockResourceBaseExpr}.collectionName`,
+            value: blockResourceSnap.collectionName as any,
+          };
+          hasBlockResourceValues = true;
+        }
+        if (hasSnapshotValue(blockResourceSnap?.dataSourceKey)) {
+          blockResourceProps.dataSourceKey = {
+            description: 'Data source key',
+            getVar: `${blockResourceBaseExpr}.dataSourceKey`,
+            value: blockResourceSnap.dataSourceKey as any,
+          };
+          hasBlockResourceValues = true;
+        }
+        if (hasSnapshotValue(blockResourceSnap?.associationName)) {
+          blockResourceProps.associationName = {
+            description: 'Association name',
+            getVar: `${blockResourceBaseExpr}.associationName`,
+            value: blockResourceSnap.associationName as any,
+          };
+          hasBlockResourceValues = true;
+        }
+
+        envs.block = {
+          description: 'Current block information',
+          getVar: 'ctx.blockModel',
+          properties: {
+            ...(hasSnapshotValue(pickLabel(blockOwner))
+              ? { label: { description: 'Block label', value: pickLabel(blockOwner) as any } }
+              : {}),
+            ...(hasSnapshotValue((blockOwner as any)?.uid)
+              ? {
+                  uid: {
+                    description: 'Block uid',
+                    getVar: 'ctx.blockModel.uid',
+                    value: (blockOwner as any)?.uid as any,
+                  },
+                }
+              : {}),
+            ...(hasBlockResourceValues
+              ? {
+                  resource: {
+                    description: 'Resource information',
+                    getVar: 'ctx.blockModel.resource',
+                    properties: {
+                      ...blockResourceProps,
+                      ...(hasSnapshotValue(blockResourceSnap?.filterByTk)
+                        ? {
+                            filterByTk: {
+                              description: 'Record filterByTk',
+                              getVar: 'ctx.blockModel.resource.filterByTk',
+                            },
+                          }
+                        : {}),
+                      ...(hasSnapshotValue(blockResourceSnap?.sourceId)
+                        ? {
+                            sourceId: {
+                              description: 'Source record ID (sourceId)',
+                              getVar: 'ctx.blockModel.resource.sourceId',
+                            },
+                          }
+                        : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+        };
+      }
+
+      // Popup (only when popup exists)
+      if (popup?.uid) {
+        const popupResourceProps: Record<string, FlowContextInfosEnvNode> = {};
+        let hasPopupResourceValues = false;
+        if (hasSnapshotValue(popupResourceSnap?.collectionName)) {
+          popupResourceProps.collectionName = {
+            description: 'Collection name',
+            getVar: 'ctx.popup.resource.collectionName',
+            value: popupResourceSnap.collectionName as any,
+          };
+          hasPopupResourceValues = true;
+        }
+        if (hasSnapshotValue(popupResourceSnap?.dataSourceKey)) {
+          popupResourceProps.dataSourceKey = {
+            description: 'Data source key',
+            getVar: 'ctx.popup.resource.dataSourceKey',
+            value: popupResourceSnap.dataSourceKey as any,
+          };
+          hasPopupResourceValues = true;
+        }
+        if (hasSnapshotValue(popupResourceSnap?.associationName)) {
+          popupResourceProps.associationName = {
+            description: 'Association name',
+            getVar: 'ctx.popup.resource.associationName',
+            value: popupResourceSnap.associationName as any,
+          };
+          hasPopupResourceValues = true;
+        }
+
+        envs.popup = {
+          description: 'Current popup information',
+          getVar: 'ctx.popup',
+          properties: {
+            uid: { description: 'Popup uid', getVar: 'ctx.popup.uid', value: popup.uid as any },
+            record: {
+              description: 'Current popup record (object).',
+              getVar: 'ctx.popup.record',
+            },
+            sourceRecord: {
+              description: 'Current popup sourceRecord (object).',
+              getVar: 'ctx.popup.sourceRecord',
+            },
+            parent: {
+              description: 'Parent popup info (object).',
+              getVar: 'ctx.popup.parent',
+            },
+            ...(hasPopupResourceValues
+              ? {
+                  resource: {
+                    description: 'Resource information',
+                    getVar: 'ctx.popup.resource',
+                    properties: {
+                      ...popupResourceProps,
+                      ...(hasSnapshotValue(popupResourceSnap?.filterByTk)
+                        ? {
+                            filterByTk: {
+                              description: 'Record filterByTk',
+                              getVar: 'ctx.popup.resource.filterByTk',
+                            },
+                          }
+                        : {}),
+                      ...(hasSnapshotValue(popupResourceSnap?.sourceId)
+                        ? {
+                            sourceId: {
+                              description: 'Source record ID (sourceId)',
+                              getVar: 'ctx.popup.resource.sourceId',
+                            },
+                          }
+                        : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+        };
+      }
 
       return envs;
     };
@@ -931,11 +1293,11 @@ export class FlowContext {
       return false;
     };
 
-    const pickMethodInfo = (obj: any): Partial<FlowContextMethodInfo> => {
+    const pickMethodInfo = (obj: any): Partial<FlowContextApiInfo> => {
       const src = toDocObject(obj);
       if (!src) return {};
       const out: any = {};
-      for (const k of ['description', 'detail', 'examples', 'completion', 'ref', 'params', 'returns']) {
+      for (const k of ['description', 'examples', 'completion', 'ref', 'params', 'returns']) {
         const v = (src as any)[k];
         if (typeof v !== 'undefined') out[k] = v;
       }
@@ -945,7 +1307,7 @@ export class FlowContext {
       return out;
     };
 
-    const pickPropertyInfo = (obj: any): Partial<FlowContextPropertyInfo> => {
+    const pickPropertyInfo = (obj: any): Partial<FlowContextApiInfo> => {
       const src = toDocObject(obj);
       if (!src) return {};
       const out: any = {};
@@ -954,7 +1316,6 @@ export class FlowContext {
         'type',
         'interface',
         'description',
-        'detail',
         'examples',
         'completion',
         'ref',
@@ -1009,7 +1370,7 @@ export class FlowContext {
       return walk(this);
     };
 
-    const buildMethodInfo = async (name: string): Promise<FlowContextMethodInfo | undefined> => {
+    const buildMethodInfo = async (name: string): Promise<FlowContextApiInfo | undefined> => {
       if (isPrivateKey(name)) return undefined;
       const docNode = docMethods[name];
       const info = getMethodInfoFromChain(name);
@@ -1028,12 +1389,14 @@ export class FlowContext {
       const disabled = typeof infoDisabled !== 'undefined' ? infoDisabled : docDisabled;
       const disabledReason = typeof infoDisabledReason !== 'undefined' ? infoDisabledReason : docDisabledReason;
 
-      let out: FlowContextMethodInfo = {};
+      let out: FlowContextApiInfo = {};
       out = { ...out, ...pickMethodInfo(docObj) };
       out = { ...out, ...pickMethodInfo(info) };
       if (typeof disabled !== 'undefined') out.disabled = !!disabled;
       if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
       if (!Object.keys(out).length) return undefined;
+      // Mark as callable for tooling (e.g. code-editor completion).
+      out.type = 'function';
       return out;
     };
 
@@ -1044,7 +1407,7 @@ export class FlowContext {
       depth: number;
       pathFromRoot: string[];
       hiddenPrefixes: Set<string>;
-    }): Promise<FlowContextPropertyInfo | undefined> => {
+    }): Promise<FlowContextApiInfo | undefined> => {
       const { docNode, metaNode, infoNode, depth, pathFromRoot, hiddenPrefixes } = args;
       const relPath = pathFromRoot.join('.');
       if (isHiddenByPrefixes(relPath, hiddenPrefixes)) return undefined;
@@ -1090,7 +1453,7 @@ export class FlowContext {
             ? metaDisabledReason
             : docDisabledReason;
 
-      let out: FlowContextPropertyInfo = {};
+      let out: FlowContextApiInfo = {};
       out = { ...out, ...pickPropertyInfo(docObj) };
       out = { ...out, ...pickPropertyInfo(metaNode) };
       out = { ...out, ...pickPropertyInfo(infoObj) };
@@ -1141,7 +1504,7 @@ export class FlowContext {
       if (infoChildren) for (const k of Object.keys(infoChildren)) keys.add(k);
       if (!keys.size) return Object.keys(out).length ? out : undefined;
 
-      const childrenOut: Record<string, FlowContextPropertyInfo> = {};
+      const childrenOut: Record<string, FlowContextApiInfo> = {};
       for (const k of keys) {
         if (isPrivateKey(k)) continue;
         const child = await buildPropertyInfoFromNodes({
@@ -1221,8 +1584,7 @@ export class FlowContext {
     // path 剪裁：每个 path 独立返回一个根节点
     if (!hasRootPath && paths.length) {
       const envs = await buildEnvs();
-      const methodsOut: Record<string, FlowContextMethodInfo> = {};
-      const propertiesOut: Record<string, FlowContextPropertyInfo> = {};
+      const apisOut: Record<string, FlowContextApiInfo> = {};
 
       for (const p of paths) {
         const segments = p
@@ -1232,11 +1594,11 @@ export class FlowContext {
         if (segments.some((s) => isPrivateKey(s))) continue;
         if (!segments.length) continue;
 
-        // 同时支持剪裁 methods 与 properties（同名时两者都返回）
+        // 同时支持剪裁 methods 与 properties（同名时两者都返回，并合并到 apis）
         if (segments.length === 1) {
           const name = segments[0];
           const mi = await buildMethodInfo(name);
-          if (mi) methodsOut[name] = mi;
+          if (mi) apisOut[name] = mi;
 
           const docNode = docProps[name];
           const metaNode = await resolvePropertyMetaAtPath([name]);
@@ -1255,7 +1617,7 @@ export class FlowContext {
               pathFromRoot: [],
               hiddenPrefixes: new Set(),
             });
-            if (pi) propertiesOut[name] = pi;
+            if (pi) apisOut[name] = { ...(apisOut[name] || {}), ...pi };
           }
           continue;
         }
@@ -1271,10 +1633,10 @@ export class FlowContext {
           pathFromRoot: [],
           hiddenPrefixes: new Set(),
         });
-        if (pi) propertiesOut[p] = pi;
+        if (pi) apisOut[p] = pi;
       }
 
-      return { methods: methodsOut, properties: propertiesOut, envs };
+      return { apis: apisOut, envs };
     }
 
     // 全量输出：合并 doc + 运行时 defineProperty/defineMethod
@@ -1286,7 +1648,7 @@ export class FlowContext {
     collectKeysDeep(this, propKeys, '_props', new WeakSet<any>());
     collectKeysDeep(this, methodKeys, '_methods', new WeakSet<any>());
 
-    const propertiesOut: Record<string, FlowContextPropertyInfo> = {};
+    const apisOut: Record<string, FlowContextApiInfo> = {};
     for (const key of propKeys) {
       if (isPrivateKey(key)) continue;
       const docNode = docProps[key];
@@ -1319,17 +1681,22 @@ export class FlowContext {
         pathFromRoot: [key],
         hiddenPrefixes: new Set(),
       });
-      if (pi) propertiesOut[key] = pi;
+      if (pi) apisOut[key] = pi;
     }
 
-    const methodsOut: Record<string, FlowContextMethodInfo> = {};
+    const methodsOut: Record<string, FlowContextApiInfo> = {};
     for (const key of methodKeys) {
       if (isPrivateKey(key)) continue;
       const mi = await buildMethodInfo(key);
       if (mi) methodsOut[key] = mi;
     }
 
-    return { methods: methodsOut, properties: propertiesOut, envs };
+    for (const [k, v] of Object.entries(methodsOut)) {
+      if (!apisOut[k]) apisOut[k] = v;
+      else apisOut[k] = { ...(apisOut[k] || {}), ...(v || {}) };
+    }
+
+    return { apis: apisOut, envs };
   }
 
   #createChildNodes(
@@ -2114,28 +2481,36 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return resolveExpressions(serverResolved, this);
     });
 
-    // Helper: resolve a single ctx variable by path, with full resolveJsonTemplate behavior.
-    // Example: await ctx.getVar('record.id')
+    // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
+    // Example: await ctx.getVar('ctx.record.id')
     this.defineMethod(
       'getVar',
       async function (this: BaseFlowEngineContext, varPath: string) {
         const raw = typeof varPath === 'string' ? varPath : String(varPath ?? '');
         const s = raw.trim();
         if (!s) return undefined;
-        return this.resolveJsonTemplate(`{{ ctx.${s} }}` as any);
+        // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
+        // We also accept a full template string '{{ ... }}' for convenience.
+        if (/^\s*\{\{/.test(s)) {
+          return this.resolveJsonTemplate(s as any);
+        }
+        if (s !== 'ctx' && !s.startsWith('ctx.')) {
+          throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
+        }
+        return this.resolveJsonTemplate(`{{ ${s} }}` as any);
       },
       {
-        description: 'Resolve a ctx variable value by relative path string.',
+        description: 'Resolve a ctx expression value by path (expression starts with "ctx.").',
         params: [
           {
             name: 'path',
             type: 'string',
-            description: 'Relative path under ctx (e.g. "record.id", "record.roles[0].id").',
+            description: 'Expression path starting with "ctx." (e.g. "ctx.record.id", "ctx.record.roles[0].id").',
           },
         ],
         returns: { type: 'Promise<any>' },
-        completion: { insertText: "await ctx.getVar('record.id')" },
-        examples: ["const id = await ctx.getVar('record.id');"],
+        completion: { insertText: "await ctx.getVar('ctx.record.id')" },
+        examples: ["const id = await ctx.getVar('ctx.record.id');"],
       },
     );
     this.defineProperty('requirejs', {
@@ -2455,6 +2830,14 @@ export class FlowModelContext extends BaseFlowModelContext {
       value: model,
       info: {
         description: 'Current FlowModel instance.',
+        detail: 'FlowModel',
+      },
+    });
+    // Ensure ctx.blockModel is always available (e.g. in JS blocks) and can be overridden by block models.
+    this.defineProperty('blockModel', {
+      get: () => this.model,
+      info: {
+        description: 'Current block model (FlowModel). In most contexts it is the same as ctx.model.',
         detail: 'FlowModel',
       },
     });

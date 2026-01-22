@@ -66,23 +66,54 @@ FlowEngineContext（全局上下文）
 - `ctx.defineMethod(name, fn, info?)`：为方法补充描述、参数、示例、补全插入、文档链接等；
 - `ctx.defineProperty(key, { meta?, info? })`：其中 `meta` 面向变量选择器 UI（`getPropertyMetaTree`），`info` 面向 `getInfos()`/补全/大模型（不影响变量选择器 UI）。
 
-如果你需要在运行时通过“变量路径字符串”取值（例如来自配置/用户输入），可以使用：`await ctx.getVar(path)`。
+如果你需要在运行时通过“变量表达式路径字符串”取值（例如来自配置/用户输入），可以使用：`await ctx.getVar('ctx.xxx')`。
 
 ### 返回结构
 
-- `methods`: `{ [name]: MethodInfo }`
-- `properties`: `{ [name]: PropertyInfo }`
-- `envs`: `{ isInPopup, blockModel, flowModel, record?, currentPopupRecord?, resource? }`
-  - `isInPopup`: 是否在弹窗/抽屉等 popup 容器中
-  - `blockModel`: 当前区块模型（通常可通过 `ctx.blockModel` 获取）的 label（若不可用则为空字符串）
-  - `flowModel`: 当前模型（`ctx.model`）的 label（若不可用则为空字符串）
-  - `currentPopupRecord`: 若在 popup 内，值为 `'ctx.popup.record'`
-  - `record`: 若存在 `filterByTk`，值为 `'ctx.record'`
-  - `resource`: 当前资源上下文（如可推断）：`collectionName/dataSourceKey/associationName/filterByTk/sourceId`
+- `apis`: `{ [name]: ApiInfo }`（合并属性与方法信息）
+- `envs`: `{ popup?, block?, flowModel?, resource?, record? }`（面向大模型/提示词的“环境信息节点树”）
+  - 节点结构：`{ description?, getVar?, value?, properties? }`
+    - `getVar`：可直接用于 `await ctx.getVar(getVar)` 的表达式字符串（推荐以 `ctx.` 开头）
+    - `value`：已解析/可序列化的静态值（可选，仅在能推断到时返回；建议保持小体积）
+    - `properties`：子节点（用于表达 `popup.resource.xxx` 等层级）
 
-其中 `MethodInfo/PropertyInfo` 至少可包含（均为可选）：
+示例（简化）：
 
-- `description` / `detail` / `examples`
+```json
+{
+  "apis": {
+    "runAction": {
+      "description": "Execute a resource action.",
+      "params": [{ "name": "actionName", "type": "string" }],
+      "returns": { "type": "Promise<any>" }
+    }
+  },
+  "envs": {
+    "resource": {
+      "description": "Resource information",
+      "getVar": "ctx.view.inputArgs",
+      "properties": {
+        "collectionName": { "getVar": "ctx.view.inputArgs.collectionName", "value": "users" },
+        "dataSourceKey": { "getVar": "ctx.view.inputArgs.dataSourceKey", "value": "main" },
+        "associationName": { "getVar": "ctx.view.inputArgs.associationName", "value": "posts" }
+      }
+    },
+    "popup": {
+      "description": "Current popup information",
+      "getVar": "ctx.popup",
+      "properties": {
+        "uid": { "getVar": "ctx.popup.uid", "value": "p1" },
+        "record": { "getVar": "ctx.popup.record" }
+      }
+    }
+  }
+}
+```
+
+其中 `ApiInfo` 至少可包含（均为可选）：
+
+- `title` / `type` / `interface`
+- `description` / `examples`
 - `completion.insertText`（用于编辑器补全插入）
 - `ref`（支持 `string | { url: string; title?: string }`）
 - `params` / `returns`（JSDoc-like）

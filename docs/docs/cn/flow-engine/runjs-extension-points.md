@@ -113,7 +113,7 @@ ctx.message.success('Hello from plugin');
 - 返回 `true`：隐藏当前节点及其子树
 - 返回 `string[]`：隐藏当前节点下的指定子路径（支持一次返回多个路径；路径为相对路径；按前缀匹配隐藏子树）
 
-`hidden(ctx)` 支持 async：你可以直接 `await ctx.xxx` 来判断（由使用者自行决断）。建议尽量快速、无副作用（不要发网络请求）。
+`hidden(ctx)` 支持 async：你可以使用 `await ctx.getVar('ctx.xxx')` 来判断（由使用者自行决断）。建议尽量快速、无副作用（不要发网络请求）。
 
 示例：仅当存在 `popup.uid` 时展示 `ctx.popup.*` 补全
 
@@ -122,7 +122,7 @@ FlowRunJSContext.define({
   properties: {
     popup: {
       description: 'Popup context (async)',
-      hidden: async (ctx) => !(await ctx.popup)?.uid,
+      hidden: async (ctx) => !(await ctx.getVar('ctx.popup'))?.uid,
       properties: {
         uid: 'Popup uid',
       },
@@ -139,7 +139,7 @@ FlowRunJSContext.define({
     popup: {
       description: 'Popup context (async)',
       hidden: async (ctx) => {
-        const popup = await ctx.popup;
+        const popup = await ctx.getVar('ctx.popup');
         if (!popup?.uid) return true;
         const hidden: string[] = [];
         if (!popup?.record) hidden.push('record');
@@ -197,7 +197,7 @@ ctx.defineMethod('refreshTargets', async () => {
 - `meta`：用于变量选择器 UI（`getPropertyMetaTree` / `FlowContextSelector`），决定是否展示、树结构、禁用等（支持函数/async）。
   - 常用字段：`title` / `type` / `properties` / `sort` / `hidden` / `disabled` / `disabledReason` / `buildVariablesParams`
 - `info`：用于补全与大模型（`getInfos` / code-editor），不影响变量选择器 UI（支持函数/async）。
-  - 常用字段：`description` / `detail` / `examples` / `completion` / `ref` / `params` / `returns` / `hidden` / `disabled` / `disabledReason`
+  - 常用字段：`title` / `type` / `interface` / `description` / `examples` / `completion` / `ref` / `params` / `returns` / `hidden` / `disabled` / `disabledReason`
 
 当未提供 `info` 但提供了 `meta` 时，`getInfos()` 会基于 `meta` 推断最小结构性信息（例如 `title/type` 与可展开的子级 key）。若两者都提供，则深合并并以 `info` 优先。
 
@@ -206,22 +206,21 @@ ctx.defineMethod('refreshTargets', async () => {
 用于输出“可用的上下文能力信息”，返回结构：
 
 ```ts
+type FlowContextInfosEnvNode = {
+  description?: string;
+  getVar?: string; // 可直接用于 await ctx.getVar(getVar)，推荐以 "ctx." 开头
+  value?: any; // 已解析的静态值（可序列化，仅在能推断到时返回）
+  properties?: Record<string, FlowContextInfosEnvNode>;
+};
+
 type FlowContextInfos = {
-  methods: Record<string, any>;
-  properties: Record<string, any>;
+  apis: Record<string, any>; // 合并 methods + properties
   envs: {
-    isInPopup: boolean;
-    blockModel: string;
-    flowModel: string;
-    currentPopupRecord?: 'ctx.popup.record';
-    record?: 'ctx.record';
-    resource?: {
-      collectionName?: any;
-      dataSourceKey?: any;
-      associationName?: any;
-      filterByTk?: any;
-      sourceId?: any;
-    };
+    popup?: FlowContextInfosEnvNode;
+    block?: FlowContextInfosEnvNode;
+    flowModel?: FlowContextInfosEnvNode;
+    resource?: FlowContextInfosEnvNode;
+    record?: FlowContextInfosEnvNode;
   };
 };
 ```
@@ -238,7 +237,7 @@ type FlowContextInfos = {
 
 当你只有一个“变量路径字符串”（例如来自配置/用户输入），希望直接拿到该变量的运行时值时，可以使用 `getVar`：
 
-- 示例：`const v = await ctx.getVar('record.roles.id')`
-- `path` 为 `ctx` 下的相对路径（例如 `record.id` / `record.roles[0].id`）
+- 示例：`const v = await ctx.getVar('ctx.record.roles.id')`
+- `path` 为以 `ctx.` 开头的表达式路径（例如 `ctx.record.id` / `ctx.record.roles[0].id`）
 
 另外：以下划线 `_` 开头的方法/属性会被视为私有成员，不会出现在 `getInfos()` 的输出中。

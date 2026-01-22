@@ -27,11 +27,11 @@ function buildBaseCompletions(): Completion[] {
       return [description, 'Examples:', ...examples].filter(Boolean).join('\n');
     };
     const buildAwaitedPopupExpr = (paths: string[]) => {
-      // ctx.popup is async; generate safe access expression using await + optional chaining.
+      // Use ctx.getVar('ctx.popup') for consistent and safe access (avoid async traps).
       if (!paths?.length || paths[0] !== 'popup') return `ctx.${(paths || []).join('.')}`;
-      if (paths.length === 1) return 'await ctx.popup';
+      if (paths.length === 1) return "await ctx.getVar('ctx.popup')";
       const rest = paths.slice(1);
-      return rest.reduce((acc, seg) => `${acc}?.${seg}`, '(await ctx.popup)');
+      return rest.reduce((acc, seg) => `${acc}?.${seg}`, "(await ctx.getVar('ctx.popup'))");
     };
     if (doc?.label || doc?.properties || doc?.methods) {
       options.push({

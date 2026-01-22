@@ -291,7 +291,7 @@ export function defineBaseContextMeta() {
       },
       popup: {
         description:
-          'Popup context when current view is opened as a popup/drawer. NOTE: ctx.popup is async; use `const popup = await ctx.popup`.',
+          'Popup context when current view is opened as a popup/drawer. Recommended: `const popup = await ctx.getVar("ctx.popup")`.',
         detail: 'Promise<PopupContext | undefined>',
         hidden: async (ctx: any) => {
           try {
@@ -303,7 +303,7 @@ export function defineBaseContextMeta() {
           }
         },
         examples: [
-          'const popup = await ctx.popup;',
+          'const popup = await ctx.getVar("ctx.popup");',
           'const id = popup?.record?.id;',
           'const parentId = popup?.parent?.record?.id;',
         ],
@@ -386,18 +386,18 @@ export function defineBaseContextMeta() {
         examples: ["await ctx.loadCSS('https://example.com/style.css');"],
       },
       getVar: {
-        description: 'Resolve a ctx variable value by relative path string.',
+        description: 'Resolve a ctx expression value by path string (expression starts with "ctx.").',
         detail: '(path: string) => Promise<any>',
-        completion: { insertText: "await ctx.getVar('record.id')" },
+        completion: { insertText: "await ctx.getVar('ctx.record.id')" },
         params: [
           {
             name: 'path',
             type: 'string',
-            description: 'Relative path under ctx (e.g. "record.id", "record.roles[0].id").',
+            description: 'Expression path starts with "ctx." (e.g. "ctx.record.id", "ctx.record.roles[0].id").',
           },
         ],
         returns: { type: 'Promise<any>' },
-        examples: ["const id = await ctx.getVar('record.id');"],
+        examples: ["const id = await ctx.getVar('ctx.record.id');"],
       },
       resolveJsonTemplate:
         'Resolve JSON templates containing variable expressions with {{ }} syntax. Parameters: (template: any, context?: object) => any',
@@ -708,10 +708,10 @@ export function defineBaseContextMeta() {
         },
         popup: {
           description:
-            '弹窗上下文（在当前视图以弹窗/抽屉打开时可用）。注意：ctx.popup 为异步值，建议 `const popup = await ctx.popup`。',
+            '弹窗上下文（在当前视图以弹窗/抽屉打开时可用）。推荐：`const popup = await ctx.getVar("ctx.popup")`。',
           detail: 'Promise<PopupContext | undefined>',
           examples: [
-            'const popup = await ctx.popup;',
+            'const popup = await ctx.getVar("ctx.popup");',
             'const id = popup?.record?.id;',
             'const parentId = popup?.parent?.record?.id;',
           ],
@@ -793,18 +793,18 @@ export function defineBaseContextMeta() {
           examples: ["await ctx.loadCSS('https://example.com/style.css');"],
         },
         getVar: {
-          description: '通过相对路径字符串获取 ctx 下变量的运行时值。',
+          description: '通过表达式路径字符串获取 ctx 的运行时值（以 "ctx." 开头）。',
           detail: '(path: string) => Promise<any>',
-          completion: { insertText: "await ctx.getVar('record.id')" },
+          completion: { insertText: "await ctx.getVar('ctx.record.id')" },
           params: [
             {
               name: 'path',
               type: 'string',
-              description: 'ctx 下的相对路径（例如 "record.id" / "record.roles[0].id"）。',
+              description: '以 "ctx." 开头的表达式路径（例如 "ctx.record.id" / "ctx.record.roles[0].id"）。',
             },
           ],
           returns: { type: 'Promise<any>' },
-          examples: ["const id = await ctx.getVar('record.id');"],
+          examples: ["const id = await ctx.getVar('ctx.record.id');"],
         },
         resolveJsonTemplate: '解析含 {{ }} 变量表达式的 JSON 模板。参数：(template: any, context?: object) => any',
         runAction: {

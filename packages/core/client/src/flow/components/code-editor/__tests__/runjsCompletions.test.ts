@@ -92,7 +92,7 @@ describe('buildRunJSCompletions', () => {
     (popupRecord as any).apply?.(mockViewPopup, popupRecord, 0, 0);
     expect(mockViewPopup.dispatch).toHaveBeenCalled();
     const popupInserted = mockViewPopup.dispatch.mock.calls[0][0]?.changes?.insert;
-    expect(popupInserted).toContain('await ctx.popup');
+    expect(popupInserted).toContain("await ctx.getVar('ctx.popup')");
     // method (with parentheses)
     const method = completions.find((c: any) => c.label === 'ctx.bar()');
     expect(method).toBeTruthy();
@@ -163,7 +163,7 @@ describe('buildRunJSCompletions', () => {
     const mockView = { dispatch: vi.fn() } as any;
     (popupId as any).apply?.(mockView, popupId, 0, 0);
     const inserted = mockView.dispatch.mock.calls[0][0]?.changes?.insert;
-    expect(inserted).toContain('await ctx.popup');
+    expect(inserted).toContain("await ctx.getVar('ctx.popup')");
   });
 
   it('keeps ctx.popup.* completions when popup is available', async () => {
@@ -279,8 +279,8 @@ describe('buildRunJSCompletions', () => {
         popup.properties = { ...(popup.properties || {}) };
         delete popup.properties.record;
         return {
-          properties: { ...(engineDoc.properties || {}), popup, extra: 'extra prop' },
-          methods: { ...(engineDoc.methods || {}) },
+          apis: { ...(engineDoc.properties || {}), ...(engineDoc.methods || {}), popup, extra: 'extra prop' },
+          envs: {},
         };
       },
       getPropertyMetaTree: (value: string) => {

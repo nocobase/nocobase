@@ -122,11 +122,11 @@ export async function buildRunJSCompletions(
   };
 
   const buildAwaitedPopupExpr = (paths: string[]) => {
-    // ctx.popup is async; generate safe access expression using await + optional chaining.
+    // Use ctx.getVar('ctx.popup') for consistent and safe access (avoid async traps).
     if (!paths?.length || paths[0] !== 'popup') return `ctx.${(paths || []).join('.')}`;
-    if (paths.length === 1) return 'await ctx.popup';
+    if (paths.length === 1) return "await ctx.getVar('ctx.popup')";
     const rest = paths.slice(1);
-    return rest.reduce((acc, seg) => `${acc}?.${seg}`, '(await ctx.popup)');
+    return rest.reduce((acc, seg) => `${acc}?.${seg}`, "(await ctx.getVar('ctx.popup'))");
   };
 
   const isFunctionLikeDocNode = (node: any, completionSpec: any): boolean => {
@@ -159,8 +159,23 @@ export async function buildRunJSCompletions(
   } catch (_) {
     infos = null;
   }
-  const propsSource = (infos as any)?.properties || (doc as any)?.properties || {};
-  const methodsSource = (infos as any)?.methods || (doc as any)?.methods || {};
+  const normalizeMethodsRecord = (methods: any): Record<string, any> => {
+    const src = methods && typeof methods === 'object' ? methods : {};
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(src)) {
+      if (typeof v === 'string') out[k] = { description: v, type: 'function' };
+      else if (v && typeof v === 'object' && !Array.isArray(v)) out[k] = { ...(v as any), type: 'function' };
+      else out[k] = v as any;
+    }
+    return out;
+  };
+  const docApis = { ...((doc as any)?.properties || {}), ...normalizeMethodsRecord((doc as any)?.methods) };
+  const infosApis = (infos as any)?.apis;
+  const legacyInfosApis =
+    (infos as any)?.properties || (infos as any)?.methods
+      ? { ...((infos as any)?.properties || {}), ...normalizeMethodsRecord((infos as any)?.methods) }
+      : null;
+  const apisSource = infosApis || legacyInfosApis || docApis || {};
   const completions: Completion[] = [];
   const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
   const hiddenDecisionCache = new Map<string, { hideSelf: boolean; hideSubpaths: string[] }>();
@@ -314,33 +329,7 @@ export async function buildRunJSCompletions(
     }
   };
 
-  await collectProperties(propsSource || {});
-  for (const k of Object.keys(methodsSource || {})) {
-    const methodDoc = (methodsSource as any)[k];
-    const decision = await resolveHiddenDecision(methodDoc, `m:${k}`, []);
-    if (decision.hideSelf) continue;
-    let detail = 'ctx method';
-    let completionSpec: any;
-    if (methodDoc && typeof methodDoc === 'object' && !Array.isArray(methodDoc)) {
-      detail = methodDoc.detail ?? detail;
-      completionSpec = methodDoc.completion;
-    }
-    const insertText = completionSpec?.insertText ?? `ctx.${k}()`;
-    completions.push({
-      label: `ctx.${k}()` as any,
-      type: 'function',
-      info: toInfo(methodDoc),
-      detail,
-      boost: 95,
-      apply: (view: EditorView, _c: Completion, from: number, to: number) => {
-        view.dispatch({
-          changes: { from, to, insert: insertText },
-          selection: { anchor: from + insertText.length },
-          scrollIntoView: true,
-        });
-      },
-    });
-  }
+  await collectProperties(apisSource || {});
   let entries: SnippetEntry[] = [];
   try {
     const ctxClassName = (hostCtx as any)?.model?.constructor?.name || '*';
@@ -429,7 +418,7 @@ export async function buildRunJSCompletions(
         completions.push({
           label,
           type: 'property',
-          detail: root === 'popup' ? 'popup (await)' : 'context value',
+          detail: root === 'popup' ? 'popup (getVar)' : 'context value',
           info,
           boost: 70,
           apply: (view: EditorView, _c: Completion, from: number, to: number) => {
