@@ -61,20 +61,12 @@ export class SubTableEditFormModel extends FormBlockModel {
   };
 
   protected defaultBlockTitle() {
-    const blockLabel: any = <FormLabel />;
     const dsName = this.dataSource?.displayName || this.dataSource?.key;
     const dsCount = this.context?.dataSourceManager?.getDataSources?.().length || 0;
     const colTitle = this.collection?.title;
     const showDs = dsCount > 1 && !!dsName;
     const rightPart = `${showDs ? `${dsName} > ` : ''}${colTitle}`;
-
-    return (
-      <span>
-        <span>{blockLabel}</span>
-        <span>: </span>
-        <span>{rightPart}</span>
-      </span>
-    ) as any;
+    return `${getFormLabelText(this)}: ${rightPart}`;
   }
 
   /**
@@ -150,12 +142,16 @@ export class SubTableEditFormModel extends FormBlockModel {
   }
 }
 
-const FormLabel = () => {
-  const model: any = useFlowModel();
+const getFormLabelText = (model) => {
   const scene = model.parent?.actionName || model.actionName;
   const t = model.context.t;
   const title = scene === 'create' ? 'Form (Add new)' : 'Form (Edit)';
-  return t(title);
+  return title;
+};
+
+const FormLabel = () => {
+  const model = useFlowModel();
+  return getFormLabelText(model);
 };
 
 SubTableEditFormModel.registerFlow({
