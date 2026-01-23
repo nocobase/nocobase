@@ -9,7 +9,8 @@
 
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import type { ForkFlowModel, PropertyMetaFactory } from '@nocobase/flow-engine';
+import { observer } from '@formily/reactive-react';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   createRecordMetaFactory,
@@ -19,21 +20,14 @@ import {
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
-  observer,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel } from '../../base';
-import { TableCustomColumnModel } from './TableCustomColumnModel';
-import { getRowKey } from './utils';
-import { FormBlockModel } from '../form/FormBlockModel';
+import { ActionModel } from '../../../base/ActionModel';
+import { TableCustomColumnModel } from '../../../blocks/table/TableCustomColumnModel';
+import { TableBlockModel } from '../../../blocks/table/TableBlockModel';
 
-const recordIdentityByFork = new WeakMap<ForkFlowModel<any>, string>();
-
-const Columns = observer<any>(({ record, model, index }) => {
-  const isConfigMode = !!model.context.flowSettingsEnabled;
-  const slotKey = `${record.__index ?? index}`;
-  const recordIdentity = getRowKey(record, model?.context?.collection?.filterTargetKey);
+const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
   return (
     <DndProvider>
       <Space
@@ -46,22 +40,8 @@ const Columns = observer<any>(({ record, model, index }) => {
         `}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
-          // Static hidden can be skipped safely; dynamic hidden is handled by fork.beforeRender + model.render wrapper.
-          if (action.hidden && !isConfigMode) {
-            return;
-          }
-
-          // Use a stable "slot" key to avoid unbounded fork growth (pageSize slots),
-          // but reset the fork instance when the underlying row record changes (pagination/virtualization),
-          // preventing linkage-rule state from leaking across rows.
-          const cachedFork = action.getFork(slotKey);
-          if (cachedFork && recordIdentityByFork.get(cachedFork) !== recordIdentity) {
-            cachedFork.dispose();
-          }
-
-          const fork = action.createFork({}, slotKey);
-          recordIdentityByFork.set(fork, recordIdentity);
-
+          const fork = action.createFork({});
+          // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
           fork.invalidateFlowCache('beforeRender');
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => (fork.context as any).collection,
@@ -77,7 +57,9 @@ const Columns = observer<any>(({ record, model, index }) => {
             },
           );
           fork.context.defineProperty('record', {
-            get: () => record,
+            get: () => {
+              return record;
+            },
             cache: false,
             resolveOnServer: createRecordResolveOnServerWithLocal(
               () => (fork.context as any).collection,
@@ -86,7 +68,10 @@ const Columns = observer<any>(({ record, model, index }) => {
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
+            get: () => record.__index__ || index,
+          });
+          fork.context.defineProperty('associationModel', {
+            value: _subTableModel,
           });
           return (
             <Droppable model={action} key={action.uid}>
@@ -94,7 +79,7 @@ const Columns = observer<any>(({ record, model, index }) => {
                 showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
                 key={fork.uid}
                 model={fork}
-                inputArgs={record}
+                inputArgs={{ record, allowDisassociation: _subTableModel?.props?.allowDisassociation }}
                 fallback={<Skeleton.Button size="small" />}
                 extraToolbarItems={[
                   {
@@ -117,10 +102,10 @@ const AddActionToolbarComponent = ({ model }) => {
     <AddSubModelButton
       key="table-row-actions-add"
       model={model}
-      subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
+      subModelBaseClass={model.context.getModelClassName('PopupSubTableActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
-        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
       }}
     >
       <PlusOutlined />
@@ -128,14 +113,16 @@ const AddActionToolbarComponent = ({ model }) => {
   );
 };
 
-export class TableActionsColumnModel extends TableCustomColumnModel {
+export class PopupSubTableActionsColumnModel extends TableCustomColumnModel {
+  _subTableModel;
   async afterAddAsSubModel() {
     await this.dispatchEvent('beforeRender');
   }
 
-  getColumnProps() {
+  getColumnProps(model) {
+    this._subTableModel = model;
     // 非配置态且列被标记为隐藏时，直接返回 null，从表格列中移除整列
-    if (this.hidden && !this.context.flowSettingsEnabled) {
+    if (this.hidden && !this.flowEngine.flowSettings?.enabled) {
       return null;
     }
     const titleContent = (
@@ -195,17 +182,17 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
           overflow: hidden;
           transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
           &:hover {
-            overflow: ${this.context.flowSettingsEnabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
+            overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
           }
         `}
       >
-        <Columns record={record} model={this} index={index} />
+        <Columns record={record} model={this} index={index} _subTableModel={this._subTableModel} />
       </div>
     );
   }
 }
 
-TableActionsColumnModel.define({
+PopupSubTableActionsColumnModel.define({
   label: '{{t("Actions")}}',
   createModelOptions: {
     stepParams: {
@@ -217,7 +204,6 @@ TableActionsColumnModel.define({
     },
   },
   hide(ctx) {
-    //子表格中隐藏这个Action
-    return ctx.disableFieldClickToOpen;
+    return !ctx.disableFieldClickToOpen;
   },
 });
