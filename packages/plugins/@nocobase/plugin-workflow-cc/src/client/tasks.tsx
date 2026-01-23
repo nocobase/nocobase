@@ -18,7 +18,6 @@ import {
   useCollectionRecordData,
   SchemaComponent,
   css,
-  useCurrentUserContext,
   useAPIClient,
   usePlugin,
   useFormBlockContext,
@@ -37,7 +36,6 @@ import PluginWorkflowClient, {
   useTasksCountsContext,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
-import { useFlowEngine, useFlowViewContext } from '@nocobase/flow-engine';
 
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
@@ -185,6 +183,7 @@ function FlowContextProvider() {
                 });
                 model.context.defineProperty('tempAssociationSources', {
                   value: tempAssociationSources,
+                  cache: false,
                 });
               }}
             />
