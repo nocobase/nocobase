@@ -2833,14 +2833,6 @@ export class FlowModelContext extends BaseFlowModelContext {
         detail: 'FlowModel',
       },
     });
-    // Ensure ctx.blockModel is always available (e.g. in JS blocks) and can be overridden by block models.
-    this.defineProperty('blockModel', {
-      get: () => this.model,
-      info: {
-        description: 'Current block model (FlowModel). In most contexts it is the same as ctx.model.',
-        detail: 'FlowModel',
-      },
-    });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
     this.defineProperty('ref', {

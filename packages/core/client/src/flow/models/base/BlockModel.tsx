@@ -66,6 +66,9 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   onInit(options: any): void {
     super.onInit(options);
+    this.context.defineProperty('blockModel', {
+      value: this,
+    });
     this.context.defineMethod('getModelClassName', (className: string) => {
       return this.getModelClassName(className);
     });
