@@ -9,7 +9,7 @@
 
 import { Cascader, Space, Button } from 'antd';
 import { last } from 'lodash';
-import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
+import { CollectionField, EditableItemModel, tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { debounce, castArray } from 'lodash';
@@ -550,7 +550,7 @@ CascadeSelectInnerFieldModel.registerFlow({
 /** --------------------------- 可视化配置 --------------------------- */
 CascadeSelectInnerFieldModel.registerFlow({
   key: 'selectSettings',
-  title: escapeT('Cascade select settings'),
+  title: tExpr('Cascader select settings'),
   sort: 800,
   steps: {
     fieldNames: { use: 'titleField' },
@@ -560,11 +560,11 @@ CascadeSelectInnerFieldModel.registerFlow({
 });
 
 CascadeSelectFieldModel.define({
-  label: escapeT('Cascade'),
+  label: tExpr('Cascader'),
 });
 
 CascadeSelectListFieldModel.define({
-  label: escapeT('Cascade'),
+  label: tExpr('Cascader'),
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
