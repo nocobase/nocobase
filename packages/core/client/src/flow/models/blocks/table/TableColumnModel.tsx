@@ -217,7 +217,7 @@ export class TableColumnModel extends DisplayItemModel {
       ),
       onCell: (record, recordIndex) => ({
         record,
-        recordIndex: record.__index || recordIndex,
+        recordIndex: record?.__index || recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
@@ -241,14 +241,14 @@ export class TableColumnModel extends DisplayItemModel {
                     <Tooltip
                       title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
                     >
-                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record?.__index || index)}</div>
                     </Tooltip>
                   );
                 }
                 if (!this.collectionField) {
                   return <FieldDeletePlaceholder />;
                 }
-                return cellRenderer(value, record, record.__index || index);
+                return cellRenderer(value, record, record?.__index || index);
               })()}
             </ErrorBoundary>
           </FlowModelProvider>
@@ -266,7 +266,7 @@ export class TableColumnModel extends DisplayItemModel {
       <>
         {this.mapSubModels('field', (field) => {
           const rowKey = getRowKey(record, this.context.collection.filterTargetKey);
-          const fork = field.createFork({}, `${record.__index || index}_${rowKey}`);
+          const fork = field.createFork({}, `${record?.__index || index}_${rowKey}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
             fork.context.t('Current record'),
@@ -295,7 +295,7 @@ export class TableColumnModel extends DisplayItemModel {
             cache: false,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => record.__index || index,
+            get: () => record?.__index || index,
           });
           const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
           const value = get(record, namePath);
@@ -449,7 +449,7 @@ TableColumnModel.registerFlow({
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
         const targetInterface = ctx.model.collectionField.getInterfaceOptions();
-        return !targetInterface.sortable;
+        return !targetInterface.sortable || ctx.associationModel;
       },
       defaultParams: {
         sorter: false,
@@ -521,7 +521,6 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps({
           titleField: params.label,
-          ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
     },
