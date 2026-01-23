@@ -9,9 +9,9 @@
 
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { SubTableRecordAction } from './SubTableEditActionModel';
+import { SubTableRecordAction } from './PopupSubTableEditActionModel';
 
-export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
+export class PopupSubTableRemoveActionModel extends SubTableRecordAction {
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('Remove'),
@@ -35,10 +35,10 @@ export class SubTableRecordDeleteActionModel extends SubTableRecordAction {
   }
 }
 
-SubTableRecordDeleteActionModel.define({
+PopupSubTableRemoveActionModel.define({
   label: tExpr('Remove'),
 });
-SubTableRecordDeleteActionModel.registerFlow({
+PopupSubTableRemoveActionModel.registerFlow({
   key: 'subTableRemoveActionSettings',
   steps: {
     disableProps: {
@@ -64,7 +64,7 @@ SubTableRecordDeleteActionModel.registerFlow({
     },
   },
 });
-SubTableRecordDeleteActionModel.registerFlow({
+PopupSubTableRemoveActionModel.registerFlow({
   key: 'deleteSettings',
   title: tExpr('Delete settings'),
   on: 'click',
@@ -88,7 +88,7 @@ SubTableRecordDeleteActionModel.registerFlow({
   },
 });
 
-SubTableRecordDeleteActionModel.registerFlow({
+PopupSubTableRemoveActionModel.registerFlow({
   key: 'enableRemoveChange',
   on: 'enableRemoveChange',
   steps: {

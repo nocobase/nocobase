@@ -102,7 +102,7 @@ const AddActionToolbarComponent = ({ model }) => {
     <AddSubModelButton
       key="table-row-actions-add"
       model={model}
-      subModelBaseClass={model.context.getModelClassName('SubTableActionGroupModel')}
+      subModelBaseClass={model.context.getModelClassName('PopupSubTableActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
@@ -113,7 +113,7 @@ const AddActionToolbarComponent = ({ model }) => {
   );
 };
 
-export class SubTableActionsColumnModel extends TableCustomColumnModel {
+export class PopupSubTableActionsColumnModel extends TableCustomColumnModel {
   _subTableModel;
   async afterAddAsSubModel() {
     await this.dispatchEvent('beforeRender');
@@ -192,7 +192,7 @@ export class SubTableActionsColumnModel extends TableCustomColumnModel {
   }
 }
 
-SubTableActionsColumnModel.define({
+PopupSubTableActionsColumnModel.define({
   label: '{{t("Actions")}}',
   createModelOptions: {
     stepParams: {

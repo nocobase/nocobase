@@ -30,7 +30,7 @@ import { useTranslation } from 'react-i18next';
 import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
-import { EditFormContent } from './actions/SubTableEditActionModel';
+import { EditFormContent } from './actions/PopupSubTableEditActionModel';
 import { QuickEditFormModel } from '../../../blocks/form/QuickEditFormModel';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
 
@@ -348,7 +348,7 @@ const DisplayTable = (props) => {
     />
   );
 };
-export class AdvancedSubTableFieldModel extends AssociationFieldModel {
+export class PopupSubTableFieldModel extends AssociationFieldModel {
   disableTitleField = true;
   defaultOverflowMode = 'ellipsis';
   updateAssociation = true;
@@ -450,7 +450,7 @@ export class AdvancedSubTableFieldModel extends AssociationFieldModel {
   }
 }
 
-AdvancedSubTableFieldModel.registerFlow({
+PopupSubTableFieldModel.registerFlow({
   key: 'advanceSubTableAssociation',
   title: tExpr('Association table settings'),
   steps: {
@@ -553,7 +553,7 @@ AdvancedSubTableFieldModel.registerFlow({
 });
 
 // 添加新纪录
-AdvancedSubTableFieldModel.registerFlow({
+PopupSubTableFieldModel.registerFlow({
   key: 'popupSettings',
   title: tExpr('Edit setting'),
   on: {
@@ -640,7 +640,7 @@ AdvancedSubTableFieldModel.registerFlow({
 });
 
 // 选择已有纪录关联
-AdvancedSubTableFieldModel.registerFlow({
+PopupSubTableFieldModel.registerFlow({
   key: 'selectExitRecordSettings',
   title: tExpr('Selector setting'),
   sort: 400,
@@ -768,7 +768,7 @@ AdvancedSubTableFieldModel.registerFlow({
   },
 });
 
-AdvancedSubTableFieldModel.registerFlow({
+PopupSubTableFieldModel.registerFlow({
   key: 'AdvancedSubTableUpdateRowSettings',
   on: 'updateRow',
   steps: {
@@ -805,7 +805,7 @@ AdvancedSubTableFieldModel.registerFlow({
   },
 });
 
-AdvancedSubTableFieldModel.registerFlow({
+PopupSubTableFieldModel.registerFlow({
   key: 'AdvancedSubTableRemoveRowSettings',
   on: 'removeRow',
   steps: {
@@ -833,7 +833,7 @@ AdvancedSubTableFieldModel.registerFlow({
 });
 
 // 分页切换后重置page
-AdvancedSubTableFieldModel.registerFlow({
+PopupSubTableFieldModel.registerFlow({
   key: 'paginationChange',
   on: 'paginationChange',
   steps: {
@@ -847,21 +847,21 @@ AdvancedSubTableFieldModel.registerFlow({
   },
 });
 
-AdvancedSubTableFieldModel.define({
+PopupSubTableFieldModel.define({
   label: tExpr('Subtable (Popup editing)'),
   createModelOptions: {
-    use: 'AdvancedSubTableFieldModel',
+    use: 'PopupSubTableFieldModel',
     subModels: {
       subTableColumns: [
         {
-          use: 'SubTableActionsColumnModel',
+          use: 'PopupSubTableActionsColumnModel',
           subModels: {
             actions: [
               {
-                use: 'SubTableEditActionModel',
+                use: 'PopupSubTableEditActionModel',
               },
               {
-                use: 'SubTableRecordDeleteActionModel',
+                use: 'PopupSubTableRemoveActionModel',
               },
             ],
           },
@@ -871,7 +871,7 @@ AdvancedSubTableFieldModel.define({
   },
 });
 
-EditableItemModel.bindModelToInterface('AdvancedSubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
+EditableItemModel.bindModelToInterface('PopupSubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
   order: 300,
   when: (ctx, field) => {
     if (field.targetCollection) {

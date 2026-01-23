@@ -14,7 +14,7 @@ import { ActionGroupModel, ActionModel } from '../../../../base';
 function matchPath(paths: string[], key: string) {
   return paths.find((p) => p === key || p.endsWith(`.${key}`)) ?? key;
 }
-export class StFormSubmitActionModel extends ActionModel {
+export class PopupSubTableFormSubmitActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     title: tExpr('Submit'),
     type: 'primary',
@@ -22,11 +22,11 @@ export class StFormSubmitActionModel extends ActionModel {
   };
 }
 
-StFormSubmitActionModel.define({
+PopupSubTableFormSubmitActionModel.define({
   label: tExpr('Submit'),
 });
 
-StFormSubmitActionModel.registerFlow({
+PopupSubTableFormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: 'click',
   title: tExpr('Submit action settings'),
@@ -89,6 +89,6 @@ StFormSubmitActionModel.registerFlow({
   },
 });
 
-export class SubTableFormActionGroupModel extends ActionGroupModel {
-  static baseClass = StFormSubmitActionModel;
+export class PopupSubTableFormActionGroupModel extends ActionGroupModel {
+  static baseClass = PopupSubTableFormSubmitActionModel;
 }

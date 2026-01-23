@@ -24,7 +24,7 @@ import React from 'react';
 import { BlockSceneEnum } from '../../../../base';
 import { FormBlockModel, FormComponent } from '../../../../blocks/form/FormBlockModel';
 
-export class SubTableEditFormModel extends FormBlockModel {
+export class PopupSubTableFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.subForm;
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
   private actionExtraToolbarItems = [
@@ -55,7 +55,7 @@ export class SubTableEditFormModel extends FormBlockModel {
     return resource;
   }
   _defaultCustomModelClasses = {
-    FormActionGroupModel: 'SubTableFormActionGroupModel',
+    FormActionGroupModel: 'PopupSubTableFormActionGroupModel',
     FormItemModel: 'FormItemModel',
     FormCustomItemModel: 'FormCustomItemModel',
   };
@@ -154,7 +154,7 @@ const FormLabel = () => {
   return getFormLabelText(model);
 };
 
-SubTableEditFormModel.registerFlow({
+PopupSubTableFormModel.registerFlow({
   key: 'init',
   steps: {
     init: {
@@ -177,12 +177,12 @@ SubTableEditFormModel.registerFlow({
     },
   },
 });
-SubTableEditFormModel.define({
+PopupSubTableFormModel.define({
   label: <FormLabel />,
   searchable: true,
   searchPlaceholder: tExpr('Search'),
   createModelOptions: {
-    use: 'SubTableEditFormModel',
+    use: 'PopupSubTableFormModel',
     subModels: {
       grid: {
         use: 'FormGridModel',

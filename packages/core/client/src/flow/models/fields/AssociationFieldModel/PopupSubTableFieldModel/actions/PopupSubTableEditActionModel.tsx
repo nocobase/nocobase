@@ -152,7 +152,7 @@ SubTableRecordAction.registerFlow({
     },
   },
 });
-export class SubTableEditActionModel extends SubTableRecordAction {
+export class PopupSubTableEditActionModel extends SubTableRecordAction {
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
     const props = this.props;
@@ -197,7 +197,7 @@ export class SubTableEditActionModel extends SubTableRecordAction {
   }
 }
 
-SubTableEditActionModel.registerFlow({
+PopupSubTableEditActionModel.registerFlow({
   key: 'buttonAclSettings',
   steps: {
     aclCheck: {
@@ -222,11 +222,11 @@ SubTableEditActionModel.registerFlow({
   },
 });
 
-SubTableEditActionModel.define({
+PopupSubTableEditActionModel.define({
   label: tExpr('Edit'),
 });
 
-SubTableEditActionModel.registerFlow({
+PopupSubTableEditActionModel.registerFlow({
   key: 'popupSettings',
   title: tExpr('Edit setting'),
   on: {
