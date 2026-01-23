@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext } from '../flowContext';
+import { FlowContext, type FlowContextMethodInfoInput, type PropertyOptions } from '../flowContext';
 import type { ActionDefinition } from '../types';
-import type { PropertyOptions } from '../flowContext';
 
 // 临时上下文：
 // - 读：优先从 scoped（临时定义）读取，兜底 parent；
@@ -51,7 +50,8 @@ export async function createEphemeralContext<TCtx extends FlowContext>(
           return (propKey: string, options: any) => (scoped as FlowContext).defineProperty(propKey, options);
         }
         if (key === 'defineMethod') {
-          return (name: string, fn: any, des?: string) => (scoped as FlowContext).defineMethod(name, fn, des);
+          return (name: string, fn: any, info?: string | FlowContextMethodInfoInput) =>
+            (scoped as FlowContext).defineMethod(name, fn, info);
         }
         if (Reflect.has(scopedObj, key)) {
           return Reflect.get(scopedObj, key, receiver);
@@ -118,7 +118,8 @@ export async function createEphemeralContext<TCtx extends FlowContext>(
           return (propKey: string, options: any) => (parent as FlowContext).defineProperty(propKey, options);
         }
         if (key === 'defineMethod') {
-          return (name: string, fn: any, des?: string) => (parent as FlowContext).defineMethod(name, fn, des);
+          return (name: string, fn: any, info?: string | FlowContextMethodInfoInput) =>
+            (parent as FlowContext).defineMethod(name, fn, info);
         }
         if (Reflect.has(scopedObj, key)) {
           return Reflect.get(scopedObj, key, receiver);

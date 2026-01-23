@@ -307,26 +307,46 @@ export const openView = defineAction({
 
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
+                info: {
+                  description: 'Current opened view controller (drawer/modal/embed).',
+                  detail: 'FlowView',
+                },
               });
               pageModel.context.defineProperty('flowSettingsEnabled', {
                 get: () => {
                   return ctx.flowSettingsEnabled;
                 },
                 cache: false,
+                info: {
+                  description: 'Whether flow settings mode is enabled.',
+                  detail: 'boolean',
+                },
               });
               // 统一视图上下文：无论内部还是外部弹窗，页面内的 ctx.view 都指向“当前视图”
               // 这样在路由模式下，外部弹窗（通过 ctx.openView 触发）与内部弹窗拥有一致的 ctx.view 行为
               pageModel.context.defineProperty('view', {
                 get: () => currentView,
+                info: {
+                  description: 'Alias of current view controller (same as ctx.currentView).',
+                  detail: 'FlowView',
+                },
               });
               pageModel.context.defineProperty('closable', {
                 get: () => openMode !== 'embed',
+                info: {
+                  description: 'Whether current view can be closed.',
+                  detail: 'boolean',
+                },
               });
 
               if (pageModel instanceof RootPageModel) {
                 // ctx.pageActive 是一个 observable.ref 对象，来自 RouteModel
                 pageModel.context.defineProperty('pageActive', {
                   get: () => ctx.pageActive,
+                  info: {
+                    description: 'Reactive page active ref from route model.',
+                    detail: 'observable.ref<boolean>',
+                  },
                 });
               }
 

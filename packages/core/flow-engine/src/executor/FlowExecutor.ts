@@ -85,6 +85,10 @@ export class FlowExecutor {
 
     flowContext.defineProperty('reactView', {
       value: model.reactView,
+      info: {
+        description: 'React view helper for rendering within NocoBase application context.',
+        detail: 'ReactView',
+      },
     });
     flowContext.defineProperty('inputArgs', {
       value: {
