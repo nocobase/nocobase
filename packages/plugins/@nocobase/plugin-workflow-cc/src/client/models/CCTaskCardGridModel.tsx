@@ -28,7 +28,6 @@ export class CCTaskCardGridModel extends DetailsGridModel {
     super.onMount();
     this.emitter.on('onSubModelAdded', this.tempAssociationSyncHandler);
     this.emitter.on('onSubModelDestroyed', this.tempAssociationSyncHandler);
-    this.syncTempAssociationFields();
   }
 
   onUnmount(): void {
