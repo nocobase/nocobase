@@ -1,20 +1,20 @@
-# Bulk Edit FlowModel 实现文档
+# 批量编辑 FlowModel 完整实现文档
 
 ## 概述
 
-本目录实现了批量编辑功能的 FlowModel 版本。与批量更新不同，批量编辑使用 `BulkEditField` 组件支持三种编辑模式：保持不变、修改为、清空。
+本目录包含基于 FlowModel 的批量编辑功能的**完整重新实现**，与原有的 Schema 机制完全分离。这是一个独立的、功能完整的批量编辑解决方案。
 
-## 批量编辑 vs 批量更新
+## 核心区别
 
-### 核心区别
+### 批量编辑 vs 批量更新
 
 | 特性 | 批量编辑 (Bulk Edit) | 批量更新 (Bulk Update) |
 |------|---------------------|---------------------|
 | 字段组件 | `BulkEditField` | 普通字段组件 |
 | 编辑模式 | 保持不变/修改为/清空 | 直接赋值 |
 | 使用场景 | 选择性修改部分字段 | 批量赋值 |
-| 表单模型 | 标准表单 + BulkEditField | AssignFormModel |
-| 弹窗方式 | Schema弹窗 | FlowModel弹窗 |
+| 表单模型 | `BulkEditFormModel` | `AssignFormModel` |
+| 实现方式 | 完整 FlowModel | FlowModel |
 
 ### BulkEditField 工作原理
 
@@ -27,7 +27,7 @@
 }
 ```
 
-## 实现内容
+## 完整架构设计
 
 ### BulkEditActionModel
 
