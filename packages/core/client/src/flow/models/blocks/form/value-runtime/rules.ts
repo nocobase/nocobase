@@ -26,6 +26,8 @@ type RuleState = {
   deps: RuleDeps;
   depDisposers: Array<() => void>;
   runSeq: number;
+  /** Write sequence when this rule was last scheduled */
+  scheduledAtWriteSeq: number;
 };
 
 type RuntimeRule = {
@@ -56,6 +58,7 @@ export type RuleEngineOptions = {
   isDisposed: () => boolean;
   valuesMirror: any;
   changeTick: { value: number };
+  getWriteSeq: () => number;
   txWriteCounts: Map<string, Map<string, number>>;
   createTrackingFormValues: (collector: DepCollector) => any;
   tryResolveNamePath: (callerCtx: any, path: string | NamePath) => NamePath | null;
@@ -63,6 +66,7 @@ export type RuleEngineOptions = {
   setFormValues: (callerCtx: any, patch: Patch, options?: SetOptions) => Promise<void>;
   findExplicitHit: (pathKey: string) => string | null;
   lastDefaultValueByPathKey: Map<string, any>;
+  lastWriteMetaByPathKey: Map<string, { source: ValueSource; writeSeq: number }>;
   observableBindings: Map<string, ObservableBinding>;
 };
 
@@ -316,7 +320,7 @@ export class RuleEngine {
           getContext: () => this.options.getBlockContext(),
         };
 
-        this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0 } });
+        this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
         this.scheduleRule(id);
       }
     }
@@ -412,7 +416,7 @@ export class RuleEngine {
 
     this.rules.set(id, {
       rule,
-      state: { deps: new Set(), depDisposers: [], runSeq: 0 },
+      state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 },
     });
 
     this.scheduleRule(id);
@@ -535,7 +539,7 @@ export class RuleEngine {
           getContext: () => model?.context,
         };
 
-        this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0 } });
+        this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
         this.scheduleRule(id);
       }
     };
@@ -715,8 +719,13 @@ export class RuleEngine {
 
   private scheduleRule(id: string) {
     if (this.options.isDisposed()) return;
-    if (!this.rules.has(id)) return;
-    const rule = this.rules.get(id)?.rule;
+    const entry = this.rules.get(id);
+    if (!entry) return;
+    const { rule, state } = entry;
+
+    // Used to detect "a higher priority source has already written the target after we were scheduled".
+    state.scheduledAtWriteSeq = this.options.getWriteSeq();
+
     const debounceMs = rule?.debounceMs ?? 0;
     this.pendingRuleIds.add(id);
 
@@ -793,6 +802,7 @@ export class RuleEngine {
     const { rule, state } = entry;
     state.runSeq += 1;
     const seq = state.runSeq;
+    const scheduledAtWriteSeq = state.scheduledAtWriteSeq;
 
     const ruleContext = this.prepareRuleContext(rule);
     const { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
@@ -831,6 +841,16 @@ export class RuleEngine {
         state,
       );
       if (!shouldApply) return;
+    }
+
+    // 优先级：联动赋值（source=linkage）应覆盖“表单赋值”（source=system）。
+    // 当 target 在本次 rule 被调度之后已被 linkage 写入，则跳过 system 写入以避免回写覆盖。
+    if (rule.source === 'system' && targetKey) {
+      const lastWrite = this.options.lastWriteMetaByPathKey.get(targetKey);
+      if (lastWrite?.source === 'linkage' && lastWrite.writeSeq >= scheduledAtWriteSeq) {
+        disposeBinding();
+        return;
+      }
     }
 
     // 关联字段嵌套属性：关联对象为空/非对象时跳过，避免隐式创建

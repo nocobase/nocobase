@@ -35,9 +35,11 @@ export class FormValueRuntime {
   private readonly valuesMirror = observable({});
   private readonly explicitSet = new Set<string>();
   private readonly lastDefaultValueByPathKey = new Map<string, any>();
+  private readonly lastWriteMetaByPathKey = new Map<string, { source: ValueSource; writeSeq: number }>();
   private readonly observableBindings = new Map<string, ObservableBinding>();
   private readonly changeTick = observable.ref(0);
   private readonly txWriteCounts = new Map<string, Map<string, number>>();
+  private writeSeq = 0;
 
   private disposed = false;
   private suppressFormCallbackDepth = 0;
@@ -73,6 +75,7 @@ export class FormValueRuntime {
       isDisposed: () => this.disposed,
       valuesMirror: this.valuesMirror,
       changeTick: this.changeTick,
+      getWriteSeq: () => this.writeSeq,
       txWriteCounts: this.txWriteCounts,
       createTrackingFormValues: (collector) =>
         createFormValuesProxy({
@@ -87,6 +90,7 @@ export class FormValueRuntime {
       setFormValues: (callerCtx, patch, ruleOptions) => this.setFormValues(callerCtx, patch, ruleOptions),
       findExplicitHit: (pathKey) => this.findExplicitHit(pathKey),
       lastDefaultValueByPathKey: this.lastDefaultValueByPathKey,
+      lastWriteMetaByPathKey: this.lastWriteMetaByPathKey,
       observableBindings: this.observableBindings,
     });
 
@@ -199,6 +203,7 @@ export class FormValueRuntime {
     }
 
     const changedPaths: NamePath[] = [];
+    let bumpedWriteSeq = false;
     for (const field of changedFields || []) {
       const name = field?.name;
       const namePath: NamePath | null = Array.isArray(name)
@@ -210,6 +215,10 @@ export class FormValueRuntime {
       const nextValue = form.getFieldValue(namePath as any);
       const prevValue = _.get(this.valuesMirror, namePath);
       if (_.isEqual(nextValue, prevValue)) continue;
+      if (!bumpedWriteSeq) {
+        this.writeSeq += 1;
+        bumpedWriteSeq = true;
+      }
       _.set(this.valuesMirror, namePath, nextValue);
       changedPaths.push(namePath);
     }
@@ -223,6 +232,11 @@ export class FormValueRuntime {
 
     const isUser = changedFields.some((f) => f?.touched === true);
     const source: ValueSource = isUser ? 'user' : 'system';
+
+    const writeSeq = this.writeSeq;
+    for (const p of changedPaths) {
+      this.lastWriteMetaByPathKey.set(namePathToPathKey(p), { source, writeSeq });
+    }
 
     // 用于给 onValuesChange 提供更精确的 changedPaths/source（避免仅靠 changedValues 的 top-level key）
     this.lastObservedChangedPaths = changedPaths;
@@ -256,13 +270,20 @@ export class FormValueRuntime {
     const snapshot = allValues && typeof allValues === 'object' ? allValues : this.getFormValuesSnapshot();
 
     let hasMirrorChange = false;
+    let bumpedWriteSeq = false;
+    const actuallyChangedPaths: NamePath[] = [];
     for (const p of changedPaths) {
       if (!p?.length) continue;
       const nextValue = _.get(snapshot, p);
       const prevValue = _.get(this.valuesMirror, p);
       if (_.isEqual(prevValue, nextValue)) continue;
+      if (!bumpedWriteSeq) {
+        this.writeSeq += 1;
+        bumpedWriteSeq = true;
+      }
       _.set(this.valuesMirror, p, nextValue);
       hasMirrorChange = true;
+      actuallyChangedPaths.push(p);
     }
     if (hasMirrorChange) {
       this.bumpChangeTick();
@@ -271,6 +292,14 @@ export class FormValueRuntime {
     // 非 default 来源写入：需要使默认值永久失效（explicit）
     for (const p of changedPaths) {
       this.markExplicit(namePathToPathKey(p));
+    }
+
+    if (hasMirrorChange) {
+      const writeSeq = this.writeSeq;
+      for (const p of actuallyChangedPaths) {
+        if (!p?.length) continue;
+        this.lastWriteMetaByPathKey.set(namePathToPathKey(p), { source, writeSeq });
+      }
     }
 
     const txId = createTxId();
@@ -299,6 +328,10 @@ export class FormValueRuntime {
       const changedPaths: NamePath[] = [];
 
       if (!Array.isArray(patch)) {
+        const patchKeys = Object.keys(patch || {});
+        if (patchKeys.length) {
+          this.writeSeq += 1;
+        }
         this.suppressFormCallbackDepth++;
         try {
           form.setFieldsValue?.(patch);
@@ -306,6 +339,11 @@ export class FormValueRuntime {
           this.bumpChangeTick();
         } finally {
           this.suppressFormCallbackDepth--;
+        }
+
+        const writeSeq = this.writeSeq;
+        for (const k of patchKeys) {
+          this.lastWriteMetaByPathKey.set(k, { source, writeSeq });
         }
 
         if (markExplicit) {
@@ -376,6 +414,9 @@ export class FormValueRuntime {
         return;
       }
 
+      this.writeSeq += 1;
+      const writeSeq = this.writeSeq;
+
       for (const { pathKey, rawValue } of filteredToWrite) {
         if (!isObservable(rawValue)) {
           const existing = this.observableBindings.get(pathKey);
@@ -396,6 +437,10 @@ export class FormValueRuntime {
         this.bumpChangeTick();
       } finally {
         this.suppressFormCallbackDepth--;
+      }
+
+      for (const { pathKey } of filteredToWrite) {
+        this.lastWriteMetaByPathKey.set(pathKey, { source, writeSeq });
       }
 
       if (markExplicit) {
@@ -452,6 +497,9 @@ export class FormValueRuntime {
     const prevValue = _.get(this.valuesMirror, namePath);
     if (_.isEqual(prevValue, nextValue)) return;
 
+    this.writeSeq += 1;
+    const writeSeq = this.writeSeq;
+
     this.suppressFormCallbackDepth++;
     try {
       form.setFieldValue?.(namePath, nextValue);
@@ -460,6 +508,8 @@ export class FormValueRuntime {
     } finally {
       this.suppressFormCallbackDepth--;
     }
+
+    this.lastWriteMetaByPathKey.set(pathKey, { source, writeSeq });
 
     const txId = createTxId();
     const allValues = this.getFormValuesSnapshot();
