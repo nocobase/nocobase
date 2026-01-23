@@ -60,8 +60,8 @@ function findNode(treeData, item) {
   }
 }
 
-function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, fields }) {
-  const activeNode = findNode(fields.dataSource || fields.componentProps.treeData, node);
+function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, dataSource, setDataSource }) {
+  const activeNode = findNode(dataSource, node);
   let children = [];
   // 多对多和多对一只展示关系字段
   if (['belongsTo', 'belongsToMany'].includes(node.field.type) && node?.type === 'reference') {
@@ -83,7 +83,7 @@ function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, 
   } else {
     activeNode.isLeaf = true;
   }
-
+  setDataSource([...dataSource]);
   return children;
 }
 
@@ -188,17 +188,17 @@ export const getCollectionState = (dm, t, dataSourceKey, displayType = true) => 
     }
   };
 
-  const getOnLoadData = (fields: any) => {
+  const getOnLoadData = (dataSource: any, setDataSource) => {
     return (node) => {
       return new Promise((resolve) => {
         if (node.children.length) {
           node.children.forEach((child) => {
-            loadChildren({ node: child, traverseAssociations, traverseFields, systemKeys, fields });
+            loadChildren({ node: child, traverseAssociations, traverseFields, systemKeys, dataSource, setDataSource });
           });
           return resolve(void 0);
         }
 
-        loadChildren({ node, traverseAssociations, traverseFields, systemKeys, fields });
+        loadChildren({ node, traverseAssociations, traverseFields, systemKeys, dataSource, setDataSource });
         resolve(void 0);
       });
     };
