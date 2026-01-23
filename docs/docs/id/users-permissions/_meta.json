@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Pengguna",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Peran dan Izin",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Peran",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Izin",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Terapkan di UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gabungan Peran",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Panduan Pengembang",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Perluas Bar Konfigurasi Izin",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Departemen",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Manajemen Departemen",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Manajemen Peran Departemen",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Sinkronisasi Data Pengguna",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Manajemen Sinkronisasi",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sumber Data",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Panduan Pengembang",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Perluas Sumber Data Sinkronisasi",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Perluas Sumber Daya Target Sinkronisasi",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

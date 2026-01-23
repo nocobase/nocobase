@@ -41,4 +41,14 @@ features:
       - title: More...
         details: Explore more tutorials on plugin development.
         link: /development
+
+  - title: Solutions
+    details: Industry solution templates built on NocoBase.
+    items:
+      - title: Ticketing Solution
+        details: AI-driven intelligent ticketing platform with multi-channel access, SLA management, knowledge base and more.
+        link: /solution/ticket-system/
+      - title: CRM (Preview)
+        details: No-code, flexible customer relationship management platform covering customers, leads, opportunities, orders and more.
+        link: /solution/crm/
 ---

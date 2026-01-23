@@ -42,4 +42,14 @@ features:
       - title: 更多...
         details: 查看更多插件开发教程。
         link: /development
+
+  - title: 解决方案
+    details: 基于 NocoBase 构建的行业解决方案模板。
+    items:
+      - title: 工单方案
+        details: AI 驱动的智能工单管理平台，支持多渠道接入、SLA 管理、知识库等。
+        link: /solution/ticket-system/
+      - title: CRM（预览版）
+        details: 无代码、灵活的客户关系管理基座，涵盖客户、线索、商机、订单等功能。
+        link: /solution/crm/
 ---

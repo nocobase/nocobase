@@ -52,7 +52,8 @@ export const SwitchWithTitle: FC = observer(
     };
 
     // 点击整个容器时触发
-    const handleWrapperClick = () => {
+    const handleWrapperClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
       if (disabled) return;
       handleChange(!checked);
     };

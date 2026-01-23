@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "بدء سريع",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "مقدمة",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "كتابة Plugin إجراء",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

@@ -1,0 +1,210 @@
+:::tip
+เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# การจัดการข้อมูลสำรอง
+
+## บทนำ
+
+ปลั๊กอินตัวจัดการข้อมูลสำรองของ NocoBase มีฟังก์ชันการทำงานสำหรับการสำรองข้อมูลทั้งหมดของฐานข้อมูล NocoBase และไฟล์ที่ผู้ใช้ได้อัปโหลด รวมถึงการสำรองข้อมูลตามกำหนดเวลา การดาวน์โหลด การลบ และการกู้คืนข้อมูลสำรองครับ/ค่ะ
+
+:::warning
+ปลั๊กอินตัวจัดการข้อมูลสำรองจะรวมอยู่ใน NocoBase Professional และ Enterprise Edition ครับ/ค่ะ สำหรับผู้ใช้ Community และ Standard Edition ท่านสามารถสำรองฐานข้อมูลได้โดยตรง ดูรายละเอียดเพิ่มเติมได้ที่: [`วิธีการสำรองและกู้คืน NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## การติดตั้ง Database Client
+
+ตัวจัดการข้อมูลสำรองต้องพึ่งพา Database Client ที่ตรงกับฐานข้อมูลหลักที่ใช้งานอยู่ครับ/ค่ะ ก่อนใช้งาน โปรดดาวน์โหลด Database Client ที่ตรงกับเวอร์ชันฐานข้อมูลที่คุณใช้จากเว็บไซต์ทางการครับ/ค่ะ
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+สำหรับเวอร์ชัน Docker ท่านสามารถเขียนสคริปต์ได้โดยตรงในไดเรกทอรี `./storage/scripts` ครับ/ค่ะ
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+เนื้อหาของไฟล์ `install-database-client.sh` มีดังนี้ครับ/ค่ะ
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+จากนั้นรีสตาร์ทคอนเทนเนอร์ `app` ครับ/ค่ะ
+
+```bash
+docker compose restart app
+# ดูบันทึก
+docker compose logs app
+```
+
+ตรวจสอบหมายเลขเวอร์ชันของ Database Client ซึ่งจะต้องตรงกับหมายเลขเวอร์ชันของ Database Server ครับ/ค่ะ
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## คำแนะนำการใช้งาน
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### สร้างข้อมูลสำรองใหม่
+
+คลิกปุ่ม 'สร้างข้อมูลสำรองใหม่' เพื่อสร้างข้อมูลสำรองใหม่ตามการตั้งค่าการสำรองข้อมูล และแสดงสถานะการสำรองข้อมูลในรายการข้อมูลสำรองครับ/ค่ะ
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### กู้คืนข้อมูลสำรอง
+
+รองรับการกู้คืนข้อมูลสำรองจากรายการข้อมูลสำรอง หรืออัปโหลดไฟล์ข้อมูลสำรองจากเครื่องเพื่อกู้คืนครับ/ค่ะ
+ไม่อนุญาตให้ดำเนินการกู้คืนข้อมูลสำรองในสถานการณ์ต่อไปนี้:
+
+- เมื่อเวอร์ชัน NocoBase ปัจจุบันต่ำกว่าเวอร์ชัน NocoBase ที่อยู่ในไฟล์ข้อมูลสำรอง
+- เมื่อฐานข้อมูล NocoBase ปัจจุบันไม่สอดคล้องกับการตั้งค่าต่อไปนี้ในไฟล์ข้อมูลสำรอง:
+  - dialect (ประเภทฐานข้อมูล)
+  - underscored (การตั้งค่าฟิลด์)
+  - table prefix (คำนำหน้าตาราง)
+  - schema (โครงสร้างตาราง)
+- เมื่อไม่ได้เปิดใช้งาน `Tolerant mode` และเวอร์ชันฐานข้อมูลขณะสร้างข้อมูลสำรองสูงกว่าเวอร์ชันฐานข้อมูลของแอปพลิเคชันปัจจุบัน
+
+> **การกู้คืนข้อมูลสำรองเป็นการดำเนินการกับฐานข้อมูลทั้งหมด ขอแนะนำให้สำรองฐานข้อมูลปัจจุบันไว้ก่อนที่จะกู้คืนข้อมูลสำรองครับ/ค่ะ**
+
+#### กู้คืนจากรายการข้อมูลสำรอง
+
+คลิกปุ่ม `กู้คืน` ของรายการข้อมูลสำรองในรายการ ป้อนรหัสผ่านการเข้ารหัสไฟล์ข้อมูลสำรองในหน้าต่างป๊อปอัป แล้วคลิก 'ยืนยัน' เพื่อกู้คืนข้อมูลสำรองครับ/ค่ะ
+
+> สำหรับไฟล์ข้อมูลสำรองที่ไม่ได้เข้ารหัส ไม่จำเป็นต้องป้อนรหัสผ่านครับ/ค่ะ
+
+> หากต้องการกู้คืนไฟล์ข้อมูลสำรองไปยังฐานข้อมูลเวอร์ชันที่ต่ำกว่า จะต้องเปิดใช้งาน `Tolerant mode` ครับ/ค่ะ
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### กู้คืนจากไฟล์ข้อมูลสำรองในเครื่อง
+
+คลิกปุ่ม `กู้คืนจากข้อมูลสำรองในเครื่อง` เลือกไฟล์ข้อมูลสำรองในเครื่องในหน้าต่างป๊อปอัป ป้อนรหัสผ่านการเข้ารหัสไฟล์ข้อมูลสำรอง แล้วคลิก 'ยืนยัน' เพื่อกู้คืนข้อมูลสำรองครับ/ค่ะ
+
+> สำหรับไฟล์ข้อมูลสำรองที่ไม่ได้เข้ารหัส ไม่จำเป็นต้องป้อนรหัสผ่านครับ/ค่ะ
+
+> หากต้องการกู้คืนไฟล์ข้อมูลสำรองไปยังฐานข้อมูลเวอร์ชันที่ต่ำกว่า จะต้องเปิดใช้งาน `Tolerant mode` ครับ/ค่ะ
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### ดาวน์โหลดไฟล์ข้อมูลสำรอง
+
+คลิกปุ่ม `ดาวน์โหลด` ของรายการข้อมูลสำรองในรายการ เพื่อดาวน์โหลดไฟล์ข้อมูลสำรองครับ/ค่ะ
+
+#### ลบข้อมูลสำรอง
+
+คลิกปุ่ม `ลบ` ของรายการข้อมูลสำรองในรายการ เพื่อลบไฟล์ข้อมูลสำรองครับ/ค่ะ
+
+## การตั้งค่าข้อมูลสำรอง
+
+สลับไปที่แท็บ `ตั้งค่า` แก้ไขการตั้งค่าข้อมูลสำรอง แล้วคลิก 'บันทึก' เพื่อให้การเปลี่ยนแปลงมีผลครับ/ค่ะ
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### คำอธิบายการตั้งค่าข้อมูลสำรอง
+
+- `สำรองข้อมูลอัตโนมัติ`: หลังจากเปิดใช้งาน `เรียกใช้การสำรองข้อมูลอัตโนมัติตามกำหนดเวลา Cron` ท่านสามารถตั้งค่าให้สำรองข้อมูลอัตโนมัติในเวลาที่กำหนดได้ครับ/ค่ะ
+- `จำนวนข้อมูลสำรองสูงสุด`: กำหนดจำนวนไฟล์ข้อมูลสำรองที่จัดเก็บในเครื่องได้สูงสุด หากเกินจำนวนที่กำหนด ระบบจะลบไฟล์ข้อมูลสำรองที่เก่าที่สุดในเครื่องโดยอัตโนมัติครับ/ค่ะ
+- `ซิงค์ไฟล์ข้อมูลสำรองไปยัง Cloud Storage`: ตั้งค่า Cloud Storage ที่จะอัปโหลดไฟล์ข้อมูลสำรองโดยอัตโนมัติหลังจากสำรองข้อมูลสำเร็จครับ/ค่ะ
+- `สำรองไฟล์ที่จัดเก็บในเครื่อง`: กำหนดว่าจะรวมไฟล์ที่ผู้ใช้อัปโหลดไปยังพื้นที่จัดเก็บในเครื่องของเซิร์ฟเวอร์ (storage/uploads) ไว้ในการสำรองข้อมูลหรือไม่ครับ/ค่ะ
+- `รหัสผ่านสำหรับกู้คืน`: หากมีการตั้งค่ารหัสผ่านสำหรับกู้คืน จะต้องป้อนรหัสผ่านนี้เมื่อกู้คืนข้อมูลสำรองครับ/ค่ะ
+
+> **โปรดเก็บรหัสผ่านสำหรับกู้คืนไว้ให้ดี หากลืมรหัสผ่านจะไม่สามารถกู้คืนไฟล์ข้อมูลสำรองได้ครับ/ค่ะ**

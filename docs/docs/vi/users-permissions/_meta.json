@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Người dùng",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Vai trò và quyền",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Cấu hình vai trò",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cấu hình quyền",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Áp dụng trong UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hợp nhất vai trò",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Hướng dẫn cho nhà phát triển",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Mở rộng thanh cấu hình quyền",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Phòng ban",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Quản lý phòng ban",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Quản lý vai trò phòng ban",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Đồng bộ dữ liệu người dùng",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Quản lý đồng bộ",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nguồn dữ liệu",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Hướng dẫn cho nhà phát triển",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Mở rộng nguồn dữ liệu đồng bộ",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mở rộng tài nguyên đích đồng bộ",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

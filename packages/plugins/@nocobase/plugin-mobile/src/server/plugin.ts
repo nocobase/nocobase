@@ -34,6 +34,32 @@ export class PluginMobileServer extends Plugin {
         });
       }
     });
+
+    this.app.on('afterInstallPlugin', async (plugin) => {
+      if (plugin.name !== 'mobile') {
+        return;
+      }
+      const record = await this.pm.repository.findOne({
+        filter: {
+          name: 'mobile',
+        },
+      });
+      if (!record) {
+        return;
+      }
+      record.options = {
+        ...record.options,
+        deprecated: true,
+      };
+      await this.pm.repository.update({
+        filter: {
+          name: 'mobile',
+        },
+        values: {
+          options: record.options,
+        },
+      });
+    });
   }
 
   setACL() {

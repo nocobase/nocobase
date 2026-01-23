@@ -76,15 +76,22 @@ async function evaluate(expr: string, ctx: any) {
     const raw = expr.trim();
 
     // 优先处理仅点号路径的聚合：ctx.a.b.c（不支持括号/函数/索引）
-    const dotOnly = raw.match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)$/);
+    // 顶层变量名仍使用 JS 标识符规则；子路径允许包含 '-'（例如 formValues.roles.a-b）。
+    const dotOnly = raw.match(
+      /^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\.([a-zA-Z_$][a-zA-Z0-9_$-]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)*))?$/,
+    );
     if (dotOnly) {
-      const path = dotOnly[1];
-      const segs = path.split('.');
-      const first = segs.shift();
-      const base = await ctx[first as string];
-      if (!segs.length) return base;
+      const first = dotOnly[1];
+      const rest = dotOnly[2];
+      const base = await ctx[first];
+      if (!rest) return base;
       // 使用异步版本取值，逐段 await，并保留数组场景下的隐式聚合语义
-      return await asyncGetValuesByPath(base, segs.join('.'));
+      const resolved = await asyncGetValuesByPath(base, rest);
+      // 当 dot path 含 '-' 时可能与减号运算符存在歧义（例如：ctx.aa.bb-ctx.cc）。
+      // 若按 path 解析未取到值，则回退到 JS 表达式解析，尽量保持兼容。
+      if (typeof resolved !== 'undefined' || !rest.includes('-')) {
+        return resolved;
+      }
     }
 
     const transformed = preprocessExpression(raw);

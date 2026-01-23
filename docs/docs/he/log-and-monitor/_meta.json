@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "יומן",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "יומן צד שרת",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "יומן צד שרת, יומן ביקורת, היסטוריה",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "טלמטריה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "הוראות שימוש",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "מייצא",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

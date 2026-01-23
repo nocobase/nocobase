@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "قنوات الإشعارات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "رسائل داخلية",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "بريد إلكتروني",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat للشركات",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "دليل المطورين",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "توسيع أنواع قنوات الإشعارات",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "توسيع Notification API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

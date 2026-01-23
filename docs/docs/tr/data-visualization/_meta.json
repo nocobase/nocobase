@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Hızlı Başlangıç",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Özellik Tanıtımı",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Veri Sorgulama",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Grafik Seçenekleri",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Önizleme ve Kaydetme",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bağlamsal Ortam Değişkenleri",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sayfa Filtreleri ve Etkileşim",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Gelişmiş",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "SQL Modunda Sorgulama",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Özel Grafik Yapılandırması",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Özel Etkileşim Olayları",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Sıkça Sorulan Sorular",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "En İyi Uygulamalar",
+    "link": "/data-visualization/best-practices"
+  }
+]

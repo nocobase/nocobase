@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "उपयोगकर्ता प्रमाणीकरण",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ऑथेंटिकेटर प्रबंधन",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "प्रमाणीकरण प्रकार",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "पासवर्ड",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "कॉन्फ़िगरेशन",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "उदाहरण",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google लॉगिन",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "Microsoft लॉगिन",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "कॉन्फ़िगरेशन",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "उदाहरण",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google लॉगिन",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "वीकॉम",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "API कुंजी",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "विकास गाइड",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "विस्तारित प्रमाणीकरण प्रकार",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "API संदर्भ",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "सत्यापन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "सत्यापन प्रकार",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "TOTP ऑथेंटिकेटर",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "विकास गाइड",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "विस्तारित सत्यापन प्रकार",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "विस्तारित सत्यापन परिदृश्य",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "विस्तारित SMS सेवा प्रदाता",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "API संदर्भ",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "टू-फ़ैक्टर ऑथेंटिकेशन (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]
