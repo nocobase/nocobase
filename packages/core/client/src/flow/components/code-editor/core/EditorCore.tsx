@@ -21,7 +21,6 @@ import { EditorView, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
-import { createJavascriptCompletion } from '../javascriptCompletion';
 import { createJavaScriptLinter } from '../linter';
 
 export const EditorCore: React.FC<{
@@ -89,7 +88,6 @@ export const EditorCore: React.FC<{
         override: [
           createHtmlCompletion(),
           createJsxCompletion(),
-          createJavascriptCompletion(),
           ...(Array.isArray(extraCompletions) && extraCompletions.length
             ? [staticCompletionSource(extraCompletions)]
             : []),

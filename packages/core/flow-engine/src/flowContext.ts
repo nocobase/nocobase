@@ -47,7 +47,7 @@ import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { inferRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
-import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
 import { setupRunJSLibs } from './runjsLibs';
@@ -130,6 +130,21 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
+export type FlowContextDocRef = string | { url: string; title?: string };
+
+export type FlowContextDocParam = {
+  name: string;
+  description?: string;
+  type?: string;
+  optional?: boolean;
+  default?: JSONValue;
+};
+
+export type FlowContextDocReturn = {
+  description?: string;
+  type?: string;
+};
+
 export interface MetaTreeNode {
   name: string;
   title: string;
@@ -159,11 +174,11 @@ export interface PropertyMeta {
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
   // 变量禁用控制：若 disabled 为真（或函数返回真）则禁用
-  disabled?: boolean | (() => boolean);
+  disabled?: boolean | (() => boolean | Promise<boolean>);
   // 禁用原因（用于 UI 小问号提示），可为函数
-  disabledReason?: string | (() => string | undefined);
+  disabledReason?: string | (() => string | undefined | Promise<string | undefined>);
   // 显示控制：当 hidden 为 true（或函数返回 true）时，不在变量选择器中展示该节点
-  hidden?: boolean | (() => boolean);
+  hidden?: boolean | (() => boolean | Promise<boolean>);
   // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
   // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
   buildVariablesParams?: (
@@ -195,6 +210,12 @@ export interface PropertyOptions {
   cache?: boolean;
   observable?: boolean; // 是否为 observable 属性
   meta?: PropertyMetaOrFactory; // 支持静态、函数和异步函数（工厂函数可带 title/sort）
+  /**
+   * 面向大模型/编辑器的上下文信息（不影响变量选择器 UI）。
+   * - 若未提供 info 但提供了 meta，getInfos() 可基于 meta 推断最小结构性信息
+   * - 若同时提供，getInfos() 将深合并且同名字段以 info 优先
+   */
+  info?: FlowContextPropertyInfoOrFactory;
   // 标记该属性是否在服务端解析：
   // - boolean: true 表示整个顶层变量交给服务端；false 表示仅前端解析
   // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
@@ -204,6 +225,135 @@ export interface PropertyOptions {
   // - 默认 false：保持兼容，其他变量即使没有 contextParams 也可选择调用服务端。
   serverOnlyWhenContextParams?: boolean;
 }
+
+export type FlowContextMethodInfoInput = {
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  hidden?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+  disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+  disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
+};
+
+export type FlowContextMethodInfo = {
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
+export type FlowContextPropertyInfoObjectInput = Omit<
+  FlowContextPropertyInfo,
+  'disabled' | 'disabledReason' | 'properties'
+> & {
+  properties?:
+    | Record<string, FlowContextPropertyInfoInput>
+    | (() => Promise<Record<string, FlowContextPropertyInfoInput>>);
+  hidden?: RunJSDocHiddenOrPathsDoc;
+  disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+  disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
+};
+
+export type FlowContextPropertyInfoInput = string | FlowContextPropertyInfoObjectInput;
+
+export type FlowContextPropertyInfoFactory = {
+  (): FlowContextPropertyInfoInput | Promise<FlowContextPropertyInfoInput | null> | null;
+};
+
+export type FlowContextPropertyInfoOrFactory = FlowContextPropertyInfoInput | FlowContextPropertyInfoFactory;
+
+export type FlowContextPropertyInfo = {
+  title?: string;
+  type?: string;
+  interface?: string;
+  description?: string;
+  detail?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  disabled?: boolean;
+  disabledReason?: string;
+  properties?: Record<string, FlowContextPropertyInfo>;
+};
+
+export type FlowContextApiInfo = {
+  title?: string;
+  type?: string;
+  interface?: string;
+  description?: string;
+  examples?: string[];
+  completion?: RunJSDocCompletionDoc;
+  ref?: FlowContextDocRef;
+  params?: FlowContextDocParam[];
+  returns?: FlowContextDocReturn;
+  disabled?: boolean;
+  disabledReason?: string;
+  properties?: Record<string, FlowContextApiInfo>;
+};
+
+export type FlowContextInfosEnvNode = {
+  /**
+   * 说明（面向人/大模型）。建议为一句话。
+   */
+  description?: string;
+  /**
+   * 可用于 `await ctx.getVar(getVar)` 的表达式字符串，推荐以 `ctx.` 开头。
+   * 例如：'ctx.popup'、'ctx.resource.collectionName'
+   */
+  getVar?: string;
+  /**
+   * 已解析/可序列化的静态值（用于 prompt 直接使用）。
+   * 注意：应保持小体积，避免放入 record 等大对象。
+   */
+  value?: JSONValue;
+  /**
+   * 子节点（用于表达 popup.resource.xxx 等层级结构）。
+   */
+  properties?: Record<string, FlowContextInfosEnvNode>;
+};
+
+export type FlowContextInfosEnvs = {
+  popup?: FlowContextInfosEnvNode;
+  block?: FlowContextInfosEnvNode;
+  flowModel?: FlowContextInfosEnvNode;
+  resource?: FlowContextInfosEnvNode;
+  record?: FlowContextInfosEnvNode;
+};
+
+export type FlowContextInfos = {
+  apis: Record<string, FlowContextApiInfo>;
+  envs: FlowContextInfosEnvs;
+};
+
+export type FlowContextGetInfosOptions = {
+  /**
+   * 最大展开层级（默认 3）。
+   * - 当不传 path 时，top-level property depth=1。
+   * - 当传 path 时，path 对应节点 depth=1。
+   */
+  maxDepth?: number;
+  /**
+   * 剪裁：仅收集指定 path 下的上下文信息。
+   * - string 形式支持：'record'、'record.id'、'ctx.record'、'{{ ctx.record }}'
+   * - string[] 表示多个剪裁路径合并
+   */
+  path?: string | string[];
+  /**
+   * RunJS 文档版本（默认 v1）。用于从 RunJSContextRegistry 取静态 doc 进行合并。
+   */
+  version?: RunJSVersion;
+};
 
 type RouteOptions = {
   name?: string; // 路由唯一标识
@@ -215,6 +365,7 @@ type RouteOptions = {
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
+  _methodInfos: Record<string, FlowContextMethodInfoInput> = {};
   protected _cache: Record<string, any> = {};
   protected _observableCache: Record<string, any> = observable.shallow({});
   protected _delegates: FlowContext[] = [];
@@ -299,8 +450,15 @@ export class FlowContext {
     });
   }
 
-  defineMethod(name: string, fn: (...args: any[]) => any, des?: string) {
+  defineMethod(name: string, fn: (...args: any[]) => any, info?: string | FlowContextMethodInfoInput) {
     this._methods[name] = fn;
+    if (typeof info === 'string') {
+      this._methodInfos[name] = { description: info };
+    } else if (info && typeof info === 'object') {
+      this._methodInfos[name] = info;
+    } else {
+      delete this._methodInfos[name];
+    }
     Object.defineProperty(this, name, {
       configurable: true,
       enumerable: false,
@@ -476,6 +634,1069 @@ export class FlowContext {
       return sb - sa;
     });
     return sorted.map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
+  }
+
+  /**
+   * 获取可序列化的上下文信息（面向大模型/编辑器等工具）。
+   *
+   * - 返回静态 plain object（不包含函数）
+   * - 支持合并 RunJSContextRegistry 的静态 doc 与运行时 defineProperty/defineMethod 注入信息
+   * - 支持计算/过滤 hidden，并计算 disabled/disabledReason（允许函数/异步函数）
+   * - 支持 maxDepth（默认 3）与 path 剪裁
+   */
+  async getInfos(options: FlowContextGetInfosOptions = {}): Promise<FlowContextInfos> {
+    const maxDepthRaw = options.maxDepth ?? 3;
+    const maxDepth = Number.isFinite(maxDepthRaw) ? Math.max(1, Math.floor(maxDepthRaw)) : 3;
+    const version = (options.version as RunJSVersion) || ('v1' as RunJSVersion);
+    const evalCtx = this.createProxy();
+
+    const isPrivateKey = (key: string) => typeof key === 'string' && key.startsWith('_');
+
+    const isPromiseLike = (v: any): v is Promise<any> =>
+      !!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as any).then === 'function';
+
+    const buildEnvs = async (): Promise<FlowContextInfosEnvs> => {
+      const envs: FlowContextInfosEnvs = {};
+
+      const firstDefined = <T>(...candidates: Array<T | undefined>): T | undefined => {
+        for (const v of candidates) {
+          if (typeof v !== 'undefined') return v;
+        }
+        return undefined;
+      };
+
+      const omitUndefined = (obj: Record<string, any>): Record<string, any> => {
+        const out: Record<string, any> = {};
+        for (const [k, v] of Object.entries(obj || {})) {
+          if (typeof v !== 'undefined') out[k] = v;
+        }
+        return out;
+      };
+
+      const getMaybe = <T = any>(fn: () => T): T | undefined => {
+        try {
+          return fn();
+        } catch (_) {
+          return undefined;
+        }
+      };
+
+      const hasSnapshotValue = (v: any): boolean => {
+        if (typeof v === 'undefined' || v === null) return false;
+        if (typeof v === 'string') return v.trim().length > 0;
+        if (Array.isArray(v)) return v.length > 0;
+        return true;
+      };
+
+      const safeCall = <T = any>(fn: () => T): T | undefined => {
+        try {
+          return fn();
+        } catch (_) {
+          return undefined;
+        }
+      };
+
+      const getResourceSnapshot = (
+        res: any,
+      ): Partial<{
+        dataSourceKey: any;
+        collectionName: any;
+        associationName: any;
+        filterByTk: any;
+        sourceId: any;
+      }> => {
+        const out: any = {};
+        if (!res) return out;
+
+        // Direct fields (popup/view inputArgs style)
+        for (const k of ['dataSourceKey', 'collectionName', 'associationName', 'filterByTk', 'sourceId']) {
+          const v = (res as any)?.[k];
+          if (hasSnapshotValue(v)) out[k] = v;
+        }
+
+        // FlowResource-like methods (BaseRecordResource/SQLResource)
+        if (!('dataSourceKey' in out)) {
+          const v = safeCall(() => (res as any).getDataSourceKey?.());
+          if (hasSnapshotValue(v)) out.dataSourceKey = v;
+        }
+        if (!('filterByTk' in out)) {
+          const v = safeCall(() => (res as any).getFilterByTk?.());
+          if (hasSnapshotValue(v)) out.filterByTk = v;
+        }
+        if (!('filterByTk' in out)) {
+          const v = safeCall(() => (res as any).getMeta?.('currentFilterByTk'));
+          if (hasSnapshotValue(v)) out.filterByTk = v;
+        }
+        if (!('sourceId' in out)) {
+          const v = safeCall(() => (res as any).getSourceId?.());
+          if (hasSnapshotValue(v)) out.sourceId = v;
+        }
+
+        // Infer collection/association from resourceName when not provided
+        if (!('collectionName' in out) || !('associationName' in out)) {
+          const rn = safeCall(() => (res as any).getResourceName?.());
+          const resourceName = typeof rn === 'string' ? rn.trim() : '';
+          if (resourceName) {
+            const parts = resourceName
+              .split('.')
+              .map((x) => x.trim())
+              .filter(Boolean);
+            if (parts.length === 1) {
+              if (!('collectionName' in out)) out.collectionName = parts[0];
+            } else if (parts.length >= 2) {
+              if (!('collectionName' in out)) out.collectionName = parts[0];
+              if (!('associationName' in out)) out.associationName = parts.slice(1).join('.');
+            }
+          }
+        }
+
+        return out;
+      };
+
+      // Resolve popup (may be Promise)
+      const popup = await (async () => {
+        try {
+          const raw = (evalCtx as any).popup;
+          return isPromiseLike(raw) ? await raw : raw;
+        } catch (_) {
+          return undefined;
+        }
+      })();
+
+      const model = getMaybe(() => (evalCtx as any).model);
+      const blockModel = getMaybe(() => (evalCtx as any).blockModel);
+      const inputArgs = getMaybe(() => (evalCtx as any).view?.inputArgs);
+      const ctxResource = getMaybe(() => (evalCtx as any).resource);
+
+      const popupResource = popup?.resource;
+      const popupResourceSnap = getResourceSnapshot(popupResource);
+
+      const blockOwner = blockModel;
+      const blockOwnerExpr = blockModel ? 'ctx.blockModel' : undefined;
+      const blockResourceBaseExpr = blockOwnerExpr ? `${blockOwnerExpr}.resource` : undefined;
+      const blockResource = blockOwner?.resource;
+      const blockResourceSnap = getResourceSnapshot(blockResource);
+      const inputArgsSnap = getResourceSnapshot(inputArgs);
+      const ctxResourceSnap = getResourceSnapshot(ctxResource);
+
+      // Resource snapshot (for prompt)
+      const pickWithGetVar = <T>(
+        pairs: Array<{
+          value: T | undefined;
+          getVar: string;
+        }>,
+      ): { value: T; getVar: string } | undefined => {
+        for (const p of pairs) {
+          if (hasSnapshotValue(p.value)) return { value: p.value as T, getVar: p.getVar };
+        }
+        return undefined;
+      };
+
+      const hasAnyResourceValuesIn = (snap: any): boolean =>
+        hasSnapshotValue(snap?.collectionName) ||
+        hasSnapshotValue(snap?.dataSourceKey) ||
+        hasSnapshotValue(snap?.associationName);
+
+      const resourceBaseExpr: string | undefined = hasAnyResourceValuesIn(popupResourceSnap)
+        ? 'ctx.popup.resource'
+        : hasAnyResourceValuesIn(blockResourceSnap)
+          ? blockResourceBaseExpr
+          : hasAnyResourceValuesIn(inputArgsSnap)
+            ? 'ctx.view.inputArgs'
+            : hasAnyResourceValuesIn(ctxResourceSnap)
+              ? 'ctx.resource'
+              : undefined;
+
+      const collectionNamePick = pickWithGetVar([
+        { value: popupResourceSnap?.collectionName, getVar: 'ctx.popup.resource.collectionName' },
+        { value: blockResourceSnap?.collectionName, getVar: `${blockResourceBaseExpr}.collectionName` },
+        { value: inputArgsSnap?.collectionName, getVar: 'ctx.view.inputArgs.collectionName' },
+        { value: ctxResourceSnap?.collectionName, getVar: 'ctx.resource.collectionName' },
+      ]);
+      const dataSourceKeyPick = pickWithGetVar([
+        { value: popupResourceSnap?.dataSourceKey, getVar: 'ctx.popup.resource.dataSourceKey' },
+        { value: blockResourceSnap?.dataSourceKey, getVar: `${blockResourceBaseExpr}.dataSourceKey` },
+        { value: inputArgsSnap?.dataSourceKey, getVar: 'ctx.view.inputArgs.dataSourceKey' },
+        { value: ctxResourceSnap?.dataSourceKey, getVar: 'ctx.resource.dataSourceKey' },
+      ]);
+      const associationNamePick = pickWithGetVar([
+        { value: popupResourceSnap?.associationName, getVar: 'ctx.popup.resource.associationName' },
+        { value: blockResourceSnap?.associationName, getVar: `${blockResourceBaseExpr}.associationName` },
+        { value: inputArgsSnap?.associationName, getVar: 'ctx.view.inputArgs.associationName' },
+        { value: ctxResourceSnap?.associationName, getVar: 'ctx.resource.associationName' },
+      ]);
+      const filterByTkPick = pickWithGetVar([
+        { value: popupResourceSnap?.filterByTk, getVar: 'ctx.popup.resource.filterByTk' },
+        { value: blockResourceSnap?.filterByTk, getVar: `${blockResourceBaseExpr}.filterByTk` },
+        { value: inputArgsSnap?.filterByTk, getVar: 'ctx.view.inputArgs.filterByTk' },
+        { value: ctxResourceSnap?.filterByTk, getVar: 'ctx.resource.filterByTk' },
+      ]);
+      const sourceIdPick = pickWithGetVar([
+        { value: popupResourceSnap?.sourceId, getVar: 'ctx.popup.resource.sourceId' },
+        { value: blockResourceSnap?.sourceId, getVar: `${blockResourceBaseExpr}.sourceId` },
+        { value: inputArgsSnap?.sourceId, getVar: 'ctx.view.inputArgs.sourceId' },
+        { value: ctxResourceSnap?.sourceId, getVar: 'ctx.resource.sourceId' },
+      ]);
+
+      const resourceProps: Record<string, FlowContextInfosEnvNode> = {};
+      let hasResourceValues = false;
+      if (hasSnapshotValue(collectionNamePick?.value)) {
+        resourceProps.collectionName = {
+          description: 'Collection name',
+          getVar: collectionNamePick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.collectionName` : undefined),
+          value: collectionNamePick?.value as any,
+        };
+        hasResourceValues = true;
+      }
+      if (hasSnapshotValue(dataSourceKeyPick?.value)) {
+        resourceProps.dataSourceKey = {
+          description: 'Data source key',
+          getVar: dataSourceKeyPick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.dataSourceKey` : undefined),
+          value: dataSourceKeyPick?.value as any,
+        };
+        hasResourceValues = true;
+      }
+      if (hasSnapshotValue(associationNamePick?.value)) {
+        resourceProps.associationName = {
+          description: 'Association name',
+          getVar: associationNamePick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.associationName` : undefined),
+          value: associationNamePick?.value as any,
+        };
+        hasResourceValues = true;
+      }
+
+      // Only include envs.resource when snapshot contains at least one resource value.
+      // Optional fields like filterByTk/sourceId are included (without value) only when envs.resource exists.
+      if (hasResourceValues) {
+        if (hasSnapshotValue(filterByTkPick?.value)) {
+          resourceProps.filterByTk = {
+            description: 'Record filterByTk',
+            getVar: filterByTkPick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.filterByTk` : undefined),
+          };
+        }
+        if (hasSnapshotValue(sourceIdPick?.value)) {
+          resourceProps.sourceId = {
+            description: 'Source record ID (sourceId)',
+            getVar: sourceIdPick?.getVar || (resourceBaseExpr ? `${resourceBaseExpr}.sourceId` : undefined),
+          };
+        }
+
+        envs.resource = {
+          description: 'Resource information',
+          getVar: resourceBaseExpr,
+          properties: resourceProps,
+        };
+      }
+
+      // Record (only when filterByTk is available)
+      if (hasSnapshotValue(filterByTkPick?.value)) {
+        envs.record = {
+          description: 'Current record',
+          getVar: 'ctx.record',
+        };
+      }
+
+      const pickLabel = (obj: any): string | undefined => {
+        try {
+          const t = obj?.title;
+          if (typeof t === 'string' && t.trim()) return t;
+        } catch (_) {
+          // ignore
+        }
+        try {
+          const label = obj?.constructor?.meta?.label;
+          if (typeof label === 'string' && label.trim()) return label;
+        } catch (_) {
+          // ignore
+        }
+        return undefined;
+      };
+
+      // FlowModel (when ctx.model exists)
+      if (model) {
+        const modelLabel = pickLabel(model);
+        const modelResource = model?.resource;
+        const modelResourceSnap = getResourceSnapshot(modelResource);
+        const modelResourceProps: Record<string, FlowContextInfosEnvNode> = {};
+        let hasModelResourceValues = false;
+        if (hasSnapshotValue(modelResourceSnap?.collectionName)) {
+          modelResourceProps.collectionName = {
+            description: 'Collection name',
+            getVar: 'ctx.model.resource.collectionName',
+            value: modelResourceSnap.collectionName as any,
+          };
+          hasModelResourceValues = true;
+        }
+        if (hasSnapshotValue(modelResourceSnap?.dataSourceKey)) {
+          modelResourceProps.dataSourceKey = {
+            description: 'Data source key',
+            getVar: 'ctx.model.resource.dataSourceKey',
+            value: modelResourceSnap.dataSourceKey as any,
+          };
+          hasModelResourceValues = true;
+        }
+        if (hasSnapshotValue(modelResourceSnap?.associationName)) {
+          modelResourceProps.associationName = {
+            description: 'Association name',
+            getVar: 'ctx.model.resource.associationName',
+            value: modelResourceSnap.associationName as any,
+          };
+          hasModelResourceValues = true;
+        }
+
+        envs.flowModel = {
+          description: 'Current FlowModel information',
+          getVar: 'ctx.model',
+          properties: {
+            ...(hasSnapshotValue(modelLabel)
+              ? { label: { description: 'Flow model label', value: modelLabel as any } }
+              : {}),
+            ...(hasSnapshotValue((model as any)?.uid)
+              ? { uid: { description: 'Flow model uid', getVar: 'ctx.model.uid', value: (model as any)?.uid as any } }
+              : {}),
+            ...(hasModelResourceValues
+              ? {
+                  resource: {
+                    description: 'Resource information',
+                    getVar: 'ctx.model.resource',
+                    properties: {
+                      ...modelResourceProps,
+                      ...(hasSnapshotValue(modelResourceSnap?.filterByTk)
+                        ? {
+                            filterByTk: {
+                              description: 'Record filterByTk',
+                              getVar: 'ctx.model.resource.filterByTk',
+                            },
+                          }
+                        : {}),
+                      ...(hasSnapshotValue(modelResourceSnap?.sourceId)
+                        ? {
+                            sourceId: {
+                              description: 'Source record ID (sourceId)',
+                              getVar: 'ctx.model.resource.sourceId',
+                            },
+                          }
+                        : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+        };
+      }
+
+      // Block (when ctx.blockModel exists)
+      if (blockOwner && blockOwnerExpr) {
+        const blockResourceProps: Record<string, FlowContextInfosEnvNode> = {};
+        let hasBlockResourceValues = false;
+        if (hasSnapshotValue(blockResourceSnap?.collectionName)) {
+          blockResourceProps.collectionName = {
+            description: 'Collection name',
+            getVar: `${blockResourceBaseExpr}.collectionName`,
+            value: blockResourceSnap.collectionName as any,
+          };
+          hasBlockResourceValues = true;
+        }
+        if (hasSnapshotValue(blockResourceSnap?.dataSourceKey)) {
+          blockResourceProps.dataSourceKey = {
+            description: 'Data source key',
+            getVar: `${blockResourceBaseExpr}.dataSourceKey`,
+            value: blockResourceSnap.dataSourceKey as any,
+          };
+          hasBlockResourceValues = true;
+        }
+        if (hasSnapshotValue(blockResourceSnap?.associationName)) {
+          blockResourceProps.associationName = {
+            description: 'Association name',
+            getVar: `${blockResourceBaseExpr}.associationName`,
+            value: blockResourceSnap.associationName as any,
+          };
+          hasBlockResourceValues = true;
+        }
+
+        envs.block = {
+          description: 'Current block information',
+          getVar: 'ctx.blockModel',
+          properties: {
+            ...(hasSnapshotValue(pickLabel(blockOwner))
+              ? { label: { description: 'Block label', value: pickLabel(blockOwner) as any } }
+              : {}),
+            ...(hasSnapshotValue((blockOwner as any)?.uid)
+              ? {
+                  uid: {
+                    description: 'Block uid',
+                    getVar: 'ctx.blockModel.uid',
+                    value: (blockOwner as any)?.uid as any,
+                  },
+                }
+              : {}),
+            ...(hasBlockResourceValues
+              ? {
+                  resource: {
+                    description: 'Resource information',
+                    getVar: 'ctx.blockModel.resource',
+                    properties: {
+                      ...blockResourceProps,
+                      ...(hasSnapshotValue(blockResourceSnap?.filterByTk)
+                        ? {
+                            filterByTk: {
+                              description: 'Record filterByTk',
+                              getVar: 'ctx.blockModel.resource.filterByTk',
+                            },
+                          }
+                        : {}),
+                      ...(hasSnapshotValue(blockResourceSnap?.sourceId)
+                        ? {
+                            sourceId: {
+                              description: 'Source record ID (sourceId)',
+                              getVar: 'ctx.blockModel.resource.sourceId',
+                            },
+                          }
+                        : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+        };
+      }
+
+      // Popup (only when popup exists)
+      if (popup?.uid) {
+        const popupResourceProps: Record<string, FlowContextInfosEnvNode> = {};
+        let hasPopupResourceValues = false;
+        if (hasSnapshotValue(popupResourceSnap?.collectionName)) {
+          popupResourceProps.collectionName = {
+            description: 'Collection name',
+            getVar: 'ctx.popup.resource.collectionName',
+            value: popupResourceSnap.collectionName as any,
+          };
+          hasPopupResourceValues = true;
+        }
+        if (hasSnapshotValue(popupResourceSnap?.dataSourceKey)) {
+          popupResourceProps.dataSourceKey = {
+            description: 'Data source key',
+            getVar: 'ctx.popup.resource.dataSourceKey',
+            value: popupResourceSnap.dataSourceKey as any,
+          };
+          hasPopupResourceValues = true;
+        }
+        if (hasSnapshotValue(popupResourceSnap?.associationName)) {
+          popupResourceProps.associationName = {
+            description: 'Association name',
+            getVar: 'ctx.popup.resource.associationName',
+            value: popupResourceSnap.associationName as any,
+          };
+          hasPopupResourceValues = true;
+        }
+
+        envs.popup = {
+          description: 'Current popup information',
+          getVar: 'ctx.popup',
+          properties: {
+            uid: { description: 'Popup uid', getVar: 'ctx.popup.uid', value: popup.uid as any },
+            record: {
+              description: 'Current popup record (object).',
+              getVar: 'ctx.popup.record',
+            },
+            sourceRecord: {
+              description: 'Current popup sourceRecord (object).',
+              getVar: 'ctx.popup.sourceRecord',
+            },
+            parent: {
+              description: 'Parent popup info (object).',
+              getVar: 'ctx.popup.parent',
+            },
+            ...(hasPopupResourceValues
+              ? {
+                  resource: {
+                    description: 'Resource information',
+                    getVar: 'ctx.popup.resource',
+                    properties: {
+                      ...popupResourceProps,
+                      ...(hasSnapshotValue(popupResourceSnap?.filterByTk)
+                        ? {
+                            filterByTk: {
+                              description: 'Record filterByTk',
+                              getVar: 'ctx.popup.resource.filterByTk',
+                            },
+                          }
+                        : {}),
+                      ...(hasSnapshotValue(popupResourceSnap?.sourceId)
+                        ? {
+                            sourceId: {
+                              description: 'Source record ID (sourceId)',
+                              getVar: 'ctx.popup.resource.sourceId',
+                            },
+                          }
+                        : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+        };
+      }
+
+      return envs;
+    };
+
+    const normalizePath = (raw: string): string | undefined => {
+      if (typeof raw !== 'string') return undefined;
+      const s = raw.trim();
+      if (!s) return undefined;
+      const extracted = extractPropertyPath(s);
+      if (Array.isArray(extracted) && extracted.length > 0) {
+        return extracted.join('.');
+      }
+      if (s === 'ctx') return '';
+      if (s.startsWith('ctx.')) return s.slice(4).trim();
+      return s;
+    };
+
+    const paths = (() => {
+      const p = options.path;
+      const list = typeof p === 'string' ? [p] : Array.isArray(p) ? p : [];
+      return list
+        .map((x) => normalizePath(String(x)))
+        .filter((x): x is string => typeof x === 'string' && x.length > 0);
+    })();
+
+    const hasRootPath = (() => {
+      const p = options.path;
+      if (typeof p === 'string') return normalizePath(p) === '';
+      if (Array.isArray(p)) return p.some((x) => normalizePath(String(x)) === '');
+      return false;
+    })();
+
+    const collectKeysDeep = (ctx: FlowContext, out: Set<string>, key: '_props' | '_methods', visited: WeakSet<any>) => {
+      if (!ctx || typeof ctx !== 'object') return;
+      if (visited.has(ctx as any)) return;
+      visited.add(ctx as any);
+      try {
+        const bag = (ctx as any)[key];
+        if (bag && typeof bag === 'object') {
+          for (const k of Object.keys(bag)) out.add(k);
+        }
+      } catch (_) {
+        // ignore
+      }
+      try {
+        const delegates = (ctx as any)._delegates;
+        if (Array.isArray(delegates)) {
+          for (const d of delegates) collectKeysDeep(d, out, key, visited);
+        }
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    const getRunJSDoc = (): any => {
+      const modelClass = getModelClassName(this);
+      const Ctor = RunJSContextRegistry.resolve(version, modelClass) || RunJSContextRegistry.resolve(version, '*');
+      if (!Ctor) return {};
+      const locale = (this as any)?.api?.auth?.locale || (this as any)?.i18n?.language || (this as any)?.locale;
+      try {
+        if ((Ctor as any)?.getDoc?.length) {
+          return (Ctor as any).getDoc(locale) || {};
+        }
+        return (Ctor as any)?.getDoc?.() || {};
+      } catch (_) {
+        return {};
+      }
+    };
+
+    const doc = getRunJSDoc();
+    const docMethods = __isPlainObject(doc?.methods) ? (doc.methods as Record<string, any>) : {};
+    const docProps = __isPlainObject(doc?.properties) ? (doc.properties as Record<string, any>) : {};
+
+    const toDocObject = (node: any): any | undefined => {
+      if (typeof node === 'string') return { description: node };
+      if (__isPlainObject(node)) return node;
+      return undefined;
+    };
+
+    const evalBool = async (raw: any, call: (fn: Function) => any): Promise<boolean | undefined> => {
+      if (typeof raw === 'undefined') return undefined;
+      if (typeof raw === 'boolean') return raw;
+      if (typeof raw === 'function') {
+        try {
+          const v = call(raw);
+          return isPromiseLike(v) ? !!(await v) : !!v;
+        } catch (_) {
+          return false;
+        }
+      }
+      return !!raw;
+    };
+
+    const evalString = async (raw: any, call: (fn: Function) => any): Promise<string | undefined> => {
+      if (typeof raw === 'undefined' || raw === null) return undefined;
+      if (typeof raw === 'string') return raw;
+      if (typeof raw === 'function') {
+        try {
+          const v = call(raw);
+          const resolved = isPromiseLike(v) ? await v : v;
+          if (typeof resolved === 'string') return resolved;
+          return typeof resolved === 'undefined' || resolved === null ? undefined : String(resolved);
+        } catch (_) {
+          return undefined;
+        }
+      }
+      return String(raw);
+    };
+
+    const evalRunJSHidden = async (
+      raw: any,
+    ): Promise<{
+      hideSelf: boolean;
+      hideSubpaths: string[];
+    }> => {
+      let hideSelf = false;
+      let list: any = [];
+      try {
+        if (typeof raw === 'boolean') hideSelf = raw;
+        else if (Array.isArray(raw)) list = raw;
+        else if (typeof raw === 'function') {
+          const v = raw(evalCtx);
+          const resolved = isPromiseLike(v) ? await v : v;
+          if (typeof resolved === 'boolean') hideSelf = resolved;
+          else if (Array.isArray(resolved)) list = resolved;
+        }
+      } catch (_) {
+        hideSelf = false;
+        list = [];
+      }
+
+      const hideSubpaths: string[] = [];
+      if (Array.isArray(list)) {
+        for (const p of list) {
+          if (typeof p !== 'string') continue;
+          const s = p.trim();
+          if (!s) continue;
+          // Only relative paths are supported. Ignore "ctx.xxx" absolute style to avoid ambiguity.
+          if (s === 'ctx' || s.startsWith('ctx.')) continue;
+          if (/\s/.test(s)) continue;
+          hideSubpaths.push(s);
+        }
+      }
+      return { hideSelf: !!hideSelf, hideSubpaths };
+    };
+
+    const isHiddenByPrefixes = (path: string, hiddenPrefixes: Set<string>) => {
+      if (!path) return false;
+      const parts = path.split('.').filter(Boolean);
+      while (parts.length) {
+        if (hiddenPrefixes.has(parts.join('.'))) return true;
+        parts.pop();
+      }
+      return false;
+    };
+
+    const pickMethodInfo = (obj: any): Partial<FlowContextApiInfo> => {
+      const src = toDocObject(obj);
+      if (!src) return {};
+      const out: any = {};
+      for (const k of ['description', 'examples', 'completion', 'ref', 'params', 'returns']) {
+        const v = (src as any)[k];
+        if (typeof v !== 'undefined') out[k] = v;
+      }
+      if (Array.isArray(out.examples)) {
+        out.examples = out.examples.filter((x: any) => typeof x === 'string' && x.trim());
+      }
+      return out;
+    };
+
+    const pickPropertyInfo = (obj: any): Partial<FlowContextApiInfo> => {
+      const src = toDocObject(obj);
+      if (!src) return {};
+      const out: any = {};
+      for (const k of [
+        'title',
+        'type',
+        'interface',
+        'description',
+        'examples',
+        'completion',
+        'ref',
+        'params',
+        'returns',
+      ]) {
+        const v = (src as any)[k];
+        if (typeof v !== 'undefined') out[k] = v;
+      }
+      if (Array.isArray(out.examples)) {
+        out.examples = out.examples.filter((x: any) => typeof x === 'string' && x.trim());
+      }
+      return out;
+    };
+
+    const getMethodInfoFromChain = (name: string): FlowContextMethodInfoInput | undefined => {
+      const visited = new WeakSet<any>();
+      const walk = (ctx: FlowContext): FlowContextMethodInfoInput | undefined => {
+        if (!ctx || typeof ctx !== 'object') return undefined;
+        if (visited.has(ctx as any)) return undefined;
+        visited.add(ctx as any);
+        if (Object.prototype.hasOwnProperty.call((ctx as any)._methodInfos || {}, name)) {
+          return (ctx as any)._methodInfos?.[name] as FlowContextMethodInfoInput;
+        }
+        const delegates = (ctx as any)._delegates;
+        if (Array.isArray(delegates)) {
+          for (const d of delegates) {
+            const found = walk(d);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+      return walk(this);
+    };
+
+    const hasMethodInChain = (name: string): boolean => {
+      const visited = new WeakSet<any>();
+      const walk = (ctx: FlowContext): boolean => {
+        if (!ctx || typeof ctx !== 'object') return false;
+        if (visited.has(ctx as any)) return false;
+        visited.add(ctx as any);
+        if (Object.prototype.hasOwnProperty.call((ctx as any)._methods || {}, name)) return true;
+        const delegates = (ctx as any)._delegates;
+        if (Array.isArray(delegates)) {
+          for (const d of delegates) {
+            if (walk(d)) return true;
+          }
+        }
+        return false;
+      };
+      return walk(this);
+    };
+
+    const buildMethodInfo = async (name: string): Promise<FlowContextApiInfo | undefined> => {
+      if (isPrivateKey(name)) return undefined;
+      const docNode = docMethods[name];
+      const info = getMethodInfoFromChain(name);
+      const exists = typeof docNode !== 'undefined' || typeof info !== 'undefined' || hasMethodInChain(name);
+      if (!exists) return undefined;
+
+      const docObj = toDocObject(docNode);
+      const docHidden = await evalBool((docObj as any)?.hidden, (fn) => fn(evalCtx));
+      const infoHidden = await evalBool(info?.hidden, (fn) => fn(evalCtx));
+      if (!!docHidden || !!infoHidden) return undefined;
+
+      const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
+      const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
+      const infoDisabled = await evalBool(info?.disabled, (fn) => fn(evalCtx));
+      const infoDisabledReason = await evalString(info?.disabledReason, (fn) => fn(evalCtx));
+      const disabled = typeof infoDisabled !== 'undefined' ? infoDisabled : docDisabled;
+      const disabledReason = typeof infoDisabledReason !== 'undefined' ? infoDisabledReason : docDisabledReason;
+
+      let out: FlowContextApiInfo = {};
+      out = { ...out, ...pickMethodInfo(docObj) };
+      out = { ...out, ...pickMethodInfo(info) };
+      if (typeof disabled !== 'undefined') out.disabled = !!disabled;
+      if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
+      if (!Object.keys(out).length) return undefined;
+      // Mark as callable for tooling (e.g. code-editor completion).
+      out.type = 'function';
+      return out;
+    };
+
+    const buildPropertyInfoFromNodes = async (args: {
+      docNode?: any;
+      metaNode?: PropertyMeta;
+      infoNode?: FlowContextPropertyInfoInput;
+      depth: number;
+      pathFromRoot: string[];
+      hiddenPrefixes: Set<string>;
+    }): Promise<FlowContextApiInfo | undefined> => {
+      const { docNode, metaNode, infoNode, depth, pathFromRoot, hiddenPrefixes } = args;
+      const relPath = pathFromRoot.join('.');
+      if (isHiddenByPrefixes(relPath, hiddenPrefixes)) return undefined;
+
+      const docObj = toDocObject(docNode);
+      const infoObj = toDocObject(infoNode);
+
+      const docHiddenDecision = await evalRunJSHidden((docObj as any)?.hidden);
+      if (docHiddenDecision.hideSelf) return undefined;
+      const infoHiddenDecision = await evalRunJSHidden((infoObj as any)?.hidden);
+      if (infoHiddenDecision.hideSelf) return undefined;
+      const metaHidden = await evalBool(metaNode?.hidden, (fn) => (fn as any).call(metaNode, evalCtx));
+      if (metaHidden) return undefined;
+
+      const childHiddenPrefixes = new Set(hiddenPrefixes);
+      for (const sub of [...docHiddenDecision.hideSubpaths, ...infoHiddenDecision.hideSubpaths]) {
+        const normalized = sub.trim();
+        if (!normalized) continue;
+        const stripped = normalized === 'ctx' ? '' : normalized.startsWith('ctx.') ? normalized.slice(4) : normalized;
+        if (!stripped) continue;
+        const abs = relPath ? `${relPath}.${stripped}` : stripped;
+        childHiddenPrefixes.add(abs);
+      }
+
+      const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
+      const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
+      const metaDisabled = await evalBool(metaNode?.disabled, (fn) => (fn as any).call(metaNode, evalCtx));
+      const metaDisabledReason = await evalString(metaNode?.disabledReason, (fn) =>
+        (fn as any).call(metaNode, evalCtx),
+      );
+      const infoDisabled = await evalBool((infoObj as any)?.disabled, (fn) => fn(evalCtx));
+      const infoDisabledReason = await evalString((infoObj as any)?.disabledReason, (fn) => fn(evalCtx));
+      const disabled =
+        typeof infoDisabled !== 'undefined'
+          ? infoDisabled
+          : typeof metaDisabled !== 'undefined'
+            ? metaDisabled
+            : docDisabled;
+      const disabledReason =
+        typeof infoDisabledReason !== 'undefined'
+          ? infoDisabledReason
+          : typeof metaDisabledReason !== 'undefined'
+            ? metaDisabledReason
+            : docDisabledReason;
+
+      let out: FlowContextApiInfo = {};
+      out = { ...out, ...pickPropertyInfo(docObj) };
+      out = { ...out, ...pickPropertyInfo(metaNode) };
+      out = { ...out, ...pickPropertyInfo(infoObj) };
+      if (typeof disabled !== 'undefined') out.disabled = !!disabled;
+      if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
+
+      if (depth >= maxDepth) return Object.keys(out).length ? out : undefined;
+
+      const docChildren = __isPlainObject((docObj as any)?.properties)
+        ? ((docObj as any).properties as any as Record<string, any>)
+        : undefined;
+
+      let metaChildren: Record<string, PropertyMeta> | undefined;
+      if (metaNode?.properties) {
+        try {
+          const props = metaNode.properties;
+          if (typeof props === 'function') {
+            const resolved = await (props as any).call(metaNode, evalCtx);
+            metaNode.properties = resolved;
+            metaChildren = resolved as Record<string, PropertyMeta>;
+          } else if (__isPlainObject(props)) {
+            metaChildren = props as Record<string, PropertyMeta>;
+          }
+        } catch (_) {
+          metaChildren = undefined;
+        }
+      }
+
+      let infoChildren: Record<string, FlowContextPropertyInfoInput> | undefined;
+      if (__isPlainObject(infoObj) && (infoObj as any)?.properties) {
+        try {
+          const props = (infoObj as any).properties;
+          if (typeof props === 'function') {
+            const resolved = await (props as any).call(infoObj, evalCtx);
+            (infoObj as any).properties = resolved;
+            infoChildren = resolved as Record<string, FlowContextPropertyInfoInput>;
+          } else if (__isPlainObject(props)) {
+            infoChildren = props as Record<string, FlowContextPropertyInfoInput>;
+          }
+        } catch (_) {
+          infoChildren = undefined;
+        }
+      }
+
+      const keys = new Set<string>();
+      if (docChildren) for (const k of Object.keys(docChildren)) keys.add(k);
+      if (metaChildren) for (const k of Object.keys(metaChildren)) keys.add(k);
+      if (infoChildren) for (const k of Object.keys(infoChildren)) keys.add(k);
+      if (!keys.size) return Object.keys(out).length ? out : undefined;
+
+      const childrenOut: Record<string, FlowContextApiInfo> = {};
+      for (const k of keys) {
+        if (isPrivateKey(k)) continue;
+        const child = await buildPropertyInfoFromNodes({
+          docNode: docChildren?.[k],
+          metaNode: metaChildren?.[k],
+          infoNode: infoChildren?.[k],
+          depth: depth + 1,
+          pathFromRoot: [...pathFromRoot, k],
+          hiddenPrefixes: childHiddenPrefixes,
+        });
+        if (child) childrenOut[k] = child;
+      }
+      if (Object.keys(childrenOut).length) out.properties = childrenOut;
+      if (!Object.keys(out).length) return undefined;
+      return out;
+    };
+
+    const resolvePropertyMetaAtPath = async (segments: string[]): Promise<PropertyMeta | undefined> => {
+      if (!segments.length) return undefined;
+      const [first, ...rest] = segments;
+      const opt = this.getPropertyOptions(first);
+      if (!opt?.meta) return undefined;
+      try {
+        const rootMeta: any =
+          typeof opt.meta === 'function' ? await (opt.meta as any).call(evalCtx, evalCtx) : opt.meta;
+        if (!rootMeta) return undefined;
+        if (!rest.length) return rootMeta as PropertyMeta;
+        return await this.#resolvePathInMetaAsync(rootMeta as PropertyMeta, rest);
+      } catch (_) {
+        return undefined;
+      }
+    };
+
+    const resolvePropertyInfoAtPath = async (segments: string[]): Promise<FlowContextPropertyInfoInput | undefined> => {
+      if (!segments.length) return undefined;
+      const [first, ...rest] = segments;
+      const opt = this.getPropertyOptions(first);
+      if (!opt?.info) return undefined;
+
+      try {
+        let cur: any = typeof opt.info === 'function' ? await (opt.info as any).call(evalCtx, evalCtx) : opt.info;
+        if (!rest.length) return cur as FlowContextPropertyInfoInput;
+
+        for (const key of rest) {
+          const obj = toDocObject(cur);
+          if (!__isPlainObject(obj)) return undefined;
+          let props: any = (obj as any)?.properties;
+          if (!props) return undefined;
+          if (typeof props === 'function') {
+            const resolved = await props.call(obj, evalCtx);
+            (obj as any).properties = resolved;
+            props = resolved;
+          }
+          if (!__isPlainObject(props)) return undefined;
+          cur = (props as any)[key];
+        }
+
+        return cur as FlowContextPropertyInfoInput;
+      } catch (_) {
+        return undefined;
+      }
+    };
+
+    const resolveDocNodeAtPath = (segments: string[]): any => {
+      if (!segments.length) return undefined;
+      let cur: any = docProps[segments[0]];
+      for (let i = 1; i < segments.length; i++) {
+        const obj = toDocObject(cur);
+        if (!__isPlainObject(obj)) return undefined;
+        const props = (obj as any).properties;
+        if (!__isPlainObject(props)) return undefined;
+        cur = (props as any)[segments[i]];
+      }
+      return cur;
+    };
+
+    // path 剪裁：每个 path 独立返回一个根节点
+    if (!hasRootPath && paths.length) {
+      const envs = await buildEnvs();
+      const apisOut: Record<string, FlowContextApiInfo> = {};
+
+      for (const p of paths) {
+        const segments = p
+          .split('.')
+          .map((x) => x.trim())
+          .filter(Boolean);
+        if (segments.some((s) => isPrivateKey(s))) continue;
+        if (!segments.length) continue;
+
+        // 同时支持剪裁 methods 与 properties（同名时两者都返回，并合并到 apis）
+        if (segments.length === 1) {
+          const name = segments[0];
+          const mi = await buildMethodInfo(name);
+          if (mi) apisOut[name] = mi;
+
+          const docNode = docProps[name];
+          const metaNode = await resolvePropertyMetaAtPath([name]);
+          const infoNode = await resolvePropertyInfoAtPath([name]);
+          const existsProp =
+            typeof docNode !== 'undefined' ||
+            typeof metaNode !== 'undefined' ||
+            typeof infoNode !== 'undefined' ||
+            !!this.getPropertyOptions(name);
+          if (existsProp) {
+            const pi = await buildPropertyInfoFromNodes({
+              docNode,
+              metaNode,
+              infoNode,
+              depth: 1,
+              pathFromRoot: [],
+              hiddenPrefixes: new Set(),
+            });
+            if (pi) apisOut[name] = { ...(apisOut[name] || {}), ...pi };
+          }
+          continue;
+        }
+
+        const docNode = resolveDocNodeAtPath(segments);
+        const metaNode = await resolvePropertyMetaAtPath(segments);
+        const infoNode = await resolvePropertyInfoAtPath(segments);
+        const pi = await buildPropertyInfoFromNodes({
+          docNode,
+          metaNode,
+          infoNode,
+          depth: 1,
+          pathFromRoot: [],
+          hiddenPrefixes: new Set(),
+        });
+        if (pi) apisOut[p] = pi;
+      }
+
+      return { apis: apisOut, envs };
+    }
+
+    // 全量输出：合并 doc + 运行时 defineProperty/defineMethod
+    const envs = await buildEnvs();
+    const propKeys = new Set<string>();
+    const methodKeys = new Set<string>();
+    for (const k of Object.keys(docProps)) propKeys.add(k);
+    for (const k of Object.keys(docMethods)) methodKeys.add(k);
+    collectKeysDeep(this, propKeys, '_props', new WeakSet<any>());
+    collectKeysDeep(this, methodKeys, '_methods', new WeakSet<any>());
+
+    const apisOut: Record<string, FlowContextApiInfo> = {};
+    for (const key of propKeys) {
+      if (isPrivateKey(key)) continue;
+      const docNode = docProps[key];
+      const opt = this.getPropertyOptions(key);
+      let metaNode: PropertyMeta | undefined;
+      if (opt?.meta) {
+        try {
+          metaNode = (
+            typeof opt.meta === 'function' ? await (opt.meta as any).call(evalCtx, evalCtx) : opt.meta
+          ) as any;
+        } catch (_) {
+          metaNode = undefined;
+        }
+      }
+      let infoNode: FlowContextPropertyInfoInput | undefined;
+      if (opt?.info) {
+        try {
+          infoNode = (
+            typeof opt.info === 'function' ? await (opt.info as any).call(evalCtx, evalCtx) : opt.info
+          ) as any;
+        } catch (_) {
+          infoNode = undefined;
+        }
+      }
+      const pi = await buildPropertyInfoFromNodes({
+        docNode,
+        metaNode,
+        infoNode,
+        depth: 1,
+        pathFromRoot: [key],
+        hiddenPrefixes: new Set(),
+      });
+      if (pi) apisOut[key] = pi;
+    }
+
+    const methodsOut: Record<string, FlowContextApiInfo> = {};
+    for (const key of methodKeys) {
+      if (isPrivateKey(key)) continue;
+      const mi = await buildMethodInfo(key);
+      if (mi) methodsOut[key] = mi;
+    }
+
+    for (const [k, v] of Object.entries(methodsOut)) {
+      if (!apisOut[k]) apisOut[k] = v;
+      else apisOut[k] = { ...(apisOut[k] || {}), ...(v || {}) };
+    }
+
+    return { apis: apisOut, envs };
   }
 
   #createChildNodes(
@@ -723,9 +1944,16 @@ export class FlowContext {
     const computeStateFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string; hidden: boolean } => {
       if (!m) return { disabled: false, hidden: false };
       const disabledVal = typeof m.disabled === 'function' ? m.disabled() : m.disabled;
-      const reason = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
+      const reasonVal = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
       const hiddenVal = typeof m.hidden === 'function' ? m.hidden() : m.hidden;
-      return { disabled: !!disabledVal, reason, hidden: !!hiddenVal };
+      const disabledIsPromise = disabledVal && typeof (disabledVal as any).then === 'function';
+      const reasonIsPromise = reasonVal && typeof (reasonVal as any).then === 'function';
+      const hiddenIsPromise = hiddenVal && typeof (hiddenVal as any).then === 'function';
+      // getPropertyMetaTree 为同步 API：遇到 Promise 时 fail-open（不隐藏/不禁用）
+      const disabled = disabledIsPromise ? false : !!disabledVal;
+      const reason = reasonIsPromise ? undefined : (reasonVal as any);
+      const hidden = hiddenIsPromise ? false : !!hiddenVal;
+      return { disabled, reason, hidden };
     };
 
     if (typeof metaOrFactory === 'function') {
@@ -972,6 +2200,7 @@ class BaseFlowEngineContext extends FlowContext {
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare getVar: (path: string) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -1052,12 +2281,24 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     dataSourceManager.addDataSource(mainDataSource);
     this.defineProperty('engine', {
       value: this.engine,
+      info: {
+        description: 'FlowEngine instance.',
+        detail: 'FlowEngine',
+      },
     });
     this.defineProperty('sql', {
       get: () => new FlowSQLRepository(this),
+      info: {
+        description: 'SQL helper (FlowSQLRepository).',
+        detail: 'FlowSQLRepository',
+      },
     });
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
+      info: {
+        description: 'DataSourceManager instance.',
+        detail: 'DataSourceManager',
+      },
     });
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
@@ -1239,8 +2480,45 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
       return resolveExpressions(serverResolved, this);
     });
+
+    // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
+    // Example: await ctx.getVar('ctx.record.id')
+    this.defineMethod(
+      'getVar',
+      async function (this: BaseFlowEngineContext, varPath: string) {
+        const raw = typeof varPath === 'string' ? varPath : String(varPath ?? '');
+        const s = raw.trim();
+        if (!s) return undefined;
+        // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
+        // We also accept a full template string '{{ ... }}' for convenience.
+        if (/^\s*\{\{/.test(s)) {
+          return this.resolveJsonTemplate(s as any);
+        }
+        if (s !== 'ctx' && !s.startsWith('ctx.')) {
+          throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
+        }
+        return this.resolveJsonTemplate(`{{ ${s} }}` as any);
+      },
+      {
+        description: 'Resolve a ctx expression value by path (expression starts with "ctx.").',
+        params: [
+          {
+            name: 'path',
+            type: 'string',
+            description: 'Expression path starting with "ctx." (e.g. "ctx.record.id", "ctx.record.roles[0].id").',
+          },
+        ],
+        returns: { type: 'Promise<any>' },
+        completion: { insertText: "await ctx.getVar('ctx.record.id')" },
+        examples: ["const id = await ctx.getVar('ctx.record.id');"],
+      },
+    );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
+      info: {
+        description: 'RequireJS runtime loader (if available).',
+        detail: 'any',
+      },
     });
     // Expose API token and current role as top-level variables for VariableInput.
     // Front-end only: no resolveOnServer flag. Mark cache: false to reflect runtime changes.
@@ -1320,23 +2598,33 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
-    this.defineMethod('loadCSS', async (url: string) => {
-      return new Promise((resolve, reject) => {
-        // Check if CSS is already loaded
-        const existingLink = document.querySelector(`link[href="${url}"]`);
-        if (existingLink) {
-          resolve(null);
-          return;
-        }
+    this.defineMethod(
+      'loadCSS',
+      async (url: string) => {
+        return new Promise((resolve, reject) => {
+          // Check if CSS is already loaded
+          const existingLink = document.querySelector(`link[href="${url}"]`);
+          if (existingLink) {
+            resolve(null);
+            return;
+          }
 
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = url;
-        link.onload = () => resolve(null);
-        link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
-        document.head.appendChild(link);
-      });
-    });
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = url;
+          link.onload = () => resolve(null);
+          link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
+          document.head.appendChild(link);
+        });
+      },
+      {
+        description: 'Load a CSS file by URL (browser only).',
+        params: [{ name: 'url', type: 'string', description: 'CSS URL.' }],
+        returns: { type: 'Promise<void>' },
+        completion: { insertText: "await ctx.loadCSS('https://example.com/style.css')" },
+        examples: ["await ctx.loadCSS('https://example.com/style.css');"],
+      },
+    );
     this.defineMethod('requireAsync', async (url: string) => {
       return new Promise((resolve, reject) => {
         if (!this.requirejs) {
@@ -1499,6 +2787,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const acl = new ACL(this.engine);
         return acl;
       },
+      info: {
+        description: 'ACL helper bound to the FlowEngine.',
+        detail: 'ACL',
+      },
     });
     this.defineMethod('aclCheck', function (params) {
       return this.acl.aclCheck(params);
@@ -1536,6 +2828,18 @@ export class FlowModelContext extends BaseFlowModelContext {
     });
     this.defineProperty('model', {
       value: model,
+      info: {
+        description: 'Current FlowModel instance.',
+        detail: 'FlowModel',
+      },
+    });
+    // Ensure ctx.blockModel is always available (e.g. in JS blocks) and can be overridden by block models.
+    this.defineProperty('blockModel', {
+      get: () => this.model,
+      info: {
+        description: 'Current block model (FlowModel). In most contexts it is the same as ctx.model.',
+        detail: 'FlowModel',
+      },
     });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
@@ -1543,6 +2847,10 @@ export class FlowModelContext extends BaseFlowModelContext {
       get: () => {
         this.model['_refCreated'] = true;
         return stableRef;
+      },
+      info: {
+        description: 'Stable React ref for the view container.',
+        detail: 'React.RefObject<HTMLDivElement>',
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
@@ -1603,7 +2911,9 @@ export class FlowModelContext extends BaseFlowModelContext {
         preventClose: !!opts?.preventClose,
         engineCtx: this.engine.context,
       };
-      model.context.defineProperty('view', { value: pendingView });
+      model.context.defineProperty('view', {
+        value: pendingView,
+      });
       await model.dispatchEvent(
         'click',
         {
@@ -1670,6 +2980,10 @@ export class FlowForkModelContext extends BaseFlowModelContext {
     });
     this.defineProperty('model', {
       get: () => this.fork,
+      info: {
+        description: 'Current ForkFlowModel instance (as model).',
+        detail: 'ForkFlowModel',
+      },
     });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
@@ -1677,6 +2991,10 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       get: () => {
         this.fork['_refCreated'] = true;
         return stableRef;
+      },
+      info: {
+        description: 'Stable React ref for the view container.',
+        detail: 'React.RefObject<HTMLDivElement>',
       },
     });
   }
@@ -1785,6 +3103,16 @@ export type RunJSDocCompletionDoc = {
   insertText?: string;
 };
 
+export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);
+
+// `hidden` is the single visibility entrypoint for RunJSDoc property docs:
+// - boolean: hide the whole node and its subtree
+// - string[]: hide specific subpaths under the node (relative dot-paths)
+export type RunJSDocHiddenOrPathsDoc =
+  | boolean
+  | string[]
+  | ((ctx: any) => boolean | string[] | Promise<boolean | string[]>);
+
 export type RunJSDocPropertyDoc =
   | string
   | {
@@ -1793,7 +3121,13 @@ export type RunJSDocPropertyDoc =
       type?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
       properties?: Record<string, RunJSDocPropertyDoc>;
+      hidden?: RunJSDocHiddenOrPathsDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMethodDoc =
@@ -1803,6 +3137,12 @@ export type RunJSDocMethodDoc =
       detail?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
+      hidden?: RunJSDocHiddenDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMeta = {
@@ -1830,13 +3170,135 @@ function __runjsDeepMerge(base: any, patch: any) {
   return out;
 }
 
+function __isPlainObject(val: any): val is Record<string, any> {
+  return !!val && typeof val === 'object' && !Array.isArray(val);
+}
+
+function __mergeRunJSDocDocRecord(base: any, patch: any, mergeDoc: (b: any, p: any) => any): any {
+  if (!__isPlainObject(patch)) return base;
+  // Important: preserve `null` markers when base is not an object (e.g. child class wants to delete parent keys).
+  // If we eagerly delete them here, the deletion intent is lost for later merges in the inheritance chain.
+  if (!__isPlainObject(base)) return patch;
+  const out: any = { ...base };
+  for (const k of Object.keys(patch)) {
+    const pv = patch[k];
+    if (pv === null) {
+      delete out[k];
+      continue;
+    }
+    const bv = __isPlainObject(base) ? base[k] : undefined;
+    const merged = mergeDoc(bv, pv);
+    if (typeof merged === 'undefined') delete out[k];
+    else out[k] = merged;
+  }
+  return out;
+}
+
+function __mergeRunJSDocPropertyDoc(base: any, patch: any): any {
+  if (patch === null) return undefined;
+
+  const baseIsObj = __isPlainObject(base);
+  const patchIsObj = __isPlainObject(patch);
+  const baseIsStr = typeof base === 'string';
+  const patchIsStr = typeof patch === 'string';
+
+  // Treat string docs as { description: string } when merging with object docs,
+  // to avoid "whole replacement" that drops base hidden/properties/completion.
+  if (patchIsStr) {
+    if (baseIsObj) {
+      return __mergeRunJSDocPropertyDoc(base, { description: patch });
+    }
+    return patch;
+  }
+
+  if (patchIsObj) {
+    const baseObj: any = baseIsObj ? base : baseIsStr ? { description: base } : undefined;
+    const out: any = { ...(baseObj || {}) };
+    for (const k of Object.keys(patch)) {
+      if (k === 'properties') {
+        const pv = (patch as any).properties;
+        if (pv === null) {
+          delete out.properties;
+          continue;
+        }
+        const mergedProps = __mergeRunJSDocDocRecord(baseObj?.properties, pv, __mergeRunJSDocPropertyDoc);
+        if (typeof mergedProps === 'undefined') delete out.properties;
+        else out.properties = mergedProps;
+        continue;
+      }
+      const mergedVal = __runjsDeepMerge(baseObj?.[k], (patch as any)[k]);
+      if (typeof mergedVal === 'undefined') delete out[k];
+      else out[k] = mergedVal;
+    }
+    return out;
+  }
+
+  return patch ?? base;
+}
+
+function __mergeRunJSDocMethodDoc(base: any, patch: any): any {
+  if (patch === null) return undefined;
+
+  const baseIsObj = __isPlainObject(base);
+  const patchIsObj = __isPlainObject(patch);
+  const baseIsStr = typeof base === 'string';
+  const patchIsStr = typeof patch === 'string';
+
+  if (patchIsStr) {
+    if (baseIsObj) {
+      return __mergeRunJSDocMethodDoc(base, { description: patch });
+    }
+    return patch;
+  }
+
+  if (patchIsObj) {
+    const baseObj: any = baseIsObj ? base : baseIsStr ? { description: base } : undefined;
+    const out: any = { ...(baseObj || {}) };
+    for (const k of Object.keys(patch)) {
+      const mergedVal = __runjsDeepMerge(baseObj?.[k], (patch as any)[k]);
+      if (typeof mergedVal === 'undefined') delete out[k];
+      else out[k] = mergedVal;
+    }
+    return out;
+  }
+
+  return patch ?? base;
+}
+
+function __mergeRunJSDocMeta(base: any, patch: any): RunJSDocMeta {
+  const baseObj: any = __isPlainObject(base) ? base : {};
+  const patchObj: any = __isPlainObject(patch) ? patch : {};
+  const out: any = { ...baseObj };
+
+  for (const k of Object.keys(patchObj)) {
+    if (k === 'properties') {
+      const mergedProps = __mergeRunJSDocDocRecord(baseObj.properties, patchObj.properties, __mergeRunJSDocPropertyDoc);
+      if (typeof mergedProps === 'undefined') delete out.properties;
+      else out.properties = mergedProps;
+      continue;
+    }
+    if (k === 'methods') {
+      const mergedMethods = __mergeRunJSDocDocRecord(baseObj.methods, patchObj.methods, __mergeRunJSDocMethodDoc);
+      if (typeof mergedMethods === 'undefined') delete out.methods;
+      else out.methods = mergedMethods;
+      continue;
+    }
+    const mergedVal = __runjsDeepMerge(baseObj[k], patchObj[k]);
+    if (typeof mergedVal === 'undefined') delete out[k];
+    else out[k] = mergedVal;
+  }
+
+  return out as RunJSDocMeta;
+}
 export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
-    this.defineProperty('dayjs', { value: dayjs });
+    this.defineProperty('dayjs', {
+      value: dayjs,
+    });
     // 为 JS 运行时代码提供带有 antd/App/ConfigProvider 包裹的 React 根
     // 保持与 ReactDOMClient 接口一致，优先覆盖 createRoot，其余方法透传
     const ReactDOMShim: any = {
@@ -1919,11 +3381,11 @@ export class FlowRunJSContext extends FlowContext {
     if (locale) {
       const map = __runjsClassLocaleMeta.get(this) || new Map<string, RunJSDocMeta>();
       const prev = map.get(locale) || {};
-      map.set(locale, __runjsDeepMerge(prev, meta));
+      map.set(locale, __mergeRunJSDocMeta(prev, meta));
       __runjsClassLocaleMeta.set(this, map);
     } else {
       const prev = __runjsClassDefaultMeta.get(this) || {};
-      __runjsClassDefaultMeta.set(this, __runjsDeepMerge(prev, meta));
+      __runjsClassDefaultMeta.set(this, __mergeRunJSDocMeta(prev, meta));
     }
     __runjsDocCache.delete(this);
   }
@@ -1940,13 +3402,13 @@ export class FlowRunJSContext extends FlowContext {
     }
     let merged: RunJSDocMeta = {};
     for (const cls of chain) {
-      merged = __runjsDeepMerge(merged, __runjsClassDefaultMeta.get(cls) || {});
+      merged = __mergeRunJSDocMeta(merged, __runjsClassDefaultMeta.get(cls) || {});
     }
     if (locale) {
       for (const cls of chain) {
         const lmap = __runjsClassLocaleMeta.get(cls);
         if (lmap && lmap.has(locale)) {
-          merged = __runjsDeepMerge(merged, lmap.get(locale));
+          merged = __mergeRunJSDocMeta(merged, lmap.get(locale));
         }
       }
     }

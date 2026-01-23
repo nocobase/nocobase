@@ -8,9 +8,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext, FlowRuntimeContext } from '../flowContext';
+import { FlowContext, FlowRuntimeContext, FlowRunJSContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
+import { RunJSContextRegistry } from '../runjs-context/registry';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -752,11 +753,318 @@ describe('FlowContext properties and methods', () => {
   });
 });
 
+describe('FlowContext.getInfos', () => {
+  it('should support defineMethod info (string as description)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('foo', () => 1, 'do something');
+    expect(ctx.foo()).toBe(1);
+
+    const infos = await ctx.getInfos({ path: 'foo' });
+    expect(infos.apis.foo?.description).toBe('do something');
+  });
+
+  it('should support defineMethod info object (completion/ref)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('bar', () => 2, {
+      description: 'Bar',
+      completion: { insertText: 'ctx.bar()' },
+      ref: { url: 'https://example.com', title: 'Docs' },
+    });
+
+    const infos = await ctx.getInfos({ path: 'bar' });
+    expect(infos.apis.bar?.completion?.insertText).toBe('ctx.bar()');
+    expect((infos.apis.bar?.ref as any)?.url).toBe('https://example.com');
+  });
+
+  it('should return property infos with completion/ref/examples', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('token', {
+      value: 't',
+      meta: {
+        type: 'string',
+        title: 'Token',
+      },
+      info: {
+        description: 'Token string',
+        completion: { insertText: 'ctx.token' },
+        ref: 'docs/token',
+        examples: ['const t = ctx.token'],
+      },
+    });
+
+    const infos = await ctx.getInfos({ path: 'token' });
+    expect(infos.apis.token?.type).toBe('string');
+    expect(infos.apis.token?.title).toBe('Token');
+    expect(infos.apis.token?.completion?.insertText).toBe('ctx.token');
+    expect(infos.apis.token?.ref).toBe('docs/token');
+    expect(infos.apis.token?.examples).toContain('const t = ctx.token');
+  });
+
+  it('should respect maxDepth when expanding properties', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('deep', {
+      meta: {
+        type: 'object',
+        title: 'deep',
+        properties: {
+          level1: {
+            type: 'object',
+            title: 'l1',
+            properties: {
+              level2: {
+                type: 'object',
+                title: 'l2',
+                properties: {
+                  level3: { type: 'string', title: 'l3' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const infos = await ctx.getInfos({ path: 'deep', maxDepth: 2 });
+    expect(infos.apis.deep?.properties?.level1).toBeTruthy();
+    expect(infos.apis.deep?.properties?.level1?.properties?.level2).toBeUndefined();
+  });
+
+  it('should support deep path pruning (root key is the path string)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('deep', {
+      meta: {
+        type: 'object',
+        title: 'deep',
+        properties: {
+          level1: {
+            type: 'object',
+            title: 'l1',
+            properties: {
+              level2: { type: 'string', title: 'l2' },
+            },
+          },
+        },
+      },
+    });
+
+    const infos = await ctx.getInfos({ path: 'deep.level1', maxDepth: 2 });
+    expect(infos.apis['deep.level1']?.title).toBe('l1');
+    expect(infos.apis['deep.level1']?.properties?.level2).toBeTruthy();
+  });
+
+  it('should compute/skip hidden nodes and compute disabled/disabledReason', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('secret', {
+      meta: { type: 'string', title: 'secret', hidden: () => true },
+    });
+    ctx.defineProperty('disabledProp', {
+      meta: {
+        type: 'string',
+        title: 'disabledProp',
+        disabled: async () => true,
+        disabledReason: async () => 'not available',
+      },
+    });
+    ctx.defineMethod('hiddenMethod', () => 1, { hidden: async () => true, description: 'hidden' });
+    ctx.defineMethod('disabledMethod', () => 1, {
+      description: 'disabled',
+      disabled: async () => true,
+      disabledReason: async () => 'nope',
+    });
+
+    const infos = await ctx.getInfos();
+    expect(infos.apis.secret).toBeUndefined();
+    expect(infos.apis.hiddenMethod).toBeUndefined();
+    expect(infos.apis.disabledProp?.disabled).toBe(true);
+    expect(infos.apis.disabledProp?.disabledReason).toBe('not available');
+    expect(infos.apis.disabledMethod?.disabled).toBe(true);
+    expect(infos.apis.disabledMethod?.disabledReason).toBe('nope');
+  });
+
+  it('should not return empty method/property infos (no meta/doc)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('plainProp', { value: 1 });
+    ctx.defineMethod('plainMethod', () => 1);
+
+    const infos = await ctx.getInfos();
+    expect(infos.apis.plainProp).toBeUndefined();
+    expect(infos.apis.plainMethod).toBeUndefined();
+  });
+
+  it('should not return keys starting with underscore', async () => {
+    class TestRunJSContext extends FlowRunJSContext {}
+    TestRunJSContext.define({
+      properties: {
+        _internal: 'internal',
+        pub: {
+          type: 'object',
+          description: 'pub',
+          properties: {
+            _secret: 'secret',
+            visible: 'visible',
+          },
+        },
+      },
+      methods: {
+        _m: 'hidden method',
+        m: 'visible method',
+      },
+    });
+    RunJSContextRegistry.register('test-private', '*', TestRunJSContext as any);
+
+    const ctx = new FlowContext();
+    ctx.defineProperty('_runtimeSecret', {
+      meta: { type: 'string', title: '_runtimeSecret' },
+    });
+    ctx.defineMethod('_runtimeMethod', () => 1, 'runtime hidden');
+    ctx.defineProperty('runtime', {
+      meta: {
+        type: 'object',
+        title: 'runtime',
+        properties: {
+          _child: { type: 'string', title: '_child' },
+          child: { type: 'string', title: 'child' },
+        },
+      },
+    });
+
+    const infos = await ctx.getInfos({ version: 'test-private' as any, maxDepth: 3 });
+    expect(infos.apis._internal).toBeUndefined();
+    expect(infos.apis._runtimeSecret).toBeUndefined();
+    expect(infos.apis._m).toBeUndefined();
+    expect(infos.apis._runtimeMethod).toBeUndefined();
+
+    // nested private keys are also skipped
+    expect(infos.apis.pub?.properties?._secret).toBeUndefined();
+    expect(infos.apis.pub?.properties?.visible).toBeTruthy();
+    expect(infos.apis.runtime?.properties?._child).toBeUndefined();
+    expect(infos.apis.runtime?.properties?.child).toBeTruthy();
+  });
+
+  it('should support RunJS doc hidden subpaths (string[])', async () => {
+    class TestRunJSContext extends FlowRunJSContext {}
+    TestRunJSContext.define({
+      properties: {
+        root: {
+          type: 'object',
+          description: 'Root',
+          hidden: ['b'],
+          properties: { a: 'A', b: 'B' },
+        },
+      },
+    });
+    RunJSContextRegistry.register('test-infos', '*', TestRunJSContext as any);
+
+    const ctx = new FlowContext();
+    const infos = await ctx.getInfos({ version: 'test-infos' as any, path: 'root', maxDepth: 2 });
+    expect(infos.apis.root?.properties?.a).toBeTruthy();
+    expect(infos.apis.root?.properties?.b).toBeUndefined();
+  });
+
+  it('should return envs nodes (popup/block/resource/record)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('blockModel', { value: { uid: 'b1' } });
+    ctx.defineProperty('popup', {
+      value: Promise.resolve({
+        uid: 'p1',
+        resource: {
+          collectionName: 'posts',
+          dataSourceKey: 'main',
+          associationName: 'comments',
+          filterByTk: 1,
+          sourceId: 2,
+        },
+      }),
+    });
+
+    const infos = await ctx.getInfos();
+
+    expect(infos.envs.resource?.getVar).toBe('ctx.popup.resource');
+    expect(infos.envs.resource?.properties?.collectionName?.value).toBe('posts');
+    expect(infos.envs.resource?.properties?.filterByTk?.value).toBeUndefined();
+    expect(infos.envs.record?.getVar).toBe('ctx.record');
+    expect(infos.envs.block?.properties?.uid?.getVar).toBe('ctx.blockModel.uid');
+    expect(infos.envs.popup?.properties?.uid?.value).toBe('p1');
+  });
+
+  it('should include block/flowModel/resource envs when blockModel exists', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', {
+      value: {
+        uid: 'm1',
+        constructor: { meta: { label: 'MyModel' } },
+      },
+    });
+    ctx.defineProperty('blockModel', {
+      value: {
+        uid: 'b1',
+        constructor: { meta: { label: 'MyBlock' } },
+        resource: {
+          collectionName: 'posts',
+          dataSourceKey: 'main',
+          associationName: 'comments',
+          filterByTk: 1,
+          sourceId: 2,
+        },
+      },
+    });
+
+    const infos = await ctx.getInfos();
+
+    expect(infos.envs.block?.getVar).toBe('ctx.blockModel');
+    expect(infos.envs.flowModel?.getVar).toBe('ctx.model');
+    expect(infos.envs.flowModel?.properties?.label?.value).toBe('MyModel');
+    expect(infos.envs.resource?.getVar).toBe('ctx.blockModel.resource');
+    expect(infos.envs.resource?.properties?.collectionName?.value).toBe('posts');
+    expect(infos.envs.resource?.properties?.filterByTk?.value).toBeUndefined();
+    expect(infos.envs.record?.getVar).toBe('ctx.record');
+  });
+
+  it('should omit popup env section when popup is not available', async () => {
+    const ctx = new FlowContext();
+    const infos = await ctx.getInfos();
+    expect(infos.envs.popup).toBeUndefined();
+  });
+
+  it('should omit optional resource fields and record env when missing', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('popup', {
+      value: Promise.resolve({
+        uid: 'p1',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'posts',
+          // filterByTk/sourceId intentionally omitted
+        },
+      }),
+    });
+
+    const infos = await ctx.getInfos();
+
+    expect(infos.envs.record).toBeUndefined();
+    expect(infos.envs.resource?.properties?.filterByTk).toBeUndefined();
+    expect(infos.envs.resource?.properties?.sourceId).toBeUndefined();
+    expect(infos.envs.popup?.properties?.resource?.properties?.filterByTk).toBeUndefined();
+    expect(infos.envs.popup?.properties?.resource?.properties?.sourceId).toBeUndefined();
+  });
+});
+
 describe('FlowEngine context', () => {
   it('should support defineProperty on FlowEngine.context', () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('appName', { value: 'NocoBase' });
     expect(engine.context.appName).toBe('NocoBase');
+  });
+
+  it('engine.context.getVar should resolve variable by path', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('foo', { value: { bar: 1 } });
+
+    const v1 = await (engine.context as any).getVar('ctx.foo.bar');
+    expect(v1).toBe(1);
+
+    const infos = await (engine.context as any).getInfos({ path: 'getVar' });
+    expect(infos.apis.getVar?.completion?.insertText).toContain('getVar');
   });
 
   it('engine.context.runAction should resolve action from engine.getAction', async () => {
