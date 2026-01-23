@@ -19,6 +19,7 @@ import { getCollectionState } from './utils';
 const Tree = connect(
   AntdTree,
   mapProps((props: any, field: any) => {
+    const { loadData } = props;
     useEffect(() => {
       field.value = props.defaultCheckedKeys || [];
     }, []);
@@ -39,6 +40,7 @@ const Tree = connect(
       ...props,
       checkedKeys,
       onCheck,
+      loadData: loadData(dataSource, setDataSource),
       treeData: dataSource.map((v: any) => {
         if (form.values.duplicateMode === 'quickDulicate') {
           const children = v?.children?.map((k) => {
@@ -276,7 +278,7 @@ DuplicateActionModel.registerFlow({
               checkable: true,
               checkStrictly: true,
               selectable: false,
-              loadData: '{{ getOnLoadData($self) }}',
+              loadData: getOnLoadData,
               onCheck: '{{ getOnCheck($self) }}',
               getEnableFieldTree,
               rootStyle: {
