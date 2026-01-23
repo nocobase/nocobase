@@ -36,6 +36,7 @@ import PluginWorkflowClient, {
   useTasksCountsContext,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
+import { useTempAssociationSources } from './hooks/useTempAssociationSources';
 
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
@@ -116,15 +117,7 @@ function FlowContextProvider() {
   const [node, setNode] = useState<any>(null);
   const currentNode = flowContext?.nodes?.find((item) => item.id === node?.id) ?? node;
   const availableUpstreams = useAvailableUpstreams(currentNode);
-  const tempAssociationSources = useMemo(() => {
-    if (!flowContext?.workflow) return [];
-    const trigger = workflowPlugin.triggers.get(flowContext.workflow.type);
-    const triggerSource = trigger?.useTempAssociationSource?.(flowContext.workflow.config, flowContext.workflow);
-    const nodeSources = availableUpstreams
-      .map((item) => workflowPlugin.instructions.get(item.type)?.useTempAssociationSource?.(item))
-      .filter(Boolean);
-    return triggerSource ? [triggerSource, ...nodeSources] : nodeSources;
-  }, [availableUpstreams, flowContext?.workflow, workflowPlugin]);
+  const tempAssociationSources = useTempAssociationSources(flowContext?.workflow, availableUpstreams);
 
   useEffect(() => {
     if (!id) {
@@ -391,6 +384,11 @@ function TaskItem() {
 
   // V2: 使用 FlowModel 任务卡片渲染
   const taskCardUid = record.node?.config?.taskCardUid;
+
+  // 使用共享 hook 计算临时关联源
+  const availableUpstreams = useAvailableUpstreams(record.node);
+  const tempAssociationSources = useTempAssociationSources(record.workflow, availableUpstreams);
+
   const onModelLoaded = useCallback(
     (model: CCTaskCardDetailsModel) => {
       model.setDecoratorProps({ onClick: onOpen, hoverable: true });
@@ -403,8 +401,12 @@ function TaskItem() {
         get: () => record.workflow?.nodes ?? [],
         cache: false,
       });
+      model.context.defineProperty('tempAssociationSources', {
+        get: () => tempAssociationSources,
+        cache: false,
+      });
     },
-    [record, onOpen],
+    [record, onOpen, tempAssociationSources],
   );
 
   const mapModel = useCallback((model) => model.clone(), []);

@@ -38,6 +38,7 @@ import PluginWorkflowClient, {
   useTrigger,
   useWorkflowExecuted,
 } from '@nocobase/plugin-workflow/client';
+import { useTempAssociationSources } from '../hooks/useTempAssociationSources';
 import {
   FlowModel,
   FlowModelRenderer,
@@ -124,16 +125,8 @@ function SchemaContent({ value, onChange }) {
   const executed = useWorkflowExecuted();
   const node = useNodeContext();
   const nodes = useAvailableUpstreams(node);
-  const triggerSource = useTriggerTempAssociationSource();
-  const nodeTempAssociationSources = nodes
-    .map((item) => {
-      const instruction = workflowPlugin.instructions.get(item.type);
-      return instruction?.useTempAssociationSource?.(item);
-    })
-    .filter(Boolean);
-  const tempAssociationSources = triggerSource
-    ? [triggerSource, ...nodeTempAssociationSources]
-    : nodeTempAssociationSources;
+  const { workflow } = useFlowContext();
+  const tempAssociationSources = useTempAssociationSources(workflow, nodes);
 
   const { data, loading } = useRequest(
     async () => {
@@ -494,24 +487,7 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
   const flowEngine = useFlowEngine();
   const viewCtx = useFlowViewContext();
   const api = useAPIClient();
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const tempAssociationSources = React.useMemo(() => {
-    const triggerSource = workflow?.config?.collection
-      ? {
-          collection: workflow.config.collection,
-          nodeId: workflow.id,
-          nodeKey: 'workflow',
-          nodeType: 'workflow' as const,
-        }
-      : null;
-    const upstreamSources = (nodes || [])
-      .map((item) => {
-        const instruction = workflowPlugin.instructions.get(item.type);
-        return instruction?.useTempAssociationSource?.(item) || null;
-      })
-      .filter(Boolean);
-    return triggerSource ? [triggerSource, ...upstreamSources] : upstreamSources;
-  }, [nodes, workflow, workflowPlugin]);
+  const tempAssociationSources = useTempAssociationSources(workflow, nodes);
   const syncTempAssociationFields = useCallback(
     (fields: CCTaskTempAssociationFieldConfig[]) => {
       if (formDisabled || !form || !node) return;
