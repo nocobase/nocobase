@@ -18,7 +18,7 @@ import {
 import { lintGutter } from '@codemirror/lint';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
-import { EditorView, tooltips } from '@codemirror/view';
+import { EditorView, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
@@ -100,6 +100,7 @@ export const EditorCore: React.FC<{
         closeOnBlur: false,
         activateOnTyping: true,
       }),
+      ...(placeholder ? [cmPlaceholder(placeholder)] : []),
       ...(enableLinter ? [lintGutter(), createJavaScriptLinter()] : []),
       // Force CM tooltips to render under the app container that doesn't clip (closer to Edit event flows behavior)
       tooltips({
@@ -126,6 +127,12 @@ export const EditorCore: React.FC<{
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
           overflow: 'auto',
+        },
+        '.cm-placeholder': {
+          color: '#999',
+          fontStyle: 'normal',
+          whiteSpace: 'pre',
+          pointerEvents: 'none',
         },
         '.cm-diagnostic': {
           padding: '4px 8px',
@@ -187,7 +194,7 @@ export const EditorCore: React.FC<{
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly]);
+  }, [extraCompletions, enableLinter, height, minHeight, theme, readonly, placeholder]);
 
   // Update editor content when value changes
   useEffect(() => {
@@ -198,25 +205,9 @@ export const EditorCore: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // placeholder overlay
-  const showPlaceholder = placeholder && !value;
   return (
     <>
       <div style={{ flex: 1, minHeight: 120 }} ref={editorRef} />
-      {showPlaceholder && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: '#999',
-            pointerEvents: 'none',
-            fontSize: '14px',
-          }}
-        >
-          {placeholder}
-        </div>
-      )}
     </>
   );
 };
