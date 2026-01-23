@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr } from '@nocobase/flow-engine';
+import { tExpr, useFlowContext, useFlowViewContext, FlowModelRenderer } from '@nocobase/flow-engine';
 import { onFieldInputValueChange } from '@formily/core';
 import { connect, mapProps, useForm } from '@formily/react';
-import { ActionModel, ActionSceneEnum, openViewFlow } from '@nocobase/client';
+import { ActionModel, ActionSceneEnum, useRequest, SkeletonFallback } from '@nocobase/client';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
@@ -61,6 +61,66 @@ const Tree = connect(
   }),
 );
 
+function RemoteModelRenderer({ options }) {
+  const ctx = useFlowViewContext();
+  const { data, loading }: any = useRequest(
+    async () => {
+      const model: any = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      console.log('model', model, ctx.view.inputArgs.formData);
+      model.context.defineProperty('record', {
+        get: () => ctx.view.inputArgs.formData || {},
+        cache: false,
+      });
+      return model;
+    },
+    {
+      refreshDeps: [ctx, options],
+    },
+  );
+  if (loading || !data?.uid) {
+    return <SkeletonFallback style={{ margin: 16 }} />;
+  }
+  return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
+}
+
+function EditFormContent({ model }) {
+  const ctx = useFlowContext();
+  const { Header, type } = ctx.view;
+  model._closeView = ctx.view.close;
+  const title = ctx.t('Duplicate record');
+  return (
+    <div>
+      <Header
+        title={
+          type === 'dialog' ? (
+            <div
+              style={{
+                padding: `${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px 0`,
+                marginBottom: -ctx.themeToken.marginSM,
+                backgroundColor: 'var(--colorBgLayout)',
+              }}
+            >
+              {title}
+            </div>
+          ) : (
+            title
+          )
+        }
+      />
+      <RemoteModelRenderer
+        options={{
+          parentId: ctx.view.inputArgs.parentId,
+          subKey: `deplicate.edit-form-grid-block`,
+          async: true,
+          delegateToParent: false,
+          subType: 'object',
+          use: 'BlockGridModel',
+        }}
+      />
+    </div>
+  );
+}
+
 export class DuplicateActionModel extends ActionModel {
   declare props: any;
   static scene = ActionSceneEnum.record;
@@ -73,6 +133,31 @@ export class DuplicateActionModel extends ActionModel {
 
   getAclActionName() {
     return 'create';
+  }
+  onClick(event) {
+    if (this.props.duplicateMode === 'quickDulicate') {
+      this.dispatchEvent(
+        'quickCreateClick',
+        {
+          event,
+          ...this.getInputArgs(),
+        },
+        {
+          debounce: true,
+        },
+      );
+    } else {
+      this.dispatchEvent(
+        'openDuplicatePopup',
+        {
+          event,
+          ...this.getInputArgs(),
+        },
+        {
+          debounce: true,
+        },
+      );
+    }
   }
 }
 
@@ -321,8 +406,6 @@ DuplicateActionModel.registerFlow({
   },
 });
 
-DuplicateActionModel.registerFlow(openViewFlow);
-
 async function fetchTemplateData(resource: any, template: { collection: string; dataId: number; fields: string[] }) {
   if (!template?.dataId || template.fields?.length === 0) {
     return;
@@ -338,14 +421,20 @@ async function fetchTemplateData(resource: any, template: { collection: string; 
 
   return res?.data;
 }
+
+//快捷创建
 DuplicateActionModel.registerFlow({
   key: 'duplicateSettings',
   title: tExpr('Duplicate mode settings'),
-  on: 'click',
+  on: 'quickCreateClick',
   steps: {
     duplicate: {
       async handler(ctx, params) {
-        const { duplicateMode, duplicateFields } = ctx.model.props;
+        const { duplicateFields = [] } = ctx.model.props;
+        if (!duplicateFields?.length) {
+          ctx.message.error(ctx.t('Please configure the duplicate fields'));
+          return;
+        }
         const filterTargetKey = ctx.blockModel.collection.filterTargetKey;
         const dataId = Array.isArray(ctx.blockModel.collection.filterTargetKey)
           ? Object.assign(
@@ -355,46 +444,137 @@ DuplicateActionModel.registerFlow({
               }),
             )
           : ctx.record[filterTargetKey] || ctx.record.id;
+        const template = {
+          key: 'duplicate',
+          dataId,
+          default: true,
+          fields:
+            duplicateFields?.filter((v) => {
+              return [...ctx.collection.fields.values()].find((k) => v.includes(k.name));
+            }) || [],
+          collection: ctx.record.__collection || ctx.blockModel.collection.name,
+        };
 
-        if (duplicateMode === 'quickDulicate') {
-          const template = {
-            key: 'duplicate',
-            dataId,
-            default: true,
-            fields:
-              duplicateFields?.filter((v) => {
-                return [...ctx.collection.fields.values()].find((k) => v.includes(k.name));
-              }) || [],
-            collection: ctx.record.__collection || ctx.blockModel.collection.name,
-          };
+        const data = await fetchTemplateData(ctx.resource, template);
+        await ctx.blockModel.resource.create(
+          {
+            ...data,
+          },
+          params.requestConfig,
+        );
+        ctx.message.success(ctx.t('Saved successfully'));
+      },
+    },
+  },
+});
 
-          const data = await fetchTemplateData(ctx.resource, template);
-          console.log(ctx.resourece, ctx.blockModel.resource);
-          await ctx.blockModel.resource.create(
-            {
-              ...data,
-            },
-            params.requestConfig,
-          );
-
-          // await ctx.resource['create']({
-          //   values: {
-          //     ...data,
-          //   },
-          // });
-          ctx.message.success(ctx.t('Saved successfully'));
+// 复制并继续填写
+DuplicateActionModel.registerFlow({
+  key: 'popupSettings',
+  on: {
+    eventName: 'openDuplicatePopup',
+  },
+  sort: 300,
+  steps: {
+    openView: {
+      title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const duplicateMode = ctx.model.getStepParams?.('duplicateModeSettings', 'duplicateMode')?.duplicateMode;
+        return duplicateMode === 'quickDulicate';
+      },
+      uiSchema: {
+        mode: {
+          type: 'string',
+          title: tExpr('Open mode'),
+          enum: [
+            { label: tExpr('Drawer'), value: 'drawer' },
+            { label: tExpr('Dialog'), value: 'dialog' },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+        size: {
+          type: 'string',
+          title: tExpr('Popup size'),
+          enum: [
+            { label: tExpr('Small'), value: 'small' },
+            { label: tExpr('Medium'), value: 'medium' },
+            { label: tExpr('Large'), value: 'large' },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      async handler(ctx, params) {
+        const { duplicateFields = [] } = ctx.model.props;
+        if (!duplicateFields?.length) {
+          ctx.message.error(ctx.t('Please configure the duplicate fields'));
+          return;
         }
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        const filterTargetKey = ctx.blockModel.collection.filterTargetKey;
+        const dataId = Array.isArray(ctx.blockModel.collection.filterTargetKey)
+          ? Object.assign(
+              {},
+              ...filterTargetKey.map((v) => {
+                return { [v]: ctx.record[v] };
+              }),
+            )
+          : ctx.record[filterTargetKey] || ctx.record.id;
+        const template = {
+          key: 'duplicate',
+          dataId,
+          default: true,
+          fields:
+            duplicateFields?.filter((v) => {
+              return [...ctx.collection.fields.values()].find((k) => v.includes(k.name));
+            }) || [],
+          collection: ctx.record.__collection || ctx.blockModel.collection.name,
+        };
 
-        // if (!ctx.resource) {
-        //   ctx.message.error(ctx.t('No resource selected for deletion'));
-        //   return;
-        // }
-        // if (!ctx.record) {
-        //   ctx.message.error(ctx.t('No resource or record selected for deletion'));
-        //   return;
-        // }
-        // await ctx.resource.destroy(ctx.blockModel.collection.getFilterByTK(ctx.record));
-        // ctx.message.success(ctx.t('Record deleted successfully'));
+        const formData = await fetchTemplateData(ctx.resource, template);
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          target: ctx.layoutContentElement,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'new',
+            dataSourceKey: ctx.blockModel.collection.dataSourceKey,
+            collectionName: ctx.record.__collection || ctx.blockModel.collection.name,
+            formData,
+          },
+          content: () => <EditFormContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
+        });
       },
     },
   },
