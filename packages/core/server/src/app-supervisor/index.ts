@@ -465,6 +465,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.setAppLastSeenAt(appName);
   }
 
+  async getAppLastSeenAt(appName: string) {
+    return this.discoveryAdapter.getAppLastSeenAt(appName);
+  }
+
   async addAppModel(appModel: AppModel) {
     if (typeof this.discoveryAdapter.addAppModel !== 'function') {
       return;

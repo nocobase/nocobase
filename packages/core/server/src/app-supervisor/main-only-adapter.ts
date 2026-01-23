@@ -141,4 +141,8 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   setAppLastSeenAt() {}
+
+  getAppLastSeenAt(appName: string) {
+    return null;
+  }
 }

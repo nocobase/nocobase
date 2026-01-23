@@ -110,6 +110,7 @@ export interface AppDiscoveryAdapter {
    * Update the "last seen at" timestamp for an application.
    */
   setAppLastSeenAt(appName: string): void | Promise<void>;
+  getAppLastSeenAt(appName: string): number | null | Promise<number | null>;
 
   /**
    * Read the cached lifecycle status for a given application.

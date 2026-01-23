@@ -129,6 +129,10 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     this.lastSeenAt.set(appName, Math.floor(Date.now() / 1000));
   }
 
+  getAppLastSeenAt(appName: string): number | null {
+    return this.lastSeenAt.get(appName);
+  }
+
   addApp(app: Application) {
     if (this.apps[app.name]) {
       throw new Error(`app ${app.name} already exists`);
