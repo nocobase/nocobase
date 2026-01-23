@@ -47,6 +47,18 @@ type ResolvedFieldContext = {
   collectionField: CollectionField | null;
 };
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function pickStyle(value: unknown): React.CSSProperties | undefined {
+  return isPlainObject(value) ? (value as React.CSSProperties) : undefined;
+}
+
+function withFullWidthStyle(style?: React.CSSProperties): React.CSSProperties {
+  return { ...style, width: '100%', minWidth: 0 };
+}
+
 /**
  * 根据所选字段渲染对应的赋值编辑器：
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
@@ -162,6 +174,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     if (isToManyAssociationField(cf)) return true;
 
     // 部分字段组件（如 Cascader / CascadeSelectList）期望 array 值；若 uiSchema 明确声明为 array，则视为 array 值字段
+    const fieldInterface = typeof (cf as any)?.interface === 'string' ? ((cf as any).interface as string) : undefined;
+    if (fieldInterface === 'multipleSelect' || fieldInterface === 'checkboxGroup') return true;
+
     const schemaType = cf?.uiSchema?.type;
     if (schemaType === 'array') return true;
 
@@ -171,7 +186,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
   const coerceEmptyValueForRenderer = React.useCallback(
     (v: any) => {
       // VariableInput 会把 undefined/null 统一传成空字符串，这会导致 array 值组件（如 DynamicCascadeList）崩溃。
-      if (isArrayValueField && (v == null || v === '')) return [];
+      if (isArrayValueField) {
+        if (v == null || v === '') return [];
+        // 兼容历史配置：部分 array 值字段曾以单值保存（例如 multipleSelect 被渲染为单选），这里统一包装为数组以避免组件报错。
+        if (!Array.isArray(v)) return [v];
+      }
       return v;
     },
     [isArrayValueField],
@@ -236,16 +255,33 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     // 字段模型基础属性设定
     const fm = created?.subModels?.fields?.[0];
     const multiple = isToManyAssociationField(cf);
+    const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
     fm?.setProps?.({
       disabled: false,
       readPretty: false,
       pattern: 'editable',
       updateAssociation: false,
       multiple,
+      style: nextStyle,
     });
     fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
     // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
     ensureOptionsFromUiSchemaEnumIfAbsent(fm, cf);
+    // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
+    // 仅当未显式传入 mode 时设置，避免覆盖外部自定义
+    const modePropExists = typeof (fm as any)?.props?.mode !== 'undefined';
+    const modeFromSchema = (cf?.uiSchema as any)?.['x-component-props']?.mode;
+    const nextMode =
+      cf?.interface === 'multipleSelect'
+        ? typeof modeFromSchema === 'string'
+          ? modeFromSchema
+          : 'multiple'
+        : typeof modeFromSchema === 'string'
+          ? modeFromSchema
+          : undefined;
+    if (!modePropExists && nextMode) {
+      fm?.setProps?.({ mode: nextMode });
+    }
     if (!fm?.props?.fieldNames && cf?.targetCollection) {
       const targetCol = cf.targetCollection;
       const valueKey = cf?.targetKey || targetCol?.filterTargetKey || 'id';
@@ -266,6 +302,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
   // 常量/空值的两个占位渲染器
   const ConstantValueEditor = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => {
+      const wrapperStyle = pickStyle(inputProps?.style);
       React.useEffect(() => {
         const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
         const handleChange = (ev: any) => {
@@ -299,13 +336,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
             value={inputProps?.value}
             onChange={(e) => inputProps?.onChange?.(normalizeEventValue(e))}
             placeholder={placeholder}
-            style={{ width: '100%' }}
+            style={withFullWidthStyle(wrapperStyle)}
           />
         );
       }
 
       return (
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ ...withFullWidthStyle(wrapperStyle), flex: 1 }}>
           <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
         </div>
       );
