@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { capitalize, debounce } from 'lodash';
 import {
@@ -27,7 +27,7 @@ import {
   FlowModelProvider,
   FlowErrorFallback,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Input } from 'antd';
+import { TableColumnProps, Tooltip, Input, Space } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
@@ -35,12 +35,12 @@ import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { FieldDeletePlaceholder } from '../../../blocks/table/TableColumnModel';
 
-function FieldWithoutPermissionPlaceholder({ targetModel }) {
+export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
   const fieldModel = targetModel;
-  const collection = fieldModel.collectionField.collection;
+  const collection = fieldModel.context.collectionField.collection;
   const dataSource = collection.dataSource;
-  const name = fieldModel.collectionField.name;
+  const name = fieldModel.context.collectionField.name;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -121,7 +121,11 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
       return <Input value={inputValue} disabled={disabled} />;
     } else {
-      return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
+      return (
+        <Space>
+          <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} /> <EditOutlined className="edit-icon" />
+        </Space>
+      );
     }
   }, [collectionField.interface, defaultValue, fieldModel]);
   return (
@@ -211,6 +215,23 @@ const MemoCell: React.FC<CellProps> = React.memo(
           .ant-form-item-explain-error {
             white-space: break-spaces;
           }
+          .edit-icon {
+            position: absolute;
+            display: none;
+            color: #1890ff;
+            margin-left: 8px;
+            cursor: pointer;
+            z-index: 100;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+          }
+          &:hover {
+            background: rgba(24, 144, 255, 0.1) !important;
+          }
+          &:hover .edit-icon {
+            display: inline-flex;
+          }
         `}
       >
         {parent.mapSubModels('field', (action: FieldModel) => {
@@ -236,8 +257,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
               showLabel={false}
               disabled={
                 parent.props.disabled ||
-                (!record.__is_new__ && parent.props.aclDisabled) ||
-                (record.__is_new__ && parent.props.aclCreateDisabled)
+                (!record?.__is_new__ && parent.props.aclDisabled) ||
+                (record?.__is_new__ && parent.props.aclCreateDisabled)
               }
             >
               {fork.constructor.isLargeField ? (
@@ -250,8 +271,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   defaultValue={value}
                   disabled={
                     parent.props.disabled ||
-                    (!record.__is_new__ && parent.props.aclDisabled) ||
-                    (record.__is_new__ && parent.props.aclCreateDisabled)
+                    (!record?.__is_new__ && parent.props.aclDisabled) ||
+                    (record?.__is_new__ && parent.props.aclCreateDisabled)
                   }
                 />
               ) : (
@@ -417,7 +438,7 @@ export class SubTableColumnModel<
       // render: this.renderItem(),
       hidden: this.hidden && !this.context.flowSettingsEnabled,
       render: (value) => {
-        const { record, rowIndex: index } = value;
+        const { record, rowIndex: index } = value || {};
         return (
           <FlowModelProvider model={this}>
             <ErrorBoundary FallbackComponent={FlowErrorFallback}>
@@ -449,7 +470,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record } = props;
+      const { value, id, rowIdx, record } = props || {};
       return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} />;
     };
   }

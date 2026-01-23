@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Snabbstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introduktion",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Skriv ett åtgärds-plugin",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

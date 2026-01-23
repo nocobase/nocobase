@@ -9,7 +9,6 @@
 
 export { useDialog } from './useDialog';
 export { useDrawer } from './useDrawer';
-export { usePage } from './usePage';
+export { usePage, GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './usePage';
 export { usePopover } from './usePopover';
 export { ViewNavigation } from './ViewNavigation';
-export { createViewMeta } from './createViewMeta';

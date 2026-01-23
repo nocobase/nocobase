@@ -1,0 +1,110 @@
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::
+
+
+# Instalacja i aktualizacja wtyczek
+
+## Wtyczki wbudowane
+
+Wtyczki wbudowane w NocoBase aktualizują się automatycznie wraz z wersją rdzenia i nie wymagają ręcznej interwencji.
+
+## Wtyczki komercyjne
+
+Proszę zalogować się do NocoBase Service i zapoznać się z dokumentacją, aby dowiedzieć się, jak instalować i aktualizować wtyczki komercyjne.
+
+## Wtyczki stron trzecich
+
+### Instalacja wtyczek online
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Uwaga
+
+NocoBase umożliwia instalację wtyczek online za pośrednictwem interfejsu, jednak obecne doświadczenie nie jest idealne. Przyczyny obejmują:
+
+- Ze względu na ograniczenia mechanizmu działania procesów Node.js, po zainstalowaniu lub zaktualizowaniu wtyczek, należy zatrzymać proces, a następnie wykonać polecenie `upgrade`, aby zmiany weszły w życie;
+- W scenariuszach z wieloma aplikacjami, instalacja online ma trudności z jednoczesną synchronizacją wtyczek pomiędzy wieloma podaplikacjami;
+- Zbiorcze aktualizacje wtyczek nie są obsługiwane;
+- Instalacja lub aktualizacja online może łatwo doprowadzić do nieoczekiwanego zakończenia procesu aplikacji.
+
+Dlatego zaleca się korzystanie z wiersza poleceń lub ręcznego przesyłania plików do instalacji i aktualizacji wtyczek. Zalecamy zintegrowanie tego z przepływami pracy CI/CD, wykorzystując metody wiersza poleceń do pobierania, rozpakowywania i aktualizacji wtyczek, zapewniając spójność i niezawodność każdego wdrożenia aktualizacji.
+
+:::
+
+### Instalacja wtyczek za pomocą wiersza poleceń
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Jeśli wtyczka jest już zainstalowana i wymaga aktualizacji, proszę wykonać następujące polecenie:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Ręczne przesyłanie i rozpakowywanie
+
+Proszę najpierw pobrać pakiet wtyczki na swój komputer lokalny, a następnie ręcznie przesłać i rozpakować go do katalogu `./storage/plugins`. Jeśli wtyczka jest już włączona, proszę wykonać następujące polecenie, aby zakończyć aktualizację wtyczki po przesłaniu i rozpakowaniu.
+
+> ⚠️ **Uwaga**: Aby uniknąć problemów z pamięcią podręczną, proszę upewnić się, że aplikacja NocoBase jest zatrzymana przed wykonaniem operacji.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Prawidłowy sposób rozpakowywania wtyczki
+
+Poniższy przykład pokazuje, jak prawidłowo rozpakować pakiet wtyczki do wskazanego katalogu:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+To polecenie rozpakuje wtyczkę do wskazanego katalogu bez tworzenia dodatkowej warstwy katalogu `package`.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Przykład prawidłowej struktury katalogów
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt

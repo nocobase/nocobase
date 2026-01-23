@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "लॉग",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "सर्वर-साइड लॉग",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "सर्वर-साइड लॉग, ऑडिट लॉग, इतिहास",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "टेलीमेट्री",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "उपयोग निर्देश",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "एक्सपोर्टर",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

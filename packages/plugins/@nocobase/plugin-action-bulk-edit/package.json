@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-bulk-edit",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-bulk-edit",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-bulk-edit",

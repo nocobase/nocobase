@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Умовні оператори",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Розширені можливості",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

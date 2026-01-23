@@ -50,7 +50,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
   }
-  renderConfiguireActions() {
+  renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'table-column-add-actions'}
@@ -176,7 +176,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
 
               return null;
             })}
-            {this.renderConfiguireActions()}
+            {this.renderConfigureActions()}
           </Space>
         </div>
       </DndProvider>

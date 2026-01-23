@@ -1,0 +1,116 @@
+[
+  {
+    "type": "custom-link",
+    "label": "איך NocoBase עובד",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "התקנת NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "התקנת Docker",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "התקנת create-nocobase-app",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "התקנת קוד מקור Git",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "משתני סבי",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "שדרוג NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "שדרוג התקנת Docker",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "שדרוג התקנת create-nocobase-app",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "שדרוג התקנת קוד מקור מ-Git",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "פריסה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "פריסה בסביבת Production",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "פרוקסי משאבים סטטיים",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "cdn",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "פקודות תפעול נפוצות",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "פריסה מהירה יותר",
+        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "התקנה ושדרוג Plugin",
+    "link": "/get-started/install-upgrade-plugins"
+  }
+]

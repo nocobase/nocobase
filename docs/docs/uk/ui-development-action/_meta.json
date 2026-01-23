@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Швидкий старт",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Вступ",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Написання плагіна дії",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

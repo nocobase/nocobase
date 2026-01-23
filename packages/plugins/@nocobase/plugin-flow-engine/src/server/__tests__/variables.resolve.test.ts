@@ -240,6 +240,52 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(r2.data.id).toBe('{{ ctx.view.record.id }}');
   });
 
+  it('batch: should resolve filterByTk array into record arrays (formValues.roles.title)', async () => {
+    const names = ['root', 'member', 'admin'];
+    const rolesRepo = app.db.getRepository('roles');
+    // Ensure roles exist (seed may vary between test environments)
+    for (const name of names) {
+      const existing = await rolesRepo.findOne({ filter: { name } }).catch(() => null);
+      if (!existing) {
+        await rolesRepo.create({
+          values: {
+            name,
+            title: `Role ${name}`,
+            allowConfigure: true,
+          },
+        });
+      }
+    }
+
+    const expectedTitles: any[] = [];
+    for (const name of names) {
+      const rec = await rolesRepo.findOne({ filterByTk: name });
+      expectedTitles.push(rec?.toJSON?.()?.title);
+    }
+
+    const payload = {
+      batch: [
+        {
+          id: 't-roles',
+          template: { titles: '{{ ctx.formValues.roles.title }}' },
+          contextParams: {
+            'formValues.roles': {
+              dataSourceKey: 'main',
+              collection: 'roles',
+              filterByTk: names,
+            },
+          },
+        },
+      ],
+    };
+    const res = await execResolve(payload, 1);
+    const results = res.body?.results || [];
+    const item = results.find((r: any) => r.id === 't-roles');
+    expect(item).toBeTruthy();
+    expect(Array.isArray(item.data.titles)).toBe(true);
+    expect(item.data.titles).toEqual(expectedTitles);
+  });
+
   it('should support top-level bracket var for record', async () => {
     const payload = {
       template: {

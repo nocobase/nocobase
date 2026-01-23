@@ -10,7 +10,7 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-cc",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-cc",
   "license": "AGPL-3.0",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/actions": "2.x",

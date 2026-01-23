@@ -86,8 +86,8 @@ const BuiltInAboutField: React.FC = () => {
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       <Radio.Group value={mode} onChange={(e) => handleModeChange(e.target.value)}>
-        <Radio value="system">{t('Use system default')}</Radio>
-        <Radio value="custom">{t('Use custom')}</Radio>
+        <Radio value="system">{t('System default')}</Radio>
+        <Radio value="custom">{t('Custom')}</Radio>
       </Radio.Group>
       {mode === 'system' ? (
         <div

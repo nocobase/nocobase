@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Bildirim Kanalı",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Site İçi Mesaj",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-posta",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Geliştirici Kılavuzu",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genişletilmiş Bildirim Kanalı Türü",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "Genişletilmiş Bildirim API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

@@ -41,7 +41,6 @@ export class PluginMapClient extends Plugin {
     this.app.dataSourceManager.addFieldInterfaceGroups({
       map: {
         label: generateNTemplate('Map-based geometry'),
-        order: 51,
       },
     });
     this.app.schemaInitializerManager.add(mapActionInitializers_deprecated);
