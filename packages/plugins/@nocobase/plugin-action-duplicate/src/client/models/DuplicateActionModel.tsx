@@ -62,6 +62,7 @@ const Tree = connect(
 );
 
 export class DuplicateActionModel extends ActionModel {
+  declare props: any;
   static scene = ActionSceneEnum.record;
 
   defaultProps: any = {
@@ -87,7 +88,6 @@ DuplicateActionModel.registerFlow({
       title: tExpr('Duplicate mode'),
       uiSchema(ctx) {
         const t = ctx.t;
-
         const collections =
           ctx.dataSourceManager
             .getDataSource('main')
@@ -323,6 +323,21 @@ DuplicateActionModel.registerFlow({
 
 DuplicateActionModel.registerFlow(openViewFlow);
 
+async function fetchTemplateData(resource: any, template: { collection: string; dataId: number; fields: string[] }) {
+  if (!template?.dataId || template.fields?.length === 0) {
+    return;
+  }
+
+  const res = await resource.runAction('get', {
+    params: {
+      filterByTk: template.dataId,
+      fields: template.fields,
+      isTemplate: true,
+    },
+  });
+
+  return res?.data;
+}
 DuplicateActionModel.registerFlow({
   key: 'duplicateSettings',
   title: tExpr('Duplicate mode settings'),
@@ -330,16 +345,56 @@ DuplicateActionModel.registerFlow({
   steps: {
     duplicate: {
       async handler(ctx, params) {
-        if (!ctx.resource) {
-          ctx.message.error(ctx.t('No resource selected for deletion'));
-          return;
+        const { duplicateMode, duplicateFields } = ctx.model.props;
+        const filterTargetKey = ctx.blockModel.collection.filterTargetKey;
+        const dataId = Array.isArray(ctx.blockModel.collection.filterTargetKey)
+          ? Object.assign(
+              {},
+              ...filterTargetKey.map((v) => {
+                return { [v]: ctx.record[v] };
+              }),
+            )
+          : ctx.record[filterTargetKey] || ctx.record.id;
+
+        if (duplicateMode === 'quickDulicate') {
+          const template = {
+            key: 'duplicate',
+            dataId,
+            default: true,
+            fields:
+              duplicateFields?.filter((v) => {
+                return [...ctx.collection.fields.values()].find((k) => v.includes(k.name));
+              }) || [],
+            collection: ctx.record.__collection || ctx.blockModel.collection.name,
+          };
+
+          const data = await fetchTemplateData(ctx.resource, template);
+          console.log(ctx.resourece, ctx.blockModel.resource);
+          await ctx.blockModel.resource.create(
+            {
+              ...data,
+            },
+            params.requestConfig,
+          );
+
+          // await ctx.resource['create']({
+          //   values: {
+          //     ...data,
+          //   },
+          // });
+          ctx.message.success(ctx.t('Saved successfully'));
         }
-        if (!ctx.record) {
-          ctx.message.error(ctx.t('No resource or record selected for deletion'));
-          return;
-        }
-        await ctx.resource.destroy(ctx.blockModel.collection.getFilterByTK(ctx.record));
-        ctx.message.success(ctx.t('Record deleted successfully'));
+
+        // if (!ctx.resource) {
+        //   ctx.message.error(ctx.t('No resource selected for deletion'));
+        //   return;
+        // }
+        // if (!ctx.record) {
+        //   ctx.message.error(ctx.t('No resource or record selected for deletion'));
+        //   return;
+        // }
+        // await ctx.resource.destroy(ctx.blockModel.collection.getFilterByTK(ctx.record));
+        // ctx.message.success(ctx.t('Record deleted successfully'));
       },
     },
   },
