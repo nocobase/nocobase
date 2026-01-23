@@ -484,6 +484,49 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['a'])).toBe('user');
   });
 
+  it('linkage assignment takes precedence over mode=assign form assignment', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-linkage-precedence',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    // linkage writes to target; form assignment should NOT immediately write back and override
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'LINK' }], { source: 'linkage' });
+    expect(formStub.getFieldValue(['a'])).toBe('LINK');
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(formStub.getFieldValue(['a'])).toBe('LINK');
+
+    // dependency change should still update via form assignment (if linkage doesn't re-run)
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
   it('tracks ctx var deps and updates when ctx var changes', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
