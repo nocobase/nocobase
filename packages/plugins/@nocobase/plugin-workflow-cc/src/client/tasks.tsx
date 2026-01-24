@@ -350,18 +350,17 @@ function ContentDetail(props) {
   );
 }
 
-function RecordTitle(props) {
-  const record = useCollectionRecordData();
-  if (Array.isArray(props.dataIndex)) {
-    for (const index of props.dataIndex) {
-      const title = get(record, index);
-      if (title) {
-        return title;
-      }
-    }
+const getUpstreams = (currentNode: any, nodes: any[]) => {
+  if (!currentNode || !nodes) {
+    return [];
   }
-  return get(record, props.dataIndex);
-}
+  const result = [];
+  const upstreamNode = nodes.find((node) => node.id === currentNode.upstreamId);
+  if (upstreamNode) {
+    result.push(upstreamNode, ...getUpstreams(upstreamNode, nodes));
+  }
+  return result;
+};
 
 function TaskItem() {
   const token = useAntdToken();
@@ -385,8 +384,7 @@ function TaskItem() {
   // V2: 使用 FlowModel 任务卡片渲染
   const taskCardUid = record.node?.config?.taskCardUid;
 
-  // 使用共享 hook 计算临时关联源
-  const availableUpstreams = useAvailableUpstreams(record.node);
+  const availableUpstreams = getUpstreams(record.node, record.workflow?.nodes);
   const tempAssociationSources = useTempAssociationSources(record.workflow, availableUpstreams);
 
   const onModelLoaded = useCallback(
