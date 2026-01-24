@@ -14,6 +14,7 @@ import React from 'react';
 import { EllipsisWithTooltip } from '../../components';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
+import { EditFormModel } from '../blocks/form/EditFormModel';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
@@ -261,9 +262,17 @@ ClickableFieldModel.registerFlow({
       title: tExpr('Enable click-to-open'),
       uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
+        if (ctx.disableFieldClickToOpen) {
+          return {
+            clickToOpen: false,
+          };
+        }
         return {
           clickToOpen: ctx.collectionField.isAssociationField(),
         };
+      },
+      hideInSettings(ctx) {
+        return ctx.disableFieldClickToOpen;
       },
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });

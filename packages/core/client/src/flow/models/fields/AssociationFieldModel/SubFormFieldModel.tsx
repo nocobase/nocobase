@@ -242,7 +242,7 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormFieldModel.define({
-  label: tExpr('Sub-form'),
+  label: tExpr('Subform'),
   createModelOptions: {
     use: 'SubFormFieldModel',
     subModels: {
@@ -406,7 +406,10 @@ const ArrayNester = ({
                       {t('Add new')}
                     </Button>
                   ) : (
-                    <ActionWithoutPermission message={t('Not allow to create')} forbidden={{ actionName: 'create' }}>
+                    <ActionWithoutPermission
+                      message={t('No permission to add new')}
+                      forbidden={{ actionName: 'create' }}
+                    >
                       <Button type="link" disabled>
                         <PlusOutlined />
                         {t('Add new')}
@@ -479,7 +482,7 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormListFieldModel.define({
-  label: tExpr('Sub-form'),
+  label: tExpr('Subform'),
   createModelOptions: {
     use: 'SubFormListFieldModel',
     subModels: {
@@ -543,7 +546,7 @@ SubFormListFieldModel.registerFlow({
   sort: 300,
   steps: {
     openView: {
-      title: tExpr('Edit popup'),
+      title: tExpr('Edit popup (Select record)'),
       hideInSettings(ctx) {
         const allowSelectExistingRecord = ctx.model.getStepParams?.('subFormListSettings', 'allowSelectExistingRecord')
           ?.allowSelectExistingRecord;
@@ -676,9 +679,11 @@ FormItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho', 'o
     }
     return true;
   },
+  order: 100,
 });
 
 FormItemModel.bindModelToInterface('SubFormListFieldModel', ['m2m', 'o2m', 'mbm'], {
+  order: 100,
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

@@ -249,11 +249,17 @@ ActionModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
     linkageRules: {
       use: 'actionLinkageRules',
+    },
+  },
+});
+
+ActionModel.registerFlow({
+  key: 'buttonAclSettings',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
     },
   },
 });

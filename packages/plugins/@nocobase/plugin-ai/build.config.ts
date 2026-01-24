@@ -119,19 +119,19 @@ async function writeIndexFiles(pkgPath: string) {
 }
 
 export default defineConfig({
-  beforeBuild: async (log) => {
-    await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
-    const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
-    await writeIndexFiles(pkgPath);
-  },
+  // beforeBuild: async (log) => {
+  //   await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
+  //   const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
+  //   await writeIndexFiles(pkgPath);
+  // },
 
   afterBuild: async (log) => {
     log('copying deps');
     const deps = [
       'decamelize',
       'zod',
-      'zod-to-json-schema',
-      'langsmith',
+      // 'zod-to-json-schema',
+      // 'langsmith',
       'p-retry',
       'p-queue',
       'p-timeout',
