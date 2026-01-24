@@ -102,6 +102,10 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/msword',
+            'application/vnd.ms-excel',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.oasis.opendocument.text',
           ].includes(file.mimetype)
         ) {
           return true;
@@ -115,7 +119,7 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
           const parts = url.pathname.split('.');
           if (parts.length > 1) {
             const ext = parts[parts.length - 1].toLowerCase();
-            return ['docx', 'xlsx', 'pptx', 'odt'].includes(ext);
+            return ['docx', 'xlsx', 'pptx', 'odt', 'doc', 'xls', 'ppt'].includes(ext);
           }
           return false;
         }
