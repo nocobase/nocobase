@@ -215,7 +215,8 @@ interface CellProps {
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, width }) => {
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork }) => {
+    const isNew = record?.__is_new__;
     return (
       <div
         style={{
@@ -253,7 +254,26 @@ const MemoCell: React.FC<CellProps> = React.memo(
           const namePath = fieldPath.pop();
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', { get: () => record });
+          if (rowFork) {
+            fork.context.defineProperty('item', {
+              get: () => rowFork.context.item,
+              cache: false,
+            });
+            fork.context.defineProperty('fieldIndex', {
+              get: () => rowFork.context.fieldIndex,
+              cache: false,
+            });
+          } else {
+            fork.context.defineProperty('item', {
+              get: () => ({
+                index: rowIdx,
+                __is_new__: isNew,
+                __is_stored__: record?.__is_stored__,
+                value: record,
+              }),
+              cache: false,
+            });
+          }
 
           if (parent.props.readPretty) {
             fork.setProps({ value });
@@ -512,10 +532,12 @@ export class SubTableColumnModel<
         fork.context.defineProperty('item', {
           get: () => {
             const parentItemCtx = (parentItem ?? this.context?.item) as any;
+            const isNew = record?.__is_new__;
+            const isStored = record?.__is_stored__;
             return {
               index: Number.isFinite(rowIndex) ? rowIndex : undefined,
-              isNew: record?.isNew,
-              isStored: record?.isStored,
+              __is_new__: isNew,
+              __is_stored__: isStored,
               value: record,
               parentItem: parentItemCtx,
             };

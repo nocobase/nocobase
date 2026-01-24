@@ -232,7 +232,8 @@ FormItemModel.registerFlow({
             }
           }
 
-          if (!resultView && !ctx.item?.isNew) {
+          const isNew = ctx.item?.__is_new__ ?? false;
+          if (!resultView && !isNew) {
             ctx.model.hidden = true;
             ctx.model.forbidden = {
               actionName: 'view',
@@ -259,7 +260,8 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'update',
           });
-          if (!result && !ctx.item?.isStored) {
+          const isStored = ctx.item?.__is_stored__ ?? false;
+          if (!result && !isStored) {
             // 子表单中选择的记录
             ctx.model.hidden = true;
             ctx.model.forbidden = {

@@ -27,8 +27,8 @@ import { ActionWithoutPermission } from '../../base/ActionModel';
 
 type ItemChain = {
   index?: number;
-  isNew?: boolean;
-  isStored?: boolean;
+  __is_new__?: boolean;
+  __is_stored__?: boolean;
   value: any;
   parentItem?: ItemChain;
 };
@@ -206,8 +206,8 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         const value = this.context.form.getFieldValue(this.props.name);
         return {
           index: undefined,
-          isNew: value?.isNew,
-          isStored: value?.isStored,
+          __is_new__: value?.__is_new__,
+          __is_stored__: value?.__is_stored__,
           value,
           parentItem,
         } satisfies ItemChain;
@@ -307,53 +307,69 @@ const ArrayNester = ({
         {(fields, { add, remove }) => {
           const displayFields = fields.length === 0 ? [{ key: '0', name: 0, isDefault: true }] : fields;
 
-              const currentFork = forksRef.current[key];
-              currentFork.context.defineProperty('fieldIndex', {
-                get: () => fieldIndex,
-                cache: false,
-              });
-              currentFork.context.defineProperty('item', {
-                get: () => {
-                  const parentItem = model?.context?.item as ItemChain | undefined;
-                  const value = currentFork.context.form.getFieldValue([name, fieldName]);
-                  return {
-                    index,
-                    isNew: value?.isNew,
-                    isStored: value?.isStored,
-                    value,
-                    parentItem,
-                  } satisfies ItemChain;
-                },
-                cache: false,
-                meta: createItemChainMetaFactory({
-                  t: currentFork.context.t,
-                  title: currentFork.context.t('Current object'),
-                  collectionAccessor: () => currentFork.context.collection,
-                  valueAccessor: (ctx) => ctx?.item?.value,
-                  parentCollectionAccessor: () => model?.context?.collectionField?.collection,
-                }),
-                resolveOnServer: createItemChainResolver({
-                  collectionAccessor: () => currentFork.context.collection,
-                  valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
-                  parentCollectionAccessor: () => model?.context?.collectionField?.collection,
-                  parentValueAccessor: () => model?.context?.item?.value,
-                }),
-                serverOnlyWhenContextParams: true,
-              });
-              return (
-                // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
-                <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value?.[index]?.isNew || value?.[index]?.isStored) && (
-                    <div style={{ textAlign: 'right' }}>
-                      <Tooltip title={t('Remove')}>
-                        <CloseOutlined
-                          style={{ zIndex: 1000, color: '#a8a3a3' }}
-                          onClick={() => {
-                            remove(index);
-                            const gridFork = forksRef.current[key];
-                            // 同时销毁子模型的 fork
-                            gridFork.mapSubModels('items', (item) => {
-                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                // 每行只创建一次 fork
+                if (!forksRef.current[key]) {
+                  const fork = gridModel.createFork({ disabled });
+                  fork.gridContainerRef = React.createRef<HTMLDivElement>();
+                  fork.context.defineProperty('fieldKey', {
+                    get: () => fieldIndex,
+                  });
+                  forksRef.current[key] = fork;
+                }
+
+                const currentFork = forksRef.current[key];
+
+                currentFork.context.defineProperty('fieldIndex', {
+                  get: () => fieldIndex,
+                  cache: false,
+                });
+
+                currentFork.context.defineProperty('item', {
+                  get: () => {
+                    const parentItem = ((model?.parent as any)?.context?.item ?? model?.context?.item) as
+                      | ItemChain
+                      | undefined;
+                    const rowValue = currentFork.context.form.getFieldValue([name, fieldName]);
+                    return {
+                      index,
+                      __is_new__: rowValue?.__is_new__,
+                      __is_stored__: rowValue?.__is_stored__,
+                      value: rowValue,
+                      parentItem,
+                    } satisfies ItemChain;
+                  },
+                  cache: false,
+                  meta: createItemChainMetaFactory({
+                    t: currentFork.context.t,
+                    title: currentFork.context.t('Current object'),
+                    collectionAccessor: () => currentFork.context.collection,
+                    valueAccessor: (ctx) => ctx?.item?.value,
+                    parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                  }),
+                  resolveOnServer: createItemChainResolver({
+                    collectionAccessor: () => currentFork.context.collection,
+                    valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
+                    parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                    parentValueAccessor: () =>
+                      (model?.parent as any)?.context?.item?.value ?? (model?.context as any)?.item?.value,
+                  }),
+                  serverOnlyWhenContextParams: true,
+                });
+
+                const rowValue = value?.[index];
+                const removable =
+                  !disabled && !isDefault && (allowDisassociation || rowValue?.__is_new__ || rowValue?.__is_stored__);
+
+                return (
+                  <div key={key} style={{ marginBottom: 12 }}>
+                    {removable && (
+                      <div style={{ textAlign: 'right' }}>
+                        <Tooltip title={t('Remove')}>
+                          <CloseOutlined
+                            style={{ zIndex: 1000, color: '#a8a3a3' }}
+                            onClick={() => {
+                              remove(index);
+                              const gridFork = forksRef.current[key];
                               // 同时销毁子模型的 fork
                               item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
                               item.getFork(cacheKey)?.dispose();
