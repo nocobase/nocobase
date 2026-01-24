@@ -20,6 +20,7 @@ import { DisplayPreviewFieldModel } from './models/DisplayPreviewFieldModel';
 import { UploadActionModel } from './models/UploadActionModel';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
+
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
   static buildInStorage = [STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS];
@@ -133,5 +134,8 @@ export class PluginFileManagerClient extends Plugin {
     }
   }
 }
+
+export { filePreviewTypes } from './previewer/filePreviewTypes';
+export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';
 
 export default PluginFileManagerClient;
