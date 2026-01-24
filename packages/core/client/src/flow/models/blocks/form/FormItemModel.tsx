@@ -146,8 +146,8 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         validateFirst={true}
         disabled={
           this.props.disabled ||
-          (!_.isEmpty(record) && !record.isNew && this.props.aclDisabled) ||
-          (!_.isEmpty(record) && record.isNew && this.props.aclCreateDisabled)
+          (!_.isEmpty(record) && !record.__is_new__ && this.props.aclDisabled) ||
+          (!_.isEmpty(record) && record.__is_new__ && this.props.aclCreateDisabled)
         }
       >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
@@ -241,7 +241,8 @@ FormItemModel.registerFlow({
             }
           }
 
-          if (!resultView && !ctx.item?.isNew) {
+          const isNew = ctx.item?.isNew ?? (ctx as any).currentObject?.__is_new__ ?? false;
+          if (!resultView && !isNew) {
             ctx.model.hidden = true;
             ctx.model.forbidden = {
               actionName: 'view',
@@ -268,7 +269,8 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'update',
           });
-          if (!result && !ctx.item?.isStored) {
+          const isStored = ctx.item?.isStored ?? (ctx as any).currentObject?.__is_stored__ ?? false;
+          if (!result && !isStored) {
             // 子表单中选择的记录
             ctx.model.hidden = true;
             ctx.model.forbidden = {

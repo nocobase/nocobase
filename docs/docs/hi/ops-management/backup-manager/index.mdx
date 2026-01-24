@@ -1,0 +1,210 @@
+:::tip
+यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# बैकअप प्रबंधक
+
+## परिचय
+
+NocoBase बैकअप प्रबंधक प्लगइन, NocoBase डेटाबेस और उपयोगकर्ता द्वारा अपलोड की गई फ़ाइलों के पूर्ण बैकअप, निर्धारित बैकअप, बैकअप डाउनलोड करने, हटाने और पुनर्स्थापित करने जैसी सुविधाएँ प्रदान करता है।
+
+:::warning
+बैकअप प्रबंधक प्लगइन प्रोफेशनल (Professional) और एंटरप्राइज़ (Enterprise) संस्करणों में शामिल है। कम्युनिटी (Community) और स्टैंडर्ड (Standard) संस्करण के उपयोगकर्ता सीधे डेटाबेस का बैकअप ले सकते हैं; विवरण के लिए देखें: [`NocoBase का बैकअप कैसे लें और पुनर्स्थापित करें`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## डेटाबेस क्लाइंट इंस्टॉल करें
+
+बैकअप प्रबंधक संबंधित डेटाबेस के क्लाइंट पर निर्भर करता है। उपयोग करने से पहले, कृपया अपनी डेटाबेस संस्करण से मेल खाने वाले क्लाइंट को डाउनलोड करने के लिए आधिकारिक वेबसाइट पर जाएँ:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+डॉकर (Docker) संस्करणों के लिए, आप सीधे `./storage/scripts` डायरेक्टरी में एक स्क्रिप्ट लिख सकते हैं
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+`install-database-client.sh` की सामग्री इस प्रकार है:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+फिर ऐप (app) कंटेनर को रीस्टार्ट करें
+
+```bash
+docker compose restart app
+# लॉग देखें
+docker compose logs app
+```
+
+डेटाबेस क्लाइंट के संस्करण संख्या की जाँच करें, जो डेटाबेस सर्वर के संस्करण संख्या से मेल खानी चाहिए
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## उपयोग निर्देश
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### नया बैकअप बनाएँ
+
+नया बैकअप बनाने के लिए "नया बैकअप" बटन पर क्लिक करें। यह बैकअप कॉन्फ़िगरेशन के आधार पर एक नया बैकअप बनाएगा और बैकअप सूची में बैकअप स्थिति दिखाएगा।
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### बैकअप पुनर्स्थापित करें
+
+यह बैकअप सूची से बैकअप पुनर्स्थापित करने या स्थानीय बैकअप फ़ाइलों को अपलोड करके बैकअप पुनर्स्थापित करने का समर्थन करता है।
+निम्नलिखित स्थितियों में पुनर्स्थापना (restore) ऑपरेशन की अनुमति नहीं है:
+
+- जब वर्तमान NocoBase संस्करण बैकअप फ़ाइल में NocoBase संस्करण से कम हो।
+- जब वर्तमान NocoBase डेटाबेस बैकअप फ़ाइल में निम्नलिखित कॉन्फ़िगरेशन से मेल नहीं खाता हो:
+  - dialect (डेटाबेस प्रकार)
+  - underscored (फ़ील्ड कॉन्फ़िगरेशन)
+  - table prefix (तालिका उपसर्ग)
+  - schema (तालिका संरचना)
+- जब `टॉलरेंट मोड` (Tolerant mode) सक्षम न हो, और बैकअप बनाते समय डेटाबेस का संस्करण वर्तमान एप्लिकेशन डेटाबेस संस्करण से अधिक हो।
+
+> **बैकअप पुनर्स्थापना एक पूर्ण डेटाबेस ऑपरेशन है। बैकअप पुनर्स्थापित करने से पहले वर्तमान डेटाबेस का एक बैकअप लेने की सलाह दी जाती है।**
+
+#### बैकअप सूची से पुनर्स्थापित करें
+
+बैकअप सूची में बैकअप आइटम के `पुनर्स्थापित करें` बटन पर क्लिक करें, पॉप-अप विंडो में बैकअप फ़ाइल का एन्क्रिप्शन पासवर्ड दर्ज करें, और बैकअप पुनर्स्थापित करने के लिए "पुष्टि करें" पर क्लिक करें।
+
+> एन्क्रिप्टेड (encrypted) न की गई बैकअप फ़ाइल के लिए पासवर्ड दर्ज करने की आवश्यकता नहीं है।
+
+> यदि आपको बैकअप फ़ाइल को डेटाबेस के निचले संस्करण में पुनर्स्थापित करने की आवश्यकता है, तो आपको टॉलरेंट मोड (tolerant mode) सक्षम करना होगा।
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### स्थानीय बैकअप फ़ाइल से पुनर्स्थापित करें
+
+`स्थानीय बैकअप से पुनर्स्थापित करें` बटन पर क्लिक करें, पॉप-अप विंडो में स्थानीय बैकअप फ़ाइल चुनें, बैकअप फ़ाइल का एन्क्रिप्शन पासवर्ड दर्ज करें, और बैकअप पुनर्स्थापित करने के लिए "पुष्टि करें" पर क्लिक करें।
+
+> एन्क्रिप्टेड न की गई बैकअप फ़ाइल के लिए पासवर्ड दर्ज करने की आवश्यकता नहीं है।
+
+> यदि आपको बैकअप फ़ाइल को डेटाबेस के निचले संस्करण में पुनर्स्थापित करने की आवश्यकता है, तो आपको टॉलरेंट मोड (tolerant mode) सक्षम करना होगा।
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### बैकअप फ़ाइल डाउनलोड करें
+
+बैकअप सूची में बैकअप आइटम के `डाउनलोड` बटन पर क्लिक करके आप बैकअप फ़ाइल डाउनलोड कर सकते हैं।
+
+#### बैकअप हटाएँ
+
+बैकअप सूची में बैकअप आइटम के `हटाएँ` बटन पर क्लिक करके आप बैकअप फ़ाइल हटा सकते हैं।
+
+## बैकअप सेटिंग्स
+
+`सेटिंग्स` टैब पर जाएँ, बैकअप सेटिंग्स को संशोधित करें, और परिवर्तनों को प्रभावी करने के लिए `सहेजें` पर क्लिक करें।
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### बैकअप सेटिंग्स का विवरण
+
+- `स्वचालित बैकअप`: `क्रॉन शेड्यूल पर स्वचालित बैकअप चलाएँ` को सक्षम करने के बाद, आप निर्धारित समय पर स्वचालित बैकअप सेट कर सकते हैं।
+- `अधिकतम बैकअप संख्या`: स्थानीय रूप से सहेजी गई बैकअप फ़ाइलों की अधिकतम संख्या निर्धारित करें। संख्या से अधिक होने पर, सबसे पुरानी स्थानीय बैकअप फ़ाइलें स्वचालित रूप से हटा दी जाएँगी।
+- `क्लाउड स्टोरेज में बैकअप सिंक करें`: बैकअप सफल होने के बाद बैकअप फ़ाइलों को स्वचालित रूप से अपलोड करने के लिए क्लाउड स्टोरेज सेट करें।
+- `स्थानीय स्टोरेज फ़ाइलों का बैकअप लें`: क्या उपयोगकर्ताओं द्वारा सर्वर के स्थानीय स्टोरेज (storage/uploads) में अपलोड की गई फ़ाइलों को बैकअप में शामिल करना है।
+- `पुनर्स्थापना पासवर्ड`: यदि पुनर्स्थापना पासवर्ड सेट किया गया है, तो बैकअप पुनर्स्थापित करते समय इसे दर्ज करना होगा।
+
+> **कृपया पुनर्स्थापना पासवर्ड को सुरक्षित रखें। पासवर्ड भूल जाने पर बैकअप फ़ाइल को पुनर्स्थापित करना असंभव हो जाएगा।**

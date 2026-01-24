@@ -1,0 +1,210 @@
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Menedżer kopii zapasowych
+
+## Wprowadzenie
+
+Wtyczka Menedżera kopii zapasowych NocoBase oferuje funkcje pełnego tworzenia kopii zapasowych bazy danych NocoBase oraz plików przesłanych przez użytkowników, w tym planowanie, pobieranie, usuwanie i przywracanie kopii zapasowych.
+
+:::warning
+Wtyczka Menedżera kopii zapasowych jest dostępna w edycjach Professional i Enterprise. Dla użytkowników edycji Community i Standard możliwe jest bezpośrednie tworzenie kopii zapasowych bazy danych; szczegóły znajdą Państwo w: [`Jak tworzyć i przywracać kopie zapasowe NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Instalacja klienta bazy danych
+
+Menedżer kopii zapasowych wymaga klienta dla odpowiedniej bazy danych. Przed użyciem prosimy pobrać ze strony producenta klienta pasującego do używanej wersji bazy danych:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+W przypadku wersji Docker, mogą Państwo bezpośrednio utworzyć skrypt w katalogu `./storage/scripts`:
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Zawartość pliku `install-database-client.sh` jest następująca:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Następnie należy ponownie uruchomić kontener `app`
+
+```bash
+docker compose restart app
+# Sprawdzenie logów
+docker compose logs app
+```
+
+Prosimy sprawdzić numer wersji klienta bazy danych, który musi być zgodny z numerem wersji serwera bazy danych.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Instrukcja użytkowania
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Tworzenie nowej kopii zapasowej
+
+Proszę kliknąć przycisk „Nowa kopia zapasowa”, aby utworzyć nową kopię zapasową zgodnie z konfiguracją, a jej status zostanie wyświetlony na liście kopii zapasowych.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Przywracanie kopii zapasowej
+
+Obsługiwane jest przywracanie kopii zapasowych z listy kopii zapasowych lub przesyłanie lokalnych plików kopii zapasowych w celu ich przywrócenia.
+Operacje przywracania nie są dozwolone w następujących scenariuszach:
+
+- Gdy bieżąca wersja NocoBase jest niższa niż wersja NocoBase w pliku kopii zapasowej.
+- Gdy bieżąca baza danych NocoBase jest niezgodna z następującymi konfiguracjami w pliku kopii zapasowej:
+  - dialect (typ bazy danych)
+  - underscored (konfiguracja pól)
+  - table prefix (prefiks tabel)
+  - schema (struktura tabel)
+- Gdy tryb `Tolerancyjny` nie jest włączony, a wersja bazy danych podczas tworzenia kopii zapasowej jest wyższa niż bieżąca wersja bazy danych aplikacji.
+
+> **Przywracanie kopii zapasowej jest operacją na całej bazie danych. Zalecamy utworzenie kopii zapasowej bieżącej bazy danych przed jej przywróceniem.**
+
+#### Przywracanie z listy kopii zapasowych
+
+Proszę kliknąć przycisk `Przywróć` obok wybranej kopii zapasowej na liście, wprowadzić hasło szyfrujące plik kopii zapasowej w wyskakującym oknie i kliknąć „Potwierdź”, aby przywrócić kopię zapasową.
+
+> W przypadku niezaszyfrowanej kopii zapasowej nie ma potrzeby wprowadzania hasła.
+
+> Jeśli chcą Państwo przywrócić kopię zapasową do niższej wersji bazy danych, należy włączyć tryb tolerancyjny.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Przywracanie z lokalnego pliku kopii zapasowej
+
+Proszę kliknąć przycisk `Przywróć z lokalnej kopii zapasowej`, wybrać lokalny plik kopii zapasowej w wyskakującym oknie, wprowadzić hasło szyfrujące plik kopii zapasowej i kliknąć „Potwierdź”, aby przywrócić kopię zapasową.
+
+> W przypadku niezaszyfrowanej kopii zapasowej nie ma potrzeby wprowadzania hasła.
+
+> Jeśli chcą Państwo przywrócić kopię zapasową do niższej wersji bazy danych, należy włączyć tryb tolerancyjny.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Pobieranie pliku kopii zapasowej
+
+Proszę kliknąć przycisk `Pobierz` obok wybranej kopii zapasowej na liście, aby pobrać plik kopii zapasowej.
+
+#### Usuwanie kopii zapasowej
+
+Proszę kliknąć przycisk `Usuń` obok wybranej kopii zapasowej na liście, aby usunąć plik kopii zapasowej.
+
+## Ustawienia kopii zapasowych
+
+Proszę przejść do zakładki `Ustawienia`, zmodyfikować ustawienia kopii zapasowych i kliknąć `Zapisz`, aby zmiany zostały zastosowane.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Opis ustawień kopii zapasowych
+
+- `Automatyczna kopia zapasowa`: Po włączeniu opcji `Uruchom automatyczną kopię zapasową zgodnie z harmonogramem Cron` mogą Państwo ustawić automatyczne tworzenie kopii zapasowych w określonych godzinach.
+- `Maksymalna liczba kopii zapasowych`: Proszę ustawić maksymalną liczbę lokalnie przechowywanych plików kopii zapasowych. Po przekroczeniu tej liczby najstarsze lokalne pliki kopii zapasowych zostaną automatycznie usunięte.
+- `Synchronizuj kopię zapasową z pamięcią w chmurze`: Proszę ustawić pamięć w chmurze, do której pliki kopii zapasowych zostaną automatycznie przesłane po pomyślnym utworzeniu kopii.
+- `Kopia zapasowa lokalnych plików`: Określa, czy pliki przesłane przez użytkowników do lokalnej pamięci serwera (storage/uploads) mają być uwzględnione w kopii zapasowej.
+- `Hasło do przywracania`: Jeśli ustawiono hasło do przywracania, należy je wprowadzić podczas przywracania kopii zapasowej.
+
+> **Prosimy o bezpieczne przechowywanie hasła do przywracania. Zapomnienie hasła uniemożliwi przywrócenie pliku kopii zapasowej.**

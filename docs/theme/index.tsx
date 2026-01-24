@@ -1,20 +1,20 @@
 import { NoSSR, useLang } from '@rspress/core/runtime';
-import { SwitchAppearance as BaseSwitchAppearance, Badge, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
+import { Badge, SwitchAppearance as BaseSwitchAppearance, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useNavigate, usePageData, usePages } from '@rspress/runtime';
+import { useFrontmatter, useLocation, useNavigate, usePageData, usePages } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
+import { locales } from '../locales';
 import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
 import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
 import { transformHref, useLangPrefix } from './utils';
-import { locales } from './locales';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -68,6 +68,10 @@ const LANGUAGES: Language[] = locales;
 function LanguageDropdown() {
   const lang = useLang();
   const currentLanguage = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
+  const { pathname, search } = useLocation();
+  const getLanguageHref = (targetLang: string) => {
+    return targetLang === 'en' ? `${pathname}${search}` : `/${targetLang}${pathname}${search}`;
+  };
 
   return (
     <div
@@ -122,14 +126,16 @@ function LanguageDropdown() {
             }}
           >
             {LANGUAGES.map((language) => {
+              const href = getLanguageHref(language.code);
+              
               if (language.code === currentLanguage.code) {
                 return (
-                  <div>
+                  <div key={language.code}>
                     <div
                       className="rp-rounded-2xl rp-my-1 rp-flex"
                       style={{ padding: '0.4rem 1.5rem 0.4rem 0.75rem' }}
                     >
-                      <a href={currentLanguage.href} className="rp-text-brand">{currentLanguage.label}</a>
+                      <a href={href} className="rp-text-brand">{currentLanguage.label}</a>
                     </div>
                   </div>
                 );
@@ -138,7 +144,7 @@ function LanguageDropdown() {
                 <div key={language.code}>
                   <div className="rp-font-medium rp-my-1">
                     <a
-                      href={language.href}
+                      href={href}
                       className="rp-link"
                       role="menuitem"
                     >

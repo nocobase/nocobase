@@ -1,0 +1,22 @@
+[
+  {
+    "text": "शुरू करें",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "text": "मार्गदर्शिका",
+    "link": "/guide/"
+  },
+  {
+    "text": "विकास",
+    "link": "/development/"
+  },
+  {
+    "text": "प्लगइन",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  }
+]

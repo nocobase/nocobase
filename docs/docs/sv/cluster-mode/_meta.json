@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Klusterläge"
+  },
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Förberedelser",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes-distribution",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Driftprocesser",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tjänstuppdelning",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Utvecklarreferens",
+    "link": "/cluster-mode/development"
+  }
+]

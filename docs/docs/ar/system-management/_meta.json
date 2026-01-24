@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "إدارة النظام",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "إدارة الـ Plugin",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "إعدادات النظام",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "تخصيص العلامة التجارية",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "محرر السمات",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "إعدادات اللغة",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "إدارة التوطين",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

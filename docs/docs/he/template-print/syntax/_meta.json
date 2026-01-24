@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "שימוש בסיסי",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "עיבוד בלולאה",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "כלי עיצוב"
+  }
+]

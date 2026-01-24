@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
+import { getRowKey } from '../../../blocks/table/utils';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -32,12 +33,17 @@ export function SubTableField(props) {
     isConfigMode,
     parentFieldIndex,
     parentItem,
+    resetPage,
+    filterTargetKey = 'id',
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   useEffect(() => {
     setCurrentPageSize(pageSize);
   }, [pageSize]);
+  useEffect(() => {
+    resetPage && setCurrentPage(1);
+  }, [resetPage]);
 
   // 前端分页
   const pagination = useMemo(() => {
@@ -63,14 +69,19 @@ export function SubTableField(props) {
 
   // 新增一行
   const handleAdd = () => {
-    if (allowCreate !== false) {
-      const newRow = { isNew: true };
-      columns.forEach((col) => (newRow[col.dataIndex] = undefined));
-      const newValue = [...(value || []), newRow];
-      const lastPage = Math.ceil(newValue.length / currentPageSize);
-      setCurrentPage(lastPage);
-      onChange?.([...(value || []), newRow]);
-    }
+    if (allowCreate === false) return;
+
+    const newRow = {
+      __is_new__: true,
+    };
+
+    columns.forEach((col) => {
+      newRow[col.dataIndex] = undefined;
+    });
+
+    const newValue = [...(value || []), newRow];
+    setCurrentPage(Math.ceil(newValue.length / currentPageSize));
+    onChange?.(newValue);
   };
 
   // 删除行
@@ -120,7 +131,7 @@ export function SubTableField(props) {
         fixed: 'right',
         render: (v, record, index) => {
           const pageRowIdx = (currentPage - 1) * currentPageSize + index;
-          if (!allowDisassociation && !(record.isNew || record.isStored)) {
+          if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
             return;
           }
           return (
@@ -136,12 +147,19 @@ export function SubTableField(props) {
       },
     ])
     .filter(Boolean);
+
+  const pagedDataSource = useMemo(() => {
+    if (!value?.length) return [];
+
+    const start = (currentPage - 1) * currentPageSize;
+    return value.slice(start, start + currentPageSize);
+  }, [value, currentPage, currentPageSize]);
   return (
     <Form.Item>
       <Table
-        dataSource={value}
+        dataSource={pagedDataSource}
         columns={editableColumns}
-        rowKey={(row, idx) => idx}
+        rowKey={(record) => getRowKey(record, filterTargetKey)}
         tableLayout="fixed"
         scroll={{ x: 'max-content' }}
         pagination={pagination}

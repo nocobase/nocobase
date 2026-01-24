@@ -17,6 +17,7 @@ import {
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import React from 'react';
+import { uid } from '@formily/shared';
 import { FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { RecordPickerContent } from '../RecordPickerFieldModel';
@@ -101,7 +102,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
       },
     };
     const isConfigMode = !!this.context.flowSettingsEnabled;
-
     return (
       <SubTableField
         {...this.props}
@@ -110,6 +110,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         isConfigMode={isConfigMode}
         parentFieldIndex={this.context.fieldIndex}
         parentItem={this.context.item}
+        filterTargetKey={this.collection.filterTargetKey}
       />
     );
   }
@@ -321,7 +322,7 @@ SubTableFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isStored: true,
+                      __is_stored__: true,
                     };
                   }),
                 ];
@@ -347,6 +348,21 @@ SubTableFieldModel.registerFlow({
               padding: 0,
             },
           },
+        });
+      },
+    },
+  },
+});
+
+// 分页切换后重置page
+SubTableFieldModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    pageRefresh: {
+      handler(ctx, params) {
+        ctx.model.setProps({
+          resetPage: uid(),
         });
       },
     },

@@ -21,6 +21,13 @@ class MockFormBlockModel extends FlowModel {
       this.setTitle(titleFromProps);
     }
   }
+
+  onInit(options: any) {
+    super.onInit(options);
+    this.context.defineProperty('collection', {
+      value: { name: 'mock-collection' },
+    });
+  }
 }
 
 const TEST_TIMEOUT = 10_000;
@@ -235,6 +242,34 @@ describe('ReferenceBlockModel', () => {
         expect(store['target-block-uid'].parentId).toBe('grid-uid');
         expect(lastSavedSnapshot['reference-block-uid']?.subModels?.target).toBeUndefined();
         expect(lastSavedSnapshot['target-block-uid']).toBeUndefined();
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should expose target collection on reference block context',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        expect(referenceBlockModel.context.collection.name).toBe('mock-collection');
       },
       TEST_TIMEOUT,
     );

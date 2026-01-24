@@ -1,0 +1,111 @@
+:::tip
+מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::
+
+
+# התקנה ושדרוג של תוספים
+
+## תוספים מובנים
+
+תוספים מובנים של NocoBase מתעדכנים אוטומטית עם גרסת הליבה ואינם דורשים פעולה ידנית.
+
+## תוספים מסחריים
+
+אנא היכנסו לשירות NocoBase ועיינו בתיעוד כדי ללמוד כיצד להתקין ולשדרג תוספים מסחריים.
+
+## תוספים של צד שלישי
+
+### התקנת תוספים אונליין
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning שימו לב
+
+NocoBase תומכת בהתקנת תוספים אונליין דרך הממשק, אך החוויה הנוכחית אינה אופטימלית. הסיבות לכך כוללות:
+
+- עקב מגבלות מנגנון הריצה של תהליכי Node.js, לאחר התקנה או עדכון של תוספים, יש לעצור את התהליך ולאחר מכן להריץ את הפקודה `upgrade` כדי שהשינויים ייכנסו לתוקף;
+- בתרחישי ריבוי יישומים, התקנה אונליין מתקשה לטפל בסנכרון תוספים בין מספר יישומי משנה בו-זמנית;
+- עדכוני תוספים בקבוצות אינם נתמכים;
+- התקנה או עדכון תוספים אונליין עלולים לגרום לסיום לא תקין של תהליך היישום.
+
+לכן, מומלץ להשתמש בשיטות שורת פקודה או העלאה ידנית כדי להתקין ולשדרג תוספים. אנו ממליצים לשלב זאת עם תהליכי CI/CD, תוך שימוש בשיטות שורת פקודה להורדה, חילוץ ושדרוג תוספים, ובכך להבטיח עקביות ואמינות בכל פריסת עדכון.
+
+:::
+
+### התקנת תוספים באמצעות שורת הפקודה
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+אם התוסף כבר מותקן ויש צורך לשדרג אותו, הריצו את הפקודה הבאה:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### העלאה וחילוץ ידניים
+
+אנא הורידו את חבילת התוסף למחשב המקומי שלכם תחילה, ולאחר מכן העלו וחלצו אותה ידנית לתיקיית `./storage/plugins`. אם התוסף כבר מופעל, בצעו את הפקודה הבאה לאחר ההעלאה והחילוץ כדי להשלים את שדרוג התוסף.
+
+> ⚠️ **שימו לב**: כדי למנוע בעיות מטמון, אנא ודאו שיישום NocoBase הופסק לפני הביצוע.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### הדרך הנכונה לחלץ תוסף
+
+הדוגמה הבאה מדגימה כיצד לחלץ חבילת תוסף לתיקייה המצוינת באופן נכון:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+פקודה זו תחלץ את התוסף לתיקייה המצוינת מבלי ליצור שכבת תיקייה נוספת בשם `package`.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### דוגמה למבנה תיקיות נכון
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

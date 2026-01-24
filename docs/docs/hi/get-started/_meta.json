@@ -1,0 +1,116 @@
+[
+  {
+    "type": "custom-link",
+    "label": "NocoBase कैसे काम करता है",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase इंस्टॉल करें",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Docker इंस्टॉलेशन",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "create-nocobase-app इंस्टॉलेशन",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Git सोर्स कोड इंस्टॉलेशन",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "एनवायरनमेंट वैरिएबल",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase अपग्रेड करें",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Docker इंस्टॉलेशन का अपग्रेड",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "create-nocobase-app इंस्टॉलेशन का अपग्रेड",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Git सोर्स कोड इंस्टॉलेशन का अपग्रेड",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "डिप्लॉयमेंट",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "प्रोडक्शन एनवायरनमेंट डिप्लॉयमेंट",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "स्टैटिक रिसोर्स प्रॉक्सी",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "Caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "CDN",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "सामान्य O&M कमांड",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker Compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "तेज़ी से डिप्लॉय कैसे करें",
+        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Plugin इंस्टॉल और अपग्रेड करें",
+    "link": "/get-started/install-upgrade-plugins"
+  }
+]

@@ -2,6 +2,7 @@ node_modules/
 lib/
 esm/
 es/
+!docs/docs/es
 .env
 .env.e2e
 .DS_Store

@@ -1,0 +1,210 @@
+:::tip
+Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Manajer Pencadangan
+
+## Pendahuluan
+
+Plugin manajer pencadangan NocoBase menyediakan fitur-fitur untuk pencadangan penuh basis data NocoBase dan berkas yang diunggah pengguna, termasuk penjadwalan pencadangan, pengunduhan, penghapusan, dan pemulihan.
+
+:::warning
+Plugin Manajer Pencadangan disertakan dalam edisi Profesional dan Enterprise. Untuk pengguna edisi Komunitas dan Standar, Anda dapat langsung mencadangkan basis data; lihat detailnya di: [`Cara Mencadangkan dan Memulihkan NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Instal Klien Basis Data
+
+Manajer Pencadangan bergantung pada klien untuk basis data yang sesuai. Sebelum digunakan, silakan kunjungi situs web resmi untuk mengunduh klien yang cocok dengan versi basis data yang Anda gunakan:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Untuk versi Docker, Anda dapat langsung menulis skrip di direktori `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Isi dari `install-database-client.sh` adalah sebagai berikut:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Kemudian mulai ulang kontainer aplikasi
+
+```bash
+docker compose restart app
+# Lihat log
+docker compose logs app
+```
+
+Periksa nomor versi klien basis data, yang harus cocok dengan nomor versi server basis data.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Petunjuk Penggunaan
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Membuat Pencadangan Baru
+
+Klik tombol `Buat pencadangan baru` untuk membuat pencadangan baru berdasarkan konfigurasi pencadangan dan menampilkan status pencadangan di daftar pencadangan.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Memulihkan Pencadangan
+
+Mendukung pemulihan pencadangan dari daftar pencadangan atau mengunggah berkas pencadangan lokal untuk memulihkan pencadangan.
+Operasi pemulihan tidak diizinkan dalam skenario berikut:
+
+- Ketika versi NocoBase saat ini lebih rendah dari versi NocoBase dalam berkas pencadangan.
+- Ketika basis data NocoBase saat ini tidak konsisten dengan konfigurasi berikut dalam berkas pencadangan:
+  - tipe basis data `dialect`
+  - konfigurasi bidang `underscored`
+  - prefiks tabel `table prefix`
+  - struktur tabel `schema`
+- Ketika `mode toleran` tidak diaktifkan, dan versi basis data saat membuat pencadangan lebih tinggi dari versi basis data aplikasi saat ini.
+
+> **Pemulihan adalah operasi basis data penuh. Disarankan untuk mencadangkan basis data saat ini sebelum memulihkan pencadangan.**
+
+#### Memulihkan dari daftar pencadangan
+
+Klik tombol `Pulihkan` pada item pencadangan di daftar pencadangan, masukkan kata sandi enkripsi berkas pencadangan di jendela pop-up, dan klik `Konfirmasi` untuk memulihkan pencadangan.
+
+> Berkas pencadangan yang tidak terenkripsi tidak memerlukan kata sandi.
+
+> Jika Anda perlu memulihkan berkas pencadangan ke basis data versi yang lebih rendah, Anda perlu mengaktifkan mode toleran.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Memulihkan dari berkas pencadangan lokal
+
+Klik tombol `Pulihkan dari pencadangan lokal`, pilih berkas pencadangan lokal di jendela pop-up, masukkan kata sandi enkripsi berkas pencadangan, dan klik `Konfirmasi` untuk memulihkan pencadangan.
+
+> Berkas pencadangan yang tidak terenkripsi tidak memerlukan kata sandi.
+
+> Jika Anda perlu memulihkan berkas pencadangan ke basis data versi yang lebih rendah, Anda perlu mengaktifkan mode toleran.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Mengunduh Berkas Pencadangan
+
+Klik tombol `Unduh` pada item pencadangan di daftar pencadangan untuk mengunduh berkas pencadangan.
+
+#### Menghapus Pencadangan
+
+Klik tombol `Hapus` pada item pencadangan di daftar pencadangan untuk menghapus berkas pencadangan.
+
+## Pengaturan Pencadangan
+
+Beralih ke tab `Pengaturan`, ubah pengaturan pencadangan, dan klik `Simpan` agar perubahan berlaku.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Deskripsi Pengaturan Pencadangan
+
+- `Pencadangan otomatis`: Setelah mengaktifkan `Jalankan pencadangan otomatis sesuai jadwal Cron`, Anda dapat mengatur pencadangan otomatis pada waktu yang ditentukan.
+- `Jumlah pencadangan maksimum`: Atur jumlah maksimum berkas pencadangan yang disimpan secara lokal. Setelah melebihi jumlah tersebut, berkas pencadangan lokal yang paling awal akan otomatis dihapus.
+- `Sinkronkan pencadangan ke penyimpanan cloud`: Atur penyimpanan cloud tempat berkas pencadangan akan otomatis diunggah setelah pencadangan berhasil.
+- `Cadangkan berkas penyimpanan lokal`: Apakah akan menyertakan berkas yang diunggah pengguna ke penyimpanan lokal server (storage/uploads) dalam pencadangan.
+- `Kata sandi pemulihan`: Jika kata sandi pemulihan diatur, kata sandi tersebut harus dimasukkan saat memulihkan pencadangan.
+
+> **Harap simpan kata sandi pemulihan dengan aman. Melupakan kata sandi akan membuat Anda tidak dapat memulihkan berkas pencadangan.**

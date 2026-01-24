@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "การยืนยันตัวตนผู้ใช้",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการเครื่องมือยืนยันตัวตน",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "ประเภทการยืนยันตัวตน",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "รหัสผ่าน",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "การกำหนดค่า",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "ตัวอย่าง",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "เข้าสู่ระบบด้วย Google",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "เข้าสู่ระบบด้วย Microsoft",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "การกำหนดค่า",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "ตัวอย่าง",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "เข้าสู่ระบบด้วย Google",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "คีย์ API",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "คู่มือการพัฒนา",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "ขยายประเภทการยืนยันตัวตน",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "การอ้างอิง API",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การตรวจสอบ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ประเภทการตรวจสอบ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "เครื่องมือยืนยันตัวตน TOTP",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "คู่มือการพัฒนา",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "ขยายประเภทการตรวจสอบ",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "ขยายสถานการณ์การตรวจสอบ",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "ขยายผู้ให้บริการ SMS",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "การอ้างอิง API",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การยืนยันตัวตนแบบสองปัจจัย (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

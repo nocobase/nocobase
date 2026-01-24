@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "התחלה מהירה",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "מבוא לתכונות",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "שאילתת נתונים",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "אפשרויות תרשים",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "תצוגה מקדימה ושמירה",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "שימוש במשתני סביבה בהקשר",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "מסנני עמודים וקישוריות",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "מתקדם",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "שאילתת נתונים במצב SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "הגדרת תרשים מותאמת אישית",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "אירועי אינטראקציה מותאמים אישית",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "שאלות נפוצות",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "שיטות עבודה מומלצות",
+    "link": "/data-visualization/best-practices"
+  }
+]

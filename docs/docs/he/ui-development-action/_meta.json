@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "התחלה מהירה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "מבוא",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "כתיבת Action Plugin",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]
