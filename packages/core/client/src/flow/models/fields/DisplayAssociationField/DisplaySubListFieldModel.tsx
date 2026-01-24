@@ -55,8 +55,8 @@ const ArrayNester = ({ name, value = [] }: any) => {
           fork.context.defineProperty('item', {
             get: () => ({
               index,
-              isNew: item?.isNew,
-              isStored: item?.isStored,
+              __is_new__: item?.__is_new__,
+              __is_stored__: item?.__is_stored__,
               value: item,
               parentItem,
             }),

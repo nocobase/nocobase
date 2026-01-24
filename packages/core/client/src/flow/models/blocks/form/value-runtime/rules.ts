@@ -1076,7 +1076,7 @@ export class RuleEngine {
     }
 
     // “当前项”链：用于多层级关系字段条件
-    // 语义：ctx.item -> { index?, isNew?, isStored?, value, parentItem? }，其中：
+    // 语义：ctx.item -> { index?, __is_new__?, __is_stored__?, value, parentItem? }，其中：
     // - index：仅当当前对象位于对多关联行内时存在（0-based）
     // - value：当前对象的值（来自 formValues 的对应切片，支持无限嵌套属性访问）
     // - parentItem：上级项（同结构，可链式 parentItem.parentItem...）
@@ -1098,8 +1098,8 @@ export class RuleEngine {
     const buildNode = (value: any, index: number | undefined, parentItem: any) => {
       return {
         index,
-        isNew: value?.isNew,
-        isStored: value?.isStored,
+        __is_new__: value?.__is_new__,
+        __is_stored__: value?.__is_stored__,
         value,
         parentItem,
       };

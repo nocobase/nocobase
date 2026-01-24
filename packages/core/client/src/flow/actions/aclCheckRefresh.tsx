@@ -107,7 +107,7 @@ const runFormItemAclCheck = async (ctx: any) => {
       }
     }
 
-    if (!resultView && !ctx.item?.isNew) {
+    if (!resultView && !ctx.item?.__is_new__) {
       ctx.model.setHidden?.(true);
       ctx.model.forbidden = {
         actionName: 'view',
@@ -134,7 +134,7 @@ const runFormItemAclCheck = async (ctx: any) => {
       fields: [ctx.collectionField.name],
       actionName: 'update',
     });
-    if (!result && !ctx.item?.isStored) {
+    if (!result && !ctx.item?.__is_stored__) {
       // 子表单中选择的记录
       ctx.model.setHidden?.(true);
       ctx.model.forbidden = {
