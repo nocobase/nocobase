@@ -130,6 +130,9 @@ const schema = {
   },
 } as ISchema;
 
+import { useAuthTranslation } from '../../locale';
+
 export const SMTPSettings: React.FC = () => {
-  return <SchemaComponent schema={schema} />;
+  const { t } = useAuthTranslation();
+  return <SchemaComponent scope={{ t }} schema={schema} />;
 };

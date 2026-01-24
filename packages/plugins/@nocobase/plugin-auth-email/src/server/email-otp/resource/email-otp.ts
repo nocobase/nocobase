@@ -22,7 +22,7 @@ const asyncRandomInt = promisify(randomInt);
 
 async function create(ctx: Context, next: Next) {
   const { action: actionName, verifier: verifierName } = ctx.action.params?.values || {};
-  const plugin = ctx.app.getPlugin('@moonship1011/plugin-auth-email') as PluginAuthEmailServer;
+  const plugin = ctx.app.getPlugin('@nocobase/plugin-auth-email') as PluginAuthEmailServer;
   const verificationManager = ctx.app.getPlugin('verification').verificationManager;
   const action = verificationManager.actions.get(actionName);
   if (!action) {
@@ -56,14 +56,14 @@ async function create(ctx: Context, next: Next) {
     filter: {
       action: actionName,
       receiver,
-      status: CODE_STATUS_UNUSED,
-      expiresAt: {
-        $dateAfter: new Date(),
+      createdAt: {
+        $gt: dayjs().subtract(verification.resendInterval, 'second').toDate(),
       },
     },
+    order: [['createdAt', 'DESC']],
   });
   if (record) {
-    const seconds = dayjs(record.get('expiresAt')).diff(dayjs(), 'seconds');
+    const seconds = dayjs(record.get('createdAt')).add(verification.resendInterval, 'second').diff(dayjs(), 'seconds');
     return ctx.throw(429, {
       code: 'RateLimit',
       message: ctx.t("Please don't retry in {{time}} seconds", { time: seconds, ns: namespace }),
@@ -117,6 +117,7 @@ async function create(ctx: Context, next: Next) {
   ctx.body = {
     id: result.id,
     expiresAt: result.expiresAt,
+    resendInterval: verification.resendInterval,
   };
 
   return next();

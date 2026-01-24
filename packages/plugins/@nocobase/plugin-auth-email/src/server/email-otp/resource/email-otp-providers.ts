@@ -14,7 +14,7 @@ export default {
   name: 'emailOTPProviders',
   actions: {
     list: async (ctx: Context, next: Next) => {
-      const plugin = ctx.app.pm.get('@moonship1011/plugin-auth-email') as PluginAuthEmailServer;
+      const plugin = ctx.app.pm.get('@nocobase/plugin-auth-email') as PluginAuthEmailServer;
       ctx.body = plugin.emailOTPProviderManager.listProviders();
       await next();
     },

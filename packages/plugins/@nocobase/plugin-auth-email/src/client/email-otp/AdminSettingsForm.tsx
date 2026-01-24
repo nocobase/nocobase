@@ -12,9 +12,10 @@ import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { observer, useForm } from '@formily/react';
 import PluginAuthEmailClient from '../..';
+import { useAuthTranslation } from '../locale';
 
 export const useAdminSettingsForm = (providerType: string) => {
-  const plugin = usePlugin('@moonship1011/plugin-auth-email') as any;
+  const plugin = usePlugin('@nocobase/plugin-auth-email') as any;
   const provider = plugin.emailOTPProviderManager?.getProvider?.(providerType);
   return provider?.components?.AdminSettingsForm;
 };
@@ -29,14 +30,16 @@ export const Settings = observer(
 );
 
 export const AdminSettingsForm: React.FC = () => {
+  const { t } = useAuthTranslation();
   return (
     <SchemaComponent
       components={{ Settings }}
+      scope={{ t }}
       schema={{
         type: 'void',
         properties: {
           codeLength: {
-            title: tval('Code Length', { ns: 'auth-email' }),
+            title: '{{t("Code Length")}}',
             type: 'number',
             'x-decorator': 'FormItem',
             'x-component': 'InputNumber',
@@ -45,19 +48,19 @@ export const AdminSettingsForm: React.FC = () => {
             maximum: 12,
           },
           codeType: {
-            title: tval('Code Type', { ns: 'auth-email' }),
+            title: '{{t("Code Type")}}',
             type: 'string',
             'x-decorator': 'FormItem',
             'x-component': 'Select',
             default: 'numeric',
             enum: [
-              { label: tval('Numeric', { ns: 'auth-email' }), value: 'numeric' },
-              { label: tval('Alphabetic', { ns: 'auth-email' }), value: 'alpha' },
-              { label: tval('Alphanumeric', { ns: 'auth-email' }), value: 'alphanumeric' },
+              { label: '{{t("Numeric")}}', value: 'numeric' },
+              { label: '{{t("Alphabetic")}}', value: 'alpha' },
+              { label: '{{t("Alphanumeric")}}', value: 'alphanumeric' },
             ],
           },
           expiresIn: {
-            title: tval('Expires In (seconds)', { ns: 'auth-email' }),
+            title: '{{t("Expires In (seconds)")}}',
             type: 'number',
             'x-decorator': 'FormItem',
             'x-component': 'InputNumber',
@@ -65,8 +68,17 @@ export const AdminSettingsForm: React.FC = () => {
             minimum: 60,
             maximum: 3600,
           },
+          resendInterval: {
+            title: '{{t("Resend Interval (seconds)")}}',
+            type: 'number',
+            'x-decorator': 'FormItem',
+            'x-component': 'InputNumber',
+            default: 60,
+            minimum: 10,
+            maximum: 600,
+          },
           provider: {
-            title: tval('Provider', { ns: 'auth-email' }),
+            title: '{{t("Provider")}}',
             type: 'string',
             required: true,
             'x-decorator': 'FormItem',

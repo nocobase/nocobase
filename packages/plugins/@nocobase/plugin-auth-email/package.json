@@ -1,5 +1,5 @@
 {
-  "name": "@moonship1011/plugin-auth-email",
+  "name": "@nocobase/plugin-auth-email",
   "displayName": "Auth: Email",
   "displayName.zh-CN": "认证：邮箱",
   "description": "Email authentication with verification code.",

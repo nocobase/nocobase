@@ -53,8 +53,8 @@ export const VerificationCode: React.FC<{
         if (value) {
           onChange('');
         }
-        const expiresIn = data.expiresAt ? Math.ceil((Date.parse(data.expiresAt) - Date.now()) / 1000) : 60;
-        setCountdown(expiresIn);
+        const countdown = data.resendInterval || 60;
+        setCountdown(countdown);
         timer.current = setInterval(() => {
           setCountdown((count) => count - 1);
         }, 1000);
