@@ -95,40 +95,6 @@ export async function buildRunJSCompletions(
     return lines.join('\n');
   };
 
-  const toTitle = (node: any) => {
-    try {
-      return String(node?.title ?? '');
-    } catch (_) {
-      return '';
-    }
-  };
-
-  const resolveMetaNodes = async (maybe: any): Promise<any[]> => {
-    if (!maybe) return [];
-    if (typeof maybe === 'function') {
-      try {
-        const v = await maybe();
-        return Array.isArray(v) ? v : [];
-      } catch (_) {
-        return [];
-      }
-    }
-    return Array.isArray(maybe) ? maybe : [];
-  };
-
-  const resolveChildren = async (node: any): Promise<any[]> => {
-    if (!node) return [];
-    return resolveMetaNodes(node.children);
-  };
-
-  const buildAwaitedPopupExpr = (paths: string[]) => {
-    // Use ctx.getVar('ctx.popup') for consistent and safe access (avoid async traps).
-    if (!paths?.length || paths[0] !== 'popup') return `ctx.${(paths || []).join('.')}`;
-    if (paths.length === 1) return "await ctx.getVar('ctx.popup')";
-    const rest = paths.slice(1);
-    return rest.reduce((acc, seg) => `${acc}?.${seg}`, "(await ctx.getVar('ctx.popup'))");
-  };
-
   const isFunctionLikeDocNode = (node: any, completionSpec: any): boolean => {
     if (!node || typeof node !== 'object' || Array.isArray(node)) return false;
     const type = typeof (node as any).type === 'string' ? String((node as any).type) : '';
@@ -287,7 +253,6 @@ export async function buildRunJSCompletions(
       const ctxLabel = `ctx.${path.join('.')}`;
       const depth = path.length;
       const root = path[0];
-      const isPopupPath = root === 'popup';
       if (isHiddenByPaths(ctxLabel)) continue;
       const decision = await resolveHiddenDecision(value, `p:${path.join('.')}`, path);
       if (decision.hideSelf) continue;
@@ -301,10 +266,10 @@ export async function buildRunJSCompletions(
         completionSpec = value.completion;
         children = value.properties as Record<string, any> | undefined;
       }
-      const isCallable = !isPopupPath && isFunctionLikeDocNode(value, completionSpec);
+      const isCallable = isFunctionLikeDocNode(value, completionSpec);
       const insertText =
         completionSpec?.insertText ??
-        (isPopupPath ? buildAwaitedPopupExpr(path) : isCallable ? `${ctxLabel}()` : undefined);
+        (root === 'popup' ? `await ctx.getVar('${ctxLabel}')` : isCallable ? `${ctxLabel}()` : undefined);
       const apply = insertText
         ? (view: EditorView, _completion: Completion, from: number, to: number) => {
             view.dispatch({
@@ -390,71 +355,21 @@ export async function buildRunJSCompletions(
     });
   }
 
-  // Build additional completions from FlowContext variable meta (record/formValues/popup...).
-  // This is especially useful for ctx.record.<field> and ctx.formValues.<field> where fields are dynamic.
-  try {
-    if (hostCtx && typeof hostCtx.getPropertyMetaTree === 'function') {
-      const popupDecision = await resolveHiddenDecision((doc as any)?.properties?.popup, 'p:popup', ['popup']);
-      const roots = popupDecision.hideSelf ? ['record', 'formValues'] : ['record', 'formValues', 'popup'];
-      const maxDepthAfterRoot = 2; // record.xxx(.yyy) / formValues.xxx(.yyy) / popup.record.xxx
-      const maxTotal = 240;
-      let added = 0;
-
-      const addMetaCompletion = (node: any) => {
-        if (!node?.paths?.length) return;
-        const paths: string[] = Array.isArray(node.paths) ? node.paths.map(String) : [];
-        if (!paths.length) return;
-        const root = paths[0];
-        if (!roots.includes(root)) return;
-        const depthAfterRoot = Math.max(0, paths.length - 1);
-        if (depthAfterRoot > maxDepthAfterRoot) return;
-        const label = `ctx.${paths.join('.')}`;
-        if (isHiddenByPaths(label)) return;
-        // Avoid flooding with too many meta-derived entries.
-        if (added >= maxTotal) return;
-
-        const info = toTitle(node) || label;
-        const insertText = root === 'popup' ? buildAwaitedPopupExpr(paths) : label;
-        completions.push({
-          label,
-          type: 'property',
-          detail: root === 'popup' ? 'popup (getVar)' : 'context value',
-          info,
-          boost: 70,
-          apply: (view: EditorView, _c: Completion, from: number, to: number) => {
-            view.dispatch({
-              changes: { from, to, insert: insertText },
-              selection: { anchor: from + insertText.length },
-              scrollIntoView: true,
-            });
-          },
-        } as Completion);
-        added += 1;
-      };
-
-      const walk = async (nodes: any[], depthAfterRoot: number) => {
-        for (const n of nodes) {
-          addMetaCompletion(n);
-          if (added >= maxTotal) return;
-          if (depthAfterRoot >= maxDepthAfterRoot) continue;
-          const children = await resolveChildren(n);
-          if (children.length) {
-            await walk(children, depthAfterRoot + 1);
-            if (added >= maxTotal) return;
-          }
-        }
-      };
-
-      for (const root of roots) {
-        if (added >= maxTotal) break;
-        const maybe = hostCtx.getPropertyMetaTree(`{{ ctx.${root} }}`);
-        const nodes = await resolveMetaNodes(maybe);
-        await walk(nodes, 1);
-      }
+  // Dedupe by label and keep last definition.
+  const seenLabels = new Set<string>();
+  const dedupedCompletions: Completion[] = [];
+  for (let i = completions.length - 1; i >= 0; i--) {
+    const c: any = completions[i];
+    const label = c?.label;
+    if (typeof label !== 'string' || !label) {
+      dedupedCompletions.push(completions[i]);
+      continue;
     }
-  } catch (_) {
-    // ignore meta completion failures
+    if (seenLabels.has(label)) continue;
+    seenLabels.add(label);
+    dedupedCompletions.push(completions[i]);
   }
+  dedupedCompletions.reverse();
 
-  return { completions, entries: filteredEntries };
+  return { completions: dedupedCompletions, entries: filteredEntries };
 }

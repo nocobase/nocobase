@@ -13,6 +13,7 @@ import {
   type Completion,
   type CompletionContext,
   type CompletionResult,
+  type CompletionSource,
 } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -33,6 +34,7 @@ export const EditorCore: React.FC<{
   readonly?: boolean;
   enableLinter?: boolean;
   extraCompletions?: Completion[];
+  completionSource?: CompletionSource;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -44,6 +46,7 @@ export const EditorCore: React.FC<{
   readonly = false,
   enableLinter = false,
   extraCompletions,
+  completionSource,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -88,9 +91,11 @@ export const EditorCore: React.FC<{
         override: [
           createHtmlCompletion(),
           createJsxCompletion(),
-          ...(Array.isArray(extraCompletions) && extraCompletions.length
-            ? [staticCompletionSource(extraCompletions)]
-            : []),
+          ...(typeof completionSource === 'function'
+            ? [completionSource]
+            : Array.isArray(extraCompletions) && extraCompletions.length
+              ? [staticCompletionSource(extraCompletions)]
+              : []),
         ],
         closeOnBlur: false,
         activateOnTyping: true,
@@ -182,7 +187,7 @@ export const EditorCore: React.FC<{
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [extraCompletions, enableLinter, height, minHeight, theme, readonly]);
+  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly]);
 
   // Update editor content when value changes
   useEffect(() => {
