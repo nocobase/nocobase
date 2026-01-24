@@ -27,8 +27,8 @@ import { ActionWithoutPermission } from '../../base/ActionModel';
 
 type ItemChain = {
   index?: number;
-  isNew?: boolean;
-  isStored?: boolean;
+  __is_new__?: boolean;
+  __is_stored__?: boolean;
   value: any;
   parentItem?: ItemChain;
 };
@@ -206,8 +206,8 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         const value = this.context.form.getFieldValue(this.props.name);
         return {
           index: undefined,
-          isNew: value?.isNew ?? value?.__is_new__,
-          isStored: value?.isStored ?? value?.__is_stored__,
+          __is_new__: value?.__is_new__,
+          __is_stored__: value?.__is_stored__,
           value,
           parentItem,
         } satisfies ItemChain;
@@ -329,21 +329,6 @@ const ArrayNester = ({
                   cache: false,
                 });
 
-                currentFork.context.defineProperty('currentObject', {
-                  get: () => currentFork.context.form.getFieldValue([name, fieldName]) || {},
-                  cache: false,
-                  meta: createAssociationAwareObjectMetaFactory(
-                    () => currentFork.context.collection,
-                    currentFork.context.t('Current object'),
-                    () => currentFork.context.form.getFieldValue([name, fieldName]),
-                  ),
-                  resolveOnServer: createAssociationSubpathResolver(
-                    () => currentFork.context.collection,
-                    () => currentFork.context.form.getFieldValue([name, fieldName]),
-                  ),
-                  serverOnlyWhenContextParams: true,
-                });
-
                 currentFork.context.defineProperty('item', {
                   get: () => {
                     const parentItem = ((model?.parent as any)?.context?.item ?? model?.context?.item) as
@@ -352,8 +337,8 @@ const ArrayNester = ({
                     const rowValue = currentFork.context.form.getFieldValue([name, fieldName]);
                     return {
                       index,
-                      isNew: rowValue?.isNew ?? rowValue?.__is_new__,
-                      isStored: rowValue?.isStored ?? rowValue?.__is_stored__,
+                      __is_new__: rowValue?.__is_new__,
+                      __is_stored__: rowValue?.__is_stored__,
                       value: rowValue,
                       parentItem,
                     } satisfies ItemChain;
@@ -378,13 +363,7 @@ const ArrayNester = ({
 
                 const rowValue = value?.[index];
                 const removable =
-                  !disabled &&
-                  !isDefault &&
-                  (allowDisassociation ||
-                    rowValue?.__is_new__ ||
-                    rowValue?.__is_stored__ ||
-                    rowValue?.isNew ||
-                    rowValue?.isStored);
+                  !disabled && !isDefault && (allowDisassociation || rowValue?.__is_new__ || rowValue?.__is_stored__);
 
                 return (
                   <div key={key} style={{ marginBottom: 12 }}>

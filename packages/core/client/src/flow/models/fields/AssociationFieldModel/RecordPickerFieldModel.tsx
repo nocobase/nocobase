@@ -304,7 +304,7 @@ RecordPickerFieldModel.registerFlow({
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
         const sourceCollection = ctx.collectionField?.collection;
-        const sourceRecord = ctx.currentObject || ctx.record;
+        const sourceRecord = ctx.item?.value ?? ctx.record;
         const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
         const associationName = ctx.collectionField?.resourceName;
         const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
