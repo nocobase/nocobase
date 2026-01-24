@@ -59,13 +59,6 @@ function useTriggerInitializers(): SchemaInitializerItemType | null {
   return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
 }
 
-function useTriggerTempAssociationSource() {
-  const { workflow } = useFlowContext();
-  const trigger = useTrigger();
-  if (!workflow || !trigger?.useTempAssociationSource) return null;
-  return trigger.useTempAssociationSource(workflow.config, workflow);
-}
-
 export const addBlockButton = new SchemaInitializer({
   name: 'workflowCc:popup:configureUserInterface:addBlock',
   wrap: gridRowColWrap,
