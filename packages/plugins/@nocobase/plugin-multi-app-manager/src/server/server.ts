@@ -118,6 +118,10 @@ export class PluginMultiAppManagerServer extends Plugin {
   }
 
   setMetrics() {
+    const supervisor = AppSupervisor.getInstance();
+    if (supervisor.getDiscoveryAdapter().name !== 'legacy') {
+      return;
+    }
     this.meter = this.app.telemetry.metric.getMeter();
     if (!this.meter) {
       return;
@@ -127,7 +131,6 @@ export class PluginMultiAppManagerServer extends Plugin {
     });
     this.meter.addBatchObservableCallback(
       (observableResult) => {
-        const supervisor = AppSupervisor.getInstance();
         const allStatuses = { ...supervisor.appStatus };
 
         const createCounts = (): Record<AppStatus, number> => ({
