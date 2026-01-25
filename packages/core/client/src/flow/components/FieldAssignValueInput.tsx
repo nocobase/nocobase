@@ -17,6 +17,7 @@ import {
   parseValueToPath,
   isRunJSValue,
   type CollectionField,
+  type MetaTreeNode,
   useFlowContext,
   EditableItemModel,
   FlowModelContext,
@@ -35,6 +36,8 @@ interface Props {
   value: any;
   onChange: (value: any) => void;
   placeholder?: string;
+  /** 额外变量树（置于 Constant/Null/RunJS 与 base metaTree 之间） */
+  extraMetaTree?: MetaTreeNode[];
 }
 
 type ResolvedFieldContext = {
@@ -64,7 +67,7 @@ function withFullWidthStyle(style?: React.CSSProperties): React.CSSProperties {
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
  * - 支持变量引用，并提供 Constant / Null 两种快捷项
  */
-export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onChange, placeholder }) => {
+export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onChange, placeholder, extraMetaTree }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
     if (!eventOrValue || typeof eventOrValue !== 'object') return eventOrValue;
@@ -74,6 +77,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     if (!('value' in target)) return eventOrValue;
     return (target as { value?: unknown }).value;
   }, []);
+
+  // extraMetaTree 可能来自父组件动态构造（引用不稳定），这里用 ref 保持 metaTree getter 稳定，避免 VariableInput 频繁刷新。
+  const extraMetaTreeRef = React.useRef(extraMetaTree);
+  React.useEffect(() => {
+    extraMetaTreeRef.current = extraMetaTree;
+  }, [extraMetaTree]);
 
   // 优先：表单上已配置的字段（含子表单/子表单列表的子字段）
   const itemModel = React.useMemo(() => {
@@ -367,6 +376,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
     return async () => {
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
+      const extra = extraMetaTreeRef.current;
+      const extraTree = Array.isArray(extra) ? extra : [];
       return [
         {
           title: tExpr('Constant'),
@@ -377,6 +388,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
+        ...extraTree,
         ...base,
       ];
     };
