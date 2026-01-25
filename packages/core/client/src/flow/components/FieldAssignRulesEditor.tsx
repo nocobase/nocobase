@@ -559,6 +559,23 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     };
   });
 
+  const defaultActiveKey = React.useMemo(() => {
+    if (!value.length) return [];
+
+    // 默认展开最后一个启用项；若无启用项则回退第一项。
+    let enabledIndex = -1;
+    for (let i = value.length - 1; i >= 0; i--) {
+      if (value[i]?.enable !== false) {
+        enabledIndex = i;
+        break;
+      }
+    }
+    const indexToOpen = enabledIndex >= 0 ? enabledIndex : 0;
+    const item = value[indexToOpen];
+    const key = item?.key || String(indexToOpen);
+    return key ? [key] : [];
+  }, [value]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {value.length ? (
@@ -566,7 +583,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
           items={collapseItems}
           size="small"
           style={{ marginBottom: 8 }}
-          defaultActiveKey={value.length > 0 ? [value[0].key] : []}
+          defaultActiveKey={defaultActiveKey}
           accordion
         />
       ) : (
