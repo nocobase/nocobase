@@ -80,9 +80,13 @@ export const useValues = (): UseValuesReturn => {
       const fieldNames = dataIndex.concat();
       fieldNames.pop();
       const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-      ctxField.collectionName = targetField?.target;
+      if (ctxField) {
+        ctxField.collectionName = targetField?.target;
+      }
     } else {
-      ctxField.collectionName = null;
+      if (ctxField) {
+        ctxField.collectionName = null;
+      }
     }
     field.data.operators = operators;
     field.data.operator = operator;
@@ -107,9 +111,13 @@ export const useValues = (): UseValuesReturn => {
         const fieldNames = dataIndex.concat();
         fieldNames.pop();
         const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-        ctxField.collectionName = targetField?.target;
+        if (ctxField) {
+          ctxField.collectionName = targetField?.target;
+        }
       } else {
-        ctxField.collectionName = null;
+        if (ctxField) {
+          ctxField.collectionName = null;
+        }
       }
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
