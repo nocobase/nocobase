@@ -20,6 +20,11 @@ import { isToManyAssociationField } from '../../../../internal/utils/modelUtils'
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
 
+// default 规则的优先级：
+// - step 初始值（editItemSettings/formItemSettings.initialValue）：priority=0（低于表单赋值）
+// - props.initialValue（通常为联动规则临时写入）：需要覆盖表单赋值，因此提升优先级
+const LINKAGE_DEFAULT_RULE_PRIORITY = 1000;
+
 type RuleDeps = Set<string>;
 
 type RuleState = {
@@ -74,6 +79,11 @@ export class RuleEngine {
   private readonly options: RuleEngineOptions;
 
   private readonly rules = new Map<string, { rule: RuntimeRule; state: RuleState }>();
+  // 仅用于 rule 引擎内部的“同源 default 规则”优先级仲裁；避免低优先级 default 在高优先级 default 写入后再次回写覆盖。
+  private readonly lastRuleWriteByTargetKey = new Map<
+    string,
+    { source: ValueSource; priority: number; writeSeq: number }
+  >();
   private readonly assignTemplatesByTargetPath = new Map<
     string,
     Array<FormAssignRuleItem & { __key: string; __order: number }>
@@ -378,6 +388,15 @@ export class RuleEngine {
     const master = (model as any).master || model;
     this.bindMasterInitialValue(master, id);
 
+    const getPropsInitialValue = () => {
+      const p = (master as any)?.getProps?.() ?? (master as any)?.props;
+      return p?.initialValue;
+    };
+
+    const getDefaultRulePriority = () => {
+      return typeof getPropsInitialValue() !== 'undefined' ? LINKAGE_DEFAULT_RULE_PRIORITY : 0;
+    };
+
     const getStepDefaultValue = () => {
       try {
         const fromEdit = master?.getStepParams?.('editItemSettings', 'initialValue')?.defaultValue;
@@ -393,11 +412,10 @@ export class RuleEngine {
     const rule: RuntimeRule = {
       id,
       source: 'default',
-      priority: 0,
+      priority: getDefaultRulePriority(),
       debounceMs: 0,
       getEnabled: () => {
-        const p = (master as any)?.getProps?.() ?? (master as any)?.props;
-        const fromProps = p?.initialValue;
+        const fromProps = getPropsInitialValue();
         if (typeof fromProps !== 'undefined') return true;
         const fromStep = getStepDefaultValue();
         return typeof fromStep !== 'undefined';
@@ -406,8 +424,7 @@ export class RuleEngine {
         return this.getModelTargetNamePath(model) || target;
       },
       getValue: () => {
-        const p = (master as any)?.getProps?.() ?? (master as any)?.props;
-        const fromProps = p?.initialValue;
+        const fromProps = getPropsInitialValue();
         if (typeof fromProps !== 'undefined') return fromProps;
         return getStepDefaultValue();
       },
@@ -670,7 +687,13 @@ export class RuleEngine {
         if (_.isEqual(next, prev)) return;
         const ids = this.defaultRuleIdsByMasterUid.get(uid);
         if (!ids) return;
+        const p = (master as any)?.getProps?.() ?? (master as any)?.props;
+        const nextPriority = typeof p?.initialValue !== 'undefined' ? LINKAGE_DEFAULT_RULE_PRIORITY : 0;
         for (const id of ids) {
+          const entry = this.rules.get(id);
+          if (entry) {
+            entry.rule.priority = nextPriority;
+          }
           this.scheduleRule(id);
         }
       },
@@ -843,6 +866,20 @@ export class RuleEngine {
       if (!shouldApply) return;
     }
 
+    // 优先级：default 规则之间也需要避免“低优先级默认值”反复覆盖“高优先级默认值”导致振荡。
+    // 若 target 在本次 rule 被调度之后已被更高优先级的 default 写入，则跳过当前 default 写入。
+    if (rule.source === 'default' && targetKey) {
+      const lastWrite = this.lastRuleWriteByTargetKey.get(targetKey);
+      if (
+        lastWrite?.source === 'default' &&
+        lastWrite.priority > rule.priority &&
+        lastWrite.writeSeq >= scheduledAtWriteSeq
+      ) {
+        disposeBinding();
+        return;
+      }
+    }
+
     // 优先级：联动赋值（source=linkage）应覆盖“表单赋值”（source=system）。
     // 当 target 在本次 rule 被调度之后已被 linkage 写入，则跳过 system 写入以避免回写覆盖。
     if (rule.source === 'system' && targetKey) {
@@ -874,10 +911,19 @@ export class RuleEngine {
       }
     }
 
+    const beforeWriteSeq = this.options.getWriteSeq();
     await this.options.setFormValues(evalCtx, [{ path: targetNamePath, value: resolved }], {
       source: rule.source,
       txId: this.currentRuleTxId || undefined,
     });
+    const afterWriteSeq = this.options.getWriteSeq();
+    if (targetKey && afterWriteSeq !== beforeWriteSeq) {
+      this.lastRuleWriteByTargetKey.set(targetKey, {
+        source: rule.source,
+        priority: rule.priority,
+        writeSeq: afterWriteSeq,
+      });
+    }
   }
 
   private prepareRuleContext(rule: RuntimeRule) {

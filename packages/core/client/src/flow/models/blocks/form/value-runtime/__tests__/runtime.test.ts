@@ -527,6 +527,70 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
   });
 
+  it('linkage default value takes precedence over mode=default form assignment', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-linkage-default-precedence',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('fieldPathArray', { value: ['a'] });
+
+    const fieldModel: any = {
+      uid: 'field-a-linkage-default-precedence',
+      context: fieldCtx,
+      props: observable({ initialValue: undefined }),
+      getProps: function () {
+        return this.props;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    // linkage writes initialValue (default semantics) and SHOULD override form assignment default
+    fieldModel.props.initialValue = '__LINK__';
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('__LINK__'));
+
+    // dependency change triggers form assignment default recompute, but linkage default still wins
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('__LINK__'));
+
+    // linkage default removed -> form assignment default takes effect again
+    fieldModel.props.initialValue = undefined;
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Z' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Z'));
+  });
+
   it('tracks ctx var deps and updates when ctx var changes', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
