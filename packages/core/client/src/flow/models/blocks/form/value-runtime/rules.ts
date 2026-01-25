@@ -863,6 +863,17 @@ export class RuleEngine {
       return;
     }
 
+    // mode=assign（source=system）需要强制把值回写到字段模型 props，确保 UI（如 vditor）在“写回旧值”时也会同步更新。
+    if (rule.source === 'system' && targetKey) {
+      const modelForUi = baseCtx?.model;
+      if (modelForUi?.subModels?.field) {
+        const modelTarget = this.getModelTargetNamePath(modelForUi);
+        if (modelTarget && namePathToPathKey(modelTarget) === targetKey) {
+          modelForUi.setProps({ value: resolved });
+        }
+      }
+    }
+
     await this.options.setFormValues(evalCtx, [{ path: targetNamePath, value: resolved }], {
       source: rule.source,
       txId: this.currentRuleTxId || undefined,
