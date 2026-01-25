@@ -524,6 +524,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 targetPath={item.targetPath || ''}
                 value={item.value}
                 onChange={(v) => patchItem(index, { value: v })}
+                extraMetaTree={extraMetaTree}
               />
             </div>
           )}
