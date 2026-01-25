@@ -90,6 +90,22 @@ describe('legacyDefaultValueMigration', () => {
     expect(merged.some((r: any) => r.targetPath === 'f1' && r.mode === 'default' && r.value === 1)).toBe(true);
   });
 
+  it('does not re-append legacy defaults if already migrated (legacy key) even when mode was coerced', () => {
+    const legacy = [{ key: 'legacy-default:f1', targetPath: 'f1', mode: 'default', value: 1 }] as any[];
+
+    const existing = [{ key: 'legacy-default:f1', targetPath: 'f1', mode: 'assign', value: 1 }] as any[];
+    const merged = mergeAssignRulesWithLegacyDefaults(existing as any, legacy as any);
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ key: 'legacy-default:f1', targetPath: 'f1' });
+
+    const existingWithModifiedKey = [
+      { key: 'legacy-default:f1:f1', targetPath: 'f1', mode: 'assign', value: 1 },
+    ] as any[];
+    const merged2 = mergeAssignRulesWithLegacyDefaults(existingWithModifiedKey as any, legacy as any);
+    expect(merged2).toHaveLength(1);
+    expect(merged2[0]).toMatchObject({ key: 'legacy-default:f1:f1', targetPath: 'f1' });
+  });
+
   it('clears field-level initialValue configs from form model items', () => {
     const field1 = createMockFieldModel({
       uid: 'f1',
