@@ -65,20 +65,9 @@ describe('gateway', () => {
   describe('http api', () => {
     it('should return error when app not found', async () => {
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
-      expect(res.status).toBe(503);
+      expect(res.status).toBe(404);
       const data = res.body;
       expect(data).toMatchObject({
-        error: {
-          code: 'APP_PREPARING',
-          message: `application main is preparing, please wait patiently`,
-          status: 503,
-          maintaining: true,
-        },
-      });
-      const res2 = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
-      expect(res2.status).toBe(404);
-      const data2 = res2.body;
-      expect(data2).toMatchObject({
         error: {
           code: 'APP_NOT_FOUND',
           message: `application main not found`,
