@@ -120,18 +120,29 @@ export function mergeAssignRulesWithLegacyDefaults(
   const legacy = Array.isArray(legacyDefaults) ? legacyDefaults : [];
   if (!legacy.length) return base;
 
-  const existingDefaultFields = new Set(
-    base
-      .filter((it) => it && typeof it === 'object' && it.mode === 'default' && it.targetPath)
-      .map((it) => String(it.targetPath)),
-  );
+  // 已存在的“默认值语义”目标字段：
+  // - 显式 default 模式规则
+  // - 或者带 legacy-default: 前缀的迁移规则（即使在某些场景被强制改成 assign，也应视为已迁移）
+  const existingDefaultTargets = new Set<string>();
+  for (const it of base) {
+    if (!it || typeof it !== 'object') continue;
+    const targetPath = it.targetPath ? String(it.targetPath) : '';
+    if (!targetPath) continue;
+    if (it.mode === 'default') {
+      existingDefaultTargets.add(targetPath);
+      continue;
+    }
+    if (String(it.key ?? '').startsWith('legacy-default:')) {
+      existingDefaultTargets.add(targetPath);
+    }
+  }
   const existingKeys = new Set(base.map((it) => String(it.key ?? '')));
 
   const toAdd: FieldAssignRuleItem[] = [];
   for (const it of legacy) {
     const targetPath = it.targetPath ? String(it.targetPath) : '';
     if (!targetPath) continue;
-    if (existingDefaultFields.has(targetPath)) continue;
+    if (existingDefaultTargets.has(targetPath)) continue;
 
     const next: FieldAssignRuleItem = { ...it };
     const k = String(next.key ?? '');
