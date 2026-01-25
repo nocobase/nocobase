@@ -11,6 +11,7 @@ import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocob
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
+import { DataSourceConstructor } from './types';
 import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
 type DataSourceHook = (dataSource: DataSource) => void;
@@ -107,11 +108,11 @@ export class DataSourceManager {
     };
   }
 
-  registerDataSourceType(type: string, DataSourceClass: typeof DataSource) {
+  registerDataSourceType(type: string, DataSourceClass: DataSourceConstructor) {
     this.factory.register(type, DataSourceClass);
   }
 
-  getDataSourceType(type: string): typeof DataSource | undefined {
+  getDataSourceType(type: string): DataSourceConstructor | undefined {
     return this.factory.getClass(type);
   }
 

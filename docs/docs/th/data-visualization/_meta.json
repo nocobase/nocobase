@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "เริ่มต้นใช้งาน",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "แนะนำฟังก์ชัน",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การสืบค้นข้อมูล",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "ตัวเลือกแผนภูมิ",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "ดูตัวอย่างและบันทึก",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "การใช้ตัวแปรสภาพแวดล้อมตามบริบท",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "ตัวกรองหน้าและการโต้ตอบ",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "ขั้นสูง",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การสืบค้นข้อมูลในโหมด SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "การกำหนดค่าแผนภูมิแบบกำหนดเอง",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "เหตุการณ์การโต้ตอบแบบกำหนดเอง",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "คำถามที่พบบ่อย",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "แนวทางปฏิบัติที่ดีที่สุด",
+    "link": "/data-visualization/best-practices"
+  }
+]

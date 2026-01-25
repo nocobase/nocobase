@@ -7,17 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
 import React, { createContext, useContext, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
-import { useAppSpin } from '../application';
+import { useApp, useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
 export const useCurrentUserContext = () => {
-  return useContext(CurrentUserContext);
+  const flowEngine = useFlowEngine();
+  const contextValue = useContext(CurrentUserContext);
+
+  if (!contextValue && flowEngine) {
+    return {
+      data: {
+        data: flowEngine.context.user,
+      },
+    } as any;
+  }
+
+  return contextValue;
 };
 
 export const useIsLoggedIn = () => {
@@ -44,6 +57,9 @@ export const useCurrentRoles = () => {
 
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
+  const app = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
   const result = useRequest<any>(() =>
     api
       .request({
@@ -51,7 +67,23 @@ export const CurrentUserProvider = (props) => {
         skipNotify: true,
         skipAuth: true,
       })
-      .then((res) => res?.data),
+      .then((res) => {
+        if (res?.data?.data?.id == null) {
+          navigate('/signin?redirect=' + location.pathname + location.search);
+        }
+        const userMeta = createCollectionContextMeta(
+          () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
+          app.flowEngine.translate('Current user'),
+        );
+        // 排序：用户优先显示
+        userMeta.sort = 1000;
+        app.flowEngine.context.defineProperty('user', {
+          value: res?.data?.data,
+          resolveOnServer: true,
+          meta: userMeta,
+        });
+        return res?.data;
+      }),
   );
 
   const { render } = useAppSpin();

@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Налаштування адміністратора",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Процес налаштування",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Налаштування Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Налаштування пошти Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Часті запитання",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Опис функцій",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Поштовий центр",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Поштовий блок",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Підпис електронної пошти",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Шаблон електронної пошти",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Поглиблено",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Примітка до листа",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Завдання з листа",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Мітка листа",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Масова розсилка",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Автозбереження чернетки",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

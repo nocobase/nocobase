@@ -12,5 +12,5 @@
   "Value": "値",
   "Variables": "変数",
   "Variables and secrets": "変数とシークレット",
-  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variables and secrets have been updated. A restart is required for the changes to take effect."
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "変数とシークレットが更新されました。変更を反映するには再起動が必要です。"
 }

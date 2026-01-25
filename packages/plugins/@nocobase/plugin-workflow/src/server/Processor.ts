@@ -306,6 +306,10 @@ export default class Processor {
             changes.push([`status`, job.status]);
             job.changed('status', false);
           }
+          if (job.changed('meta')) {
+            changes.push([`meta`, JSON.stringify(job.meta ?? null)]);
+            job.changed('meta', false);
+          }
           if (job.changed('result')) {
             changes.push([`result`, JSON.stringify(job.result ?? null)]);
             job.changed('result', false);
@@ -480,12 +484,17 @@ export default class Processor {
       }
     }
 
-    return {
+    const scopes = {
       $context: this.execution.context,
       $jobsMapByNodeKey: this.jobResultsMapByNodeKey,
       $system: systemFns,
       $scopes,
       $env: this.options.plugin.app.environment.getVariables(),
+    };
+
+    return {
+      ...scopes,
+      ctx: scopes, // 2.0
     };
   }
 

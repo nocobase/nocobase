@@ -1,5 +1,7 @@
 {
+  "Ignore failed sending and continue workflow": "送信失敗を無視してワークフローを継続",
   "Ignore failure and continue workflow": "Ignore failure and continue workflow",
   "Notification": "通知",
-  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Send notification. You can use the variables in the upstream nodes as content and ohter config."
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "SMTPサービスを呼び出してメールを送信。上流ノードの変数を宛先・件名・本文として使用可能です。",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "通知を送信。上流ノードの変数を通知内容やその他の設定として使用可能です。"
 }

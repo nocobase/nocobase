@@ -13,7 +13,7 @@
   "Port": "포트",
   "SMTP host": "서비스 호스트",
   "Secure": "보안",
-  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "SMTP 서비스를 호출하여 이메일을 보냅니다. 상위 노드의 변수를 수신자, 제목, 내용으로 사용할 수 있습니다.",
   "Subject": "제목",
   "To": "받는 사람",
   "User": "사용자"

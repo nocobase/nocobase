@@ -10,6 +10,7 @@
 export * from './aes-encryptor';
 export * from './app-supervisor';
 export * from './application';
+export * from './gateway/ws-server';
 export { Application as default } from './application';
 export * from './audit-manager';
 export * from './gateway';
@@ -21,6 +22,7 @@ export * from './pub-sub-manager';
 export * from './event-queue';
 export * from './worker-id-allocator';
 export * from './redis-connection-manager';
+export * from './main-data-source';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
 
 export {

@@ -1,0 +1,465 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "数据源",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "数据源管理",
+        "link": "/data-sources/data-source-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "主数据源",
+        "link": "/data-sources/data-source-main/"
+      },
+      {
+        "type": "custom-link",
+        "label": "外部数据源（数据库）",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "介绍",
+            "link": "/data-sources/data-source-manager/external-database"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 PostgreSQL",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 MSSQL",
+            "link": "/data-sources/data-source-external-mssql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 Oracle",
+            "link": "/data-sources/data-source-external-oracle/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "主、外部数据库对比",
+        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "REST API 数据源",
+        "link": "/data-sources/data-source-rest-api/"
+      },
+      {
+        "type": "custom-link",
+        "label": "人大金仓（KingbaseES）数据源",
+        "link": "/data-sources/data-source-kingbase/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "数据表",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/data-sources/data-modeling/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "普通表",
+        "link": "/data-sources/data-source-main/general-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "继承表",
+        "link": "/data-sources/data-source-main/inheritance-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "文件表",
+        "link": "/data-sources/file-manager/file-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "树表",
+        "link": "/data-sources/collection-tree/"
+      },
+      {
+        "type": "custom-link",
+        "label": "日历表",
+        "link": "/data-sources/calendar/calendar-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "评论表",
+        "link": "/data-sources/collection-comment/"
+      },
+      {
+        "type": "custom-link",
+        "label": "表达式表",
+        "link": "/data-sources/collection-expression/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "SQL 表",
+        "link": "/data-sources/collection-sql/"
+      },
+      {
+        "type": "custom-link",
+        "label": "数据库视图",
+        "link": "/data-sources/collection-view/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "数据表字段",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/data-sources/data-modeling/collection-fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "字段验证",
+        "link": "/data-sources/data-modeling/collection-fields/validation"
+      },
+      {
+        "type": "custom-link",
+        "label": "基本类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "单行文本",
+            "link": "/data-sources/data-modeling/collection-fields/basic/input"
+          },
+          {
+            "type": "custom-link",
+            "label": "多行文本",
+            "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
+          },
+          {
+            "type": "custom-link",
+            "label": "手机号码",
+            "link": "/data-sources/data-modeling/collection-fields/basic/phone"
+          },
+          {
+            "type": "custom-link",
+            "label": "电子邮箱",
+            "link": "/data-sources/data-modeling/collection-fields/basic/email"
+          },
+          {
+            "type": "custom-link",
+            "label": "URL",
+            "link": "/data-sources/data-modeling/collection-fields/basic/url"
+          },
+          {
+            "type": "custom-link",
+            "label": "整数",
+            "link": "/data-sources/data-modeling/collection-fields/basic/integer"
+          },
+          {
+            "type": "custom-link",
+            "label": "数字",
+            "link": "/data-sources/data-modeling/collection-fields/basic/number"
+          },
+          {
+            "type": "custom-link",
+            "label": "百分比",
+            "link": "/data-sources/data-modeling/collection-fields/basic/percent"
+          },
+          {
+            "type": "custom-link",
+            "label": "密码",
+            "link": "/data-sources/data-modeling/collection-fields/basic/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "颜色",
+            "link": "/data-sources/data-modeling/collection-fields/basic/color"
+          },
+          {
+            "type": "custom-link",
+            "label": "图标",
+            "link": "/data-sources/data-modeling/collection-fields/basic/icon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "选择类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "勾选",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
+          },
+          {
+            "type": "custom-link",
+            "label": "下拉菜单（单选）",
+            "link": "/data-sources/data-modeling/collection-fields/choices/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "下拉菜单（多选）",
+            "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "单选框",
+            "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "复选框",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "多媒体",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/data-sources/data-modeling/collection-fields/media/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown(Vditor)",
+            "link": "/data-sources/field-markdown-vditor/"
+          },
+          {
+            "type": "custom-link",
+            "label": "富文本",
+            "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
+          },
+          {
+            "type": "custom-link",
+            "label": "附件（关系）",
+            "link": "/data-sources/file-manager/field-attachment"
+          },
+          {
+            "type": "custom-link",
+            "label": "附件（URL）",
+            "link": "/data-sources/field-attachment-url/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "日期 & 时间",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/data-sources/data-modeling/collection-fields/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "日期时间（含时区）",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "日期时间（不含时区）",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
+          },
+          {
+            "type": "custom-link",
+            "label": "Unix 时间戳",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
+          },
+          {
+            "type": "custom-link",
+            "label": "日期（不含时间）",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/date"
+          },
+          {
+            "type": "custom-link",
+            "label": "时间",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/time"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "几何图形",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "点",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/point"
+          },
+          {
+            "type": "custom-link",
+            "label": "线",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/line"
+          },
+          {
+            "type": "custom-link",
+            "label": "圆",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
+          },
+          {
+            "type": "custom-link",
+            "label": "多边形",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "高级类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Snowflake ID (53-bit)",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/snowflake-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "UUID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nano ID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/nano-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "排序",
+            "link": "/data-sources/field-sort/"
+          },
+          {
+            "type": "custom-link",
+            "label": "计算公式",
+            "link": "/data-sources/field-formula/"
+          },
+          {
+            "type": "custom-link",
+            "label": "自动编码",
+            "link": "/data-sources/field-sequence/"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/json"
+          },
+          {
+            "type": "custom-link",
+            "label": "数据表选择器",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "加密",
+            "link": "/data-sources/field-encryption/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "系统信息",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "创建日期",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "最后修改日期",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "创建人",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "最后修改人",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "空间",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
+            "label": "Table OID",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "关系类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/data-sources/data-modeling/collection-fields/associations"
+          },
+          {
+            "type": "custom-link",
+            "label": "一对一",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "一对多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "多对一",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "多对多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "多对多（数组）",
+            "link": "/data-sources/field-m2m-array/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/data-sources/development"
+      }
+    ]
+  }
+]

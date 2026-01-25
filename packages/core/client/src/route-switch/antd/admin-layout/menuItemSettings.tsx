@@ -32,6 +32,7 @@ import {
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { getFlowPageMenuSchema } from '../../../modules/menu/FlowPageMenuItem';
 import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
@@ -136,7 +137,8 @@ export const RemoveRoute: FC = () => {
 
             if (
               currentPageUid !== currentRoute?.schemaUid &&
-              !findRouteBySchemaUid(currentPageUid, currentRoute?.children)
+              !findRouteBySchemaUid(currentPageUid, currentRoute?.children) &&
+              currentRoute?.type !== NocoBaseDesktopRouteType.group
             ) {
               return;
             }
@@ -147,8 +149,10 @@ export const RemoveRoute: FC = () => {
             const nextSibling = findNextSibling(allAccessRoutes, currentRoute);
 
             if (prevSibling || nextSibling) {
+              const sibling = prevSibling || nextSibling;
+
               // 如果删除的是当前打开的页面或分组，需要跳转到上一个页面或分组
-              navigate(`/admin/${prevSibling?.schemaUid || nextSibling?.schemaUid}`);
+              navigate(`/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`);
             } else {
               navigate(`/`);
             }
@@ -227,11 +231,11 @@ const InsertMenuItems = (props) => {
 
       <SchemaSettingsModalItem
         eventKey={`${insertPosition}page`}
-        title={t('Page')}
+        title={t('Classic page (v1)')}
         schema={
           {
             type: 'object',
-            title: t('Add page'),
+            title: t('Add classic page'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
@@ -287,6 +291,70 @@ const InsertMenuItems = (props) => {
 
           // 3. 插入一个对应的 Schema
           insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
+        }}
+      />
+      <SchemaSettingsModalItem
+        eventKey={`${insertPosition}flowPage`}
+        title={t('Modern page (v2)')}
+        schema={
+          {
+            type: 'object',
+            title: t('Add modern page'),
+            properties: {
+              title: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: t('Menu item title'),
+                required: true,
+                'x-component-props': {},
+              },
+              icon: {
+                title: t('Icon'),
+                'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={async ({ title, icon }) => {
+          const menuSchemaUid = uid();
+          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
+          const tabSchemaName = uid();
+          const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.flowPage,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: parentId || undefined,
+            schemaUid: pageSchemaUid,
+            menuSchemaUid,
+            enableTabs: false,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.tabs,
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hidden: true,
+              },
+            ],
+          });
+
+          if (insertPositionToMethod[insertPosition]) {
+            // 2. 然后再把路由移动到对应的位置
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: currentRoute?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
+          insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid }));
         }}
       />
       <SchemaSettingsModalItem

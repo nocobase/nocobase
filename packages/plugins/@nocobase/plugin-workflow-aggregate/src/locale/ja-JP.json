@@ -6,7 +6,7 @@
   "Data of collection": "コレクションデータ",
   "Distinct": "重複排除",
   "Field to aggregate": "集計フィールド",
-  "Number of decimal places for query result.": "Number of decimal places for query result.",
+  "Number of decimal places for query result.": "クエリ結果の小数点以下の桁数",
   "Query result": "クエリ結果",
   "Result precision": "結果精度",
   "Target type": "ターゲットタイプ"

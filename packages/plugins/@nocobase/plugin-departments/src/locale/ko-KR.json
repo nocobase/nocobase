@@ -33,5 +33,5 @@
   "Superior department": "상위 부서",
   "The department has members, please remove them first": "부서에 구성원이 있습니다. 먼저 구성원을 삭제해주세요.",
   "The department has sub-departments, please delete them first": "부서에 하위 부서가 있습니다. 먼저 하위 부서를 삭제해 주세요.",
-  "This field is currently not supported for use in form blocks.": "This field is currently not supported for use in form blocks."
+  "This field is currently not supported for use in form blocks.": "이 필드는 현재 폼 블록에서 지원되지 않습니다."
 }

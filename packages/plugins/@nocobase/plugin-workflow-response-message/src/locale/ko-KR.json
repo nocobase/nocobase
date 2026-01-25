@@ -1,8 +1,8 @@
 {
-  "Add response message, will be send to client when process of request ends.": "Add response message, will be send to client when process of request ends.",
-  "If the workflow ends normally, the response message will return a success status by default.": "If the workflow ends normally, the response message will return a success status by default.",
-  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.",
+  "Add response message, will be send to client when process of request ends.": "응답 메시지를 추가하면 요청 처리 종료 시 클라이언트로 전송됩니다.",
+  "If the workflow ends normally, the response message will return a success status by default.": "워크플로가 정상 종료되면 응답 메시지는 기본적으로 성공 상태를 반환합니다.",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "실패 상태를 반환하려면 하위에 \"프로세스 종료\" 노드를 추가해 워크플로를 종료하세요.",
   "Message content": "메시지 내용",
   "Response message": "응답 메시지",
-  "Supports variables in template.": "Supports variables in template."
+  "Supports variables in template.": "템플릿에서 변수 사용 가능"
 }

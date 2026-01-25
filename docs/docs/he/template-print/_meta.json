@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "הוראות הגדרה",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "תחביר תבנית"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "תכונות מתקדמות"
+  },
+  {
+    "type": "custom-link",
+    "label": "שאלות נפוצות",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "תרחישי שימוש",
+    "link": "/template-print/scenes"
+  }
+]

@@ -6,7 +6,7 @@
   "description": "Provides a client interface for the NocoBase server",
   "description.ru-RU": "Предоставляет клиентский интерфейс для сервера NocoBase",
   "description.zh-CN": "为 NocoBase 服务端提供客户端界面",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
@@ -16,12 +16,12 @@
     "koa-static": "^5.0.0"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/plugin-localization": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-localization": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

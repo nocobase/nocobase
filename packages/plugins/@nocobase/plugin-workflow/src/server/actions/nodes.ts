@@ -267,6 +267,92 @@ export async function destroy(context: Context, next) {
   await next();
 }
 
+export async function destroyBranch(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, branchIndex: branchIndexParam, shift: shiftParam } = context.action.params;
+  if (branchIndexParam == null || branchIndexParam === '') {
+    context.throw(400, 'branchIndex is required');
+  }
+  const branchIndex = Number.parseInt(branchIndexParam, 10);
+  if (Number.isNaN(branchIndex)) {
+    context.throw(400, 'branchIndex must be a number');
+  }
+  const shift = !(shiftParam == null || shiftParam === '') && Number.parseInt(String(shiftParam), 10) === 1;
+
+  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex', 'key'];
+  const instance = await repository.findOne({
+    filterByTk,
+    fields: [...fields, 'workflowId'],
+    appends: ['workflow.versionStats.executed'],
+  });
+  if (!instance) {
+    context.throw(404, 'Node not found');
+  }
+  if (instance.workflow.versionStats.executed > 0) {
+    context.throw(400, 'Branches in executed workflow could not be deleted');
+  }
+
+  let deletedBranchHead = null;
+
+  await db.sequelize.transaction(async (transaction) => {
+    const nodes = await repository.find({
+      filter: {
+        workflowId: instance.workflowId,
+      },
+      fields,
+      transaction,
+    });
+    const nodesMap = new Map();
+    nodes.forEach((item) => {
+      nodesMap.set(item.id, item);
+    });
+    nodes.forEach((item) => {
+      if (item.upstreamId) {
+        item.upstream = nodesMap.get(item.upstreamId);
+      }
+      if (item.downstreamId) {
+        item.downstream = nodesMap.get(item.downstreamId);
+      }
+    });
+
+    const branchHeads = nodes
+      .filter((item) => item.upstreamId === instance.id && item.branchIndex != null)
+      .sort((a, b) => a.branchIndex - b.branchIndex);
+    const branchHead = branchHeads.find((item) => item.branchIndex === branchIndex);
+    deletedBranchHead = branchHead || null;
+
+    if (branchHead) {
+      const nodesToDelete = searchBranchDownstreams(nodes, branchHead);
+      const idsToDelete = nodesToDelete.map((item) => item.id);
+      if (idsToDelete.length) {
+        await repository.destroy({
+          filterByTk: idsToDelete,
+          transaction,
+        });
+      }
+    }
+
+    if (shift) {
+      const headsToShift = branchHeads.filter((item) => item.branchIndex > branchIndex);
+      await Promise.all(
+        headsToShift.map((item) =>
+          item.update(
+            {
+              branchIndex: item.branchIndex - 1,
+            },
+            { transaction },
+          ),
+        ),
+      );
+    }
+  });
+
+  context.body = deletedBranchHead;
+
+  await next();
+}
+
 export async function update(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);

@@ -1,0 +1,8 @@
+{
+  "Add response message, will be send to client when process of request ends.": "Tambahkan pesan respons, akan dikirim ke klien ketika proses permintaan berakhir.",
+  "If the workflow ends normally, the response message will return a success status by default.": "Jika alur kerja berakhir secara normal, pesan respons akan mengembalikan status berhasil secara default.",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "Jika Anda ingin mengembalikan status kegagalan, harap tambahkan node \"Akhiri Proses\" di hilir untuk menghentikan alur kerja.",
+  "Message content": "Konten pesan",
+  "Response message": "Pesan respons",
+  "Supports variables in template.": "Mendukung variabel dalam template."
+}

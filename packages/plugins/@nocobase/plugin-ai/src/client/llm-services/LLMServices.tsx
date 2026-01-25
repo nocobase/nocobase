@@ -22,18 +22,19 @@ import {
 } from '@nocobase/client';
 import React, { useContext, useMemo, useState } from 'react';
 import { useT } from '../locale';
-import { Button, Dropdown, App } from 'antd';
+import { Button, Divider, Dropdown, App, Tag, theme } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
-import { LLMProviderContext, LLMProvidersContext, useLLMProviders } from './llm-providers';
+import { LLMProviderContext, LLMProvidersContext, useLLMProviders, useLLMProvider } from './llm-providers';
 import { Schema, useForm, observer } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
 import PluginAIClient from '..';
+import { LLMTestFlight } from './component/LLMTestFlight';
 
 const useCreateFormProps = () => {
-  const { provider } = useContext(LLMProviderContext);
+  const provider = useLLMProvider();
   const form = useMemo(
     () =>
       createForm({
@@ -127,16 +128,59 @@ const useEditActionProps = () => {
 };
 const AddNew = () => {
   const t = useT();
+  const { token } = theme.useToken();
   const [visible, setVisible] = useState(false);
   const [provider, setProvider] = useState('');
   const providers = useLLMProviders();
-  const items = providers.map((item) => ({
-    ...item,
-    onClick: () => {
-      setVisible(true);
-      setProvider(item.value);
-    },
-  }));
+
+  const providerHints: Record<string, string> = {
+    anthropic: 'Claude',
+    'google-genai': 'Gemini',
+    openai: 'GPT',
+    'openai-completions': 'GPT (Completions, Legacy)',
+    dashscope: 'Qwen',
+    deepseek: 'DeepSeek',
+    ollama: 'Local models',
+  };
+
+  const items = providers.flatMap((item, index) => {
+    const hint = providerHints[item.value];
+    const menuItem = {
+      ...item,
+      label: (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+            <span>{item.label}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{hint}</div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {item.supportedModel.map((item) => (
+                <Tag
+                  key={item}
+                  style={{
+                    color: token.colorTextTertiary,
+                    backgroundColor: token.colorFillTertiary,
+                    borderColor: token.colorBorderSecondary,
+                  }}
+                >
+                  {item}
+                </Tag>
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
+      onClick: () => {
+        setVisible(true);
+        setProvider(item.value);
+      },
+    };
+    if (index > 0) {
+      return [{ type: 'divider' as const }, menuItem];
+    }
+    return [menuItem];
+  });
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
@@ -146,7 +190,11 @@ const AddNew = () => {
             {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
-        <SchemaComponent scope={{ setProvider, useCreateFormProps }} schema={createLLMSchema} />
+        <SchemaComponent
+          components={{ LLMTestFlight }}
+          scope={{ setProvider, useCreateFormProps, providers }}
+          schema={createLLMSchema}
+        />
       </LLMProviderContext.Provider>
     </ActionContextProvider>
   );
@@ -179,10 +227,11 @@ export const LLMServices: React.FC = () => {
         .listLLMProviders()
         .then((res) => {
           const providers = res?.data?.data || [];
-          return providers.map((provider: { name: string; title?: string }) => ({
+          return providers.map((provider: { name: string; title?: string; supportedModel: string[] }) => ({
             key: provider.name,
             label: Schema.compile(provider.title || provider.name, { t }),
             value: provider.name,
+            supportedModel: provider.supportedModel,
           }));
         }),
     {
@@ -197,7 +246,7 @@ export const LLMServices: React.FC = () => {
       <ExtendCollectionsProvider collections={[llmServices]}>
         <SchemaComponent
           schema={llmsSchema}
-          components={{ AddNew, Settings }}
+          components={{ AddNew, Settings, LLMTestFlight }}
           scope={{ t, providers, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
         />
       </ExtendCollectionsProvider>

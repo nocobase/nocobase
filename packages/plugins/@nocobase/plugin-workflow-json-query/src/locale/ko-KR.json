@@ -3,11 +3,11 @@
   "Alias": "별칭",
   "Data source": "데이터 소스",
   "Display label": "표시 라벨",
-  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "쿼리 결과가 객체 또는 객체 배열인 경우, 후속 노드에서 접근할 속성을 매핑할 수 있습니다.",
   "JSON calculation": "JSON 계산",
   "Properties mapping": "속성 매핑",
   "Property key": "속성 키",
   "Query engine": "쿼리 엔진",
   "Query expression": "쿼리 표현식",
-  "Transforming or calculating values from complex JSON data.": "Transforming or calculating values from complex JSON data."
+  "Transforming or calculating values from complex JSON data.": "복잡한 JSON 데이터에서 값 변환 또는 계산"
 }

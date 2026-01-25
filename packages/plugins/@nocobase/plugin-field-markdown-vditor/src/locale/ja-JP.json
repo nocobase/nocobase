@@ -30,6 +30,7 @@
   "Toolbar": "ツールバー",
   "Undo": "元に戻す",
   "Upload": "画像またはファイルをアップロード",
+  "Used to store files uploaded in the Markdown editor": "Markdownエディタでアップロードされたファイルを保存するために使用",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "Markdownエディタでアップロードされたファイルを保存するために使用 (デフォルト: attachments)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "upload failed",

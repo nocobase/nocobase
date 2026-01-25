@@ -17,6 +17,7 @@
   "Illegal percentage format": "Ungültiges Prozentformat",
   "Import": "Importieren",
   "Import Data": "Daten importieren",
+  "Import action settings": "Import action settings",
   "Import completed": "Import abgeschlossen: {{success}} Datensätze importiert, {{updated}} Datensätze aktualisiert, {{skipped}} Datensätze übersprungen, insgesamt {{total}} Datensätze",
   "Import explain": "Anleitung",
   "Import warnings": "Sie können bis zu {{limit}} Datenzeilen auf einmal importieren, alles darüber hinaus wird ignoriert.",

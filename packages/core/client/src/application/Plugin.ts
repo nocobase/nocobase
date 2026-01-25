@@ -23,6 +23,18 @@ export class Plugin<T = any> {
     return this.app.pluginManager;
   }
 
+  get context() {
+    return this.app.context;
+  }
+
+  get flowEngine() {
+    return this.app.flowEngine;
+  }
+
+  get engine() {
+    return this.app.flowEngine;
+  }
+
   get pm() {
     return this.app.pm;
   }
@@ -32,6 +44,10 @@ export class Plugin<T = any> {
   }
 
   get pluginSettingsManager() {
+    return this.app.pluginSettingsManager;
+  }
+
+  get pluginSettingsRouter() {
     return this.app.pluginSettingsManager;
   }
 

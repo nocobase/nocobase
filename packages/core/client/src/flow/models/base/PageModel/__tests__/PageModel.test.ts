@@ -1,0 +1,156 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PageModel } from '../PageModel';
+import { DragEndEvent } from '@dnd-kit/core';
+
+// Mock FlowModel and other dependencies
+vi.mock('@nocobase/flow-engine', () => ({
+  FlowModel: class {
+    props: any;
+    context: any;
+    subModels: any = {};
+    constructor(options: any = {}) {
+      this.props = options.props || {};
+      this.context = options.context || {};
+    }
+    setProps(key: string, value: any) {
+      this.props[key] = value;
+    }
+    mapSubModels(key: string, callback: any) {
+      if (this.subModels[key]) {
+        return this.subModels[key].map(callback);
+      }
+      return [];
+    }
+    static registerFlow() {}
+  },
+  tExpr: (str: string) => str,
+  DndProvider: ({ children }: any) => children,
+  AddSubModelButton: () => null,
+  FlowSettingsButton: () => null,
+  FlowModelRenderer: () => null,
+  Droppable: ({ children }: any) => children,
+  DragHandler: () => null,
+  getPageActive: () => false,
+  CreateModelOptions: class {},
+}));
+
+vi.mock('antd', () => ({
+  Tabs: (props: any) => null,
+}));
+
+vi.mock('@ant-design/icons', () => ({
+  PlusOutlined: () => null,
+}));
+
+vi.mock('@ant-design/pro-layout', () => ({
+  PageHeader: () => null,
+}));
+
+describe('PageModel', () => {
+  let pageModel: PageModel;
+  let mockDragEndEvent: DragEndEvent;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Create PageModel instance
+    pageModel = new PageModel({});
+    // Initialize subModels
+    (pageModel as any).subModels = {};
+  });
+
+  describe('handleDragEnd', () => {
+    it('should throw "Method not implemented." error', async () => {
+      mockDragEndEvent = {
+        active: { id: 'active' },
+        over: { id: 'over' },
+      } as any;
+      await expect(pageModel.handleDragEnd(mockDragEndEvent)).rejects.toThrow();
+    });
+  });
+
+  describe('getFirstTab', () => {
+    it('should return the first tab if tabs exist', () => {
+      const mockTab1 = { uid: 'tab1' };
+      const mockTab2 = { uid: 'tab2' };
+      (pageModel as any).subModels = { tabs: [mockTab1, mockTab2] };
+      expect(pageModel.getFirstTab()).toBe(mockTab1);
+    });
+
+    it('should return undefined if tabs do not exist', () => {
+      (pageModel as any).subModels = { tabs: [] };
+      expect(pageModel.getFirstTab()).toBeUndefined();
+    });
+
+    it('should return undefined if subModels.tabs is undefined', () => {
+      (pageModel as any).subModels = {};
+      expect(pageModel.getFirstTab()).toBeUndefined();
+    });
+  });
+
+  describe('renderTabs activeKey logic', () => {
+    beforeEach(() => {
+      // Mock mapTabs to avoid complex rendering logic inside it
+      pageModel.mapTabs = vi.fn().mockReturnValue([]);
+      // Mock t function in context
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+      } as any;
+    });
+
+    it('should use viewParams.tabUid if available', () => {
+      pageModel.context.view = {
+        // @ts-ignore
+        navigation: {
+          viewParams: {
+            tabUid: 'tab-from-params',
+          },
+        },
+      };
+
+      const result = pageModel.renderTabs() as any;
+      // result is <DndProvider><Tabs ... /></DndProvider>
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.activeKey).toBe('tab-from-params');
+    });
+
+    it('should use first tab uid if viewParams exists but tabUid is missing', () => {
+      const mockTab1 = { uid: 'first-tab-uid' };
+      (pageModel as any).subModels = { tabs: [mockTab1] };
+      pageModel.context.view = {
+        // @ts-ignore
+        navigation: {
+          viewParams: {}, // exists but empty tabUid
+        },
+      };
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+      expect(tabsElement.props.activeKey).toBe('first-tab-uid');
+    });
+
+    it('should use props.tabActiveKey if viewParams is missing', () => {
+      pageModel.props = { tabActiveKey: 'tab-from-props' } as any;
+      // @ts-ignore
+      pageModel.context.view = {
+        navigation: null, // viewParams missing
+      };
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+      expect(tabsElement.props.activeKey).toBe('tab-from-props');
+    });
+  });
+});

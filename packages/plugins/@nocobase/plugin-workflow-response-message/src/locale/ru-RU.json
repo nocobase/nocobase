@@ -1,8 +1,8 @@
 {
-  "Add response message, will be send to client when process of request ends.": "Add response message, will be send to client when process of request ends.",
-  "If the workflow ends normally, the response message will return a success status by default.": "If the workflow ends normally, the response message will return a success status by default.",
-  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.",
+  "Add response message, will be send to client when process of request ends.": "Добавить сообщение ответа, которое будет отправлено клиенту по завершении обработки запроса.",
+  "If the workflow ends normally, the response message will return a success status by default.": "Если рабочий процесс завершается нормально, сообщение ответа по умолчанию вернет статус успеха.",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "Если вы хотите вернуть статус ошибки, добавьте узел \"Конец процесса\" ниже по потоку, чтобы завершить рабочий процесс.",
   "Message content": "Содержание сообщения",
   "Response message": "Сообщение ответа",
-  "Supports variables in template.": "Supports variables in template."
+  "Supports variables in template.": "Поддерживает переменные в шаблоне."
 }

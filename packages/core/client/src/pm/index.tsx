@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { ACLPane } from '../acl/ACLShortcut';
 import { ADMIN_SETTINGS_PATH } from '../application';
 import { Plugin } from '../application/Plugin';
@@ -42,6 +43,14 @@ export class PMPlugin extends Plugin {
       Component: SystemSettingsPane,
       aclSnippet: 'pm.system-settings.system-settings',
     });
+    this.app.pluginSettingsManager.add('plugin-manager', {
+      icon: 'ApiOutlined',
+      title: '{{t("Plugin manager")}}',
+      Component: PluginManager,
+      hideInMenu: true,
+      hidden: true,
+      aclSnippet: 'pm',
+    });
   }
 
   addComponents() {
@@ -53,17 +62,19 @@ export class PMPlugin extends Plugin {
 
   addRoutes() {
     this.app.router.add('admin.pm.list', {
-      path: '/admin/pm/list',
-      element: <PluginManager />,
+      path: '/admin/pm/*',
+      Component: () => {
+        return <Navigate to="/admin/settings/plugin-manager" replace />;
+      },
     });
-    this.app.router.add('admin.pm.list-tab', {
-      path: '/admin/pm/list/:tabName',
-      element: <PluginManager />,
-    });
-    this.app.router.add('admin.pm.list-tab-mdfile', {
-      path: '/admin/pm/list/:tabName/:mdfile',
-      element: <PluginManager />,
-    });
+    // this.app.router.add('admin.pm.list-tab', {
+    //   path: '/admin/pm/list/:tabName',
+    //   element: <PluginManager />,
+    // });
+    // this.app.router.add('admin.pm.list-tab-mdfile', {
+    //   path: '/admin/pm/list/:tabName/:mdfile',
+    //   element: <PluginManager />,
+    // });
 
     this.app.router.add('admin.settings', {
       path: ADMIN_SETTINGS_PATH,

@@ -8,7 +8,7 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';

@@ -1,4 +1,5 @@
 {
+  "Export settings": "Export settings",
   "Export warning": "Puoi esportare fino a {{limit}} colonne di dati alla volta, qualsiasi eccedenza sarà ignorata.",
   "False": "Falso",
   "Start export": "Avvia esportazione",

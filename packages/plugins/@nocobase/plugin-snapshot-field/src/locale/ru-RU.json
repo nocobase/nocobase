@@ -9,6 +9,6 @@
   "The association field to snapshot": "Поле связи для создания снимка",
   "View record": "Просмотр записи",
   "When a record is created, association data is backed up in a snapshot": "При создании записи данные связи сохраняются в виде снимка",
-  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "При добавлении новой записи создавать снимок для связанной записи и сохранять в текущей записи. Снимок не обновляется при последующем изменении записи.",
-  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated."
+  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "При добавлении новой записи создается снимок связанной записи и сохраняется в текущей записи. Снимок не обновляется при последующем изменении записи.",
+  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "При добавлении новой записи создается снимок связанной записи и сохраняется в новой записи. Снимок не будет обновлен, если связанная запись изменится."
 }

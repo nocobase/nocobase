@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "displayName": "Calendar",
   "displayName.ru-RU": "Календарь",
   "displayName.zh-CN": "日历",
@@ -30,9 +30,9 @@
     "solarlunar-es": "^1.0.9"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x"
   },
   "repository": {
     "type": "git",

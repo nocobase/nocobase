@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/theme-editor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/theme-editor",
@@ -27,12 +27,12 @@
     "vanilla-jsoneditor": "^0.17.8"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

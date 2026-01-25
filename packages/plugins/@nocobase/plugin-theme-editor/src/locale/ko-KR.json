@@ -11,7 +11,7 @@
   "Default theme": "기본 테마",
   "Delete theme": "테마 삭제",
   "Deleted successfully": "성공적으로 삭제되었습니다",
-  "Deletion is unrecoverable. Confirm deletion?": "삭제 후 복구할 수 없습니다. 삭제 확인?",
+  "Deletion is unrecoverable. Confirm deletion?": "삭제 후 복구할 수 없습니다. 삭제하시겠습니까?",
   "Edit": "편집",
   "Edit Theme Config": "테마 구성 편집",
   "Edit based on current theme": "현재 테마 기반으로 편집",

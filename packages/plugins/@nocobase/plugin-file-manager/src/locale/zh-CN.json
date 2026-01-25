@@ -1,4 +1,5 @@
 {
+  "Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.": "在服务器端从远程存储获取文件时，HTTP 请求的附加选项，例如请求头等。",
   "Access base URL": "访问 URL 基础",
   "Aliyun OSS": "阿里云 OSS",
   "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿里云 OSS 存储桶所在区域。例如：\"oss-cn-beijing\"。",
@@ -36,9 +37,12 @@
   "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "文件保存的相对路径。留空则为根路径。开始和结尾的斜杠“/”会被忽略。例如：\"user/avatar\"。",
   "Renaming": "重命名",
   "Renaming strategy to avoid filename conflicts when uploading files.": "上传文件时避免文件名冲突的重命名策略。",
+  "Request options": "请求选项",
   "See more": "更多请查阅",
   "Size": "文件大小",
   "Storage": "存储空间",
+  "Storage base URL": "Storage base URL",
+  "Storage display name": "Storage display name",
   "Storage name": "存储空间标识",
   "Storage type": "存储类型",
   "Storage type {{type}} is not registered, please check if related plugin is enabled.": "{{type}} 类型的存储引擎未被注册，请检查相关插件是否已启用。",

@@ -7,16 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
+import * as bundleRequire from 'bundle-require';
 import chalk from 'chalk';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
-import * as bundleRequire from 'bundle-require';
 import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
-import { PkgLog, UserConfig, getPackageJson } from './utils';
+import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
+import { getPackageJson, PkgLog, UserConfig } from './utils';
 import {
   buildCheck,
   checkRequire,
@@ -26,9 +28,7 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { obfuscate } from './utils/obfuscationResult';
-import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -58,7 +58,9 @@ const external = [
   '@nocobase/test',
   '@nocobase/utils',
   '@nocobase/license-kit',
-
+  '@nocobase/flow-engine',
+  '@nocobase/client-v2',
+  '@nocobase/shared',
   // @nocobase/auth
   'jsonwebtoken',
 
@@ -516,7 +518,13 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
         },
         {
           test: /\.svg$/i,
+          type: 'asset',
+          resourceQuery: { not: [/react/] }, // exclude react component if *.svg?react
+        },
+        {
+          test: /\.svg$/i,
           issuer: /\.[jt]sx?$/,
+          resourceQuery: /react/, // *.svg?react
           use: ['@svgr/webpack'],
         },
         {
@@ -558,8 +566,12 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                   parser: {
                     syntax: 'typescript',
                     tsx: true,
+                    decorators: true,
                   },
                   target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
                 },
               },
             },
@@ -582,8 +594,12 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                 jsc: {
                   parser: {
                     syntax: 'typescript',
+                    decorators: true,
                   },
                   target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
                 },
               },
             },
@@ -611,18 +627,18 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                 module.source = {
                   source: `
 __webpack_require__.p = (function() {
-  var publicPath = window['__nocobase_public_path__'] || '/';
+  var publicPath = window['__webpack_public_path__'] || '/';
   // 确保路径以 / 结尾
   if (!publicPath.endsWith('/')) {
     publicPath += '/';
   }
   return publicPath + 'static/plugins/${packageJson.name}/dist/client/';
-})();`
+})();`,
                 };
               }
             });
           });
-        }
+        },
       },
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({

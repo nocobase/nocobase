@@ -30,6 +30,7 @@
   "Toolbar": "Настройка панели инструментов редактора",
   "Undo": "Отменить",
   "Upload": "Загрузить изображение или файл",
+  "Used to store files uploaded in the Markdown editor": "Используется для хранения файлов, загруженных в редакторе Markdown",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "Используется для хранения файлов, загруженных в редакторе Markdown (по умолчанию: вложения)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "Ошибка загрузки",

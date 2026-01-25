@@ -1,4 +1,5 @@
 {
+  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" only support \"application/json\", and no need to specify",
   "\"Content-Type\" will be ignored from headers.": "请求头中配置的 \"Content-Type\" 将被忽略。",
   "Add key-value pairs": "添加键值对",
   "Add parameter": "添加参数",
@@ -19,6 +20,8 @@
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "向指定 URL 发送 HTTP 请求。可以使用上游节点里的变量作为请求头、参数和请求体。",
   "Status code": "状态码",
   "Timeout": "超时设置",
+  "Timeout config": "Timeout config",
   "URL": "地址",
-  "Use variable": "使用变量"
+  "Use variable": "使用变量",
+  "ms": "ms"
 }

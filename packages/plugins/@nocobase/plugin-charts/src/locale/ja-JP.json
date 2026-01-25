@@ -45,7 +45,7 @@
   "Funnel": "ファネル",
   "Funnel Layer Width/Metrics": "ファネル層の幅/メトリクス",
   "Invalid JSON format": "無効なJSON形式",
-  "Invalid JSON format,must be an object array.": "Invalid JSON format,must be an object array.",
+  "Invalid JSON format,must be an object array.": "無効なJSON形式です。オブジェクト配列である必要があります。",
   "JSON config": "JSON設定",
   "Json config references": "JSON設定リファレンス",
   "Json config references: ": "JSON設定リファレンス: ",

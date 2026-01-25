@@ -100,7 +100,7 @@ const InternalAssociationSelect = observer(
     const schemaComponentCtxValue = useContext(SchemaComponentContext);
     const { getCollection } = useCollectionManager_deprecated();
     const associationCollection = getCollection(collectionField.target);
-    const { filterTargetKey } = associationCollection;
+    const { filterTargetKey } = associationCollection || {};
 
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;

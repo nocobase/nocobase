@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Управление системой",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Управление плагинами",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Системные настройки",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Пользовательский брендинг",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Редактор тем",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройки языка",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Управление локализацией",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-gantt",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "displayName": "Block: Gantt",
   "displayName.ru-RU": "Блок: Диаграмма Ганта",
   "displayName.zh-CN": "区块：甘特图",
@@ -16,9 +16,9 @@
     "antd-style": "3.7.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

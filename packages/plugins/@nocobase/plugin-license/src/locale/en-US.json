@@ -2,6 +2,13 @@
   "Change key": "Change key",
   "Copied": "Copied",
   "Copy": "Copy",
+  "Enter license key": "Enter license key",
+  "Instance ID": "Instance ID",
+  "Invalid license key": "Invalid license key",
+  "License key": "License key",
+  "License key has been set": "License key has been set",
+  "License key saved successfully, please re-run the plugin installation.": "License key saved successfully, please re-run the plugin installation.",
+  "License settings": "License settings",
   "Failed to copy, please open ./storage/.license/instance-id and copy it": "Failed to copy, please open ./storage/.license/instance-id and copy it",
   "Invalid license key.": "Invalid license key.",
   "The license key is invalid. Please visit the NocoBase Service to obtain a new license key.": "The license key is invalid. Please visit the NocoBase Service to obtain a new license key.",
@@ -26,12 +33,5 @@
   "Please go to the": "Please go to the",
   "License Settings": "License Settings",
   "page to enter the license key.": "page to enter the license key.",
-  "License information": "License information",
-  "Enter license key": "Enter license key",
-  "Instance ID": "Instance ID",
-  "Invalid license key": "Invalid license key",
-  "License key": "License key",
-  "License key has been set": "License key has been set",
-  "License key saved successfully, please re-run the plugin installation.": "License key saved successfully, please re-run the plugin installation.",
-  "License settings": "License settings"
+  "License information": "License information"
 }

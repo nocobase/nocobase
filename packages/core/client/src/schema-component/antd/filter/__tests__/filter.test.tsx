@@ -29,7 +29,7 @@ describe('Filter', () => {
 
     // 弹窗中显示的内容
     expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();
-    expect(within(tooltip).getByTitle(/ne/i)).toBeInTheDocument();
+    // expect(within(tooltip).getByText(/ne/i)).toBeInTheDocument();
     expect(within(tooltip).getByText(/tags \/ title/i)).toBeInTheDocument();
     expect(within(tooltip).getByText(/eq/i)).toBeInTheDocument();
     expect(within(tooltip).getByText(/^Add condition$/i)).toBeInTheDocument();

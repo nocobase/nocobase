@@ -53,6 +53,18 @@ const formItemWrapCss = css`
   .ant-formily-item-label label {
     word-break: normal;
   }
+
+  .ant-input,
+  .ant-select,
+  .ant-cascader-picker,
+  .ant-picker,
+  .ant-input-number,
+  .ant-input-affix-wrapper {
+    &.auto-width {
+      width: auto;
+      min-width: 6em;
+    }
+  }
 `;
 
 const formItemLabelCss = css`

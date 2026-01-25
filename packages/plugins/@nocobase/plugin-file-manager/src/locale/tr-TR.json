@@ -40,6 +40,7 @@
   "Size": "Size",
   "Storage": "Storage",
   "Storage base URL": "Depolama temel URLsi",
+  "Storage display name": "Storage display name",
   "Storage name": "Depo adı",
   "Storage type": "Depolama türü",
   "Storage type {{type}} is not registered, please check if related plugin is enabled.": "Storage type {{type}} is not registered, please check if related plugin is enabled.",

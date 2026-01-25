@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "displayName": "Notification: In-app message",
   "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",
@@ -21,12 +21,12 @@
     "antd-mobile": "^5.38"
   },
   "peerDependencies": {
-    "@formily/reactive": "^2",
+    "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-notification-manager": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-notification-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
     "react-router-dom": "^6.x"
   }
 }

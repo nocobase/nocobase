@@ -9,7 +9,8 @@
 
 import { Plugin } from '../application/Plugin';
 
-import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
+import { DataSource } from '../data-source/data-source/DataSource';
+import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
 import {
   CheckboxFieldInterface,
   CheckboxGroupFieldInterface,
@@ -43,6 +44,7 @@ import {
   RadioGroupFieldInterface,
   RichTextFieldInterface,
   SelectFieldInterface,
+  SnowflakeIdFieldInterface,
   SubTableFieldInterface,
   TableoidFieldInterface,
   TextareaFieldInterface,
@@ -53,14 +55,13 @@ import {
   UrlFieldInterface,
   UUIDFieldInterface,
 } from './interfaces';
+import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
 import {
   GeneralCollectionTemplate,
   SqlCollectionTemplate,
   TreeCollectionTemplate,
   ViewCollectionTemplate,
 } from './templates';
-import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
-import { DataSource } from '../data-source/data-source/DataSource';
 
 class MainDataSource extends DataSource {
   async getDataSource() {
@@ -72,6 +73,7 @@ class MainDataSource extends DataSource {
     const collections = service?.data?.data || [];
 
     return {
+      key: 'main',
       collections,
     };
   }
@@ -92,6 +94,7 @@ export class CollectionPlugin extends Plugin {
     this.dataSourceManager.addDataSource(MainDataSource, {
       key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
+      status: 'loaded',
     });
   }
 
@@ -163,6 +166,7 @@ export class CollectionPlugin extends Plugin {
       RadioGroupFieldInterface,
       RichTextFieldInterface,
       SelectFieldInterface,
+      SnowflakeIdFieldInterface,
       SubTableFieldInterface,
       TableoidFieldInterface,
       TextareaFieldInterface,

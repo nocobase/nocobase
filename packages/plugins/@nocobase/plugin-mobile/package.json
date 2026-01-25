@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
@@ -12,11 +12,11 @@
   "description.ru-RU": "С 2.0 версии, мобильная версия заменена новым плагином ui-layout, который всё ещё находится в разработке.",
   "description.zh-CN": "自 2.0 版本起，移动端由新的 ui-layout 插件替代，该插件仍在开发中。",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-acl": "1.x",
-    "@nocobase/plugin-localization": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-acl": "2.x",
+    "@nocobase/plugin-localization": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "devDependencies": {
     "@ant-design/icons": "5.x",

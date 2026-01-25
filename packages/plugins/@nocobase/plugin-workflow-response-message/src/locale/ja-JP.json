@@ -1,8 +1,8 @@
 {
-  "Add response message, will be send to client when process of request ends.": "Add response message, will be send to client when process of request ends.",
-  "If the workflow ends normally, the response message will return a success status by default.": "If the workflow ends normally, the response message will return a success status by default.",
-  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.",
+  "Add response message, will be send to client when process of request ends.": "レスポンスメッセージを追加。リクエスト処理終了時にクライアントへ送信されます。",
+  "If the workflow ends normally, the response message will return a success status by default.": "ワークフローが正常終了した場合、レスポンスメッセージはデフォルトで成功ステータスを返します。",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "失敗ステータスを返す場合は、下流に「プロセス終了」ノードを追加してワークフローを終了してください。",
   "Message content": "メッセージ本文",
   "Response message": "レスポンスメッセージ",
-  "Supports variables in template.": "Supports variables in template."
+  "Supports variables in template.": "テンプレート変数の使用が可能です。"
 }

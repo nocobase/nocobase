@@ -64,7 +64,7 @@ export default defineCollection({
       type: 'snowflakeId',
       name: 'id',
       primaryKey: true,
-      interface: 'id',
+      interface: 'integer',
       uiSchema: {
         type: 'number',
         title: '{{t("ID")}}',

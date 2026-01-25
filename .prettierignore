@@ -18,3 +18,4 @@ packages/app/client/src/.plugins
 packages/**/locale/**
 storage
 ./lerna.json
+locales/**

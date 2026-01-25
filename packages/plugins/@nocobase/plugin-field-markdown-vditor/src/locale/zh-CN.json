@@ -30,6 +30,7 @@
   "Toolbar": "编辑器工具栏配置",
   "Undo": "撤销",
   "Upload": "上传图片或文件",
+  "Used to store files uploaded in the Markdown editor": "用于存储在Markdown编辑器中上传的文件",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "用于存储在Markdown编辑器中上传的文件 (默认: attachments)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "上传失败",

@@ -17,7 +17,7 @@
   "Forgot password": "Забыли пароль",
   "Go to login": "Перейти к входу",
   "Hours": "Часы",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "В режиме конфигурации весь столбец становится прозрачным. В неконфигурационном режиме столбец будет скрыт. Даже если столбец скрыт, заданные значения по умолчанию и другие настройки останутся в силе.",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "В режиме конфигурации весь столбец становится прозрачным. В неконфигурационном режиме весь столбец будет скрыт. Даже если столбец скрыт, настроенные значения по умолчанию и другие настройки останутся в силе.",
   "Minutes": "Минуты",
   "Missing X-Authenticator in request header": "Отсутствует X-Authenticator в заголовке запроса",
   "No authentication methods available.": "Методы аутентификации недоступны.",

@@ -7,20 +7,58 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import PluginACLClient from '@nocobase/plugin-acl/client';
+import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
-import { openaiProviderOptions } from './llm-providers/openai';
+import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
+import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
-import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { LLMInstruction } from './workflow/nodes/llm';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
+import { googleGenAIProviderOptions } from './llm-providers/google-genai';
+import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
+import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
+import { anthropicProviderOptions } from './llm-providers/anthropic';
+import {
+  AIEmployeeShortcutListModel,
+  AIEmployeeShortcutModel,
+  AIEmployeeButtonModel,
+} from './ai-employees/flow/models';
+import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
+import { FlowModelsContext } from './ai-employees/context/flow-models';
+import { formFillerTool } from './ai-employees/form-filler/tools';
+import './ai-employees/flow/events';
+import { aiEmployeesData } from './ai-employees/flow/context';
+import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { ollamaProviderOptions } from './llm-providers/ollama';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+import { DatasourceSettingPage } from './ai-employees/admin/datasource';
+import { DatasourceContext } from './ai-employees/context/datasource';
+const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
+const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
+const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
+const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
+const { AIResourceContextCollector } = lazy(
+  () => import('./ai-employees/1.x/selector/AIContextCollector'),
+  'AIResourceContextCollector',
+);
+import { CodeEditorContext } from './ai-employees/context/code-editor';
+import { setupAICoding } from './ai-employees/ai-coding/setup';
+import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
+import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
+import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
+import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
+import { suggestionsTool } from './ai-employees/suggestions/tools';
 
 export class PluginAIClient extends Plugin {
+  features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager();
 
   async afterAdd() {
@@ -31,10 +69,39 @@ export class PluginAIClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
+    this.app.use(AIEmployeesProvider);
+
+    this.app.addComponents({
+      AIResourceContextCollector,
+    });
+
+    this.flowEngine.registerModels({
+      AIEmployeeShortcutListModel,
+      AIEmployeeShortcutModel,
+      AIEmployeeButtonModel,
+    });
+
+    this.addPluginSettings();
+    this.setupAIFeatures();
+    this.setupWorkflow();
+
+    setupDataModeling(this);
+    setupAICoding();
+  }
+
+  addPluginSettings() {
     this.app.pluginSettingsManager.add('ai', {
-      icon: 'RobotOutlined',
-      title: tval('AI integration', { ns: namespace }),
+      icon: 'TeamOutlined',
+      title: tval('AI employees', { ns: namespace }),
       aclSnippet: 'pm.ai',
+      isPinned: true,
+      sort: 400,
+    });
+    this.app.pluginSettingsManager.add('ai.employees', {
+      icon: 'TeamOutlined',
+      title: tval('AI employees', { ns: namespace }),
+      aclSnippet: 'pm.ai.employees',
+      Component: Employees,
     });
     this.app.pluginSettingsManager.add('ai.llm-services', {
       icon: 'LinkOutlined',
@@ -42,20 +109,84 @@ export class PluginAIClient extends Plugin {
       aclSnippet: 'pm.ai.llm-services',
       Component: LLMServices,
     });
+    this.app.pluginSettingsManager.add('ai.datasource', {
+      sort: 99,
+      icon: 'CloudServerOutlined',
+      title: tval('Datasource', { ns: namespace }),
+      aclSnippet: 'pm.ai.datasource',
+      Component: DatasourceSettingPage,
+    });
+    this.app.pluginSettingsManager.add('ai.settings', {
+      sort: 100,
+      icon: 'SettingOutlined',
+      title: tval('Settings'),
+      aclSnippet: 'pm.ai.settings',
+      Component: AdminSettings,
+    });
 
-    this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
+    const aclPlugin = this.app.pm.get(PluginACLClient);
+    if (aclPlugin) {
+      aclPlugin.settingsUI.addPermissionsTab(PermissionsTab);
+    }
+  }
+
+  setupAIFeatures() {
+    this.app.flowEngine.context.defineProperty(...aiEmployeesData);
+
+    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
+    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
+    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
+    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
+    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,
     });
+    this.aiManager.chatSettings.set('structured-output', {
+      title: tval('Structured output'),
+      Component: StructuredOutputSettings,
+    });
 
+    this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
+    this.aiManager.registerWorkContext('datasource', DatasourceContext);
+    this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
+
+    // 使用可视化员工的工作上下文参数
+    this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
+
+    // 使用可视化员工的工具参数
+    this.aiManager.registerTool(...vizSwitchModesTool);
+    this.aiManager.registerTool(...vizRunQueryTool);
+
+    this.aiManager.registerTool(...defineCollectionsTool);
+    this.aiManager.registerTool(...formFillerTool);
+    this.aiManager.registerTool(...chartGeneratorTool);
+    this.aiManager.registerTool(...listCodeSnippetTool);
+    this.aiManager.registerTool(...getCodeSnippetTool);
+    this.aiManager.registerTool(...suggestionsTool);
+  }
+
+  setupWorkflow() {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClient;
+    workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
+    // workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 }
 
 export default PluginAIClient;
-export { Chat, ModelSelect };
-export type { LLMProviderOptions } from './manager/ai-manager';
+export { ModelSelect, Chat };
+export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
+export type { ToolCall } from './ai-employees/types';
+export * from './features';
+export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
+export { useAIEmployeesData } from './ai-employees/hooks/useAIEmployeesData';
+export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
+export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
+export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
+export { ProfileCard } from './ai-employees/ProfileCard';
+export { avatars } from './ai-employees/avatars';

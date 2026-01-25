@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ניהול שחרורים",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "סקירה כללית",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "משתנים ומפתחות",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "ניהול גיבויים",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ניהול העברות",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

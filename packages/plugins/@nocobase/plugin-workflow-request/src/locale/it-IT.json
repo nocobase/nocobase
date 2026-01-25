@@ -1,4 +1,5 @@
 {
+  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" only support \"application/json\", and no need to specify",
   "\"Content-Type\" will be ignored from headers.": "\"Content-Type\" sarà ignorato dall'intestazione",
   "Add key-value pairs": "Aggiungi coppie chiave-valore",
   "Add parameter": "Aggiungi parametro",
@@ -19,6 +20,8 @@
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "Invia una richiesta HTTP a un URL. Puoi usare le variabili nei nodi upstream come intestazioni, parametri e corpo della richiesta.",
   "Status code": "Codice stato",
   "Timeout": "Timeout",
+  "Timeout config": "Timeout config",
   "URL": "URL",
-  "Use variable": "Usa variabile"
+  "Use variable": "Usa variabile",
+  "ms": "ms"
 }

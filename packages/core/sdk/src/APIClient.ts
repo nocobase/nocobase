@@ -9,6 +9,8 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import qs from 'qs';
+import { Auth } from './Auth';
+import { BaseStorage, LocalStorage, MemoryStorage, SessionStorage } from './Storage';
 
 export interface ActionParams {
   filterByTk?: any;
@@ -28,293 +30,14 @@ export type IResource = {
   [key: string]: ResourceAction;
 };
 
-export class Auth {
-  protected api: APIClient;
-
-  get storagePrefix() {
-    return this.api.storagePrefix;
-  }
-
-  get KEYS() {
-    const defaults = {
-      locale: this.storagePrefix + 'LOCALE',
-      role: this.storagePrefix + 'ROLE',
-      token: this.storagePrefix + 'TOKEN',
-      authenticator: this.storagePrefix + 'AUTH',
-      theme: this.storagePrefix + 'THEME',
-    };
-
-    if (this.api['app']) {
-      const appName = this.api['app']?.getName?.();
-      if (appName) {
-        defaults['role'] = `${appName.toUpperCase()}_` + defaults['role'];
-        defaults['locale'] = `${appName.toUpperCase()}_` + defaults['locale'];
-      }
-    }
-
-    return defaults;
-  }
-
-  protected options = {
-    locale: null,
-    role: null,
-    authenticator: null,
-    token: null,
-  };
-
-  constructor(api: APIClient) {
-    this.api = api;
-    this.api.axios.interceptors.request.use(this.middleware.bind(this));
-  }
-
-  get locale() {
-    return this.getLocale();
-  }
-
-  set locale(value: string) {
-    this.setLocale(value);
-  }
-
-  get role() {
-    return this.getRole();
-  }
-
-  set role(value: string) {
-    this.setRole(value);
-  }
-
-  get token() {
-    return this.getToken();
-  }
-
-  set token(value: string) {
-    this.setToken(value);
-  }
-
-  get authenticator() {
-    return this.getAuthenticator();
-  }
-
-  set authenticator(value: string) {
-    this.setAuthenticator(value);
-  }
-
-  /**
-   * @internal
-   */
-  getOption(key: string) {
-    if (!this.KEYS[key]) {
-      return;
-    }
-    return this.api.storage.getItem(this.KEYS[key]);
-  }
-
-  /**
-   * @internal
-   */
-  setOption(key: string, value?: string) {
-    if (!this.KEYS[key]) {
-      return;
-    }
-    this.options[key] = value;
-    return this.api.storage.setItem(this.KEYS[key], value || '');
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#locale} instead
-   */
-  getLocale() {
-    return this.getOption('locale');
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#locale} instead
-   */
-  setLocale(locale: string) {
-    this.setOption('locale', locale);
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#role} instead
-   */
-  getRole() {
-    return this.getOption('role');
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#role} instead
-   */
-  setRole(role: string) {
-    this.setOption('role', role);
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#token} instead
-   */
-  getToken() {
-    return this.getOption('token');
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#token} instead
-   */
-  setToken(token: string) {
-    this.setOption('token', token);
-
-    if (this.api['app']) {
-      this.api['app'].eventBus.dispatchEvent(
-        new CustomEvent('auth:tokenChanged', { detail: { token, authenticator: this.authenticator } }),
-      );
-    }
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#authenticator} instead
-   */
-  getAuthenticator() {
-    return this.getOption('authenticator');
-  }
-
-  /**
-   * @internal
-   * use {@link Auth#authenticator} instead
-   */
-  setAuthenticator(authenticator: string) {
-    this.setOption('authenticator', authenticator);
-  }
-
-  middleware(config: AxiosRequestConfig) {
-    if (this.locale) {
-      config.headers['X-Locale'] = this.locale;
-    }
-    if (this.role) {
-      config.headers['X-Role'] = this.role;
-    }
-    if (this.authenticator && !config.headers['X-Authenticator']) {
-      config.headers['X-Authenticator'] = this.authenticator;
-    }
-    if (this.token) {
-      config.headers['Authorization'] = `Bearer ${this.token}`;
-    }
-    return config;
-  }
-
-  async signIn(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
-    const response = await this.api.request({
-      method: 'post',
-      url: 'auth:signIn',
-      data: values,
-      headers: {
-        'X-Authenticator': authenticator,
-      },
-    });
-    const data = response?.data?.data;
-    this.setAuthenticator(authenticator);
-    this.setToken(data?.token);
-    return response;
-  }
-
-  async signUp(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
-    return await this.api.request({
-      method: 'post',
-      url: 'auth:signUp',
-      data: values,
-      headers: {
-        'X-Authenticator': authenticator,
-      },
-    });
-  }
-
-  async signOut() {
-    const response = await this.api.request({
-      method: 'post',
-      url: 'auth:signOut',
-    });
-    this.setToken(null);
-    this.setRole(null);
-    this.setAuthenticator(null);
-    return response;
-  }
-
-  async lostPassword(values: any): Promise<AxiosResponse<any>> {
-    // 获取当前 URL 的查询参数
-    const searchParams = new URLSearchParams(window.location.search);
-
-    // 转换为对象
-    const paramsObject = Object.fromEntries(searchParams.entries());
-
-    const response = await this.api.request({
-      method: 'post',
-      url: 'auth:lostPassword',
-      data: {
-        ...values,
-        baseURL: window.location.href.split('/forgot-password')[0],
-      },
-      headers: {
-        'X-Authenticator': paramsObject.name,
-      },
-    });
-    return response;
-  }
-
-  async resetPassword(values: any): Promise<AxiosResponse<any>> {
-    const response = await this.api.request({
-      method: 'post',
-      url: 'auth:resetPassword',
-      data: values,
-    });
-    return response;
-  }
-
-  async checkResetToken(values: any): Promise<AxiosResponse<any>> {
-    const response = await this.api.request({
-      method: 'post',
-      url: 'auth:checkResetToken',
-      data: values,
-    });
-    return response;
-  }
-}
-
-export abstract class Storage {
-  abstract clear(): void;
-  abstract getItem(key: string): string | null;
-  abstract removeItem(key: string): void;
-  abstract setItem(key: string, value: string): void;
-}
-
-export class MemoryStorage extends Storage {
-  items = new Map();
-
-  clear() {
-    this.items.clear();
-  }
-
-  getItem(key: string) {
-    return this.items.get(key);
-  }
-
-  setItem(key: string, value: string) {
-    return this.items.set(key, value);
-  }
-
-  removeItem(key: string) {
-    return this.items.delete(key);
-  }
-}
-
 interface ExtendedOptions {
   authClass?: any;
   storageType?: 'localStorage' | 'sessionStorage' | 'memory';
   storageClass?: any;
   storagePrefix?: string;
+  appName?: string;
+  // 共享 token
+  shareToken?: boolean;
 }
 
 export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
@@ -323,8 +46,35 @@ export class APIClient {
   options?: APIClientOptions;
   axios: AxiosInstance;
   auth: Auth;
-  storage: Storage;
+  storage: BaseStorage;
   storagePrefix = 'NOCOBASE_';
+  baseStoragePrefix = 'NOCOBASE_';
+  shareToken = false;
+
+  toErrMessages(error) {
+    if (typeof document !== 'undefined' && typeof error?.response?.data === 'string') {
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = error?.response?.data;
+      let message = tempElement.textContent || tempElement.innerText;
+      if (message.includes('Error occurred while trying')) {
+        message = 'The application may be starting up. Please try again later.';
+        return [{ code: 'APP_WARNING', message }];
+      }
+      if (message.includes('502 Bad Gateway')) {
+        message = 'The application may be starting up. Please try again later.';
+        return [{ code: 'APP_WARNING', message }];
+      }
+      return [{ message }];
+    }
+    if (error?.response?.data?.error) {
+      return [error?.response?.data?.error];
+    }
+    return (
+      error?.response?.data?.errors ||
+      error?.response?.data?.messages ||
+      error?.response?.error || [{ message: error.message || 'Server error' }]
+    );
+  }
 
   getHeaders() {
     const headers = {};
@@ -348,8 +98,18 @@ export class APIClient {
     if (typeof options === 'function') {
       this.axios = options;
     } else {
-      const { authClass, storageType, storageClass, storagePrefix = 'NOCOBASE_', ...others } = options || {};
-      this.storagePrefix = storagePrefix;
+      const {
+        appName,
+        authClass,
+        storageType,
+        storageClass,
+        storagePrefix = 'NOCOBASE_',
+        shareToken = false,
+        ...others
+      } = options || {};
+      this.shareToken = shareToken;
+      this.baseStoragePrefix = storagePrefix;
+      this.storagePrefix = appName ? `${storagePrefix}${appName.toUpperCase()}_` : storagePrefix;
       this.axios = axios.create(others);
       this.initStorage(storageClass, storageType);
       if (authClass) {
@@ -365,20 +125,22 @@ export class APIClient {
     this.interceptors();
   }
 
-  private initStorage(storage?: any, storageType = 'localStorage') {
+  createStorage(storageType: 'localStorage' | 'sessionStorage' | 'memory') {
+    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
+      return new LocalStorage(this.storagePrefix, this.baseStoragePrefix, this.shareToken);
+    }
+    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
+      return new SessionStorage(this.storagePrefix, this.baseStoragePrefix, this.shareToken);
+    }
+    return new MemoryStorage();
+  }
+
+  private initStorage(storage?: any, storageType: 'localStorage' | 'sessionStorage' | 'memory' = 'localStorage') {
     if (storage) {
       this.storage = new storage(this);
       return;
     }
-    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
-      this.storage = localStorage;
-      return;
-    }
-    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
-      this.storage = sessionStorage;
-      return;
-    }
-    this.storage = new MemoryStorage();
+    this.storage = this.createStorage(storageType);
   }
 
   interceptors() {

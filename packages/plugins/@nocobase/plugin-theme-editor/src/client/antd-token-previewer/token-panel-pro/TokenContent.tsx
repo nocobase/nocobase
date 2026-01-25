@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CaretRightOutlined, ExpandOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, EditOutlined, ExpandOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import type { ThemeConfig } from '@nocobase/client';
 import { StablePopover } from '@nocobase/client';
-import { Button, Checkbox, Collapse, ConfigProvider, InputNumber, Switch, Tooltip, Typography } from 'antd';
+import { Button, Checkbox, Collapse, ConfigProvider, InputNumber, Switch, Tooltip, Typography, Input } from 'antd';
 import seed from 'antd/es/theme/themes/seed';
 import classNames from 'classnames';
 import type { FC } from 'react';
@@ -348,6 +348,14 @@ const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled, alph
       {tokenName === 'wireframe' && <Switch checked={tokenValue} onChange={handleChange} />}
       {['siderWidth'].includes(tokenName) && (
         <InputNumber defaultValue={200} value={tokenValue} onChange={handleChange} />
+      )}
+      {['globalStyle'].includes(tokenName) && (
+        <Input.TextArea
+          value={tokenValue}
+          onChange={(e) => {
+            handleChange(e.target.value);
+          }}
+        />
       )}
     </div>
   );

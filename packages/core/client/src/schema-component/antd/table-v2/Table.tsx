@@ -1189,7 +1189,7 @@ export const Table: any = withDynamicSchemaProps(
       const scroll = useMemo(() => {
         return {
           x: 'max-content',
-          y: tableHeight,
+          y: dataSource?.length === 0 ? undefined : tableHeight, // 当数据为空且设置了 y 轴高度时，表格头会缩到一起。为了解决这个问题，在数据为空时，y 轴高度需要设置为 undefined
         };
       }, [tableHeight, dataSource]);
 

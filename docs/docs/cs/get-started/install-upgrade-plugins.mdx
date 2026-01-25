@@ -1,0 +1,111 @@
+:::tip
+Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::
+
+
+# Instalace a aktualizace pluginů
+
+## Vestavěné pluginy
+
+Vestavěné pluginy NocoBase se automaticky aktualizují s verzí jádra a nevyžadují žádnou ruční akci.
+
+## Komerční pluginy
+
+Přihlaste se prosím do NocoBase Service a nahlédněte do dokumentace, abyste se dozvěděli, jak instalovat a aktualizovat komerční pluginy.
+
+## Pluginy třetích stran
+
+### Online instalace pluginů
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Upozornění
+
+NocoBase sice podporuje online instalaci pluginů přes uživatelské rozhraní, ale aktuální zkušenost není ideální. Důvody zahrnují:
+
+- Kvůli omezením mechanismu běhu procesů Node.js je po instalaci nebo aktualizaci pluginů nutné proces zastavit a poté spustit příkaz `upgrade`, aby se změny projevily;
+- Ve scénářích s více aplikacemi je online instalace obtížná, protože nedokáže současně řešit synchronizaci pluginů napříč několika podaplikacemi;
+- Hromadné aktualizace pluginů nejsou podporovány;
+- Online instalace nebo aktualizace pluginů může snadno vést k abnormálnímu ukončení procesů aplikace.
+
+Proto se doporučuje používat k instalaci a aktualizaci pluginů metody příkazového řádku nebo ručního nahrávání. Doporučujeme to integrovat s CI/CD pracovními postupy, využívat metody příkazového řádku pro stahování, rozbalování a aktualizaci pluginů, čímž zajistíte konzistenci a spolehlivost každého nasazení aktualizace.
+
+:::
+
+### Instalace pluginů pomocí příkazového řádku
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Pokud je plugin již nainstalován a potřebuje aktualizovat, spusťte následující příkaz:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Ruční nahrání a rozbalení
+
+Nejprve si stáhněte balíček pluginu do svého lokálního počítače, poté jej ručně nahrajte a rozbalte do adresáře `./storage/plugins`. Pokud je plugin již povolen, spusťte po nahrání a rozbalení následující příkaz k dokončení aktualizace pluginu.
+
+> ⚠️ **Upozornění**: Abyste předešli problémům s mezipamětí, ujistěte se, že aplikace NocoBase je před spuštěním zastavena.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Správný způsob rozbalení pluginu
+
+Následující příklad ukazuje, jak správně rozbalit balíček pluginu do určeného adresáře:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Tento příkaz rozbalí plugin do určeného adresáře a nevytvoří zbytečnou úroveň adresáře `package`.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Příklad správné adresářové struktury
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

@@ -1,0 +1,211 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
+```yaml
+pkg: '@nocobase/plugin-backups'
+---
+
+# Gestione dei Backup
+
+## Introduzione
+
+Il plugin di gestione dei backup di NocoBase offre funzionalità per il backup completo del database NocoBase e dei file caricati dagli utenti, inclusi la pianificazione, il download, l'eliminazione e il ripristino dei backup.
+
+:::warning
+Il plugin Gestione dei Backup è incluso nelle edizioni Professional ed Enterprise. Per gli utenti delle edizioni Community e Standard, è possibile eseguire il backup diretto del database; per maggiori dettagli, consulti: [`Come eseguire il backup e il ripristino di NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Installare il Client del Database
+
+Il Gestore dei Backup dipende dal client del database corrispondente. Prima dell'uso, La preghiamo di visitare il sito ufficiale per scaricare il client che corrisponde alla versione del database che sta utilizzando:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Per le versioni Docker, può scrivere direttamente uno script nella directory `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Il contenuto di `install-database-client.sh` è il seguente:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Quindi riavvii il container dell'app
+
+```bash
+docker compose restart app
+# Visualizzi i log
+docker compose logs app
+```
+
+Verifichi il numero di versione del client del database, che deve corrispondere al numero di versione del server del database.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Istruzioni per l'Uso
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Creare un Nuovo Backup
+
+Clicchi sul pulsante "Nuovo backup" per creare un nuovo backup basato sulla configurazione di backup e visualizzare lo stato del backup nell'elenco dei backup.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Ripristinare un Backup
+
+Supporta il ripristino dei backup dall'elenco dei backup o il caricamento di file di backup locali per il ripristino.
+Le operazioni di ripristino non sono consentite nei seguenti scenari:
+
+- Quando la versione attuale di NocoBase è inferiore alla versione di NocoBase presente nel file di backup.
+- Quando il database NocoBase attuale non è coerente con le seguenti configurazioni presenti nel file di backup:
+  - dialect (tipo di database)
+  - underscored (configurazione dei campi)
+  - table prefix (prefisso della tabella)
+  - schema (struttura della tabella)
+- Quando la `modalità tollerante` non è abilitata e la versione del database al momento della creazione del backup è superiore alla versione del database dell'applicazione attuale.
+
+> **Il ripristino è un'operazione completa sul database. Si raccomanda di eseguire un backup del database attuale prima di procedere con il ripristino.**
+
+#### Ripristinare dall'elenco dei backup
+
+Clicchi sul pulsante `Ripristina` dell'elemento di backup nell'elenco, inserisca la password di crittografia del file di backup nella finestra a comparsa e clicchi su "Conferma" per ripristinare il backup.
+
+> Per i backup non crittografati non è necessario inserire alcuna password.
+
+> Se ha bisogno di ripristinare il file di backup su una versione inferiore del database, deve abilitare la modalità tollerante.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Ripristinare da un file di backup locale
+
+Clicchi sul pulsante `Ripristina da backup locale`, selezioni il file di backup locale nella finestra a comparsa, inserisca la password di crittografia del file di backup e clicchi su "Conferma" per ripristinare il backup.
+
+> Per i backup non crittografati non è necessario inserire alcuna password.
+
+> Se ha bisogno di ripristinare il file di backup su una versione inferiore del database, deve abilitare la modalità tollerante.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Scaricare il File di Backup
+
+Clicchi sul pulsante `Scarica` dell'elemento di backup nell'elenco per scaricare il file di backup.
+
+#### Eliminare un Backup
+
+Clicchi sul pulsante `Elimina` dell'elemento di backup nell'elenco per eliminare il file di backup.
+
+## Impostazioni di Backup
+
+Passi alla scheda `Impostazioni`, modifichi le impostazioni di backup e clicchi su `Salva` per applicare le modifiche.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Descrizione delle Impostazioni di Backup
+
+- `Backup automatico`: Dopo aver abilitato `Esegui backup automatico secondo la pianificazione Cron`, può impostare backup automatici a orari specifici.
+- `Numero massimo di backup`: Imposti il numero massimo di file di backup salvati localmente. Una volta superato questo numero, i file di backup locali più vecchi verranno automaticamente eliminati.
+- `Sincronizza backup su cloud storage`: Imposti il servizio di cloud storage dove i file di backup vengono caricati automaticamente dopo un backup riuscito.
+- `Backup dei file di archiviazione locale`: Indica se includere nel backup i file caricati dagli utenti nell'archiviazione locale del server (storage/uploads).
+- `Password di ripristino`: Se è stata impostata una password di ripristino, questa dovrà essere inserita al momento del ripristino del backup.
+
+> **La preghiamo di conservare la password di ripristino in modo sicuro. Dimenticare la password renderà impossibile il ripristino del file di backup.**

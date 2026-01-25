@@ -7,12 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Cache } from '@nocobase/cache';
 import { uid } from '@nocobase/utils';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
+
+class PackageUrls {
+  static items = {};
+  static async get(packageName: string) {
+    if (!this.items[packageName]) {
+      this.items[packageName] = await this.fetch(packageName);
+    }
+    return this.items[packageName];
+  }
+  static async fetch(packageName: string) {
+    const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
+    const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
+    const r = await fse.exists(pkgPath);
+    if (r) {
+      let t = '';
+      const dist = path.resolve(pkgPath, PLUGIN_CLIENT_ENTRY_FILE);
+      const distExists = await fse.exists(dist);
+      if (distExists) {
+        const fsState = await fse.stat(distExists ? dist : pkgPath);
+        t = `?t=${fsState.mtime.getTime()}`;
+      }
+      const cdnBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+      const url = `${cdnBaseUrl}${'/static/plugins/'}${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
+      return url;
+    }
+  }
+}
 
 export default {
   name: 'pm',
@@ -130,36 +158,29 @@ export default {
       await next();
     },
     async listEnabled(ctx, next) {
-      const pm = ctx.db.getRepository('applicationPlugins');
-      const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
-      const items = await pm.find({
-        filter: {
-          enabled: true,
-        },
-      });
-      const arr = [];
-      for (const item of items) {
-        const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, item.packageName);
-        const r = await fse.exists(pkgPath);
-        if (r) {
-          let t = '';
-          const dist = path.resolve(pkgPath, PLUGIN_CLIENT_ENTRY_FILE);
-          const distExists = await fse.exists(dist);
-          if (distExists) {
-            const fsState = await fse.stat(distExists ? dist : pkgPath);
-            t = `?t=${fsState.mtime.getTime()}`;
-          }
-          const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${item.packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
+      const toArr = async () => {
+        const pm = ctx.db.getRepository('applicationPlugins');
+        const items = await pm.find({
+          filter: {
+            enabled: true,
+          },
+        });
+        const arr = [];
+        for (const item of items) {
+          const url = await PackageUrls.get(item.packageName);
           const { name, packageName, options } = item.toJSON();
-          arr.push({
-            name,
-            packageName,
-            options,
-            url,
-          });
+          if (url) {
+            arr.push({
+              name,
+              packageName,
+              options,
+              url,
+            });
+          }
         }
-      }
-      ctx.body = arr;
+        return arr;
+      };
+      ctx.body = await toArr();
       await next();
     },
     async get(ctx, next) {

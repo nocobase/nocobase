@@ -1,8 +1,8 @@
 {
-  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "Одно число будет рассматриваться как счетчик цикла, одна строка будет рассматриваться как массив символов, а другие не-массивы будут преобразованы в массивы. Узел цикла завершается, когда достигнут счетчик цикла или когда завершен перебор массива. Вы также можете добавить узлы условий в цикл для его завершения.",
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "Одиночное число будет рассматриваться как количество итераций, одиночная строка — как массив символов, а другие не массивные значения будут преобразованы в массивы. Узел цикла завершается при достижении количества итераций или завершении обхода массива. Вы также можете добавить условные узлы для завершения цикла.",
   "After each ends": "После завершения каждой итерации",
   "Before each starts": "Перед началом каждой итерации",
-  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "Используя узел цикла, вы можете выполнять одну и ту же операцию с несколькими наборами данных. Источником этих наборов могут быть либо несколько записей из узла запроса, либо несколько связанных записей одной записи. Узел цикла также может использоваться для итерации определенное количество раз или для перебора каждого символа в строке. Однако чрезмерное использование циклов может вызвать проблемы с производительностью, поэтому используйте с осторожностью.",
+  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "Используя узел цикла, вы можете выполнять одну и ту же операцию над несколькими наборами данных. Источником этих наборов могут быть либо несколько записей из узла запроса, либо несколько связанных записей одной записи. Узел цикла также можно использовать для повторения определенного количества раз или для обхода каждого символа в строке. Однако чрезмерное использование циклов может вызвать проблемы с производительностью, поэтому используйте с осторожностью.",
   "Condition": "Условие",
   "Continue loop on next item": "Продолжить цикл со следующим элементом",
   "Continue on next item": "Продолжить со следующим элементом",
@@ -12,10 +12,12 @@
   "Exit workflow": "Выйти из рабочего процесса",
   "Loop": "Цикл",
   "Loop condition on each item": "Условие цикла для каждого элемента",
+  "Loop index": "Индекс цикла",
   "Loop index (starts from 0)": "Индекс цикла (начинается с 0)",
   "Loop length": "Длина цикла",
   "Loop sequence (starts from 1)": "Последовательность цикла (начинается с 1)",
   "Loop target": "Цель цикла",
+  "Scope variables": "Переменные области видимости",
   "When condition is not met on item": "Когда условие не выполняется для элемента",
   "When node inside loop failed": "Когда узел внутри цикла завершился ошибкой",
   "When to check": "Когда проверять"

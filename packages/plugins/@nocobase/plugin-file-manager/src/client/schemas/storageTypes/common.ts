@@ -86,4 +86,24 @@ export default {
     ],
     default: 'appendRandomID',
   },
+  settings: {
+    type: 'object',
+    title: `{{t("Advanced Settings", { ns: "${NAMESPACE}" })}}`,
+    'x-component': 'fieldset',
+    properties: {
+      requestOptions: {
+        type: 'object',
+        title: `{{t("Request options", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input.JSON',
+        'x-component-props': {
+          autoSize: {
+            minRows: 5,
+            // maxRows: 20,
+          },
+        },
+      },
+    },
+  },
 };

@@ -1,22 +1,25 @@
 {
   "name": "@nocobase/plugin-block-template",
-  "displayName": "Block: template",
+  "displayName": "Block: template (deprecated)",
   "displayName.ru-RU": "Блок: шаблон",
-  "displayName.zh-CN": "区块：模板",
+  "displayName.zh-CN": "区块：模板（已废弃）",
   "description": "Create and manage block templates for reuse on pages.",
   "description.ru-RU": "Создавайте и управляйте шаблонами блоков для повторного использования на страницах.",
   "description.zh-CN": "创建和管理区块模板，用于在页面中重复使用。",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-template",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-template",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-template",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-ui-schema-storage": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-ui-schema-storage": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "nocobase": {
+    "deprecated": true
   },
   "keywords": [
     "Block",

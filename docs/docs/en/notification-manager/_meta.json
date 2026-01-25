@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Notification channel",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "In-app message",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email",
+        "link": "/notification-manager/notification-email"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Development",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Extend channel type",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

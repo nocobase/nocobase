@@ -39,6 +39,8 @@
   "See more": "See more",
   "Size": "Size",
   "Storage": "Storage",
+  "Storage base URL": "Storage base URL",
+  "Storage display name": "Storage display name",
   "Storage name": "Storage name",
   "Storage type": "Storage type",
   "Storage type {{type}} is not registered, please check if related plugin is enabled.": "Storage type {{type}} is not registered, please check if related plugin is enabled.",

@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "系统管理",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "插件管理",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "系统设置",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "自定义品牌",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "主题编辑器",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "语言设置",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "本地化管理",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

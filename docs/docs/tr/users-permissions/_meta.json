@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Kullanıcı",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Roller ve İzinler",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Rol Yapılandırması",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "İzin Yapılandırması",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI'da Uygula",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Rol Birleşimi",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Geliştirici Kılavuzu",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "İzin Yapılandırma Çubuğunu Genişlet",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Departman",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Departman Yönetimi",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Departman Rol Yönetimi",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Kullanıcı Veri Senkronizasyonu",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Senkronizasyon Yönetimi",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Veri Kaynakları",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Geliştirici Kılavuzu",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Senkronizasyon Veri Kaynağını Genişlet",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Senkronizasyon Hedef Kaynağını Genişlet",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

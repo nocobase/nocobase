@@ -1,0 +1,351 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { EyeOutlined } from '@ant-design/icons';
+import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype, css } from '@nocobase/client';
+import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
+import { useTranslation } from 'react-i18next';
+import {
+  DownloadOutlined,
+  LeftOutlined,
+  RightOutlined,
+  RotateLeftOutlined,
+  RotateRightOutlined,
+  SwapOutlined,
+  UndoOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from '@ant-design/icons';
+import { Image, Space, Tooltip, Alert } from 'antd';
+import { castArray } from 'lodash';
+import React from 'react';
+type FileType = 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'word' | 'ppt' | 'file' | 'unknown';
+
+function getFileType(file: any): FileType {
+  let mimetype = '';
+  let ext = '';
+
+  const extractExtFromUrl = (url: string) => {
+    const clean = url.split('?')[0].split('#')[0];
+    const i = clean.lastIndexOf('.');
+    return i !== -1 ? clean.slice(i).toLowerCase() : '';
+  };
+
+  if (typeof file === 'string') {
+    ext = extractExtFromUrl(file);
+  } else if (file && typeof file === 'object') {
+    mimetype = file.mimetype || '';
+    ext = (file.extname || '').toLowerCase();
+    if (!ext && file.url) {
+      ext = extractExtFromUrl(file.url);
+    }
+  }
+
+  // 1️⃣ MIME 优先
+  if (mimetype) {
+    if (mimetype.startsWith('image/')) return 'image';
+    if (mimetype.startsWith('video/')) return 'video';
+    if (mimetype.startsWith('audio/')) return 'audio';
+    if (mimetype === 'application/pdf') return 'pdf';
+    if (mimetype.includes('spreadsheet')) return 'excel';
+    if (mimetype.includes('word')) return 'word';
+    if (mimetype.includes('presentation')) return 'ppt';
+  }
+
+  // 2️⃣ 扩展名兜底
+  if (['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'].includes(ext)) return 'image';
+  if (['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'].includes(ext)) return 'video';
+  if (['.mp3', '.wav', '.aac', '.ogg'].includes(ext)) return 'audio';
+  if (['.pdf'].includes(ext)) return 'pdf';
+  if (['.xls', '.xlsx', '.csv'].includes(ext)) return 'excel';
+  if (['.doc', '.docx'].includes(ext)) return 'word';
+  if (['.ppt', '.pptx'].includes(ext)) return 'ppt';
+
+  // 3️⃣ 有文件但识别不了
+  if (ext) return 'file';
+
+  return 'unknown';
+}
+
+const FilePreview = ({ file, size, showFileName }: { file: any; size: number; showFileName: boolean }) => {
+  const src = typeof file === 'string' ? file : file?.preview || file?.url;
+  if (!src) {
+    return;
+  }
+  const fileName =
+    typeof file === 'string' ? src.split('/').pop() : file?.name || file?.filename || file?.url?.split('/').pop();
+  const ext = src.split('.').pop()?.toLowerCase() || '';
+  const fallbackMap: Record<string, string> = {
+    pdf: '/file-placeholder/pdf-200-200.png',
+    mp4: '/file-placeholder/video-200-200.png',
+    mov: '/file-placeholder/video-200-200.png',
+    doc: '/file-placeholder/docx-200-200.png',
+    docx: '/file-placeholder/docx-200-200.png',
+    word: '/file-placeholder/docx-200-200.png',
+    xls: '/file-placeholder/xlsx-200-200.png',
+    xlsx: '/file-placeholder/xlsx-200-200.png',
+    excel: '/file-placeholder/xlsx-200-200.png',
+    ppt: '/file-placeholder/ppt-200-200.png',
+    pptx: '/file-placeholder/ppt-200-200.png',
+    jpg: '/file-placeholder/image-200-200.png',
+    jpeg: '/file-placeholder/image-200-200.png',
+    png: '/file-placeholder/image-200-200.png',
+    gif: '/file-placeholder/image-200-200.png',
+    default: '/file-placeholder/unknown-200-200.png',
+  };
+
+  const type = getFileType(file);
+  const fallback = fallbackMap[type] || fallbackMap.default;
+  const imageNode = (
+    <div
+      className={css`
+        .ant-image-img {
+          border: 1px solid #d9d9d9;
+          padding: 2px;
+        }
+      `}
+    >
+      <Image
+        src={src}
+        fallback={fallback}
+        width={size}
+        height={size}
+        preview={{ mask: <EyeOutlined /> }}
+        style={{
+          borderRadius: 4,
+          objectFit: 'cover',
+          boxShadow: '0 0 0 2px #fff',
+        }}
+      />
+    </div>
+  );
+  return (
+    <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
+      {imageNode}
+      {showFileName && (
+        <Tooltip title={fileName}>
+          <div
+            style={{
+              fontSize: 12,
+              marginTop: 4,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {fileName}
+          </div>
+        </Tooltip>
+      )}
+    </div>
+  );
+};
+
+const Preview = (props) => {
+  const { value = [], size = 28, showFileName } = props;
+  const [current, setCurrent] = React.useState(0);
+  const { t } = useTranslation();
+  const onDownload = (props) => {
+    const url = value[current].url || value[current];
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
+    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
+    const filename = `${Date.now()}_${value[current]?.filename}${suffix}`;
+    // eslint-disable-next-line promise/catch-or-return
+    fetch(url)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(blobUrl);
+        link.remove();
+      });
+  };
+  return (
+    <Image.PreviewGroup
+      preview={{
+        toolbarRender: (
+          _,
+          {
+            transform: { scale },
+            actions: { onActive, onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
+          },
+        ) => (
+          <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
+            <LeftOutlined disabled={current === 0} onClick={() => onActive?.(-1)} />
+            <RightOutlined disabled={current === value.length - 1} onClick={() => onActive?.(1)} />
+            <DownloadOutlined onClick={onDownload} />
+            <SwapOutlined rotate={90} onClick={onFlipY} />
+            <SwapOutlined onClick={onFlipX} />
+            <RotateLeftOutlined onClick={onRotateLeft} />
+            <RotateRightOutlined onClick={onRotateRight} />
+            <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
+            <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
+            <UndoOutlined onClick={onReset} />
+          </Space>
+        ),
+        onChange: (index) => {
+          setCurrent(index);
+        },
+        imageRender: (originalNode, info) => {
+          setCurrent(info.current);
+          const file: any = info.image;
+          // 根据文件类型决定如何渲染预览
+          if (matchMimetype(file, 'application/pdf')) {
+            // PDF 文件的预览
+            return <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />;
+          } else if (matchMimetype(file, 'audio/*')) {
+            // 音频文件的预览
+            return (
+              <audio controls>
+                <source src={file.url || file.preview} type={file.type} />
+                {t('Your browser does not support the audio tag.')}
+              </audio>
+            );
+          } else if (matchMimetype(file, 'video/*')) {
+            // 视频文件的预览
+            return (
+              <video controls width="100%">
+                <source src={file.url || file.preview} type={file.type} />
+                {t('Your browser does not support the video tag.')}
+              </video>
+            );
+          } else if (matchMimetype(file, 'text/plain')) {
+            // 文本文件的预览
+            return <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />;
+          } else if (matchMimetype(file, 'image/*')) {
+            // 图片文件的预览
+            return originalNode;
+          } else {
+            return (
+              <Alert
+                type="warning"
+                description={
+                  <span>
+                    {t('File type is not supported for previewing,')}
+                    <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                      {t('download it to preview')}
+                    </a>
+                  </span>
+                }
+                showIcon
+              />
+            );
+          }
+        },
+      }}
+    >
+      <Space size={5} wrap={true}>
+        {Array.isArray(value) &&
+          value.map((file, index) => <FilePreview file={file} size={size} key={index} showFileName={showFileName} />)}
+      </Space>
+    </Image.PreviewGroup>
+  );
+};
+export class DisplayPreviewFieldModel extends FieldModel {
+  disableTitleField = true;
+  render(): any {
+    const { value, titleField, template, target } = this.props;
+    if (titleField && template !== 'file' && target !== 'attachments') {
+      return castArray(value).flatMap((v, idx) => {
+        const result = v?.[titleField];
+        const content = result ? (
+          <Preview key={idx} {...this.props} value={castArray(result).filter(Boolean)} />
+        ) : (
+          <span key={idx}>N/A</span>
+        );
+
+        return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
+      });
+    } else {
+      return <Preview {...this.props} value={castArray(value).filter(Boolean)} />;
+    }
+  }
+}
+
+DisplayPreviewFieldModel.registerFlow({
+  key: 'previewReadPrettySetting',
+  sort: 500,
+  title: tExpr('Preview Settings'),
+  steps: {
+    size: {
+      title: tExpr('Size'),
+      uiMode: (ctx) => {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          key: 'size',
+          props: {
+            options: [
+              {
+                value: 300,
+                label: t('Large'),
+              },
+              {
+                value: 100,
+                label: t('Middle'),
+              },
+              {
+                value: 28,
+                label: t('Small'),
+              },
+            ],
+          },
+        };
+      },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
+      },
+      defaultParams: (ctx) => {
+        return {
+          size: ctx.model.parent instanceof DetailsItemModel ? 100 : 28,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('size', params.size);
+      },
+    },
+    showFileName: {
+      title: tExpr('Show file name'),
+      uiMode: { type: 'switch', key: 'showFileName' },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
+      },
+      defaultParams: {
+        showFileName: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('showFileName', params.showFileName);
+      },
+    },
+  },
+});
+
+DisplayPreviewFieldModel.define({
+  label: tExpr('Preview'),
+});
+
+DisplayItemModel.bindModelToInterface(
+  'DisplayPreviewFieldModel',
+  ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
+  {
+    isDefault: true,
+    when: (ctx, field) => {
+      if (field.targetCollection) {
+        return field.targetCollection.template === 'file';
+      }
+      return true;
+    },
+  },
+);

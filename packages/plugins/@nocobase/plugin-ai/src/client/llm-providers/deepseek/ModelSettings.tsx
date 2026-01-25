@@ -14,7 +14,6 @@ import { namespace, useT } from '../../locale';
 import { Collapse } from 'antd';
 import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 import { ModelSelect } from '../components/ModelSelect';
-import { Chat } from '../components/Chat';
 
 const Options: React.FC = () => {
   const t = useT();
@@ -144,7 +143,7 @@ const Options: React.FC = () => {
 export const ModelSettingsForm: React.FC = () => {
   return (
     <SchemaComponent
-      components={{ Options, WorkflowVariableRawTextArea, ModelSelect, Chat }}
+      components={{ Options, WorkflowVariableRawTextArea, ModelSelect }}
       schema={{
         type: 'void',
         properties: {
@@ -158,10 +157,6 @@ export const ModelSettingsForm: React.FC = () => {
           options: {
             type: 'void',
             'x-component': 'Options',
-          },
-          chat: {
-            type: 'void',
-            'x-component': 'Chat',
           },
         },
       }}

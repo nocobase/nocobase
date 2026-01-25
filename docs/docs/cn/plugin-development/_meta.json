@@ -1,0 +1,211 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速入门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "插件开发概述",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "编写第一个插件",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "项目目录结构",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "服务端开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin 插件",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections 数据表",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database 数据库操作",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager 数据源管理",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager 资源管理",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL 权限控制",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware 中间件",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cache 缓存",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event 事件",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context 请求上下文",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration 升级脚本",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger 日志",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Telemetry 遥测",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n 国际化",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command 命令行",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager 定时任务管理",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test 测试",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "客户端开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin 插件",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context 上下文",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router 路由",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL 权限控制",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager 数据源管理",
+        "link": "/plugin-development/client/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Resource 资源",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "Request 请求",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "Styles & Themes 样式与主题",
+        "link": "/plugin-development/client/styles-themes"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger 日志",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n 国际化",
+        "link": "/plugin-development/client/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test 测试",
+        "link": "/plugin-development/client/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "其他",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "插件升级指南",
+        "link": "/plugin-development/plugin-upgrade-guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "语言列表",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "依赖管理",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "构建",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "1.9.39",
+  "version": "2.0.0-beta.14",
   "license": "AGPL-3.0",
   "displayName": "Collection field: Sort",
   "displayName.ru-RU": "Поле коллекции: Сортировка",
@@ -10,12 +10,12 @@
   "description.zh-CN": "用于对数据表的数据进行排序。",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/lock-manager": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/lock-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
     "lodash": "4.17.21",
     "sequelize": "^6.26.0"
   },

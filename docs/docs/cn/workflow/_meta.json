@@ -1,0 +1,297 @@
+[
+  {
+    "type": "section-header",
+    "label": "工作流"
+  },
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/workflow/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "快速开始",
+    "link": "/workflow/getting-started"
+  },
+  {
+    "type": "custom-link",
+    "label": "触发器",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/workflow/triggers/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "数据表事件",
+        "link": "/workflow/triggers/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "定时任务",
+        "link": "/workflow/triggers/schedule"
+      },
+      {
+        "type": "custom-link",
+        "label": "操作前事件",
+        "link": "/workflow/triggers/pre-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "操作后事件",
+        "link": "/workflow/triggers/post-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "自定义操作事件",
+        "link": "/workflow/triggers/custom-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "审批",
+        "link": "/workflow/triggers/approval"
+      },
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/workflow/triggers/webhook"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "节点",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/workflow/nodes/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "人工智能",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "大语言模型",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "流程控制",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "条件",
+            "link": "/workflow/nodes/condition"
+          },
+          {
+            "type": "custom-link",
+            "label": "多条件分支",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
+            "label": "循环",
+            "link": "/workflow/nodes/loop"
+          },
+          {
+            "type": "custom-link",
+            "label": "变量",
+            "link": "/workflow/nodes/variable"
+          },
+          {
+            "type": "custom-link",
+            "label": "并行分支",
+            "link": "/workflow/nodes/parallel"
+          },
+          {
+            "type": "custom-link",
+            "label": "调用工作流",
+            "link": "/workflow/nodes/subflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "流程输出",
+            "link": "/workflow/nodes/output"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON 变量映射",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
+            "label": "延时",
+            "link": "/workflow/nodes/delay"
+          },
+          {
+            "type": "custom-link",
+            "label": "结束",
+            "link": "/workflow/nodes/end"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "计算",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "计算",
+            "link": "/workflow/nodes/calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "日期计算",
+            "link": "/workflow/nodes/date-calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON 计算",
+            "link": "/workflow/nodes/json-query"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "数据操作",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "新增数据",
+            "link": "/workflow/nodes/create"
+          },
+          {
+            "type": "custom-link",
+            "label": "更新数据",
+            "link": "/workflow/nodes/update"
+          },
+          {
+            "type": "custom-link",
+            "label": "查询数据",
+            "link": "/workflow/nodes/query"
+          },
+          {
+            "type": "custom-link",
+            "label": "删除数据",
+            "link": "/workflow/nodes/destroy"
+          },
+          {
+            "type": "custom-link",
+            "label": "SQL 操作",
+            "link": "/workflow/nodes/sql"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "人工处理",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "人工处理",
+            "link": "/workflow/nodes/manual"
+          },
+          {
+            "type": "custom-link",
+            "label": "审批",
+            "link": "/workflow/nodes/approval"
+          },
+          {
+            "type": "custom-link",
+            "label": "抄送",
+            "link": "/workflow/nodes/cc"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP 请求",
+            "link": "/workflow/nodes/request"
+          },
+          {
+            "type": "custom-link",
+            "label": "JavaScript 脚本",
+            "link": "/workflow/nodes/javascript"
+          },
+          {
+            "type": "custom-link",
+            "label": "通知",
+            "link": "/notification-manager/#工作流通知节点"
+          },
+          {
+            "type": "custom-link",
+            "label": "邮件发送",
+            "link": "/workflow/nodes/mailer"
+          },
+          {
+            "type": "custom-link",
+            "label": "响应",
+            "link": "/workflow/nodes/response"
+          },
+          {
+            "type": "custom-link",
+            "label": "响应消息",
+            "link": "/workflow/nodes/response-message"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "变量",
+    "link": "/workflow/advanced/variables"
+  },
+  {
+    "type": "custom-link",
+    "label": "执行记录",
+    "link": "/workflow/advanced/execution"
+  },
+  {
+    "type": "custom-link",
+    "label": "版本管理",
+    "link": "/workflow/advanced/revision"
+  },
+  {
+    "type": "custom-link",
+    "label": "高级选项",
+    "link": "/workflow/advanced/options"
+  },
+  {
+    "type": "custom-link",
+    "label": "扩展开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/workflow/development/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展触发器类型",
+        "link": "/workflow/development/trigger"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展节点类型",
+        "link": "/workflow/development/node"
+      },
+      {
+        "type": "custom-link",
+        "label": "API 参考",
+        "link": "/workflow/development/api"
+      }
+    ]
+  }
+]

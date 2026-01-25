@@ -17,6 +17,7 @@
   "Illegal percentage format": "Formato percentuale illegale",
   "Import": "Importa",
   "Import Data": "Importa dati",
+  "Import action settings": "Import action settings",
   "Import completed": "Importazione completata: {{success}} record importati con successo, {{updated}} record aggiornati, {{skipped}} record saltati, totale {{total}} record",
   "Import explain": "Guida importazione",
   "Import warnings": "Puoi importare fino a {{limit}} righe di dati alla volta, qualsiasi eccedenza verrà ignorata.",

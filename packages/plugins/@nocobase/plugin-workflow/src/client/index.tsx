@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
+import { Plugin, useCompile, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import MobileManager from '@nocobase/plugin-mobile/client';
 
@@ -22,9 +23,11 @@ import { lang, NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
+import MultiConditionsInstruction from './nodes/multi-conditions';
 import CreateInstruction from './nodes/create';
 import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
+import OutputInstruction from './nodes/output';
 import QueryInstruction from './nodes/query';
 import UpdateInstruction from './nodes/update';
 import { BindWorkflowConfig } from './settings/BindWorkflowConfig';
@@ -43,10 +46,17 @@ import {
   WorkflowTasksMobile,
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
-import { observer } from '@formily/react';
-import { Space, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
 import React from 'react';
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import { NodeDetailsModel, NodeValueModel } from './models';
+import { Collection } from '@nocobase/flow-engine';
+import workflows from '../common/collections/workflows';
+import flow_nodes from '../common/collections/flow_nodes';
+import executions from '../common/collections/executions';
+import workflowCategories from '../common/collections/workflowCategories';
+import workflowStats from '../common/collections/workflowStats';
+import workflowVersionStats from '../common/collections/workflowVersionStats';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -121,6 +131,14 @@ export default class PluginWorkflowClient extends Plugin {
     this.taskTypes.register(key, { ...option, key });
   }
 
+  registerCollectionsToDataSource(collectionOptions: any[]) {
+    collectionOptions.forEach((option) => {
+      this.flowEngine.dataSourceManager
+        .getDataSource('main')
+        .addCollection(new Collection({ ...option, hidden: true }));
+    });
+  }
+
   async load() {
     this.app.addProvider(WorkflowCollectionsProvider);
     this.app.addProvider(TasksProvider);
@@ -128,7 +146,9 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
       title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+      isPinned: true,
       Component: WorkflowPane,
+      sort: 300,
       aclSnippet: 'pm.workflow.workflows',
     });
 
@@ -190,7 +210,10 @@ export default class PluginWorkflowClient extends Plugin {
 
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('multi-conditions', MultiConditionsInstruction);
+
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
 
     this.registerInstruction('query', QueryInstruction);
     this.registerInstruction('create', CreateInstruction);
@@ -230,6 +253,20 @@ export default class PluginWorkflowClient extends Plugin {
       ),
       value: 'genSnowflakeId',
     });
+
+    this.flowEngine.registerModels({
+      NodeDetailsModel,
+      NodeValueModel,
+    });
+
+    this.registerCollectionsToDataSource([
+      workflows,
+      flow_nodes,
+      executions,
+      workflowCategories,
+      workflowStats,
+      workflowVersionStats,
+    ]);
   }
 }
 
@@ -246,3 +283,5 @@ export { Trigger, useTrigger } from './triggers';
 export * from './utils';
 export * from './variable';
 export { usePopupRecordContext, useTasksCountsContext } from './WorkflowTasks';
+export { createTriggerWorkflowsSchema } from './flows/triggerWorkflows';
+export { NodeDetailsModel, NodeValueModel };

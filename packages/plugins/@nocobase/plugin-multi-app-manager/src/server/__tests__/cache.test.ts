@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer, MockServerOptions } from '@nocobase/test';
+import { createMockServer, MockServer, MockServerOptions, sleep } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
 
 describe('cache', async () => {

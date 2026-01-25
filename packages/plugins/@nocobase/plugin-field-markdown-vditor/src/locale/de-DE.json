@@ -30,6 +30,7 @@
   "Toolbar": "Editor-Symbolleistenkonfiguration",
   "Undo": "Rückgängig",
   "Upload": "Bild oder Datei hochladen",
+  "Used to store files uploaded in the Markdown editor": "Wird verwendet, um Dateien zu speichern, die im Markdown-Editor hochgeladen wurden",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "Dateisammlung, die in den Markdown-Editor hochgeladen wurde (Standard: attachments)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "Hochladen fehlgeschlagen",
