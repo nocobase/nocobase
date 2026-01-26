@@ -324,6 +324,30 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       [operatorMetaList, operator],
     );
 
+    const resolveFormulaDataType = useCallback((meta?: MetaTreeNode) => {
+      return (
+        (meta as any)?.options?.dataType || (meta as any)?.dataType || meta?.type || meta?.uiSchema?.type || 'double'
+      );
+    }, []);
+
+    const getFormulaFilterComponent = useCallback((dataType: string) => {
+      switch (dataType) {
+        case 'boolean':
+          return 'Switch';
+        case 'date':
+          return 'DateFilterDynamicComponent';
+        case 'integer':
+        case 'bigInt':
+        case 'double':
+        case 'decimal':
+        case 'number':
+          return 'InputNumber';
+        case 'string':
+        default:
+          return 'Input';
+      }
+    }, []);
+
     // 轻量动态输入渲染：使用 formily 动态 schema 渲染 mergedSchema
     const mergedSchema: ISchema = useMemo(() => {
       const fieldSchema = leftMeta?.uiSchema || {};
@@ -331,9 +355,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const merged = merge({}, fieldSchema, opSchema);
       // 公式字段：在筛选场景下改为可编辑输入组件，并标记筛选上下文
       if (leftMeta?.interface === 'formula') {
+        const dataType = resolveFormulaDataType(leftMeta);
         const override: ISchema = {
           'x-read-pretty': false,
-          'x-component': 'Input',
+          'x-component': getFormulaFilterComponent(dataType),
           'x-component-props': {
             ...(merged['x-component-props'] as Record<string, any>),
           },
@@ -342,7 +367,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         return next;
       }
       return merged;
-    }, [leftMeta, currentOpMeta]);
+    }, [leftMeta, currentOpMeta, getFormulaFilterComponent, resolveFormulaDataType]);
 
     // 仅在组件类型切换且新组件为日期/时间类时，检测不兼容旧值并清空；首渲染保留旧值
     const prevXComponentRef = React.useRef<string | undefined>(mergedSchema?.['x-component'] as string | undefined);
