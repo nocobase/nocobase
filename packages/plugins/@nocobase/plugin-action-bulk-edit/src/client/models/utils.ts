@@ -30,24 +30,24 @@ export const createTagPageOptions = ({ tabTitle, items }: { tabTitle: string; it
               },
             },
           },
-          subModels: {
-            grid: {
-              async: true,
-              use: 'BlockGridModel',
-              stepParams: {
-                gridSettings: {
-                  grid: {
-                    rows: {},
-                    sizes: {},
-                  },
-                },
-              },
-              filterManager: [],
-              subModels: {
-                items: items,
-              },
-            },
-          },
+          // subModels: {
+          //   grid: {
+          //     async: true,
+          //     use: 'BlockGridModel',
+          //     stepParams: {
+          //       gridSettings: {
+          //         grid: {
+          //           rows: {},
+          //           sizes: {},
+          //         },
+          //       },
+          //     },
+          //     filterManager: [],
+          //     subModels: {
+          //       items: items,
+          //     },
+          //   },
+          // },
         },
       ],
     },

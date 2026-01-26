@@ -22,6 +22,7 @@ export class BulkEditFormModel extends CreateFormModel {
     FormItemModel: 'BulkEditFormItemModel', // 使用批量编辑专用的字段项
   };
 }
+
 BulkEditFormModel.define({
   label: 'Bulk Edit Form',
   createModelOptions: async (ctx, extra) => {

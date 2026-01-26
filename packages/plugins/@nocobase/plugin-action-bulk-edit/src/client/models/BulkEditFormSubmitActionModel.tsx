@@ -11,8 +11,9 @@ import { CreateFormModel, FieldModel, FormActionModel, FormSubmitActionModel, Ac
 import React from 'react';
 import { Button, ButtonProps, message, Modal, Dropdown, DatePicker } from 'antd';
 import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { submitHandler } from './submitHandler';
 
-export class BulkEditFormSubmitActionModel extends ActionModel {
+export class BulkEditFormSubmitActionModel extends FormSubmitActionModel {
   defaultProps: ButtonProps & { withScheduleSend?: boolean } = {
     title: tExpr('Submit'),
     type: 'primary',
@@ -25,7 +26,7 @@ BulkEditFormSubmitActionModel.define({
 });
 
 BulkEditFormSubmitActionModel.registerFlow({
-  key: 'sendSettings',
+  key: 'submitSettings',
   title: tExpr('Send settings'),
   on: 'click',
   steps: {
@@ -58,10 +59,37 @@ BulkEditFormSubmitActionModel.registerFlow({
     },
     saveResource: {
       async handler(ctx, params) {
-        const blockModel = ctx.blockModel;
-        await blockModel.form.validateFields();
-        const values = blockModel.form.getFieldsValue(true);
-        console.log('BulkEditFormSubmitActionModel send flow handler called', ctx, params, values);
+        if (!ctx?.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        if (!ctx.blockModel) {
+          throw new Error('Block model is not initialized');
+        }
+        try {
+          ctx.model.setProps('loading', true);
+          await submitHandler(ctx, params);
+          ctx.model.setProps('loading', false);
+        } catch (error) {
+          ctx.model.setProps('loading', false);
+          // 显示保存失败提示
+          ctx.message.error(ctx.t('Save failed'));
+          console.error('Form submission error:', error);
+          ctx.exit();
+        }
+      },
+    },
+    refreshAndClose: {
+      async handler(ctx) {
+        if (ctx.view) {
+          const viewUid = ctx.view.inputArgs?.viewUid;
+          const actionModel = ctx.engine.getModel(viewUid, true);
+
+          if (actionModel) {
+            actionModel.context.blockModel?.resource?.refresh();
+          }
+
+          ctx.view.close();
+        }
       },
     },
   },

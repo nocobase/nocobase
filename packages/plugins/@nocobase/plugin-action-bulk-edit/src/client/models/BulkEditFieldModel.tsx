@@ -67,7 +67,17 @@ const BulkEditField = (props) => {
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{lang('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{lang('Clear')}</Select.Option>
       </Select>
-      <FieldModelRenderer model={fieldModel} {...rest} onChange={valueChangeHandler} />
+
+      {/* {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
+        collectionField?.interface !== 'checkbox' && (
+          <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
+        )}
+      {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
+        collectionField?.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />} */}
+
+      {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) && (
+        <FieldModelRenderer model={fieldModel} {...rest} onChange={valueChangeHandler} />
+      )}
     </Space>
   );
 };
