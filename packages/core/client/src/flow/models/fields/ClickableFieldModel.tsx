@@ -59,7 +59,9 @@ export class ClickableFieldModel extends FieldModel {
         // also incorrect for v1
         filterByTk = currentRecord[targetCollection.filterTargetKey];
       }
-      const parentObj = associationPathName ? get(this.context.record, associationPathName) : this.context.record;
+      const parentObj = associationPathName
+        ? get(this.context.blockModel?.form?.getFieldsValue?.(true) || this.context.record, associationPathName)
+        : this.context.record;
       this.dispatchEvent(
         'click',
         {
