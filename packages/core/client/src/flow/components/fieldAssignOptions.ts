@@ -65,6 +65,74 @@ function getLastPathSegment(path: string): string {
   return segs.length ? segs[segs.length - 1] : '';
 }
 
+type CollectionLike = {
+  getField?: (name: string) => unknown;
+  getFields?: () => unknown[];
+};
+
+function getCollectionFromFormBlockModel(model: any): CollectionLike | null {
+  if (!model || typeof model !== 'object') return null;
+  const collection = (model as any)?.collection || (model as any)?.context?.collection;
+  return collection && typeof collection === 'object' ? (collection as CollectionLike) : null;
+}
+
+function buildRootOptionsFromCollection(
+  collection: CollectionLike | null,
+  t: (key: string) => string,
+): FieldAssignCascaderOption[] {
+  const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
+  const out: FieldAssignCascaderOption[] = [];
+  for (const rawField of fields) {
+    if (!rawField) continue;
+    const f = rawField as {
+      name?: unknown;
+      title?: unknown;
+      interface?: unknown;
+      isAssociationField?: () => boolean;
+      targetCollection?: any;
+    };
+    const fieldInterface = typeof f.interface === 'string' ? f.interface : undefined;
+    if (!fieldInterface) continue;
+    if (fieldInterface === 'formula') continue;
+
+    const name = String(f.name || '');
+    if (!name) continue;
+    const title = t(typeof f.title === 'string' ? f.title : name);
+
+    const isAssoc = !!f.isAssociationField?.();
+    const hasTarget = !!f.targetCollection;
+
+    out.push({
+      label: title,
+      value: name,
+      isLeaf: !(isAssoc && hasTarget),
+    });
+  }
+  return out;
+}
+
+function mergeRootOptions(
+  configured: FieldAssignCascaderOption[],
+  allFields: FieldAssignCascaderOption[],
+): FieldAssignCascaderOption[] {
+  const configuredList = Array.isArray(configured) ? configured : [];
+  const allList = Array.isArray(allFields) ? allFields : [];
+
+  const configuredValues = new Set<string>();
+  for (const it of configuredList) {
+    const v = it?.value ? String(it.value) : '';
+    if (v) configuredValues.add(v);
+  }
+
+  const extra = allList.filter((it) => {
+    const v = it?.value ? String(it.value) : '';
+    if (!v) return false;
+    return !configuredValues.has(v);
+  });
+
+  return [...configuredList, ...extra];
+}
+
 export function collectFieldAssignCascaderOptions(options: {
   formBlockModel: any;
   t: (key: string) => string;
@@ -74,6 +142,7 @@ export function collectFieldAssignCascaderOptions(options: {
   const { formBlockModel, t, maxFormItemDepth = Number.POSITIVE_INFINITY } = options;
 
   const rootItems = formBlockModel?.subModels?.grid?.subModels?.items || [];
+  const rootCollection = getCollectionFromFormBlockModel(formBlockModel);
 
   const walkItems = (items: any[], depth: number): FieldAssignCascaderOption[] => {
     if (!Array.isArray(items)) return [];
@@ -137,5 +206,7 @@ export function collectFieldAssignCascaderOptions(options: {
     return out;
   };
 
-  return walkItems(rootItems, 1);
+  const configuredOptions = walkItems(rootItems, 1);
+  const allFieldOptions = buildRootOptionsFromCollection(rootCollection, t);
+  return mergeRootOptions(configuredOptions, allFieldOptions);
 }

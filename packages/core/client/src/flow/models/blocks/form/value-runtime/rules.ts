@@ -105,6 +105,84 @@ export class RuleEngine {
     this.options = options;
   }
 
+  private getAssignRuleBlockId(templateKey: string) {
+    return `form-assign:${templateKey}:block`;
+  }
+
+  private removeAssignRuleBlockInstance(templateKey: string) {
+    const blockId = this.getAssignRuleBlockId(templateKey);
+    if (this.rules.has(blockId)) {
+      this.removeRule(blockId);
+    }
+  }
+
+  private removeRowGridAssignRuleInstances(templateKey: string) {
+    const prefix = `form-assign:${templateKey}:`;
+    const blockId = this.getAssignRuleBlockId(templateKey);
+    const toRemove: string[] = [];
+
+    for (const [id, entry] of this.rules.entries()) {
+      if (!id.startsWith(prefix)) continue;
+      if (id === blockId) continue;
+      const ctx = entry?.rule?.getContext?.();
+      const ctxModel = ctx?.model;
+      if (ctxModel && this.isRowGridModel(ctxModel as any)) {
+        toRemove.push(id);
+      }
+    }
+
+    for (const id of toRemove) {
+      this.removeRule(id);
+    }
+  }
+
+  private hasAnyNonBlockAssignRuleInstance(templateKey: string) {
+    const prefix = `form-assign:${templateKey}:`;
+    const blockId = this.getAssignRuleBlockId(templateKey);
+    for (const id of this.rules.keys()) {
+      if (!id.startsWith(prefix)) continue;
+      if (id === blockId) continue;
+      return true;
+    }
+    return false;
+  }
+
+  private ensureBlockAssignRuleInstancesForTargetPath(targetPath: string) {
+    if (this.options.isDisposed()) return;
+    if (!targetPath) return;
+    if (!this.shouldCreateBlockLevelAssignRule(targetPath)) return;
+
+    const templates = this.assignTemplatesByTargetPath.get(targetPath) || [];
+    if (!templates.length) return;
+
+    for (const template of templates) {
+      const templateKey = template?.__key ? String(template.__key) : '';
+      if (!templateKey) continue;
+      if (this.hasAnyNonBlockAssignRuleInstance(templateKey)) continue;
+
+      const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
+      const source: ValueSource = mode === 'default' ? 'default' : 'system';
+      const enabled = template?.enable !== false;
+      const id = this.getAssignRuleBlockId(templateKey);
+      if (this.rules.has(id)) continue;
+
+      const rule: RuntimeRule = {
+        id,
+        source,
+        priority: 10 + (template.__order || 0),
+        debounceMs: 0,
+        getEnabled: () => enabled && !!targetPath,
+        getTarget: () => targetPath,
+        getValue: () => template?.value,
+        getCondition: () => template?.condition,
+        getContext: () => this.options.getBlockContext(),
+      };
+
+      this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
+      this.scheduleRule(id);
+    }
+  }
+
   private getCollectionFromContext(baseCtx: any): any | undefined {
     return baseCtx?.collection ?? baseCtx?.model?.context?.collection;
   }
@@ -337,6 +415,11 @@ export class RuleEngine {
   }
 
   onModelMounted(model: FlowModel) {
+    // 维护“已配置到 UI 的字段 targetPath”集合：仅 master 参与（fork 不代表配置项存在/删除）
+    if (this.isModelInThisForm(model) && !(model as any)?.isFork && (model as any)?.subModels?.field) {
+      const p = this.getModelTargetPath(model);
+      if (p) this.formItemTargetPaths.add(p);
+    }
     this.tryRegisterDefaultRuleInstance(model);
     this.tryRegisterAssignRuleInstancesForModel(model);
   }
@@ -344,6 +427,43 @@ export class RuleEngine {
   onModelUnmounted(model: FlowModel) {
     this.tryUnregisterDefaultRuleInstance(model);
     this.tryUnregisterAssignRuleInstancesForModel(model);
+
+    // 字段模型卸载后：为其对应的 targetPath（以及潜在的嵌套 targetPath）恢复 block-level 兜底实例，
+    // 以保证“先配置规则→后添加字段→再移除字段”行为稳定。
+    if (this.isModelInThisForm(model) && (model as any)?.subModels?.field) {
+      const p = this.getModelTargetPath(model);
+      if (p) {
+        this.ensureBlockAssignRuleInstancesForTargetPath(p);
+
+        if (!(model as any)?.isFork) {
+          this.formItemTargetPaths.delete(p);
+
+          // 对一关联字段可能承载其子属性规则实例；卸载时这些子属性规则也需要回退到 block-level。
+          const prefix = `${p}.`;
+          for (const targetPath of this.assignTemplatesByTargetPath.keys()) {
+            if (!targetPath.startsWith(prefix)) continue;
+            this.ensureBlockAssignRuleInstancesForTargetPath(targetPath);
+          }
+
+          // 对多子表单场景：若该字段是 users.age 这类路径，row grid 模型仍在时需要重刷一次以便重新注册 row-grid 规则。
+          // 这里避免做全量 sync，仅触发一次按当前模型树的重新注册。
+          const engine = this.options.getEngine();
+          if (engine?.forEachModel) {
+            const visit = (m: FlowModel) => {
+              this.tryRegisterAssignRuleInstancesForModel(m);
+              const forks: any = (m as any)?.forks;
+              if (forks && typeof forks.forEach === 'function') {
+                forks.forEach((fork: any) => {
+                  if (!fork || (fork as any)?.disposed) return;
+                  this.tryRegisterAssignRuleInstancesForModel(fork as any);
+                });
+              }
+            };
+            engine.forEachModel((m: FlowModel) => visit(m));
+          }
+        }
+      }
+    }
   }
 
   private isModelInThisForm(model: FlowModel) {
@@ -534,6 +654,12 @@ export class RuleEngine {
       matchedTargetPaths?.add(targetPathForRule);
 
       for (const template of ruleTemplates) {
+        // 若之前在无字段模型时创建了 block-level/row-grid 兜底实例，这里在字段模型可用时迁移到字段实例，避免双挂载。
+        this.removeAssignRuleBlockInstance(template.__key);
+        if ((model as any)?.subModels?.field) {
+          this.removeRowGridAssignRuleInstances(template.__key);
+        }
+
         const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
         const source: ValueSource = mode === 'default' ? 'default' : 'system';
         const enabled = template?.enable !== false;
