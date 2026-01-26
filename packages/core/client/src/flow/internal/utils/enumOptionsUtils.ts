@@ -16,23 +16,21 @@ type Option = { label: any; value: any } & Record<string, any>;
 // Internal utility: normalize uiSchema.enum into antd-friendly options
 function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []): Option[] {
   if (!Array.isArray(uiEnum)) return [];
-  return uiEnum
-    .map((item: UiSchemaEnumItem) => {
-      if (item && typeof item === 'object' && !Array.isArray(item)) {
-        const anyItem = item as any;
-        const hasLabel = typeof anyItem.label !== 'undefined';
-        const hasValue = typeof anyItem.value !== 'undefined';
-        const label = hasLabel ? anyItem.label : String(anyItem.value ?? '');
-        const value = hasValue ? anyItem.value : label;
-        const opt: any = { label, value };
-        if (anyItem.color) opt.color = anyItem.color;
-        if (anyItem.icon) opt.icon = anyItem.icon;
-        return opt;
-      }
-      // Primitive values: keep original value; stringify label
-      return { label: String(item), value: item };
-    })
-    .filter((option) => option?.value !== undefined && option?.value !== '');
+  return uiEnum.map((item: UiSchemaEnumItem) => {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      const anyItem = item as any;
+      const hasLabel = typeof anyItem.label !== 'undefined';
+      const hasValue = typeof anyItem.value !== 'undefined';
+      const label = hasLabel ? anyItem.label : String(anyItem.value ?? '');
+      const value = hasValue ? anyItem.value : label;
+      const opt: any = { label, value };
+      if (anyItem.color) opt.color = anyItem.color;
+      if (anyItem.icon) opt.icon = anyItem.icon;
+      return opt;
+    }
+    // Primitive values: keep original value; stringify label
+    return { label: String(item), value: item };
+  });
 }
 
 // Map option labels through t() (supports {{t('key')}} template and plain strings)
