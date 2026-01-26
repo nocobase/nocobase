@@ -147,7 +147,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
       };
     }
 
-    // 2) 嵌套语义：根据 targetPath 在集合上解析（例如 user.name / user.profile.name）
+    // 2) 未配置字段：优先按根集合解析顶层字段（例如 foo / user）
     const rootCollection = getCollectionFromModel((flowCtx as any).model);
     const blockModel = (flowCtx as any).model?.context?.blockModel || (flowCtx as any).model;
     const empty: ResolvedFieldContext = {
@@ -159,6 +159,28 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
       fieldName: null,
       collectionField: null,
     };
+
+    const topLevelField =
+      typeof rootCollection?.getField === 'function' ? (rootCollection.getField(targetPath) as CollectionField) : null;
+    if (topLevelField) {
+      const fieldName = String((topLevelField as any)?.name || targetPath || '');
+      const dataSourceManager = flowCtx.model?.context?.dataSourceManager;
+      const dataSource =
+        (rootCollection?.dataSourceKey
+          ? dataSourceManager?.getDataSource?.(rootCollection.dataSourceKey)
+          : undefined) || null;
+      return {
+        ...empty,
+        collection: rootCollection,
+        dataSource,
+        blockModel,
+        fieldPath: fieldName,
+        fieldName,
+        collectionField: topLevelField || null,
+      };
+    }
+
+    // 3) 兜底：表单上未配置但来自关联字段 target collection 的嵌套属性（如 `user.name`）
     const nested = resolveNestedAssociationField(rootCollection, targetPath);
     if (!nested) return empty;
     const collection = nested.collection;
@@ -212,11 +234,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
     const engine = resolved?.itemModel?.context?.engine || (flowCtx as any).model?.context?.engine;
 
     const fields = typeof collection.getFields === 'function' ? collection.getFields() || [] : [];
-    const f = fields.find((x: any) => x?.name === fieldName);
-    const binding = EditableItemModel.getDefaultBindingByField(
-      resolved?.itemModel?.context || flowCtx.model?.context,
-      f,
-    );
+    const f =
+      fields.find((x: any) => x?.name === fieldName) ||
+      (typeof collection.getField === 'function' ? (collection.getField(fieldName) as any) : undefined) ||
+      cf;
+
+    const binding = f
+      ? EditableItemModel.getDefaultBindingByField(resolved?.itemModel?.context || flowCtx.model?.context, f)
+      : null;
     const fieldModelUse: string | undefined = binding?.modelName;
 
     const subField = itemModel?.subModels?.field;
