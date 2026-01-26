@@ -8,9 +8,9 @@
 
 ### サーバーサイド
 
-1.  **`StorageType` の継承**
-    
-    新しいクラスを作成し、`make()` メソッドと `delete()` メソッドを実装します。必要に応じて、`getFileURL()`、`getFileStream()`、`getFileData()` などのフックをオーバーライドしてください。
+1. **`StorageType` の継承**
+   
+   新しいクラスを作成し、`make()` と `delete()` を実装します。必要に応じて `getFileURL()`、`getFileStream()`、`getFileData()` などのフックをオーバーライドしてください。
 
 例：
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **新しいタイプの登録**  
-    プラグインの `beforeLoad` または `load` ライフサイクルで、新しいストレージ実装を注入します。
+4. **新しいタイプを登録**  
+   プラグインの `beforeLoad` または `load` ライフサイクルに新しいストレージ実装を注入します：
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-登録が完了すると、ストレージ設定は組み込みタイプと同様に `storages` リソースに表示されます。`StorageType.defaults()` が提供する設定は、フォームの自動入力やデフォルトレコードの初期化に利用できます。
+登録後、ストレージ設定は組み込みタイプと同様に `storages` リソースに表示されます。`StorageType.defaults()` が提供する設定は、フォームの自動入力やデフォルトレコードの初期化に利用できます。
 
-### クライアントサイドの設定と管理インターフェース
-クライアントサイドでは、ファイルマネージャーに設定フォームのレンダリング方法や、カスタムアップロードロジックの有無を伝える必要があります。各ストレージタイプオブジェクトには、以下のプロパティが含まれます。
+<!--
+### クライアント側の設定と管理画面
+クライアント側では、設定フォームの描画方法やカスタムアップロードロジックの有無をファイルマネージャーに伝える必要があります。各ストレージタイプのオブジェクトには以下のプロパティがあります：
+-->
 
-## フロントエンドファイルタイプの拡張
+## フロントエンドのファイルタイプ拡張
 
-アップロードされたファイルについて、フロントエンドのインターフェースでは、ファイルタイプに応じて異なるプレビューコンテンツを表示できます。ファイルマネージャーの添付ファイルフィールドには、ブラウザベースのファイルプレビュー（iframe に埋め込まれる形式）が組み込まれており、この方法でほとんどのファイル形式（画像、動画、音声、PDF など）をブラウザで直接プレビューできます。ファイル形式がブラウザでのプレビューに対応していない場合や、特別なプレビュー操作が必要な場合は、ファイルタイプに基づいたプレビューコンポーネントを拡張することで実現できます。
+アップロード済みのファイルについて、フロントエンドの画面でファイルタイプに応じた異なるプレビュー内容を表示できます。ファイルマネージャーの添付フィールドには、ブラウザ（iframe 内）でのファイルプレビューが組み込まれており、画像・動画・音声・PDF などの多くの形式をブラウザで直接プレビューできます。ブラウザが対応しない形式や特別なプレビュー操作が必要な場合は、ファイルタイプに基づくプレビューコンポーネントを拡張できます。
 
 ### 例
 
-例えば、画像タイプのファイルにカルーセル切り替えコンポーネントを拡張したい場合は、以下のコードを使用できます。
+たとえば Office ファイルに対してカスタムのオンラインプレビューを統合したい場合、次のコードを使用できます：
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-ここで、`attachmentFileTypes` は `@nocobase/client` パッケージで提供される、ファイルタイプを拡張するためのエントリーオブジェクトです。この `add` メソッドを使用して、ファイルタイプ記述オブジェクトを拡張します。
+ここで `filePreviewTypes` は `@nocobase/plugin-file-manager/client` が提供するファイルプレビュー拡張のための入口オブジェクトです。`add` メソッドでファイルタイプの記述オブジェクトを追加します。
 
-各ファイルタイプは、ファイルタイプが要件を満たしているかを確認するための `match()` メソッドを実装する必要があります。この例では、`mime-match` パッケージが提供するメソッドを使用してファイルの `mimetype` 属性をチェックし、`image/*` タイプに一致する場合、処理対象のファイルタイプと見なされます。一致しなかった場合は、組み込みのタイプ処理にフォールバックされます。
+各ファイルタイプは `match()` メソッドを実装し、要件に合致するかを判定します。例では `matchMimetype` を使ってファイルの `mimetype` を確認し、`docx` に一致すれば処理対象とします。一致しない場合は組み込みのタイプ処理にフォールバックします。
 
-タイプ記述オブジェクトの `Previewer` プロパティは、プレビューに使用されるコンポーネントです。ファイルタイプが一致すると、このコンポーネントがレンダリングされてプレビューが行われます。通常、`<Modal />` などのダイアログタイプのコンポーネントを基本コンテナとして使用し、その中にプレビューとインタラクティブなコンテンツを配置してプレビュー機能を実装することをお勧めします。
+タイプ記述オブジェクトの `Previewer` プロパティがプレビュー用コンポーネントです。ファイルタイプが一致すると、このコンポーネントがプレビューダイアログに描画されます。任意の React ビュー（iframe、プレイヤー、チャートなど）を返せます。
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` は、`@nocobase/client` からインポートされるグローバルインスタンスです。
+`filePreviewTypes` は `@nocobase/plugin-file-manager/client` からインポートするグローバルインスタンスです：
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-ファイルタイプ登録センターに新しいファイルタイプ記述オブジェクトを登録します。記述オブジェクトのタイプは `AttachmentFileType` です。
+ファイルタイプの登録センターに新しい記述オブジェクトを登録します。記述オブジェクトの型は `FilePreviewType` です。
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-ファイル形式のマッチングメソッドです。
+ファイル形式のマッチング方法。
 
-引数 `file` は、アップロードされたファイルのデータオブジェクトであり、タイプ判定に使用できる関連プロパティを含んでいます。
+入力パラメータ `file` はアップロード済みファイルのデータオブジェクトで、タイプ判定に使える属性を含みます：
 
-*   `mimetype`：mimetype の説明
-*   `extname`：ファイル拡張子（「.」を含む）
-*   `path`：ファイルの相対保存パス
-*   `url`：ファイル URL
+* `mimetype`：mimetype の説明
+* `extname`：拡張子（"." を含む）
+* `path`：ファイルの相対保存パス
+* `url`：ファイル URL
 
-戻り値は `boolean` 型で、マッチング結果を示します。
+戻り値は `boolean` で、マッチするかどうかを示します。
+
+##### `getThumbnailURL`
+
+ファイル一覧で使うサムネイル URL を返します。返り値が空の場合は内蔵のプレースホルダー画像が使われます。
 
 ##### `Previewer`
 
-ファイルをプレビューするための React コンポーネントです。
+ファイルをプレビューするための React コンポーネント。
 
-渡される Props パラメータは以下のとおりです。
+受け取る Props は以下です：
 
-*   `index`：添付ファイルリスト内のファイルのインデックス
-*   `list`：添付ファイルリスト
-*   `onSwitchIndex`：インデックスを切り替えるためのメソッド
+* `file`：現在のファイルオブジェクト（文字列 URL または `url`/`preview` を含むオブジェクト）
+* `index`：一覧内のファイルのインデックス
+* `list`：ファイル一覧
 
-この `onSwitchIndex` には、リスト内の任意のインデックス値を渡すことで、他のファイルに切り替えることができます。引数として `null` を渡すと、プレビューコンポーネントが直接閉じられます。
-
-```ts
-onSwitchIndex(null);
-```
