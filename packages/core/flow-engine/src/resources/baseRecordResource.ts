@@ -142,7 +142,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
    * Used to coordinate "refresh on active" across view stacks.
    */
   protected markDataSourceDirty(resourceName?: string) {
-    const engine = getDirtyRegistryEngineFromContext(this.context);
+    const engine = this.context.engine;
     if (!engine) return;
 
     const dataSourceKey = this.getDataSourceKey() || 'main';
@@ -319,18 +319,4 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   abstract refresh(): Promise<void>;
-}
-
-type DirtyRegistryEngine = {
-  markDataSourceDirty: (dataSourceKey: string, resourceName: string) => number;
-  emitter?: { emit?: (event: string, payload?: unknown) => unknown };
-};
-
-function getDirtyRegistryEngineFromContext(context: unknown): DirtyRegistryEngine | null {
-  if (!context || (typeof context !== 'object' && typeof context !== 'function')) return null;
-  const engine = Reflect.get(context as object, 'engine') as unknown;
-  if (!engine || (typeof engine !== 'object' && typeof engine !== 'function')) return null;
-  const mark = Reflect.get(engine as object, 'markDataSourceDirty') as unknown;
-  if (typeof mark !== 'function') return null;
-  return engine as DirtyRegistryEngine;
 }
