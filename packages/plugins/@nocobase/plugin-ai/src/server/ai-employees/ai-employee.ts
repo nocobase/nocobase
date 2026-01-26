@@ -904,7 +904,7 @@ export class AIEmployee {
   }
 
   private async getToolMap() {
-    const toolGroupList = await this.plugin.aiManager.toolManager.listTools();
+    const toolGroupList = await this.plugin.aiManager.toolManager.listTools(false);
     const toolList = toolGroupList.flatMap(({ tools }) => tools);
     return new Map(toolList.map((tool) => [tool.name, tool]));
   }

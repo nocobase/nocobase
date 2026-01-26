@@ -39,42 +39,42 @@ DB_PASSWORD=nocobase
 #### Installazione Docker
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # Chiave dell'applicazione per la generazione di token utente, ecc.
-      # Se APP_KEY viene modificata, i vecchi token diventeranno invalidi.
-      # Può essere una stringa casuale qualsiasi e deve essere mantenuta confidenziale.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # Tipo di database
+      # Database type
       - DB_DIALECT=kingbase
-      # Host del database, può essere sostituito con l'IP di un server database esistente, se necessario.
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # Nome del database
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # Utente del database
+      # Database user
       - DB_USER=nocobase
-      # Password del database
+      # Database password
       - DB_PASSWORD=nocobase
-      # Fuso orario
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # Servizio Kingbase solo a scopo di test
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -85,10 +85,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # Deve essere impostato su no
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # Solo pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

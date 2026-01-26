@@ -39,42 +39,42 @@ DB_PASSWORD=nocobase
 #### Docker 설치
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # 사용자 토큰 생성 등에 사용되는 애플리케이션 키
-      # APP_KEY가 변경되면 이전 토큰도 무효화됩니다.
-      # 임의의 무작위 문자열을 사용할 수 있으며, 외부에 노출되지 않도록 주의하세요.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # 데이터베이스 유형
+      # Database type
       - DB_DIALECT=kingbase
-      # 데이터베이스 호스트. 기존 데이터베이스 서버 IP로 대체할 수 있습니다.
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # 데이터베이스 이름
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # 데이터베이스 사용자
+      # Database user
       - DB_USER=nocobase
-      # 데이터베이스 비밀번호
+      # Database password
       - DB_PASSWORD=nocobase
-      # 시간대
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # 테스트 목적으로만 사용되는 Kingbase 서비스
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -85,10 +85,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # 반드시 no로 설정해야 합니다.
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # pg 전용
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

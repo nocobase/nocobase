@@ -143,13 +143,12 @@ const AddNew = () => {
     ollama: 'Local models',
   };
 
-  const items = providers.map((item, index) => {
+  const items = providers.flatMap((item, index) => {
     const hint = providerHints[item.value];
-    return {
+    const menuItem = {
       ...item,
       label: (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {index > 0 && <Divider style={{ margin: '4px 0' }} />}
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
             <span>{item.label}</span>
           </div>
@@ -177,6 +176,10 @@ const AddNew = () => {
         setProvider(item.value);
       },
     };
+    if (index > 0) {
+      return [{ type: 'divider' as const }, menuItem];
+    }
+    return [menuItem];
   });
 
   return (

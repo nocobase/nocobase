@@ -30,7 +30,7 @@ Vyberte verzi NocoBase ([Porovnání verzí](../quickstart.md)) a typ databáze,
 
 - **Výběr image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - Pro produkční prostředí doporučujeme zafixovat konkrétní číselnou verzi, abyste předešli neúmyslným automatickým aktualizacím. [Zobrazit všechny verze](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Image z Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Image z Alibaba Cloud: `nocobase/nocobase:latest-full`
   - Image z Docker Hub: `nocobase/nocobase:latest-full`
   - **`full` image** obsahuje klienty PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, které jsou potřeba pro pluginy pro správu záloh a migrací, a také LibreOffice pro tisk šablon (PDF).
   - Pokud potřebujete sestavit vlastní image, můžete se podívat na oficiální [Dockerfile (odlehčená verze)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) a [Dockerfile-full (plná verze)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
@@ -42,6 +42,9 @@ Vyberte verzi NocoBase ([Porovnání verzí](../quickstart.md)) a typ databáze,
 
 <Tabs>
 
+<Tab label="Verze Beta (2.0-beta)">
+
+<Tabs>
 <Tab label="PostgreSQL">
 
 ```yml
@@ -51,7 +54,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -85,7 +88,7 @@ services:
 
   # Pokud používáte existující databázovou službu, můžete postgres nespouštět.
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -109,7 +112,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -144,7 +147,7 @@ services:
 
   # Pokud používáte existující databázovou službu, můžete mysql nespouštět.
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -168,7 +171,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -203,7 +206,7 @@ services:
 
   # Pokud používáte existující databázovou službu, můžete mariadb nespouštět.
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -217,6 +220,374 @@ services:
 ```
 
 </Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Verze Alpha (2.0-alpha)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Klíč aplikace, slouží k generování uživatelských tokenů atd.
+      # Pokud se APP_KEY změní, staré tokeny se stanou neplatnými.
+      # Může to být libovolný náhodný řetězec, ujistěte se, že nebude vyzrazen.
+      - APP_KEY=your-secret-key
+      # Typ databáze, podporuje postgres, mysql, mariadb.
+      - DB_DIALECT=postgres
+      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru.
+      - DB_HOST=postgres
+      # Port databáze
+      - DB_PORT=5432
+      # Název databáze
+      - DB_DATABASE=nocobase
+      # Uživatel databáze
+      - DB_USER=nocobase
+      # Heslo databáze
+      - DB_PASSWORD=nocobase
+      # Časové pásmo
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Pokud používáte existující databázovou službu, můžete postgres nespouštět.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Klíč aplikace, slouží k generování uživatelských tokenů atd.
+      # Pokud se APP_KEY změní, staré tokeny se stanou neplatnými.
+      # Může to být libovolný náhodný řetězec, ujistěte se, že nebude vyzrazen.
+      - APP_KEY=your-secret-key
+      # Typ databáze, podporuje postgres, mysql, mariadb.
+      - DB_DIALECT=mysql
+      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru.
+      - DB_HOST=mysql
+      # Port databáze
+      - DB_PORT=3306
+      # Název databáze
+      - DB_DATABASE=nocobase
+      # Uživatel databáze
+      - DB_USER=root
+      # Heslo databáze
+      - DB_PASSWORD=nocobase
+      # Zda se názvy tabulek a polí databáze převedou na styl snake_case.
+      - DB_UNDERSCORED=true
+      # Časové pásmo
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Pokud používáte existující databázovou službu, můžete mysql nespouštět.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Klíč aplikace, slouží k generování uživatelských tokenů atd.
+      # Pokud se APP_KEY změní, staré tokeny se stanou neplatnými.
+      # Může to být libovolný náhodný řetězec, ujistěte se, že nebude vyzrazen.
+      - APP_KEY=your-secret-key
+      # Typ databáze, podporuje postgres, mysql, mariadb.
+      - DB_DIALECT=mariadb
+      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru.
+      - DB_HOST=mariadb
+      # Port databáze
+      - DB_PORT=3306
+      # Název databáze
+      - DB_DATABASE=nocobase
+      # Uživatel databáze
+      - DB_USER=root
+      # Heslo databáze
+      - DB_PASSWORD=nocobase
+      # Zda se názvy tabulek a polí databáze převedou na styl snake_case.
+      - DB_UNDERSCORED=true
+      # Časové pásmo
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Pokud používáte existující databázovou službu, můžete mariadb nespouštět.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Verze Latest (1.9)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Klíč aplikace, slouží k generování uživatelských tokenů atd.
+      # Pokud se APP_KEY změní, staré tokeny se stanou neplatnými.
+      # Může to být libovolný náhodný řetězec, ujistěte se, že nebude vyzrazen.
+      - APP_KEY=your-secret-key
+      # Typ databáze, podporuje postgres, mysql, mariadb.
+      - DB_DIALECT=postgres
+      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru.
+      - DB_HOST=postgres
+      # Port databáze
+      - DB_PORT=5432
+      # Název databáze
+      - DB_DATABASE=nocobase
+      # Uživatel databáze
+      - DB_USER=nocobase
+      # Heslo databáze
+      - DB_PASSWORD=nocobase
+      # Časové pásmo
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Pokud používáte existující databázovou službu, můžete postgres nespouštět.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Klíč aplikace, slouží k generování uživatelských tokenů atd.
+      # Pokud se APP_KEY změní, staré tokeny se stanou neplatnými.
+      # Může to být libovolný náhodný řetězec, ujistěte se, že nebude vyzrazen.
+      - APP_KEY=your-secret-key
+      # Typ databáze, podporuje postgres, mysql, mariadb.
+      - DB_DIALECT=mysql
+      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru.
+      - DB_HOST=mysql
+      # Port databáze
+      - DB_PORT=3306
+      # Název databáze
+      - DB_DATABASE=nocobase
+      # Uživatel databáze
+      - DB_USER=root
+      # Heslo databáze
+      - DB_PASSWORD=nocobase
+      # Zda se názvy tabulek a polí databáze převedou na styl snake_case.
+      - DB_UNDERSCORED=true
+      # Časové pásmo
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Pokud používáte existující databázovou službu, můžete mysql nespouštět.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Klíč aplikace, slouží k generování uživatelských tokenů atd.
+      # Pokud se APP_KEY změní, staré tokeny se stanou neplatnými.
+      # Může to být libovolný náhodný řetězec, ujistěte se, že nebude vyzrazen.
+      - APP_KEY=your-secret-key
+      # Typ databáze, podporuje postgres, mysql, mariadb.
+      - DB_DIALECT=mariadb
+      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru.
+      - DB_HOST=mariadb
+      # Port databáze
+      - DB_PORT=3306
+      # Název databáze
+      - DB_DATABASE=nocobase
+      # Uživatel databáze
+      - DB_USER=root
+      # Heslo databáze
+      - DB_PASSWORD=nocobase
+      # Zda se názvy tabulek a polí databáze převedou na styl snake_case.
+      - DB_UNDERSCORED=true
+      # Časové pásmo
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Pokud používáte existující databázovou službu, můžete mariadb nespouštět.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
 </Tabs>
 
 ## 3. Instalace a spuštění NocoBase

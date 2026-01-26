@@ -37,10 +37,10 @@ cd C:\your\path\my-project
 services:
   app:
     # Recomendado usar a imagem do Alibaba Cloud (pode oferecer melhor desempenho de rede)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    image: nocobase/nocobase:1.7.14-full
     # Você também pode usar uma versão de alias (pode atualizar automaticamente, use com cautela em produção)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
     # Docker Hub (pode ser mais lento/falhar)
     # image: nocobase/nocobase:1.7.14-full
 # ...
@@ -71,7 +71,7 @@ O NocoBase não suporta *downgrades*. Se precisar reverter, restaure o backup do
 
 **P: Imagem sendo puxada lentamente ou falha**
 
-Use um acelerador de imagem ou utilize a imagem do Alibaba Cloud `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`.
+Use um acelerador de imagem ou utilize a imagem do Alibaba Cloud `nocobase/nocobase:<tag>`.
 
 **P: A versão não mudou**
 

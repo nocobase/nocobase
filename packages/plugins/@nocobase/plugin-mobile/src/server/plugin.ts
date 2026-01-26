@@ -44,6 +44,9 @@ export class PluginMobileServer extends Plugin {
           name: 'mobile',
         },
       });
+      if (!record) {
+        return;
+      }
       record.options = {
         ...record.options,
         deprecated: true,

@@ -39,42 +39,42 @@ DB_PASSWORD=nocobase
 #### डॉकर इंस्टॉलेशन
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # उपयोगकर्ता टोकन आदि उत्पन्न करने के लिए एप्लिकेशन कुंजी।
-      # यदि APP_KEY बदला जाता है, तो पुराने टोकन भी अमान्य हो जाएंगे।
-      # कोई भी रैंडम स्ट्रिंग हो सकती है, और सुनिश्चित करें कि यह गोपनीय रहे।
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # डेटाबेस प्रकार
+      # Database type
       - DB_DIALECT=kingbase
-      # डेटाबेस होस्ट, यदि आवश्यक हो तो मौजूदा डेटाबेस सर्वर IP से बदलें।
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # डेटाबेस नाम
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # डेटाबेस उपयोगकर्ता
+      # Database user
       - DB_USER=nocobase
-      # डेटाबेस पासवर्ड
+      # Database password
       - DB_PASSWORD=nocobase
-      # समय क्षेत्र
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # केवल परीक्षण उद्देश्यों के लिए किंगबेस सेवा
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -85,10 +85,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # 'no' पर सेट होना चाहिए
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # केवल pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```

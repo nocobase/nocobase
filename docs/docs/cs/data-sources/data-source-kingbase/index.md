@@ -38,42 +38,42 @@ DB_PASSWORD=nocobase
 #### Instalace pomocí Dockeru
 
 ```yml
-version: "3"
-
 networks:
   nocobase:
     driver: bridge
 
+services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - postgres
+      - kingbase
     environment:
-      # Klíč aplikace pro generování uživatelských tokenů atd.
-      # Změna APP_KEY zneplatní staré tokeny.
-      # Použijte náhodný řetězec a zajistěte, aby nebyl zveřejněn.
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
-      # Typ databáze
+      # Database type
       - DB_DIALECT=kingbase
-      # Hostitel databáze, lze nahradit IP adresou existujícího databázového serveru
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
-      # Název databáze
+      - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
-      # Uživatel databáze
+      # Database user
       - DB_USER=nocobase
-      # Heslo databáze
+      # Database password
       - DB_PASSWORD=nocobase
-      # Časové pásmo
-      - TZ=Asia/Shanghai
+      # Timezone
+      - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "11000:80"
 
-  # Služba Kingbase pouze pro testovací účely
+  # Kingbase service for testing purposes only
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -84,10 +84,10 @@ networks:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # Musí být nastaveno na 'no'
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # Pouze pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```
