@@ -10,6 +10,7 @@
 import { AppSupervisor, Gateway } from '@nocobase/server';
 import { createMockServer, createWsClient, MockServer, startServerWithRandomPort, waitSecond } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
+import { PluginMultiAppManagerServer } from '../server';
 
 describe('gateway with multiple apps', () => {
   let app: MockServer;
@@ -19,8 +20,10 @@ describe('gateway with multiple apps', () => {
   beforeEach(async () => {
     gateway = Gateway.getInstance();
 
+    PluginMultiAppManagerServer.staticImport();
+
     app = await createMockServer({
-      plugins: ['multi-app-manager'],
+      plugins: ['multi-app-manager', 'field-sort'],
     });
   });
 
@@ -33,7 +36,7 @@ describe('gateway with multiple apps', () => {
   });
 
   it.skip('should boot main app with sub apps', async () => {
-    const mainStatus = AppSupervisor.getInstance().getAppStatus('main');
+    const mainStatus = await AppSupervisor.getInstance().getAppStatus('main');
     expect(mainStatus).toEqual('running');
 
     const subAppName = `td_${uid()}`;
