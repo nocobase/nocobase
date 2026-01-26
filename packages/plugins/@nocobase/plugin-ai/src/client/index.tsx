@@ -190,3 +190,4 @@ export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
 export { ProfileCard } from './ai-employees/ProfileCard';
 export { avatars } from './ai-employees/avatars';
+export { setRuntimeContext } from './skills';
