@@ -16,16 +16,13 @@ import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
+import { Command } from '@langchain/langgraph';
 import { Context } from '@nocobase/actions';
 import { ToolOptions } from '../manager/tool-manager';
 import { tool } from 'langchain';
 import { createAgent } from 'langchain';
-import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
-import { Command } from '@langchain/langgraph';
-
-let isCheckPointerInit = false;
-const DB_URI = `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE}?sslmode=disable`;
-const checkpointer = PostgresSaver.fromConnString(DB_URI);
+import { SequelizeCollectionSaver } from '../ai-employees/checkpoints';
+import '@langchain/core/utils/stream';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -90,6 +87,7 @@ export abstract class LLMProvider {
     }
     const middleware = context?.middleware;
     const systemPrompt = context?.systemPrompt;
+    const checkpointer = new SequelizeCollectionSaver(() => this.app.mainDataSource);
     return createAgent({ model: this.chatModel, tools, middleware, systemPrompt, checkpointer });
   }
 
@@ -104,14 +102,10 @@ export abstract class LLMProvider {
   }
 
   async getAgentStream(context: AIChatContext, options?: any, state?: any) {
-    if (!isCheckPointerInit) {
-      isCheckPointerInit = true;
-      await checkpointer.setup();
-    }
-
     const agent = this.prepareAgent(context);
     if (context.decisions?.length) {
       return agent.stream(
+        // @ts-ignore
         new Command({
           resume: {
             decisions: context.decisions,
