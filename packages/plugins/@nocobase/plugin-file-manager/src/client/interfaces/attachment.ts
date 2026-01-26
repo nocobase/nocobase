@@ -127,18 +127,6 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
           'x-component': 'Input',
         },
       },
-      {
-        name: 'url',
-        value: 'url',
-        title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
-        label: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
-        operators: interfacesProperties.operators.string,
-        schema: {
-          title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
-          type: 'string',
-          'x-component': 'Input',
-        },
-      },
     ],
   };
 }

@@ -42,7 +42,11 @@ export class FilterActionModel extends ActionModel {
       return this.map.get(this.props.filterableFieldNames);
     }
 
-    const fields = this.context.blockModel.collection?.getFields() || [];
+    const fields =
+      this.context.blockModel.collection?.getFields().filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments';
+      }) || [];
 
     const result = getIgnoreFieldNames(
       this.props.filterableFieldNames || [],
@@ -255,9 +259,9 @@ function getFilterableFields(collection: any, fiMgr: any) {
   const fields = collection?.getFields?.() || [];
   if (!fiMgr) return [];
   return fields.filter((field: any) => {
+    if (field.target === 'attachments') return false;
     if (!field?.interface) return false;
     if (field?.filterable === false) return false;
-    if (field?.target && !field?.targetCollection) return false;
     const fi = fiMgr.getFieldInterface(field.interface);
     return !!fi?.filterable;
   });
