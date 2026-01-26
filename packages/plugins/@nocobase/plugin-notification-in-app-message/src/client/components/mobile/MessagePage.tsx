@@ -15,7 +15,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Schema } from '@formily/react';
-import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
 import { useLocalTranslation } from '../../../locale';
 import {
   fetchChannels,
@@ -45,6 +44,9 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
   const ctx = useCurrentUserContext();
   const [searchParams] = useSearchParams();
   const channelName = searchParams.get('channel');
+  const MobilePageContentContainer = app.getComponent('MobilePageContentContainer');
+  const MobilePageHeader = app.getComponent('MobilePageHeader');
+  const MobilePageProvider = app.getComponent('MobilePageProvider');
   useEffect(() => {
     const effect = async () => {
       if (channelName) {
@@ -104,6 +106,10 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
     }
   }, [messages]);
   const title = Schema.compile(selectedChannelObs.value?.title, { t: app.i18n.t }) || t('Message');
+
+  if (!MobilePageProvider || !MobilePageHeader || !MobilePageContentContainer) {
+    return null;
+  }
 
   return (
     <MobilePageProvider displayPageHeader={props.displayPageHeader}>
