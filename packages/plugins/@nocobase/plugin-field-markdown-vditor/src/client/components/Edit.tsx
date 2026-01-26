@@ -74,20 +74,20 @@ export const Edit = withDynamicSchemaProps((props) => {
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
-        
+
         // Save scroll positions before setting initial value to prevent unwanted autoscroll
         // This is especially important when adding empty fields or fields without '\n' at the end
         const savedScrollX = window.scrollX || window.pageXOffset;
         const savedScrollY = window.scrollY || window.pageYOffset;
-        
+
         vditor.setValue(value ?? '');
-        
+
         // Restore scroll position to prevent autoscroll during initialization
         // This fixes the issue where fields without '\n' at the end cause unwanted scrolling
         requestAnimationFrame(() => {
           window.scrollTo(savedScrollX, savedScrollY);
         });
-        
+
         if (disabled) {
           vditor.disabled();
         } else {
@@ -198,7 +198,7 @@ export const Edit = withDynamicSchemaProps((props) => {
         // This fixes the issue where fields without '\n' at the end cause unwanted scrolling
         const savedScrollX = window.scrollX || window.pageXOffset;
         const savedScrollY = window.scrollY || window.pageYOffset;
-        
+
         editor.setValue(value ?? '');
         // editor.focus();
 
@@ -206,16 +206,16 @@ export const Edit = withDynamicSchemaProps((props) => {
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
         ) as HTMLPreElement;
-        
+
         // Check if the editor is currently focused
         // Only set cursor position if user is actively editing to avoid unwanted scroll
         const vditorContent = containerRef.current?.querySelector('.vditor-content');
-        const isEditorFocused = preArea && (
-          document.activeElement === preArea || 
-          preArea.contains(document.activeElement) ||
-          (document.activeElement as HTMLElement)?.closest?.('.vditor-content') === vditorContent
-        );
-        
+        const isEditorFocused =
+          preArea &&
+          (document.activeElement === preArea ||
+            preArea.contains(document.activeElement) ||
+            (document.activeElement as HTMLElement)?.closest?.('.vditor-content') === vditorContent);
+
         if (preArea && isEditorFocused) {
           // User is actively editing - set cursor position at the end
           // We don't prevent scroll here as the user is actively interacting with the field
@@ -229,7 +229,7 @@ export const Edit = withDynamicSchemaProps((props) => {
           }
         }
         // If editor is not focused, don't set selection to avoid unwanted autoscroll
-        
+
         // Restore scroll position if field was not focused to prevent autoscroll
         // This is crucial for fields without '\n' at the end which may trigger scroll
         if (!isEditorFocused) {
