@@ -117,5 +117,10 @@
     "type": "custom-link",
     "label": "Install and Upgrade Plugins",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "Translation Contribution",
+    "link": "/get-started/translations"
   }
 ]

@@ -27,7 +27,14 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
-import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
+import {
+  buildOpenerUids,
+  LabelByField,
+  resolveOptions,
+  toSelectValue,
+  type AssociationOption,
+  type LazySelectProps,
+} from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 import { BlockSceneEnum } from '../../base';
 import { ActionWithoutPermission } from '../../base/ActionModel';
@@ -201,7 +208,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         value={toSelectValue(value, fieldNames, isMultiple)}
         mode={isMultiple ? 'multiple' : undefined}
         onChange={(value, option) => {
-          onChange(option as any);
+          onChange(option as AssociationOption | AssociationOption[]);
         }}
         optionRender={({ data }) => {
           return <LabelByField option={data} fieldNames={fieldNames} />;
@@ -733,6 +740,11 @@ RecordSelectFieldModel.registerFlow({
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const sourceCollection = ctx.collectionField?.collection;
+        const sourceRecord = ctx.currentObject || ctx.record;
+        const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
+        const associationName = ctx.collectionField?.resourceName;
+        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -743,7 +755,9 @@ RecordSelectFieldModel.registerFlow({
             scene: 'create',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
+            openerUids,
             onChange: (e) => {
               if (toOne || !ctx.model.props.allowMultiple) {
                 onChange(e);
@@ -784,13 +798,13 @@ RecordSelectFieldModel.registerFlow({
 });
 
 RecordSelectFieldModel.define({
-  label: tExpr('Select'),
+  label: tExpr('Dropdown select'),
 });
 
 EditableItemModel.bindModelToInterface(
   'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
-  { isDefault: true },
+  { isDefault: true, order: 1 },
 );
 
 FilterableItemModel.bindModelToInterface(

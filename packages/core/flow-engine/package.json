@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/flow-engine",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "private": false,
   "description": "A standalone flow engine for NocoBase, managing workflows, models, and actions.",
   "main": "lib/index.js",
@@ -8,8 +8,8 @@
   "dependencies": {
     "@formily/antd-v5": "1.x",
     "@formily/reactive": "2.x",
-    "@nocobase/sdk": "2.0.0-alpha.64",
-    "@nocobase/shared": "2.0.0-alpha.64",
+    "@nocobase/sdk": "2.0.0-alpha.66",
+    "@nocobase/shared": "2.0.0-alpha.66",
     "ahooks": "^3.7.2",
     "dayjs": "^1.11.9",
     "dompurify": "^3.0.2",

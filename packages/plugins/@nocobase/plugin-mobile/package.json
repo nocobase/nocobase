@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
@@ -8,9 +8,9 @@
   "displayName": "Mobile (deprecated)",
   "displayName.zh-CN": "移动端（已废弃）",
   "displayName.ru-RU": "Мобильная версия (устарело)",
-  "description": "Provides the ability to configure mobile pages.",
-  "description.ru-RU": "Предоставляет возможность настройки мобильных страниц.",
-  "description.zh-CN": "提供移动端页面配置的能力。",
+  "description": "Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.",
+  "description.ru-RU": "С 2.0 версии, мобильная версия заменена новым плагином ui-layout, который всё ещё находится в разработке.",
+  "description.zh-CN": "自 2.0 版本起，移动端由新的 ui-layout 插件替代，该插件仍在开发中。",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-acl": "2.x",

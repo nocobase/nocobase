@@ -2,7 +2,7 @@
   "private": true,
   "name": "@nocobase-example/plugin-custom-table-block",
   "displayName": "Plugin example: Custom table block",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

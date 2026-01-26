@@ -25,6 +25,7 @@ const getOptions = (
         label: Schema.compile(group.label, { t }),
         key: groupName,
         options: Object.keys(fieldInterfaces[groupName] || {})
+          .filter((type) => !fieldInterfaces[groupName][type].hidden)
           .map((type) => {
             const field = fieldInterfaces[groupName][type];
             return {
@@ -48,50 +49,17 @@ export const useFieldInterfaceOptions = () => {
   return useMemo(() => {
     const fieldInterfaceInstances = dm.collectionFieldInterfaceManager.getFieldInterfaces();
     const fieldGroups = dm.collectionFieldInterfaceManager.getFieldInterfaceGroups();
-    const fieldInterfaceInstancesByGroups = fieldInterfaceInstances
-      .filter((fieldInterface) =>
-        [
-          'id',
-          'input',
-          'integer',
-          'checkbox',
-          'checkboxGroup',
-          'color',
-          'createdAt',
-          'updatedAt',
-          'createdBy',
-          'updatedBy',
-          'date',
-          'datetime',
-          'datetimeNoTz',
-          'email',
-          'icon',
-          'json',
-          'markdown',
-          'multipleSelect',
-          'nanoid',
-          'number',
-          'password',
-          'percent',
-          'phone',
-          'radioGroup',
-          'richText',
-          'select',
-          'textarea',
-          'time',
-          'unixTimestamp',
-          'url',
-          'uuid',
-        ].includes(fieldInterface.name),
-      )
-      .reduce<Record<string, CollectionFieldInterface[]>>((memo, fieldInterface) => {
+    const fieldInterfaceInstancesByGroups = fieldInterfaceInstances.reduce<Record<string, CollectionFieldInterface[]>>(
+      (memo, fieldInterface) => {
         const group = fieldInterface.group || 'basic';
         if (!memo[group]) {
           memo[group] = [];
         }
         memo[group].push(fieldInterface);
         return memo;
-      }, {});
+      },
+      {},
+    );
     return getOptions(fieldInterfaceInstancesByGroups, fieldGroups, t);
   }, [dm]);
 };

@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Кластерний режим"
+  },
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Підготовка",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Розгортання в Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Процес експлуатації",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Розподіл сервісів",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Довідник розробника",
+    "link": "/cluster-mode/development"
+  }
+]

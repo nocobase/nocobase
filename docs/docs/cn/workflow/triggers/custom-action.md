@@ -48,7 +48,7 @@ NocoBase 内置了常见的数据操作（增删改查等），当这些操作�
 
 ### 无上下文
 
-> v.1.6.0+
+> v1.6.0+
 
 在操作面板和其他数据区块，均可添加“触发工作流”按钮：
 
@@ -86,7 +86,7 @@ NocoBase 内置了常见的数据操作（增删改查等），当这些操作�
 
 ### 多行记录
 
-> v.1.6.0+
+> v1.6.0+
 
 在表格区块的操作栏中，添加“触发工作流”按钮时会有一个额外选项，选择上下文类型是“无上下文”或“多行数据”：
 
@@ -154,6 +154,21 @@ NocoBase 内置了常见的数据操作（增删改查等），当这些操作�
 
 自定义操作事件的触发不仅限于用户界面的操作，也可以通过 HTTP API 调用触发。特别地，自定义操作事件为所有数据表操作都提供了触发工作流的新操作类型：`trigger`，可安装 NocoBase 标准的操作 API 来进行调用。
 
+:::info{title="提示"}
+因为外部调用也需要基于用户身份，所以通过 HTTP API 调用时，和普通界面发送的请求一致，都需要提供认证信息，包括 `Authorization` 请求头或 `token` 参数（登录获得的 token），以及 `X-Role` 请求头（用户当前角色名）。
+:::
+
+### 无上下文
+
+无上下文的工作流需要针对 workflows 资源进行触发操作：
+
+```bash
+curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
+  "http://localhost:3000/api/workflows:trigger?triggerWorkflows=workflowKey"
+```
+
+### 单行记录
+
 类似示例中由按钮触发的工作流，可以这样调用：
 
 ```bash
@@ -169,7 +184,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger?triggerWorkflows=workflowKey"
 ```
@@ -180,7 +195,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
@@ -198,18 +213,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 以上调用成功后，将触发对应 `samples` 表的自定义操作事件。
 
 :::info{title="提示"}
-因为外部调用也需要基于用户身份，所以通过 HTTP API 调用时，和普通界面发送的请求一致，都需要提供认证信息，包括 `Authorization` 请求头或 `token` 参数（登录获得的 token），以及 `X-Role` 请求头（用户当前角色名）。
+通过 HTTP API 调用触发操作后事件时，也需要注意工作流的启用状态，以及数据表配置是否匹配，否则可能不会调用成功，或出现错误。
 :::
 
-如果需要触发该操作中对一关系数据（对多暂不支持）的事件，可以在参数中使用 `!` 来指定关系字段的触发数据：
+### 多行记录
+
+与单行记录的调用方式类似，但传入的数据只需要多个主键参数（`filterByTk[]`），且无需传入 data 部分：
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
-  "http://localhost:3000/api/posts:trigger/<:id>?triggerWorkflows=workflowKey!category"
+  "http://localhost:3000/api/samples:trigger?filterByTk[]=1&filterByTk[]=2&triggerWorkflows=workflowKey"
 ```
 
-以上调用成功后，将触发对应 `categories` 表的自定义操作事件。
-
-:::info{title="提示"}
-通过 HTTP API 调用触发操作后事件时，也需要注意工作流的启用状态，以及数据表配置是否匹配，否则可能不会调用成功，或出现错误。
-:::
+该调用将触发多行记录模式的自定义操作事件，并且将 id 为 1 和 2 的数据作为触发器上下文中的数据。

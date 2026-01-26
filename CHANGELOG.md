@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.39](https://github.com/nocobase/nocobase/compare/v1.9.38...v1.9.39) - 2026-01-21
+
+### 🐛 Bug Fixes
+
+- **[server]** Fix version of `mathjs` in common dependencies ([#8475](https://github.com/nocobase/nocobase/pull/8475)) by @mytharcher
+
+- **[client]** Fix the issue where the configuration menu does not display in Chrome 144 ([#8470](https://github.com/nocobase/nocobase/pull/8470)) by @zhangzhonghe
+
+- **[Async task manager]** Fix the issue where workflow triggered by async import delayed to execute ([#8478](https://github.com/nocobase/nocobase/pull/8478)) by @mytharcher
+
+- **[Action: Import records Pro]** Fix the issue where workflow triggered by async import delayed to execute by @mytharcher
+
+## [v1.9.38](https://github.com/nocobase/nocobase/compare/v1.9.37...v1.9.38) - 2026-01-20
+
+### 🚀 Improvements
+
+- **[server]** Support configuring a CORS origin whitelist ([#8454](https://github.com/nocobase/nocobase/pull/8454)) by @2013xile
+
+- **[Error handler]** Sanitize SQL reference errors ([#8464](https://github.com/nocobase/nocobase/pull/8464)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - fix issue where collection field group sorting settings did not take effect. ([#8453](https://github.com/nocobase/nocobase/pull/8453)) by @katherinehhh
+
+  - fix issue when editing collection in the graphical interface ([#8451](https://github.com/nocobase/nocobase/pull/8451)) by @katherinehhh
+
+  - Fix the issue where the table "Column Settings" button is non-functional ([#8441](https://github.com/nocobase/nocobase/pull/8441)) by @zhangzhonghe
+
+  - Fix the issue where table row button linkage rules affect the state of buttons within popup forms ([#8434](https://github.com/nocobase/nocobase/pull/8434)) by @zhangzhonghe
+
+- **[Mobile (deprecated)]** Deprecated mobile plugin (replaced by the ui-layout plugin from version 2.0). ([#8456](https://github.com/nocobase/nocobase/pull/8456)) by @chenos
+
 ## [v1.9.37](https://github.com/nocobase/nocobase/compare/v1.9.36...v1.9.37) - 2026-01-15
 
 ### 🚀 Improvements

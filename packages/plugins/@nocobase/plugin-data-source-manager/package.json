@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-source-manager",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "dist/server/index.js",
   "displayName": "Data source manager",
   "displayName.ru-RU": "Менеджер управления источниками данных",

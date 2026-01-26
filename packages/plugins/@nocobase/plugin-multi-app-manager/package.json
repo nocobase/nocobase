@@ -6,7 +6,7 @@
   "description": "Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.",
   "description.ru-RU": "Позволяет динамически создавать несколько приложений без отдельных развертываний.",
   "description.zh-CN": "多应用以进程共享的方式运行，仅适合测试和演示环境，生产环境下请勿使用。",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/multi-app-manager",

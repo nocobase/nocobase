@@ -8,9 +8,10 @@
  */
 
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useForm } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useForm, useFormEffects } from '@formily/react';
 import { Input as AntdInput } from 'antd';
 import { customAlphabet as Alphabet } from 'nanoid';
+import { onFormReset } from '@formily/core';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
@@ -45,6 +46,17 @@ export const NanoIDInput = Object.assign(
           state.validator = isValidNanoid;
         });
       }, [isInFilterFormBlock]);
+
+      // 监听表单 reset
+      useFormEffects(() => {
+        onFormReset(() => {
+          if (!customAlphabet || isInFilterFormBlock || autoFill === false) return;
+          const value = Alphabet(customAlphabet, size)();
+          field.setInitialValue(value);
+          field.setValue(value);
+        });
+      });
+
       return {
         ...props,
         suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,

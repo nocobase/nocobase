@@ -39,6 +39,7 @@ export class QuickEditFormModel extends FlowModel {
   viewContainer: any;
   __onSubmitSuccess;
   _fieldProps: any;
+  _onOk: any;
 
   get form() {
     return this.context.form;
@@ -56,13 +57,26 @@ export class QuickEditFormModel extends FlowModel {
     dataSourceKey: string;
     collectionName: string;
     fieldPath: string;
-    filterByTk: string;
     record: any;
+    filterByTk?: string;
     onSuccess?: (values: any) => void;
     fieldProps?: any;
+    sourceFieldModelUid?: string;
+    onOk?: (values: any) => void;
   }) {
-    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, record, onSuccess, fieldProps } =
-      options;
+    const {
+      flowEngine,
+      target,
+      dataSourceKey,
+      collectionName,
+      fieldPath,
+      filterByTk,
+      record,
+      onSuccess,
+      fieldProps,
+      onOk,
+      sourceFieldModelUid,
+    } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditFormModel',
       stepParams: {
@@ -92,12 +106,13 @@ export class QuickEditFormModel extends FlowModel {
         model.viewContainer = popover;
         model.__onSubmitSuccess = onSuccess;
         model._fieldProps = fieldProps;
+        model._onOk = onOk;
         console.log('QuickEditFormModel.open3', Date.now() - model.now);
         return (
           <FlowModelRenderer
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            inputArgs={{ filterByTk, record }}
+            inputArgs={{ filterByTk, record, sourceFieldModelUid }}
           />
         );
       },
@@ -178,15 +193,20 @@ export class QuickEditFormModel extends FlowModel {
               const originalValues = {
                 [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
               };
-              try {
-                await this.resource.save(formValues, { refresh: false });
-                this.__onSubmitSuccess?.(formValues);
+              if (this._onOk) {
+                this._onOk(formValues);
                 this.viewContainer.close();
-                this.context.message.success(this.context.t('Saved successfully'));
-              } catch (error) {
-                console.error('Failed to save form data:', error);
-                this.context.message.error(this.context.t('Failed to save form data'));
-                this.__onSubmitSuccess?.(originalValues);
+              } else {
+                try {
+                  await this.resource.save(formValues, { refresh: false });
+                  this.__onSubmitSuccess?.(formValues);
+                  this.viewContainer.close();
+                  this.context.message.success(this.context.t('Saved successfully'));
+                } catch (error) {
+                  console.error('Failed to save form data:', error);
+                  this.context.message.error(this.context.t('Failed to save form data'));
+                  this.__onSubmitSuccess?.(originalValues);
+                }
               }
             }}
           >
@@ -211,7 +231,6 @@ QuickEditFormModel.registerFlow({
         ctx.model.fieldPath = fieldPath;
         ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
         const resource = ctx.createResource(SingleRecordResource);
-        console.log(resource);
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
         ctx.model.resource = resource;
@@ -239,6 +258,7 @@ QuickEditFormModel.registerFlow({
             },
           });
           fieldModel.setProps({ ...collectionField.getComponentProps(), ...ctx.model._fieldProps });
+          fieldModel.setProps({ sourceFieldModelUid: ctx.inputArgs.sourceFieldModelUid });
           ctx.model.context.defineProperty('collectionField', {
             get: () => collectionField,
           });

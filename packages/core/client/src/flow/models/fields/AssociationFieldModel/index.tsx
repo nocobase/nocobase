@@ -13,3 +13,4 @@ export * from './SubTableFieldModel';
 export * from './SubFormFieldModel';
 export * from './RecordPickerFieldModel';
 export * from './CascadeSelectFieldModel';
+export * from './PopupSubTableFieldModel';

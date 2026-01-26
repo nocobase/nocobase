@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "सिस्टम प्रबंधन",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Plugin प्रबंधन",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "सिस्टम सेटिंग्स",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "कस्टम ब्रांडिंग",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "थीम एडिटर",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "भाषा सेटिंग्स",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "लोकलाइज़ेशन प्रबंधन",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

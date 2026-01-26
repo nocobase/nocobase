@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "وضع التكتل"
+  },
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "التحضير",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "نشر Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "عملية التشغيل",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "تقسيم الخدمات",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "مرجع التطوير",
+    "link": "/cluster-mode/development"
+  }
+]

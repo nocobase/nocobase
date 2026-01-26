@@ -4,7 +4,7 @@
   "displayName.zh-CN": "UI 模板",
   "description": "Provides block templates and popup templates for UI reuse.",
   "description.zh-CN": "提供区块模板和弹窗模板复用的能力。",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "types": "./dist/index.d.ts",

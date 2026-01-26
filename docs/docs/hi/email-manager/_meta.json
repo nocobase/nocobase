@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "एडमिनिस्ट्रेटर कॉन्फ़िगरेशन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "कॉन्फ़िगरेशन प्रक्रिया",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Google मेल कॉन्फ़िगरेशन",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Microsoft मेल कॉन्फ़िगरेशन",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "अक्सर पूछे जाने वाले प्रश्न",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "फ़ीचर परिचय",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "मेल सेंटर",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "मेल ब्लॉक",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "मेल सिग्नेचर",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "मेल टेम्प्लेट",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "उन्नत",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "मेल नोट्स",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "मेल टू-डू",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "मेल लेबल",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "बैच भेजना",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "ड्राफ़्ट ऑटो-सेव करें",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

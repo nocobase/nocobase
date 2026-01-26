@@ -6,7 +6,7 @@
   "description": "SMS authentication.",
   "description.ru-RU": "Аутентификация по SMS.",
   "description.zh-CN": "通过短信验证码认证身份。",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth-sms",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth-sms",

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/telemetry",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "description": "nocobase telemetry library",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
@@ -11,7 +11,7 @@
     "directory": "packages/telemetry"
   },
   "dependencies": {
-    "@nocobase/utils": "2.0.0-alpha.64",
+    "@nocobase/utils": "2.0.0-alpha.66",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/instrumentation": "^0.207.0",
     "@opentelemetry/resources": "^2.2.0",

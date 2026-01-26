@@ -13,7 +13,6 @@ import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
-import * as antdIcons from '@ant-design/icons';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
@@ -38,6 +37,7 @@ import {
   extractPropertyPath,
   extractUsedVariablePaths,
   FlowExitException,
+  prepareRunJsCode,
   resolveDefaultParams,
   resolveExpressions,
 } from './utils';
@@ -50,6 +50,7 @@ import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
+import { setupRunJSLibs } from './runjsLibs';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -964,7 +965,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
-  declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;
   declare pageInfo: { version?: 'v1' | 'v2' };
   /**
    * @deprecated use `resolveJsonTemplate` instead
@@ -995,6 +996,25 @@ class BaseFlowEngineContext extends FlowContext {
   declare location: Location;
   declare sql: FlowSQLRepository;
   declare logger: pino.Logger;
+
+  constructor() {
+    super();
+    this.defineMethod(
+      'runjs',
+      async function (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) {
+        const { preprocessTemplates, ...runnerOptions } = options || {};
+        const mergedGlobals = { ...(runnerOptions?.globals || {}), ...(variables || {}) };
+        const runner = await this.createJSRunner({
+          ...(runnerOptions || {}),
+          globals: mergedGlobals,
+        });
+        // Enable by default; use `preprocessTemplates: false` to explicitly disable.
+        const shouldPreprocessTemplates = preprocessTemplates !== false;
+        const jsCode = await prepareRunJsCode(String(code ?? ''), { preprocessTemplates: shouldPreprocessTemplates });
+        return runner.run(jsCode);
+      },
+    );
+  }
 }
 
 class BaseFlowModelContext extends BaseFlowEngineContext {
@@ -1042,14 +1062,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
-    });
-    this.defineMethod('runjs', async (code, variables, options?: JSRunnerOptions) => {
-      const mergedGlobals = { ...(options?.globals || {}), ...(variables || {}) };
-      const runner = (await (this as any).createJSRunner({
-        ...(options || {}),
-        globals: mergedGlobals,
-      })) as JSRunner;
-      return runner.run(code);
     });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
@@ -1351,7 +1363,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
-      if (cache.has(u)) return cache.get(u)!;
+      if (cache.has(u)) return cache.get(u) as Promise<any>;
       // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
       const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
       // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
@@ -1381,16 +1393,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       } catch (_) {
         // ignore if setup is not available
       }
-      const version = (options?.version as any) || 'v1';
+      const version = options?.version || 'v1';
       const modelClass = getModelClassName(this);
-      const Ctor =
-        (RunJSContextRegistry.resolve(version, modelClass) as any) ||
-        (RunJSContextRegistry.resolve(version, '*') as any) ||
-        FlowRunJSContext;
-      let runCtx: any;
-      if (Ctor) {
-        runCtx = new Ctor(this);
-      }
+      const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
+      const runCtx = new Ctor(this);
       const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
@@ -1528,13 +1534,6 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
-    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await this.createJSRunner({
-        globals: variables,
-        version: options?.version,
-      });
-      return runner.run(code);
-    });
     this.defineProperty('model', {
       value: model,
     });
@@ -1665,7 +1664,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate((this.master as any).context);
+    this.addDelegate(this.master.context);
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
@@ -1679,13 +1678,6 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         this.fork['_refCreated'] = true;
         return stableRef;
       },
-    });
-    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await this.createJSRunner({
-        globals: variables,
-        version: options?.version,
-      });
-      return runner.run(code);
     });
   }
 }
@@ -1740,13 +1732,6 @@ export class FlowRuntimeContext<
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
-    });
-    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await this.createJSRunner({
-        globals: variables,
-        version: options?.version,
-      });
-      return runner.run(code);
     });
   }
 
@@ -1844,6 +1829,7 @@ function __runjsDeepMerge(base: any, patch: any) {
   }
   return out;
 }
+
 export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
@@ -1864,17 +1850,7 @@ export class FlowRunJSContext extends FlowContext {
     };
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
-    // 为第三方/通用库提供统一命名空间：ctx.libs
-    // - 新增库应优先挂载到 ctx.libs.xxx
-    // - 同时保留顶层别名（如 ctx.React / ctx.antd），以兼容历史代码
-    const libs = Object.freeze({
-      React,
-      ReactDOM: ReactDOMShim,
-      antd,
-      dayjs,
-      antdIcons,
-    });
-    this.defineProperty('libs', { value: libs });
+    setupRunJSLibs(this);
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available
@@ -1955,7 +1931,7 @@ export class FlowRunJSContext extends FlowContext {
     const self = this as any as Function;
     let cacheForClass = __runjsDocCache.get(self);
     const cacheKey = String(locale || 'default');
-    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey)!;
+    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey) as RunJSDocMeta;
     const chain: Function[] = [];
     let cur: any = self;
     while (cur && cur.prototype) {

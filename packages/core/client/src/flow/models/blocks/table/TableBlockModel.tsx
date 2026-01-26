@@ -277,6 +277,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   filterByTk: this.collection.getFilterByTK(record),
                   record: record,
                   fieldProps: { ...model.props, ...model.subModels.field.props },
+                  sourceFieldModelUid: model.subModels.field.uid,
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
@@ -608,7 +609,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Enable tree table'),
       uiMode: { type: 'switch', key: 'treeTable' },
       hideInSettings(ctx) {
-        if (ctx.model.collection.template !== 'tree') {
+        if ((ctx.model.collection.template !== 'tree' || ctx.model, ctx.view?.inputArgs?.scene === 'select')) {
           return true;
         }
       },
@@ -626,7 +627,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Expand all rows by default'),
       uiMode: { type: 'switch', key: 'defaultExpandAllRows' },
       hideInSettings(ctx) {
-        if (ctx.model.collection.template !== 'tree') {
+        if ((ctx.model.collection.template !== 'tree' || ctx.model, ctx.view?.inputArgs?.scene === 'select')) {
           return true;
         }
       },

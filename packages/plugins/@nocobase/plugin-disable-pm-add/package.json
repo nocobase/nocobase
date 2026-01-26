@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-disable-pm-add",
-  "version": "2.0.0-alpha.64",
+  "version": "2.0.0-alpha.66",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

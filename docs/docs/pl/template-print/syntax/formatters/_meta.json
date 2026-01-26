@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Przegląd",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formatowanie tekstu",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formatowanie liczb",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formatowanie walut",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formatowanie dat",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formatowanie interwałów czasowych",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formatowanie tablic",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

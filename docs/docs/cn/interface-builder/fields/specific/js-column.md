@@ -19,7 +19,7 @@ JS Column 的每个单元格渲染时可使用以下上下文能力：
 - `ctx.openView(options)`：打开已配置的视图（弹窗/抽屉/页面）；
 - `ctx.i18n.t()` / `ctx.t()`：国际化；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染；
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`：内置 React / ReactDOM / Ant Design / Ant Design 图标 / dayjs 等通用库，用于 JSX 渲染与时间处理。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` 仍保留用于兼容。）
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`：内置 React / ReactDOM / Ant Design / Ant Design 图标 / dayjs / lodash / math.js / formula.js 等通用库，用于 JSX 渲染、时间处理、数据操作与数学运算。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` 仍保留用于兼容。）
 - `ctx.render(vnode)`：渲染 React 元素/HTML/DOM 到默认容器 `ctx.element`（当前单元格），多次渲染会复用 Root，并覆盖容器现有内容。
 
 ## 编辑器与片段
