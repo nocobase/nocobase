@@ -27,12 +27,12 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
-import { enumToOptions, translateOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
-  () => import('../../../schema-component'),
+  () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
   'DateFilterDynamicComponent',
 );
 
