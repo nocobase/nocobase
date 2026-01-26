@@ -476,14 +476,15 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const supportKeyword = operator === '$in' || operator === '$notIn';
       if (resolved && supportKeyword) {
         const { Comp, props: xProps } = resolved;
-        if ((!xProps?.options || xProps?.options.length === 0) && enumOptions?.length) {
-          xProps.options = enumOptions;
+        const nextProps = { ...xProps };
+        if ((!nextProps?.options || nextProps?.options.length === 0) && enumOptions?.length) {
+          nextProps.options = enumOptions;
         }
         const style = {
           flex: '1 1 40%',
           minWidth: 160,
           maxWidth: '100%',
-          ...(xProps?.style || {}),
+          ...(nextProps?.style || {}),
         };
         const normalized =
           Array.isArray(rightValue) && rightValue.every((v) => typeof v === 'string' || typeof v === 'number')
@@ -497,8 +498,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         return (
           <div style={style}>
             <Comp
-              {...xProps}
-              style={{ width: '100%', ...(xProps?.style || {}) }}
+              {...nextProps}
+              style={{ width: '100%', ...(nextProps?.style || {}) }}
               value={normalized}
               onChange={(vals: any) => setRightValue(vals)}
             />
