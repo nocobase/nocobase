@@ -6,11 +6,11 @@ Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse 
 
 ## Opslag-engines uitbreiden
 
-### Server-side
+### Serverzijde
 
-1.  **`StorageType` overerven**
-    
-    Maak een nieuwe klasse aan en implementeer de methoden `make()` en `delete()`. Indien nodig, overschrijf dan hooks zoals `getFileURL()`, `getFileStream()` en `getFileData()`.
+1. **`StorageType` erven**
+   
+   Maak een nieuwe klasse aan en implementeer de methoden `make()` en `delete()`. Overschrijf indien nodig hooks zoals `getFileURL()`, `getFileStream()` en `getFileData()`.
 
 Voorbeeld:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Het nieuwe type registreren**  
-    Injecteer de nieuwe opslagimplementatie in de `beforeLoad`- of `load`-lifecycle van de plugin:
+4. **Nieuw type registreren**  
+   Voeg de nieuwe opslagimplementatie in het `beforeLoad`- of `load`-levenscyclus van de plugin in:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Na registratie verschijnt de opslagconfiguratie in de `storages`-resource, net als de ingebouwde typen. De configuratie die `StorageType.defaults()` biedt, kunt u gebruiken om formulieren automatisch in te vullen of standaardrecords te initialiseren.
+Na registratie verschijnt de opslagconfiguratie in de `storages`-resource, net als de ingebouwde typen. De configuratie die `StorageType.defaults()` levert, kan worden gebruikt om formulieren automatisch te vullen of standaardrecords te initialiseren.
 
+<!--
 ### Client-side configuratie en beheerinterface
-Aan de client-side moet u de bestandsbeheerder informeren hoe de configuratieformulieren moeten worden gerenderd en of er aangepaste uploadlogica aanwezig is. Elk opslagtype-object bevat de volgende eigenschappen:
+Aan de clientzijde moet je de bestandsbeheerder informeren hoe het configuratieformulier moet worden gerenderd en of er aangepaste uploadlogica is. Elk storage-type object bevat de volgende eigenschappen:
+-->
 
-## Frontend bestandstypen uitbreiden
+## Frontend-bestandstypen uitbreiden
 
-Voor reeds geüploade bestanden kunt u op de frontend-interface verschillende preview-inhoud weergeven, afhankelijk van het bestandstype. Het bijlageveld van de bestandsbeheerder heeft een ingebouwde, browsergebaseerde bestandsvoorbeeldweergave (ingebed in een iframe). Deze methode ondersteunt de meeste bestandsformaten (zoals afbeeldingen, video's, audio en PDF's) die direct in de browser kunnen worden bekeken. Wanneer een bestandsformaat niet wordt ondersteund voor browserpreview, of wanneer er speciale interacties voor de preview nodig zijn, kunt u dit realiseren door de bestandstype-gebaseerde preview-component uit te breiden.
+Voor geüploade bestanden kun je op de frontend verschillende preview-inhoud tonen op basis van het bestandstype. Het bijlagenveld van de bestandsbeheerder heeft een ingebouwde browserpreview (ingesloten in een iframe) die de meeste bestandsformaten (zoals afbeeldingen, video, audio en PDF) direct in de browser kan tonen. Als een bestandsformaat niet door de browser wordt ondersteund of er speciale preview-interacties nodig zijn, kun je de previewcomponent per bestandstype uitbreiden.
 
 ### Voorbeeld
 
-Als u bijvoorbeeld een carrouselcomponent wilt toevoegen aan een afbeeldingstype, kunt u de volgende code gebruiken:
+Als je bijvoorbeeld een aangepaste online preview voor Office-bestanden wilt integreren, kun je de volgende code gebruiken:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Hier is `attachmentFileTypes` het entry-object dat wordt geleverd in het `@nocobase/client`-pakket voor het uitbreiden van bestandstypen. Gebruik de `add`-methode om een bestandstype-beschrijvingsobject uit te breiden.
+Hier is `filePreviewTypes` het instapobject dat door `@nocobase/plugin-file-manager/client` wordt geleverd om bestandspreviews uit te breiden. Gebruik de `add`-methode om een bestandstype-omschrijving toe te voegen.
 
-Elk bestandstype moet een `match()`-methode implementeren om te controleren of het bestandstype aan de vereisten voldoet. In het voorbeeld wordt de methode van het `mime-match`-pakket gebruikt om het `mimetype`-attribuut van het bestand te controleren. Als het overeenkomt met het `image/*`-type, wordt het beschouwd als het te verwerken bestandstype. Als er geen overeenkomst wordt gevonden, wordt teruggevallen op de ingebouwde typeverwerking.
+Elk bestandstype moet een `match()`-methode implementeren om te controleren of het bestandstype voldoet. In het voorbeeld wordt `matchMimetype` gebruikt om het `mimetype`-attribuut van het bestand te controleren. Als het overeenkomt met het `docx`-type, wordt dit beschouwd als het type dat verwerkt moet worden. Als er geen match is, valt het terug op de ingebouwde typeverwerking.
 
-De `Previewer`-eigenschap op het typebeschrijvingsobject is de component die wordt gebruikt voor de preview. Wanneer het bestandstype overeenkomt, wordt deze component gerenderd voor de preview. Over het algemeen wordt aangeraden om een dialoogvenster-achtige component (zoals `<Modal />`) als basiscontainer te gebruiken en vervolgens de preview en de interactieve inhoud daarin te plaatsen om de preview-functionaliteit te implementeren.
+De `Previewer`-eigenschap op de type-omschrijving is de component voor de preview. Wanneer het bestandstype overeenkomt, wordt deze component in de previewdialoog weergegeven. Je kunt elke React-weergave retourneren (zoals een iframe, speler of grafiek).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` is een globale instantie, te importeren vanuit `@nocobase/client`:
+`filePreviewTypes` is een globale instantie die wordt geïmporteerd vanuit `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Registreert een nieuw bestandstype-beschrijvingsobject bij het register voor bestandstypen. Het type van het beschrijvingsobject is `AttachmentFileType`.
+Registreert een nieuwe bestandstype-omschrijving in het bestandstype-register. Het type van de omschrijving is `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Methode voor het matchen van bestandsformaten.
+Methode voor bestandsformaatmatching.
 
-De invoerparameter `file` is het data-object van een geüpload bestand, dat relevante eigenschappen bevat die kunnen worden gebruikt voor typebepaling:
+De invoerparameter `file` is het dataobject van een geüpload bestand en bevat relevante eigenschappen voor typecontrole:
 
-*   `mimetype`: beschrijving van het mimetype
-*   `extname`: bestandsextensie, inclusief de "."
-*   `path`: relatief opslagpad van het bestand
-*   `url`: URL van het bestand
+* `mimetype`: mimetype-beschrijving
+* `extname`: bestandsextensie, inclusief "."
+* `path`: relatieve opslagpad van het bestand
+* `url`: bestand-URL
 
-Retourneert een `boolean`-waarde die aangeeft of er een overeenkomst is.
+Retourneert een `boolean` die aangeeft of er een match is.
+
+##### `getThumbnailURL`
+
+Retourneert de miniatuur-URL die in de bestandslijst wordt gebruikt. Als de retourwaarde leeg is, wordt de ingebouwde placeholder-afbeelding gebruikt.
 
 ##### `Previewer`
 
 Een React-component voor het previewen van bestanden.
 
-De inkomende Props zijn:
+De binnenkomende props zijn:
 
-*   `index`: De index van het bestand in de bijlagelijst
-*   `list`: De bijlagelijst
-*   `onSwitchIndex`: Een methode voor het wisselen van de index
+* `file`: het huidige bestandsobject (kan een string-URL zijn of een object met `url`/`preview`)
+* `index`: index van het bestand in de lijst
+* `list`: bestandslijst
 
-U kunt `onSwitchIndex` elke willekeurige index uit de lijst meegeven om naar een ander bestand te schakelen. Als `null` als argument wordt meegegeven, wordt de preview-component direct gesloten.
-
-```ts
-onSwitchIndex(null);
-```

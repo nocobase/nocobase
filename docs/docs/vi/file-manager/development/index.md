@@ -2,16 +2,15 @@
 Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
 :::
 
-
 # Phát triển mở rộng
 
 ## Mở rộng công cụ lưu trữ
 
 ### Phía máy chủ
 
-1.  **Kế thừa `StorageType`**
-
-    Tạo một lớp mới và triển khai các phương thức `make()` và `delete()`. Nếu cần, ghi đè các hook như `getFileURL()`, `getFileStream()`, `getFileData()`.
+1. **Kế thừa `StorageType`**
+   
+   Tạo lớp mới và triển khai các phương thức `make()` và `delete()`. Khi cần, ghi đè các hook như `getFileURL()`, `getFileStream()`, `getFileData()`.
 
 Ví dụ:
 
@@ -49,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Đăng ký loại mới**
-    Chèn triển khai lưu trữ mới vào vòng đời `beforeLoad` hoặc `load` của plugin:
+4. **Đăng ký loại mới**  
+   Tiêm triển khai lưu trữ mới vào vòng đời `beforeLoad` hoặc `load` của plugin:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -66,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Sau khi đăng ký, cấu hình lưu trữ sẽ xuất hiện trong tài nguyên `storages`, tương tự như các loại tích hợp sẵn. Cấu hình do `StorageType.defaults()` cung cấp có thể được sử dụng để tự động điền biểu mẫu hoặc khởi tạo các bản ghi mặc định.
+Sau khi đăng ký, cấu hình lưu trữ sẽ xuất hiện trong tài nguyên `storages`, giống như các loại tích hợp sẵn. Cấu hình do `StorageType.defaults()` cung cấp có thể dùng để tự động điền biểu mẫu hoặc khởi tạo bản ghi mặc định.
 
-### Phía máy khách: Cấu hình và giao diện quản lý
-Ở phía máy khách, bạn cần thông báo cho trình quản lý tệp biết cách hiển thị biểu mẫu cấu hình và liệu có logic tải lên tùy chỉnh hay không. Mỗi đối tượng loại lưu trữ bao gồm các thuộc tính sau:
+<!--
+### Cấu hình phía client và giao diện quản trị
+Ở phía client, bạn cần cho trình quản lý tệp biết cách render biểu mẫu cấu hình và có hay không logic tải lên tùy chỉnh. Mỗi đối tượng loại lưu trữ chứa các thuộc tính sau:
+-->
 
-## Mở rộng các loại tệp phía giao diện người dùng
+## Mở rộng loại tệp ở frontend
 
-Đối với các tệp đã tải lên, bạn có thể hiển thị nội dung xem trước khác nhau trên giao diện người dùng dựa trên các loại tệp khác nhau. Trường tệp đính kèm của trình quản lý tệp có tính năng xem trước tệp tích hợp sẵn dựa trên trình duyệt (nhúng trong iframe), hỗ trợ xem trước trực tiếp hầu hết các định dạng tệp (như hình ảnh, video, âm thanh và PDF) trong trình duyệt. Khi một định dạng tệp không được trình duyệt hỗ trợ xem trước hoặc khi cần các tương tác xem trước đặc biệt, bạn có thể mở rộng thành phần xem trước dựa trên loại tệp để thực hiện điều này.
+Đối với các tệp đã tải lên, bạn có thể hiển thị nội dung xem trước khác nhau trên giao diện frontend dựa trên loại tệp. Trường đính kèm của trình quản lý tệp có xem trước dựa trên trình duyệt (nhúng trong iframe), hỗ trợ xem trước hầu hết định dạng (như hình ảnh, video, âm thanh và PDF) trực tiếp trong trình duyệt. Khi định dạng tệp không được trình duyệt hỗ trợ hoặc cần tương tác xem trước đặc biệt, bạn có thể mở rộng thành phần xem trước theo loại tệp.
 
 ### Ví dụ
 
-Ví dụ, để mở rộng loại tệp hình ảnh với một thành phần chuyển đổi băng chuyền (carousel), bạn có thể sử dụng đoạn mã sau:
+Ví dụ, nếu bạn muốn tích hợp xem trước trực tuyến tùy chỉnh cho tệp Office, bạn có thể dùng đoạn mã sau:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Trong đó, `attachmentFileTypes` là đối tượng điểm truy cập được cung cấp trong gói `@nocobase/client` để mở rộng các loại tệp. Bạn sử dụng phương thức `add` của nó để mở rộng một đối tượng mô tả loại tệp.
+Ở đây `filePreviewTypes` là đối tượng đầu vào do `@nocobase/plugin-file-manager/client` cung cấp để mở rộng xem trước tệp. Dùng phương thức `add` để thêm đối tượng mô tả loại tệp.
 
-Mỗi loại tệp phải triển khai một phương thức `match()` để kiểm tra xem loại tệp có đáp ứng yêu cầu hay không. Trong ví dụ, phương thức được cung cấp bởi gói `mime-match` được sử dụng để kiểm tra thuộc tính `mimetype` của tệp. Nếu nó khớp với loại `image/*`, thì đó được coi là loại tệp cần xử lý. Nếu không khớp thành công, nó sẽ quay về cách xử lý loại tệp tích hợp sẵn.
+Mỗi loại tệp phải triển khai phương thức `match()` để kiểm tra xem loại tệp có đáp ứng yêu cầu hay không. Trong ví dụ, `matchMimetype` được dùng để kiểm tra thuộc tính `mimetype` của tệp. Nếu khớp với loại `docx` thì được coi là loại cần xử lý. Nếu không khớp, sẽ dùng xử lý loại tích hợp sẵn.
 
-Thuộc tính `Previewer` trên đối tượng mô tả loại tệp chính là thành phần được sử dụng để xem trước. Khi loại tệp khớp, thành phần này sẽ được hiển thị để xem trước. Thông thường, bạn nên sử dụng một thành phần dạng hộp thoại (như `<Modal />` v.v.) làm vùng chứa cơ sở, sau đó đặt nội dung xem trước và các tương tác cần thiết vào thành phần đó để triển khai chức năng xem trước.
+Thuộc tính `Previewer` trong đối tượng mô tả loại là thành phần dùng để xem trước. Khi loại tệp khớp, thành phần này sẽ được render trong hộp thoại xem trước. Bạn có thể trả về bất kỳ React view nào (như iframe, trình phát hoặc biểu đồ).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` là một thể hiện toàn cục, được nhập từ `@nocobase/client`:
+`filePreviewTypes` là một instance toàn cục, được import từ `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Đăng ký một đối tượng mô tả loại tệp mới vào trung tâm đăng ký loại tệp. Loại của đối tượng mô tả là `AttachmentFileType`.
+Đăng ký một đối tượng mô tả loại tệp mới vào registry loại tệp. Kiểu của đối tượng mô tả là `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
 Phương thức khớp định dạng tệp.
 
-Tham số đầu vào `file` là đối tượng dữ liệu của một tệp đã tải lên, chứa các thuộc tính liên quan có thể được sử dụng để xác định loại:
+Tham số đầu vào `file` là đối tượng dữ liệu của tệp đã tải lên, chứa các thuộc tính liên quan để kiểm tra loại:
 
-*   `mimetype`: mô tả mimetype
-*   `extname`: phần mở rộng của tệp, bao gồm dấu "."
-*   `path`: đường dẫn lưu trữ tương đối của tệp
-*   `url`: URL của tệp
+* `mimetype`: mô tả mimetype
+* `extname`: phần mở rộng tệp, bao gồm "."
+* `path`: đường dẫn lưu trữ tương đối của tệp
+* `url`: URL của tệp
 
-Giá trị trả về là kiểu `boolean`, cho biết kết quả khớp.
+Trả về giá trị `boolean` cho biết có khớp hay không.
+
+##### `getThumbnailURL`
+
+Trả về URL ảnh thu nhỏ dùng trong danh sách tệp. Nếu giá trị trả về trống, ảnh placeholder tích hợp sẽ được dùng.
 
 ##### `Previewer`
 
-Một thành phần React dùng để xem trước tệp.
+Thành phần React để xem trước tệp.
 
-Các tham số Props được truyền vào là:
+Các props đầu vào:
 
-*   `index`: Chỉ mục của tệp trong danh sách tệp đính kèm
-*   `list`: Danh sách tệp đính kèm
-*   `onSwitchIndex`: Phương thức dùng để chuyển đổi chỉ mục
+* `file`: đối tượng tệp hiện tại (có thể là URL dạng chuỗi hoặc đối tượng chứa `url`/`preview`)
+* `index`: chỉ số của tệp trong danh sách
+* `list`: danh sách tệp
 
-Trong đó, `onSwitchIndex` có thể nhận bất kỳ giá trị chỉ mục nào từ danh sách để chuyển sang tệp khác. Nếu truyền `null` làm tham số để chuyển đổi, thành phần xem trước sẽ đóng trực tiếp.
-
-```ts
-onSwitchIndex(null);
-```

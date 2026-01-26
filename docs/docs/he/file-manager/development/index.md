@@ -6,11 +6,11 @@
 
 ## הרחבת מנועי אחסון
 
-### צד השרת
+### צד שרת
 
-1.  **ירושה מ־`StorageType`**
-
-    צרו מחלקה חדשה ויישמו את המתודות `make()` ו־`delete()`. במידת הצורך, דִרסו (override) את ה־hooks כמו `getFileURL()`, `getFileStream()` ו־`getFileData()`.
+1. **ירושה מ-`StorageType`**
+   
+   צרו מחלקה חדשה והטמיעו את המתודות `make()` ו-`delete()`. במידת הצורך דרסו hooks כמו `getFileURL()`, `getFileStream()` ו-`getFileData()`.
 
 דוגמה:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **רישום הסוג החדש**
-    הטמיעו את מימוש האחסון החדש במחזור החיים `beforeLoad` או `load` של ה**תוסף**:
+4. **רישום סוג חדש**  
+   הזריקו את מימוש האחסון החדש למחזור החיים `beforeLoad` או `load` של התוסף:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-לאחר הרישום, תצורת האחסון תופיע במשאב `storages`, בדומה לסוגים המובנים. התצורה שמסופקת על ידי `StorageType.defaults()` יכולה לשמש למילוי אוטומטי של טפסים או לאתחול רשומות ברירת מחדל.
+לאחר הרישום, תצורת האחסון תופיע במשאב `storages` כמו הסוגים המובנים. את התצורה שמספק `StorageType.defaults()` ניתן להשתמש למילוי אוטומטי של טפסים או לאתחול רשומות ברירת מחדל.
 
-### תצורת צד הלקוח וממשק ניהול
-בצד הלקוח, עליכם ליידע את מנהל הקבצים כיצד לרנדר את טופס התצורה והאם קיימת לוגיקת העלאה מותאמת אישית. כל **אובייקט** של סוג אחסון מכיל את המאפיינים הבאים:
+<!--
+### תצורת צד לקוח וממשק ניהול
+בצד הלקוח צריך להודיע למנהל הקבצים כיצד לרנדר את טופס התצורה והאם יש לוגיקת העלאה מותאמת אישית. לכל אובייקט מסוג אחסון יש את המאפיינים הבאים:
+-->
 
-## הרחבת סוגי קבצים בצד הלקוח
+## הרחבת סוגי קבצים בצד ה-Frontend
 
-עבור קבצים שהועלו, ניתן להציג תוכן תצוגה מקדימה שונה בממשק צד הלקוח בהתבסס על סוגי קבצים שונים. שדה הקבצים המצורפים של מנהל הקבצים כולל תצוגה מקדימה מובנית של קבצים מבוססת דפדפן (המוטמעת ב־iframe), התומכת בהצגה מקדימה של רוב פורמטי הקבצים (כגון תמונות, סרטונים, אודיו וקובצי PDF) ישירות בדפדפן. כאשר פורמט קובץ אינו נתמך לתצוגה מקדימה בדפדפן, או כאשר נדרשות אינטראקציות תצוגה מקדימה מיוחדות, ניתן להרחיב את רכיב התצוגה המקדימה מבוסס סוג הקובץ.
+עבור קבצים שהועלו, ניתן להציג תצוגות מקדימות שונות בממשק לפי סוג הקובץ. לשדה הקבצים של מנהל הקבצים יש תצוגה מקדימה מובנית המבוססת דפדפן (מוטמעת ב-iframe), התומכת ברוב הפורמטים (כמו תמונות, וידאו, אודיו ו-PDF) ישירות בדפדפן. כאשר פורמט הקובץ אינו נתמך בדפדפן או נדרשות אינטראקציות תצוגה מיוחדות, ניתן להרחיב את רכיב התצוגה לפי סוג הקובץ.
 
 ### דוגמה
 
-לדוגמה, אם ברצונכם להרחיב סוג קובץ תמונה עם רכיב קרוסלה (carousel) למעבר בין תמונות, תוכלו להשתמש בקוד הבא:
+לדוגמה, אם רוצים לשלב תצוגה מקדימה מקוונת מותאמת אישית לקבצי Office, ניתן להשתמש בקוד הבא:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-`attachmentFileTypes` הוא אובייקט הכניסה המסופק בחבילה `@nocobase/client` ומשמש להרחבת סוגי קבצים. השתמשו במתודת `add` שלו כדי להרחיב אובייקט תיאור של סוג קובץ.
+כאן `filePreviewTypes` הוא אובייקט הכניסה שמספק `@nocobase/plugin-file-manager/client` להרחבת תצוגות מקדימות. השתמשו ב-`add` כדי להוסיף אובייקט תיאור של סוג קובץ.
 
-כל סוג קובץ חייב לממש מתודת `match()` כדי לבדוק אם סוג הקובץ עומד בדרישות. בדוגמה, המתודה המסופקת על ידי חבילת `mime-match` משמשת לבדיקת מאפיין ה־`mimetype` של הקובץ. אם הוא תואם לסוג `image/*`, הוא נחשב לסוג הקובץ שיש לעבד. אם לא נמצאה התאמה, המערכת תחזור לטיפול המובנה בסוג הקובץ.
+כל סוג קובץ חייב לממש מתודת `match()` כדי לבדוק אם הסוג עומד בדרישות. בדוגמה משתמשים ב-`matchMimetype` כדי לבדוק את מאפיין `mimetype` של הקובץ. אם הוא תואם לסוג `docx`, הוא נחשב לסוג שיש לטפל בו. אם אין התאמה, תתבצע חזרה לטיפול המובנה.
 
-המאפיין `Previewer` באובייקט תיאור הסוג הוא הרכיב המשמש לתצוגה מקדימה. כאשר סוג הקובץ תואם, רכיב זה ירונדר לצורך תצוגה מקדימה. בדרך כלל מומלץ להשתמש ברכיב מסוג חלון קופץ (כמו `<Modal />` וכדומה) כקונטיינר בסיסי, ולאחר מכן למקם בתוכו את התצוגה המקדימה ואת התוכן הדורש אינטראקציה, כדי לממש את פונקציונליות התצוגה המקדימה.
+מאפיין `Previewer` באובייקט התיאור הוא הרכיב שמבצע את התצוגה המקדימה. כאשר הסוג תואם, רכיב זה יוצג בדיאלוג התצוגה. ניתן להחזיר כל תצוגת React (כגון iframe, נגן או תרשים).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` הוא מופע גלובלי, המיובא מ־`@nocobase/client`:
+`filePreviewTypes` הוא מופע גלובלי המיובא מ-`@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-רושם אובייקט תיאור סוג קובץ חדש במרכז הרישום של סוגי הקבצים. סוג אובייקט התיאור הוא `AttachmentFileType`.
+רישום אובייקט תיאור חדש של סוג קובץ ברג'יסטרי של סוגי קבצים. סוג האובייקט הוא `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-מתודת התאמת פורמט קובץ.
+שיטה להתאמת פורמט קובץ.
 
-הפרמטר `file` המועבר הוא אובייקט הנתונים של קובץ שהועלה, המכיל מאפיינים רלוונטיים שניתן להשתמש בהם לבדיקת סוג:
+פרמטר הקלט `file` הוא אובייקט הנתונים של הקובץ שהועלה, וכולל מאפיינים רלוונטיים לבדיקת סוג:
 
-*   `mimetype`: תיאור mimetype
-*   `extname`: סיומת הקובץ, כולל הנקודה "."
-*   `path`: נתיב האחסון היחסי של הקובץ
-*   `url`: כתובת ה־URL של הקובץ
+* `mimetype`: תיאור mimetype
+* `extname`: סיומת הקובץ, כולל "."
+* `path`: נתיב האחסון היחסי של הקובץ
+* `url`: כתובת ה-URL של הקובץ
 
-ערך ההחזרה הוא מסוג `boolean`, המציין את תוצאת ההתאמה.
+מחזירה ערך `boolean` שמציין אם יש התאמה.
+
+##### `getThumbnailURL`
+
+מחזירה את כתובת ה-URL של התמונה הממוזערת ברשימת הקבצים. אם הערך מוחזר ריק, תשתמש בתמונת placeholder מובנית.
 
 ##### `Previewer`
 
-רכיב React המשמש לתצוגה מקדימה של קבצים.
+רכיב React לתצוגה מקדימה של קבצים.
 
-פרמטרי ה־Props המועברים הם:
+ה-Props הנכנסים הם:
 
-*   `index`: האינדקס של הקובץ ברשימת הקבצים המצורפים
-*   `list`: רשימת הקבצים המצורפים
-*   `onSwitchIndex`: מתודה למעבר בין אינדקסים
+* `file`: אובייקט הקובץ הנוכחי (יכול להיות URL כמחרוזת או אובייקט הכולל `url`/`preview`)
+* `index`: אינדקס הקובץ ברשימה
+* `list`: רשימת הקבצים
 
-ל־`onSwitchIndex` ניתן להעביר כל ערך אינדקס מתוך הרשימה, כדי לעבור לקובץ אחר. אם `null` מועבר כארגומנט, רכיב התצוגה המקדימה ייסגר ישירות.
-
-```ts
-onSwitchIndex(null);
-```

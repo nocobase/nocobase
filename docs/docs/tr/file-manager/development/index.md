@@ -2,16 +2,15 @@
 Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
 :::
 
-
 # Uzantı Geliştirme
 
-## Depolama Motorlarını Genişletme
+## Depolama motorlarını genişletme
 
-### Sunucu Tarafı
+### Sunucu tarafı
 
-1.  **`StorageType`'ı Devralma**
-
-    Yeni bir sınıf oluşturun ve `make()` ile `delete()` metotlarını uygulayın. Gerekirse `getFileURL()`, `getFileStream()`, `getFileData()` gibi hook'ları geçersiz kılın.
+1. **`StorageType`'ı miras alma**
+   
+   Yeni bir sınıf oluşturun ve `make()` ile `delete()` metodlarını uygulayın. Gerekirse `getFileURL()`, `getFileStream()` ve `getFileData()` gibi hook'ları override edin.
 
 Örnek:
 
@@ -49,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Yeni Türü Kaydetme**
-    Yeni depolama uygulamasını eklentinin `beforeLoad` veya `load` yaşam döngüsüne enjekte edin:
+4. **Yeni türü kaydetme**  
+   Yeni depolama uygulamasını eklentinin `beforeLoad` veya `load` yaşam döngüsüne enjekte edin:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -66,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Kaydolduktan sonra, depolama yapılandırması, yerleşik türler gibi `storages` kaynağında görünecektir. `StorageType.defaults()` tarafından sağlanan yapılandırma, formları otomatik doldurmak veya varsayılan kayıtları başlatmak için kullanılabilir.
+Kayıt tamamlandıktan sonra depolama yapılandırması, yerleşik türler gibi `storages` kaynağında görünür. `StorageType.defaults()` tarafından sağlanan yapılandırma, formları otomatik doldurmak veya varsayılan kayıtları başlatmak için kullanılabilir.
 
-### İstemci Tarafı Yapılandırma ve Yönetim Arayüzü
-İstemci tarafında, dosya yöneticisine yapılandırma formunu nasıl oluşturacağını ve özel yükleme mantığı olup olmadığını bildirmeniz gerekir. Her depolama türü nesnesi aşağıdaki özelliklere sahiptir:
+<!--
+### İstemci tarafı yapılandırma ve yönetim arayüzü
+İstemci tarafında dosya yöneticisine yapılandırma formunun nasıl oluşturulacağını ve özel yükleme mantığı olup olmadığını bildirmeniz gerekir. Her depolama türü nesnesi aşağıdaki özellikleri içerir:
+-->
 
-## Ön Uç Dosya Türlerini Genişletme
+## Ön uçta dosya türlerini genişletme
 
-Yüklenmiş dosyalar için, ön uç arayüzünde farklı dosya türlerine göre farklı önizleme içerikleri gösterebilirsiniz. Dosya yöneticisinin ek alanı, çoğu dosya biçimini (resimler, videolar, sesler ve PDF'ler gibi) doğrudan tarayıcıda önizlemeyi destekleyen, tarayıcı tabanlı (bir iframe'e gömülü) yerleşik bir dosya önizlemesine sahiptir. Bir dosya biçimi tarayıcı tarafından önizleme için desteklenmediğinde veya özel önizleme etkileşimleri gerektiğinde, dosya türüne dayalı önizleme bileşenini genişleterek bunu gerçekleştirebilirsiniz.
+Yüklenmiş dosyalar için, dosya türüne göre ön uç arayüzünde farklı önizleme içerikleri gösterebilirsiniz. Dosya yöneticisinin ek alanı, tarayıcı tabanlı (iframe içinde) yerleşik bir dosya önizlemesi içerir ve çoğu formatı (resimler, videolar, sesler ve PDF'ler gibi) doğrudan tarayıcıda önizlemeyi destekler. Bir format tarayıcı tarafından desteklenmiyorsa veya özel önizleme etkileşimleri gerekiyorsa, dosya türüne dayalı önizleme bileşenini genişletebilirsiniz.
 
 ### Örnek
 
-Örneğin, bir resim dosya türünü bir carousel bileşeniyle genişletmek isterseniz, aşağıdaki kodu kullanabilirsiniz:
+Örneğin Office dosyaları için özel bir çevrimiçi önizleme entegre etmek istiyorsanız aşağıdaki kodu kullanabilirsiniz:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Burada, `attachmentFileTypes`, `@nocobase/client` paketinde dosya türlerini genişletmek için sağlanan giriş nesnesidir. Bir dosya türü açıklama nesnesini genişletmek için `add` metodunu kullanın.
+Burada `filePreviewTypes`, dosya önizlemelerini genişletmek için `@nocobase/plugin-file-manager/client` tarafından sağlanan giriş nesnesidir. Bir dosya türü tanım nesnesi eklemek için `add` yöntemini kullanın.
 
-Her dosya türü, dosya türünün gereksinimleri karşılayıp karşılamadığını kontrol etmek için bir `match()` metodu uygulamalıdır. Örnekte, `mime-match` paketi tarafından sağlanan metot, dosyanın `mimetype` özelliğini kontrol etmek için kullanılır. Eğer `image/*` türüyle eşleşirse, işlenmesi gereken dosya türü olarak kabul edilir. Eşleşme bulunamazsa, yerleşik tür işlemeye geri dönülür.
+Her dosya türü, türün gereksinimleri karşılayıp karşılamadığını kontrol etmek için bir `match()` yöntemi uygulamalıdır. Örnekte `matchMimetype`, dosyanın `mimetype` özelliğini kontrol etmek için kullanılır. `docx` türüyle eşleşirse işlenecek tür olarak kabul edilir. Eşleşmezse yerleşik tür işleme kullanılır.
 
-Tür açıklama nesnesindeki `Previewer` özelliği, önizleme için kullanılan bileşendir. Dosya türü eşleştiğinde, bu bileşen önizleme için oluşturulur. Genellikle, bir iletişim kutusu (modal) türü bileşeni (örneğin `<Modal />` gibi) temel kapsayıcı olarak kullanmanız ve ardından önizleme ile etkileşim gerektiren içeriği bu bileşenin içine yerleştirerek önizleme işlevselliğini uygulamanız önerilir.
+Tip tanım nesnesindeki `Previewer` özelliği, önizleme için kullanılan bileşendir. Dosya türü eşleştiğinde bu bileşen önizleme diyalogunda render edilir. Herhangi bir React görünümü döndürebilirsiniz (örneğin iframe, oynatıcı veya grafik).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes`, `@nocobase/client`'tan içe aktarılan global bir örnektir:
+`filePreviewTypes`, `@nocobase/plugin-file-manager/client` içinden içe aktarılan global bir örnektir:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Dosya türü kayıt merkezine yeni bir dosya türü açıklama nesnesi kaydeder. Açıklama nesnesinin türü `AttachmentFileType`'tır.
+Dosya türleri kaydına yeni bir dosya türü tanım nesnesi kaydeder. Tanım nesnesinin türü `FilePreviewType`'dır.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Dosya biçimi eşleştirme metodu.
+Dosya biçimi eşleştirme yöntemi.
 
-Girdi parametresi `file`, yüklenmiş bir dosyanın veri nesnesidir ve tür kontrolü için kullanılabilecek ilgili özellikleri içerir:
+Giriş parametresi `file`, yüklenen dosyanın veri nesnesidir ve tür kontrolü için kullanılabilecek özellikler içerir:
 
-*   `mimetype`: mimetype açıklaması
-*   `extname`: "." içeren dosya uzantısı
-*   `path`: dosyanın göreceli depolama yolu
-*   `url`: dosya URL'si
+* `mimetype`: mimetype açıklaması
+* `extname`: dosya uzantısı, "." dahil
+* `path`: dosyanın göreli depolama yolu
+* `url`: dosya URL'si
 
-Eşleşip eşleşmediğini belirten `boolean` türünde bir değer döndürür.
+Eşleşme olup olmadığını belirten bir `boolean` döndürür.
+
+##### `getThumbnailURL`
+
+Dosya listesindeki küçük resim URL'sini döndürür. Dönüş değeri boşsa yerleşik yer tutucu görüntü kullanılır.
 
 ##### `Previewer`
 
-Dosyaları önizlemek için kullanılan bir React bileşeni.
+Dosyaları önizlemek için bir React bileşeni.
 
-Gelen Props parametreleri şunlardır:
+Gelen Props:
 
-*   `index`: ek listesindeki dosyanın indeksi
-*   `list`: ek listesi
-*   `onSwitchIndex`: indeksi değiştirmek için bir metot
+* `file`: mevcut dosya nesnesi (string URL veya `url`/`preview` içeren bir nesne olabilir)
+* `index`: listedeki dosyanın indeksi
+* `list`: dosya listesi
 
-`onSwitchIndex` metoduna, başka bir dosyaya geçmek için listeden herhangi bir indeks değeri iletilebilir. Eğer parametre olarak `null` kullanılırsa, önizleme bileşeni doğrudan kapatılır.
-
-```ts
-onSwitchIndex(null);
-```

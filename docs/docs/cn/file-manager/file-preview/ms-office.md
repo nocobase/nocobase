@@ -42,14 +42,15 @@ Office 文件预览插件用于在 NocoBase 应用中预览 Office 格式的文�
 
 ## 支持的文件格式
 
-插件仅支持以下 Office 文件格式的预览，判断依据为文件的 MIME 类型：
+插件仅支持以下 Office 文件格式的预览，判断依据为文件的 MIME 类型或文件扩展名：
 
 - Word 文档：
-  `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+  `application/vnd.openxmlformats-officedocument.wordprocessingml.document` （`.docx`）或 `application/msword`（`.doc`）
 - Excel 表格：
-  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` （`.xlsx`）或 `application/vnd.ms-excel`（`.xls`）
 - PowerPoint 演示文稿：
-  `application/vnd.openxmlformats-officedocument.presentationml.presentation`
+  `application/vnd.openxmlformats-officedocument.presentationml.presentation` （`.pptx`）或 `application/vnd.ms-powerpoint`（`.ppt`）
+- OpenDocument 文本：`application/vnd.oasis.opendocument.text`（`.odt`）
 
 其他格式的文件将不会启用该插件的预览功能。
 

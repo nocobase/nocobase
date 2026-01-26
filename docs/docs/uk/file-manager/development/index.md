@@ -2,16 +2,15 @@
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
 
-
 # Розробка розширень
 
 ## Розширення механізмів зберігання
 
-### На стороні сервера
+### Серверна частина
 
-1.  **Успадкування `StorageType`**
-
-    Створіть новий клас та реалізуйте методи `make()` і `delete()`, а за потреби перевизначте хуки, такі як `getFileURL()`, `getFileStream()`, `getFileData()`.
+1. **Успадкувати `StorageType`**
+   
+   Створіть новий клас і реалізуйте методи `make()` та `delete()`. За потреби перевизначте хуки `getFileURL()`, `getFileStream()` і `getFileData()`.
 
 Приклад:
 
@@ -49,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Реєстрація нового типу**
-    Впровадьте нову реалізацію сховища в життєвому циклі плагіна `beforeLoad` або `load`:
+4. **Зареєструвати новий тип**  
+   Впровадьте нову реалізацію сховища в життєвий цикл `beforeLoad` або `load` плагіна:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -66,146 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Після реєстрації конфігурація сховища з'явиться в ресурсі `storages`, так само як і вбудовані типи. Конфігурація, що надається `StorageType.defaults()`, може бути використана для автоматичного заповнення форм або ініціалізації записів за замовчуванням.
+Після реєстрації конфігурація сховища з’явиться у ресурсі `storages`, як і вбудовані типи. Конфігурацію, що надає `StorageType.defaults()`, можна використовувати для автозаповнення форм або ініціалізації записів за замовчуванням.
 
-### Конфігурація на стороні клієнта та інтерфейс управління
+<!--
+### Налаштування на стороні клієнта та інтерфейс керування
+На стороні клієнта потрібно повідомити файловий менеджер, як рендерити форму налаштувань і чи є власна логіка завантаження. Кожен об’єкт типу сховища містить такі властивості:
+-->
 
-На стороні клієнта необхідно повідомити файловому менеджеру, як відображати форму конфігурації та чи існує спеціальна логіка завантаження. Кожен об'єкт типу сховища містить такі властивості:
+## Розширення типів файлів у фронтенді
 
-## Розширення типів файлів на фронтенді
-
-Для вже завантажених файлів на фронтенді можна відображати різний вміст попереднього перегляду залежно від їхнього типу. Поле вкладень файлового менеджера має вбудований попередній перегляд файлів на основі браузера (вбудований в iframe), який підтримує прямий перегляд більшості форматів файлів (таких як зображення, відео, аудіо та PDF) безпосередньо в браузері. Якщо формат файлу не підтримується для попереднього перегляду в браузері, або якщо потрібні спеціальні інтерактивні можливості попереднього перегляду, ви можете розширити компонент попереднього перегляду на основі типу файлу.
+Для вже завантажених файлів можна відображати різний вміст попереднього перегляду у фронтенд-інтерфейсі залежно від типу файлу. Поле вкладень файлового менеджера має вбудований перегляд файлів на базі браузера (всередині iframe), який підтримує перегляд більшості форматів (зображення, відео, аудіо та PDF) безпосередньо у браузері. Якщо формат не підтримується браузером або потрібні спеціальні взаємодії, можна розширити компонент попереднього перегляду за типом файлу.
 
 ### Приклад
 
-Наприклад, якщо ви бажаєте розширити тип файлів зображень компонентом для перемикання каруселі, ви можете використати наступний код:
+Наприклад, якщо ви хочете інтегрувати кастомний онлайн-перегляд для файлів Office, можна використати такий код:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Тут `attachmentFileTypes` — це об'єкт входу, що надається в пакеті `@nocobase/client` для розширення типів файлів. Використовуйте його метод `add` для розширення об'єкта опису типу файлу.
+Тут `filePreviewTypes` — це вхідний об’єкт, що надається `@nocobase/plugin-file-manager/client` для розширення попереднього перегляду файлів. Використовуйте метод `add`, щоб додати об’єкт опису типу файлу.
 
-Кожен тип файлу повинен реалізовувати метод `match()`, який перевіряє, чи відповідає тип файлу вимогам. У прикладі метод, наданий пакетом `mime-match`, використовується для перевірки атрибута `mimetype` файлу. Якщо він відповідає типу `image/*`, то вважається, що це тип файлу, який потрібно обробити. Якщо збігу не знайдено, буде використана вбудована обробка типу.
+Кожен тип файлу має реалізувати метод `match()` для перевірки відповідності. У прикладі `matchMimetype` використовується для перевірки атрибуту `mimetype` файлу. Якщо він відповідає типу `docx`, файл вважається таким, що підлягає обробці. Якщо не відповідає, використовується вбудована обробка.
 
-Властивість `Previewer` в об'єкті опису типу є компонентом, що використовується для попереднього перегляду. Коли тип файлу збігається, цей компонент буде відрендерено для попереднього перегляду. Зазвичай рекомендується використовувати компонент типу діалогового вікна (наприклад, `<Modal />`) як базовий контейнер, а потім розміщувати вміст попереднього перегляду та інтерактивні елементи всередині цього компонента для реалізації функції попереднього перегляду.
+Властивість `Previewer` в об’єкті опису типу — це компонент для перегляду. Коли тип файлу співпадає, цей компонент рендериться у діалозі перегляду. Можна повернути будь-який React-вид (наприклад, iframe, плеєр або діаграму).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` — це глобальний екземпляр, який імпортується з `@nocobase/client`:
+`filePreviewTypes` — це глобальний екземпляр, імпортований з `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Реєструє новий об'єкт опису типу файлу в реєстрі типів файлів. Тип об'єкта опису — `AttachmentFileType`.
+Реєструє новий об’єкт опису типу файлу у реєстрі типів файлів. Тип об’єкта опису — `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
 Метод зіставлення формату файлу.
 
-Вхідний параметр `file` — це об'єкт даних завантаженого файлу, що містить відповідні властивості, які можна використовувати для визначення типу:
+Вхідний параметр `file` — це об’єкт даних завантаженого файлу, що містить властивості для перевірки типу:
 
-*   `mimetype`: опис mimetype
-*   `extname`: розширення файлу, включаючи "."
-*   `path`: відносний шлях зберігання файлу
-*   `url`: URL файлу
+* `mimetype`: опис mimetype
+* `extname`: розширення файлу, включно з "."
+* `path`: відносний шлях зберігання файлу
+* `url`: URL файлу
 
-Повертає значення типу `boolean`, що вказує на результат збігу.
+Повертає `boolean`, що вказує на результат зіставлення.
+
+##### `getThumbnailURL`
+
+Повертає URL мініатюри, яка використовується у списку файлів. Якщо значення порожнє, буде використано вбудоване зображення-заповнювач.
 
 ##### `Previewer`
 
-Компонент React для попереднього перегляду файлів.
+React-компонент для попереднього перегляду файлів.
 
-Вхідні параметри Props:
+Передані Props:
 
-*   `index`: індекс файлу в списку вкладень
-*   `list`: список вкладень
-*   `onSwitchIndex`: метод для перемикання індексу
+* `file`: поточний об’єкт файлу (може бути рядком URL або об’єктом з `url`/`preview`)
+* `index`: індекс файлу у списку
+* `list`: список файлів
 
-Метод `onSwitchIndex` може приймати будь-який індекс зі списку для перемикання на інший файл. Якщо як аргумент передано `null`, компонент попереднього перегляду буде закрито безпосередньо.
-
-```ts
-onSwitchIndex(null);
-```

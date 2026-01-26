@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UploadFieldModel } from '@nocobase/client';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 import { Upload } from '@formily/antd-v5';
 import { UploadOutlined } from '@ant-design/icons';
 import { DisplayItemModel, EditableItemModel, tExpr } from '@nocobase/flow-engine';

@@ -74,108 +74,75 @@ export default class MyStoragePluginServer extends Plugin {
 
 ### 示例
 
-例如希望对图片类型的文件扩展一个轮播切换组件，可以通过以下代码方式：
+例如希望对 Office 文件接入自定义在线预览，可以通过以下代码方式：
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-其中 `attachmentFileTypes` 是 `@nocobase/client` 包中提供的用于扩展文件类型的入口对象，使用其提供的 `add` 方法来扩展一个文件类型描述对象。
+其中 `filePreviewTypes` 是 `@nocobase/plugin-file-manager/client` 提供的用于扩展文件预览的入口对象，使用其提供的 `add` 方法来扩展一个文件类型描述对象。
 
-每个文件类型必须实现一个 `match()` 方法，用于检查文件类型是否满足要求，例子中通过 `mime-match` 包提供的方法对文件的 `mimetype` 属性进行检测，如果匹配 `image/*` 的类型，则认为是需要处理的文件类型。如果未匹配成功，则会降级为内置的类型处理。
+每个文件类型必须实现一个 `match()` 方法，用于检查文件类型是否满足要求。示例中通过 `matchMimetype` 对文件的 `mimetype` 属性进行检测，如果匹配 `docx` 的类型，则认为是需要处理的文件类型。如果未匹配成功，则会降级为内置的类型处理。
 
-在类型描述对象上的 `Previewer` 属性即为用于预览的组件，当文件类型匹配时，将渲染该组件进行预览。通常建议使用弹窗类型的组件作为基础容器（如 `<Modal />` 等），再将预览和需要交互的内容放入该组件，实现预览功能。
+在类型描述对象上的 `Previewer` 属性即为用于预览的组件，当文件类型匹配时，将渲染该组件进行预览。该组件会渲染在文件预览弹层中，你可以返回任意 React 视图（例如 iframe、播放器、图表等）。
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` 是一个全局实例，通过 `@nocobase/client` 导入：
+`filePreviewTypes` 是一个全局实例，通过 `@nocobase/plugin-file-manager/client` 导入：
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-向文件类型注册中心注册新的文件类型描述对象。描述对象的类型为 `AttachmentFileType`。
+向文件类型注册中心注册新的文件类型描述对象。描述对象的类型为 `FilePreviewType`。
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
@@ -190,18 +157,17 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 返回值为 `boolean` 类型，表示是否匹配的结果。
 
+##### `getThumbnailURL`
+
+用于返回文件列表里的缩略图地址。当返回值为空时，将使用内置占位图。
+
 ##### `Previewer`
 
 用于预览文件的 React 组件。
 
 传入 Props 参数为：
 
-* `index`：文件在附件列表中的索引
-* `list`：附件列表
-* `onSwitchIndex`：用于切换索引的方法
+* `file`：当前文件对象（可能是字符串 URL 或包含 `url`/`preview` 的对象）
+* `index`：文件在列表中的索引
+* `list`：文件列表
 
-其中 `onSwitchIndex` 可以传入一个 list 中的任意索引值，用于切换到其他文件。如果使用 `null` 作为参数切换，则直接关闭预览组件。
-
-```ts
-onSwitchIndex(null);
-```

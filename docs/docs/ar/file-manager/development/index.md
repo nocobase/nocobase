@@ -8,9 +8,9 @@
 
 ### جانب الخادم
 
-1.  **وراثة `StorageType`**
-
-    أنشئ صنفًا جديدًا وطبّق طريقتي `make()` و `delete()`، وقم بتجاوز الخطافات (hooks) مثل `getFileURL()` و `getFileStream()` و `getFileData()` عند الضرورة.
+1. **وراثة `StorageType`**
+   
+   أنشئ فئة جديدة وقم بتنفيذ الدالتين `make()` و`delete()`، ويمكنك عند الحاجة إعادة تعريف الخطافات مثل `getFileURL()` و`getFileStream()` و`getFileData()`.
 
 مثال:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **تسجيل النوع الجديد**
-    قم بحقن تطبيق التخزين الجديد في دورة حياة `beforeLoad` أو `load` الخاصة بـ **الإضافة**:
+4. **تسجيل النوع الجديد**  
+   قم بحقن تنفيذ التخزين الجديد ضمن دورة حياة `beforeLoad` أو `load` الخاصة بالإضافة:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-بعد التسجيل، ستظهر إعدادات التخزين في مورد `storages` تمامًا مثل الأنواع المدمجة. يمكن استخدام الإعدادات التي يوفرها `StorageType.defaults()` لملء النماذج تلقائيًا أو تهيئة السجلات الافتراضية.
+بعد التسجيل ستظهر إعدادات التخزين ضمن مورد `storages` تمامًا مثل الأنواع المضمنة. يمكن استخدام الإعدادات التي يوفرها `StorageType.defaults()` لملء النماذج تلقائيًا أو تهيئة السجلات الافتراضية.
 
-### إعدادات جانب العميل وواجهة الإدارة
-على جانب العميل، تحتاج إلى إبلاغ مدير الملفات بكيفية عرض نموذج الإعدادات وما إذا كان هناك منطق تحميل مخصص. يحتوي كل كائن من نوع التخزين على الخصائص التالية:
+<!--
+### إعدادات الواجهة الأمامية وواجهة الإدارة
+في جانب العميل، تحتاج إلى إبلاغ مدير الملفات بكيفية عرض نموذج الإعداد وما إذا كانت هناك منطق رفع مخصص. يحتوي كل كائن من نوع التخزين على الخصائص التالية:
+-->
 
-## توسيع أنواع ملفات الواجهة الأمامية
+## توسيع أنواع الملفات في الواجهة الأمامية
 
-بالنسبة للملفات التي تم تحميلها، يمكنك عرض محتوى معاينة مختلف في واجهة المستخدم الأمامية بناءً على أنواع الملفات المختلفة. يتضمن حقل المرفقات في مدير الملفات معاينة ملفات مدمجة تعتمد على المتصفح (مضمنة في iframe)، والتي تدعم معاينة معظم تنسيقات الملفات (مثل الصور ومقاطع الفيديو والصوت وملفات PDF) مباشرة في المتصفح. عندما لا يدعم تنسيق ملف معين المعاينة في المتصفح، أو عندما تكون هناك حاجة لتفاعلات معاينة خاصة، يمكنك تحقيق ذلك عن طريق توسيع مكون المعاينة المستند إلى نوع الملف.
+بالنسبة للملفات التي تم رفعها، يمكن عرض محتوى معاينة مختلف في الواجهة الأمامية حسب نوع الملف. يحتوي حقل المرفقات في مدير الملفات على معاينة مدمجة تعتمد على المتصفح (ضمن iframe)، وتدعم معاينة معظم التنسيقات (مثل الصور والفيديو والصوت وملفات PDF) مباشرة في المتصفح. عند عدم دعم المتصفح لتنسيق معين أو عند الحاجة إلى تفاعلات معاينة خاصة، يمكنك توسيع مكوّن المعاينة بحسب نوع الملف.
 
 ### مثال
 
-على سبيل المثال، إذا كنت ترغب في توسيع نوع ملف الصورة بمكون عرض دوار (carousel)، يمكنك استخدام الكود التالي:
+على سبيل المثال، إذا أردت دمج معاينة عبر الإنترنت مخصصة لملفات Office، يمكنك استخدام الكود التالي:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-هنا، `attachmentFileTypes` هو الكائن المدخل المتوفر في حزمة `@nocobase/client` لتوسيع أنواع الملفات. استخدم طريقة `add` الخاصة به لتوسيع كائن وصف نوع الملف.
+هنا `filePreviewTypes` هو كائن الإدخال المقدم من `@nocobase/plugin-file-manager/client` لتوسيع معاينات الملفات. استخدم طريقة `add` لإضافة كائن واصف لنوع الملف.
 
-يجب أن يطبق كل نوع ملف طريقة `match()` للتحقق مما إذا كان نوع الملف يفي بالمتطلبات. في المثال، تُستخدم الطريقة المتوفرة بواسطة حزمة `mime-match` للتحقق من خاصية `mimetype` للملف. إذا تطابقت مع نوع `image/*`، فسيُعتبر نوع الملف الذي يجب معالجته. إذا لم يتم العثور على تطابق، فسيتم الرجوع إلى معالجة النوع المدمجة.
+يجب على كل نوع ملف تنفيذ دالة `match()` للتحقق مما إذا كان نوع الملف مطابقًا. في المثال يتم استخدام `matchMimetype` للتحقق من خاصية `mimetype` للملف. إذا تطابق مع نوع `docx` فيُعتبر النوع المطلوب التعامل معه. وإذا لم يتطابق فسيتم الرجوع إلى المعالجة المدمجة.
 
-خاصية `Previewer` في كائن وصف النوع هي المكون المستخدم للمعاينة. عندما يتطابق نوع الملف، سيتم عرض هذا المكون للمعاينة. يُنصح عمومًا باستخدام مكون من نوع نافذة منبثقة (مثل `<Modal />`) كحاوية أساسية، ثم وضع محتوى المعاينة والتفاعل المطلوب داخل هذا المكون لتحقيق وظيفة المعاينة.
+خاصية `Previewer` في كائن الوصف هي المكوّن المستخدم للمعاينة. عند تطابق نوع الملف سيتم عرض هذا المكوّن داخل نافذة المعاينة. يمكنك إرجاع أي عرض React (مثل iframe أو مشغل أو مخطط).
 
-### واجهة برمجة التطبيقات (API)
+### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` هو كائن عام (global instance)، يتم استيراده من `@nocobase/client`:
+`filePreviewTypes` هو مثيل عام يتم استيراده من `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-يسجل كائن وصف نوع ملف جديد في مركز تسجيل أنواع الملفات. نوع كائن الوصف هو `AttachmentFileType`.
+يسجّل كائن واصف جديد لنوع الملف في سجل الأنواع. نوع كائن الوصف هو `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
 طريقة مطابقة تنسيق الملف.
 
-المعامل المدخل `file` هو كائن البيانات لملف تم تحميله، ويحتوي على خصائص ذات صلة يمكن استخدامها لتحديد النوع:
+المعامل `file` هو كائن بيانات الملف المرفوع، ويحتوي على خصائص ذات صلة يمكن استخدامها للتحقق من النوع:
 
-*   `mimetype`: وصف نوع MIME
-*   `extname`: امتداد الملف، بما في ذلك "."
-*   `path`: المسار النسبي لتخزين الملف
-*   `url`: عنوان URL للملف
+* `mimetype`: وصف mimetype
+* `extname`: امتداد الملف ويشمل "."
+* `path`: المسار النسبي لتخزين الملف
+* `url`: رابط URL للملف
 
-القيمة المرجعة هي من نوع `boolean`، وتشير إلى نتيجة المطابقة.
+ترجع قيمة `boolean` تشير إلى ما إذا كان هناك تطابق.
+
+##### `getThumbnailURL`
+
+يعيد رابط الصورة المصغرة المستخدمة في قائمة الملفات. إذا كانت القيمة فارغة فسيتم استخدام صورة عنصر نائب مدمجة.
 
 ##### `Previewer`
 
-مكون React يستخدم لمعاينة الملفات.
+مكوّن React لمعاينة الملفات.
 
-معاملات Props المدخلة هي:
+المعلمات المرسلة هي:
 
-*   `index`: فهرس الملف في قائمة المرفقات
-*   `list`: قائمة المرفقات
-*   `onSwitchIndex`: طريقة لتبديل الفهرس
+* `file`: كائن الملف الحالي (قد يكون رابط URL نصي أو كائنًا يحتوي على `url`/`preview`)
+* `index`: فهرس الملف في القائمة
+* `list`: قائمة الملفات
 
-يمكن تمرير أي قيمة فهرس من `list` إلى `onSwitchIndex` للتبديل إلى ملف آخر. إذا تم تمرير `null` كمعامل للتبديل، فسيتم إغلاق مكون المعاينة مباشرة.
-
-```ts
-onSwitchIndex(null);
-```

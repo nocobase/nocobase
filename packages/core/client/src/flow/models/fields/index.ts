@@ -24,7 +24,6 @@ export * from './RichTextFieldModel';
 export * from './SelectFieldModel';
 export * from './TextareaFieldModel';
 export * from './TimeFieldModel';
-export * from './UploadFieldModel';
 export * from './VariableFieldFormModel';
 export * from './JSFieldModel';
 export * from './JSEditableFieldModel';

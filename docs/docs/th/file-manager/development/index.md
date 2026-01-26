@@ -2,16 +2,15 @@
 เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
 :::
 
-
 # การพัฒนาส่วนขยาย
 
 ## การขยาย Storage Engine
 
 ### ฝั่งเซิร์ฟเวอร์
 
-1.  **สืบทอด (Inherit) `StorageType`**
-
-    สร้างคลาสใหม่และ implement เมธอด `make()` กับ `delete()` ครับ/ค่ะ และหากจำเป็น ก็ให้ override hook ต่างๆ เช่น `getFileURL()` , `getFileStream()` , `getFileData()` ได้เลยครับ/ค่ะ
+1. **สืบทอด `StorageType`**
+   
+   สร้างคลาสใหม่และติดตั้งเมธอด `make()` และ `delete()` หากจำเป็นสามารถ override hook เช่น `getFileURL()` `getFileStream()` และ `getFileData()` ได้
 
 ตัวอย่าง:
 
@@ -49,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **ลงทะเบียนประเภทใหม่**
-    ให้ inject การ implement storage แบบใหม่เข้าไปใน lifecycle ของปลั๊กอินช่วง `beforeLoad` หรือ `load` ครับ/ค่ะ
+4. **ลงทะเบียนประเภทใหม่**  
+   ฉีดการทำงานของ storage ใหม่ใน lifecycle `beforeLoad` หรือ `load` ของปลั๊กอิน:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -66,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-หลังจากลงทะเบียนเรียบร้อยแล้ว การตั้งค่า storage จะปรากฏใน resource `storages` เหมือนกับประเภทที่มาพร้อมระบบครับ/ค่ะ โดยการตั้งค่าที่มาจาก `StorageType.defaults()` สามารถนำไปใช้เพื่อกรอกข้อมูลในฟอร์มโดยอัตโนมัติ หรือใช้สำหรับเริ่มต้นค่าเริ่มต้นของ record ได้ครับ/ค่ะ
+หลังจากลงทะเบียนแล้ว การตั้งค่า storage จะปรากฏใน resource `storages` เช่นเดียวกับประเภทที่มีอยู่ในระบบ ค่าเริ่มต้นจาก `StorageType.defaults()` สามารถใช้เติมฟอร์มหรือสร้างเรคคอร์ดเริ่มต้นได้
 
-### การตั้งค่าฝั่งไคลเอนต์และหน้าจอการจัดการ
-ทางฝั่งไคลเอนต์ เราจำเป็นต้องแจ้งให้ตัวจัดการไฟล์ทราบว่าจะ render ฟอร์มการตั้งค่าอย่างไร และมี logic การอัปโหลดที่กำหนดเองหรือไม่ครับ/ค่ะ โดยแต่ละออบเจกต์ประเภท storage จะมีคุณสมบัติดังต่อไปนี้:
+<!--
+### การตั้งค่าฝั่งไคลเอนต์และหน้าจอจัดการ
+ฝั่งไคลเอนต์ต้องแจ้งให้ตัวจัดการไฟล์รู้ว่าจะเรนเดอร์ฟอร์มการตั้งค่าอย่างไร และมีลอจิกการอัปโหลดแบบกำหนดเองหรือไม่ แต่ละออบเจ็กต์ประเภท storage จะมีคุณสมบัติดังต่อไปนี้:
+-->
 
-## การขยายประเภทไฟล์สำหรับ Frontend
+## การขยายประเภทไฟล์ฝั่ง Frontend
 
-สำหรับไฟล์ที่อัปโหลดเสร็จแล้ว บนหน้าจอ frontend เราสามารถแสดงเนื้อหาการพรีวิวที่แตกต่างกันได้ตามประเภทไฟล์ครับ/ค่ะ โดยฟิลด์ไฟล์แนบของตัวจัดการไฟล์จะมีฟังก์ชันพรีวิวไฟล์ที่ทำงานบนเบราว์เซอร์ (ฝังอยู่ใน iframe) มาให้ในตัว ซึ่งรองรับการพรีวิวไฟล์ส่วนใหญ่ (เช่น รูปภาพ, วิดีโอ, เสียง และ PDF) ได้โดยตรงในเบราว์เซอร์ครับ/ค่ะ แต่หากไฟล์บางประเภทไม่รองรับการพรีวิวในเบราว์เซอร์ หรือต้องการการโต้ตอบพิเศษในการพรีวิว เราสามารถขยายคอมโพเนนต์พรีวิวตามประเภทไฟล์ได้ครับ/ค่ะ
+สำหรับไฟล์ที่อัปโหลดแล้ว คุณสามารถแสดงเนื้อหาพรีวิวที่แตกต่างกันตามประเภทไฟล์ในหน้าจอ frontend ได้ ฟิลด์แนบไฟล์ของตัวจัดการไฟล์มีพรีวิวแบบฝังในเบราว์เซอร์ (ภายใน iframe) ซึ่งรองรับการพรีวิวรูปแบบไฟล์ส่วนใหญ่ (เช่น รูปภาพ วิดีโอ เสียง และ PDF) ได้โดยตรงในเบราว์เซอร์ เมื่อรูปแบบไฟล์ไม่รองรับการพรีวิวในเบราว์เซอร์หรือจำเป็นต้องมีการโต้ตอบพรีวิวพิเศษ คุณสามารถขยายคอมโพเนนต์พรีวิวตามประเภทไฟล์ได้
 
 ### ตัวอย่าง
 
-ตัวอย่างเช่น หากต้องการขยายประเภทไฟล์รูปภาพด้วยคอมโพเนนต์สไลด์โชว์ (carousel) สามารถทำได้ด้วยโค้ดดังต่อไปนี้ครับ/ค่ะ
+ตัวอย่างเช่น หากต้องการเชื่อมต่อพรีวิวออนไลน์แบบกำหนดเองสำหรับไฟล์ Office สามารถใช้โค้ดดังนี้:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-โดย `attachmentFileTypes` คือออบเจกต์หลักที่อยู่ในแพ็กเกจ `@nocobase/client` ซึ่งใช้สำหรับขยายประเภทไฟล์ครับ/ค่ะ เราจะใช้เมธอด `add` ที่มีให้เพื่อขยายออบเจกต์คำอธิบายประเภทไฟล์ครับ/ค่ะ
+`filePreviewTypes` คือออบเจ็กต์สำหรับขยายพรีวิวไฟล์ที่มาจาก `@nocobase/plugin-file-manager/client` ใช้เมธอด `add` เพื่อเพิ่มออบเจ็กต์คำอธิบายประเภทไฟล์
 
-แต่ละประเภทไฟล์จะต้อง implement เมธอด `match()` เพื่อตรวจสอบว่าประเภทไฟล์นั้นตรงตามข้อกำหนดหรือไม่ครับ/ค่ะ ในตัวอย่างนี้ เราใช้เมธอดที่มาจากแพ็กเกจ `mime-match` เพื่อตรวจสอบคุณสมบัติ `mimetype` ของไฟล์ หากตรงกับประเภท `image/*` ก็จะถือว่าเป็นประเภทไฟล์ที่ต้องดำเนินการครับ/ค่ะ แต่ถ้าไม่ตรงกัน ระบบก็จะกลับไปใช้การจัดการประเภทไฟล์ที่มาพร้อมระบบแทนครับ/ค่ะ
+แต่ละประเภทไฟล์ต้องมีเมธอด `match()` เพื่อตรวจสอบว่าเป็นประเภทที่ต้องการหรือไม่ ในตัวอย่างใช้ `matchMimetype` เพื่อตรวจสอบแอตทริบิวต์ `mimetype` ของไฟล์ หากตรงกับประเภท `docx` จะถือว่าเป็นประเภทที่ต้องจัดการ หากไม่ตรง จะใช้การจัดการประเภทที่มีในระบบ
 
-คุณสมบัติ `Previewer` บนออบเจกต์คำอธิบายประเภทไฟล์คือคอมโพเนนต์ที่ใช้สำหรับพรีวิวครับ/ค่ะ เมื่อประเภทไฟล์ตรงกัน คอมโพเนนต์นี้จะถูก render เพื่อแสดงการพรีวิว โดยทั่วไปแล้ว แนะนำให้ใช้คอมโพเนนต์ประเภทป๊อปอัป (เช่น `<Modal />` เป็นต้น) เป็นคอนเทนเนอร์หลัก จากนั้นจึงนำเนื้อหาการพรีวิวและส่วนที่ต้องการการโต้ตอบใส่เข้าไปในคอมโพเนนต์นั้น เพื่อให้การทำงานของฟังก์ชันพรีวิวสมบูรณ์ครับ/ค่ะ
+พร็อพเพอร์ตี `Previewer` ของออบเจ็กต์คำอธิบายประเภทคือคอมโพเนนต์ที่ใช้สำหรับพรีวิว เมื่อประเภทไฟล์ตรงเงื่อนไข คอมโพเนนต์นี้จะถูกเรนเดอร์ในหน้าต่างพรีวิว คุณสามารถคืนค่าเป็น React view ใดๆ ได้ (เช่น iframe, player หรือกราฟ)
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` เป็น global instance ที่ import มาจาก `@nocobase/client` ครับ/ค่ะ
+`filePreviewTypes` เป็นอินสแตนซ์แบบ global นำเข้าจาก `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-ใช้สำหรับลงทะเบียนออบเจกต์คำอธิบายประเภทไฟล์ใหม่เข้าสู่ระบบลงทะเบียนประเภทไฟล์ครับ/ค่ะ โดยออบเจกต์คำอธิบายนี้จะมีประเภทเป็น `AttachmentFileType`
+ลงทะเบียนออบเจ็กต์คำอธิบายประเภทไฟล์ใหม่ใน registry ของประเภทไฟล์ ประเภทของออบเจ็กต์คำอธิบายคือ `FilePreviewType`
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
 เมธอดสำหรับจับคู่รูปแบบไฟล์
 
-พารามิเตอร์ `file` ที่ส่งเข้ามาคือออบเจกต์ข้อมูลของไฟล์ที่อัปโหลดแล้ว ซึ่งมีคุณสมบัติที่เกี่ยวข้องที่สามารถใช้ในการตรวจสอบประเภทไฟล์ได้ดังนี้ครับ/ค่ะ
+พารามิเตอร์ `file` คือออบเจ็กต์ข้อมูลของไฟล์ที่อัปโหลดแล้ว ซึ่งมีคุณสมบัติที่เกี่ยวข้องสำหรับการตรวจสอบประเภท:
 
-*   `mimetype`: คำอธิบาย mimetype
-*   `extname`: นามสกุลไฟล์ รวมถึงเครื่องหมาย "."
-*   `path`: พาธสัมพัทธ์ของไฟล์ที่จัดเก็บ
-*   `url`: URL ของไฟล์
+* `mimetype`: คำอธิบาย mimetype
+* `extname`: นามสกุลไฟล์ รวมถึง "."
+* `path`: เส้นทางจัดเก็บไฟล์แบบสัมพัทธ์
+* `url`: URL ของไฟล์
 
-ค่าที่ส่งกลับจะเป็นประเภท `boolean` ซึ่งระบุผลลัพธ์ว่าตรงกันหรือไม่ครับ/ค่ะ
+คืนค่า `boolean` เพื่อบอกว่าตรงกันหรือไม่
+
+##### `getThumbnailURL`
+
+คืนค่า URL ของภาพย่อที่ใช้ในรายการไฟล์ หากค่าที่คืนว่าง จะใช้ภาพ placeholder ที่มีอยู่ในระบบ
 
 ##### `Previewer`
 
 คอมโพเนนต์ React สำหรับพรีวิวไฟล์
 
-พารามิเตอร์ Props ที่ส่งเข้ามาคือ:
+Props ที่รับเข้ามา:
 
-*   `index`: ตำแหน่ง (index) ของไฟล์ในรายการไฟล์แนบ
-*   `list`: รายการไฟล์แนบ
-*   `onSwitchIndex`: เมธอดสำหรับสลับตำแหน่ง (index)
+* `file`: ออบเจ็กต์ไฟล์ปัจจุบัน (อาจเป็น URL แบบสตริงหรือออบเจ็กต์ที่มี `url`/`preview`)
+* `index`: ดัชนีของไฟล์ในรายการ
+* `list`: รายการไฟล์
 
-โดย `onSwitchIndex` สามารถรับค่า index ใดๆ จาก `list` เพื่อสลับไปยังไฟล์อื่นได้ครับ/ค่ะ หากส่ง `null` เป็นพารามิเตอร์เพื่อสลับ คอมโพเนนต์พรีวิวจะถูกปิดทันทีครับ/ค่ะ
-
-```ts
-onSwitchIndex(null);
-```
