@@ -692,6 +692,11 @@ export const subFormLinkageAssignField = defineAction({
 
       let model = forkModel;
 
+      // 对多子表单（Form.List）新增行时 fork 可能尚未创建，此时不能回退到 master（会写错路径并可能触发清空）
+      if (!forkModel && ctx?.model?.context?.fieldKey) {
+        return;
+      }
+
       // 适配对一子表单的场景
       if (!forkModel) {
         model = formItemModel;
