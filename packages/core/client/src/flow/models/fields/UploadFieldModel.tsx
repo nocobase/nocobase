@@ -627,13 +627,14 @@ UploadFieldModel.registerFlow({
 });
 
 UploadFieldModel.define({
-  label: tExpr('Upload'),
+  label: tExpr('File picker'),
 });
 EditableItemModel.bindModelToInterface(
   'UploadFieldModel',
   ['attachment', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   {
     isDefault: true,
+    order: 30,
     when: (ctx, field) => {
       if (field.targetCollection) {
         return field.targetCollection.template === 'file';

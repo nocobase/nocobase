@@ -28,6 +28,7 @@ const ReactQuill = lazy(async () => {
 
 export const RichTextField = (props) => {
   const richTextClass = useRichTextStyles();
+  const boundsClass = React.useMemo(() => `quill-bounds-${Math.random().toString(36).slice(2, 9)}`, []);
   const modules = {
     toolbar: [
       [
@@ -85,7 +86,7 @@ export const RichTextField = (props) => {
 
   return (
     <ReactQuill
-      className={richTextClass}
+      className={`${richTextClass} ${boundsClass}`}
       modules={propsModules || modules}
       formats={propsFormats || formats}
       value={value}
@@ -97,6 +98,7 @@ export const RichTextField = (props) => {
         }
       }}
       readOnly={disabled}
+      bounds={`.${boundsClass}`}
     />
   );
 };

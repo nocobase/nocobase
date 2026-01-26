@@ -798,13 +798,13 @@ RecordSelectFieldModel.registerFlow({
 });
 
 RecordSelectFieldModel.define({
-  label: tExpr('Select'),
+  label: tExpr('Dropdown select'),
 });
 
 EditableItemModel.bindModelToInterface(
   'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
-  { isDefault: true },
+  { isDefault: true, order: 1 },
 );
 
 FilterableItemModel.bindModelToInterface(

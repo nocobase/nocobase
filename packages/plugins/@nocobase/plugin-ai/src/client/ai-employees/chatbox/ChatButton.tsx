@@ -54,7 +54,7 @@ export const ChatButton: React.FC = observer(() => {
       }));
   }, [aiEmployees]);
 
-  if (!aiEmployees?.length) {
+  if (open || !aiEmployees?.length) {
     return null;
   }
 
@@ -74,9 +74,8 @@ export const ChatButton: React.FC = observer(() => {
             z-index: 1050;
             position: fixed;
             bottom: 42px;
-            inset-inline-end: 0px;
-            height: 62px;
-            padding: 10px 14px 10px 10px;
+            inset-inline-end: -8px;
+            padding: 9px 22px 9px 10px;
             border-radius: 31px 0 0 31px;
             display: flex;
             align-items: center;
@@ -88,14 +87,20 @@ export const ChatButton: React.FC = observer(() => {
               0 3px 6px -4px rgba(0, 0, 0, 0.12),
               0 6px 16px 0px rgba(0, 0, 0, 0.08),
               0 9px 28px 8px rgba(0, 0, 0, 0.05);
-            transition: opacity 0.2s ease;
+            transform: translateX(0);
+            will-change: transform;
+            transition:
+              transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s ease;
             &:hover {
               opacity: 1;
+              transform: translateX(-8px);
             }
 
             ${dropdownOpen
               ? `
-            opacity: 1;
+              opacity: 1;
+              transform: translateX(-8px);
             `
               : ''}
           `}

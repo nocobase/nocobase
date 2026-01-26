@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AppSupervisor } from '@nocobase/server';
+import { AppSupervisor, Application } from '@nocobase/server';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import Application from '../application';
+import { PluginMultiAppManagerServer } from '../server';
 
 describe('multiple application', () => {
   let app: MockServer;
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
     app = mockServer({
       acl: false,
     });

@@ -385,17 +385,11 @@ RecordPickerFieldModel.registerFlow({
 });
 
 RecordPickerFieldModel.define({
-  label: tExpr('Record picker'),
+  label: tExpr('Popup select'),
 });
 
-EditableItemModel.bindModelToInterface('RecordPickerFieldModel', [
-  'm2m',
-  'm2o',
-  'o2o',
-  'o2m',
-  'oho',
-  'obo',
-  'updatedBy',
-  'createdBy',
-  'mbm',
-]);
+EditableItemModel.bindModelToInterface(
+  'RecordPickerFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  { order: 20 },
+);

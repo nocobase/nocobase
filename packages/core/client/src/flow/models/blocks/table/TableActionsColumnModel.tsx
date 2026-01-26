@@ -26,6 +26,7 @@ import React from 'react';
 import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { getRowKey } from './utils';
+import { FormBlockModel } from '../form/FormBlockModel';
 
 const recordIdentityByFork = new WeakMap<ForkFlowModel<any>, string>();
 
@@ -214,5 +215,9 @@ TableActionsColumnModel.define({
         },
       },
     },
+  },
+  hide(ctx) {
+    //子表格中隐藏这个Action
+    return ctx.disableFieldClickToOpen;
   },
 });

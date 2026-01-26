@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
+import Database, { BelongsToManyRepository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('reference integrity check', () => {
@@ -131,5 +131,46 @@ describe('reference integrity check', () => {
         name: 'foo',
       },
     });
+  });
+
+  it('should restrict when destroy nested relation via relationship repository', async () => {
+    const types = db.collection({
+      name: 'types',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'authors', onDelete: 'CASCADE' },
+      ],
+    });
+
+    const authors = db.collection({
+      name: 'authors',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts', onDelete: 'RESTRICT' },
+      ],
+    });
+
+    const posts = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await db.sync();
+
+    const type = await types.repository.create({
+      values: {
+        title: 'novel',
+        authors: [
+          { name: 'alice', posts: [{ title: 'a' }] },
+          { name: 'bob', posts: [{ title: 'b' }] },
+        ],
+      },
+    });
+
+    await expect(
+      db.getRepository<BelongsToManyRepository>('types.authors', type.id).destroy({
+        filter: { name: 'alice' },
+      }),
+    ).rejects.toThrowError(/RESTRICT/);
   });
 });

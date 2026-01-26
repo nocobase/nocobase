@@ -514,10 +514,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+  async setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
     this._maintainingCommandStatus = _maintainingCommandStatus;
 
-    this.emit('maintaining', _maintainingCommandStatus);
+    await this.emitAsync('maintaining', _maintainingCommandStatus);
 
     if (_maintainingCommandStatus.status == 'command_end') {
       this._maintaining = false;
@@ -879,7 +879,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       const command = await this.cli.parseAsync(argv, options);
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_end',
         command: this.activatedCommand,
       });
@@ -892,7 +892,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         };
       }
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
@@ -1199,12 +1199,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           name: getCommandFullName(actionCommand),
         };
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_begin',
           command: this.activatedCommand,
         });
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_running',
           command: this.activatedCommand,
         });

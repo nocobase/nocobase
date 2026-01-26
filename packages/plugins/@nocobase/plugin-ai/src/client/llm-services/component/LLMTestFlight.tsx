@@ -87,23 +87,48 @@ export const LLMTestFlight: React.FC = () => {
                 schema={{
                   type: 'void',
                   properties: {
-                    model: {
-                      title: tval('Model', { ns: namespace }),
-                      type: 'string',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'ModelSelect',
+                    testFlightGroup: {
+                      type: 'void',
+                      'x-component': 'div',
+                      'x-component-props': {
+                        style: {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        },
+                      },
+                      properties: {
+                        model: {
+                          title: tval('Model', { ns: namespace }),
+                          type: 'string',
+                          required: true,
+                          'x-decorator': 'FormItem',
+                          'x-decorator-props': {
+                            layout: 'horizontal',
+                            style: {
+                              marginBottom: 0,
+                            },
+                          },
+                          'x-component': 'ModelSelect',
+                          'x-component-props': {
+                            style: {
+                              width: 240,
+                            },
+                          },
+                        },
+                        runTest: {
+                          title: '{{ t("Run") }}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            type: 'primary',
+                          },
+                          'x-use-component-props': 'useTestActionProps',
+                        },
+                      },
                     },
                     notifyMessage: {
                       type: 'void',
                       'x-component': 'NotifyMessage',
-                    },
-                    runTest: {
-                      title: '{{ t("Run") }}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                      },
-                      'x-use-component-props': 'useTestActionProps',
                     },
                   },
                 }}
@@ -116,7 +141,7 @@ export const LLMTestFlight: React.FC = () => {
   );
 };
 
-const ModelSelect: React.FC = () => {
+const ModelSelect: React.FC = (props) => {
   const api = useAPIClient();
   const [options, setOptions] = useState([]);
   const [models, setModels] = useState<{ label: string; value: string }[]>([]);
@@ -183,6 +208,7 @@ const ModelSelect: React.FC = () => {
 
   return (
     <AutoComplete
+      {...props}
       onSearch={handleSearch}
       options={options}
       notFoundContent={loading ? <Spin size="small" /> : null}

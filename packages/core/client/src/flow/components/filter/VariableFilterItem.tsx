@@ -621,7 +621,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               ...node,
               children: async () => {
                 const base = await original();
-                return [...(Array.isArray(base) ? base : []), ...extraChildren];
+                const merged = [...(Array.isArray(base) ? base : []), ...extraChildren];
+                return _.uniqBy(merged, 'name');
               },
             } as MetaTreeNode;
           }

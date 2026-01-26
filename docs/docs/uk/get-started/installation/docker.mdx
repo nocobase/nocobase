@@ -42,6 +42,373 @@ vi docker-compose.yml
 
 <Tabs>
 
+<Tab label="Бета-версія (2.0-beta)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=postgres
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=postgres
+      # Порт бази даних
+      - DB_PORT=5432
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=nocobase
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати postgres.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=mysql
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=mysql
+      # Порт бази даних
+      - DB_PORT=3306
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=root
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Чи перетворювати імена таблиць та полів у стиль snake_case.
+      - DB_UNDERSCORED=true
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mysql.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=mariadb
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=mariadb
+      # Порт бази даних
+      - DB_PORT=3306
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=root
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Чи перетворювати імена таблиць та полів у стиль snake_case.
+      - DB_UNDERSCORED=true
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mariadb.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Альфа-версія (2.0-alpha)">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=postgres
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=postgres
+      # Порт бази даних
+      - DB_PORT=5432
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=nocobase
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати postgres.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=mysql
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=mysql
+      # Порт бази даних
+      - DB_PORT=3306
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=root
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Чи перетворювати імена таблиць та полів у стиль snake_case.
+      - DB_UNDERSCORED=true
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mysql.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Ключ програми, використовується для генерації токенів користувачів тощо.
+      # Якщо APP_KEY буде змінено, старі токени стануть недійсними.
+      # Може бути будь-яким випадковим рядком, переконайтеся, що він не розголошується.
+      - APP_KEY=your-secret-key
+      # Тип бази даних, підтримує postgres, mysql, mariadb.
+      - DB_DIALECT=mariadb
+      # Хост бази даних, можна замінити на IP-адресу наявного сервера бази даних.
+      - DB_HOST=mariadb
+      # Порт бази даних
+      - DB_PORT=3306
+      # Ім'я бази даних
+      - DB_DATABASE=nocobase
+      # Користувач бази даних
+      - DB_USER=root
+      # Пароль бази даних
+      - DB_PASSWORD=nocobase
+      # Чи перетворювати імена таблиць та полів у стиль snake_case.
+      - DB_UNDERSCORED=true
+      # Часовий пояс
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Якщо ви використовуєте наявну службу бази даних, ви можете не запускати mariadb.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Остання версія (1.9)">
+
+<Tabs>
 <Tab label="PostgreSQL">
 
 ```yml
@@ -217,6 +584,10 @@ services:
 ```
 
 </Tab>
+</Tabs>
+
+</Tab>
+
 </Tabs>
 
 

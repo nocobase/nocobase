@@ -21,6 +21,7 @@ const ReactQuill = lazy(() => import('react-quill'));
 export const RichText = connect(
   (props) => {
     const { wrapSSR, hashId, componentCls } = useStyles();
+    const boundsClass = React.useMemo(() => `quill-bounds-${Math.random().toString(36).slice(2, 9)}`, []);
     const modules = {
       toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
     };
@@ -53,7 +54,7 @@ export const RichText = connect(
 
     return wrapSSR(
       <ReactQuill
-        className={classNames(componentCls, hashId, quillDisabled, {
+        className={classNames(componentCls, hashId, quillDisabled, boundsClass, {
           'is-disabled': disabled,
         })}
         modules={propsModules || modules}
@@ -67,6 +68,7 @@ export const RichText = connect(
           }
         }}
         readOnly={disabled}
+        bounds={`.${boundsClass}`}
       />,
     );
   },

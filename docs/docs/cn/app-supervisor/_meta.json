@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/app-supervisor/"
+  },
+  {
+    "type": "custom-link",
+    "label": "共享内存多应用",
+    "link": "/app-supervisor/local"
+  },
+  {
+    "type": "custom-link",
+    "label": "多环境多应用",
+    "link": "/app-supervisor/remote"
+  }
+]

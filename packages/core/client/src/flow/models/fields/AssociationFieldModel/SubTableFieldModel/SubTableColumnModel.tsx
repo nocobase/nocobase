@@ -35,12 +35,12 @@ import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { FieldDeletePlaceholder } from '../../../blocks/table/TableColumnModel';
 
-function FieldWithoutPermissionPlaceholder({ targetModel }) {
+export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
   const fieldModel = targetModel;
-  const collection = fieldModel.collectionField.collection;
+  const collection = fieldModel.context.collectionField.collection;
   const dataSource = collection.dataSource;
-  const name = fieldModel.collectionField.name;
+  const name = fieldModel.context.collectionField.name;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -257,8 +257,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
               showLabel={false}
               disabled={
                 parent.props.disabled ||
-                (!record.__is_new__ && parent.props.aclDisabled) ||
-                (record.__is_new__ && parent.props.aclCreateDisabled)
+                (!record?.__is_new__ && parent.props.aclDisabled) ||
+                (record?.__is_new__ && parent.props.aclCreateDisabled)
               }
             >
               {fork.constructor.isLargeField ? (
@@ -271,8 +271,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   defaultValue={value}
                   disabled={
                     parent.props.disabled ||
-                    (!record.__is_new__ && parent.props.aclDisabled) ||
-                    (record.__is_new__ && parent.props.aclCreateDisabled)
+                    (!record?.__is_new__ && parent.props.aclDisabled) ||
+                    (record?.__is_new__ && parent.props.aclCreateDisabled)
                   }
                 />
               ) : (
@@ -438,7 +438,7 @@ export class SubTableColumnModel<
       // render: this.renderItem(),
       hidden: this.hidden && !this.context.flowSettingsEnabled,
       render: (value) => {
-        const { record, rowIndex: index } = value;
+        const { record, rowIndex: index } = value || {};
         return (
           <FlowModelProvider model={this}>
             <ErrorBoundary FallbackComponent={FlowErrorFallback}>
@@ -470,7 +470,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record } = props;
+      const { value, id, rowIdx, record } = props || {};
       return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} />;
     };
   }
