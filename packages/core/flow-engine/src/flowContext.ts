@@ -656,6 +656,24 @@ export class FlowContext {
     const isPromiseLike = (v: any): v is Promise<any> =>
       !!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as any).then === 'function';
 
+    // Per-call cache for resolved PropertyMetaFactory nodes to avoid repeated async calls.
+    const metaFactoryCache = new WeakMap<Function, Promise<PropertyMeta | null>>();
+    const resolveMetaOrFactory = async (meta?: PropertyMetaOrFactory): Promise<PropertyMeta | undefined> => {
+      if (!meta) return undefined;
+      if (typeof meta !== 'function') return meta;
+      let pending = metaFactoryCache.get(meta);
+      if (!pending) {
+        pending = (async () => {
+          const v = (meta as any).call(evalCtx, evalCtx);
+          const resolved = isPromiseLike(v) ? await v : v;
+          return resolved || null;
+        })();
+        metaFactoryCache.set(meta, pending);
+      }
+      const resolved = await pending;
+      return resolved || undefined;
+    };
+
     const buildEnvs = async (): Promise<FlowContextInfosEnvs> => {
       const envs: FlowContextInfosEnvs = {};
 
@@ -1489,7 +1507,7 @@ export class FlowContext {
 
     const buildPropertyInfoFromNodes = async (args: {
       docNode?: any;
-      metaNode?: PropertyMeta;
+      metaNode?: PropertyMetaOrFactory;
       infoNode?: FlowContextPropertyInfoInput;
       depth: number;
       pathFromRoot: string[];
@@ -1506,7 +1524,9 @@ export class FlowContext {
       if (docHiddenDecision.hideSelf) return undefined;
       const infoHiddenDecision = await evalRunJSHidden((infoObj as any)?.hidden);
       if (infoHiddenDecision.hideSelf) return undefined;
-      const metaHidden = await evalBool(metaNode?.hidden, (fn) => (fn as any).call(metaNode, evalCtx));
+
+      const resolvedMetaNode = await resolveMetaOrFactory(metaNode);
+      const metaHidden = await evalBool(resolvedMetaNode?.hidden, (fn) => (fn as any).call(resolvedMetaNode, evalCtx));
       if (metaHidden) return undefined;
 
       const childHiddenPrefixes = new Set(hiddenPrefixes);
@@ -1521,9 +1541,11 @@ export class FlowContext {
 
       const docDisabled = await evalBool((docObj as any)?.disabled, (fn) => fn(evalCtx));
       const docDisabledReason = await evalString((docObj as any)?.disabledReason, (fn) => fn(evalCtx));
-      const metaDisabled = await evalBool(metaNode?.disabled, (fn) => (fn as any).call(metaNode, evalCtx));
-      const metaDisabledReason = await evalString(metaNode?.disabledReason, (fn) =>
-        (fn as any).call(metaNode, evalCtx),
+      const metaDisabled = await evalBool(resolvedMetaNode?.disabled, (fn) =>
+        (fn as any).call(resolvedMetaNode, evalCtx),
+      );
+      const metaDisabledReason = await evalString(resolvedMetaNode?.disabledReason, (fn) =>
+        (fn as any).call(resolvedMetaNode, evalCtx),
       );
       const infoDisabled = await evalBool((infoObj as any)?.disabled, (fn) => fn(evalCtx));
       const infoDisabledReason = await evalString((infoObj as any)?.disabledReason, (fn) => fn(evalCtx));
@@ -1542,7 +1564,7 @@ export class FlowContext {
 
       let out: FlowContextApiInfo = {};
       out = { ...out, ...pickPropertyInfo(docObj) };
-      out = { ...out, ...pickPropertyInfo(metaNode) };
+      out = { ...out, ...pickPropertyInfo(resolvedMetaNode) };
       out = { ...out, ...pickPropertyInfo(infoObj) };
       if (typeof disabled !== 'undefined') out.disabled = !!disabled;
       if (typeof disabledReason !== 'undefined') out.disabledReason = disabledReason;
@@ -1553,16 +1575,16 @@ export class FlowContext {
         ? ((docObj as any).properties as any as Record<string, any>)
         : undefined;
 
-      let metaChildren: Record<string, PropertyMeta> | undefined;
-      if (metaNode?.properties) {
+      let metaChildren: Record<string, PropertyMetaOrFactory> | undefined;
+      if (resolvedMetaNode?.properties) {
         try {
-          const props = metaNode.properties;
+          const props = resolvedMetaNode.properties;
           if (typeof props === 'function') {
-            const resolved = await (props as any).call(metaNode, evalCtx);
-            metaNode.properties = resolved;
-            metaChildren = resolved as Record<string, PropertyMeta>;
+            const resolved = await (props as any).call(resolvedMetaNode, evalCtx);
+            resolvedMetaNode.properties = resolved;
+            metaChildren = resolved as Record<string, PropertyMetaOrFactory>;
           } else if (__isPlainObject(props)) {
-            metaChildren = props as Record<string, PropertyMeta>;
+            metaChildren = props as Record<string, PropertyMetaOrFactory>;
           }
         } catch (_) {
           metaChildren = undefined;
@@ -1609,17 +1631,43 @@ export class FlowContext {
       return out;
     };
 
-    const resolvePropertyMetaAtPath = async (segments: string[]): Promise<PropertyMeta | undefined> => {
+    const resolvePropertyMetaAtPath = async (segments: string[]): Promise<PropertyMetaOrFactory | undefined> => {
       if (!segments.length) return undefined;
       const [first, ...rest] = segments;
       const opt = this.getPropertyOptions(first);
       if (!opt?.meta) return undefined;
       try {
-        const rootMeta: any =
-          typeof opt.meta === 'function' ? await (opt.meta as any).call(evalCtx, evalCtx) : opt.meta;
-        if (!rootMeta) return undefined;
-        if (!rest.length) return rootMeta as PropertyMeta;
-        return await this.#resolvePathInMetaAsync(rootMeta as PropertyMeta, rest);
+        // Fast path: when querying the root key only, return the meta (may be a factory) and let
+        // buildPropertyInfoFromNodes decide whether to resolve it based on maxDepth.
+        if (!rest.length) return opt.meta as PropertyMetaOrFactory;
+
+        let current = await resolveMetaOrFactory(opt.meta as PropertyMetaOrFactory);
+        if (!current) return undefined;
+
+        for (let i = 0; i < rest.length; i++) {
+          const key = rest[i];
+
+          let props: any = (current as any)?.properties;
+          if (!props) return undefined;
+          if (typeof props === 'function') {
+            const resolved = await props.call(current, evalCtx);
+            (current as any).properties = resolved;
+            props = resolved;
+          }
+          if (!props || typeof props !== 'object') return undefined;
+
+          const next = (props as any)?.[key] as PropertyMetaOrFactory | undefined;
+          if (!next) return undefined;
+
+          // Return the node at the requested path (may still be a factory).
+          if (i === rest.length - 1) return next;
+
+          const resolvedNext = await resolveMetaOrFactory(next);
+          if (!resolvedNext) return undefined;
+          current = resolvedNext;
+        }
+
+        return undefined;
       } catch (_) {
         return undefined;
       }

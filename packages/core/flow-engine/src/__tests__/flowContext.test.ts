@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext, FlowRuntimeContext, FlowRunJSContext } from '../flowContext';
+import { FlowContext, FlowRuntimeContext, FlowRunJSContext, type PropertyMetaFactory } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
@@ -850,6 +850,89 @@ describe('FlowContext.getInfos', () => {
     const infos = await ctx.getInfos({ path: 'deep.level1', maxDepth: 2 });
     expect(infos.apis['deep.level1']?.title).toBe('l1');
     expect(infos.apis['deep.level1']?.properties?.level2).toBeTruthy();
+  });
+
+  it('should expand PropertyMetaFactory nodes in path pruning', async () => {
+    const ctx = new FlowContext();
+
+    const recordFactory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: 'Record',
+      properties: {
+        id: { type: 'string', title: 'id' },
+      },
+    });
+    recordFactory.title = 'Record';
+    recordFactory.hasChildren = true;
+
+    ctx.defineProperty('popup', {
+      meta: () => ({
+        type: 'object',
+        title: 'popup',
+        properties: async () => ({
+          record: recordFactory as any,
+        }),
+      }),
+    });
+
+    const infos = await ctx.getInfos({ path: 'popup.record', maxDepth: 3 });
+    expect(infos.apis['popup.record']?.title).toBe('Record');
+    expect(infos.apis['popup.record']?.properties?.id).toBeTruthy();
+  });
+
+  it('should support deep path pruning through PropertyMetaFactory nodes', async () => {
+    const ctx = new FlowContext();
+
+    const recordFactory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: 'Record',
+      properties: {
+        id: { type: 'string', title: 'id' },
+      },
+    });
+    recordFactory.title = 'Record';
+    recordFactory.hasChildren = true;
+
+    ctx.defineProperty('popup', {
+      meta: () => ({
+        type: 'object',
+        title: 'popup',
+        properties: async () => ({
+          record: recordFactory as any,
+        }),
+      }),
+    });
+
+    const infos = await ctx.getInfos({ path: 'popup.record.id', maxDepth: 2 });
+    expect(infos.apis['popup.record.id']?.title).toBe('id');
+    expect(infos.apis['popup.record.id']?.type).toBe('string');
+  });
+
+  it('should expand PropertyMetaFactory children in full output', async () => {
+    const ctx = new FlowContext();
+
+    const recordFactory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: 'Record',
+      properties: {
+        id: { type: 'string', title: 'id' },
+      },
+    });
+    recordFactory.title = 'Record';
+    recordFactory.hasChildren = true;
+
+    ctx.defineProperty('popup', {
+      meta: () => ({
+        type: 'object',
+        title: 'popup',
+        properties: async () => ({
+          record: recordFactory as any,
+        }),
+      }),
+    });
+
+    const infos = await ctx.getInfos({ maxDepth: 3 });
+    expect(infos.apis.popup?.properties?.record?.properties?.id).toBeTruthy();
   });
 
   it('should compute/skip hidden nodes and compute disabled/disabledReason', async () => {
