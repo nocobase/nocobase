@@ -7,17 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import React from 'react';
-import { Alert } from 'antd';
+import {
+  DownloadOutlined,
+  LeftOutlined,
+  RightOutlined,
+  RotateLeftOutlined,
+  RotateRightOutlined,
+  SwapOutlined,
+  UndoOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from '@ant-design/icons';
+import { Alert, Image, Modal, Space } from 'antd';
 import { matchMimetype } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
@@ -25,7 +27,11 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSwitchIndex?: (index: number) => void;
+  onClose?: () => void;
+  onDownload?: (file: any) => void;
 }
 
 export interface FilePreviewType {
@@ -168,14 +174,129 @@ export const getPreviewThumbnailUrl = (file: any) => {
   return getFallbackIcon(previewFile, src);
 };
 
-const ImagePreviewer = ({ originalNode }: FilePreviewerProps) => <>{originalNode}</>;
+const renderModalFooter = (props: FilePreviewerProps) => {
+  const { index, list, onSwitchIndex, onDownload, file } = props;
+  const canPrev = typeof index === 'number' && !!onSwitchIndex && index > 0;
+  const canNext = typeof index === 'number' && !!onSwitchIndex && index < list.length - 1;
+  return (
+    <Space size={14} style={{ fontSize: '20px' }}>
+      <LeftOutlined
+        style={{ cursor: canPrev ? 'pointer' : 'not-allowed' }}
+        disabled={!canPrev}
+        onClick={() => canPrev && onSwitchIndex?.(index - 1)}
+      />
+      <RightOutlined
+        style={{ cursor: canNext ? 'pointer' : 'not-allowed' }}
+        disabled={!canNext}
+        onClick={() => canNext && onSwitchIndex?.(index + 1)}
+      />
+      {onDownload ? <DownloadOutlined onClick={() => onDownload(file)} /> : null}
+    </Space>
+  );
+};
+
+export const wrapWithModalPreviewer = (Previewer: React.ComponentType<FilePreviewerProps>) => {
+  return function WrappedPreviewer(props: FilePreviewerProps) {
+    const { open, onOpenChange, onClose, file } = props;
+    if (typeof open !== 'boolean') {
+      return <Previewer {...props} />;
+    }
+    const title = getFileName(file, getFileUrl(file));
+    return (
+      <Modal
+        open={open}
+        title={title}
+        onCancel={() => {
+          onOpenChange?.(false);
+          onClose?.();
+        }}
+        footer={renderModalFooter(props)}
+        width="90vw"
+        centered={true}
+      >
+        <div
+          style={{
+            maxWidth: '100%',
+            maxHeight: 'calc(100vh - 256px)',
+            height: '80vh',
+            width: '100%',
+            background: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflowY: 'auto',
+          }}
+        >
+          <Previewer {...props} />
+        </div>
+      </Modal>
+    );
+  };
+};
+
+const ImagePreviewer = (props: FilePreviewerProps) => {
+  const { file, list, index, open, onOpenChange, onSwitchIndex, onClose, onDownload } = props;
+  if (typeof open !== 'boolean') {
+    return null;
+  }
+  const src = getFileUrl(file);
+  if (!src) {
+    return null;
+  }
+  const canPrev = typeof index === 'number' && index > 0;
+  const canNext = typeof index === 'number' && index < list.length - 1;
+  return (
+    <Image
+      wrapperStyle={{ display: 'none' }}
+      preview={{
+        visible: open,
+        onVisibleChange: (visible) => onOpenChange?.(visible),
+        afterOpenChange: (visible) => {
+          if (!visible) {
+            onClose?.();
+          }
+        },
+        toolbarRender: (
+          _,
+          {
+            transform: { scale },
+            actions: { onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
+          },
+        ) => (
+          <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
+            <LeftOutlined
+              style={{ cursor: canPrev ? 'pointer' : 'not-allowed' }}
+              disabled={!canPrev}
+              onClick={() => canPrev && onSwitchIndex?.(index - 1)}
+            />
+            <RightOutlined
+              style={{ cursor: canNext ? 'pointer' : 'not-allowed' }}
+              disabled={!canNext}
+              onClick={() => canNext && onSwitchIndex?.(index + 1)}
+            />
+            {onDownload ? <DownloadOutlined onClick={() => onDownload(file)} /> : null}
+            <SwapOutlined rotate={90} onClick={onFlipY} />
+            <SwapOutlined onClick={onFlipX} />
+            <RotateLeftOutlined onClick={onRotateLeft} />
+            <RotateRightOutlined onClick={onRotateRight} />
+            <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
+            <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
+            <UndoOutlined onClick={onReset} />
+          </Space>
+        ),
+      }}
+      src={src}
+    />
+  );
+};
 
 const IframePreviewer = ({ file }: FilePreviewerProps) => {
   const src = getFileUrl(file);
   if (!src) {
     return null;
   }
-  return <iframe src={src} width="90%" height="80%" style={{ border: 'none' }} />;
+  return <iframe src={src} width="100%" height="100%" style={{ border: 'none' }} />;
 };
 
 const AudioPreviewer = ({ file }: FilePreviewerProps) => {
@@ -206,6 +327,34 @@ const VideoPreviewer = ({ file }: FilePreviewerProps) => {
   );
 };
 
+const UnsupportedPreviewer = (props: FilePreviewerProps) => {
+  const { t } = useTranslation();
+  const { file } = props;
+  return (
+    <Alert
+      type="warning"
+      description={
+        <span>
+          {t('File type is not supported for previewing,')}
+          {props.onDownload ? (
+            <a onClick={() => props.onDownload?.(file)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+              {t('download it to preview')}
+            </a>
+          ) : null}
+        </span>
+      }
+      showIcon
+    />
+  );
+};
+
+filePreviewTypes.add({
+  match() {
+    return true;
+  },
+  Previewer: wrapWithModalPreviewer(UnsupportedPreviewer),
+});
+
 filePreviewTypes.add({
   match(file) {
     return matchMimetype(file, 'image/*');
@@ -218,64 +367,33 @@ filePreviewTypes.add({
 
 filePreviewTypes.add({
   match(file) {
-    return matchMimetype(file, 'application/pdf');
+    return ['text/plain', 'application/pdf', 'application/json'].some((type) => matchMimetype(file, type));
   },
-  Previewer: IframePreviewer,
+  Previewer: wrapWithModalPreviewer(IframePreviewer),
 });
 
 filePreviewTypes.add({
   match(file) {
     return matchMimetype(file, 'audio/*');
   },
-  Previewer: AudioPreviewer,
+  Previewer: wrapWithModalPreviewer(AudioPreviewer),
 });
 
 filePreviewTypes.add({
   match(file) {
     return matchMimetype(file, 'video/*');
   },
-  Previewer: VideoPreviewer,
+  Previewer: wrapWithModalPreviewer(VideoPreviewer),
 });
 
-filePreviewTypes.add({
-  match(file) {
-    return matchMimetype(file, 'text/plain');
-  },
-  Previewer: IframePreviewer,
-});
-
-export interface FilePreviewRendererProps {
-  file: any;
-  index: number;
-  list: any[];
-  originalNode: React.ReactNode;
-  onDownload?: (file: any) => void;
-}
-
-export const FilePreviewRenderer = ({ file, index, list, originalNode, onDownload }: FilePreviewRendererProps) => {
-  const { t } = useTranslation();
-  const normalized = normalizePreviewFile(file);
+export const FilePreviewRenderer = (props: FilePreviewerProps) => {
+  const normalized = normalizePreviewFile(props.file);
   if (!normalized) {
-    return <>{originalNode}</>;
+    return null;
   }
   const { Previewer } = filePreviewTypes.getTypeByFile(normalized) ?? {};
-  if (Previewer) {
-    return <Previewer file={normalized} index={index} list={list} originalNode={originalNode} />;
+  if (!Previewer) {
+    return null;
   }
-  return (
-    <Alert
-      type="warning"
-      description={
-        <span>
-          {t('File type is not supported for previewing,')}
-          {onDownload ? (
-            <a onClick={() => onDownload(normalized)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-              {t('download it to preview')}
-            </a>
-          ) : null}
-        </span>
-      }
-      showIcon
-    />
-  );
+  return <Previewer {...props} file={normalized} />;
 };

@@ -136,7 +136,7 @@ export class PluginFileManagerClient extends Plugin {
   }
 }
 
-export { filePreviewTypes } from './previewer/filePreviewTypes';
+export { filePreviewTypes, wrapWithModalPreviewer } from './previewer/filePreviewTypes';
 export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';
 export { CardUpload, UploadFieldModel } from './models/UploadFieldModel';
 

@@ -12,7 +12,7 @@ import { Modal, Button } from 'antd';
 import { saveAs } from 'file-saver';
 
 import { Plugin, attachmentFileTypes } from '@nocobase/client';
-import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
+import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
 import { useT } from './locale';
 
 const OFFICE_MIME_TYPES = [
@@ -108,7 +108,7 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
         style={{
           maxWidth: '100%',
           maxHeight: 'calc(100vh - 256px)',
-          height: '90vh',
+          height: '100%',
           width: '100%',
           background: 'white',
           display: 'flex',
@@ -122,7 +122,7 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
           src={url}
           style={{
             width: '100%',
-            maxHeight: '90vh',
+            maxHeight: '100%',
             flex: '1 1 auto',
             border: 'none',
           }}
@@ -137,7 +137,7 @@ function OfficeInlinePreviewer({ file }) {
   if (!url) {
     return null;
   }
-  return <iframe src={url} width="90%" height="80%" style={{ border: 'none' }} />;
+  return <iframe src={url} width="100%" height="100%" style={{ border: 'none' }} />;
 }
 
 export class PluginFilePreviewerOfficeClient extends Plugin {
@@ -148,7 +148,7 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
     });
     filePreviewTypes.add({
       match: isOfficeFile,
-      Previewer: OfficeInlinePreviewer,
+      Previewer: wrapWithModalPreviewer(OfficeInlinePreviewer),
     });
   }
 }

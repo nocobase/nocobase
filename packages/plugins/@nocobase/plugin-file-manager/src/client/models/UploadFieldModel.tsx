@@ -7,22 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  UploadOutlined,
-  PlusOutlined,
-  DownloadOutlined,
-  LeftOutlined,
-  RightOutlined,
-  RotateLeftOutlined,
-  RotateRightOutlined,
-  SwapOutlined,
-  UndoOutlined,
-  ZoomInOutlined,
-  ZoomOutOutlined,
-} from '@ant-design/icons';
+import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
-import { Image, Space } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
@@ -67,16 +54,12 @@ export const CardUpload = (props) => {
     setPreviewOpen(true);
   };
 
-  const goToPreviousImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : fileList.length - 1));
-    const file = fileList[currentImageIndex - 1];
-    setPreviewImage(file);
-  };
-
-  const goToNextImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex < fileList.length - 1 ? prevIndex + 1 : 0));
-    const file = fileList[currentImageIndex + 1];
-    setPreviewImage(file);
+  const switchPreviewIndex = (nextIndex: number) => {
+    if (nextIndex < 0 || nextIndex >= fileList.length) {
+      return;
+    }
+    setCurrentImageIndex(nextIndex);
+    setPreviewImage(fileList[nextIndex]);
   };
   const onDownload = (file?: any) => {
     const target = file || previewImage;
@@ -179,59 +162,15 @@ export const CardUpload = (props) => {
         </Upload>
 
         {previewImage && (
-          <Image
-            wrapperStyle={{ display: 'none' }}
-            preview={{
-              visible: previewOpen,
-              onVisibleChange: (visible) => setPreviewOpen(visible),
-              afterOpenChange: (visible) => !visible && setPreviewImage(null),
-              toolbarRender: (
-                _,
-                {
-                  transform: { scale },
-                  actions: { onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
-                },
-              ) => (
-                <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
-                  <LeftOutlined
-                    style={{
-                      cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
-                    }}
-                    disabled={currentImageIndex === 0}
-                    onClick={() => currentImageIndex !== 0 && goToPreviousImage()}
-                  />
-
-                  <RightOutlined
-                    style={{
-                      cursor: currentImageIndex === fileList.length - 1 ? 'not-allowed' : 'pointer',
-                    }}
-                    disabled={currentImageIndex === fileList.length - 1}
-                    onClick={() => currentImageIndex !== value.length - 1 && goToNextImage()}
-                  />
-
-                  <DownloadOutlined onClick={onDownload} />
-                  <SwapOutlined rotate={90} onClick={onFlipY} />
-                  <SwapOutlined onClick={onFlipX} />
-                  <RotateLeftOutlined onClick={onRotateLeft} />
-                  <RotateRightOutlined onClick={onRotateRight} />
-                  <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
-                  <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
-                  <UndoOutlined onClick={onReset} />
-                </Space>
-              ),
-              imageRender: (originalNode) => {
-                return (
-                  <FilePreviewRenderer
-                    file={previewImage}
-                    index={currentImageIndex}
-                    list={fileList}
-                    originalNode={originalNode}
-                    onDownload={onDownload}
-                  />
-                );
-              },
-            }}
-            src={previewImage.url || previewImage.preview}
+          <FilePreviewRenderer
+            open={previewOpen}
+            file={previewImage}
+            list={fileList}
+            index={currentImageIndex}
+            onOpenChange={setPreviewOpen}
+            onClose={() => setPreviewImage(null)}
+            onSwitchIndex={switchPreviewIndex}
+            onDownload={onDownload}
           />
         )}
         {allowSelectExistingRecord ? (

@@ -7,20 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EyeOutlined } from '@ant-design/icons';
 import { DetailsItemModel, FieldModel, TableColumnModel, css } from '@nocobase/client';
 import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
-import {
-  DownloadOutlined,
-  LeftOutlined,
-  RightOutlined,
-  RotateLeftOutlined,
-  RotateRightOutlined,
-  SwapOutlined,
-  UndoOutlined,
-  ZoomInOutlined,
-  ZoomOutOutlined,
-} from '@ant-design/icons';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -34,7 +22,17 @@ import {
   normalizePreviewFile,
 } from '../previewer/filePreviewTypes';
 
-const FilePreview = ({ file, size, showFileName }: { file: any; size: number; showFileName: boolean }) => {
+const FilePreview = ({
+  file,
+  size,
+  showFileName,
+  onClick,
+}: {
+  file: any;
+  size: number;
+  showFileName: boolean;
+  onClick?: () => void;
+}) => {
   const previewFile = normalizePreviewFile(file);
   const src = getPreviewFileUrl(previewFile);
   if (!src) {
@@ -57,7 +55,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
         fallback={fallback}
         width={size}
         height={size}
-        preview={{ mask: <EyeOutlined /> }}
+        preview={false}
         style={{
           borderRadius: 4,
           objectFit: 'cover',
@@ -67,7 +65,15 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
     </div>
   );
   return (
-    <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
+    <div
+      onClick={onClick}
+      style={{
+        textAlign: 'center',
+        width: size,
+        wordBreak: 'break-all',
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+    >
       {imageNode}
       {showFileName && (
         <Tooltip title={fileName}>
@@ -92,6 +98,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
+  const [previewOpen, setPreviewOpen] = React.useState(false);
   const list = React.useMemo(
     () =>
       castArray(value)
@@ -105,6 +112,11 @@ const Preview = (props) => {
       setCurrent(0);
     }
   }, [current, list.length]);
+  React.useEffect(() => {
+    if (!list.length && previewOpen) {
+      setPreviewOpen(false);
+    }
+  }, [list.length, previewOpen]);
   const onDownload = React.useCallback(
     (fileOverride?: any) => {
       const file = fileOverride || list[current];
@@ -137,62 +149,45 @@ const Preview = (props) => {
     },
     [current, list],
   );
+  const onOpenAtIndex = React.useCallback((index: number) => {
+    setCurrent(index);
+    setPreviewOpen(true);
+  }, []);
+  const onSwitchIndex = React.useCallback(
+    (index: number) => {
+      if (index < 0 || index >= list.length) {
+        return;
+      }
+      setCurrent(index);
+    },
+    [list.length],
+  );
   return (
-    <Image.PreviewGroup
-      preview={{
-        toolbarRender: (
-          _,
-          {
-            transform: { scale },
-            actions: { onActive, onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
-          },
-        ) => (
-          <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
-            <LeftOutlined disabled={current === 0} onClick={() => onActive?.(-1)} />
-            <RightOutlined disabled={current === list.length - 1} onClick={() => onActive?.(1)} />
-            <DownloadOutlined onClick={() => onDownload(list[current])} />
-            <SwapOutlined rotate={90} onClick={onFlipY} />
-            <SwapOutlined onClick={onFlipX} />
-            <RotateLeftOutlined onClick={onRotateLeft} />
-            <RotateRightOutlined onClick={onRotateRight} />
-            <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
-            <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
-            <UndoOutlined onClick={onReset} />
-          </Space>
-        ),
-        onChange: (index) => {
-          if (typeof index === 'number') {
-            setCurrent(index);
-          }
-        },
-        imageRender: (originalNode, info) => {
-          const nextIndex = info.current;
-          if (typeof nextIndex === 'number' && nextIndex !== current) {
-            setCurrent(nextIndex);
-          }
-          const index = typeof nextIndex === 'number' ? nextIndex : current;
-          const file: any = list[index] || normalizePreviewFile(info.image);
-          if (!file) {
-            return originalNode;
-          }
-          return (
-            <FilePreviewRenderer
-              file={file}
-              index={index}
-              list={list}
-              originalNode={originalNode}
-              onDownload={onDownload}
-            />
-          );
-        },
-      }}
-    >
-      <Space size={5} wrap={true}>
+    <>
+      <Space wrap={true}>
         {list.map((file, index) => (
-          <FilePreview file={file} size={size} key={index} showFileName={showFileName} />
+          <FilePreview
+            file={file}
+            size={size}
+            key={index}
+            showFileName={showFileName}
+            onClick={() => onOpenAtIndex(index)}
+          />
         ))}
       </Space>
-    </Image.PreviewGroup>
+      {list[current] ? (
+        <FilePreviewRenderer
+          open={previewOpen}
+          file={list[current]}
+          index={current}
+          list={list}
+          onOpenChange={setPreviewOpen}
+          onClose={() => setPreviewOpen(false)}
+          onSwitchIndex={onSwitchIndex}
+          onDownload={onDownload}
+        />
+      ) : null}
+    </>
   );
 };
 export class DisplayPreviewFieldModel extends FieldModel {
