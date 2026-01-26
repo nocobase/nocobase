@@ -381,10 +381,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     }, [t]);
     const stableT = React.useCallback((s: string) => tRef.current?.(s) ?? s, []);
 
-    const enumOptions = useMemo(
-      () => enumToOptions(mergedSchema?.enum as UiSchemaEnumItem[], stableT) || [],
-      [mergedSchema, stableT],
-    );
+    const enumOptions = useMemo(() => {
+      const options = enumToOptions(mergedSchema?.enum as UiSchemaEnumItem[], stableT) || [];
+      return options.filter((option) => option?.value !== undefined && option?.value !== '');
+    }, [mergedSchema, stableT]);
 
     const staticInputRenderer = useMemo(
       () => createStaticInputRenderer(mergedSchema, leftMeta, stableT, model.context.app),
