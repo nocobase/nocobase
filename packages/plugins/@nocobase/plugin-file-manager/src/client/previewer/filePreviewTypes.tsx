@@ -7,7 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
+import { Alert } from 'antd';
 import { matchMimetype } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
@@ -67,6 +77,96 @@ export function getFileUrl(file: any) {
   }
   return file.url || file.preview || '';
 }
+
+const FALLBACK_ICON_MAP: Record<string, string> = {
+  pdf: '/file-placeholder/pdf-200-200.png',
+  mp4: '/file-placeholder/video-200-200.png',
+  mov: '/file-placeholder/video-200-200.png',
+  avi: '/file-placeholder/video-200-200.png',
+  wmv: '/file-placeholder/video-200-200.png',
+  flv: '/file-placeholder/video-200-200.png',
+  mkv: '/file-placeholder/video-200-200.png',
+  mp3: '/file-placeholder/audio-200-200.png',
+  wav: '/file-placeholder/audio-200-200.png',
+  aac: '/file-placeholder/audio-200-200.png',
+  ogg: '/file-placeholder/audio-200-200.png',
+  doc: '/file-placeholder/docx-200-200.png',
+  docx: '/file-placeholder/docx-200-200.png',
+  odt: '/file-placeholder/docx-200-200.png',
+  xls: '/file-placeholder/xlsx-200-200.png',
+  xlsx: '/file-placeholder/xlsx-200-200.png',
+  csv: '/file-placeholder/xlsx-200-200.png',
+  ppt: '/file-placeholder/pptx-200-200.png',
+  pptx: '/file-placeholder/pptx-200-200.png',
+  jpg: '/file-placeholder/jpeg-200-200.png',
+  jpeg: '/file-placeholder/jpeg-200-200.png',
+  png: '/file-placeholder/png-200-200.png',
+  gif: '/file-placeholder/gif-200-200.png',
+  webp: '/file-placeholder/png-200-200.png',
+  bmp: '/file-placeholder/png-200-200.png',
+  svg: '/file-placeholder/svg-200-200.png',
+  default: '/file-placeholder/unknown-200-200.png',
+};
+
+const stripQueryAndHash = (url: string) => url.split('?')[0].split('#')[0];
+
+const getExtFromName = (value?: string) => {
+  if (!value) {
+    return '';
+  }
+  const clean = stripQueryAndHash(value);
+  const index = clean.lastIndexOf('.');
+  return index !== -1 ? clean.slice(index + 1).toLowerCase() : '';
+};
+
+const getNameFromUrl = (url?: string) => {
+  if (!url) {
+    return '';
+  }
+  const clean = stripQueryAndHash(url);
+  const index = clean.lastIndexOf('/');
+  return index !== -1 ? clean.slice(index + 1) : clean;
+};
+
+export const getFileExt = (file: any, url?: string) => {
+  if (file && typeof file === 'object') {
+    if (file.extname) {
+      return String(file.extname).replace(/^\./, '').toLowerCase();
+    }
+    const nameExt = getExtFromName(file.name || file.filename || file.title);
+    if (nameExt) {
+      return nameExt;
+    }
+  }
+  return getExtFromName(url);
+};
+
+export const getFileName = (file: any, url?: string) => {
+  const nameFromUrl = getNameFromUrl(url);
+  if (!file || typeof file === 'string') {
+    return nameFromUrl;
+  }
+  return file.name || file.filename || file.title || nameFromUrl;
+};
+
+export const getFallbackIcon = (file: any, url?: string) => {
+  const ext = getFileExt(file, url);
+  return FALLBACK_ICON_MAP[ext] || FALLBACK_ICON_MAP.default;
+};
+
+export const getPreviewThumbnailUrl = (file: any) => {
+  const previewFile = normalizePreviewFile(file);
+  const src = getPreviewFileUrl(previewFile);
+  const { getThumbnailURL } = filePreviewTypes.getTypeByFile(previewFile) ?? {};
+  const thumbnail = getThumbnailURL?.(previewFile);
+  if (thumbnail) {
+    return thumbnail;
+  }
+  if (matchMimetype(previewFile, 'image/*')) {
+    return '';
+  }
+  return getFallbackIcon(previewFile, src);
+};
 
 const ImagePreviewer = ({ originalNode }: FilePreviewerProps) => <>{originalNode}</>;
 
@@ -143,3 +243,39 @@ filePreviewTypes.add({
   },
   Previewer: IframePreviewer,
 });
+
+export interface FilePreviewRendererProps {
+  file: any;
+  index: number;
+  list: any[];
+  originalNode: React.ReactNode;
+  onDownload?: (file: any) => void;
+}
+
+export const FilePreviewRenderer = ({ file, index, list, originalNode, onDownload }: FilePreviewRendererProps) => {
+  const { t } = useTranslation();
+  const normalized = normalizePreviewFile(file);
+  if (!normalized) {
+    return <>{originalNode}</>;
+  }
+  const { Previewer } = filePreviewTypes.getTypeByFile(normalized) ?? {};
+  if (Previewer) {
+    return <Previewer file={normalized} index={index} list={list} originalNode={originalNode} />;
+  }
+  return (
+    <Alert
+      type="warning"
+      description={
+        <span>
+          {t('File type is not supported for previewing,')}
+          {onDownload ? (
+            <a onClick={() => onDownload(normalized)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+              {t('download it to preview')}
+            </a>
+          ) : null}
+        </span>
+      }
+      showIcon
+    />
+  );
+};

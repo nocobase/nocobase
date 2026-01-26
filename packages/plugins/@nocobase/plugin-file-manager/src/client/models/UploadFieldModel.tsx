@@ -22,15 +22,14 @@ import {
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
-import { Image, Space, Alert } from 'antd';
+import { Image, Space } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
 import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
-import { FieldModel } from '../base';
-import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
-import { matchMimetype, getThumbnailPlaceholderURL } from '../../../schema-component/antd/upload/shared';
+import { FieldModel, RecordPickerContent } from '@nocobase/client';
+import { FilePreviewRenderer, getPreviewThumbnailUrl } from '../previewer/filePreviewTypes';
 
 export const CardUpload = (props) => {
   const {
@@ -79,12 +78,19 @@ export const CardUpload = (props) => {
     const file = fileList[currentImageIndex + 1];
     setPreviewImage(file);
   };
-  const onDownload = () => {
-    const url = previewImage.url || previewImage.preview;
+  const onDownload = (file?: any) => {
+    const target = file || previewImage;
+    if (!target) {
+      return;
+    }
+    const url = target.url || target.preview;
+    if (!url) {
+      return;
+    }
     const cleanUrl = url.split('?')[0].split('#')[0];
     const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
     const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
-    const filename = `${Date.now()}_${previewImage.filename}${suffix}`;
+    const filename = `${Date.now()}_${target.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())
@@ -104,7 +110,7 @@ export const CardUpload = (props) => {
     return data.map((file) => {
       return {
         ...file,
-        thumbUrl: matchMimetype(file, 'image/*') ? file.preview || file.url : getThumbnailPlaceholderURL(file),
+        thumbUrl: getPreviewThumbnailUrl(file),
       };
     });
   };
@@ -213,54 +219,16 @@ export const CardUpload = (props) => {
                   <UndoOutlined onClick={onReset} />
                 </Space>
               ),
-              imageRender: (originalNode, info) => {
-                const file: any = info.image;
-                // 根据文件类型决定如何渲染预览
-                if (matchMimetype(file, 'application/pdf')) {
-                  // PDF 文件的预览
-                  return (
-                    <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />
-                  );
-                } else if (matchMimetype(file, 'audio/*')) {
-                  // 音频文件的预览
-                  return (
-                    <audio controls>
-                      <source src={file.url || file.preview} type={file.type} />
-                      {t('Your browser does not support the audio tag.')}
-                    </audio>
-                  );
-                } else if (matchMimetype(file, 'video/*')) {
-                  // 视频文件的预览
-                  return (
-                    <video controls width="100%">
-                      <source src={file.url || file.preview} type={file.type} />
-                      {t('Your browser does not support the video tag.')}
-                    </video>
-                  );
-                } else if (matchMimetype(file, 'text/plain')) {
-                  // 文本文件的预览
-                  return (
-                    <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />
-                  );
-                } else if (matchMimetype(file, 'image/*')) {
-                  // 图片文件的预览
-                  return originalNode;
-                } else {
-                  return (
-                    <Alert
-                      type="warning"
-                      description={
-                        <span>
-                          {t('File type is not supported for previewing,')}
-                          <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-                            {t('download it to preview')}
-                          </a>
-                        </span>
-                      }
-                      showIcon
-                    />
-                  );
-                }
+              imageRender: (originalNode) => {
+                return (
+                  <FilePreviewRenderer
+                    file={previewImage}
+                    index={currentImageIndex}
+                    list={fileList}
+                    originalNode={originalNode}
+                    onDownload={onDownload}
+                  />
+                );
               },
             }}
             src={previewImage.url || previewImage.preview}

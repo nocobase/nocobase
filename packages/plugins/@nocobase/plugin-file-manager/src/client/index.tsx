@@ -17,6 +17,7 @@ import { useStorageCfg } from './hooks/useStorageUploadProps';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
 import { DisplayPreviewFieldModel } from './models/DisplayPreviewFieldModel';
+import { UploadFieldModel } from './models/UploadFieldModel';
 import { UploadActionModel } from './models/UploadActionModel';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
@@ -68,7 +69,7 @@ export class PluginFileManagerClient extends Plugin {
       FileSizeField,
     });
 
-    this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel });
+    this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel });
   }
 
   registerStorageType(name: string, options) {
@@ -137,5 +138,6 @@ export class PluginFileManagerClient extends Plugin {
 
 export { filePreviewTypes } from './previewer/filePreviewTypes';
 export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';
+export { CardUpload, UploadFieldModel } from './models/UploadFieldModel';
 
 export default PluginFileManagerClient;

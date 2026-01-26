@@ -10,7 +10,6 @@
 import { EyeOutlined } from '@ant-design/icons';
 import { DetailsItemModel, FieldModel, TableColumnModel, css } from '@nocobase/client';
 import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
-import { useTranslation } from 'react-i18next';
 import {
   DownloadOutlined,
   LeftOutlined,
@@ -22,86 +21,18 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import { Image, Space, Tooltip, Alert } from 'antd';
+import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { filePreviewTypes, getPreviewFileUrl, normalizePreviewFile } from '../previewer/filePreviewTypes';
-
-const FALLBACK_ICON_MAP: Record<string, string> = {
-  pdf: '/file-placeholder/pdf-200-200.png',
-  mp4: '/file-placeholder/video-200-200.png',
-  mov: '/file-placeholder/video-200-200.png',
-  avi: '/file-placeholder/video-200-200.png',
-  wmv: '/file-placeholder/video-200-200.png',
-  flv: '/file-placeholder/video-200-200.png',
-  mkv: '/file-placeholder/video-200-200.png',
-  mp3: '/file-placeholder/audio-200-200.png',
-  wav: '/file-placeholder/audio-200-200.png',
-  aac: '/file-placeholder/audio-200-200.png',
-  ogg: '/file-placeholder/audio-200-200.png',
-  doc: '/file-placeholder/docx-200-200.png',
-  docx: '/file-placeholder/docx-200-200.png',
-  odt: '/file-placeholder/docx-200-200.png',
-  xls: '/file-placeholder/xlsx-200-200.png',
-  xlsx: '/file-placeholder/xlsx-200-200.png',
-  csv: '/file-placeholder/xlsx-200-200.png',
-  ppt: '/file-placeholder/pptx-200-200.png',
-  pptx: '/file-placeholder/pptx-200-200.png',
-  jpg: '/file-placeholder/jpeg-200-200.png',
-  jpeg: '/file-placeholder/jpeg-200-200.png',
-  png: '/file-placeholder/png-200-200.png',
-  gif: '/file-placeholder/gif-200-200.png',
-  webp: '/file-placeholder/png-200-200.png',
-  bmp: '/file-placeholder/png-200-200.png',
-  svg: '/file-placeholder/svg-200-200.png',
-  default: '/file-placeholder/unknown-200-200.png',
-};
-
-const stripQueryAndHash = (url: string) => url.split('?')[0].split('#')[0];
-
-const getExtFromName = (value?: string) => {
-  if (!value) {
-    return '';
-  }
-  const clean = stripQueryAndHash(value);
-  const index = clean.lastIndexOf('.');
-  return index !== -1 ? clean.slice(index + 1).toLowerCase() : '';
-};
-
-const getNameFromUrl = (url?: string) => {
-  if (!url) {
-    return '';
-  }
-  const clean = stripQueryAndHash(url);
-  const index = clean.lastIndexOf('/');
-  return index !== -1 ? clean.slice(index + 1) : clean;
-};
-
-const getFileExt = (file: any, url?: string) => {
-  if (file && typeof file === 'object') {
-    if (file.extname) {
-      return String(file.extname).replace(/^\./, '').toLowerCase();
-    }
-    const nameExt = getExtFromName(file.name || file.filename || file.title);
-    if (nameExt) {
-      return nameExt;
-    }
-  }
-  return getExtFromName(url);
-};
-
-const getFileName = (file: any, url?: string) => {
-  const nameFromUrl = getNameFromUrl(url);
-  if (!file || typeof file === 'string') {
-    return nameFromUrl;
-  }
-  return file.name || file.filename || file.title || nameFromUrl;
-};
-
-const getFallbackIcon = (file: any, url?: string) => {
-  const ext = getFileExt(file, url);
-  return FALLBACK_ICON_MAP[ext] || FALLBACK_ICON_MAP.default;
-};
+import {
+  FilePreviewRenderer,
+  getFallbackIcon,
+  getFileExt,
+  getFileName,
+  getPreviewThumbnailUrl,
+  getPreviewFileUrl,
+  normalizePreviewFile,
+} from '../previewer/filePreviewTypes';
 
 const FilePreview = ({ file, size, showFileName }: { file: any; size: number; showFileName: boolean }) => {
   const previewFile = normalizePreviewFile(file);
@@ -111,8 +42,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
   }
   const fileName = getFileName(previewFile, src);
   const fallback = getFallbackIcon(previewFile, src);
-  const { getThumbnailURL } = filePreviewTypes.getTypeByFile(previewFile) ?? {};
-  const thumbnail = getThumbnailURL?.(previewFile) || fallback;
+  const thumbnail = getPreviewThumbnailUrl(previewFile) || fallback;
   const imageNode = (
     <div
       className={css`
@@ -162,7 +92,6 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
-  const { t } = useTranslation();
   const list = React.useMemo(
     () =>
       castArray(value)
@@ -176,35 +105,38 @@ const Preview = (props) => {
       setCurrent(0);
     }
   }, [current, list.length]);
-  const onDownload = React.useCallback(() => {
-    const file = list[current];
-    if (!file) {
-      return;
-    }
-    const url = file.url || file.preview;
-    if (!url) {
-      return;
-    }
-    let filename = getFileName(file, url);
-    const ext = getFileExt(file, url);
-    if (filename && ext && !filename.toLowerCase().endsWith(`.${ext}`)) {
-      filename = `${filename}.${ext}`;
-    }
-    const downloadName = `${Date.now()}_${filename || 'file'}`;
-    // eslint-disable-next-line promise/catch-or-return
-    fetch(url)
-      .then((response) => response.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(new Blob([blob]));
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = downloadName;
-        document.body.appendChild(link);
-        link.click();
-        URL.revokeObjectURL(blobUrl);
-        link.remove();
-      });
-  }, [current, list]);
+  const onDownload = React.useCallback(
+    (fileOverride?: any) => {
+      const file = fileOverride || list[current];
+      if (!file) {
+        return;
+      }
+      const url = file.url || file.preview;
+      if (!url) {
+        return;
+      }
+      let filename = getFileName(file, url);
+      const ext = getFileExt(file, url);
+      if (filename && ext && !filename.toLowerCase().endsWith(`.${ext}`)) {
+        filename = `${filename}.${ext}`;
+      }
+      const downloadName = `${Date.now()}_${filename || 'file'}`;
+      // eslint-disable-next-line promise/catch-or-return
+      fetch(url)
+        .then((response) => response.blob())
+        .then((blob) => {
+          const blobUrl = URL.createObjectURL(new Blob([blob]));
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = downloadName;
+          document.body.appendChild(link);
+          link.click();
+          URL.revokeObjectURL(blobUrl);
+          link.remove();
+        });
+    },
+    [current, list],
+  );
   return (
     <Image.PreviewGroup
       preview={{
@@ -218,7 +150,7 @@ const Preview = (props) => {
           <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
             <LeftOutlined disabled={current === 0} onClick={() => onActive?.(-1)} />
             <RightOutlined disabled={current === list.length - 1} onClick={() => onActive?.(1)} />
-            <DownloadOutlined onClick={onDownload} />
+            <DownloadOutlined onClick={() => onDownload(list[current])} />
             <SwapOutlined rotate={90} onClick={onFlipY} />
             <SwapOutlined onClick={onFlipX} />
             <RotateLeftOutlined onClick={onRotateLeft} />
@@ -243,22 +175,13 @@ const Preview = (props) => {
           if (!file) {
             return originalNode;
           }
-          const { Previewer } = filePreviewTypes.getTypeByFile(file) ?? {};
-          if (Previewer) {
-            return <Previewer file={file} index={index} list={list} originalNode={originalNode} />;
-          }
           return (
-            <Alert
-              type="warning"
-              description={
-                <span>
-                  {t('File type is not supported for previewing,')}
-                  <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-                    {t('download it to preview')}
-                  </a>
-                </span>
-              }
-              showIcon
+            <FilePreviewRenderer
+              file={file}
+              index={index}
+              list={list}
+              originalNode={originalNode}
+              onDownload={onDownload}
             />
           );
         },
