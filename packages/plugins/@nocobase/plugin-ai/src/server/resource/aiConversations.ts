@@ -305,7 +305,7 @@ export default {
     async sendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, aiEmployee: employeeName, messages } = ctx.action.params.values || {};
+      const { sessionId, aiEmployee: employeeName, messages, editingMessageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -354,7 +354,7 @@ export default {
           conversation.options?.conversationSettings?.webSearch,
         );
         await aiEmployee.cancelToolCall();
-        await aiEmployee.processMessages({ userMessages: messages });
+        await aiEmployee.processMessages({ userMessages: messages, messageId: editingMessageId });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Tool call error');
