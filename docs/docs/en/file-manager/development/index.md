@@ -4,9 +4,9 @@
 
 ### Server-side
 
-1.  **Inherit `StorageType`**
-    
-    Create a new class and implement the `make()` and `delete()` methods, and override hooks like `getFileURL()`, `getFileStream()`, `getFileData()` if necessary.
+1. **Inherit `StorageType`**
+   
+   Create a new class and implement the `make()` and `delete()` methods, and override hooks like `getFileURL()`, `getFileStream()`, `getFileData()` if necessary.
 
 Example:
 
@@ -44,8 +44,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Register the new type**  
-    Inject the new storage implementation in the plugin's `beforeLoad` or `load` lifecycle:
+4. **Register the new type**  
+   Inject the new storage implementation in the plugin's `beforeLoad` or `load` lifecycle:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -74,108 +74,75 @@ For uploaded files, you can display different preview content on the frontend in
 
 ### Example
 
-For example, to extend an image file type with a carousel component, you can use the following code:
+For example, if you want to integrate a custom online preview for Office files, you can use the following code:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Here, `attachmentFileTypes` is the entry object provided in the `@nocobase/client` package for extending file types. Use its `add` method to extend a file type description object.
+Here, `filePreviewTypes` is the entry object provided by `@nocobase/plugin-file-manager/client` for extending file previews. Use its `add` method to extend a file type descriptor object.
 
-Each file type must implement a `match()` method to check if the file type meets the requirements. In the example, the method provided by the `mime-match` package is used to check the file's `mimetype` attribute. If it matches the `image/*` type, it is considered the file type to be processed. If no match is found, it will fall back to the built-in type handling.
+Each file type must implement a `match()` method to check whether the file type meets the requirements. In the example, `matchMimetype` is used to check the file's `mimetype` attribute. If it matches the `docx` type, it is considered the file type to be handled. If it does not match, the built-in type handling will be used.
 
-The `Previewer` property on the type description object is the component used for previewing. When the file type matches, this component will be rendered for preview. It is generally recommended to use a dialog-type component (such as `<Modal />`) as the base container, and then place the preview and interactive content within it to implement the preview functionality.
+The `Previewer` property on the type descriptor object is the component used for previewing. When the file type matches, this component will be rendered in the preview dialog. You can return any React view (such as an iframe, player, or chart).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` is a global instance, imported from `@nocobase/client`:
+`filePreviewTypes` is a global instance, imported from `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Registers a new file type description object with the file type registry. The type of the description object is `AttachmentFileType`.
+Register a new file type descriptor object with the file type registry. The type of the descriptor object is `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
@@ -183,12 +150,16 @@ File format matching method.
 
 The input parameter `file` is the data object of an uploaded file, containing relevant properties that can be used for type checking:
 
-*   `mimetype`: mimetype description
-*   `extname`: file extension, including the "."
-*   `path`: relative storage path of the file
-*   `url`: file URL
+* `mimetype`: mimetype description
+* `extname`: file extension, including "."
+* `path`: relative storage path of the file
+* `url`: file URL
 
 Returns a `boolean` value indicating whether it matches.
+
+##### `getThumbnailURL`
+
+Returns the thumbnail URL used in the file list. If the return value is empty, the built-in placeholder image will be used.
 
 ##### `Previewer`
 
@@ -196,12 +167,7 @@ A React component for previewing files.
 
 The incoming Props are:
 
-*   `index`: The index of the file in the attachment list
-*   `list`: The attachment list
-*   `onSwitchIndex`: A method for switching the index
+* `file`: the current file object (may be a string URL or an object containing `url`/`preview`)
+* `index`: index of the file in the list
+* `list`: file list
 
-The `onSwitchIndex` can be passed any index from the list to switch to another file. If `null` is passed as the argument, the preview component will be closed directly.
-
-```ts
-onSwitchIndex(null);
-```
