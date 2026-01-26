@@ -12,13 +12,13 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-ai",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-ai",
   "peerDependencies": {
+    "@nocobase/ai": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-data-source-manager": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/ai": "2.x"
+    "@nocobase/test": "2.x"
   },
   "devDependencies": {
     "@ant-design/x": "^1.1.0",
@@ -28,6 +28,8 @@
     "@langchain/core": "^1.1.12",
     "@langchain/deepseek": "^1.0.4",
     "@langchain/google-genai": "^2.1.7",
+    "@langchain/langgraph": "^1.1.2",
+    "@langchain/langgraph-checkpoint": "^1.0.0",
     "@langchain/ollama": "^1.1.0",
     "@langchain/openai": "^1.2.1",
     "@nocobase/ai-employee-avatars": "^1.0.2",

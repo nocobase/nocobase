@@ -11,18 +11,31 @@ import { Model, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
 import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
-import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { sendSSEError, parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types';
+import {
+  AIChatContext,
+  AIChatConversation,
+  AIMessage,
+  AIMessageInput,
+  UserDecision,
+  WorkContextHandler,
+} from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { DocumentSegmentedWithScore } from '../features';
 import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
+import {
+  conversationMiddleware,
+  debugMiddleware,
+  toolCallStatusMiddleware,
+  toolInteractionMiddleware,
+} from './middleware';
+import { ToolOptions } from '../manager/tool-manager';
 
 type ToolMessage = {
   id: string;
@@ -40,14 +53,14 @@ type ToolMessage = {
 };
 
 export class AIEmployee {
-  private employee: Model;
+  employee: Model;
+  aiChatConversation: AIChatConversation;
+  skillSettings?: Record<string, any>;
   private plugin: PluginAIServer;
   private db: Database;
   private sessionId: string;
   private ctx: Context;
   private systemMessage: string;
-  private aiChatConversation: AIChatConversation;
-  private skillSettings?: Record<string, any>;
   private webSearch?: boolean;
 
   constructor(
@@ -115,12 +128,32 @@ export class AIEmployee {
     return { provider, model: modelSettings.model, service };
   }
 
-  async prepareChatStream(chatContext: AIChatContext, provider: LLMProvider) {
+  async prepareChatStream({
+    chatContext,
+    provider,
+    options,
+    state,
+  }: {
+    chatContext: AIChatContext;
+    provider: LLMProvider;
+    options?: { configurable?: any };
+    state?: any;
+  }) {
     const controller = new AbortController();
     const { signal } = controller;
 
     try {
-      const stream = await provider.stream(chatContext, { signal, version: 'v2' });
+      const { threadId } = await this.getCurrentThread();
+      const stream = await provider.getAgentStream(
+        chatContext,
+        {
+          signal,
+          streamMode: ['updates', 'messages', 'custom'],
+          configurable: options?.configurable ?? { thread_id: threadId },
+          context: { ctx: this.ctx },
+        },
+        state,
+      );
       this.plugin.aiEmployeesManager.conversationController.set(this.sessionId, controller);
       return { stream, controller, signal };
     } catch (error) {
@@ -132,128 +165,62 @@ export class AIEmployee {
     stream: any,
     options: {
       signal: AbortSignal;
-      messageId?: string;
-      model: string;
-      service: {
-        provider: string;
-      };
       provider: LLMProvider;
       allowEmpty?: boolean;
     },
   ) {
-    const { signal, messageId, model, service, provider, allowEmpty = false } = options;
-
-    let gathered: any;
-    let errMsg = '';
+    const { signal, provider, allowEmpty = false } = options;
+    let isMessageEmpty = true;
     try {
-      for await (const streamEvent of stream) {
-        if (streamEvent.event !== 'on_chat_model_stream') {
-          this.ctx.log.debug(`skip event: ${streamEvent.event}`);
-          continue;
-        }
-        const chunk = streamEvent.data.chunk;
-        gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
-        if (chunk.content) {
-          this.ctx.res.write(
-            `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
-          );
-        }
-        if (chunk.tool_call_chunks) {
-          this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunk.tool_call_chunks })}\n\n`);
-        }
-        const webSearch = provider.parseWebSearchAction(chunk);
-        if (webSearch?.length) {
-          this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
+      for await (const [mode, chunks] of stream) {
+        if (mode === 'messages') {
+          const [chunk] = chunks;
+          if (chunk.type !== 'ai') {
+            continue;
+          }
+          if (isMessageEmpty && chunk.content?.length) {
+            isMessageEmpty = false;
+          }
+
+          if (chunk.content) {
+            this.ctx.res.write(
+              `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
+            );
+          }
+
+          const webSearch = provider.parseWebSearchAction(chunk);
+          if (webSearch?.length) {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
+          }
+        } else if (mode === 'updates') {
+          if ('__interrupt__' in chunks) {
+            if (isMessageEmpty) {
+              isMessageEmpty = false;
+            }
+            console.log(`\n\nInterrupt: ${JSON.stringify(chunks.__interrupt__)}`);
+          }
+        } else if (mode === 'custom') {
+          if (isMessageEmpty) {
+            isMessageEmpty = false;
+          }
+          if (chunks.action === 'showToolCalls') {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
+          } else if (chunks.action === 'beforeToolCall') {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
+          }
         }
       }
-    } catch (err) {
-      errMsg = err.message;
-      this.ctx.log.error(err);
-    }
 
-    this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
-
-    // 如果流式过程中发生错误，必须发送错误事件，无论是否有部分内容
-    if (errMsg) {
-      this.sendErrorResponse(errMsg);
-      return;
-    }
-
-    const message = gathered?.content;
-    const toolCalls = gathered?.tool_calls;
-    const skills = this.employee.skillSettings?.skills;
-    if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
-      this.sendErrorResponse(errMsg);
-      return;
-    }
-
-    if (message || toolCalls?.length) {
-      const values: AIMessageInput = {
-        role: this.employee.username,
-        content: {
-          type: 'text',
-          content: message,
-        },
-        metadata: {
-          model,
-          provider: service.provider,
-          usage_metadata: {},
-        },
-        toolCalls: null,
-      };
-
-      if (signal.aborted) {
-        values.metadata.interrupted = true;
-      }
-
-      if (toolCalls?.length) {
-        values.toolCalls = toolCalls;
-        values.metadata.autoCallTools = toolCalls
-          .filter((tool: { name: string }) => {
-            return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
-          })
-          .map((tool: { name: string }) => tool.name);
-      }
-
-      if (gathered?.usage_metadata) {
-        values.metadata.usage_metadata = gathered.usage_metadata;
-      }
-      if (gathered?.response_metadata) {
-        values.metadata.response_metadata = gathered.response_metadata;
-      }
-      if (gathered?.additional_kwargs) {
-        values.metadata.additional_kwargs = gathered.additional_kwargs;
-      }
-
-      const aiMessage = await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-        if (messageId) {
-          await conversation.removeMessages({ messageId });
-          await this.aiToolMessagesRepo.destroy({
-            filter: {
-              sessionId: this.sessionId,
-              messageId: {
-                $gte: messageId,
-              },
-            },
-            transaction,
-          });
-        }
-        const result: AIMessage = await conversation.addMessages(values);
-        if (toolCalls?.length) {
-          await this.initToolCall(transaction, result.messageId, toolCalls);
-        }
-
-        return result;
-      });
-
-      if (toolCalls?.length) {
-        this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
-        await this.callTool(aiMessage.messageId, true);
+      if (isMessageEmpty && !signal.aborted && !allowEmpty) {
+        this.sendErrorResponse('Empty message');
         return;
       }
+    } catch (err) {
+      this.ctx.log.error(err);
+      this.sendErrorResponse(err.message);
+    } finally {
+      this.ctx.res.end();
     }
-
-    this.ctx.res.end();
   }
 
   async parseUISchema(content: string) {
@@ -330,7 +297,7 @@ export class AIEmployee {
     return message;
   }
 
-  async getSystemPrompt(aiMessages: AIMessage[]) {
+  async getSystemPrompt() {
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id,
@@ -349,6 +316,7 @@ export class AIEmployee {
       background = await parseVariables(this.ctx, this.systemMessage);
     }
 
+    const aiMessages = await this.aiChatConversation.listMessages();
     const workContextBackground = await this.plugin.workContextHandler.background(this.ctx, aiMessages);
     if (workContextBackground?.length) {
       background = `${background}\n${workContextBackground.join('\n')}`;
@@ -509,121 +477,40 @@ export class AIEmployee {
     });
   }
 
-  async callTool(messageId: string, autoCall: boolean) {
-    try {
-      const toolCalls = await this.getToolCallList(messageId);
-      const tools = await this.withTool(toolCalls);
-
-      const backendTools = tools
-        .filter(({ auto }) => auto === autoCall)
-        .filter(({ tool }) => tool.execution === 'backend');
-      const frontendTools = tools
-        .filter(({ auto }) => auto === autoCall)
-        .filter(({ tool }) => tool.execution === 'frontend');
-
-      if (!_.isEmpty(backendTools)) {
-        const parallelToolCall = backendTools.map(async (toolCall) => {
-          const [updated] = await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'pending',
-              invokeStartTime: new Date(),
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'init',
-              },
-            },
-          );
-          if (updated === 0) {
-            return;
-          }
-          const result = await toolCall.tool.invoke(this.ctx, toolCall.args, toolCall.id);
-          await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'done',
-              invokeEndTime: new Date(),
-              status: result.status,
-              content: result.content,
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'pending',
-              },
-            },
-          );
-        });
-        await Promise.all(parallelToolCall);
-      }
-
-      if (!_.isEmpty(frontendTools)) {
-        const parallelToolCall = frontendTools.map(async (toolCall) => {
-          const [updated] = await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'pending',
-              invokeStartTime: new Date(),
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'init',
-              },
-            },
-          );
-          if (updated === 0) {
-            return null;
-          } else {
-            return toolCall;
-          }
-        });
-
-        const type = 'tool_calls';
-        const body = (await Promise.all(parallelToolCall)).filter((x) => !_.isNull(x));
-        if (!_.isEmpty(body)) {
-          this.ctx.res.write(`data: ${JSON.stringify({ type, body })} \n\n`);
-        }
-        this.ctx.res.end();
-      } else {
-        await this.sendToolMessage(messageId);
-      }
-    } catch (err) {
-      this.ctx.log.error(err);
-      this.sendErrorResponse(err.message || 'Tool call error');
-    }
+  async updateToolCallPending(toolCallId: string) {
+    const [updated] = await this.aiToolMessagesModel.update(
+      {
+        invokeStatus: 'pending',
+        invokeStartTime: new Date(),
+      },
+      {
+        where: {
+          sessionId: this.sessionId,
+          toolCallId,
+          invokeStatus: 'init',
+        },
+      },
+    );
+    return updated;
   }
 
-  async confirmToolCall(messageId: string, toolCallIds: string[] = []) {
-    if (!_.isEmpty(toolCallIds)) {
-      const toolCallList = await this.getToolCallList(messageId);
-      const tools = await this.withTool(toolCallList.filter((x) => toolCallIds.includes(x.id)));
-      const frontendTools = tools.filter(({ tool }) => tool.execution === 'frontend');
-      if (!_.isEmpty(frontendTools)) {
-        const parallelToolCall = frontendTools.map(async (toolCall) => {
-          const result = await toolCall.tool.invoke(this.ctx, toolCall.args, toolCall.id);
-          await this.aiToolMessagesModel.update(
-            {
-              invokeStatus: 'done',
-              invokeEndTime: new Date(),
-              status: result.status,
-              content: result.content,
-            },
-            {
-              where: {
-                messageId,
-                toolCallId: toolCall.id,
-                invokeStatus: 'pending',
-              },
-            },
-          );
-        });
-        await Promise.all(parallelToolCall);
-      }
-    }
-    await this.sendToolMessage(messageId);
+  async updateToolCallDone(toolCallId: string, result: any) {
+    const [updated] = await this.aiToolMessagesModel.update(
+      {
+        invokeStatus: 'done',
+        invokeEndTime: new Date(),
+        status: result?.status ?? 'success',
+        content: result?.content ?? result,
+      },
+      {
+        where: {
+          sessionId: this.sessionId,
+          toolCallId,
+          invokeStatus: 'pending',
+        },
+      },
+    );
+    return updated;
   }
 
   async cancelToolCall() {
@@ -705,89 +592,68 @@ export class AIEmployee {
     });
   }
 
-  private async sendToolMessage(messageId: string) {
-    const toolCalls: ToolMessage[] = await this.aiToolMessagesRepo.find({ filter: { messageId } });
-    if (_.isEmpty(toolCalls) || !toolCalls.every((item) => item.invokeStatus === 'done')) {
-      this.ctx.res.end();
-      return;
-    }
-
-    const { provider, model, service } = await this.getLLMService();
-    const toolCallMap = await this.getToolCallMap(messageId);
-    await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-      await conversation.addMessages(
-        toolCalls.map((toolCall) => ({
-          role: 'tool',
-          content: {
-            type: 'text',
-            content: toolCall.content,
-          },
-          metadata: {
-            model,
-            provider: service.provider,
-            toolCall: toolCallMap.get(toolCall.toolCallId),
-            autoCall: toolCall.auto,
-          },
-        })),
-      );
-      for (const toolCall of toolCalls) {
-        await this.aiToolMessagesRepo.update({
-          filter: {
-            messageId,
-            toolCallId: toolCall.toolCallId,
-          },
-          values: {
-            invokeStatus: 'confirmed',
-          },
-          transaction,
-        });
-      }
-    });
-
-    const chatContext = await this.aiChatConversation.getChatContext({
-      workContextHandler: this.plugin.workContextHandler,
-      provider,
-      getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
-      tools: await this.getTools(),
-    });
-
-    const { stream, signal } = await this.prepareChatStream(chatContext, provider);
-    await this.processChatStream(stream, {
-      signal,
-      model,
-      service,
-      provider,
-      allowEmpty: true,
-    });
+  get logger() {
+    return this.ctx.logger;
   }
 
   sendErrorResponse(errorMessage: string) {
     sendSSEError(this.ctx, errorMessage);
   }
 
-  async processMessages(userMessages: AIMessageInput[], messageId?: string) {
+  async processMessages({
+    messageId,
+    userMessages = [],
+    userDecisions,
+  }: {
+    messageId?: string;
+    userMessages?: AIMessageInput[];
+    userDecisions?: UserDecision[];
+  }) {
     try {
-      await this.aiChatConversation.withTransaction(async (conversation) => {
-        if (messageId) {
-          await conversation.removeMessages({ messageId });
-        }
-        await conversation.addMessages(userMessages);
-      });
-
       const { provider, model, service } = await this.getLLMService();
+      const prepareOptions = messageId
+        ? async () => {
+            const agentThread = await this.forkCurrentThread(provider);
+            const thread_id = agentThread.threadId;
+            const options = {
+              configurable: {
+                thread_id,
+              },
+            };
+            const tools = await this.getTools();
+            const middleware = this.getMiddleware({ tools, model, service, messageId, agentThread });
+            const historyMessages = await this.aiChatConversation.listMessages({ messageId });
+            const state = {
+              lastHumanMessageIndex: historyMessages.filter((x) => x.role === 'user').length,
+              lastAIMessageIndex: historyMessages.filter((x) => x.role === this.employee.username).length,
+              lastToolMessageIndex: historyMessages.filter((x) => x.role === 'tool').length,
+              lastMessageIndex: historyMessages.length,
+            };
+            return { historyMessages, tools, middleware, options, state };
+          }
+        : async () => {
+            const historyMessages = [];
+            let options;
+            let state;
+            const tools = await this.getTools();
+            const middleware = this.getMiddleware({ tools, model, service });
+            return { historyMessages, tools, middleware, options, state };
+          };
+      const { historyMessages, tools, middleware, options, state } = await prepareOptions();
+
       const chatContext = await this.aiChatConversation.getChatContext({
-        workContextHandler: this.plugin.workContextHandler,
-        provider,
-        getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
-        tools: await this.getTools(),
+        userMessages: [...historyMessages, ...userMessages],
+        userDecisions,
+        tools,
+        middleware,
+        getSystemPrompt: async () => this.getSystemPrompt(),
+        formatMessages: async (messages) => this.formatMessages({ messages, provider }),
       });
-      const { stream, signal } = await this.prepareChatStream(chatContext, provider);
+      const { stream, signal } = await this.prepareChatStream({ chatContext, provider, options, state });
 
       await this.processChatStream(stream, {
         signal,
-        model,
         provider,
-        service,
       });
 
       return true;
@@ -798,32 +664,94 @@ export class AIEmployee {
     }
   }
 
-  async resendMessages(messageId?: string) {
-    try {
-      const { provider, model, service } = await this.getLLMService();
-      const chatContext = await this.aiChatConversation.getChatContext({
-        workContextHandler: this.plugin.workContextHandler,
-        provider,
-        getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
-        messageId,
-        tools: await this.getTools(),
-      });
-      const { stream, signal } = await this.prepareChatStream(chatContext, provider);
+  async updateThread(transaction: Transaction, { sessionId, thread }: { sessionId: string; thread: number }) {
+    await this.aiConversationsRepo.update({
+      values: { thread },
+      filter: {
+        sessionId,
+        thread: {
+          $lt: thread,
+        },
+      },
+      transaction,
+    });
+  }
 
-      await this.processChatStream(stream, {
-        signal,
-        messageId,
-        model,
-        provider,
-        service,
-      });
+  removeAbortController() {
+    this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
+  }
 
-      return true;
-    } catch (err) {
-      this.ctx.log.error(err);
-      this.sendErrorResponse(err.message);
-      return false;
+  private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
+    const formattedMessages = [];
+    const workContextHandler = this.plugin.workContextHandler;
+
+    // 截断过长的内容
+    const truncate = (text: string, maxLen = 50000) => {
+      if (!text || text.length <= maxLen) return text;
+      return text.slice(0, maxLen) + '\n...[truncated]';
+    };
+
+    for (const msg of messages) {
+      const attachments = msg.attachments;
+      const workContext = msg.workContext;
+      const userContent = msg.content;
+      let { content } = userContent ?? {};
+
+      // 截断消息内容
+      if (typeof content === 'string') {
+        content = truncate(content);
+      }
+      if (msg.role === 'user') {
+        if (typeof content === 'string') {
+          content = `<user_query>${content}</user_query>`;
+          if (workContext?.length) {
+            const workContextStr = (await workContextHandler.resolve(this.ctx, workContext))
+              .map((x) => `<work_context>${x}</work_context>`)
+              .join('\n');
+            content = workContextStr + '\n' + content;
+          }
+        }
+        const contents = [];
+        if (attachments?.length) {
+          for (const attachment of attachments) {
+            const parsed = await provider.parseAttachment(this.ctx, attachment);
+            contents.push(parsed);
+          }
+          if (content) {
+            contents.push({
+              type: 'text',
+              text: content,
+            });
+          }
+        }
+        formattedMessages.push({
+          role: 'user',
+          content: contents.length ? contents : content,
+          additional_kwargs: {
+            userContent,
+            attachments,
+            workContext,
+          },
+        });
+        continue;
+      }
+      if (msg.role === 'tool') {
+        formattedMessages.push({
+          role: 'tool',
+          content,
+          tool_call_id: msg.metadata?.toolCallId,
+        });
+        continue;
+      }
+      formattedMessages.push({
+        role: 'assistant',
+        content,
+        tool_calls: msg.toolCalls,
+        additional_kwargs: msg.metadata?.additional_kwargs,
+      });
     }
+
+    return formattedMessages;
   }
 
   private getAutoSkillNames(): string[] {
@@ -833,18 +761,6 @@ export class AIEmployee {
 
   private getSkills(): { name: string; autoCall?: boolean }[] {
     return this.employee.skillSettings?.skills ?? [];
-  }
-
-  private async getToolCallList(messageId: string): Promise<
-    Array<{
-      id: string;
-      args: unknown;
-      name: string;
-      type: string;
-    }>
-  > {
-    const { toolCalls } = await this.aiMessagesRepo.findByTargetKey(messageId);
-    return toolCalls;
   }
 
   private async getToolCallMap(messageId: string): Promise<
@@ -882,7 +798,7 @@ export class AIEmployee {
 
   private async getTools() {
     const toolMap = await this.getToolMap();
-    const tools = [];
+    const tools: ToolOptions[] = [];
     let skills = this.getSkills();
     const skillFilter = this.skillSettings?.skills;
     if (skillFilter) {
@@ -896,6 +812,7 @@ export class AIEmployee {
       for (const skill of skills) {
         const tool = toolMap.get(skill.name);
         if (tool) {
+          tool.autoCall = skill.autoCall;
           tools.push(tool);
         }
       }
@@ -903,10 +820,52 @@ export class AIEmployee {
     return tools;
   }
 
+  private getMiddleware(options: {
+    tools: ToolOptions[];
+    model: any;
+    service: any;
+    messageId?: string;
+    agentThread?: AgentThread;
+  }) {
+    const { tools, model, service, messageId, agentThread } = options;
+    return [
+      toolInteractionMiddleware(this, tools),
+      toolCallStatusMiddleware(this),
+      conversationMiddleware(this, { model, service, messageId, agentThread }),
+      debugMiddleware(this, this.ctx.logger),
+    ];
+  }
+
+  private async getCurrentThread(): Promise<AgentThread> {
+    const aiConversation = await this.aiConversationsRepo.findByTargetKey(this.sessionId);
+    if (!aiConversation) {
+      throw new Error('Conversation not existed');
+    }
+    return AgentThread.newThread(aiConversation.sessionId, aiConversation.thread);
+  }
+
+  private async forkCurrentThread(provider: LLMProvider): Promise<AgentThread> {
+    let retTry = 3;
+    const agent = provider.prepareAgent();
+    let currentThread = await this.getCurrentThread();
+    do {
+      currentThread = currentThread.fork();
+      const existedState = await agent.graph.getState({ configurable: { thread_id: currentThread.threadId } });
+      if (!existedState.config.configurable?.checkpoint_id) {
+        return currentThread;
+      }
+    } while (retTry-- > 0);
+    throw new Error('Fail to create new agent thread');
+  }
+
   private async getToolMap() {
     const toolGroupList = await this.plugin.aiManager.toolManager.listTools(false);
     const toolList = toolGroupList.flatMap(({ tools }) => tools);
     return new Map(toolList.map((tool) => [tool.name, tool]));
+  }
+
+  private get aiConversationsRepo() {
+    return this.ctx.db.getRepository('aiConversations');
   }
 
   private get aiMessagesRepo() {
@@ -919,5 +878,32 @@ export class AIEmployee {
 
   private get aiToolMessagesModel() {
     return this.ctx.db.getModel('aiToolMessages');
+  }
+}
+
+class AgentThread {
+  constructor(
+    private readonly _sessionId: string,
+    private readonly _thread: number,
+  ) {}
+
+  static newThread(sessionId: string, thread: number) {
+    return new AgentThread(sessionId, thread);
+  }
+
+  get sessionId() {
+    return this._sessionId;
+  }
+
+  get thread() {
+    return this._thread;
+  }
+
+  get threadId() {
+    return `${this._sessionId}:${this._thread}`;
+  }
+
+  fork(): AgentThread {
+    return new AgentThread(this._sessionId, this._thread + 1);
   }
 }
