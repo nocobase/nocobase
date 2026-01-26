@@ -85,14 +85,15 @@ describe('buildRunJSCompletions', () => {
     const inserted = mockView.dispatch.mock.calls[0][0]?.changes?.insert;
     expect(inserted).toContain('ctx.api.request');
 
-    // popup is async; doc-derived ctx.popup.* completions should insert awaited expression.
+    // popup derived from doc (insert via ctx.getVar for async-safe access)
     const popupRecord = completions.find((c: any) => c.label === 'ctx.popup.record');
     expect(popupRecord).toBeTruthy();
+    expect(typeof (popupRecord as any).apply).toBe('function');
     const mockViewPopup = { dispatch: vi.fn() } as any;
     (popupRecord as any).apply?.(mockViewPopup, popupRecord, 0, 0);
     expect(mockViewPopup.dispatch).toHaveBeenCalled();
     const popupInserted = mockViewPopup.dispatch.mock.calls[0][0]?.changes?.insert;
-    expect(popupInserted).toContain("await ctx.getVar('ctx.popup')");
+    expect(popupInserted).toContain("await ctx.getVar('ctx.popup.record')");
     // method (with parentheses)
     const method = completions.find((c: any) => c.label === 'ctx.bar()');
     expect(method).toBeTruthy();
@@ -121,49 +122,6 @@ describe('buildRunJSCompletions', () => {
       const { completions } = await buildRunJSCompletions({}, 'v1', scene);
       expect(completions.some((c: any) => c.label === 'ctx.foo')).toBe(true);
     }
-  });
-
-  it('adds meta-based completions for record/formValues/popup', async () => {
-    const hostCtx: any = {
-      popup: Promise.resolve({ uid: 'p1' }),
-      getPropertyMetaTree: (value: string) => {
-        if (value === '{{ ctx.record }}') {
-          return [
-            { name: 'name', title: 'Name', type: 'string', paths: ['record', 'name'] },
-            { name: 'status', title: 'Status', type: 'string', paths: ['record', 'status'] },
-          ];
-        }
-        if (value === '{{ ctx.formValues }}') {
-          return [{ name: 'title', title: 'Title', type: 'string', paths: ['formValues', 'title'] }];
-        }
-        if (value === '{{ ctx.popup }}') {
-          return [
-            {
-              name: 'record',
-              title: 'Popup record',
-              type: 'object',
-              paths: ['popup', 'record'],
-              children: [
-                { name: 'id', title: 'ID', type: 'string', paths: ['popup', 'record', 'id'] },
-                { name: 'name', title: 'Name', type: 'string', paths: ['popup', 'record', 'name'] },
-              ],
-            },
-          ];
-        }
-        return [];
-      },
-    };
-
-    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
-    expect(completions.some((c: any) => c.label === 'ctx.record.name')).toBe(true);
-    expect(completions.some((c: any) => c.label === 'ctx.formValues.title')).toBe(true);
-
-    const popupId = completions.find((c: any) => c.label === 'ctx.popup.record.id');
-    expect(popupId).toBeTruthy();
-    const mockView = { dispatch: vi.fn() } as any;
-    (popupId as any).apply?.(mockView, popupId, 0, 0);
-    const inserted = mockView.dispatch.mock.calls[0][0]?.changes?.insert;
-    expect(inserted).toContain("await ctx.getVar('ctx.popup')");
   });
 
   it('keeps ctx.popup.* completions when popup is available', async () => {

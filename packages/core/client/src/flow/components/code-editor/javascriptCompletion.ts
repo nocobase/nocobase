@@ -26,13 +26,6 @@ function buildBaseCompletions(): Completion[] {
       if (!examples.length) return typeof description === 'string' ? description : String(description ?? '');
       return [description, 'Examples:', ...examples].filter(Boolean).join('\n');
     };
-    const buildAwaitedPopupExpr = (paths: string[]) => {
-      // Use ctx.getVar('ctx.popup') for consistent and safe access (avoid async traps).
-      if (!paths?.length || paths[0] !== 'popup') return `ctx.${(paths || []).join('.')}`;
-      if (paths.length === 1) return "await ctx.getVar('ctx.popup')";
-      const rest = paths.slice(1);
-      return rest.reduce((acc, seg) => `${acc}?.${seg}`, "(await ctx.getVar('ctx.popup'))");
-    };
     if (doc?.label || doc?.properties || doc?.methods) {
       options.push({
         label: 'ctx',
@@ -57,8 +50,7 @@ function buildBaseCompletions(): Completion[] {
           completionSpec = value.completion;
           children = value.properties as Record<string, any> | undefined;
         }
-        const insertText =
-          completionSpec?.insertText ?? (path?.[0] === 'popup' ? buildAwaitedPopupExpr(path) : undefined);
+        const insertText = completionSpec?.insertText;
         const apply = insertText
           ? (view: any, _completion: any, from: number, to: number) => {
               view.dispatch({

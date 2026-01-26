@@ -992,13 +992,13 @@ describe('FlowContext.getInfos', () => {
     ctx.defineProperty('model', {
       value: {
         uid: 'm1',
-        constructor: { meta: { label: 'MyModel' } },
+        constructor: { name: 'MyFlowModel', meta: { label: 'MyModel' } },
       },
     });
     ctx.defineProperty('blockModel', {
       value: {
         uid: 'b1',
-        constructor: { meta: { label: 'MyBlock' } },
+        constructor: { name: 'TableBlockModel', meta: { label: 'MyBlock' } },
         resource: {
           collectionName: 'posts',
           dataSourceKey: 'main',
@@ -1012,8 +1012,10 @@ describe('FlowContext.getInfos', () => {
     const infos = await ctx.getInfos();
 
     expect(infos.envs.block?.getVar).toBe('ctx.blockModel');
+    expect(infos.envs.block?.properties?.modelClass?.value).toBe('TableBlockModel');
     expect(infos.envs.flowModel?.getVar).toBe('ctx.model');
     expect(infos.envs.flowModel?.properties?.label?.value).toBe('MyModel');
+    expect(infos.envs.flowModel?.properties?.modelClass?.value).toBe('MyFlowModel');
     expect(infos.envs.resource?.getVar).toBe('ctx.blockModel.resource');
     expect(infos.envs.resource?.properties?.collectionName?.value).toBe('posts');
     expect(infos.envs.resource?.properties?.filterByTk?.value).toBeUndefined();
@@ -1046,6 +1048,132 @@ describe('FlowContext.getInfos', () => {
     expect(infos.envs.resource?.properties?.sourceId).toBeUndefined();
     expect(infos.envs.popup?.properties?.resource?.properties?.filterByTk).toBeUndefined();
     expect(infos.envs.popup?.properties?.resource?.properties?.sourceId).toBeUndefined();
+  });
+
+  it('should return currentViewBlocks for page view (BlockModel only)', async () => {
+    const engine = new FlowEngine();
+
+    class ViewModel extends FlowModel {}
+    class BlockModelLike extends FlowModel {
+      onInit(options: any): void {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+    }
+    class NonBlockModel extends FlowModel {}
+
+    BlockModelLike.define({ label: 'MyBlock' } as any);
+    NonBlockModel.define({ label: 'NotBlock' } as any);
+
+    engine.registerModels({ ViewModel, BlockModelLike, NonBlockModel });
+
+    engine.createModel({
+      uid: 'view1',
+      use: 'ViewModel',
+      subModels: {
+        blocks: [
+          { uid: 'b1', use: 'BlockModelLike' },
+          { uid: 'b2', use: 'BlockModelLike' },
+        ],
+        other: { uid: 'x1', use: 'NonBlockModel' },
+      },
+    });
+
+    (engine.getModel('b1') as any).resource = { dataSourceKey: 'main', collectionName: 'posts' };
+    (engine.getModel('b2') as any).resource = {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      associationName: 'roles',
+    };
+
+    engine.context.defineProperty('view', { value: { inputArgs: { viewUid: 'view1' } } });
+
+    const infos = await engine.context.getInfos();
+
+    const blocks = (infos.envs.currentViewBlocks?.value || []) as any[];
+    const uids = blocks.map((b) => b.uid);
+
+    expect(infos.envs.currentViewBlocks?.getVar).toBeUndefined();
+    expect(uids).toEqual(expect.arrayContaining(['b1', 'b2']));
+    expect(uids).not.toContain('x1');
+
+    const b1 = blocks.find((b) => b.uid === 'b1');
+    expect(b1?.label).toBeTruthy();
+    expect(b1).not.toHaveProperty('use');
+    expect(b1?.modelClass).toBe('BlockModelLike');
+    expect(b1?.resource?.collectionName).toBe('posts');
+  });
+
+  it('should prefer current popup view for currentViewBlocks', async () => {
+    const engine = new FlowEngine();
+
+    class ViewModel extends FlowModel {}
+    class BlockModelLike extends FlowModel {
+      onInit(options: any): void {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+    }
+
+    BlockModelLike.define({ label: 'MyBlock' } as any);
+    engine.registerModels({ ViewModel, BlockModelLike });
+
+    engine.createModel({
+      uid: 'page1',
+      use: 'ViewModel',
+      subModels: { blocks: [{ uid: 'pageBlock1', use: 'BlockModelLike' }] },
+    });
+    engine.createModel({
+      uid: 'popup1',
+      use: 'ViewModel',
+      subModels: { blocks: [{ uid: 'popupBlock1', use: 'BlockModelLike' }] },
+    });
+
+    engine.context.defineProperty('view', { value: { inputArgs: { viewUid: 'page1' } } });
+    engine.context.defineProperty('popup', { value: { uid: 'popup1' } });
+
+    const infos = await engine.context.getInfos();
+    const blocks = (infos.envs.currentViewBlocks?.value || []) as any[];
+    const uids = blocks.map((b) => b.uid);
+
+    expect(uids).toContain('popupBlock1');
+    expect(uids).not.toContain('pageBlock1');
+  });
+
+  it('should include hidden blocks in currentViewBlocks', async () => {
+    const engine = new FlowEngine();
+
+    class ViewModel extends FlowModel {}
+    class BlockModelLike extends FlowModel {
+      onInit(options: any): void {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+    }
+
+    BlockModelLike.define({ label: 'MyBlock' } as any);
+    engine.registerModels({ ViewModel, BlockModelLike });
+
+    engine.createModel({
+      uid: 'view1',
+      use: 'ViewModel',
+      subModels: { blocks: [{ uid: 'b1', use: 'BlockModelLike' }] },
+    });
+
+    const b1 = engine.getModel('b1') as any;
+    b1.hidden = true;
+
+    engine.context.defineProperty('view', { value: { inputArgs: { viewUid: 'view1' } } });
+
+    const infos = await engine.context.getInfos();
+    const blocks = (infos.envs.currentViewBlocks?.value || []) as any[];
+    expect(blocks.map((b) => b.uid)).toContain('b1');
+  });
+
+  it('should omit currentViewBlocks when view is not available', async () => {
+    const engine = new FlowEngine();
+    const infos = await engine.context.getInfos();
+    expect(infos.envs.currentViewBlocks).toBeUndefined();
   });
 });
 
