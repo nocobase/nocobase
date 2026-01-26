@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ Các props đầu vào:
 * `file`: đối tượng tệp hiện tại (có thể là URL dạng chuỗi hoặc đối tượng chứa `url`/`preview`)
 * `index`: chỉ số của tệp trong danh sách
 * `list`: danh sách tệp
-* `originalNode`: node xem trước ảnh tích hợp, có thể tái sử dụng trực tiếp
 
-`originalNode` thường được dùng để tái sử dụng node xem trước tích hợp cho loại ảnh và tránh triển khai lại.

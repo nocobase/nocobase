@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 * `file`: 현재 파일 객체(문자열 URL 또는 `url`/`preview`를 포함한 객체)
 * `index`: 목록에서의 파일 인덱스
 * `list`: 파일 목록
-* `originalNode`: 내장 이미지 미리보기 노드로, 직접 재사용 가능
 
-`originalNode`는 이미지 타입에서 내장 미리보기 노드를 재사용해 재구현을 피하기 위해 자주 사용됩니다.

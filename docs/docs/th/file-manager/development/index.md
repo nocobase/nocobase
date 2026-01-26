@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ Props ที่รับเข้ามา:
 * `file`: ออบเจ็กต์ไฟล์ปัจจุบัน (อาจเป็น URL แบบสตริงหรือออบเจ็กต์ที่มี `url`/`preview`)
 * `index`: ดัชนีของไฟล์ในรายการ
 * `list`: รายการไฟล์
-* `originalNode`: โหนดพรีวิวรูปภาพที่มีในระบบ สามารถนำกลับมาใช้ได้ทันที
 
-`originalNode` มักใช้เพื่อ reuse โหนดพรีวิวเดิมสำหรับประเภทภาพและหลีกเลี่ยงการเขียนซ้ำ

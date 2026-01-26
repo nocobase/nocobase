@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ Předávané props jsou:
 * `file`: aktuální objekt souboru (může být řetězcová URL nebo objekt obsahující `url`/`preview`)
 * `index`: index souboru v seznamu
 * `list`: seznam souborů
-* `originalNode`: vestavěný uzel náhledu obrázku, který lze přímo použít
 
-`originalNode` se často používá pro znovupoužití vestavěného náhledu u obrázkových typů a k vyhnutí se opětovné implementaci.

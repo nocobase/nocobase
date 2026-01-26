@@ -21,7 +21,8 @@ import {
 } from '@ant-design/icons';
 import { Alert, Image, Modal, Space } from 'antd';
 import { matchMimetype } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { NAMESPACE } from '../locale';
 
 export interface FilePreviewerProps {
   file: any;
@@ -31,7 +32,7 @@ export interface FilePreviewerProps {
   onOpenChange?: (open: boolean) => void;
   onSwitchIndex?: (index: number) => void;
   onClose?: () => void;
-  onDownload?: (file: any) => void;
+  onDownload: (file: any) => void;
 }
 
 export interface FilePreviewType {
@@ -190,7 +191,7 @@ const renderModalFooter = (props: FilePreviewerProps) => {
         disabled={!canNext}
         onClick={() => canNext && onSwitchIndex?.(index + 1)}
       />
-      {onDownload ? <DownloadOutlined onClick={() => onDownload(file)} /> : null}
+      <DownloadOutlined onClick={() => onDownload(file)} />
     </Space>
   );
 };
@@ -320,7 +321,7 @@ const VideoPreviewer = ({ file }: FilePreviewerProps) => {
     return null;
   }
   return (
-    <video controls width="90%">
+    <video controls width="100%" height="100%">
       <source src={src} type={file?.type || file?.mimetype} />
       {t('Your browser does not support the video tag.')}
     </video>
@@ -334,14 +335,16 @@ const UnsupportedPreviewer = (props: FilePreviewerProps) => {
     <Alert
       type="warning"
       description={
-        <span>
-          {t('File type is not supported for previewing,')}
+        <Trans ns={NAMESPACE}>
+          {'File type is not supported for previewing, please '}
           {props.onDownload ? (
             <a onClick={() => props.onDownload?.(file)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-              {t('download it to preview')}
+              {'download it to preview'}
             </a>
-          ) : null}
-        </span>
+          ) : (
+            <span>{'download it to preview'}</span>
+          )}
+        </Trans>
       }
       showIcon
     />

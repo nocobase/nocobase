@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ Props yang diterima adalah:
 * `file`: objek file saat ini (bisa berupa URL string atau objek yang berisi `url`/`preview`)
 * `index`: indeks file dalam daftar
 * `list`: daftar file
-* `originalNode`: node pratinjau gambar bawaan, bisa digunakan langsung
 
-`originalNode` sering digunakan untuk memakai kembali node pratinjau bawaan untuk tipe gambar dan menghindari implementasi ulang.

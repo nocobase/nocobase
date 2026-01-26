@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 * `file`: אובייקט הקובץ הנוכחי (יכול להיות URL כמחרוזת או אובייקט הכולל `url`/`preview`)
 * `index`: אינדקס הקובץ ברשימה
 * `list`: רשימת הקבצים
-* `originalNode`: צומת תצוגת תמונה מובנה, ניתן לשימוש חוזר
 
-`originalNode` משמש לעיתים קרובות כדי להשתמש מחדש בצומת התצוגה המובנה עבור סוגי תמונות ולהימנע ממימוש מחדש.

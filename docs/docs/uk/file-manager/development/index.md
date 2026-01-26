@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ React-компонент для попереднього перегляду фа
 * `file`: поточний об’єкт файлу (може бути рядком URL або об’єктом з `url`/`preview`)
 * `index`: індекс файлу у списку
 * `list`: список файлів
-* `originalNode`: вбудований вузол перегляду зображень, який можна безпосередньо перевикористати
 
-`originalNode` часто використовується для повторного використання вбудованого вузла перегляду для типів зображень і уникнення повторної реалізації.

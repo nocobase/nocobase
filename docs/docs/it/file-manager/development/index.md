@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ Le props in ingresso sono:
 * `file`: oggetto file corrente (può essere una URL stringa o un oggetto che contiene `url`/`preview`)
 * `index`: indice del file nell'elenco
 * `list`: elenco dei file
-* `originalNode`: nodo di anteprima immagine integrato, riutilizzabile direttamente
 
-`originalNode` viene spesso utilizzato per riutilizzare il nodo di anteprima integrato per i tipi immagine ed evitare una nuova implementazione.

@@ -121,7 +121,6 @@ export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
-  originalNode: React.ReactNode;
 }
 
 export interface FilePreviewType {
@@ -175,6 +174,4 @@ Gelen Props:
 * `file`: mevcut dosya nesnesi (string URL veya `url`/`preview` içeren bir nesne olabilir)
 * `index`: listedeki dosyanın indeksi
 * `list`: dosya listesi
-* `originalNode`: yerleşik görsel önizleme düğümü, doğrudan yeniden kullanılabilir
 
-`originalNode`, görsel türler için yerleşik önizleme düğümünü yeniden kullanmak ve tekrar uygulamaktan kaçınmak için sıkça kullanılır.
