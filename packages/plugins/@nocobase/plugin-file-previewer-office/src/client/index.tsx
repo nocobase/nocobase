@@ -137,7 +137,7 @@ function OfficeInlinePreviewer({ file }) {
   if (!url) {
     return null;
   }
-  return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
+  return <iframe src={url} width="90%" height="80%" style={{ border: 'none' }} />;
 }
 
 export class PluginFilePreviewerOfficeClient extends Plugin {

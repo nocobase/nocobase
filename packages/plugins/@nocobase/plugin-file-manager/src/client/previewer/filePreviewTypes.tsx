@@ -75,7 +75,7 @@ const IframePreviewer = ({ file }: FilePreviewerProps) => {
   if (!src) {
     return null;
   }
-  return <iframe src={src} width="100%" height="600px" style={{ border: 'none' }} />;
+  return <iframe src={src} width="90%" height="80%" style={{ border: 'none' }} />;
 };
 
 const AudioPreviewer = ({ file }: FilePreviewerProps) => {
@@ -99,7 +99,7 @@ const VideoPreviewer = ({ file }: FilePreviewerProps) => {
     return null;
   }
   return (
-    <video controls width="100%">
+    <video controls width="90%">
       <source src={src} type={file?.type || file?.mimetype} />
       {t('Your browser does not support the video tag.')}
     </video>
