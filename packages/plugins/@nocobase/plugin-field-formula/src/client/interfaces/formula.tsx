@@ -63,8 +63,9 @@ const datetimeProperties = {
   },
 };
 
-const resolveFormulaDataType = (meta?: { dataType?: string; options?: { dataType?: string } }) => {
-  return meta?.options?.dataType || meta?.dataType || 'double';
+const resolveFormulaDataType = (meta?: any) => {
+  // Prefer explicit dataType from options or field
+  return meta?.options?.dataType || meta?.dataType || meta?.type || meta?.uiSchema?.type || 'double';
 };
 
 const formulaOperatorGroups = [
