@@ -21,6 +21,8 @@ describe('multiple apps', () => {
   let db: Database;
 
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
+
     app = await createMockServer({
       plugins: ['nocobase', 'field-sort', 'multi-app-manager'],
     });
@@ -57,29 +59,19 @@ describe('multiple apps', () => {
   it('should register db creator', async () => {
     const fn = vi.fn();
 
-    const appPlugin = app.getPlugin<PluginMultiAppManagerServer>(PluginMultiAppManagerServer);
-    const defaultDbCreator = appPlugin.appDbCreator;
-
-    appPlugin.setAppDbCreator(async (app) => {
-      fn();
-      await defaultDbCreator(app);
-    });
-
-    const name = `td_${uid()}`;
-
-    await db.getRepository('applications').create({
-      values: {
-        name,
-        options: {
-          plugins: [],
-        },
+    AppSupervisor.getInstance().registerAppDbCreator(
+      ({ appOptions }) => appOptions.dbConnType === 'test',
+      async (app) => {
+        fn();
       },
-      context: {
-        waitSubAppInstall: true,
+    );
+
+    await AppSupervisor.getInstance().createDatabase({
+      app: {} as any,
+      appOptions: {
+        dbConnType: 'test',
       },
     });
-
-    await AppSupervisor.getInstance().removeApp(name);
 
     expect(fn).toBeCalled();
   });
@@ -99,7 +91,7 @@ describe('multiple apps', () => {
       },
     });
 
-    const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
+    const subAppStatus = await AppSupervisor.getInstance().getAppStatus(name);
     expect(subAppStatus).toEqual('running');
   });
 
@@ -395,7 +387,7 @@ describe('multiple apps', () => {
     await app.start();
     await sleep(10000);
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
-    const appStatus = AppSupervisor.getInstance().getAppStatus(subAppName);
+    const appStatus = await AppSupervisor.getInstance().getAppStatus(subAppName);
     expect(appStatus).toEqual('running');
   });
 
