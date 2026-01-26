@@ -31,6 +31,7 @@ const SETTINGS_FLOW_KEY = 'bulkEditSettings';
 export class BulkEditActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.collection;
 
+  defaultPopupTitle = tExpr('Bulk edit');
   defaultProps: ButtonProps = {
     title: tExpr('Bulk edit'),
     icon: 'EditOutlined',
@@ -43,46 +44,46 @@ export class BulkEditActionModel extends PopupActionModel {
 
 BulkEditActionModel.define({
   label: tExpr('Bulk edit'),
-  createModelOptions: async (ctx, extra) => {
-    console.log('BulkEditActionModel createModelOptions called', ctx, extra);
-    const item = {
-      use: 'BulkEditFormModel',
-      stepParams: {
-        resourceSettings: {
-          init: {
-            dataSourceKey: ctx.collection?.dataSourceKey,
-            collectionName: ctx.collection?.name,
-          },
-        },
-      },
-      subModels: {
-        actions: [
-          // {
-          //   use: 'BulkEditFormActionModel',
-          // },
-        ],
-        grid: {
-          // "uid": "b6dc58a1639",
-          use: 'FormGridModel',
-          // "parentId": "2021d179357",
-          // "subKey": "grid",
-          // "subType": "object",
-          // "stepParams": {},
-          // "sortIndex": 0,
-          // "flowRegistry": {}
-        },
-      },
-    };
-    return {
-      use: 'BulkEditActionModel',
-      subModels: {
-        page: createTagPageOptions({
-          tabTitle: tExpr('Bulk edit'),
-          items: [item],
-        }),
-      },
-    };
-  },
+  // createModelOptions: async (ctx, extra) => {
+  //   console.log('BulkEditActionModel createModelOptions called', ctx, extra);
+  //   const item = {
+  //     use: 'BulkEditFormModel',
+  //     stepParams: {
+  //       resourceSettings: {
+  //         init: {
+  //           dataSourceKey: ctx.collection?.dataSourceKey,
+  //           collectionName: ctx.collection?.name,
+  //         },
+  //       },
+  //     },
+  //     subModels: {
+  //       actions: [
+  //         // {
+  //         //   use: 'BulkEditFormActionModel',
+  //         // },
+  //       ],
+  //       grid: {
+  //         // "uid": "b6dc58a1639",
+  //         use: 'FormGridModel',
+  //         // "parentId": "2021d179357",
+  //         // "subKey": "grid",
+  //         // "subType": "object",
+  //         // "stepParams": {},
+  //         // "sortIndex": 0,
+  //         // "flowRegistry": {}
+  //       },
+  //     },
+  //   };
+  //   return {
+  //     use: 'BulkEditActionModel',
+  //     subModels: {
+  //       page: createTagPageOptions({
+  //         tabTitle: tExpr('Bulk edit'),
+  //         items: [item],
+  //       }),
+  //     },
+  //   };
+  // },
 });
 
 /**
@@ -93,16 +94,6 @@ BulkEditActionModel.registerFlow({
   title: tExpr('Bulk edit action settings', { ns: NAMESPACE }),
   manual: true,
   steps: {
-    // 二次确认配置
-    confirm: {
-      title: tExpr('Secondary confirmation'),
-      use: 'confirm',
-      defaultParams: {
-        enable: false,
-        title: tExpr('Bulk edit'),
-        content: tExpr('Are you sure you want to perform the bulk edit action?'),
-      },
-    },
     // 编辑范围：选中记录 or 全部记录
     editMode: {
       title: tExpr('Data scope to edit'),
@@ -135,11 +126,9 @@ BulkEditActionModel.registerFlow({
     openModal: {
       async handler(ctx) {
         console.log('BulkEditActionModel openModal handler called');
-        // 1. 检查编辑模式
         const editModeParams = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'editMode') || {};
         const mode = editModeParams?.value || 'selected';
 
-        // 2. 如果是选中模式，检查是否有选中记录
         if (mode === 'selected') {
           const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
           if (!rows.length) {
@@ -148,26 +137,15 @@ BulkEditActionModel.registerFlow({
           }
         }
 
-        // 3. 获取集合信息
         const collection = ctx.collection?.name;
         if (!collection) {
           ctx.message.error(ctx.t('Collection is required to perform this action'));
           return;
         }
 
-        // 4. 复用原有的批量编辑机制：设置 visible 触发 BulkEditActionDecorator 打开弹窗
-        // BulkEditActionDecorator 会渲染带有字段初始化器的表单
-        // 用户可以在弹窗中动态添加要编辑的字段
         ctx.model.setProps({
           visible: true,
         });
-
-        // 注意：实际的表单提交逻辑由原有的 useCustomizeBulkEditActionProps 处理
-        // 它会：
-        // 1. 读取表单值（BulkEditField 格式）
-        // 2. 转换为实际更新值
-        // 3. 调用 API 执行批量更新
-        // 4. 刷新表格数据
       },
     },
   },

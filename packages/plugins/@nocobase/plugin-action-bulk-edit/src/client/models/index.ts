@@ -11,6 +11,8 @@
 export * from './BulkEditActionModel';
 // 表单
 export * from './BulkEditFormModel';
+export * from './BulkEditFormItemModel';
+export * from './BulkEditFieldModel';
 // 表单按钮
 export * from './BulkEditFormActionGroupModel';
 export * from './BulkEditFormSubmitActionModel';

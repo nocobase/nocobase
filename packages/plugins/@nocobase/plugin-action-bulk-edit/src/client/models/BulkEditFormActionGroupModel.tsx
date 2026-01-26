@@ -14,6 +14,6 @@ import { BulkEditFormSubmitActionModel } from './BulkEditFormSubmitActionModel';
 export class BulkEditFormActionGroupModel extends ActionGroupModel {}
 
 BulkEditFormActionGroupModel.registerActionModels({
-  AIEmployeeActionModel,
+  // AIEmployeeActionModel,
   BulkEditFormSubmitActionModel,
 });
