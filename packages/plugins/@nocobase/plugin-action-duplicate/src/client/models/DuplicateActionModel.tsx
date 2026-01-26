@@ -34,6 +34,7 @@ const Tree = connect(
     useEffect(() => {
       const data = props.getEnableFieldTree(form.values.collection);
       setDataSource(data);
+      field.dataSource = data;
     }, [form.values.collection]);
 
     return {
@@ -161,6 +162,7 @@ DuplicateActionModel.define({
   sort: 60,
 });
 
+//复制模式
 DuplicateActionModel.registerFlow({
   key: 'duplicateModeSettings',
   steps: {
@@ -188,18 +190,6 @@ DuplicateActionModel.registerFlow({
             }
           }
           return result;
-        };
-        const useSelectAllFields = (form) => {
-          return {
-            async run() {
-              form.query('duplicateFields').take((f) => {
-                const selectFields = getAllkeys(f.componentProps.treeData, []);
-                f.componentProps.defaultCheckedKeys = selectFields;
-                f.setInitialValue(selectFields);
-                f?.onCheck?.(selectFields);
-              });
-            },
-          };
         };
         const useUnSelectAllFields = (form) => {
           return {
@@ -293,11 +283,16 @@ DuplicateActionModel.registerFlow({
             title: '{{ t("Select all") }}',
             'x-component': () => {
               // eslint-disable-next-line react-hooks/rules-of-hooks
-              const from = useForm();
+              const form = useForm();
               return (
                 <a
                   onClick={() => {
-                    return useSelectAllFields(from);
+                    form.query('duplicateFields').take((f: any) => {
+                      const selectFields = getAllkeys(f.dataSource, []);
+                      f.componentProps.defaultCheckedKeys = selectFields;
+                      f.setInitialValue(selectFields);
+                      f?.onCheck?.(selectFields);
+                    });
                   }}
                   style={{ float: 'right', position: 'relative', zIndex: 1200 }}
                 >
@@ -321,13 +316,16 @@ DuplicateActionModel.registerFlow({
             title: '{{ t("UnSelect all") }}',
             'x-component': () => {
               // eslint-disable-next-line react-hooks/rules-of-hooks
-              const from = useForm();
-
+              const form = useForm();
               return (
                 <a
                   style={{ float: 'right', position: 'relative', zIndex: 1200, marginRight: '10px' }}
                   onClick={() => {
-                    return useUnSelectAllFields(from);
+                    form.query('duplicateFields').take((f: any) => {
+                      f.componentProps.defaultCheckedKeys = [];
+                      f.setInitialValue([]);
+                      f?.onCheck([]);
+                    });
                   }}
                 >
                   {t('UnSelect all')}
@@ -561,6 +559,7 @@ DuplicateActionModel.registerFlow({
             dataSourceKey: ctx.blockModel.collection.dataSourceKey,
             collectionName: ctx.record.__collection || ctx.blockModel.collection.name,
             formData,
+            viewUid: ctx.blockModel.uid,
           },
           content: () => <EditFormContent model={ctx.model} />,
           styles: {
