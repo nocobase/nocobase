@@ -66,11 +66,6 @@ function RemoteModelRenderer({ options }) {
   const { data, loading }: any = useRequest(
     async () => {
       const model: any = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
-      console.log('model', model, ctx.view.inputArgs.formData);
-      model.context.defineProperty('record', {
-        get: () => ctx.view.inputArgs.formData || {},
-        cache: false,
-      });
       return model;
     },
     {
@@ -551,6 +546,10 @@ DuplicateActionModel.registerFlow({
         };
 
         const formData = await fetchTemplateData(ctx.resource, template);
+        ctx.model.context.defineProperty('record', {
+          get: () => ctx.view.inputArgs.formData || {},
+          cache: false,
+        });
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
