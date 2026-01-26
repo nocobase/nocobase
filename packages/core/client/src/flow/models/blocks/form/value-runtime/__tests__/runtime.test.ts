@@ -248,6 +248,69 @@ describe('FormValueRuntime (default rules)', () => {
 });
 
 describe('FormValueRuntime (form assign rules)', () => {
+  it('migrates block-level rule to field instance on mount and restores on unmount', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-migrate-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    const ruleEngine: any = (runtime as any).ruleEngine;
+    const rules: Map<string, any> = ruleEngine.rules;
+    const blockId = 'form-assign:r1:block';
+    expect(rules.has(blockId)).toBe(true);
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+
+    const fieldModel: any = {
+      uid: 'field-a-migrate-1',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'a' };
+        }
+        return undefined;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+    fieldModel.context = fieldCtx;
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    const instanceId = 'form-assign:r1:field-a-migrate-1:master';
+    expect(rules.has(blockId)).toBe(false);
+    expect(rules.has(instanceId)).toBe(true);
+
+    engineEmitter.emit('model:unmounted', { model: fieldModel });
+
+    expect(rules.has(instanceId)).toBe(false);
+    expect(rules.has(blockId)).toBe(true);
+  });
+
   it('supports RunJSValue and updates on formValues dependency change', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

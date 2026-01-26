@@ -33,6 +33,10 @@ describe('fieldAssignOptions', () => {
         if (name === 'users') return usersAssociationField as any;
         return null;
       },
+      getFields: () => [
+        usersAssociationField,
+        { name: 'title', title: 'Title', interface: 'input', type: 'string', isAssociationField: () => false },
+      ],
     };
 
     const usersItemModel = {
@@ -58,11 +62,7 @@ describe('fieldAssignOptions', () => {
 
     const options = collectFieldAssignCascaderOptions({ formBlockModel, t });
 
-    expect(options).toMatchObject([
-      {
-        value: 'users',
-        isLeaf: false,
-      },
-    ]);
+    expect(options.some((o: any) => o?.value === 'users' && o?.isLeaf === false)).toBe(true);
+    expect(options.some((o: any) => o?.value === 'title' && o?.label === 'Title' && o?.isLeaf === true)).toBe(true);
   });
 });
