@@ -25,6 +25,10 @@ export class PluginFieldChinaRegionServer extends Plugin {
     await this.importData();
   }
 
+  beforeLoad() {
+    this.app.acl.appendStrategyResource('chinaRegions');
+  }
+
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
 
