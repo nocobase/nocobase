@@ -162,69 +162,6 @@ function buildAbsoluteFieldPathArray(
   };
 }
 
-function ensureFormListRowExists(form: any, listRootPath: Array<string | number>, rowIndex: number) {
-  if (!form?.getFieldValue || !form?.setFieldValue) return;
-  if (!Array.isArray(listRootPath) || listRootPath.length === 0) return;
-  if (!Number.isFinite(rowIndex) || rowIndex < 0) return;
-
-  const current = form.getFieldValue(listRootPath);
-  const currentArr = Array.isArray(current) ? current : current == null ? [] : [];
-
-  if (currentArr.length > rowIndex && currentArr[rowIndex] != null) {
-    return;
-  }
-
-  const next = [...currentArr];
-  while (next.length <= rowIndex) {
-    next.push({ __is_new__: true });
-  }
-  if (next[rowIndex] == null) {
-    next[rowIndex] = { __is_new__: true };
-  }
-
-  // Avoid unnecessary writes to reduce extra formValuesChange cascades.
-  if (!_.isEqual(currentArr, next)) {
-    form.setFieldValue(listRootPath, next);
-  }
-}
-
-type RetryState = { count: number; scheduled: boolean };
-const subFormLinkageAssignRetryMap = new WeakMap<any, Map<string, RetryState>>();
-
-function scheduleSubFormLinkageRetry(ctx: any, key: string) {
-  const blockModel = ctx?.model?.context?.blockModel;
-  if (!blockModel) return;
-
-  const owner = blockModel;
-  let map = subFormLinkageAssignRetryMap.get(owner);
-  if (!map) {
-    map = new Map();
-    subFormLinkageAssignRetryMap.set(owner, map);
-  }
-
-  const current = map.get(key) || { count: 0, scheduled: false };
-  const MAX_RETRY = 3;
-  if (current.count >= MAX_RETRY || current.scheduled) {
-    map.set(key, current);
-    return;
-  }
-
-  current.count += 1;
-  current.scheduled = true;
-  map.set(key, current);
-
-  setTimeout(() => {
-    const latest = map?.get(key);
-    if (latest) {
-      latest.scheduled = false;
-      map?.set(key, latest);
-    }
-    // Follow existing linkage handler behavior: emit + dispatch to propagate into sub-form models.
-    owner.dispatchEvent?.('formValuesChange', {}, { debounce: true });
-    // owner.emitter?.emit('formValuesChange', {});
-  }, 0);
-}
-
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: tExpr('Set block state'),
@@ -829,30 +766,17 @@ export const subFormLinkageAssignField = defineAction({
       let model = forkKey ? formItemModel.getFork(forkKey) : null;
 
       // 对多子表单（Form.List）场景：
-      // - 即使行 fork 已存在，也需确保底层 Form.List 的数组行已创建（默认空行仅用于 UI 展示）
       // - 确保用于写入的 fieldPathArray 为可落地的“绝对路径”
       if (fieldKey) {
         const fieldPath =
           formItemModel?.fieldPath || formItemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
         const built = buildAbsoluteFieldPathArray(fieldPath, fieldKey);
 
-        // 无法安全推导路径时，延迟重试，避免写错路径
-        if (!built || built.hasUnmatchedIndices || !built.fieldPathArray?.length) {
-          // 若已有 fork 且其路径已就绪，则直接使用现有路径；否则延迟重试等待路径可用
-          if (!model?.context?.fieldPathArray) {
-            scheduleSubFormLinkageRetry(ctx, `${String(fieldKey)}:${String(field)}`);
-            return;
-          }
-        } else {
-          // 自动创建第一行（或补齐缺失行），保证联动赋值可落地
-          if (built.listRootPath && typeof built.listRowIndex === 'number') {
-            ensureFormListRowExists(ctx?.model?.context?.form, built.listRootPath, built.listRowIndex);
-          }
-
-          // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
-          if (!model && forkKey) {
-            model = formItemModel.createFork({}, forkKey);
-          }
+        // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
+        if (!model && forkKey) {
+          model = formItemModel.createFork({}, forkKey);
+        }
+        if (model.isFork) {
           model?.context?.defineProperty?.('fieldPathArray', { value: built.fieldPathArray });
         }
       }
