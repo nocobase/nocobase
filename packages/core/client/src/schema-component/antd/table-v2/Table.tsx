@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
+import { CloseOutlined, MenuOutlined, ReloadOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css, cx } from '@emotion/css';
@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable } from 'antd';
+import { Table as AntdTable, InputNumber, Button, Divider } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, {
@@ -70,8 +70,6 @@ import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-
-// Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
 // Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
@@ -456,20 +454,195 @@ const TableIndex = (props) => {
   );
 };
 
-const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+const defaultPageSizeOptions = [5, 10, 20, 50, 100, 200];
+
+// Helpers for per-table custom page size persistence
+const getCustomPageSizes = (tableId?: string): number[] => {
+  if (!tableId || typeof window === 'undefined') return defaultPageSizeOptions;
+  try {
+    const key = `nb.pagination.customSizes.${tableId}`;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return defaultPageSizeOptions;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return defaultPageSizeOptions;
+    const cleaned = parsed.map((v) => parseInt(v, 10)).filter((v) => Number.isFinite(v) && v > 0);
+    return cleaned.length > 0 ? cleaned : defaultPageSizeOptions;
+  } catch (e) {
+    return defaultPageSizeOptions;
+  }
+};
+
+const setCustomPageSizes = (tableId?: string, sizes?: number[]) => {
+  if (!tableId || typeof window === 'undefined') return;
+  const key = `nb.pagination.customSizes.${tableId}`;
+  if (!sizes || sizes.length === 0) {
+    window.localStorage.removeItem(key);
+    return;
+  }
+  const cleaned = sizes.map((v) => parseInt(String(v), 10)).filter((v) => Number.isFinite(v) && v > 0);
+  window.localStorage.setItem(key, JSON.stringify(cleaned));
+};
+
+const setSelectedPageSize = (tableId?: string, size?: number) => {
+  if (!tableId || typeof window === 'undefined') return;
+  const key = `nb.pagination.selectedSize.${tableId}`;
+  if (!size || !Number.isFinite(size) || size <= 0) {
+    window.localStorage.removeItem(key);
+    return;
+  }
+  window.localStorage.setItem(key, String(size));
+};
 
 const usePaginationProps = (pagination1, pagination2, tableProps) => {
   const { t } = useTranslation();
   const field: any = useField();
+  const fieldSchema = useFieldSchema();
   const { token } = useToken();
   const { meta } = useDataBlockRequestData() || {};
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { hasNext } = meta || {};
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
-  const { total: totalCount, current, pageSize } = pagination || {};
+
+  const tableId = tableProps?.['x-uid'] || fieldSchema?.['x-uid'] || field?.componentProps?.['x-uid'];
+  const defaultPageSize = fieldSchema?.parent?.['x-decorator-props']?.params?.pageSize;
+  const [pageSizes, setPageSizes] = useState<number[]>(() => getCustomPageSizes(tableId));
+  const [customInputValue, setCustomInputValue] = useState<number | undefined>(undefined);
+  const [pendingPageSize, setPendingPageSize] = useState<number | undefined>(undefined);
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const dataService = getDataBlockRequest();
   const blockProps = useDataBlockProps();
+
+  // Sync sizes with localStorage
+  useEffect(() => {
+    if (tableId) {
+      setPageSizes(getCustomPageSizes(tableId));
+    }
+  }, [tableId]);
+
+  useEffect(() => {
+    if (tableId) {
+      setCustomPageSizes(tableId, pageSizes);
+    }
+  }, [pageSizes, tableId]);
+
+  // Handle pending page size change after pageSizes state updates
+  useEffect(() => {
+    if (pendingPageSize && pageSizes.includes(pendingPageSize)) {
+      setSelectedPageSize(tableId, pendingPageSize);
+      pagination?.onShowSizeChange?.(1, pendingPageSize);
+      try {
+        const baseParams = (dataService as any)?.params?.[0] || (blockProps as any)?.params || {};
+        dataService?.run?.({ ...baseParams, page: 1, pageSize: pendingPageSize });
+      } catch (e) {
+        // ignore
+      }
+      setPendingPageSize(undefined);
+      // Close dropdown after applying size
+      setDropdownOpen(false);
+    }
+  }, [pendingPageSize, pageSizes, tableId, pagination, dataService, blockProps]);
+
+  const handleSizeChange = useCallback(
+    (current: number, size: number) => {
+      // Add to cached sizes if not present
+      if (!pageSizes.includes(size)) {
+        setPageSizes((prev) => {
+          const next = Array.from(new Set([...prev, size])).sort((a, b) => a - b);
+          return next;
+        });
+      }
+      // Persist selected size
+      setSelectedPageSize(tableId, size);
+      // Call original handler
+      pagination?.onShowSizeChange?.(current, size);
+      // Trigger data refresh
+      try {
+        const baseParams = (dataService as any)?.params?.[0] || (blockProps as any)?.params || {};
+        dataService?.run?.({ ...baseParams, page: 1, pageSize: size });
+      } catch (e) {
+        // ignore
+      }
+    },
+    [pageSizes, tableId, pagination, dataService, blockProps],
+  );
+
+  const handleResetPageSizes = useCallback(() => {
+    // Reset to default page size options
+    setPageSizes(defaultPageSizeOptions);
+    // Clear custom input
+    setCustomInputValue(undefined);
+    // Clear selected size from localStorage
+    setSelectedPageSize(tableId, undefined);
+    // Set pending size to trigger selection after state update (this will close the dropdown)
+    setPendingPageSize(defaultPageSize);
+  }, [tableId, defaultPageSize]);
+
+  const handleApplyCustomSize = useCallback(
+    (size: number) => {
+      // Validate: custom size must be between min and max of default options (exclusive)
+      const minSize = Math.min(...defaultPageSizeOptions);
+      const maxSize = Math.max(...defaultPageSizeOptions);
+      if (!size || size <= minSize || size >= maxSize) {
+        setCustomInputValue(undefined);
+        return;
+      }
+
+      // Remove existing custom sizes (those not in default list)
+      const newSizes = pageSizes.filter((s) => defaultPageSizeOptions.includes(s));
+      // Add the new custom size
+      newSizes.push(size);
+      newSizes.sort((a, b) => a - b);
+      setPageSizes(newSizes);
+
+      // Set pending size to be applied after state update
+      setPendingPageSize(size);
+      setCustomInputValue(undefined);
+    },
+    [pageSizes],
+  );
+
+  // SelectProps for custom dropdown
+  // NOTE: dropdownRender is deprecated since antd 5.25.0, use popupRender instead
+  // See: https://ant.design/docs/react/migration-v6#api-adjustments
+  const showSizeChangerSelectProps = useMemo(() => {
+    return {
+      open: dropdownOpen,
+      onDropdownVisibleChange: (open: boolean) => setDropdownOpen(open),
+      dropdownRender: (menu) => (
+        <>
+          {menu}
+          <Divider style={{ margin: '4px 0' }} />
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <InputNumber
+              min={1}
+              value={customInputValue}
+              placeholder={t('Enter items per page')}
+              title={t('Enter items per page')}
+              onChange={(val) => setCustomInputValue(typeof val === 'number' ? val : undefined)}
+              onPressEnter={() => {
+                if (typeof customInputValue === 'number' && customInputValue > 0) {
+                  handleApplyCustomSize(customInputValue);
+                }
+              }}
+              size="small"
+              style={{ flex: 1 }}
+            />
+            <Button
+              type="text"
+              icon={<ReloadOutlined />}
+              onClick={handleResetPageSizes}
+              title={t('Reset to default page sizes')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </div>
+        </>
+      ),
+    };
+  }, [dropdownOpen, customInputValue, t, handleApplyCustomSize, handleResetPageSizes]);
+  const { total: totalCount, current, pageSize } = pagination || {};
   const original = useAssociationFieldContext();
   const { components } = useContext(SchemaOptionsContext);
   const C = original?.fieldSchema?.['x-component-props']?.summary?.Component || blockProps?.summary?.Component;
@@ -485,24 +658,26 @@ const usePaginationProps = (pagination1, pagination2, tableProps) => {
 
   const showTotalResult = useMemo(() => {
     return {
-      pageSizeOptions,
+      pageSizeOptions: pageSizes,
       showTotal,
-      showSizeChanger: true,
+      showSizeChanger: showSizeChangerSelectProps,
+      onShowSizeChange: handleSizeChange,
       ...pagination,
     };
-  }, [pagination, showTotal]);
+  }, [pagination, showTotal, pageSizes, handleSizeChange, showSizeChangerSelectProps]);
 
   const result = useMemo(() => {
     if (totalCount) {
       return showTotalResult;
     } else {
       return {
-        pageSizeOptions,
+        pageSizeOptions: pageSizes,
         showTotal: false,
         simple: true,
         showTitle: false,
-        showSizeChanger: true,
+        showSizeChanger: showSizeChangerSelectProps,
         hideOnSinglePage: false,
+        onShowSizeChange: handleSizeChange,
         ...pagination,
         total: tableProps.value?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
