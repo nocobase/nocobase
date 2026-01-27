@@ -33,7 +33,7 @@ export const refreshTargetBlocks = defineAction({
         console.warn(`Not found model: ${target}`);
         return;
       }
-      modelInstance.resource?.refresh ? modelInstance.resource.refresh() : modelInstance.refresh();
+      modelInstance.refresh();
     });
   },
 });
