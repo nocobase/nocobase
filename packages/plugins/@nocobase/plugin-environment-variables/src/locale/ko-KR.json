@@ -12,5 +12,5 @@
   "Value": "값",
   "Variables": "변수",
   "Variables and secrets": "변수 및 비밀",
-  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variables and secrets have been updated. A restart is required for the changes to take effect."
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "변수와 시크릿이 업데이트되었습니다. 변경 사항을 적용하려면 재시작이 필요합니다."
 }

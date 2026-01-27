@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Flera applikationer",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Flera utrymmen",
+    "link": "/multi-app/multi-space"
+  }
+]

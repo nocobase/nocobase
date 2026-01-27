@@ -19,6 +19,7 @@ import { NAMESPACE } from '../locale';
 import { appends, collection, values } from '../schemas/collection';
 import { getCollectionFieldOptions, useGetDataSourceCollectionManager } from '../variable';
 import { Instruction, useNodeSavedConfig } from '.';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function useVariables({ key: name, title, config }, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
@@ -139,6 +140,43 @@ export default class extends Instruction {
       Component: CollectionBlockInitializer,
       collection: node.config.collection,
       dataPath: `$jobsMapByNodeKey.${node.key}`,
+    };
+  }
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ node }): SubModelItem {
+    if (!node.config.collection) {
+      return null;
+    }
+
+    return {
+      key: node.title ?? `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: node.config.collection,
+              dataPath: `$jobsMapByNodeKey.${node.key}`,
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'DetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
     };
   }
 }

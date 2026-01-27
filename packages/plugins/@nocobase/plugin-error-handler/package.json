@@ -6,7 +6,7 @@
   "description.ru-RU": "Обработка ошибок и исключений приложения.",
   "description": "Handling application errors and exceptions.",
   "description.zh-CN": "处理应用程序中的错误和异常。",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/error-handler",
@@ -17,11 +17,11 @@
     "supertest": "^6.1.6"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "repository": {
     "type": "git",

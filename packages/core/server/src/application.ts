@@ -26,6 +26,7 @@ import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
+import { Snowflake } from '@nocobase/snowflake-id';
 import {
   applyMixins,
   AsyncEmitter,
@@ -34,7 +35,6 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-import { Snowflake } from '@nocobase/snowflake-id';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -78,11 +78,11 @@ import { availableActions } from './acl/available-action';
 import AesEncryptor from './aes-encryptor';
 import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
-import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
 import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
-import { WorkerIdAllocator } from './worker-id-allocator';
+import { ServiceContainer } from './service-container';
 import { setupSnowflakeIdField } from './snowflake-id-field';
+import { WorkerIdAllocator } from './worker-id-allocator';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -286,6 +286,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private static staticCommands = [];
+
+  static registerStaticCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
 
   static addCommand(callback: (app: Application) => void) {
     this.staticCommands.push(callback);
@@ -537,7 +541,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.version.get()} instead.
+   * Use {@link #this.getPackageVersion} instead.
    * @deprecated
    */
   getVersion() {
@@ -1098,6 +1102,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     this.log.info('upgrading...');
+    const pkgVersion = this.getPackageVersion();
+    const appVersion = await this.version.get();
+    if (process.env.SKIP_SAME_VERSION_UPGRADE === 'true' && pkgVersion === appVersion) {
+      this.log.info(`app is already the latest version (${appVersion})`);
+      return;
+    }
     await this.reInit();
     const migrator1 = await this.loadCoreMigrations();
     await migrator1.beforeLoad.up();
@@ -1140,7 +1150,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //     },
     //   });
     // }, 'Sync');
-    await this.emitAsync('afterUpgrade', this, options);
+    if (!options.quickstart) {
+      await this.emitAsync('afterUpgrade', this, options);
+    }
     await this.restart();
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {
@@ -1306,8 +1318,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._telemetry = new Telemetry({
-      serviceName: `nocobase-${this.name}`,
-      version: this.getVersion(),
+      appName: this.name,
+      version: this.getPackageVersion(),
       ...options.telemetry,
     });
 
@@ -1324,6 +1336,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
+    this._dataSourceManager.beforeAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        setupSnowflakeIdField(this, dataSource.collectionManager.db);
+      }
+    });
     this._dataSourceManager.afterAddDataSource((dataSource) => {
       if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
         for (const [actionName, actionParams] of Object.entries(availableActions)) {
@@ -1379,8 +1396,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
-
-    setupSnowflakeIdField(this);
   }
 
   protected createDatabase(options: ApplicationOptions) {

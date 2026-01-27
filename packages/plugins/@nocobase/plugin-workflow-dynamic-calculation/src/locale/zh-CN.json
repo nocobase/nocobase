@@ -1,6 +1,8 @@
 {
+  "An expression for calculation in each rows": "An expression for calculation in each rows",
   "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "基于计算引擎计算表达式并获取值作为结果。可以在表达式中使用上游节点的变量。表达式是从表达式表中动态获取的。",
   "Calculation result": "运算结果",
+  "Dynamic Calculation": "Dynamic Calculation",
   "Dynamic expression": "动态表达式",
   "Dynamic expression calculation": "动态表达式计算",
   "Expression": "表达式",

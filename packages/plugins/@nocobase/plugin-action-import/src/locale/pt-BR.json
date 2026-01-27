@@ -17,6 +17,7 @@
   "Illegal percentage format": "Formato de porcentagem ilegal",
   "Import": "Import",
   "Import Data": "Importar dados",
+  "Import action settings": "Import action settings",
   "Import completed": "Import completed",
   "Import done, total success have {{successCount}} , total failure have {{failureCount}}": "{{successCount}} dados foram importados com sucesso",
   "Import explain": "Guia",

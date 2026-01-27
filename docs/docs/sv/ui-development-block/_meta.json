@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Snabbstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introduktion",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Skriv ett block-plugin",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

@@ -1,81 +1,102 @@
-  /* width */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
+/* width */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  /* Track */
-  ::-webkit-scrollbar-track {
-    background: var(--colorBgScrollTrack);
-  }
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--colorBgScrollTrack);
+}
 
-  /* Handle */
-  ::-webkit-scrollbar-thumb {
-    background: var(--colorBgScrollBar);
-    border-radius: 4px;
-  }
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--colorBgScrollBar);
+  border-radius: 4px;
+}
 
-  /* Handle on hover */
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--colorBgScrollBarHover);
-  }
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--colorBgScrollBarHover);
+}
 
-  ::-webkit-scrollbar-thumb:active {
-    background: var(--colorBgScrollBarActive);
-  }
+::-webkit-scrollbar-thumb:active {
+  background: var(--colorBgScrollBarActive);
+}
 
-  .rc-virtual-list-scrollbar-thumb {
-    background: var(--colorBgScrollBar) !important;
-  }
+.rc-virtual-list-scrollbar-thumb {
+  background: var(--colorBgScrollBar) !important;
+}
 
-  .rc-virtual-list-scrollbar-thumb:hover {
-    background: var(--colorBgScrollBarHover) !important;
-  }
+.rc-virtual-list-scrollbar-thumb:hover {
+  background: var(--colorBgScrollBarHover) !important;
+}
 
-  .rc-virtual-list-scrollbar-thumb:active {
-    background: var(--colorBgScrollBarActive) !important;
-  }
+.rc-virtual-list-scrollbar-thumb:active {
+  background: var(--colorBgScrollBarActive) !important;
+}
 
-  // Fix the style of the top collapsed menu button dropdown
-  .ant-menu-submenu-popup {
-    backdrop-filter: none;
-  }
+// Fix the style of the top collapsed menu button dropdown
+.ant-menu-submenu-popup {
+  backdrop-filter: none;
+}
 
-  // Fix the style of the top collapsed menu button dropdown when clicking
-  .ant-menu-item.ant-menu-item-only-child.ant-pro-base-menu-horizontal-menu-item:active {
-    background-color: var(--colorBgMenuItemSelected) !important;
-  }
+// Fix the style of the top collapsed menu button dropdown when clicking
+.ant-menu-item.ant-menu-item-only-child.ant-pro-base-menu-horizontal-menu-item:active {
+  background-color: var(--colorBgMenuItemSelected) !important;
+}
 
-  html {
+// html {
+//   overflow: hidden;
+// }
+
+.nb-hidden {
+  display: none;
+}
+
+.nb-dialog-overflow-hidden {
+  .ant-modal-content {
     overflow: hidden;
   }
+}
 
-  // 侧边菜单样式配置
-  // TODO: 临时做法，后面需要统一 Layout 组件
-  .ant-layout-sider {
-    .ant-menu {
-      background: var(--colorBgSider) !important;
+// 侧边菜单样式配置
+// TODO: 临时做法，后面需要统一 Layout 组件
+.ant-layout-sider {
+  .ant-menu {
+    background: var(--colorBgSider) !important;
 
-      .ant-menu-item {
+    .ant-menu-item {
+      color: var(--colorTextSiderMenu) !important;
+
+      &:hover {
+        background-color: var(--colorBgSiderMenuHover) !important;
+        color: var(--colorTextSiderMenuHover) !important;
+      }
+
+      &:active {
+        background-color: var(--colorBgSiderMenuActive) !important;
+      }
+
+      &.ant-menu-item-selected {
+        background-color: var(--colorBgSiderMenuActive) !important;
+        color: var(--colorTextSiderMenuActive) !important;
+      }
+    }
+
+    .ant-menu-submenu {
+      .ant-menu-submenu-title {
         color: var(--colorTextSiderMenu) !important;
 
         &:hover {
           background-color: var(--colorBgSiderMenuHover) !important;
           color: var(--colorTextSiderMenuHover) !important;
         }
-
-        &:active {
-          background-color: var(--colorBgSiderMenuActive) !important;
-        }
-
-        &.ant-menu-item-selected {
-          background-color: var(--colorBgSiderMenuActive) !important;
-          color: var(--colorTextSiderMenuActive) !important;
-        }
       }
 
-      .ant-menu-submenu {
+      &.ant-menu-submenu-selected {
         .ant-menu-submenu-title {
+          color: var(--colorTextSiderMenuActive) !important;
           color: var(--colorTextSiderMenu) !important;
 
           &:hover {
@@ -92,3 +113,4 @@
       }
     }
   }
+}

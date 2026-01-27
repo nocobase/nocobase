@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, JoiValidationError, UniqueConstraintError } from '@nocobase/database';
+import {
+  Collection,
+  extractTypeFromDefinition,
+  fieldTypeMap,
+  Filter,
+  InheritedCollection,
+  JoiValidationError,
+  UniqueConstraintError,
+} from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -28,6 +36,9 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import mainDataSourceResource from './resourcers/main-data-source';
+import { ColumnsDescription } from 'sequelize';
+import { PRESET_FIELDS_INTERFACES } from './constants';
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 
@@ -428,7 +439,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*'],
+      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSource:*'],
     });
 
     this.app.acl.registerSnippet({
@@ -470,16 +481,18 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
-
-    this.app.resource(viewResourcer);
-    this.app.actions(collectionActions);
+    this.app.resourceManager.define(viewResourcer);
+    this.app.resourceManager.registerActionHandlers(collectionActions);
+    this.app.resourceManager.define(mainDataSourceResource);
 
     const handleFieldSource = ({
       fields,
       isRawValue,
+      rawFields,
     }: {
       fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>;
       isRawValue?: boolean;
+      rawFields?: ColumnsDescription;
     }) => {
       lodash.castArray(fields).forEach((field, index) => {
         const source = isRawValue ? field.source : field.get('source');
@@ -515,6 +528,15 @@ export class PluginDataSourceMainServer extends Plugin {
         } else {
           field.set('options', newOptions);
         }
+        const fieldTypes = fieldTypeMap[this.db.options.dialect];
+        if (rawFields && fieldTypes) {
+          const rawField = rawFields[field.get('name')];
+          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
+            const mappedType = extractTypeFromDefinition(rawField.type);
+            const possibleTypes = fieldTypes[mappedType];
+            field.set('possibleTypes', possibleTypes);
+          }
+        }
       });
     };
 
@@ -533,7 +555,19 @@ export class PluginDataSourceMainServer extends Plugin {
 
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
-        handleFieldSource({ fields: ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows });
+        const collectionName = ctx.action.sourceId;
+        const collection: Collection = ctx.db.getCollection(collectionName);
+        let rawFields: ColumnsDescription = {};
+        if (collection) {
+          try {
+            rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(
+              collection.getTableNameWithSchema(),
+            );
+          } catch (err) {
+            // ignore
+          }
+        }
+        handleFieldSource({ fields: ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields });
       }
 
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {

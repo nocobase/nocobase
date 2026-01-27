@@ -1,0 +1,4 @@
+{
+  "Many to many (array)": "Több a többhöz (tömb)",
+  "Many to many (array) description": "Lehetővé teszi több a többhöz kapcsolatok létrehozását két modell között a cél modell egyedi kulcsainak tárolásával tömbben."
+}

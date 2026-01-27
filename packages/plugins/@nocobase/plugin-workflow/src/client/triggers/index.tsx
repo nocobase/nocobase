@@ -78,7 +78,7 @@ export abstract class Trigger {
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemType | null;
   initializers?: any;
-  isActionTriggerable?: boolean | ((config: object, context?: object) => boolean);
+  isActionTriggerable_deprecated?: boolean | ((config: object, context?: object) => boolean);
 }
 
 function TriggerExecution() {
@@ -391,5 +391,10 @@ export const TriggerConfig = () => {
 export function useTrigger() {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
+
+  if (!workflow?.type) {
+    return null;
+  }
+
   return workflowPlugin.triggers.get(workflow.type);
 }

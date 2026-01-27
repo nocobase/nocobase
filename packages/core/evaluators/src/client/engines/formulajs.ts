@@ -12,6 +12,6 @@ import formulajs from '../../utils/formulajs';
 export default {
   label: 'Formula.js',
   tooltip: '{{t("Formula.js supports most Microsoft Excel formula functions.")}}',
-  link: 'https://docs.nocobase.com/handbook/calculation-engines/formula',
+  link: 'FORMULAJS_DOC_URL',
   evaluate: formulajs,
 };

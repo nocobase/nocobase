@@ -8,7 +8,6 @@
  */
 
 import { Application, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
 import { DataSourcesFieldModel } from './models/data-sources-field-model';
 import remoteCollectionsResourcer from './resourcers/data-sources-collections';
@@ -16,19 +15,17 @@ import remoteFieldsResourcer from './resourcers/data-sources-collections-fields'
 import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
-
-import { DataSourceManager, LoadingProgress } from '@nocobase/data-source-manager';
+import dataSourcesActions from './actions/data-sources';
+import { LoadingProgress } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { mergeRole } from '@nocobase/acl';
-import { ALLOW_MAX_COLLECTIONS_COUNT } from './constants';
+import { loadDataSourceTablesIntoCollections } from './middlewares/load-tables';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
-
-const canRefreshStatus = ['loaded', 'loading-failed', 'reloading-failed'];
 
 export class PluginDataSourceManagerServer extends Plugin {
   public dataSourceErrors: {
@@ -357,35 +354,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       await next();
     });
 
-    this.app.resourceManager.use(async function verifyDatasourceCollectionsCount(ctx, next) {
-      if (!ctx.action) {
-        await next();
-        return;
-      }
-
-      const { actionName, resourceName, params } = ctx.action;
-      if (resourceName === 'dataSources' && (actionName === 'create' || actionName === 'update')) {
-        const { values } = params;
-        if (values.options?.addAllCollections) {
-          let introspector: { getCollections: () => Promise<string[]> } = null;
-          const dataSourceManager = ctx.app['dataSourceManager'] as DataSourceManager;
-
-          const klass = dataSourceManager.factory.getClass(values.type);
-          // @ts-ignore
-          const dataSource = new klass(values.options);
-          introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
-            dataSource.collectionManager.db,
-          );
-          const allCollections = await introspector.getCollections();
-          if (allCollections.length > ALLOW_MAX_COLLECTIONS_COUNT) {
-            throw new Error(
-              `The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`,
-            );
-          }
-        }
-      }
-      await next();
-    });
+    this.app.resourceManager.use(loadDataSourceTablesIntoCollections);
 
     this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();
@@ -411,84 +380,14 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     const self = this;
-    this.app.actions({
-      async ['dataSources:listEnabled'](ctx, next) {
-        const dataSources = await ctx.db.getRepository('dataSources').find({
-          filter: {
-            enabled: true,
-            'type.$ne': 'main',
-          },
-        });
+    this.app.resourceManager.registerActionHandlers(dataSourcesActions);
 
-        ctx.body = dataSources.map((dataSourceModel) => {
-          return mapDataSourceWithCollection(dataSourceModel);
-        });
-
-        await next();
-      },
-
-      async ['dataSources:testConnection'](ctx, next) {
-        const { values } = ctx.action.params;
-
-        const { options, type } = values;
-
-        const klass = ctx.app.dataSourceManager.factory.getClass(type);
-
-        try {
-          await klass.testConnection(self.renderJsonTemplate(options));
-        } catch (error) {
-          throw new Error(`Test connection failed: ${error.message}`);
-        }
-
-        ctx.body = {
-          success: true,
-        };
-
-        await next();
-      },
-
-      async ['dataSources:refresh'](ctx, next) {
-        const { filterByTk, clientStatus } = ctx.action.params;
-
-        const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
-          filter: {
-            key: filterByTk,
-          },
-        });
-
-        const currentStatus = plugin.dataSourceStatus[filterByTk];
-
-        if (
-          canRefreshStatus.includes(currentStatus) &&
-          (clientStatus ? clientStatus && canRefreshStatus.includes(clientStatus) : true)
-        ) {
-          dataSourceModel.loadIntoApplication({
-            app: ctx.app,
-            refresh: true,
-            reuseDB: true,
-          });
-
-          ctx.app.syncMessageManager.publish(self.name, {
-            type: 'loadDataSource',
-            dataSourceKey: dataSourceModel.get('key'),
-          });
-        }
-
-        ctx.body = {
-          status: plugin.dataSourceStatus[filterByTk],
-        };
-
-        await next();
-      },
-    });
-
-    this.app.resourcer.define(remoteCollectionsResourcer);
-    this.app.resourcer.define(remoteFieldsResourcer);
-    this.app.resourcer.define(rolesRemoteCollectionsResourcer);
-    this.app.resourcer.define(databaseConnectionsRolesResourcer);
-    this.app.resourcer.define(rolesConnectionResourcesResourcer);
-
-    this.app.resourcer.define({
+    this.app.resourceManager.define(remoteCollectionsResourcer);
+    this.app.resourceManager.define(remoteFieldsResourcer);
+    this.app.resourceManager.define(rolesRemoteCollectionsResourcer);
+    this.app.resourceManager.define(databaseConnectionsRolesResourcer);
+    this.app.resourceManager.define(rolesConnectionResourcesResourcer);
+    this.app.resourceManager.define({
       name: 'dataSources',
     });
 
@@ -808,9 +707,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
   }
 
-  async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-  }
+  async load() {}
 }
 
 export default PluginDataSourceManagerServer;

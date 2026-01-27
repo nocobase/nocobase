@@ -1,5 +1,7 @@
 {
+  "Ignore failed sending and continue workflow": "전송 실패 시 무시하고 워크플로 계속",
   "Ignore failure and continue workflow": "Ignore failure and continue workflow",
   "Notification": "알림",
-  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Send notification. You can use the variables in the upstream nodes as content and ohter config."
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "SMTP 서비스를 호출하여 이메일을 보냅니다. 상위 노드의 변수를 수신자, 제목, 내용으로 사용할 수 있습니다.",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "알림을 보냅니다. 상위 노드의 변수를 내용 및 기타 설정에 사용할 수 있습니다."
 }

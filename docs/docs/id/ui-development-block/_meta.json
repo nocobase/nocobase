@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Mulai Cepat",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Pengenalan",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Menulis Plugin Blok",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

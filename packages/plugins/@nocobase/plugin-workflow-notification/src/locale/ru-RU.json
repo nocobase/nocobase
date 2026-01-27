@@ -1,5 +1,7 @@
 {
+  "Ignore failed sending and continue workflow": "Игнорировать неудачную отправку и продолжить рабочий процесс",
   "Ignore failure and continue workflow": "Ignore failure and continue workflow",
   "Notification": "Уведомление",
-  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Отправить уведомление. Вы можете использовать переменные из вышестоящих узлов в качестве содержимого и других настроек."
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Отправить email, вызвав SMTP-сервис. Вы можете использовать переменные из предыдущих узлов в качестве получателей, темы и содержания письма.",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Отправить уведомление. Вы можете использовать переменные из предыдущих узлов в качестве содержания и других настроек."
 }

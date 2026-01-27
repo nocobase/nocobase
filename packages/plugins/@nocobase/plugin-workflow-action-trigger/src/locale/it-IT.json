@@ -2,15 +2,21 @@
   "Associations to use": "Associazioni da utilizzare",
   "Collection": "Raccolta",
   "Create record action": "Azione di creazione record",
+  "Event triggers when submitted a workflow bound form action.": "Event triggers when submitted a workflow bound form action.",
+  "Form data model": "Form data model",
+  "Form event": "Form event",
   "Global mode, triggered after the completion of the following actions": "Modalità globale, attivata dopo il completamento delle seguenti azioni",
   "Local mode, triggered after the completion of actions bound to this workflow": "Modalità locale, attivata dopo il completamento delle azioni associate a questo workflow",
   "Post-action event": "Evento post-azione",
   "Role of user acted": "Ruolo dell'utente che ha agito",
+  "Role of user submitted form": "Role of user submitted form",
   "Select actions": "Seleziona azioni",
   "The collection to which the triggered data belongs.": "La raccolta a cui appartengono i dati attivati.",
   "Trigger data": "Dati attivazione",
   "Trigger mode": "Modalità di attivazione",
   "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Attivato dopo il completamento con esito positivo di una richiesta avviata tramite un pulsante di azione o un'API, ad esempio dopo l'aggiunta o l'aggiornamento di dati. Adatto per l'elaborazione dei dati, l'invio di notifiche, ecc. dopo il completamento delle azioni.",
   "Update record action": "Azione di aggiornamento record",
-  "User acted": "Utente che ha agito"
+  "Use a collection to match form data.": "Use a collection to match form data.",
+  "User acted": "Utente che ha agito",
+  "User submitted form": "User submitted form"
 }

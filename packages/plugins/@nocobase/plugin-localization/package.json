@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-localization",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/localization-management",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/localization-management",
@@ -10,11 +10,11 @@
     "deepmerge": "^4.3.1"
   },
   "peerDependencies": {
-    "@nocobase/cache": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/cache": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "System management"

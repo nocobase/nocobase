@@ -1,4 +1,5 @@
 {
+  "Export settings": "Export settings",
   "Export warning": "Sie können bis zu {{limit}} Datenzeilen auf einmal exportieren, alles darüber hinaus wird ignoriert.",
   "False": "Falsch",
   "Start export": "Export starten",

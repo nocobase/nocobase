@@ -6,12 +6,13 @@
   "description": "A plugin for previewing office files via Microsoft live preview service.",
   "description.ru-RU": "Плагин для просмотра Office-файлов через Microsoft live preview service.",
   "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "File manager",

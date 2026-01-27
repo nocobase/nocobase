@@ -6,7 +6,7 @@
   "description": "SMS authentication.",
   "description.ru-RU": "Аутентификация по SMS.",
   "description.zh-CN": "通过短信验证码认证身份。",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth-sms",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth-sms",
@@ -19,14 +19,14 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/auth": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/auth": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
     "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
-    "@nocobase/plugin-verification": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/plugin-verification": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

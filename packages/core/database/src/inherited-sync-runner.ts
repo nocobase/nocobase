@@ -150,12 +150,16 @@ export class InheritedSyncRunner {
 
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);
-
       for (const attribute in childAttributes) {
         const columnName = childAttributes[attribute].field;
-
+        const fieldName = childAttributes[attribute].fieldName;
         if (!columns[columnName]) {
-          await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
+          await queryInterface.addColumn(
+            tableName,
+            columnName,
+            childAttributes[columnName] || childAttributes[fieldName],
+            options,
+          );
         }
       }
     }

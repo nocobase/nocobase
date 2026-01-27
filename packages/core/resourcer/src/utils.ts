@@ -213,6 +213,32 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
   return params;
 }
 
+function smartParse(str) {
+  if (typeof str !== 'string') return str; // 非字符串直接返回原值
+
+  const s = str.trim();
+  if (!s) return str;
+
+  // --- 简单判断：只有 {} 或 [] 才可能是 JSON ---
+  const first = s[0];
+  if (first !== '{' && first !== '[') {
+    return str; // 不可能是 JSON，直接返回原值
+  }
+
+  // --- 复杂判断：真正解析 ---
+  try {
+    const parsed = JSON.parse(s);
+
+    // 只接受 Object 或 Array，其他类型仍返回原值
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed !== null && typeof parsed === 'object') return parsed;
+
+    return str;
+  } catch {
+    return str;
+  }
+}
+
 export function parseQuery(input: string): any {
   // 自带 query 处理的不太给力，需要用 qs 转一下
   const query = qs.parse(input, {
@@ -227,6 +253,10 @@ export function parseQuery(input: string): any {
   // filter 支持 json string
   if (typeof query.filter === 'string') {
     query.filter = JSON.parse(query.filter);
+  }
+
+  if (typeof query.filterByTk === 'string') {
+    query.filterByTk = smartParse(query.filterByTk);
   }
 
   return query;

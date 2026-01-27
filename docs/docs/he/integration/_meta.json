@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API Key",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "תיעוד API",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "תרחישי שימוש",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "זרימת עבודה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "בקשת HTTP",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "מקורות נתונים חיצוניים",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "תוכן מוטמע",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "בלוק Iframe",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "הטמעה",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

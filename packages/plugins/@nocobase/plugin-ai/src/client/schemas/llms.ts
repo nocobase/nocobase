@@ -17,11 +17,20 @@ export const createLLMSchema = {
       'x-decorator': 'FormV2',
       'x-use-decorator-props': 'useCreateFormProps',
       properties: {
+        provider: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Provider") }}',
+          'x-component': 'Select',
+          enum: '{{ providers }}',
+          'x-pattern': 'readPretty',
+        },
         name: {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("UID") }}',
           'x-component': 'Input',
+          'x-pattern': 'readPretty',
         },
         title: {
           type: 'string',
@@ -32,6 +41,10 @@ export const createLLMSchema = {
         options: {
           type: 'object',
           'x-component': 'Settings',
+        },
+        testFlight: {
+          type: 'void',
+          'x-component': 'LLMTestFlight',
         },
         footer: {
           type: 'void',
@@ -125,7 +138,7 @@ export const llmsSchema = {
           'x-component': 'TableV2',
           'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
-            rowKey: 'id',
+            rowKey: 'name',
             rowSelection: {
               type: 'checkbox',
             },
@@ -206,6 +219,10 @@ export const llmsSchema = {
                             options: {
                               type: 'object',
                               'x-component': 'Settings',
+                            },
+                            testFlight: {
+                              type: 'void',
+                              'x-component': 'LLMTestFlight',
                             },
                             footer: {
                               type: 'void',

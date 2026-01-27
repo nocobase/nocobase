@@ -13,7 +13,7 @@
   "Port": "Порт",
   "SMTP host": "Хост SMTP-сервиса",
   "Secure": "Безопасное соединение",
-  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Отправить email. Вы можете использовать переменные из вышестоящих узлов как получателей, тему и содержимое письма.",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Отправить email, вызвав SMTP-сервис. Вы можете использовать переменные из предыдущих узлов в качестве получателей, темы и содержания письма.",
   "Subject": "Тема",
   "To": "Кому",
   "User": "Пользователь"

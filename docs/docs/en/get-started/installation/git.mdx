@@ -1,0 +1,106 @@
+# Install from Git Source
+
+:::tip Prerequisites
+
+- Git, Node.js 20+, and Yarn 1.22.x are installed
+- A required database is configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
+
+:::
+
+## 1. Download NocoBase to your local machine
+
+Choose a NocoBase version ([Version Comparison](../quickstart.md)) and run the corresponding command.
+
+<Tabs>
+<Tab label="Beta version (2.0-beta)">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Alpha version (2.0-alpha)">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Latest version (1.9)">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. Change directory
+
+```bash
+cd my-nocobase
+```
+
+## 3. Install dependencies
+
+📢 This step may take more than ten minutes, depending on your network environment, system configuration, and other factors.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. Set environment variables
+
+The environment variables required by NocoBase are stored in the `.env` file in the root directory. Modify the environment variables according to your actual situation.
+
+```bash
+TZ=UTC
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning Environment Variable Descriptions
+
+- `TZ` is used to set the application's time zone, which defaults to the operating system's time zone.
+- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. Please change it to your own secret key and ensure it is not exposed.
+- `DB_*` are database-related. If you are not using the default database service from the example, please modify them according to your actual situation.
+
+:::
+
+## 5. Install NocoBase
+
+```bash
+yarn nocobase install --lang=en-US
+```
+
+## 6. Start NocoBase
+
+
+**Development environment**
+
+```bash
+yarn dev
+```
+
+**Production environment (not recommended)**
+
+It is not recommended to deploy from source in a production environment. For production, please refer to [Production Deployment](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. Log in to NocoBase
+
+Open [http://localhost:13000](http://localhost:13000) in your browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+
+:::warning Account Security Warning
+
+After logging in for the first time, please change the default password promptly to ensure system security.
+
+:::

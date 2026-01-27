@@ -1,7 +1,8 @@
 {
+  "Export settings": "Export settings",
   "Export warning": "내보내기 경고",
   "False": "거짓",
   "Start export": "내보내기 시작",
   "True": "참",
-  "another export action is running, please try again later.": "another export action is running, please try again later."
+  "another export action is running, please try again later.": "다른 내보내기 작업이 진행 중입니다. 나중에 다시 시도해 주세요."
 }

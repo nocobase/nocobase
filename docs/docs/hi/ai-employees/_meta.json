@@ -1,0 +1,191 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/ai-employees/"
+  },
+  {
+    "type": "custom-link",
+    "label": "क्विक स्टार्ट",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "LLM सर्विस कॉन्फ़िगर करें",
+        "link": "/ai-employees/quick-start/llm-service"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI कर्मचारी बनाएँ",
+        "link": "/ai-employees/quick-start/ai-employees"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI कर्मचारी के साथ सहयोग करें",
+        "link": "/ai-employees/quick-start/collaborate"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "बिल्ट-इन AI कर्मचारी",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/ai-employees/built-in/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viz: इनसाइट एनालिस्ट",
+        "link": "/ai-employees/built-in/viz"
+      },
+      {
+        "type": "custom-link",
+        "label": "Orin: डेटा मॉडलिंग एक्सपर्ट",
+        "link": "/ai-employees/built-in/data-modeling"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dex: डेटा रैंगलिंग एक्सपर्ट",
+        "link": "/ai-employees/built-in/data-organizer"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nathan: फ्रंटएंड इंजीनियर",
+        "link": "/ai-employees/built-in/ai-coding"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "उन्नत",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ब्लॉक चुनें",
+        "link": "/ai-employees/advanced/pick-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "डेटा सोर्स",
+        "link": "/ai-employees/advanced/datasource"
+      },
+      {
+        "type": "custom-link",
+        "label": "स्किल्स",
+        "link": "/ai-employees/advanced/skill"
+      },
+      {
+        "type": "custom-link",
+        "label": "टास्क",
+        "link": "/ai-employees/advanced/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "नेटवर्क सर्च",
+        "link": "/ai-employees/advanced/web-search"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "परमिशन कंट्रोल",
+    "link": "/ai-employees/permission"
+  },
+  {
+    "type": "custom-link",
+    "label": "फ़ाइल प्रबंधन",
+    "link": "/ai-employees/file-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "वर्कफ़्लो",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "LLM नोड",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "टेक्स्ट चैट",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "मल्टीमॉडल चैट",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "स्ट्रक्चर्ड आउटपुट",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "AI नॉलेज बेस",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/ai-employees/knowledge-base/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "वेक्टर डेटाबेस",
+        "link": "/ai-employees/knowledge-base/vector-database"
+      },
+      {
+        "type": "custom-link",
+        "label": "वेक्टर स्टोरेज",
+        "link": "/ai-employees/knowledge-base/vector-store"
+      },
+      {
+        "type": "custom-link",
+        "label": "नॉलेज बेस",
+        "link": "/ai-employees/knowledge-base/knowledge-base"
+      },
+      {
+        "type": "custom-link",
+        "label": "RAG",
+        "link": "/ai-employees/knowledge-base/rag"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "एप्लीकेशन डॉक्यूमेंटेशन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "परिदृश्य",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Viz: CRM परिदृश्य कॉन्फ़िगरेशन",
+            "link": "/ai-employees/scenarios/viz-crm"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "कॉन्फ़िगरेशन",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "एडमिनिस्ट्रेटर कॉन्फ़िगरेशन",
+            "link": "/ai-employees/configuration/admin-configuration"
+          },
+          {
+            "type": "custom-link",
+            "label": "प्रॉम्प्ट गाइड",
+            "link": "/ai-employees/configuration/prompt-engineering-guide"
+          }
+        ]
+      }
+    ]
+  }
+]

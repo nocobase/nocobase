@@ -21,7 +21,7 @@
   "Random character": "ランダム文字",
   "Reset cycle": "リセット周期",
   "Rule content": "ルール内容",
-  "Select character sets to generate random characters.": "Select character sets to generate random characters.",
+  "Select character sets to generate random characters.": "ランダム文字生成に使用する文字セットを選択",
   "Sequence": "シーケンス",
   "Sequence rules": "シーケンスルール",
   "Start from": "開始位置",
@@ -31,7 +31,7 @@
   "Text content": "テキスト内容",
   "Type": "タイプ",
   "Uppercase letters": "大文字",
-  "Will generate random characters with specified length.": "Will generate random characters with specified length.",
+  "Will generate random characters with specified length.": "指定された長さのランダム文字を生成します",
   "Yearly": "毎年",
   "{{value}} Digits": "{{value}} 桁数"
 }

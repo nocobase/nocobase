@@ -11,11 +11,12 @@ import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions, useSchemaOptionsContext } from './SchemaComponentOptions';
+import { useApp } from '../../application';
 
 const randomString = (prefix = '') => {
   return `${prefix}${uid()}`;
@@ -59,6 +60,7 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const [formId, setFormId] = useState(() => uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
+  const app = useApp();
 
   const scope = useMemo(() => {
     return { ...props.scope, t, randomString };
@@ -78,6 +80,11 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
       onDesignableChange?.(value);
     };
   }, [designableValue, onDesignableChange]);
+
+  // 初始化时同步 flowSettings 状态
+  useEffect(() => {
+    designableValue ? app.flowEngine?.flowSettings?.enable() : app.flowEngine?.flowSettings?.disable();
+  }, [app, designableValue]);
 
   const reset = useCallback(() => {
     setFormId(uid());

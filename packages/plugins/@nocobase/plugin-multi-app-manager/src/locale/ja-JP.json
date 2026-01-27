@@ -9,10 +9,18 @@
   "Custom domain": "カスタムドメイン",
   "JWT secret": "JWT secret",
   "Manage applications": "アプリケーションを管理",
+  "Migrate data": "Migrate data",
+  "Migrate data to new multi-app": "Migrate data to new multi-app",
+  "Migrate successfully": "Migrate successfully",
+  "Multi-app is not enabled, please enable it first": "Multi-app is not enabled, please enable it first",
   "Multi-app manager": "マルチアプリ管理",
+  "Multi-app manager (deprecated)": "Multi-app manager (deprecated)",
   "Pin to menu": "メニューに固定",
+  "Please enter the port": "Please enter the port",
+  "Port": "Port",
   "Standalone deployment": "スタンドアロンデプロイメント",
   "Start mode": "起動モード",
   "Start on first visit": "初回訪問時に起動する",
-  "Start with main application": "メインアプリケーションと共に起動する"
+  "Start with main application": "メインアプリケーションと共に起動する",
+  "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate."
 }

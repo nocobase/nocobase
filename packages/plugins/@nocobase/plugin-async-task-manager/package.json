@@ -6,13 +6,13 @@
   "description": "Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.",
   "description.ru-RU": "Управление асинхронными задачами и мониторинг (например, импорт/экспорт данных). Поддержка отслеживания прогресса и уведомлений о задачах.",
   "description.zh-CN": "管理和监控数据导入导出等异步任务。支持任务进度跟踪和通知。",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-error-handler": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-error-handler": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "dependencies": {
     "p-queue": "^6.6.2"

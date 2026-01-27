@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "मूल उपयोग",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "लूप प्रोसेसिंग",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "फ़ॉर्मेटिंग टूल"
+  }
+]

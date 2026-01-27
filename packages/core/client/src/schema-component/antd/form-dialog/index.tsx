@@ -12,7 +12,7 @@ import { FormProvider, Observer, observer, ReactFC } from '@formily/react';
 import { untracked } from '@formily/reactive';
 import { applyMiddleware, IMiddleware, isBool, isFn, isNum, isStr } from '@formily/shared';
 import { Modal, ModalProps, ThemeConfig } from 'antd';
-import React, { Fragment, useLayoutEffect, useRef, useState } from 'react';
+import React, { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GlobalThemeProvider } from '../../../global-theme';
 import { createPortalProvider, createPortalRoot, loading, usePrefixCls, useToken } from '../__builtins__';
@@ -102,12 +102,17 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
           {() => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { token } = useToken();
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const container: HTMLElement = useMemo(() => {
+              return document.querySelector('#nocobase-app-container');
+            }, []);
 
             return (
               <Modal
                 // fix https://nocobase.height.app/T-2797
                 // fix https://nocobase.height.app/T-2838
                 zIndex={token.zIndexPopupBase + 1000}
+                getContainer={container}
                 {...modal}
                 open={open}
                 confirmLoading={form.submitting}

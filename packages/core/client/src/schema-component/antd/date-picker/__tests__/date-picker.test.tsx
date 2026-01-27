@@ -108,10 +108,15 @@ describe('RangePicker', () => {
     await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
     await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
 
-    await waitFor(() => expect(startInput).toHaveValue('2023-05-01'));
-    await waitFor(() => expect(endInput).toHaveValue('2023-05-02'));
-    // Read pretty
-    expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+    await waitFor(
+      () => {
+        expect(startInput).toHaveValue('2023-05-01');
+        expect(endInput).toHaveValue('2023-05-02');
+        // Read pretty（等到回填完成再断言，避免动画未收起导致的偶发失败）
+        expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
     // Value
     expect(screen.getByText('2023-05-01T00:00:00.000Z ~ 2023-05-02T23:59:59.999Z')).toBeInTheDocument();
   });
@@ -153,16 +158,18 @@ describe('RangePicker', () => {
     await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
     await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
 
-    await waitFor(() => expect(startInput).toHaveValue('2023-05-01'));
-    await waitFor(() => expect(endInput).toHaveValue('2023-05-02'));
+    await waitFor(() => expect(startInput).toHaveValue('2023-05-01'), { timeout: 3000 });
+    await waitFor(() => expect(endInput).toHaveValue('2023-05-02'), { timeout: 3000 });
 
     // Read pretty
-    await waitFor(() =>
-      expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument(),
+    await waitFor(
+      () =>
+        expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument(),
+      { timeout: 3000 },
     );
 
     // Value
-    await waitFor(() => expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument(), { timeout: 3000 });
   });
 
   it('showTime=false,gmt=true,utc=true', async () => {

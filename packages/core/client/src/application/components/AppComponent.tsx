@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import React, { FC, useCallback, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import type { Application } from '../Application';
@@ -36,6 +36,7 @@ export const AppComponent: FC<AppComponentProps> = observer(
     if (app.error?.code && !(app.maintained && app.maintaining)) {
       return <AppError app={app} error={app.error} />;
     }
+    if (app.loading) return app.renderComponent('AppSpin', { app });
     return (
       <ErrorBoundary
         FallbackComponent={(props) => <AppError app={app} error={app.error} {...props} />}

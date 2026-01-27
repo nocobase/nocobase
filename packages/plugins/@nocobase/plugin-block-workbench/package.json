@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-workbench",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "displayName": "Block: Action panel",
   "displayName.ru-RU": "Блок: Панель действий",
   "displayName.zh-CN": "区块：操作面板",
@@ -9,10 +9,10 @@
   "description.zh-CN": "集中管理和展示各种操作，方便用户快速执行任务。支持扩展，目前支持的操作类型有弹窗、链接、扫描、自定义请求。",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-mobile": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-mobile": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "devDependencies": {
     "@ant-design/icons": "^5.x",

@@ -30,6 +30,7 @@
   "Toolbar": "편집기 도구 모음 구성",
   "Undo": "취소하기",
   "Upload": "이미지 업로드하기",
+  "Used to store files uploaded in the Markdown editor": "Markdown 편집기에 업로드된 파일을 저장하는 데 사용됩니다",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "Markdown 편집기에 업로드된 파일을 저장하는 데 사용됩니다 (default: attachments)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "upload failed",

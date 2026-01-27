@@ -33,5 +33,5 @@
   "Superior department": "上位部門",
   "The department has members, please remove them first": "部門にメンバーが存在します。先に削除してください。",
   "The department has sub-departments, please delete them first": "部門に子部門が存在します。先に削除してください。",
-  "This field is currently not supported for use in form blocks.": "This field is currently not supported for use in form blocks."
+  "This field is currently not supported for use in form blocks.": "このフィールドはフォームブロックでの使用がサポートされていません。"
 }

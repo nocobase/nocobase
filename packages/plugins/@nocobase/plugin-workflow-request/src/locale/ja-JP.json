@@ -1,5 +1,6 @@
 {
-  "\"Content-Type\" will be ignored from headers.": "\"Content-Type\" will be ignored from headers.",
+  "\"Content-Type\" only support \"application/json\", and no need to specify": "「Content-Type」は「application/json」のみサポートされ、明示的な指定は不要です。",
+  "\"Content-Type\" will be ignored from headers.": "ヘッダーに設定された「Content-Type」は無効となります。",
   "Add key-value pairs": "キーと値のペアを追加",
   "Add parameter": "パラメータの追加",
   "Add request header": "ヘッダーの追加",

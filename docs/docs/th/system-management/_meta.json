@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "การจัดการระบบ",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การจัดการปลั๊กอิน",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การตั้งค่าระบบ",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การสร้างแบรนด์ที่กำหนดเอง",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ตัวแก้ไขธีม",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การตั้งค่าภาษา",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการการแปล",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

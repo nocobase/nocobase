@@ -17,6 +17,7 @@
   "Illegal percentage format": "Formato de porcentaje ilegal",
   "Import": "Import",
   "Import Data": "Importar datos",
+  "Import action settings": "Import action settings",
   "Import completed": "Import completed",
   "Import explain": "Guía",
   "Import warnings": "You can import up to {{limit}} rows of data at a time, any excess will be ignored.",

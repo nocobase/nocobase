@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "name": "@nocobase-example/plugin-custom-table-block-field",
+  "displayName": "Plugin example: Custom field for table block",
+  "version": "2.0.0-beta.15",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}

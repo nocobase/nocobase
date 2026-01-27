@@ -1,0 +1,209 @@
+:::tip
+Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Správce záloh
+
+## Úvod
+
+Plugin Správce záloh NocoBase nabízí funkce pro kompletní zálohování databáze NocoBase a uživatelsky nahraných souborů, včetně plánování záloh, stahování, mazání a obnovy.
+
+:::warning
+Plugin Správce záloh je součástí edic Professional a Enterprise. Uživatelé edic Community a Standard mohou zálohovat databázi přímo; podrobnosti naleznete zde: [`Jak zálohovat a obnovit NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Instalace databázového klienta
+
+Správce záloh závisí na klientovi pro odpovídající databázi. Před použitím si prosím stáhněte klienta, který odpovídá verzi vaší databáze, z oficiálních stránek:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Pro Docker verze můžete přímo vytvořit skript v adresáři `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Obsah souboru `install-database-client.sh` je následující:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Poté restartujte kontejner `app`
+
+```bash
+docker compose restart app
+# Zobrazit logy
+docker compose logs app
+```
+
+Zkontrolujte číslo verze databázového klienta, které se musí shodovat s číslem verze databázového serveru.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+</Tab>
+</Tabs>
+
+## Pokyny k použití
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Vytvoření nové zálohy
+
+Klikněte na tlačítko „Nová záloha“ pro vytvoření nové zálohy na základě konfigurace zálohování a zobrazte stav zálohy v seznamu záloh.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Obnovení zálohy
+
+Podporuje obnovení záloh ze seznamu záloh nebo nahrání lokálních záložních souborů pro obnovení záloh.
+Operace obnovení nejsou povoleny v následujících scénářích:
+
+- Pokud je aktuální verze NocoBase nižší než verze NocoBase v záložním souboru.
+- Pokud je aktuální databáze NocoBase nekonzistentní s následujícími konfiguracemi v záložním souboru:
+  - dialect (typ databáze)
+  - underscored (konfigurace polí)
+  - table prefix (předpona tabulky)
+  - schema (struktura tabulky)
+- Pokud není povolen `tolerantní režim` a verze databáze při vytváření zálohy je vyšší než aktuální verze databáze aplikace.
+
+> **Obnova je kompletní databázová operace. Doporučujeme zálohovat aktuální databázi před provedením obnovy.**
+
+#### Obnovení ze seznamu záloh
+
+Klikněte na tlačítko `Obnovit` u položky zálohy v seznamu záloh, v vyskakovacím okně zadejte šifrovací heslo záložního souboru a klikněte na „Potvrdit“ pro obnovení zálohy.
+
+> U nešifrovaných záložních souborů není třeba zadávat heslo.
+
+> Pokud potřebujete obnovit záložní soubor do nižší verze databáze, je nutné povolit tolerantní režim.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Obnovení z lokálního záložního souboru
+
+Klikněte na tlačítko `Obnovit z lokální zálohy`, v vyskakovacím okně vyberte lokální záložní soubor, zadejte šifrovací heslo záložního souboru a klikněte na „Potvrdit“ pro obnovení zálohy.
+
+> U nešifrovaných záložních souborů není třeba zadávat heslo.
+
+> Pokud potřebujete obnovit záložní soubor do nižší verze databáze, je nutné povolit tolerantní režim.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Stažení záložního souboru
+
+Klikněte na tlačítko `Stáhnout` u položky zálohy v seznamu záloh pro stažení záložního souboru.
+
+#### Smazání zálohy
+
+Klikněte na tlačítko `Smazat` u položky zálohy v seznamu záloh pro smazání záložního souboru.
+
+## Nastavení zálohování
+
+Přepněte na záložku `Nastavení`, upravte nastavení zálohování a klikněte na `Uložit` pro uplatnění změn.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Popis nastavení zálohování
+
+- `Automatické zálohování`: Po povolení `Spustit automatické zálohování podle plánu Cron` můžete nastavit automatické zálohování v určených časech.
+- `Maximální počet záloh`: Nastavte maximální počet lokálně uložených záložních souborů. Po překročení tohoto počtu budou nejstarší lokální záložní soubory automaticky smazány.
+- `Synchronizovat zálohu do cloudového úložiště`: Nastavte cloudové úložiště, kam se záložní soubory automaticky nahrají po úspěšném zálohování.
+- `Zálohovat soubory lokálního úložiště`: Zda zahrnout soubory nahrané uživateli do lokálního úložiště serveru (storage/uploads) do zálohy.
+- `Heslo pro obnovu`: Pokud je nastaveno heslo pro obnovu, musí být zadáno při obnovování zálohy.
+
+> **Heslo pro obnovu si prosím pečlivě uschovejte. Zapomenutí hesla znemožní obnovení záložního souboru.**

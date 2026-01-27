@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "התחלה מהירה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "מבוא",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "פיתוח Plugin שדה",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

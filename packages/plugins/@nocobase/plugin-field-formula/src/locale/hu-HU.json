@@ -1,0 +1,9 @@
+{
+  "Calculation engine": "Számítási motor",
+  "Compute a value based on the other fields": "Érték kiszámítása más mezők alapján",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Több mezőérték közötti számítások eredményeinek konfigurálása és tárolása ugyanabban a rekordban, támogatva mind a Math.js, mind az Excel formula funkciókat.",
+  "Expression": "Kifejezés",
+  "Expression syntax error": "Kifejezés szintaktikai hiba",
+  "Formula": "Képlet",
+  "Syntax references": "Szintaxis referenciák"
+}

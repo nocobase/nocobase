@@ -3,11 +3,11 @@
   "Alias": "エイリアス",
   "Data source": "データソース",
   "Display label": "表示ラベル",
-  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "クエリ結果のタイプがオブジェクトまたはオブジェクトの配列の場合、後続のノードでアクセスするプロパティをマッピングできます。",
   "JSON calculation": "JSON計算",
   "Properties mapping": "プロパティマッピング",
   "Property key": "プロパティキー",
   "Query engine": "クエリエンジン",
   "Query expression": "クエリ式",
-  "Transforming or calculating values from complex JSON data.": "Transforming or calculating values from complex JSON data."
+  "Transforming or calculating values from complex JSON data.": "複雑なJSONデータから値を変換または計算します。"
 }

@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "用户",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "角色和权限",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "角色配置",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "权限配置",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "在 UI 中应用",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "角色并集",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "开发指南",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "扩展权限配置栏",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "部门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "部门管理",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "部门角色管理",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "用户数据同步",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "同步管理",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "数据源",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "企业微信",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "开发指南",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "扩展同步数据源",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "扩展同步目标资源",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

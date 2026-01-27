@@ -1,4 +1,5 @@
 {
+  "Export settings": "导出设置",
   "Export warning": "每次最多导出记录 {{limit}} 行数据，超出的将被忽略。",
   "False": "否",
   "Start export": "开始导出记录",

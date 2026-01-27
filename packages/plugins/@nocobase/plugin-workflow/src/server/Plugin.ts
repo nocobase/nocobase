@@ -30,10 +30,12 @@ import { Instruction, InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import EndInstruction from './instructions/EndInstruction';
+import OutputInstruction from './instructions/OutputInstruction';
 import CreateInstruction from './instructions/CreateInstruction';
 import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
+import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
 
 import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
@@ -292,7 +294,9 @@ export default class PluginWorkflowServer extends Plugin {
   private initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('multi-conditions', MultiConditionsInstruction);
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
     this.registerInstruction('query', QueryInstruction);
@@ -349,10 +353,12 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.meter = this.app.telemetry.metric.getMeter();
-    const counter = this.meter.createObservableGauge('workflow.events.counter');
-    counter.addCallback((result) => {
-      result.observe(this.dispatcher.getEventsCount());
-    });
+    if (this.meter) {
+      const counter = this.meter.createObservableGauge('workflow.events.counter');
+      counter.addCallback((result) => {
+        result.observe(this.dispatcher.getEventsCount());
+      });
+    }
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
@@ -365,6 +371,8 @@ export default class PluginWorkflowServer extends Plugin {
         'executions:destroy',
         'flow_nodes:update',
         'flow_nodes:destroy',
+        'flow_nodes:destroyBranch',
+        'flow_nodes:move',
         'flow_nodes:test',
         'jobs:get',
         'workflowCategories:*',

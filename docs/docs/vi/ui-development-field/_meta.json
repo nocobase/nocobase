@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Bắt đầu nhanh",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Giới thiệu",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viết một plugin trường",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

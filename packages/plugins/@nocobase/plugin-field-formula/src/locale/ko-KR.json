@@ -1,7 +1,7 @@
 {
   "Calculation engine": "계산 엔진",
   "Compute a value based on the other fields": "다른 필드를 기반으로 값 계산",
-  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "여러 필드 값 간의 계산 결과를 동일한 레코드에 구성하고 저장할 수 있으며, Math.js와 Excel 수식 함수 모두를 지원합니다.",
   "Expression": "표현식",
   "Expression syntax error": "표현식 구문 오류",
   "Formula": "수식",

@@ -6,7 +6,7 @@
   "description": "Create an iframe block on the page to embed and display external web pages or content.",
   "description.ru-RU": "Создавайте iframe-блоки и управляйте ими на странице для встраивания и отображения внешних веб-страниц или контента.",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-iframe",
@@ -22,11 +22,11 @@
     "react-iframe": "~1.8.5"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

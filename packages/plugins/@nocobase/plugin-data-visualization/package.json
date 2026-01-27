@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "1.9.40",
+  "version": "2.0.0-beta.15",
   "displayName": "Data visualization",
   "displayName.ru-RU": "Визуализация данных",
   "displayName.zh-CN": "数据可视化",
@@ -14,6 +14,12 @@
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@ant-design/plots": "^2.1.4",
+    "@codemirror/lang-javascript": "^6.0.1",
+    "@codemirror/lang-sql": "^6.9.1",
+    "@codemirror/lint": "^6.8.3",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.37.2",
     "@emotion/css": "^11.7.1",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
@@ -21,6 +27,8 @@
     "@formily/shared": "2.x",
     "antd": "5.x",
     "classnames": "^2.3.1",
+    "codemirror": "^6.0.2",
+    "echarts": "^6.0.0",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
@@ -28,14 +36,15 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/cache": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/plugin-data-source-main": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/cache": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-ai": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

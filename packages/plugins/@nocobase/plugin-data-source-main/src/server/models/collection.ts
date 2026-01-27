@@ -84,6 +84,9 @@ export class CollectionModel extends MagicAttributeModel {
         lodash.set(collectionOptions, 'dumpRules.group', 'custom');
       }
 
+      const fieldRepo = this.db.getRepository('collections.fields', name);
+      const fieldModels = await fieldRepo.find({ transaction });
+      collectionOptions['fieldModels'] = fieldModels;
       collection = this.db.collection(collectionOptions);
     }
 
@@ -149,6 +152,9 @@ export class CollectionModel extends MagicAttributeModel {
     });
 
     for (const instance of instances) {
+      if (!instance.get('collectionName')) {
+        instance.set('collectionName', this.get('name'));
+      }
       await instance.load(options);
     }
   }
@@ -194,24 +200,24 @@ export class CollectionModel extends MagicAttributeModel {
         };
       });
 
-    const beforePendingFields = getPendingField();
-
-    const collection = await this.load({
-      transaction: options?.transaction,
-    });
-
-    const afterPendingFields = getPendingField();
-
-    const resolvedPendingFields = lodash.differenceWith(beforePendingFields, afterPendingFields, lodash.isEqual);
-    const resolvedPendingFieldsCollections = lodash.uniq(resolvedPendingFields.map((field) => field.collectionName));
-
-    // postgres support zero column table, other database should not sync it to database
-    // @ts-ignore
-    if (Object.keys(collection.model.tableAttributes).length == 0 && !this.db.inDialect('postgres')) {
-      return;
-    }
-
     try {
+      const beforePendingFields = getPendingField();
+
+      const collection = await this.load({
+        transaction: options?.transaction,
+      });
+
+      const afterPendingFields = getPendingField();
+
+      const resolvedPendingFields = lodash.differenceWith(beforePendingFields, afterPendingFields, lodash.isEqual);
+      const resolvedPendingFieldsCollections = lodash.uniq(resolvedPendingFields.map((field) => field.collectionName));
+
+      // postgres support zero column table, other database should not sync it to database
+      // @ts-ignore
+      if (Object.keys(collection.model.tableAttributes).length == 0 && !this.db.inDialect('postgres')) {
+        return;
+      }
+
       const syncOptions = {
         force: false,
         alter: {
