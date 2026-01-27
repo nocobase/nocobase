@@ -21,6 +21,15 @@ export class BulkEditFormModel extends CreateFormModel {
     FormActionGroupModel: 'BulkEditFormActionGroupModel',
     FormItemModel: 'BulkEditFormItemModel', // 使用批量编辑专用的字段项
   };
+
+  /**
+   * 重写 defineChildren 方法，返回 undefined 表示不需要动态生成子菜单
+   * 批量编辑场景下，collection 信息已经从上下文中确定，无需用户选择
+   * 返回 undefined 会让系统直接使用 define 中的 createModelOptions，不展开子菜单
+   */
+  // static async defineChildren() {
+  //   return undefined;
+  // }
 }
 
 BulkEditFormModel.define({

@@ -22,7 +22,7 @@ export const createTagPageOptions = ({ tabTitle, items }: { tabTitle: string; it
     subModels: {
       tabs: [
         {
-          use: 'ChildPageTabModel',
+          use: 'BulkEditChildPageTabModel',
           stepParams: {
             pageTabSettings: {
               tab: {

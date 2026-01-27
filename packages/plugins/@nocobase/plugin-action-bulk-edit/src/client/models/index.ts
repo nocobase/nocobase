@@ -17,7 +17,6 @@ export * from './BulkEditFieldModel';
 export * from './BulkEditFormActionGroupModel';
 export * from './BulkEditFormSubmitActionModel';
 
-// export * from './BulkEditFieldForFlow';
-// export * from './BulkEditFieldList';
-// export * from './ResourceSelectors';
-// export * from './BulkEditFormDialog';
+// 页面 Tab
+export * from './BulkEditChildPageTabModel';
+export { BulkEditBlockGridModel } from './BulkEditChildPageTabModel';
