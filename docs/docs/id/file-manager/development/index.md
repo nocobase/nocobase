@@ -8,9 +8,9 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 
 ### Sisi Server
 
-1.  **Mewarisi `StorageType`**
-
-    Buat kelas baru dan implementasikan metode `make()` serta `delete()`. Jika diperlukan, timpa (override) *hook* seperti `getFileURL()`, `getFileStream()`, atau `getFileData()`.
+1. **Mewarisi `StorageType`**
+   
+   Buat kelas baru dan implementasikan metode `make()` dan `delete()`. Jika perlu, timpa hook seperti `getFileURL()`, `getFileStream()`, dan `getFileData()`.
 
 Contoh:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Daftarkan Tipe Baru**
-    Suntikkan implementasi penyimpanan baru dalam siklus hidup `beforeLoad` atau `load` dari plugin Anda:
+4. **Mendaftarkan tipe baru**  
+   Sisipkan implementasi penyimpanan baru pada siklus hidup `beforeLoad` atau `load` plugin:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Setelah pendaftaran, konfigurasi penyimpanan akan muncul di sumber daya `storages`, sama seperti tipe bawaan. Konfigurasi yang disediakan oleh `StorageType.defaults()` dapat digunakan untuk mengisi formulir secara otomatis atau menginisialisasi catatan default.
+Setelah didaftarkan, konfigurasi penyimpanan akan muncul di resource `storages`, sama seperti tipe bawaan. Konfigurasi yang disediakan oleh `StorageType.defaults()` dapat digunakan untuk mengisi formulir secara otomatis atau menginisialisasi record default.
 
-### Konfigurasi Sisi Klien dan Antarmuka Manajemen
-Di sisi klien, Anda perlu memberi tahu pengelola berkas (file manager) cara merender formulir konfigurasi dan apakah ada logika unggah khusus. Setiap objek tipe penyimpanan memiliki properti berikut:
+<!--
+### Konfigurasi sisi klien dan antarmuka manajemen
+Di sisi klien, Anda perlu memberi tahu pengelola file bagaimana merender formulir konfigurasi dan apakah ada logika unggah kustom. Setiap objek tipe penyimpanan berisi properti berikut:
+-->
 
-## Memperluas Tipe Berkas Frontend
+## Memperluas Tipe File di Frontend
 
-Untuk berkas yang sudah diunggah, Anda dapat menampilkan konten pratinjau yang berbeda di antarmuka frontend berdasarkan tipe berkas yang berbeda. Bidang lampiran pengelola berkas memiliki pratinjau berkas berbasis browser bawaan (tertanam dalam iframe), yang mendukung pratinjau sebagian besar format berkas (seperti gambar, video, audio, dan PDF) langsung di browser. Ketika format berkas tidak didukung oleh browser untuk pratinjau, atau ketika interaksi pratinjau khusus diperlukan, Anda dapat memperluas komponen pratinjau berbasis tipe berkas.
+Untuk file yang sudah diunggah, Anda dapat menampilkan konten pratinjau yang berbeda di antarmuka frontend berdasarkan tipe file. Field lampiran pada pengelola file memiliki pratinjau file berbasis browser (disematkan dalam iframe), yang mendukung pratinjau sebagian besar format (seperti gambar, video, audio, dan PDF) langsung di browser. Ketika format file tidak didukung oleh browser atau memerlukan interaksi pratinjau khusus, Anda dapat memperluas komponen pratinjau berdasarkan tipe file.
 
 ### Contoh
 
-Misalnya, jika Anda ingin memperluas tipe berkas gambar dengan komponen *carousel* (geser), Anda dapat menggunakan kode berikut:
+Misalnya, jika Anda ingin mengintegrasikan pratinjau online kustom untuk file Office, Anda dapat menggunakan kode berikut:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Di sini, `attachmentFileTypes` adalah objek *entry* yang disediakan dalam paket `@nocobase/client` untuk memperluas tipe berkas. Gunakan metode `add` yang disediakannya untuk memperluas objek deskripsi tipe berkas.
+Di sini, `filePreviewTypes` adalah objek entry yang disediakan oleh `@nocobase/plugin-file-manager/client` untuk memperluas pratinjau file. Gunakan metode `add` untuk menambahkan objek deskripsi tipe file.
 
-Setiap tipe berkas harus mengimplementasikan metode `match()` untuk memeriksa apakah tipe berkas memenuhi persyaratan. Dalam contoh ini, metode yang disediakan oleh paket `mime-match` digunakan untuk memeriksa atribut `mimetype` berkas. Jika cocok dengan tipe `image/*`, maka berkas tersebut dianggap sebagai tipe berkas yang perlu diproses. Jika tidak ada kecocokan, maka akan kembali ke penanganan tipe bawaan.
+Setiap tipe file harus mengimplementasikan metode `match()` untuk memeriksa apakah tipe file memenuhi persyaratan. Dalam contoh, `matchMimetype` digunakan untuk memeriksa atribut `mimetype` file. Jika cocok dengan tipe `docx`, maka dianggap tipe file yang harus ditangani. Jika tidak cocok, akan digunakan penanganan tipe bawaan.
 
-Properti `Previewer` pada objek deskripsi tipe adalah komponen yang digunakan untuk pratinjau. Ketika tipe berkas cocok, komponen ini akan dirender untuk pratinjau. Umumnya disarankan untuk menggunakan komponen tipe dialog (seperti `<Modal />`) sebagai wadah dasar, lalu menempatkan pratinjau dan konten interaktif di dalamnya untuk mengimplementasikan fungsionalitas pratinjau.
+Properti `Previewer` pada objek deskripsi tipe adalah komponen untuk pratinjau. Ketika tipe file cocok, komponen ini akan dirender dalam dialog pratinjau. Anda dapat mengembalikan tampilan React apa pun (misalnya iframe, pemutar, atau grafik).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` adalah instans global, diimpor dari `@nocobase/client`:
+`filePreviewTypes` adalah instance global yang diimpor dari `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Mendaftarkan objek deskripsi tipe berkas baru ke registri tipe berkas. Tipe objek deskripsi adalah `AttachmentFileType`.
+Mendaftarkan objek deskripsi tipe file baru ke registri tipe file. Tipe objek deskripsi adalah `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Metode pencocokan format berkas.
+Metode pencocokan format file.
 
-Parameter masukan `file` adalah objek data dari berkas yang diunggah, berisi properti relevan yang dapat digunakan untuk pemeriksaan tipe:
+Parameter masukan `file` adalah objek data file yang diunggah, berisi properti relevan untuk pemeriksaan tipe:
 
-*   `mimetype`: deskripsi mimetype
-*   `extname`: ekstensi berkas, termasuk "."
-*   `path`: jalur penyimpanan relatif berkas
-*   `url`: URL berkas
+* `mimetype`: deskripsi mimetype
+* `extname`: ekstensi file, termasuk "."
+* `path`: jalur penyimpanan relatif file
+* `url`: URL file
 
-Mengembalikan nilai `boolean` yang menunjukkan hasil kecocokan.
+Mengembalikan nilai `boolean` yang menunjukkan apakah cocok.
+
+##### `getThumbnailURL`
+
+Mengembalikan URL thumbnail yang digunakan pada daftar file. Jika nilai yang dikembalikan kosong, gambar placeholder bawaan akan digunakan.
 
 ##### `Previewer`
 
-Komponen React untuk pratinjau berkas.
+Komponen React untuk pratinjau file.
 
-Parameter Props yang masuk adalah:
+Props yang diterima adalah:
 
-*   `index`: Indeks berkas dalam daftar lampiran
-*   `list`: Daftar lampiran
-*   `onSwitchIndex`: Metode untuk mengganti indeks
+* `file`: objek file saat ini (bisa berupa URL string atau objek yang berisi `url`/`preview`)
+* `index`: indeks file dalam daftar
+* `list`: daftar file
 
-`onSwitchIndex` dapat menerima nilai indeks apa pun dari `list` untuk beralih ke berkas lain. Jika `null` diteruskan sebagai argumen, komponen pratinjau akan langsung ditutup.
-
-```ts
-onSwitchIndex(null);
-```

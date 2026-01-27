@@ -31,16 +31,13 @@ export function createBlockScopedEngine(parent: FlowEngine): FlowEngine {
   local.context.addDelegate(parent.context);
 
   // 覆盖 unlinkFromStack：BlockScoped 引擎被移除时，修复前后指针，避免“截断”后续视图/作用域
-  const originalUnlink = local.unlinkFromStack.bind(local);
   local.unlinkFromStack = function () {
-    // 修复指针：prev -> next，next -> prev，然后清理自身指针
-    // 若不这么做，移除位于中间的 block 引擎会导致后续整段链丢失
     const prev = (local as any)._previousEngine as FlowEngine | undefined;
     const next = (local as any)._nextEngine as FlowEngine | undefined;
     if (prev) (prev as any)._nextEngine = next;
     if (next) (next as any)._previousEngine = prev;
-    (local as any)._previousEngine = undefined as any;
-    (local as any)._nextEngine = undefined as any;
+    (local as any)._previousEngine = undefined;
+    (local as any)._nextEngine = undefined;
   };
 
   // 默认全部代理到父引擎，只有少数字段（实例/缓存/执行器/上下文/链表指针）使用本地值
