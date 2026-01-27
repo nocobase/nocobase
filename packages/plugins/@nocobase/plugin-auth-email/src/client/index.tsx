@@ -12,7 +12,6 @@ import AuthPlugin from '@nocobase/plugin-auth/client';
 import { SigninPage } from './SigninPage';
 import { Options } from './Options';
 import { authType } from '../constants';
-import PluginVerificationClient from '@nocobase/plugin-verification/client';
 import { emailOTPVerificationOptions } from './email-otp';
 import { EmailOTPProviderManager } from './email-otp/provider-manager';
 import { SMTPSettings } from './email-otp/providers/SMTPSettings';
