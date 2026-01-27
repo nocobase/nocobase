@@ -8,6 +8,7 @@
  */
 
 import { FlowEngine } from './flowEngine';
+import { ENGINE_SCOPE_KEY, VIEW_ENGINE_SCOPE } from './views/viewEvents';
 
 /**
  * ViewScopedFlowEngine（视图作用域引擎）
@@ -24,6 +25,8 @@ import { FlowEngine } from './flowEngine';
  */
 export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
   const local = new FlowEngine();
+  // Mark for view-stack traversal (used by view activation events).
+  Object.defineProperty(local, ENGINE_SCOPE_KEY, { value: VIEW_ENGINE_SCOPE, configurable: true });
   if (parent.modelRepository) {
     local.setModelRepository(parent.modelRepository);
   }
@@ -43,6 +46,7 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     '_applyFlowCache',
     'executor',
     'context',
+    ENGINE_SCOPE_KEY,
     'previousEngine',
     'nextEngine',
     // 调度器与事件总线局部化
