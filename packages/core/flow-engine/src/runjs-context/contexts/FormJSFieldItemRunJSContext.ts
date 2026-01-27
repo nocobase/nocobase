@@ -19,6 +19,11 @@ FormJSFieldItemRunJSContext.define({
     value: `Current field value (read-only in display mode; in controlled scenarios, use setProps to modify).`,
     record: `Current record data object (read-only).
       Contains all field values of the parent record.`,
+    formValues: {
+      description: 'Snapshot of current form values (object). Available in form contexts (CreateForm/EditForm).',
+      detail: 'Record<string, any>',
+      examples: ['const { name, status } = ctx.formValues || {};'],
+    },
   },
   methods: {
     onRefReady: `Wait for form field container DOM element to be ready before executing callback.
@@ -36,6 +41,11 @@ FormJSFieldItemRunJSContext.define(
       element: 'ElementProxy，表单字段容器',
       value: '字段值（展示模式为只读；受控场景用 setProps 修改）',
       record: '当前记录（只读）',
+      formValues: {
+        description: '当前表单值快照（对象）。仅表单相关上下文可用（Create/Edit Form）。',
+        detail: 'Record<string, any>',
+        examples: ['const { name, status } = ctx.formValues || {};'],
+      },
     },
     methods: {
       onRefReady: '容器就绪回调',
