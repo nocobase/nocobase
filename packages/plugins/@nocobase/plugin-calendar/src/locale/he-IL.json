@@ -1,0 +1,65 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+export default {
+  "Configure calendar": "הגדר יומן",
+  "Title field": "שדה כותרת",
+  "Custom title": "כותרת מותאמת אישית",
+  "Show lunar": "הצג לוח ירחי",
+  "Start date field": "שדה תאריך התחלה",
+  "End date field": "שדה תאריך סיום",
+  "Work week": "שבוע עבודה",
+  "Today": "היום",
+  "Day": "יום",
+  "Agenda": "אג'נדה",
+  "Date": "תאריך",
+  "Time": "זמן",
+  "Event": "אירוע",
+  "None": "ללא",
+  "Calendar": "יומן",
+  "Delete events": "מחק אירועים",
+  "This event": "האירוע הזה",
+  "This and following events": "האירוע הזה והבאים אחריו",
+  "All events": "כל האירועים",
+  "Delete this event?": "למחוק את האירוע הזה?",
+  "Delete Event": "מחק אירוע",
+  "Calendar collection": "אוסף יומן",
+  "Create calendar block": "צור בלוק יומן",
+  "Filter": "סינון",
+  "Configure actions": "הגדר פעולות",
+  "Enable actions": "הפעל פעולות",
+  "Turn pages": "החלף עמודים",
+  "Select view": "בחר תצוגה",
+  "Add new": "הוסף חדש",
+  "View record": "צפה ברשומה",
+  "Details": "פרטים",
+  "Customize": "התאם אישית",
+  "Popup": "קופץ",
+  "Updated successfully": "עודכן בהצלחה",
+  "Custom request": "בקשה מותאמת אישית",
+  "Edit": "ערוך",
+  "Delete": "מחק",
+  "Print": "הדפס",
+  "Daily": "יומי",
+  "Weekly": "שבועי",
+  "Monthly": "חודשי",
+  "Yearly": "שנתי",
+  "Repeats": "חוזר על עצמו",
+  "Background color field": "שדה צבע רקע",
+  "Not selected": "לא נבחר"
+};
