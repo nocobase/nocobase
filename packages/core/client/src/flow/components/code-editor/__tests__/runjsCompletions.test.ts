@@ -223,43 +223,19 @@ describe('buildRunJSCompletions', () => {
     doc.properties.popup.hidden = prev;
   });
 
-  it('prefers ctx.getInfos() when available and still filters meta completions by RunJS hidden subpaths', async () => {
+  it('merges ctx.getApiInfos() when available and still respects RunJS hidden subpaths', async () => {
     const engineDoc: any = (await import('@nocobase/flow-engine')).getRunJSDocFor({} as any);
     const prev = engineDoc?.properties?.popup?.hidden;
     engineDoc.properties.popup.hidden = async () => ['record'];
 
     const hostCtx: any = {
       popup: Promise.resolve({ uid: 'p1' }),
-      getInfos: async () => {
-        // Simulate serialized infos output: no `hidden` fields and no popup.record node.
-        const popup = { ...(engineDoc.properties.popup || {}) } as any;
-        delete popup.hidden;
-        popup.properties = { ...(popup.properties || {}) };
-        delete popup.properties.record;
-        return {
-          apis: { ...(engineDoc.properties || {}), ...(engineDoc.methods || {}), popup, extra: 'extra prop' },
-          envs: {},
-        };
-      },
-      getPropertyMetaTree: (value: string) => {
-        if (value === '{{ ctx.popup }}') {
-          return [
-            {
-              name: 'record',
-              title: 'Popup record',
-              type: 'object',
-              paths: ['popup', 'record'],
-              children: [{ name: 'id', title: 'ID', type: 'string', paths: ['popup', 'record', 'id'] }],
-            },
-          ];
-        }
-        return [];
-      },
+      getApiInfos: async () => ({ extra: 'extra prop' }),
     };
 
     const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
     expect(completions.some((c: any) => c.label === 'ctx.extra')).toBe(true);
-    // meta-derived completions should respect hidden subpaths from RunJS doc
+    // Doc-derived completions should respect hidden subpaths from RunJS doc
     expect(completions.some((c: any) => c.label === 'ctx.popup.record')).toBe(false);
     expect(completions.some((c: any) => c.label === 'ctx.popup.record.id')).toBe(false);
 

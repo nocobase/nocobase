@@ -3086,9 +3086,9 @@
   integrity sha512-x/rqGMdzj+fWZvCOYForTghzbtqPDZ5gPwaoNGHdgDfF2QA/XZbCBp4Moo5scrkAMPhB7z26XM/AaHuIJdgauA==
 
 "@babel/runtime-corejs3@^7.15.4":
-  version "7.28.4"
-  resolved "https://registry.npmmirror.com/@babel/runtime-corejs3/-/runtime-corejs3-7.28.4.tgz#c25be39c7997ce2f130d70b9baecb8ed94df93fa"
-  integrity sha512-h7iEYiW4HebClDEhtvFObtPmIvrd1SSfpI9EhOeKk4CtIK/ngBWFpuhCzhdmRKtg71ylcue+9I6dv54XYO1epQ==
+  version "7.28.6"
+  resolved "https://registry.npmmirror.com/@babel/runtime-corejs3/-/runtime-corejs3-7.28.6.tgz#f1e4a0da50f4856ceec1bb51c83f8ed0b202ed12"
+  integrity sha512-kz2fAQ5UzjV7X7D3ySxmj3vRq89dTpqOZWv76Z6pNPztkwb/0Yj1Mtx1xFrYj6mbIHysxtBot8J4o0JLCblcFw==
   dependencies:
     core-js-pure "^3.43.0"
 
@@ -5265,11 +5265,6 @@
   version "1.4.0"
   resolved "https://registry.npmmirror.com/@ioredis/commands/-/commands-1.4.0.tgz#9f657d51cdd5d2fdb8889592aa4a355546151f25"
   integrity sha512-aFT2yemJJo+TZCmieA7qnYGQooOS7QfNmYrzGtsYd3g9j5iDP8AimYYAesf79ohjbLG12XxC4nG5DyEnC88AsQ==
-
-"@ioredis/commands@^1.3.0":
-  version "1.3.0"
-  resolved "https://registry.npmjs.org/@ioredis/commands/-/commands-1.3.0.tgz#4dc3ae9bfa7146b63baf27672a61db0ea86e35e5"
-  integrity sha512-M/T6Zewn7sDaBQEqIZ8Rb+i9y8qfGmq+5SDFSf9sA2lUZTmdDLVdOiQaeDp+Q4wElZ9HG1GAX5KhDaidp6LQsQ==
 
 "@isaacs/cliui@^8.0.2":
   version "8.0.2"
@@ -7594,6 +7589,11 @@
   resolved "https://registry.npmmirror.com/@redis/bloom/-/bloom-1.2.0.tgz#d3fd6d3c0af3ef92f26767b56414a370c7b63b71"
   integrity sha512-HG2DFjYKbpNmVXsa0keLHp/3leGJz1mjh09f2RLGGLQZzSHpkmZWuwJbAvo3QcRY8p80m5+ZdXZdYOSBLlp7Cg==
 
+"@redis/bloom@5.10.0":
+  version "5.10.0"
+  resolved "https://registry.npmjs.org/@redis/bloom/-/bloom-5.10.0.tgz#1079373583b82a8b61b0d3721755245686b4a602"
+  integrity sha512-doIF37ob+l47n0rkpRNgU8n4iacBlKM9xLiP1LtTZTvz8TloJB8qx/MgvhMhKdYG+CvCY2aPBnN2706izFn/4A==
+
 "@redis/client@1.5.12", "@redis/client@^1.5.8":
   version "1.5.12"
   resolved "https://registry.npmmirror.com/@redis/client/-/client-1.5.12.tgz#4c387727992152aea443b869de0ebb697f899187"
@@ -7602,6 +7602,13 @@
     cluster-key-slot "1.1.2"
     generic-pool "3.9.0"
     yallist "4.0.0"
+
+"@redis/client@5.10.0":
+  version "5.10.0"
+  resolved "https://registry.npmjs.org/@redis/client/-/client-5.10.0.tgz#621d5de1898a4f2c3a813769779ca5902ef9d57a"
+  integrity sha512-JXmM4XCoso6C75Mr3lhKA3eNxSzkYi3nCzxDIKY+YOszYsJjuKbFgVtguVPbLMOttN4iu2fXoc2BGhdnYhIOxA==
+  dependencies:
+    cluster-key-slot "1.1.2"
 
 "@redis/graph@1.1.1", "@redis/graph@^1.1.0":
   version "1.1.1"
@@ -7613,15 +7620,30 @@
   resolved "https://registry.npmmirror.com/@redis/json/-/json-1.0.6.tgz#b7a7725bbb907765d84c99d55eac3fcf772e180e"
   integrity sha512-rcZO3bfQbm2zPRpqo82XbW8zg4G/w4W3tI7X8Mqleq9goQjAGLL7q/1n1ZX4dXEAmORVZ4s1+uKLaUOg7LrUhw==
 
+"@redis/json@5.10.0":
+  version "5.10.0"
+  resolved "https://registry.npmjs.org/@redis/json/-/json-5.10.0.tgz#a550a7859c3cbae45535aad157fcaa8e6bd3e7d3"
+  integrity sha512-B2G8XlOmTPUuZtD44EMGbtoepQG34RCDXLZbjrtON1Djet0t5Ri7/YPXvL9aomXqP8lLTreaprtyLKF4tmXEEA==
+
 "@redis/search@1.1.6", "@redis/search@^1.1.3":
   version "1.1.6"
   resolved "https://registry.npmmirror.com/@redis/search/-/search-1.1.6.tgz#33bcdd791d9ed88ab6910243a355d85a7fedf756"
   integrity sha512-mZXCxbTYKBQ3M2lZnEddwEAks0Kc7nauire8q20oA0oA/LoA+E/b5Y5KZn232ztPb1FkIGqo12vh3Lf+Vw5iTw==
 
+"@redis/search@5.10.0":
+  version "5.10.0"
+  resolved "https://registry.npmjs.org/@redis/search/-/search-5.10.0.tgz#587851479c6abb9b40b31ab9b31c234db7a04919"
+  integrity sha512-3SVcPswoSfp2HnmWbAGUzlbUPn7fOohVu2weUQ0S+EMiQi8jwjL+aN2p6V3TI65eNfVsJ8vyPvqWklm6H6esmg==
+
 "@redis/time-series@1.0.5", "@redis/time-series@^1.0.4":
   version "1.0.5"
   resolved "https://registry.npmmirror.com/@redis/time-series/-/time-series-1.0.5.tgz#a6d70ef7a0e71e083ea09b967df0a0ed742bc6ad"
   integrity sha512-IFjIgTusQym2B5IZJG3XKr5llka7ey84fw/NOYqESP5WUfQs9zz1ww/9+qoz4ka/S6KcGBodzlCeZ5UImKbscg==
+
+"@redis/time-series@5.10.0":
+  version "5.10.0"
+  resolved "https://registry.npmjs.org/@redis/time-series/-/time-series-5.10.0.tgz#9c7de35fe023e36233fba5c8478ce25832ead64c"
+  integrity sha512-cPkpddXH5kc/SdRhF0YG0qtjL+noqFT0AcHbQ6axhsPsO7iqPi1cjxgdkE9TNeKiBUUdCaU1DbqkR/LzbzPBhg==
 
 "@remix-run/router@1.23.0":
   version "1.23.0"
@@ -9068,9 +9090,9 @@
     "@types/node" "*"
 
 "@types/ali-oss@^6.16.11":
-  version "6.23.0"
-  resolved "https://registry.npmmirror.com/@types/ali-oss/-/ali-oss-6.23.0.tgz#c7668d1b8a3a648144866b1b331c4e3b0f437001"
-  integrity sha512-1qUcJuD8CunaTVyBS1hx/CNZQntj5ghM4+lSoDZ/fnNYUKc53PBzBu1z/tCmMV/VE4vLCjf7rTaXd2d93nCUbA==
+  version "6.23.1"
+  resolved "https://registry.npmmirror.com/@types/ali-oss/-/ali-oss-6.23.1.tgz#65a2841a8be69ceb3fbf25654d7d07676632b100"
+  integrity sha512-4mmCq2gUPBaPo6UlLIS/wMc7LxzDCzEUlRJAbLEk68Ntw7KWuF4RUwrQz3gtJkAeIYQ/R6PN3IvPTqk8daVVKQ==
 
 "@types/amqplib@^0.10.7":
   version "0.10.8"
@@ -12285,9 +12307,9 @@ axios@^1.7.8:
     proxy-from-env "^1.1.0"
 
 axios@^1.8.2:
-  version "1.13.2"
-  resolved "https://registry.npmmirror.com/axios/-/axios-1.13.2.tgz#9ada120b7b5ab24509553ec3e40123521117f687"
-  integrity sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==
+  version "1.13.3"
+  resolved "https://registry.npmmirror.com/axios/-/axios-1.13.3.tgz#f123e77356630a22b0163920662556944f2be1a1"
+  integrity sha512-ERT8kdX7DZjtUm7IitEyV7InTHAF42iJuMArIiDIV5YtPanJkgw4hw5Dyg9fh0mihdWNn1GKaeIWErfe56UQ1g==
   dependencies:
     follow-redirects "^1.15.6"
     form-data "^4.0.4"
@@ -14581,9 +14603,9 @@ core-js-pure@^3.23.3:
   integrity sha512-pmhivkYXkymswFfbXsANmBAewXx86UBfmagP+w0wkK06kLsLlTK5oQmsURPivzMkIBQiYq2cjamcZExIwlFQIg==
 
 core-js-pure@^3.43.0:
-  version "3.47.0"
-  resolved "https://registry.npmmirror.com/core-js-pure/-/core-js-pure-3.47.0.tgz#1104df8a3b6eb9189fcc559b5a65b90f66e7e887"
-  integrity sha512-BcxeDbzUrRnXGYIVAGFtcGQVNpFcUhVjr6W7F8XktvQW2iJP9e66GP6xdKotCRFlrxBvNIBrhwKteRXqMV86Nw==
+  version "3.48.0"
+  resolved "https://registry.npmmirror.com/core-js-pure/-/core-js-pure-3.48.0.tgz#7d5a3fe1ec3631b9aa76a81c843ac2ce918e5023"
+  integrity sha512-1slJgk89tWC51HQ1AEqG+s2VuwpTRr8ocu4n20QUcH1v9lAN0RXen0Q0AABa/DK1I7RrNWLucplOHMx8hfTGTw==
 
 core-js@3.28.0:
   version "3.28.0"
@@ -20985,21 +21007,6 @@ ioredis@^5.4.1:
   integrity sha512-C6uC+kleiIMmjViJINWk80sOQw5lEzse1ZmvD+S/s8p8CWapftSaC+kocGTx6xrbrJ4WmYQGC08ffHLr6ToR6Q==
   dependencies:
     "@ioredis/commands" "1.4.0"
-    cluster-key-slot "^1.1.0"
-    debug "^4.3.4"
-    denque "^2.1.0"
-    lodash.defaults "^4.2.0"
-    lodash.isarguments "^3.1.0"
-    redis-errors "^1.2.0"
-    redis-parser "^3.0.0"
-    standard-as-callback "^2.1.0"
-
-ioredis@^5.7.0:
-  version "5.7.0"
-  resolved "https://registry.npmjs.org/ioredis/-/ioredis-5.7.0.tgz#be8f4a09bfb67bfa84ead297ff625973a5dcefc3"
-  integrity sha512-NUcA93i1lukyXU+riqEyPtSEkyFq8tX90uL659J+qpCZ3rEdViB/APC58oAhIh3+bJln2hzdlZbBZsGNrlsR8g==
-  dependencies:
-    "@ioredis/commands" "^1.3.0"
     cluster-key-slot "^1.1.0"
     debug "^4.3.4"
     denque "^2.1.0"
@@ -28945,7 +28952,7 @@ quill-delta@^3.6.2:
 
 quill-image-resize-module-react@^3.0.0:
   version "3.0.0"
-  resolved "https://registry.npmmirror.com/quill-image-resize-module-react/-/quill-image-resize-module-react-3.0.0.tgz#dec32cecd175fcdc52bfd184206174fdd111a864"
+  resolved "https://registry.npmjs.org/quill-image-resize-module-react/-/quill-image-resize-module-react-3.0.0.tgz#dec32cecd175fcdc52bfd184206174fdd111a864"
   integrity sha512-3jVChLoXh+fwEELx3OswOEEuF+1KU3r/B9RAqZ//s+d+UMduVZzUepU1g/XoxjKoBJvWD2lJwBIFBRUNb8ebCw==
   dependencies:
     lodash "^4.17.4"
@@ -29021,7 +29028,7 @@ raw-body@3.0.0:
 
 raw-loader@^0.5.1:
   version "0.5.1"
-  resolved "https://registry.npmmirror.com/raw-loader/-/raw-loader-0.5.1.tgz#0c3d0beaed8a01c966d9787bf778281252a979aa"
+  resolved "https://registry.npmjs.org/raw-loader/-/raw-loader-0.5.1.tgz#0c3d0beaed8a01c966d9787bf778281252a979aa"
   integrity sha512-sf7oGoLuaYAScB4VGr0tzetsYlS8EJH6qnTCfQ/WVEa89hALQ4RQfCKt5xCyPQKPDUbVUAIP1QsxAwfAjlDp7Q==
 
 raw-loader@^4.0.2:
@@ -30138,6 +30145,17 @@ redis@^4.6.10, redis@^4.6.7:
     "@redis/json" "1.0.6"
     "@redis/search" "1.1.6"
     "@redis/time-series" "1.0.5"
+
+redis@^5.10.0:
+  version "5.10.0"
+  resolved "https://registry.npmjs.org/redis/-/redis-5.10.0.tgz#c1b26ba2acd9c5fcc0d1724a3c7f0984ca43f48b"
+  integrity sha512-0/Y+7IEiTgVGPrLFKy8oAEArSyEJkU0zvgV5xyi9NzNQ+SLZmyFbUsWIbgPcd4UdUh00opXGKlXJwMmsis5Byw==
+  dependencies:
+    "@redis/bloom" "5.10.0"
+    "@redis/client" "5.10.0"
+    "@redis/json" "5.10.0"
+    "@redis/search" "5.10.0"
+    "@redis/time-series" "5.10.0"
 
 redlock@^5.0.0-beta.2:
   version "5.0.0-beta.2"

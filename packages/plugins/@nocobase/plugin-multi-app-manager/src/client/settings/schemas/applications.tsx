@@ -25,6 +25,7 @@ import { Form, InputNumber, message, Modal } from 'antd';
 import React from 'react';
 import { NAMESPACE } from '../../../locale';
 import { i18nText, usePluginUtils } from '../../utils';
+import { Migrate } from '../../Migrate';
 
 const collection = {
   name: 'applications',
@@ -385,14 +386,18 @@ export function getSchema() {
                 },
                 'x-align': 'left',
               },
-              migrateData: {
+              // migrateData: {
+              //   type: 'void',
+              //   title: `{{ t("Migrate data to new multi-app", { ns: "${NAMESPACE}" }) }}`,
+              //   'x-component': 'Action',
+              //   'x-component-props': {
+              //     icon: 'DeliveredProcedureOutlined',
+              //     useAction: useMigrateData,
+              //   },
+              // },
+              migrate: {
                 type: 'void',
-                title: `{{ t("Migrate data to new multi-app", { ns: "${NAMESPACE}" }) }}`,
-                'x-component': 'Action',
-                'x-component-props': {
-                  icon: 'DeliveredProcedureOutlined',
-                  useAction: useMigrateData,
-                },
+                'x-component': Migrate,
               },
               delete: {
                 type: 'void',
