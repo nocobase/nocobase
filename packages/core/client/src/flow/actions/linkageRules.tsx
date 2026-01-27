@@ -92,6 +92,139 @@ const getFormFieldsByForkModel = (ctx: any) => {
   }
 };
 
+type ParsedFieldIndexEntry = {
+  fieldName: string;
+  index: number;
+};
+
+function normalizeFieldKeyParts(fieldKey: string): string[] {
+  const s = fieldKey;
+  // tolerate array stringification like "a:0,b:1"
+  if (s.includes(',') && s.includes(':')) {
+    return s
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return s ? [s] : [];
+}
+
+function parseFieldIndexEntry(entry: string): ParsedFieldIndexEntry | null {
+  const [fieldName, indexStr] = String(entry || '').split(':');
+  if (!fieldName) return null;
+  const index = Number(indexStr);
+  if (!Number.isFinite(index)) return null;
+  return { fieldName, index };
+}
+
+function buildAbsoluteFieldPathArray(
+  fieldPath: string | undefined,
+  fieldKey: any,
+): {
+  fieldPathArray: Array<string | number>;
+  // path to the (innermost) Form.List root, e.g. ['user', 'comments'] (without index)
+  listRootPath?: Array<string | number>;
+  // row index for the innermost Form.List
+  listRowIndex?: number;
+  hasUnmatchedIndices: boolean;
+} | null {
+  if (!fieldPath) return null;
+
+  const pathParts = String(fieldPath)
+    .split('.')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  if (!pathParts.length) return null;
+
+  const indices = normalizeFieldKeyParts(fieldKey).map(parseFieldIndexEntry).filter(Boolean) as ParsedFieldIndexEntry[];
+
+  let idxPtr = 0;
+  const out: Array<string | number> = [];
+  let listRootPath: Array<string | number> | undefined;
+  let listRowIndex: number | undefined;
+
+  for (const part of pathParts) {
+    out.push(part);
+    const cur = indices[idxPtr];
+    if (cur && cur.fieldName === part) {
+      listRootPath = [...out];
+      listRowIndex = cur.index;
+      out.push(cur.index);
+      idxPtr += 1;
+    }
+  }
+
+  return {
+    fieldPathArray: out,
+    listRootPath,
+    listRowIndex,
+    hasUnmatchedIndices: idxPtr < indices.length,
+  };
+}
+
+function ensureFormListRowExists(form: any, listRootPath: Array<string | number>, rowIndex: number) {
+  if (!form?.getFieldValue || !form?.setFieldValue) return;
+  if (!Array.isArray(listRootPath) || listRootPath.length === 0) return;
+  if (!Number.isFinite(rowIndex) || rowIndex < 0) return;
+
+  const current = form.getFieldValue(listRootPath);
+  const currentArr = Array.isArray(current) ? current : current == null ? [] : [];
+
+  if (currentArr.length > rowIndex && currentArr[rowIndex] != null) {
+    return;
+  }
+
+  const next = [...currentArr];
+  while (next.length <= rowIndex) {
+    next.push({ __is_new__: true });
+  }
+  if (next[rowIndex] == null) {
+    next[rowIndex] = { __is_new__: true };
+  }
+
+  // Avoid unnecessary writes to reduce extra formValuesChange cascades.
+  if (!_.isEqual(currentArr, next)) {
+    form.setFieldValue(listRootPath, next);
+  }
+}
+
+type RetryState = { count: number; scheduled: boolean };
+const subFormLinkageAssignRetryMap = new WeakMap<any, Map<string, RetryState>>();
+
+function scheduleSubFormLinkageRetry(ctx: any, key: string) {
+  const blockModel = ctx?.model?.context?.blockModel;
+  if (!blockModel) return;
+
+  const owner = blockModel;
+  let map = subFormLinkageAssignRetryMap.get(owner);
+  if (!map) {
+    map = new Map();
+    subFormLinkageAssignRetryMap.set(owner, map);
+  }
+
+  const current = map.get(key) || { count: 0, scheduled: false };
+  const MAX_RETRY = 3;
+  if (current.count >= MAX_RETRY || current.scheduled) {
+    map.set(key, current);
+    return;
+  }
+
+  current.count += 1;
+  current.scheduled = true;
+  map.set(key, current);
+
+  setTimeout(() => {
+    const latest = map?.get(key);
+    if (latest) {
+      latest.scheduled = false;
+      map?.set(key, latest);
+    }
+    // Follow existing linkage handler behavior: emit + dispatch to propagate into sub-form models.
+    owner.dispatchEvent?.('formValuesChange', {}, { debounce: true });
+    // owner.emitter?.emit('formValuesChange', {});
+  }, 0);
+}
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: tExpr('Set block state'),
@@ -688,21 +821,46 @@ export const subFormLinkageAssignField = defineAction({
     if (!field) return;
     try {
       const formItemModel = ctx.engine.getModel(field);
-      const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${field}`);
+      if (!formItemModel) return;
 
-      let model = forkModel;
+      const fieldKey = ctx?.model?.context?.fieldKey;
+      const forkKey = fieldKey ? `${fieldKey}:${field}` : null;
 
-      // 对多子表单（Form.List）新增行时 fork 可能尚未创建，此时不能回退到 master（会写错路径并可能触发清空）
-      if (!forkModel && ctx?.model?.context?.fieldKey) {
-        return;
+      let model = forkKey ? formItemModel.getFork(forkKey) : null;
+
+      // 对多子表单（Form.List）场景：
+      // - 即使行 fork 已存在，也需确保底层 Form.List 的数组行已创建（默认空行仅用于 UI 展示）
+      // - 确保用于写入的 fieldPathArray 为可落地的“绝对路径”
+      if (fieldKey) {
+        const fieldPath =
+          formItemModel?.fieldPath || formItemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+        const built = buildAbsoluteFieldPathArray(fieldPath, fieldKey);
+
+        // 无法安全推导路径时，延迟重试，避免写错路径
+        if (!built || built.hasUnmatchedIndices || !built.fieldPathArray?.length) {
+          // 若已有 fork 且其路径已就绪，则直接使用现有路径；否则延迟重试等待路径可用
+          if (!model?.context?.fieldPathArray) {
+            scheduleSubFormLinkageRetry(ctx, `${String(fieldKey)}:${String(field)}`);
+            return;
+          }
+        } else {
+          // 自动创建第一行（或补齐缺失行），保证联动赋值可落地
+          if (built.listRootPath && typeof built.listRowIndex === 'number') {
+            ensureFormListRowExists(ctx?.model?.context?.form, built.listRootPath, built.listRowIndex);
+          }
+
+          // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
+          if (!model && forkKey) {
+            model = formItemModel.createFork({}, forkKey);
+          }
+          model?.context?.defineProperty?.('fieldPathArray', { value: built.fieldPathArray });
+        }
       }
 
-      // 适配对一子表单的场景
-      if (!forkModel) {
-        model = formItemModel;
+      // 适配对一子表单的场景（无行级 fieldKey）
+      if (!model) {
+        model = formItemModel as any;
       }
-
-      if (!model) return;
 
       const collectionField = (formItemModel as any)?.collectionField;
       const finalValue = coerceForToOneField(collectionField, assignValue);
