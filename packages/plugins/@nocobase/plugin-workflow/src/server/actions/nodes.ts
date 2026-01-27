@@ -353,6 +353,189 @@ export async function destroyBranch(context: Context, next) {
   await next();
 }
 
+export async function move(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, values = {} } = context.action.params;
+  const rawUpstreamId = values.upstreamId;
+  const rawBranchIndex = values.branchIndex;
+  const upstreamId = rawUpstreamId == null || rawUpstreamId === '' ? null : rawUpstreamId;
+  let branchIndex = rawBranchIndex == null || rawBranchIndex === '' ? null : Number.parseInt(rawBranchIndex, 10);
+  if (rawBranchIndex != null && rawBranchIndex !== '' && Number.isNaN(branchIndex)) {
+    context.throw(400, 'branchIndex must be a number');
+  }
+  if (upstreamId == null) {
+    branchIndex = null;
+  }
+
+  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex', 'workflowId'];
+
+  context.body = await db.sequelize.transaction(async (transaction) => {
+    const instance = await repository.findOne({
+      filterByTk,
+      fields,
+      appends: ['upstream', 'downstream', 'workflow.versionStats'],
+      transaction,
+    });
+    if (!instance) {
+      context.throw(404, 'Node not found');
+    }
+    if (instance.workflow.versionStats.executed > 0) {
+      context.throw(400, 'Nodes in executed workflow could not be moved');
+    }
+    if (upstreamId != null && String(upstreamId) === String(instance.id)) {
+      context.throw(400, 'Invalid upstream node');
+    }
+
+    const sameUpstream = (instance.upstreamId ?? null) == (upstreamId ?? null);
+    const sameBranchIndex = (instance.branchIndex ?? null) == (branchIndex ?? null);
+    if (sameUpstream && sameBranchIndex) {
+      context.throw(400, 'Node does not need to be moved');
+    }
+
+    const { upstream: oldUpstream, downstream: oldDownstream } = instance.get();
+
+    if (oldUpstream && oldUpstream.downstreamId === instance.id) {
+      await oldUpstream.update(
+        {
+          downstreamId: oldDownstream ? oldDownstream.id : null,
+        },
+        { transaction },
+      );
+    }
+
+    if (oldDownstream && oldDownstream.upstreamId === instance.id) {
+      await oldDownstream.update(
+        {
+          upstreamId: oldUpstream ? oldUpstream.id : null,
+          branchIndex: instance.branchIndex ?? null,
+        },
+        { transaction },
+      );
+    }
+
+    let targetUpstream = null;
+    if (upstreamId != null) {
+      targetUpstream = await repository.findOne({
+        filterByTk: upstreamId,
+        fields,
+        transaction,
+      });
+      if (!targetUpstream) {
+        context.throw(404, 'Upstream node not found');
+      }
+      if (targetUpstream.workflowId !== instance.workflowId) {
+        context.throw(400, 'Upstream node is not in the same workflow');
+      }
+    }
+
+    let newDownstream = null;
+    if (!targetUpstream) {
+      const previousHead = await repository.findOne({
+        filter: {
+          workflowId: instance.workflowId,
+          upstreamId: null,
+          id: {
+            [Op.ne]: instance.id,
+          },
+        },
+        fields,
+        transaction,
+      });
+      if (previousHead) {
+        await previousHead.update(
+          {
+            upstreamId: instance.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+        newDownstream = previousHead;
+      }
+
+      await instance.update(
+        {
+          upstreamId: null,
+          branchIndex: null,
+          downstreamId: newDownstream ? newDownstream.id : null,
+        },
+        { transaction },
+      );
+
+      return instance;
+    }
+
+    if (branchIndex == null) {
+      if (targetUpstream.downstreamId) {
+        newDownstream = await repository.findOne({
+          filterByTk: targetUpstream.downstreamId,
+          fields,
+          transaction,
+        });
+      }
+      if (newDownstream) {
+        await newDownstream.update(
+          {
+            upstreamId: instance.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+      }
+
+      await targetUpstream.update(
+        {
+          downstreamId: instance.id,
+        },
+        { transaction },
+      );
+
+      await instance.update(
+        {
+          upstreamId: targetUpstream.id,
+          branchIndex: null,
+          downstreamId: newDownstream ? newDownstream.id : null,
+        },
+        { transaction },
+      );
+
+      return instance;
+    }
+
+    const branchHead = await repository.findOne({
+      filter: {
+        upstreamId: targetUpstream.id,
+        branchIndex,
+      },
+      fields,
+      transaction,
+    });
+    if (branchHead) {
+      await branchHead.update(
+        {
+          upstreamId: instance.id,
+          branchIndex: null,
+        },
+        { transaction },
+      );
+      newDownstream = branchHead;
+    }
+
+    await instance.update(
+      {
+        upstreamId: targetUpstream.id,
+        branchIndex,
+        downstreamId: newDownstream ? newDownstream.id : null,
+      },
+      { transaction },
+    );
+
+    return instance;
+  });
+
+  await next();
+}
+
 export async function update(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
