@@ -37,23 +37,25 @@ This plugin uses Microsoft’s public online service (Office Web Viewer) to rend
 - Files must be accessible via a public URL to be previewed. Normally, files uploaded to NocoBase will have public access links automatically generated (including signed URLs from the S3-Pro plugin). However, if access permissions are restricted or the file is stored in an internal network, it cannot be previewed[^2].
 - This service does not support authentication or private storage. For example, files that require login or are only accessible on an internal network will not work with the preview functionality.
 - After Microsoft retrieves the file, it may remain cached for a short period. Even if the source file is deleted, the preview might still be accessible for some time.
-- Recommended file size limits: Word and PowerPoint files should be no larger than 10 MB, and Excel files no larger than 5 MB for reliable preview performance[^3].
+- Recommended file size limits: Word and PowerPoint files should be no larger than 10MB, and Excel files no larger than 5MB for reliable preview performance[^3].
 - There is no official public statement regarding commercial usage of this service. Please assess the risks before using it in commercial applications[^4].
 
 ## Supported File Types
 
-This plugin only supports previews for the following Office file formats, based on the file's MIME type:
+This plugin only supports previews for the following Office file formats, based on the file's MIME type or file extension:
 
-- Word Document:  
-  `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
-- Excel Spreadsheet:  
-  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
-- PowerPoint Presentation:  
-  `application/vnd.openxmlformats-officedocument.presentationml.presentation`
+- Word Document:
+  `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (`.docx`) or `application/msword` (`.doc`)
+- Excel Spreadsheet:
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (`.xlsx`) or `application/vnd.ms-excel` (`.xls`)
+- PowerPoint Presentation:
+  `application/vnd.openxmlformats-officedocument.presentationml.presentation` (`.pptx`) or `application/vnd.ms-powerpoint` (`.ppt`)
+- OpenDocument Text:
+  `application/vnd.oasis.opendocument.text` (`.odt`)
 
 Other file formats will not be previewed by this plugin.
 
-[^1]: [What is the status of view.officeapps.live.com?](https://learn.microsoft.com/en-us/answers/questions/5191451/what-is-the-status-of-view-officeapps-live-com)  
-[^2]: [Microsoft Q&A - Access denied or non-public files cannot be previewed](https://learn.microsoft.com/en-us/answers/questions/1411722/https-view-officeapps-live-com-op-embed-aspx)  
-[^3]: [Microsoft Q&A - File size limits for Office Web Viewer](https://learn.microsoft.com/en-us/answers/questions/1411722/https-view-officeapps-live-com-op-embed-aspx#file-size-limits)  
+[^1]: [What is the status of view.officeapps.live.com?](https://learn.microsoft.com/en-us/answers/questions/5191451/what-is-the-status-of-view-officeapps-live-com)
+[^2]: [Microsoft Q&A - Access denied or non-public files cannot be previewed](https://learn.microsoft.com/en-us/answers/questions/1411722/https-view-officeapps-live-com-op-embed-aspx)
+[^3]: [Microsoft Q&A - File size limits for Office Web Viewer](https://learn.microsoft.com/en-us/answers/questions/1411722/https-view-officeapps-live-com-op-embed-aspx#file-size-limits)
 [^4]: [Microsoft Q&A - Commercial use of Office Web Viewer](https://learn.microsoft.com/en-us/answers/questions/5191451/what-is-the-status-of-view-officeapps-live-com#commercial-use)
