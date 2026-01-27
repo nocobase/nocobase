@@ -81,10 +81,6 @@ export const CurrentUserProvider = (props) => {
           value: res?.data?.data,
           resolveOnServer: true,
           meta: userMeta,
-          info: {
-            description: 'Current user record object.',
-            detail: 'Record<string, any>',
-          },
         });
         return res?.data;
       }),

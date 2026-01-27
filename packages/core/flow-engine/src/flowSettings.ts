@@ -127,10 +127,6 @@ export class FlowSettings {
     engine.context.defineProperty('flowSettingsEnabled', {
       get: () => this.enabled,
       cache: false,
-      info: {
-        description: 'Whether flow settings mode is enabled.',
-        detail: 'boolean',
-      },
     });
     // 添加默认的配置项目
     this.addDefaultToolbarItems();

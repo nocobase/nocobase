@@ -31,10 +31,6 @@ export class LocalePlugin extends Plugin {
       const data = res?.data;
       this.engine.context.defineProperty('locales', {
         value: data?.data || {},
-        info: {
-          description: 'Locales payload loaded from server (app:getLang).',
-          detail: 'Record<string, any>',
-        },
       });
       this.app.use(App, { component: false });
       if (data?.data?.lang) {

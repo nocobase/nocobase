@@ -31,19 +31,11 @@ export class BlockGridModel extends GridModel {
     super.onInit(options);
     this.context.defineProperty('blockGridModel', {
       value: this,
-      info: {
-        description: 'Current BlockGridModel instance.',
-        detail: 'BlockGridModel',
-      },
     });
     this.context.defineProperty('filterManager', {
       once: true,
       get: () => {
         return new FilterManager(this, options['filterManager']);
-      },
-      info: {
-        description: 'FilterManager instance for current block grid.',
-        detail: 'FilterManager',
       },
     });
   }
