@@ -33,6 +33,7 @@ export default function ({ app }) {
       update: nodes.update,
       destroy: nodes.destroy,
       destroyBranch: nodes.destroyBranch,
+      move: nodes.move,
       test: nodes.test,
     }),
     ...make('jobs', jobs),

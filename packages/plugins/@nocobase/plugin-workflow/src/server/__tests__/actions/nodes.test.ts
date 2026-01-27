@@ -11,6 +11,7 @@ import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { JOB_STATUS } from '../../constants';
+import { FlowNodeModel } from '../../types';
 
 describe('workflow > actions > nodes', () => {
   let app: MockServer;
@@ -877,6 +878,282 @@ describe('workflow > actions > nodes', () => {
       expect(branchHeads.length).toBe(1);
       expect(branchHeads[0].id).toBe(branch1.id);
       expect(branchHeads[0].branchIndex).toBe(1);
+    });
+  });
+
+  describe('move', () => {
+    it('move node to head', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+      });
+      await n2.setDownstream(n3);
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n3.id,
+        values: {
+          upstreamId: null,
+        },
+      });
+      expect(status).toBe(200);
+
+      const nodes = (await workflow.getNodes({ order: [['id', 'asc']] })) as FlowNodeModel[];
+      const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      const n1After = nodeMap.get(n1.id);
+      const n2After = nodeMap.get(n2.id);
+      const n3After = nodeMap.get(n3.id);
+
+      expect(n3After.upstreamId).toBeNull();
+      expect(n3After.downstreamId).toBe(n1.id);
+      expect(n1After.upstreamId).toBe(n3.id);
+      expect(n1After.downstreamId).toBe(n2.id);
+      expect(n2After.upstreamId).toBe(n1.id);
+      expect(n2After.downstreamId).toBeNull();
+    });
+
+    it('move node to branch', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+      });
+      await n2.setDownstream(n3);
+
+      const b1 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const b2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: b1.id,
+      });
+      await b1.setDownstream(b2);
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n2.id,
+        values: {
+          upstreamId: n1.id,
+          branchIndex: 0,
+        },
+      });
+      expect(status).toBe(200);
+
+      const nodes = (await workflow.getNodes({ order: [['id', 'asc']] })) as FlowNodeModel[];
+      const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      const n1After = nodeMap.get(n1.id);
+      const n2After = nodeMap.get(n2.id);
+      const n3After = nodeMap.get(n3.id);
+      const b1After = nodeMap.get(b1.id);
+      const b2After = nodeMap.get(b2.id);
+
+      expect(n1After.downstreamId).toBe(n3.id);
+      expect(n3After.upstreamId).toBe(n1.id);
+      expect(n2After.upstreamId).toBe(n1.id);
+      expect(n2After.branchIndex).toBe(0);
+      expect(n2After.downstreamId).toBe(b1.id);
+      expect(b1After.upstreamId).toBe(n2.id);
+      expect(b1After.branchIndex).toBeNull();
+      expect(b2After.upstreamId).toBe(b1.id);
+    });
+
+    it('returns 400 when upstream does not change', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n2.id,
+        values: {
+          upstreamId: n1.id,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('returns 400 when upstream is self', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n1.id,
+        values: {
+          upstreamId: n1.id,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('returns 404 when upstream not found', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n1.id,
+        values: {
+          upstreamId: '999999999999',
+        },
+      });
+      expect(status).toBe(404);
+    });
+
+    it('returns 400 when upstream not in workflow', async () => {
+      const workflow1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const workflow2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow1.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow2.createNode({
+        type: 'echo',
+      });
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n1.id,
+        values: {
+          upstreamId: n2.id,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('returns 400 when branchIndex is invalid', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: n2.id,
+        values: {
+          upstreamId: n1.id,
+          branchIndex: 'invalid',
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('replaces branch head after moving out', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const b1 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const b2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: b1.id,
+      });
+      await b1.setDownstream(b2);
+
+      const { status } = await agent.resource('flow_nodes').move({
+        filterByTk: b1.id,
+        values: {
+          upstreamId: null,
+        },
+      });
+      expect(status).toBe(200);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      const n1After = nodeMap.get(n1.id);
+      const n2After = nodeMap.get(n2.id);
+      const b1After = nodeMap.get(b1.id);
+      const b2After = nodeMap.get(b2.id);
+
+      expect(b1After.upstreamId).toBeNull();
+      expect(b1After.downstreamId).toBe(n1.id);
+      expect(n1After.upstreamId).toBe(b1.id);
+      expect(n1After.downstreamId).toBe(n2.id);
+      expect(n2After.upstreamId).toBe(n1.id);
+      expect(b2After.upstreamId).toBe(n1.id);
+      expect(b2After.branchIndex).toBe(0);
     });
   });
 
