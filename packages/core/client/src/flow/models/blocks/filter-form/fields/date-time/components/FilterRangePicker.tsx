@@ -9,7 +9,7 @@
 
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { getDateRanges, inferPickerType } from '../../../../../../../schema-component';
-import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
+import { dayjs, getDateTimeFormat, getPickerFormat, str2moment } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
 import React, { useMemo } from 'react';
 import _ from 'lodash';
@@ -42,17 +42,20 @@ export const FilterRangePicker = (props: any) => {
   ];
 
   const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
-  const targetDateFormat = format || getPickerFormat(targetPicker);
+  const targetDateFormat = targetPicker === picker && format ? format : getPickerFormat(targetPicker);
   const newProps: any = {
     utc: true,
     presets,
     ...props,
-    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
+    format:
+      targetPicker === picker && format
+        ? format
+        : getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
   const dayjsValue = useMemo(() => {
-    return _.castArray(props.value).map((item) => (item ? dayjs(item) : null));
+    return _.castArray(props.value).map((item) => (item ? str2moment(item) : null));
   }, [props.value]);
 
   return <DatePicker.RangePicker {...newProps} style={{ flex: 1, ...newProps?.style }} value={dayjsValue} />;
