@@ -460,7 +460,8 @@ export default class Dispatcher {
 
     try {
       await (job ? processor.resume(job) : processor.start());
-      logger.info(`execution (${execution.id}) finished with status: ${execution.status}`, { execution });
+      logger.info(`execution (${execution.id}) finished with status: ${execution.status}`);
+      logger.debug(`execution (${execution.id}) details:`, { execution });
       if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
         await execution.destroy({ transaction: processor.mainTransaction });
       }
