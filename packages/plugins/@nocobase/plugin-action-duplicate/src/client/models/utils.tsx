@@ -9,6 +9,8 @@
 
 import React from 'react';
 import { Tag } from 'antd';
+import { ArrayBase } from '@formily/antd-v5';
+import LRUCache from 'lru-cache';
 
 const TreeNode = (props) => {
   const { tag, type, displayType = true } = props;
@@ -213,5 +215,190 @@ export const getCollectionState = (dm, t, dataSourceKey, displayType = true) => 
     getEnableFieldTree,
     getOnLoadData,
     getOnCheck,
+  };
+};
+
+export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) => {
+  const traverseFields = ((cache) => {
+    return (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '', disabled = false }, formData) => {
+      const cacheKey = `${collectionName}-${exclude.join(',')}-${depth}-${maxDepth}-${prefix}`;
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+      if (depth > maxDepth) {
+        return [];
+      }
+      const result = (
+        dm.getCollection(dataSourceKey, collectionName)
+          ? [...dm.getCollection(dataSourceKey, collectionName).fields.values()]
+          : []
+      )
+        .map((field) => {
+          if (exclude.includes(field.name)) {
+            return;
+          }
+          if (!field.interface) {
+            return;
+          }
+          if (['sort', 'password', 'sequence'].includes(field.type)) {
+            return;
+          }
+
+          const node = {
+            type: 'duplicate',
+            tag: t(field.uiSchema?.title) || field.name,
+          };
+          const option = {
+            ...node,
+            title: React.createElement(TreeNode, node),
+            key: prefix ? `${prefix}.${field.name}` : field.name,
+            isLeaf: true,
+            field,
+            disabled,
+          };
+          const tatgetFormField = formData.find((v) => v.name === option.key);
+          if (
+            ['belongsTo', 'belongsToMany'].includes(field.type) &&
+            (!tatgetFormField ||
+              ['RecordSelectFieldModel', 'RecordPickerFieldModel'].includes(tatgetFormField?.fieldMode))
+          ) {
+            node['type'] = 'reference';
+            option['type'] = 'reference';
+            option['title'] = React.createElement(TreeNode, { ...node, type: 'reference' });
+            option.isLeaf = false;
+            option['children'] = traverseAssociations(field.target, {
+              depth: depth + 1,
+              maxDepth,
+              prefix: option.key,
+              exclude: systemKeys,
+            });
+          } else if (
+            ['hasOne', 'hasMany'].includes(field.type) ||
+            ['SubFormListFieldModel', 'SubTableFieldModel', 'PopupSubTableFieldModel'].includes(
+              tatgetFormField?.fieldMode,
+            )
+          ) {
+            let childrenDisabled = false;
+            if (
+              ['hasOne', 'hasMany'].includes(field.type) &&
+              ['RecordSelectFieldModel', 'RecordPickerFieldModel'].includes(tatgetFormField?.fieldMode)
+            ) {
+              childrenDisabled = true;
+            }
+            option.disabled = true;
+            option.isLeaf = false;
+            option['children'] = traverseFields(
+              field.target,
+              {
+                depth: depth + 1,
+                maxDepth,
+                prefix: option.key,
+                exclude: ['id', ...systemKeys],
+                disabled: childrenDisabled,
+              },
+              formData,
+            );
+          }
+          return option;
+        })
+        .filter(Boolean);
+
+      cache.set(cacheKey, result);
+      return result;
+    };
+  })(new LRUCache<string, any>({ max: 100 }));
+
+  const traverseAssociations = ((cache) => {
+    return (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
+      const cacheKey = `${collectionName}-${exclude.join(',')}-${depth}-${maxDepth}-${prefix}`;
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+
+      if (depth > maxDepth) {
+        return [];
+      }
+
+      const result = (
+        dm.getCollection(dataSourceKey, collectionName)
+          ? [...dm.getCollection(dataSourceKey, collectionName).fields.values()]
+          : []
+      )
+        .map((field) => {
+          if (!field.target || !field.interface) {
+            return;
+          }
+          if (exclude.includes(field.name)) {
+            return;
+          }
+
+          const option = {
+            type: 'preloading',
+            tag: t(field.uiSchema?.title) || field.name,
+          };
+          const value = prefix ? `${prefix}.${field.name}` : field.name;
+          return {
+            type: 'preloading',
+            tag: t(field.uiSchema?.title) || field.name,
+            title: React.createElement(TreeNode, option),
+            key: value,
+            isLeaf: false,
+            field,
+            children: traverseAssociations(field.target, {
+              prefix: value,
+              depth: depth + 1,
+              maxDepth,
+              exclude,
+            }),
+          };
+        })
+        .filter(Boolean);
+      cache.set(cacheKey, result);
+      return result;
+    };
+  })(new LRUCache<string, any>({ max: 100 }));
+  const getEnableFieldTree = (collectionName: string, formData) => {
+    if (!collectionName) {
+      return [];
+    }
+
+    try {
+      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1, disabled: false }, formData);
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  };
+
+  return {
+    async run(model) {
+      const formData = new Set([]);
+      const selectFields = new Set([]);
+
+      const getAssociationAppends = (model) => {
+        model.mapSubModels('items', (item) => {
+          if (
+            item.collectionField &&
+            !(['hasOne', 'hasMany'].includes(item.collectionField.type) || item.subModels.field?.updateAssociation)
+          ) {
+            selectFields.add(item.fieldPath);
+          }
+
+          if (item.collectionField && item.collectionField.isAssociationField()) {
+            formData.add({ name: item.fieldPath, fieldMode: item.subModels.field?.use });
+            if (item.subModels.field?.updateAssociation) {
+              getAssociationAppends(item.subModels.field.subModels.grid);
+            }
+          }
+        });
+      };
+      getAssociationAppends(model);
+      const treeData = getEnableFieldTree(collectionName, [...formData]);
+      if (callBack) {
+        callBack(treeData, [...selectFields]);
+      }
+    },
   };
 };
