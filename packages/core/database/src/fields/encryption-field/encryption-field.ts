@@ -19,7 +19,7 @@ export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
 
 export class EncryptionField extends Field {
   get dataType() {
-    return DataTypes.STRING;
+    return DataTypes.STRING(this.options?.length);
   }
 
   init() {
