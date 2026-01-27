@@ -7,51 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, findAllPlugins, PluginManager } from '@nocobase/server';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
-import { Index as FlexSearchIndex } from 'flexsearch';
+import { FlexSearchIndex } from '@nocobase/ai';
+import { findAllPlugins } from '../plugin-manager/findPackageNames';
+import Application from '../application';
+import { PluginManager } from '../plugin-manager';
 
 type DocsCommandOptions = {
-  scope?: string | string[];
+  pkg?: string | string[];
 };
 
 const DOCS_STORAGE_DIR = path.resolve(process.cwd(), 'storage/ai/docs');
 
-export const createDocsIndexCommand = (app: Application) => {
-  app
-    .command('ai:create-docs-index')
-    .option('--scope [scope]', 'Generate docs index for the specified plugin package (comma separated).')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs as [DocsCommandOptions?];
-      const scopes = await resolveScopes(opts?.scope);
-      if (!scopes.length) {
-        app.log.info('No plugin packages detected for docs index generation');
-        return;
-      }
-
-      for (const scope of scopes) {
-        try {
-          const { packageName } = await PluginManager.parseName(scope);
-          const result = await buildDocsIndex(packageName);
-          if (result.created) {
-            app.log.info(`Docs index generated for ${packageName}`);
-          } else {
-            app.log.info(`Skipped docs index for ${packageName}: ${result.reason}`);
-          }
-        } catch (error) {
-          app.log.error(error, { scope });
-        }
-      }
-    });
-};
-
-async function resolveScopes(scope?: string | string[]) {
-  if (!scope) {
+async function resolvePkgs(pkg?: string | string[]) {
+  if (!pkg) {
     return await findAllPlugins();
   }
-  const scopes = (Array.isArray(scope) ? scope : scope.split(',')).map((item) => item.trim()).filter(Boolean);
+  const scopes = (Array.isArray(pkg) ? pkg : pkg.split(',')).map((item) => item.trim()).filter(Boolean);
   return Array.from(new Set(scopes));
 }
 
@@ -63,7 +37,7 @@ interface BuildResult {
 async function buildDocsIndex(packageName: string): Promise<BuildResult> {
   const packageJsonPath = require.resolve(`${packageName}/package.json`);
   const packageDir = path.dirname(packageJsonPath);
-  const docsDir = path.join(packageDir, 'src', 'ai-docs');
+  const docsDir = path.join(packageDir, 'src', 'ai', 'docs');
   const outputDir = path.join(DOCS_STORAGE_DIR, packageName);
 
   if (!(await fs.pathExists(docsDir))) {
@@ -351,3 +325,32 @@ function stripExistingReferenceBlock(content: string) {
   if (!after) return `${before}\n`;
   return `${before}\n\n${after}`;
 }
+
+export default (app: Application) => {
+  const ai = app.command('ai');
+
+  ai.command('create-docs-index')
+    .option('--pkg [pkg]', 'Generate docs index for the specified plugin package (comma separated).')
+    .action(async (...cliArgs) => {
+      const [opts] = cliArgs as [DocsCommandOptions?];
+      const pkgs = await resolvePkgs(opts?.pkg);
+      if (!pkgs.length) {
+        app.log.info('No plugin packages detected for docs index generation');
+        return;
+      }
+
+      for (const pkg of pkgs) {
+        try {
+          const { packageName } = await PluginManager.parseName(pkg);
+          const result = await buildDocsIndex(packageName);
+          if (result.created) {
+            app.log.info(`Docs index generated for ${packageName}`);
+          } else {
+            app.log.info(`Skipped docs index for ${packageName}: ${result.reason}`);
+          }
+        } catch (error) {
+          app.log.error(error, { pkg });
+        }
+      }
+    });
+};
