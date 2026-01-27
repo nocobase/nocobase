@@ -16,7 +16,6 @@ import { WorkflowCanvas } from './WorkflowCanvas';
 export const WorkflowPage = () => {
   const params = useParams<any>();
   const { styles } = useStyles();
-  console.log('-------------');
 
   return (
     <div className={cx(styles.workflowPageClass)}>
