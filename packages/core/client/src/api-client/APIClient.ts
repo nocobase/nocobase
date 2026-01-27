@@ -87,7 +87,7 @@ export class APIClient extends APIClientSDK {
 
   getHostname() {
     // 优先使用环境变量中的 API_BASE_URL
-    if (process?.env?.API_BASE_URL) {
+    if (process.env.API_BASE_URL) {
       try {
         const url = new URL(process.env.API_BASE_URL);
         return url.hostname;
