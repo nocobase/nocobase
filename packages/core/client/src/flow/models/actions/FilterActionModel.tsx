@@ -9,7 +9,7 @@
 
 import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
-import { ButtonProps, Popover, Select } from 'antd';
+import { ButtonProps, Popover, Transfer } from 'antd';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel } from '../base';
@@ -138,12 +138,20 @@ FilterActionModel.registerFlow({
             const dm = model?.context?.app?.dataSourceManager;
             const fiMgr = dm?.collectionFieldInterfaceManager;
             const filterable = getFilterableFields(model.context.blockModel.collection, fiMgr);
-            const options = filterable.map((field: any) => ({ label: field.title, value: field.name }));
-            return <Select {...props} options={options} />;
+            const dataSource = filterable.map((field: any) => ({ key: field.name, title: field.title }));
+            return (
+              <Transfer
+                {...props}
+                dataSource={dataSource}
+                targetKeys={props.value || []}
+                onChange={(nextKeys) => props.onChange?.(nextKeys)}
+                render={(item) => item.title as string}
+              />
+            );
           },
           'x-component-props': {
-            mode: 'multiple',
-            placeholder: tExpr('Please select filterable fields'),
+            showSearch: true,
+            listStyle: { width: 280, height: 360 },
           },
         },
       },
