@@ -40,7 +40,6 @@ import { DateOnlyFieldOptions } from './date-only-field';
 import { DatetimeNoTzField, DatetimeNoTzFieldOptions } from './datetime-no-tz-field';
 import { DatetimeTzFieldOptions } from './datetime-tz-field';
 import { SnowflakeIdFieldOptions } from './snowflake-id-field';
-export * from './formula-field';
 
 
 
