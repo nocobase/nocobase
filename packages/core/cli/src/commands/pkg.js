@@ -208,7 +208,7 @@ class PackageManager {
         showLicenseInfo(LicenseKeyError.notValid);
       }
       logger.error(`Login failed: ${this.baseURL}`);
-      logger.error(error?.message || error);
+      logger.error(error?.message, { error });
     }
   }
 

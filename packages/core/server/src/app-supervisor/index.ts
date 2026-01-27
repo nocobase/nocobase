@@ -455,7 +455,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         this.discoveryAdapter.loadAppModels?.(app);
       }
     });
-    app.on('afterStop', async (app: Application) => {
+    app.on('afterDestroy', async (app: Application) => {
       await this.unregisterEnvironment();
     });
     return app;

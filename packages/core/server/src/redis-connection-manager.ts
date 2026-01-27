@@ -35,7 +35,6 @@ export class RedisConnectionManager {
       this.logger.info(`Redis connected`, {
         method: 'getConnection',
         key,
-        config,
       });
     });
 
@@ -43,7 +42,6 @@ export class RedisConnectionManager {
       this.logger.trace(`Redis ready`, {
         method: 'getConnection',
         key,
-        config,
       });
     });
 
@@ -52,7 +50,6 @@ export class RedisConnectionManager {
         err,
         method: 'getConnection',
         key,
-        config,
       });
     });
 
@@ -60,7 +57,6 @@ export class RedisConnectionManager {
       this.logger.trace(`Redis closed`, {
         method: 'getConnection',
         key,
-        config,
       });
     });
   }
