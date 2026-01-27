@@ -162,24 +162,24 @@ FlowRunJSContext.define({
 
 说明：CodeEditor 始终启用基于实际 `ctx` 的补全过滤（fail-open，不抛错）。
 
-## 5. 运行时 `info/meta` 与 `ctx.getInfos()`（面向补全与大模型）
+## 5. 运行时 `info/meta` 与上下文信息 API（面向补全与大模型）
 
-除了通过 `FlowRunJSContext.define()`（静态）维护 `ctx` 文档外，你也可以在运行时通过 `FlowContext.defineProperty/defineMethod` 注入 **info/meta**，并通过 `ctx.getInfos()` 输出**静态可序列化**的上下文信息，供：
+除了通过 `FlowRunJSContext.define()`（静态）维护 `ctx` 文档外，你也可以在运行时通过 `FlowContext.defineProperty/defineMethod` 注入 **info/meta**，并通过以下 API 输出**可序列化**的上下文信息，供 CodeEditor/大模型使用：
 
-- CodeEditor 自动补全（优先使用 `getInfos()`）
-- 大模型在生成/理解 JS*Model 代码时获取可用 API、参数、示例与文档链接
+- `await ctx.getApiInfos(options?)`：静态 API 信息
+- `await ctx.getVarInfos(options?)`：变量结构信息（来源 `meta`，支持 path/maxDepth 展开）
+- `await ctx.getEnvInfos()`：运行时环境快照
 
 ### 5.1 `defineMethod(name, fn, info?)`
 
 `info` 支持（均可选）：
 
 - `description` / `detail` / `examples`
-- `completion: { insertText }`
 - `ref: string | { url: string; title?: string }`
 - `params` / `returns`（JSDoc-like）
 - `hidden` / `disabled` / `disabledReason`（支持函数/async 函数，基于运行时 `ctx` 计算）
 
-示例：为 `ctx.refreshTargets()` 提供补全与文档链接
+示例：为 `ctx.refreshTargets()` 提供文档链接
 
 ```ts
 ctx.defineMethod('refreshTargets', async () => {
@@ -187,7 +187,6 @@ ctx.defineMethod('refreshTargets', async () => {
 }, {
   description: '刷新目标区块的数据',
   detail: '() => Promise<void>',
-  completion: { insertText: 'await ctx.refreshTargets()' },
   ref: { url: 'https://docs.nocobase.com/', title: 'Docs' },
 });
 ```
@@ -196,14 +195,17 @@ ctx.defineMethod('refreshTargets', async () => {
 
 - `meta`：用于变量选择器 UI（`getPropertyMetaTree` / `FlowContextSelector`），决定是否展示、树结构、禁用等（支持函数/async）。
   - 常用字段：`title` / `type` / `properties` / `sort` / `hidden` / `disabled` / `disabledReason` / `buildVariablesParams`
-- `info`：用于补全与大模型（`getInfos` / code-editor），不影响变量选择器 UI（支持函数/async）。
-  - 常用字段：`title` / `type` / `interface` / `description` / `examples` / `completion` / `ref` / `params` / `returns` / `hidden` / `disabled` / `disabledReason`
+- `info`：用于静态 API 文档（`getApiInfos`）与面向大模型的描述，不影响变量选择器 UI（支持函数/async）。
+  - 常用字段：`title` / `type` / `interface` / `description` / `examples` / `ref` / `params` / `returns`
 
-当未提供 `info` 但提供了 `meta` 时，`getInfos()` 会基于 `meta` 推断最小结构性信息（例如 `title/type` 与可展开的子级 key）。若两者都提供，则深合并并以 `info` 优先。
+当仅提供 `meta`（未提供 `info`）时：
 
-### 5.3 `await ctx.getInfos(options?)`
+- `getApiInfos()` 不会返回该 key（因为静态 API 文档不从 `meta` 推断）
+- `getVarInfos()` 会基于 `meta` 构建变量结构（用于变量选择器/动态变量树）
 
-用于输出“可用的上下文能力信息”，返回结构：
+### 5.3 上下文信息 API
+
+用于输出“可用的上下文能力信息”，返回形态为方案 A（不再包 `{ apis/envs/... }` 一层）。
 
 ```ts
 type FlowContextInfosEnvNode = {
@@ -213,25 +215,24 @@ type FlowContextInfosEnvNode = {
   properties?: Record<string, FlowContextInfosEnvNode>;
 };
 
-type FlowContextInfos = {
-  apis: Record<string, any>; // 合并 methods + properties
-  envs: {
-    popup?: FlowContextInfosEnvNode;
-    block?: FlowContextInfosEnvNode;
-    flowModel?: FlowContextInfosEnvNode;
-    resource?: FlowContextInfosEnvNode;
-    record?: FlowContextInfosEnvNode;
-  };
+type FlowContextApiInfos = Record<string, any>; // 静态文档（顶层一层）
+type FlowContextVarInfos = Record<string, any>; // 变量结构（可按 path/maxDepth 展开）
+type FlowContextEnvInfos = {
+  popup?: FlowContextInfosEnvNode;
+  block?: FlowContextInfosEnvNode;
+  flowModel?: FlowContextInfosEnvNode;
+  resource?: FlowContextInfosEnvNode;
+  record?: FlowContextInfosEnvNode;
+  currentViewBlocks?: FlowContextInfosEnvNode;
 };
 ```
 
 常用参数：
 
-- `maxDepth`：限制属性展开层级（默认 3）
-- `path: string | string[]`：只收集指定路径子树（剪裁，减少 token）
-- `version`：RunJS 文档版本（默认 `v1`）
+- `getApiInfos({ version })`：RunJS 文档版本（默认 `v1`）
+- `getVarInfos({ path, maxDepth })`：剪裁与最大展开层级（默认 3）
 
-注意：`getInfos()` 会计算/过滤 `hidden`，并计算 `disabled/disabledReason`，且返回结果不包含函数，适合直接序列化传给大模型。
+注意：以上 API 的返回结果都不包含函数，适合直接序列化传给大模型。
 
 ### 5.4 `await ctx.getVar(path)`
 
@@ -240,4 +241,4 @@ type FlowContextInfos = {
 - 示例：`const v = await ctx.getVar('ctx.record.roles.id')`
 - `path` 为以 `ctx.` 开头的表达式路径（例如 `ctx.record.id` / `ctx.record.roles[0].id`）
 
-另外：以下划线 `_` 开头的方法/属性会被视为私有成员，不会出现在 `getInfos()` 的输出中。
+另外：以下划线 `_` 开头的方法/属性会被视为私有成员，不会出现在 `getApiInfos()` / `getVarInfos()` 的输出中。

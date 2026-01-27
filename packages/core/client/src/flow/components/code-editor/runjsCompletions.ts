@@ -117,13 +117,13 @@ export async function buildRunJSCompletions(
   }
   // 当 hostCtx 不存在时，传入空对象以获取通用（*）上下文的文档
   const doc = getRunJSDocFor((hostCtx as any) || ({} as any), { version });
-  let infos: any = null;
+  let apiInfos: any = null;
   try {
-    if (hostCtx && typeof (hostCtx as any).getInfos === 'function') {
-      infos = await (hostCtx as any).getInfos({ version });
+    if (hostCtx && typeof (hostCtx as any).getApiInfos === 'function') {
+      apiInfos = await (hostCtx as any).getApiInfos({ version });
     }
   } catch (_) {
-    infos = null;
+    apiInfos = null;
   }
   const normalizeMethodsRecord = (methods: any): Record<string, any> => {
     const src = methods && typeof methods === 'object' ? methods : {};
@@ -136,12 +136,7 @@ export async function buildRunJSCompletions(
     return out;
   };
   const docApis = { ...((doc as any)?.properties || {}), ...normalizeMethodsRecord((doc as any)?.methods) };
-  const infosApis = (infos as any)?.apis;
-  const legacyInfosApis =
-    (infos as any)?.properties || (infos as any)?.methods
-      ? { ...((infos as any)?.properties || {}), ...normalizeMethodsRecord((infos as any)?.methods) }
-      : null;
-  const apisSource = infosApis || legacyInfosApis || docApis || {};
+  const apisSource = { ...(apiInfos && typeof apiInfos === 'object' ? apiInfos : {}), ...(docApis || {}) };
   const completions: Completion[] = [];
   const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
   const hiddenDecisionCache = new Map<string, { hideSelf: boolean; hideSubpaths: string[] }>();
@@ -210,8 +205,8 @@ export async function buildRunJSCompletions(
     return decision;
   };
 
-  // When we use ctx.getInfos() as source, it may no longer carry `hidden` definitions.
-  // Pre-compute hidden path prefixes from the RunJS doc so meta-derived completions can still be filtered.
+  // When we merge ctx.getApiInfos() into the source, it may no longer carry `hidden` definitions.
+  // Pre-compute hidden path prefixes from the RunJS doc so completions can still be filtered.
   const precomputeHiddenPrefixesFromDoc = async (
     props: Record<string, any> | undefined,
     parentPath: string[] = [],
