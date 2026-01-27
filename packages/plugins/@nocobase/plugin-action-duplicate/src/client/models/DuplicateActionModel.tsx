@@ -14,7 +14,7 @@ import { ActionModel, ActionSceneEnum, useRequest, SkeletonFallback } from '@noc
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
-import { getCollectionState } from './utils';
+import { getCollectionState, getSyncFromForm } from './utils';
 
 const Tree = connect(
   AntdTree,
@@ -36,6 +36,10 @@ const Tree = connect(
       setDataSource(data);
       field.dataSource = data;
     }, [form.values.collection]);
+
+    useEffect(() => {
+      setDataSource(field.dataSource);
+    }, [field.dataSource]);
 
     return {
       ...props,
@@ -191,17 +195,7 @@ DuplicateActionModel.registerFlow({
           }
           return result;
         };
-        const useUnSelectAllFields = (form) => {
-          return {
-            async run() {
-              form.query('duplicateFields').take((f) => {
-                f.componentProps.defaultCheckedKeys = [];
-                f.setInitialValue([]);
-                f?.onCheck([]);
-              });
-            },
-          };
-        };
+
         const { getEnableFieldTree, getOnLoadData, getOnCheck } = getCollectionState(
           ctx.dataSourceManager,
           t,
@@ -251,33 +245,50 @@ DuplicateActionModel.registerFlow({
               },
             ],
           },
-          // syncFromForm: {
-          //   type: 'void',
-          //   title: '{{ t("Sync from form fields") }}',
-          //   'x-component': 'Action.Link',
-          //   'x-component-props': {
-          //     type: 'primary',
-          //     style: { float: 'right', position: 'relative', zIndex: 1200 },
-          //     useAction: () => {
-          //       const formSchema = useMemo(() => findFormBlock(fieldSchema), [fieldSchema]);
-          //       return useSyncFromForm(
-          //         formSchema,
-          //         fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
-          //         syncCallBack,
-          //       );
-          //     },
-          //   },
-          //   'x-reactions': [
-          //     {
-          //       dependencies: ['.duplicateMode'],
-          //       fulfill: {
-          //         state: {
-          //           visible: `{{ $deps[0]!=="quickDulicate" }}`,
-          //         },
-          //       },
-          //     },
-          //   ],
-          // },
+          syncFromForm: {
+            type: 'void',
+            title: '{{ t("Sync from form fields") }}',
+            'x-component': () => {
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              const form = useForm();
+              const { run } = getSyncFromForm(
+                ctx.dataSourceManager,
+                ctx.t,
+                ctx.blockModel.collection.dataSourceKey,
+                ctx.record?.__collection || ctx.blockModel.collection.name,
+                (treeData, selectFields) => {
+                  form.query('duplicateFields').take((f: any) => {
+                    f.dataSource = treeData;
+                    f.componentProps.defaultCheckedKeys = selectFields;
+                    f.setInitialValue(selectFields);
+                    f?.onCheck(selectFields);
+                  });
+                },
+              );
+              return (
+                <a
+                  onClick={async () => {
+                    const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
+                    run(model.subModels.items[0].subModels.grid);
+                  }}
+                  style={{ float: 'right', position: 'relative', zIndex: 1200 }}
+                >
+                  {t('Sync from form fields')}
+                </a>
+              );
+            },
+
+            'x-reactions': [
+              {
+                dependencies: ['.duplicateMode'],
+                fulfill: {
+                  state: {
+                    visible: `{{ $deps[0]!=="quickDulicate" }}`,
+                  },
+                },
+              },
+            ],
+          },
           selectAll: {
             type: 'void',
             title: '{{ t("Select all") }}',
