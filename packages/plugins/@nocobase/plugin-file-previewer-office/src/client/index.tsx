@@ -61,6 +61,22 @@ function isOfficeFile(file: any): boolean {
   return false;
 }
 
+function isImageOrPdf(file: any): boolean {
+  if (file.mimetype) {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      return true;
+    }
+  }
+  // Check extension if mimetype is missing
+  if (file.extname) {
+    const ext = file.extname.toLowerCase().replace('.', '');
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'pdf'].includes(ext)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const { Configuration } = lazy(() => import('./settings/Configuration'), 'Configuration');
 
 function MicrosoftPreviewer({ index, list, onSwitchIndex }) {
@@ -258,6 +274,22 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
 
 export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
+    // Try to fetch config immediately
+    try {
+      const response = await this.app.apiClient.request({
+        resource: 'filePreviewer',
+        action: 'list',
+      });
+      if (response?.data?.data?.[0]) {
+        updatePreviewConfig(response.data.data[0]);
+      }
+    } catch (e) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Failed to load file previewer config', e);
+      }
+      // Silently fail or minimal logging as this runs on app load and shouldn't block the user
+    }
+
     this.app.pluginSettingsManager.add('filePreviewerOffice', {
       icon: 'FileTextOutlined',
       title: `{{t("Office File Previewer", { ns: "@nocobase/plugin-file-previewer-office" })}}`,
@@ -267,9 +299,14 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
 
     attachmentFileTypes.add({
       match: (file) => {
+        // Exclude Images and PDFs to let them use default/native previewers
+        if (isImageOrPdf(file)) {
+          return false;
+        }
+
         // Use global preview config to dynamically determine file support
         if (globalPreviewConfig?.previewType === 'kkfileview') {
-          return true; // In kkFileView mode, support ALL file types
+          return true; // In kkFileView mode, support other file types
         }
         // In Microsoft mode, only support Office files
         return isOfficeFile(file);
