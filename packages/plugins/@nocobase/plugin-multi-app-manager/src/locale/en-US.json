@@ -22,5 +22,6 @@
   "Start mode": "Start mode",
   "Start on first visit": "Start on first visit",
   "Start with main application": "Start with main application",
-  "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate."
+  "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.",
+  "Migrate to app supervisor": "Migrate to app supervisor"
 }

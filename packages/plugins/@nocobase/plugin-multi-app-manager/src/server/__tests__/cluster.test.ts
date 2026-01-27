@@ -10,10 +10,12 @@
 import { AppSupervisor } from '@nocobase/server';
 import { createMockCluster, waitSecond } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
+import { PluginMultiAppManagerServer } from '../server';
 
 describe('cluster', () => {
   let cluster;
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
     cluster = await createMockCluster({
       plugins: ['nocobase', 'field-sort', 'multi-app-manager'],
       acl: false,
@@ -30,9 +32,15 @@ describe('cluster', () => {
 
     const fn = vi.fn();
 
-    app2.on('subAppStarted', async (subApp) => {
-      fn(subApp.name);
-    });
+    await app2.syncMessageManager.subscribe(
+      'app_supervisor:sync',
+      async (message: { type: string; appName: string }) => {
+        const { type } = message;
+        if (type === 'app:started') {
+          fn(name);
+        }
+      },
+    );
 
     await app1.db.getRepository('applications').create({
       values: {
