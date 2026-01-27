@@ -3266,10 +3266,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
-      info: {
-        description: 'RequireJS runtime loader (if available).',
-        detail: 'any',
-      },
     });
     // Expose API token and current role as top-level variables for VariableInput.
     // Front-end only: no resolveOnServer flag. Mark cache: false to reflect runtime changes.
@@ -3537,10 +3533,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       get: () => {
         const acl = new ACL(this.engine);
         return acl;
-      },
-      info: {
-        description: 'ACL helper bound to the FlowEngine.',
-        detail: 'ACL',
       },
     });
     this.defineMethod('aclCheck', function (params) {

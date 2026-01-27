@@ -342,25 +342,13 @@ export class Application {
     this.flowEngine.context.defineProperty('router', {
       get: () => this.router.router,
       cache: false,
-      info: {
-        description: 'Router instance (Remix Router).',
-        detail: 'Router',
-      },
     });
     this.flowEngine.context.defineProperty('documentTitle', {
       get: () => document.title,
-      info: {
-        description: 'Current document.title.',
-        detail: 'string',
-      },
     });
     this.flowEngine.context.defineProperty('route', {
       get: () => {},
       observable: true,
-      info: {
-        description: 'Reactive route info (observable).',
-        detail: 'RouteOptions',
-      },
     });
     this.flowEngine.context.defineProperty('location', {
       get: () => location,

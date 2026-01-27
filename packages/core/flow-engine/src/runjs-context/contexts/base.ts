@@ -146,9 +146,9 @@ export function defineBaseContextMeta() {
           },
         },
       },
+      // TODO: context meta
       resource: {
-        description:
-          'FlowResource instance for accessing and manipulating data. You MUST call ctx.useResource(...) first to create ctx.resource in most scenarios.',
+        description: 'FlowResource instance for accessing and manipulating data.',
         detail: 'FlowResource',
         examples: [
           "ctx.useResource('MultiRecordResource');",
@@ -248,8 +248,7 @@ export function defineBaseContextMeta() {
         },
       },
       viewer: {
-        description:
-          'FlowViewer instance providing view helpers (drawer/dialog/popover/embed). Useful for interactions in RunJS.',
+        description: 'FlowViewer instance providing view helpers (drawer/dialog/popover/embed). ',
         detail: 'FlowViewer',
         examples: [
           "await ctx.viewer.drawer({ width: '56%', content: <div>Hello</div> });",
