@@ -277,7 +277,16 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 处理左侧值变化（值由 converters 决定如何解析）
     const handleLeftChange = useCallback(
       (variableValue: string, meta?: MetaTreeNode) => {
-        value.path = variableValue || '';
+        const prevPath = value.path || '';
+        const nextPath = variableValue || '';
+        const changed = nextPath !== prevPath;
+        value.path = nextPath;
+        // 左侧字段切换时，清空操作符和值，避免跨字段复用旧输入
+        if (changed && prevPath) {
+          value.operator = '';
+          value.value = undefined;
+          value.noValue = false;
+        }
         if (meta) {
           setLeftMeta(meta);
         }
