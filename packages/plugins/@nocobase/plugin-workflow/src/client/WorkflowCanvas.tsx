@@ -39,7 +39,7 @@ import { CurrentWorkflowContext, FlowContext, useFlowContext } from './FlowConte
 import { lang, NAMESPACE } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
-import { linkNodes, getWorkflowDetailPath } from './utils';
+import { linkNodes, getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { Fieldset } from './components/Fieldset';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTrigger } from './triggers';
@@ -75,7 +75,7 @@ function ExecutedStatusMessage({ data, option }) {
     <Trans ns={NAMESPACE} values={{ statusText }}>
       {'Workflow executed, the result status is '}
       <Tag color={option.color}>{'{{statusText}}'}</Tag>
-      <Link to={`/admin/workflow/executions/${data.id}`}>View the execution</Link>
+      <Link to={getWorkflowExecutionsPath(data.id)}>View the execution</Link>
     </Trans>
   );
 }
@@ -117,7 +117,7 @@ function useExecuteConfirmAction() {
       ctx.setVisible(false);
       messageApi?.open(getExecutedStatusMessage(data.execution));
       if (data.newVersionId) {
-        navigate(`/admin/workflow/workflows/${data.newVersionId}`);
+        navigate(getWorkflowDetailPath(data.newVersionId));
       }
     },
   };
@@ -273,7 +273,7 @@ function WorkflowMenu() {
     });
     message.success(t('Operation succeeded'));
 
-    navigate(`/admin/workflow/workflows/${revision.id}`);
+    navigate(getWorkflowDetailPath(revision.id));
   }, [resource, workflow.id, workflow.key, message, t, navigate]);
 
   const onDelete = useCallback(async () => {

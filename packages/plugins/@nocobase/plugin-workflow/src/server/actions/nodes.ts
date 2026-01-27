@@ -15,12 +15,12 @@ import type { WorkflowModel } from '../types';
 export async function create(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
-  const { whitelist, blacklist, updateAssociationValues, values, associatedIndex: workflowId } = context.action.params;
+  const { whitelist, blacklist, updateAssociationValues, values } = context.action.params;
   const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
 
   context.body = await db.sequelize.transaction(async (transaction) => {
     const workflow =
-      workflowPlugin.enabledCache.get(Number.parseInt(workflowId, 10)) ||
+      workflowPlugin.enabledCache.get(Number.parseInt(context.action.sourceId, 10)) ||
       ((await repository.getSourceModel(transaction)) as WorkflowModel);
     if (!workflow.versionStats) {
       workflow.versionStats = await workflow.getVersionStats({ transaction });
