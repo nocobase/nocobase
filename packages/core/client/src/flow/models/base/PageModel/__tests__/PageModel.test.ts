@@ -12,36 +12,50 @@ import { PageModel } from '../PageModel';
 import { DragEndEvent } from '@dnd-kit/core';
 
 // Mock FlowModel and other dependencies
-vi.mock('@nocobase/flow-engine', () => ({
-  FlowModel: class {
-    props: any;
-    context: any;
-    subModels: any = {};
-    constructor(options: any = {}) {
-      this.props = options.props || {};
-      this.context = options.context || {};
-    }
-    setProps(key: string, value: any) {
-      this.props[key] = value;
-    }
-    mapSubModels(key: string, callback: any) {
-      if (this.subModels[key]) {
-        return this.subModels[key].map(callback);
+vi.mock('@nocobase/flow-engine', () => {
+  const VIEW_ACTIVATED_VERSION = Symbol.for('__NOCOBASE_VIEW_ACTIVATED_VERSION__');
+  return {
+    FlowModel: class {
+      props: any;
+      context: any;
+      subModels: any = {};
+      constructor(options: any = {}) {
+        this.props = options.props || {};
+        this.context = options.context || {};
       }
-      return [];
-    }
-    static registerFlow() {}
-  },
-  tExpr: (str: string) => str,
-  DndProvider: ({ children }: any) => children,
-  AddSubModelButton: () => null,
-  FlowSettingsButton: () => null,
-  FlowModelRenderer: () => null,
-  Droppable: ({ children }: any) => children,
-  DragHandler: () => null,
-  getPageActive: () => false,
-  CreateModelOptions: class {},
-}));
+      onMount() {}
+      onUnmount() {}
+      setProps(key: string, value: any) {
+        this.props[key] = value;
+      }
+      mapSubModels(key: string, callback: any) {
+        if (this.subModels[key]) {
+          return this.subModels[key].map(callback);
+        }
+        return [];
+      }
+      static registerFlow() {}
+    },
+    tExpr: (str: string) => str,
+    DndProvider: ({ children }: any) => children,
+    AddSubModelButton: () => null,
+    FlowSettingsButton: () => null,
+    FlowModelRenderer: () => null,
+    Droppable: ({ children }: any) => children,
+    DragHandler: () => null,
+    getPageActive: (ctx: any) => ctx?.view?.inputArgs?.pageActive,
+    getEmitterViewActivatedVersion: (emitter: unknown): number => {
+      if (!emitter || (typeof emitter !== 'object' && typeof emitter !== 'function')) return 0;
+      const raw = Reflect.get(emitter as object, VIEW_ACTIVATED_VERSION);
+      const num = typeof raw === 'number' ? raw : Number(raw);
+      return Number.isFinite(num) && num > 0 ? num : 0;
+    },
+    CreateModelOptions: class {},
+    VIEW_ACTIVATED_VERSION,
+    VIEW_ACTIVATED_EVENT: 'view:activated',
+    DATA_SOURCE_DIRTY_EVENT: 'dataSource:dirty',
+  };
+});
 
 vi.mock('antd', () => ({
   Tabs: (props: any) => null,
@@ -151,6 +165,67 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
+    });
+  });
+
+  describe('dirty refresh signal', () => {
+    it('should invoke current tab onActive when dataSource:dirty is emitted and page is active', async () => {
+      const listeners: Record<string, any> = {};
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+
+      (pageModel as any).flowEngine = {
+        emitter: {
+          on: vi.fn((event: string, cb: any) => {
+            listeners[event] = cb;
+          }),
+          off: vi.fn(),
+        },
+      };
+      // @ts-ignore
+      pageModel.context = {
+        view: {
+          navigation: null,
+          inputArgs: { tabUid: 'tab1', pageActive: true },
+        },
+      } as any;
+
+      pageModel.onMount();
+
+      expect(typeof listeners['dataSource:dirty']).toBe('function');
+      listeners['dataSource:dirty']({ dataSourceKey: 'main', resourceNames: ['posts'] });
+      await Promise.resolve();
+
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+    });
+
+    it('should invoke current tab onActive on mount when view:activated happened before PageModel mounted', () => {
+      const listeners: Record<string, any> = {};
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      const VIEW_ACTIVATED_VERSION = Symbol.for('__NOCOBASE_VIEW_ACTIVATED_VERSION__');
+
+      const emitter: any = {
+        on: vi.fn((event: string, cb: any) => {
+          listeners[event] = cb;
+        }),
+        off: vi.fn(),
+      };
+      emitter[VIEW_ACTIVATED_VERSION] = 1;
+
+      (pageModel as any).flowEngine = {
+        emitter,
+      };
+      // @ts-ignore
+      pageModel.context = {
+        view: {
+          navigation: null,
+          inputArgs: { tabUid: 'tab1', pageActive: true },
+        },
+      } as any;
+
+      pageModel.onMount();
+
+      expect(typeof listeners['view:activated']).toBe('function');
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
     });
   });
 });

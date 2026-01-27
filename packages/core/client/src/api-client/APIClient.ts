@@ -85,6 +85,20 @@ export class APIClient extends APIClientSDK {
     return api;
   }
 
+  getHostname() {
+    // 优先使用环境变量中的 API_BASE_URL
+    if (process.env.API_BASE_URL) {
+      try {
+        const url = new URL(process.env.API_BASE_URL);
+        return url.hostname;
+      } catch (error) {
+        // URL 解析失败时回退到 window.location.hostname
+      }
+    }
+    // 回退到当前页面的 hostname
+    return window?.location?.hostname;
+  }
+
   getHeaders() {
     const headers = super.getHeaders();
     const appName = this.app?.getName();
@@ -92,7 +106,7 @@ export class APIClient extends APIClientSDK {
       headers['X-App'] = appName;
     }
     headers['X-Timezone'] = getCurrentTimezone();
-    headers['X-Hostname'] = window?.location?.hostname;
+    headers['X-Hostname'] = this.getHostname();
     return headers;
   }
 

@@ -110,6 +110,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
   protected _data = observable.ref<TData>(null);
   protected _meta = observable.ref<Record<string, any>>({});
   private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshWaiters: Array<{ resolve: () => void; reject: (error: any) => void }> = [];
   private _debugEnabled = false;
   private _sql: string;
 
@@ -272,7 +273,11 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
 
     // 设置新的定时器，在下一个事件循环执行
     return new Promise<void>((resolve, reject) => {
+      this.refreshWaiters.push({ resolve, reject });
       this.refreshTimer = setTimeout(async () => {
+        const waiters = this.refreshWaiters;
+        this.refreshWaiters = [];
+        this.refreshTimer = null;
         try {
           this.clearError();
           this.loading = true;
@@ -281,12 +286,12 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
           this.setData(data).setMeta(meta);
           this.loading = false;
           this.emit('refresh');
-          resolve();
+          waiters.forEach((w) => w.resolve());
         } catch (error) {
           this.setError(error);
-          reject(error instanceof Error ? error : new Error(String(error)));
+          const err = error instanceof Error ? error : new Error(String(error));
+          waiters.forEach((w) => w.reject(err));
         } finally {
-          this.refreshTimer = null;
           this.loading = false;
         }
       });

@@ -44,6 +44,8 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...config,
       data: result,
     });
+    // Mark as dirty before emitting/refreshing so other views can refresh when activated.
+    this.markDataSourceDirty();
     this.emit('saved', data);
     if (options?.refresh !== false) {
       await this.refresh();
@@ -61,6 +63,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       options,
     );
     await this.runAction('destroy', config);
+    this.markDataSourceDirty();
     this.setData(null);
   }
 
