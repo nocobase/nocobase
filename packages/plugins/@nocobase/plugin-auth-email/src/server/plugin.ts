@@ -19,10 +19,23 @@ import { SMTPProvider } from './email-otp/providers/smtp';
 
 const EMAIL_OTP_VERIFICATION_TYPE = 'email-otp';
 
+import { Counter } from '@nocobase/cache';
+
 export class PluginAuthEmailServer extends Plugin {
   emailOTPProviderManager = new EmailOTPProviderManager();
+  emailOTPCounter: Counter;
 
-  afterAdd() {}
+  afterAdd() {
+    this.app.on('afterLoad', async () => {
+      this.emailOTPCounter = await this.app.cacheManager.createCounter(
+        {
+          name: 'emailOTPCounter',
+          prefix: 'email-otp:attempts',
+        },
+        this.app.lockManager,
+      );
+    });
+  }
 
   async load() {
     const verificationPlugin: VerificationPlugin = this.app.getPlugin('verification');

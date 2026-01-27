@@ -55,8 +55,8 @@ export class EmailOTPVerification extends Verification {
     if (!code) {
       return this.ctx.throw(400, 'Verification code is invalid');
     }
-    const verificationPlugin = this.ctx.app.getPlugin('verification') as any;
-    const counter = verificationPlugin.smsOTPCounter;
+    const plugin = this.ctx.app.getPlugin('@nocobase/plugin-auth-email') as PluginAuthEmailServer;
+    const counter = plugin.emailOTPCounter;
     const key = `${resource}:${action}:${receiver}`;
     let attempts = 0;
     try {
@@ -64,7 +64,7 @@ export class EmailOTPVerification extends Verification {
     } catch (e) {
       this.ctx.logger.error(e.message, {
         module: 'verification',
-        submodule: 'sms-otp',
+        submodule: 'email-otp',
         method: 'verify',
         receiver,
         action: `${resource}:${action}`,

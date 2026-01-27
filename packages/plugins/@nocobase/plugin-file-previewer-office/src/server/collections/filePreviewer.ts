@@ -22,5 +22,9 @@ export default {
       name: 'kkFileViewUrl',
       defaultValue: 'http://localhost:8012',
     },
+    {
+      type: 'string',
+      name: 'kkFileViewExtensions',
+    },
   ],
 };
