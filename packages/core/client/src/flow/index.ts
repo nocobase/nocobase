@@ -50,10 +50,6 @@ export class PluginFlowEngine extends Plugin {
     const markdownInstance = new Markdown();
     this.flowEngine.context.defineProperty('markdown', {
       get: () => markdownInstance,
-      info: {
-        description: 'Global Markdown helper (render/edit).',
-        detail: 'Markdown',
-      },
     });
 
     // 创建全局实例
@@ -62,10 +58,6 @@ export class PluginFlowEngine extends Plugin {
     // 注册到全局上下文
     this.flowEngine.context.defineProperty('liquid', {
       get: () => liquidInstance,
-      info: {
-        description: 'Global Liquid template engine instance.',
-        detail: 'LiquidEngine',
-      },
     });
   }
 }

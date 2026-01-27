@@ -350,10 +350,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       if (model?.context) {
         model.context.defineProperty('useCache', {
           value: typeof useCache === 'boolean' ? useCache : model.context.useCache,
-          info: {
-            description: 'Whether to reuse cached results when dispatching events (e.g., beforeRender).',
-            detail: 'boolean',
-          },
         });
       }
     }, [model?.context, useCache]);

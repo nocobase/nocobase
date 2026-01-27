@@ -220,17 +220,9 @@ export class Application {
     this.context = this.flowEngine.context as any;
     this.context.defineProperty('pluginManager', {
       get: () => this.pluginManager,
-      info: {
-        description: 'PluginManager instance for accessing plugins and plugin lifecycle.',
-        detail: 'PluginManager',
-      },
     });
     this.context.defineProperty('pluginSettingsRouter', {
       get: () => this.pluginSettingsManager,
-      info: {
-        description: 'PluginSettingsManager (settings router) instance.',
-        detail: 'PluginSettingsManager',
-      },
     });
     this.addDefaultProviders();
     this.addReactRouterComponents();
@@ -381,13 +373,7 @@ export class Application {
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);
     const pageInfo = observable({ version: undefined as 'v2' | 'v1' | undefined });
-    this.flowEngine.context.defineProperty('pageInfo', {
-      value: pageInfo,
-      info: {
-        description: 'Page info (observable), includes page version etc.',
-        detail: '{ version?: "v1" | "v2" }',
-      },
-    });
+    this.flowEngine.context.defineProperty('pageInfo', { value: pageInfo });
   }
 
   private addReactRouterComponents() {

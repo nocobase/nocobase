@@ -332,22 +332,7 @@ export function defineBaseContextMeta() {
           language: 'Current active language code.',
         },
       },
-      dayjs: {
-        type: 'function',
-        description: 'dayjs date-time utility library (callable).',
-        detail: 'dayjs',
-        completion: { insertText: 'ctx.dayjs()' },
-        examples: ["const now = ctx.dayjs().format('YYYY-MM-DD HH:mm:ss');"],
-      },
-      React:
-        'React namespace providing React library functions and hooks (available in RunJS environment). Recommended access path: `ctx.libs.React`.',
-      ReactDOM:
-        'ReactDOM client API including createRoot for rendering React components. Also available via `ctx.libs.ReactDOM`.',
-      antd: 'Ant Design component library. Recommended access path: `ctx.libs.antd`.',
       libs: {
-        description:
-          'Namespace for third-party and shared libraries. Includes React, ReactDOM, Ant Design, dayjs, icons, and other utilities (e.g. lodash, formula, math). New libs should be exposed here first.',
-        detail: 'Libraries namespace',
         properties: {
           React: 'React namespace (same as ctx.React).',
           ReactDOM: 'ReactDOM client API (same as ctx.ReactDOM).',
@@ -403,8 +388,6 @@ export function defineBaseContextMeta() {
         returns: { type: 'Promise<any>' },
         examples: ["const id = await ctx.getVar('ctx.record.id');"],
       },
-      resolveJsonTemplate:
-        'Resolve JSON templates containing variable expressions with {{ }} syntax. Parameters: (template: any, context?: object) => any',
       runAction: {
         description:
           'Execute a data action on the current resource. Parameters: (actionName: string, params: object) => Promise<any>. Example: `await ctx.runAction("create", { values: { name: "test" } })`',
