@@ -481,6 +481,15 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
   const viewCtx = useFlowViewContext();
   const api = useAPIClient();
   const tempAssociationSources = useTempAssociationSources(workflow, nodes);
+  const workflowId = workflow?.id;
+  const nodesSignature = useMemo(
+    () =>
+      nodes
+        ?.map((item) => item?.id)
+        .filter(Boolean)
+        .join('|') ?? '',
+    [nodes],
+  );
   const syncTempAssociationFields = useCallback(
     (fields: CCTaskTempAssociationFieldConfig[]) => {
       if (formDisabled || !form || !node) return;
@@ -557,7 +566,7 @@ function CCTaskCardDrawerContent({ uid, onUidChange, formDisabled, workflow, nod
       return model;
     },
     {
-      refreshDeps: [uid, formDisabled, syncTempAssociationFields],
+      refreshDeps: [uid, formDisabled, syncTempAssociationFields, workflowId, nodesSignature],
     },
   );
 
