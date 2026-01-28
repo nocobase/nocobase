@@ -13,10 +13,13 @@ import { DateFilterDynamicComponent } from './components/DateFilterDynamicCompon
 
 const DateTimeTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
+  // When showTime is true, use date-only format to avoid duplication
+  // because getDateTimeFormat will append time format automatically
+  const dateFormat = showTime && picker === 'date' ? 'YYYY-MM-DD' : format;
   const componentProps = {
     ...rest,
     value,
-    format,
+    format: dateFormat,
     picker,
     showTime,
   };
