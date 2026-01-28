@@ -1381,7 +1381,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const ESM_CDN_SUFFIX = window['__esm_cdn_suffix__'] || '';
         u = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${u.replace(/^\//, '')}${ESM_CDN_SUFFIX}`;
       }
-      if (u.endsWith('.css')) {
+      // 去掉 query 和 hash 后判断是否为 CSS（支持 example.css?v=123 等形式）
+      const pathPart = u.split('?')[0].split('#')[0];
+      if (pathPart.endsWith('.css')) {
         return this.loadCSS(u);
       }
       const g = globalThis as any;
