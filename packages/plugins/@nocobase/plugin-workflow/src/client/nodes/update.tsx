@@ -145,14 +145,7 @@ export default class extends Instruction {
     RadioWithTooltip,
   };
   useTempAssociationSource(node) {
-    if (!node?.config?.collection) {
-      return null;
-    }
-    return {
-      collection: node.config.collection,
-      nodeId: node.id,
-      nodeKey: node.key,
-      nodeType: 'node' as const,
-    };
+    // 更新节点只返回更新结果（0/1/计数），不提供记录数据给下游使用
+    return null;
   }
 }
