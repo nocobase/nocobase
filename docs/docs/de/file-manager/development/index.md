@@ -8,9 +8,9 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 ### Serverseitig
 
-1.  **`StorageType` implementieren**
-    
-    Erstellen Sie eine neue Klasse und implementieren Sie die Methoden `make()` und `delete()`. Überschreiben Sie bei Bedarf Hooks wie `getFileURL()`, `getFileStream()` und `getFileData()`.
+1. **`StorageType` implementieren**
+   
+   Erstellen Sie eine neue Klasse und implementieren Sie die Methoden `make()` und `delete()`. Überschreiben Sie bei Bedarf Hooks wie `getFileURL()`, `getFileStream()` oder `getFileData()`.
 
 Beispiel:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Neuen Typ registrieren**  
-    Fügen Sie die neue Speicherimplementierung im `beforeLoad`- oder `load`-Lebenszyklus des Plugins ein:
+4. **Neuen Typ registrieren**  
+   Fügen Sie die neue Speicher-Implementierung im `beforeLoad`- oder `load`-Lifecycle des Plugins ein:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Nach der Registrierung erscheint die Speicherkonfiguration in der `storages`-Ressource, genau wie die integrierten Typen. Die von `StorageType.defaults()` bereitgestellte Konfiguration kann verwendet werden, um Formulare automatisch auszufüllen oder Standarddatensätze zu initialisieren.
+Nach der Registrierung erscheint die Speicher-Konfiguration in der Ressource `storages`, genau wie die integrierten Typen. Die von `StorageType.defaults()` bereitgestellte Konfiguration kann zum automatischen Ausfüllen von Formularen oder zum Initialisieren von Standarddatensätzen verwendet werden.
 
-### Clientseitige Konfiguration und Verwaltungsoberfläche
-Clientseitig müssen Sie dem Dateimanager mitteilen, wie das Konfigurationsformular gerendert werden soll und ob eine benutzerdefinierte Upload-Logik vorhanden ist. Jedes Speicherobjekt enthält die folgenden Eigenschaften:
+<!--
+### Client-seitige Konfiguration und Verwaltungsoberfläche
+Auf der Client-Seite müssen Sie dem Dateimanager mitteilen, wie das Konfigurationsformular gerendert wird und ob es eine benutzerdefinierte Upload-Logik gibt. Jedes Storage-Typ-Objekt enthält die folgenden Eigenschaften:
+-->
 
 ## Frontend-Dateitypen erweitern
 
-Für hochgeladene Dateien können Sie auf der Frontend-Oberfläche je nach Dateityp unterschiedliche Vorschauinhalte anzeigen. Das Anhangsfeld des Dateimanagers verfügt über eine integrierte browserbasierte Dateivorschau (eingebettet in ein Iframe), die die direkte Vorschau der meisten Dateiformate (wie Bilder, Videos, Audio und PDFs) im Browser unterstützt. Wenn ein Dateiformat vom Browser nicht unterstützt wird oder spezielle Vorschauinteraktionen erforderlich sind, können Sie dies durch die Erweiterung der dateitypbasierten Vorschaukomponente realisieren.
+Für hochgeladene Dateien können in der Frontend-Oberfläche je nach Dateityp unterschiedliche Vorschauinhalte angezeigt werden. Das Anhangsfeld des Dateimanagers verfügt über eine integrierte browserbasierte Dateivorschau (in einem iframe), die die Vorschau der meisten Formate (z. B. Bilder, Videos, Audio und PDFs) direkt im Browser unterstützt. Wenn ein Dateiformat vom Browser nicht unterstützt wird oder spezielle Vorschau-Interaktionen erforderlich sind, können Sie die Vorschaukomponente basierend auf dem Dateityp erweitern.
 
 ### Beispiel
 
-Wenn Sie beispielsweise einen Bilddateityp um eine Karussell-Komponente erweitern möchten, können Sie den folgenden Code verwenden:
+Wenn Sie beispielsweise eine benutzerdefinierte Online-Vorschau für Office-Dateien integrieren möchten, können Sie den folgenden Code verwenden:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Dabei ist `attachmentFileTypes` das im `@nocobase/client`-Paket bereitgestellte Einstiegsobjekt zur Erweiterung von Dateitypen. Verwenden Sie dessen `add`-Methode, um ein Dateityp-Beschreibungsobjekt zu erweitern.
+Hier ist `filePreviewTypes` das Einstiegsobjekt aus `@nocobase/plugin-file-manager/client` zum Erweitern von Dateivorschauen. Verwenden Sie die Methode `add`, um ein Dateityp-Descriptor-Objekt hinzuzufügen.
 
-Jeder Dateityp muss eine `match()`-Methode implementieren, um zu prüfen, ob der Dateityp die Anforderungen erfüllt. Im Beispiel wird die vom `mime-match`-Paket bereitgestellte Methode verwendet, um das `mimetype`-Attribut der Datei zu überprüfen. Wenn es dem Typ `image/*` entspricht, wird es als der zu verarbeitende Dateityp angesehen. Wenn keine Übereinstimmung gefunden wird, wird auf die integrierte Typbehandlung zurückgegriffen.
+Jeder Dateityp muss eine `match()`-Methode implementieren, um zu prüfen, ob der Dateityp die Anforderungen erfüllt. Im Beispiel wird `matchMimetype` verwendet, um das `mimetype`-Attribut der Datei zu prüfen. Wenn es dem `docx`-Typ entspricht, wird der Dateityp verarbeitet. Wenn keine Übereinstimmung gefunden wird, wird auf die integrierte Typbehandlung zurückgegriffen.
 
-Die `Previewer`-Eigenschaft des Typ-Beschreibungsobjekts ist die Komponente, die für die Vorschau verwendet wird. Wenn der Dateityp übereinstimmt, wird diese Komponente zur Vorschau gerendert. Es wird generell empfohlen, eine Dialog-Komponente (wie `<Modal />` usw.) als Basiscontainer zu verwenden und dann den Vorschau- und interaktiven Inhalt in diese Komponente zu platzieren, um die Vorschaufunktion zu implementieren.
+Die `Previewer`-Eigenschaft des Typ-Descriptors ist die Komponente für die Vorschau. Wenn der Dateityp übereinstimmt, wird diese Komponente im Vorschaudialog gerendert. Sie können jede React-Ansicht zurückgeben (z. B. ein iframe, einen Player oder ein Diagramm).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` ist eine globale Instanz, die aus `@nocobase/client` importiert wird:
+`filePreviewTypes` ist eine globale Instanz, importiert aus `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Registriert ein neues Dateityp-Beschreibungsobjekt beim Dateityp-Registrierungszentrum. Der Typ des Beschreibungsobjekts ist `AttachmentFileType`.
+Registriert ein neues Dateityp-Descriptor-Objekt im Dateityp-Register. Der Typ des Descriptor-Objekts ist `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Methode zur Dateiformat-Übereinstimmung.
+Methode zur Zuordnung des Dateiformats.
 
-Der Eingabeparameter `file` ist das Datenobjekt einer hochgeladenen Datei, das relevante Eigenschaften zur Typbestimmung enthält:
+Der Eingabeparameter `file` ist das Datenobjekt einer hochgeladenen Datei und enthält relevante Eigenschaften zur Typprüfung:
 
-*   `mimetype`: mimetype Beschreibung
-*   `extname`: Dateierweiterung, einschließlich des "."
-*   `path`: relativer Speicherpfad der Datei
-*   `url`: Datei-URL
+* `mimetype`: Beschreibung des mimetype
+* `extname`: Dateiendung einschließlich "."
+* `path`: relativer Speicherpfad der Datei
+* `url`: Datei-URL
 
-Der Rückgabewert ist vom Typ `boolean` und gibt an, ob eine Übereinstimmung vorliegt.
+Gibt einen `boolean`-Wert zurück, der angibt, ob es übereinstimmt.
+
+##### `getThumbnailURL`
+
+Gibt die Thumbnail-URL in der Dateiliste zurück. Wenn der Rückgabewert leer ist, wird das integrierte Platzhalterbild verwendet.
 
 ##### `Previewer`
 
-Eine React-Komponente zur Dateivorschau.
+Eine React-Komponente zur Vorschau von Dateien.
 
-Die übergebenen Props-Parameter sind:
+Die eingehenden Props sind:
 
-*   `index`: Index der Datei in der Anhangsliste
-*   `list`: Anhangsliste
-*   `onSwitchIndex`: Eine Methode zum Wechseln des Indexes
+* `file`: aktuelles Dateiobjekt (kann eine String-URL oder ein Objekt mit `url`/`preview` sein)
+* `index`: Index der Datei in der Liste
+* `list`: Dateiliste
 
-`onSwitchIndex` kann einen beliebigen Index aus der Liste übergeben werden, um zu einer anderen Datei zu wechseln. Wenn `null` als Argument übergeben wird, wird die Vorschaukomponente direkt geschlossen.
-
-```ts
-onSwitchIndex(null);
-```

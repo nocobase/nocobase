@@ -120,6 +120,18 @@ export class FlowEngine {
   private _resources = new Map<string, typeof FlowResource>();
 
   /**
+   * Data change registry used to coordinate "refresh on active" across view-scoped engines.
+   *
+   * Keyed by: dataSourceKey -> resourceName -> version.
+   * - mark: increments version
+   * - get: returns current version (default 0)
+   *
+   * NOTE: ViewScopedFlowEngine proxies delegate non-local fields/methods to parents, so this
+   * registry naturally lives on the root engine instance and is shared across the whole view stack.
+   */
+  private _dataSourceDirtyVersions: Map<string, Map<string, number>> = new Map();
+
+  /**
    * 引擎事件总线（目前用于模型生命周期等事件）。
    * ViewScopedFlowEngine 持有自己的实例，实现作用域隔离。
    */
@@ -196,6 +208,35 @@ export class FlowEngine {
         this._modelOperationScheduler = undefined;
       }
     }
+  }
+
+  /**
+   * Mark a data source resource as "dirty" (changed).
+   * This is used by data blocks to decide whether to refresh when a view becomes active.
+   */
+  public markDataSourceDirty(dataSourceKey: string, resourceName: string): number {
+    const dsKey = String(dataSourceKey || 'main');
+    const resName = String(resourceName || '');
+    if (!resName) return this.getDataSourceDirtyVersion(dsKey, resName);
+
+    const ds = this._dataSourceDirtyVersions.get(dsKey) || new Map<string, number>();
+    if (!this._dataSourceDirtyVersions.has(dsKey)) {
+      this._dataSourceDirtyVersions.set(dsKey, ds);
+    }
+    const next = (ds.get(resName) || 0) + 1;
+    ds.set(resName, next);
+    return next;
+  }
+
+  /**
+   * Get current dirty version for a data source resource.
+   * Returns 0 when no writes have been recorded.
+   */
+  public getDataSourceDirtyVersion(dataSourceKey: string, resourceName: string): number {
+    const dsKey = String(dataSourceKey || 'main');
+    const resName = String(resourceName || '');
+    if (!resName) return 0;
+    return this._dataSourceDirtyVersions.get(dsKey)?.get(resName) || 0;
   }
 
   /** 在目标模型生命周期达成时执行操作（仅在 View 引擎本地存储计划） */

@@ -22,6 +22,7 @@
   "File size limit": "文件大小限制",
   "File storage": "文件存储器",
   "File type allowed (in MIME type format)": "允许的文件类型（MIME 格式）",
+  "File type is not supported for previewing, please <1>download it to preview</1>": "文件类型不支持预览，请<1>下载后查看</1>",
   "Filename": "文件名",
   "Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.": "只有在删除文件表记录时，文件才会被删除。当删除其他表的记录包含指向文件表的关系字段时，除非关系中配置了级联删除，否则文件不会被删除。",
   "Keep file in storage when destroy record": "删除记录时保留文件",
