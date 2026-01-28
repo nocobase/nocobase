@@ -377,8 +377,8 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
       const formData = new Set([]);
       const selectFields = new Set([]);
 
-      const getAssociationAppends = (model) => {
-        model.mapSubModels('items', (item) => {
+      const getAssociationAppends = (model, subKey) => {
+        model.mapSubModels(subKey, (item) => {
           if (
             item.collectionField &&
             !(['hasOne', 'hasMany'].includes(item.collectionField.type) || item.subModels.field?.updateAssociation)
@@ -389,12 +389,19 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
           if (item.collectionField && item.collectionField.isAssociationField()) {
             formData.add({ name: item.fieldPath, fieldMode: item.subModels.field?.use });
             if (item.subModels.field?.updateAssociation) {
-              getAssociationAppends(item.subModels.field.subModels.grid);
+              console.log(item.subModels.field.subModels);
+              if (item.subModels.field.subModels.grid) {
+                //子表单
+                getAssociationAppends(item.subModels.field.subModels.grid, 'items');
+              } else if (item.subModels.field.subModels.subTableColumns) {
+                //子表格（弹窗编辑）subTableColumns
+                getAssociationAppends(item.subModels.field, 'subTableColumns');
+              }
             }
           }
         });
       };
-      getAssociationAppends(model);
+      getAssociationAppends(model, 'items');
       const treeData = getEnableFieldTree(collectionName, [...formData]);
       if (callBack) {
         callBack(treeData, [...selectFields]);
