@@ -94,6 +94,19 @@ const normalizeNodeConfig = (config: any) => {
   return config;
 };
 
+const normalizeAppends = (appends: unknown) => {
+  if (!Array.isArray(appends)) return [];
+  const set = new Set<string>();
+  appends.forEach((field) => {
+    if (typeof field !== 'string' || !field) return;
+    set.add(field.split('.')[0]);
+    set.add(field);
+  });
+  return Array.from(set);
+};
+
+const getConfigAppends = (config: any) => normalizeAppends(config?.params?.appends ?? config?.appends);
+
 export async function appendTempAssociationFields(context: Context) {
   const body = context.body;
   const bodyData = Array.isArray(body) ? body : body?.rows;
@@ -209,6 +222,7 @@ export async function appendTempAssociationFields(context: Context) {
       dataSourceName: string;
       collectionName: string;
       recordKeys: Set<any>;
+      appends: Set<string>;
       references: Array<{ task: any; fieldName: string; recordKey: any }>;
     }
   >();
@@ -251,14 +265,17 @@ export async function appendTempAssociationFields(context: Context) {
       let collectionConfig;
       let recordData;
 
+      let appends: string[] = [];
       if (config.nodeType === 'workflow') {
         collectionConfig = workflow?.config?.collection;
         recordData = pickRecordData(execution?.context?.data);
+        appends = getConfigAppends(workflow?.config);
       } else {
         const node = workflowNodeMap.get(String(config.nodeId));
         collectionConfig = node?.config?.collection;
         const job = execution?.jobs?.find((item) => String(item.nodeId) === String(config.nodeId));
         recordData = pickRecordData(job?.result);
+        appends = getConfigAppends(node?.config);
       }
 
       if (!collectionConfig) {
@@ -294,9 +311,11 @@ export async function appendTempAssociationFields(context: Context) {
         dataSourceName,
         collectionName,
         recordKeys: new Set(),
+        appends: new Set<string>(),
         references: [],
       };
       group.recordKeys.add(recordKey);
+      appends.forEach((append) => group.appends.add(append));
       group.references.push({ task, fieldName, recordKey });
       pendingGroups.set(groupKey, group);
     });
@@ -321,6 +340,7 @@ export async function appendTempAssociationFields(context: Context) {
       filter: {
         [filterTargetKey]: Array.from(group.recordKeys),
       },
+      appends: group.appends.size ? Array.from(group.appends) : undefined,
     });
     const recordMap = new Map(records.map((record) => [toPlainObject(record)[filterTargetKey], toPlainObject(record)]));
     group.references.forEach(({ task, fieldName, recordKey }) => {
