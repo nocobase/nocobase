@@ -408,9 +408,17 @@ function TaskItem() {
   );
 
   const mapModel = useCallback((model) => model.clone(), []);
+  const taskCardReloadKey = record.node?.updatedAt ?? record.node?.updatedAt?.valueOf?.();
 
   if (taskCardUid) {
-    return <RemoteFlowModelRenderer uid={taskCardUid} onModelLoaded={onModelLoaded} mapModel={mapModel} />;
+    return (
+      <RemoteFlowModelRenderer
+        uid={taskCardUid}
+        onModelLoaded={onModelLoaded}
+        mapModel={mapModel}
+        reloadKey={taskCardReloadKey}
+      />
+    );
   }
 
   // V1: 使用默认 Card 渲染
@@ -448,6 +456,7 @@ function useTodoActionParams(status) {
     appends: [
       'node.id',
       'node.title',
+      'node.updatedAt',
       'node.config',
       'workflow.id',
       'workflow.title',
