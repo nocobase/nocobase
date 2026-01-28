@@ -1306,6 +1306,161 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['user', 'id'])).toBe(1);
   });
 
+  it('applies nested association write for updateAssociation field when association value is empty', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ user: null });
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-update-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userCollection: any = { getField: () => null };
+    const userField: any = { isAssociationField: () => true, type: 'belongsTo', targetCollection: userCollection };
+    const collection: any = { getField: (name: string) => (name === 'user' ? userField : null) };
+    blockCtx.defineProperty('collection', { value: collection });
+
+    const assocFormItemModel: any = {
+      uid: 'user',
+      subModels: { field: { updateAssociation: true, context: { collectionField: userField } } },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'user' };
+        }
+        return undefined;
+      },
+    };
+    const assocCtx = createFieldContext(runtime);
+    assocCtx.defineProperty('blockModel', { value: blockModel });
+    assocCtx.defineProperty('collection', { value: collection });
+    assocCtx.defineProperty('model', { value: assocFormItemModel });
+    assocFormItemModel.context = assocCtx;
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (cb: any) => {
+          cb(assocFormItemModel);
+        },
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'user.name',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: 'Alice',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['user', 'name'])).toBe('Alice'));
+    expect(formStub.getFieldValue(['user', '__is_new__'])).toBe(true);
+  });
+
+  it('applies nested assignment under to-many updateAssociation row when row value is missing', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ users: [] });
+
+    const blockModel: any = {
+      uid: 'form-assign-to-many-update-assoc-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+
+    const usersItemCollection: any = {
+      getField: (name: string) => ({ name, isAssociationField: () => false }),
+    };
+    const usersField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: usersItemCollection };
+    const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: rootCollection });
+
+    const usersFormItemModel: any = {
+      uid: 'users',
+      subModels: { field: { updateAssociation: true, context: { collectionField: usersField } } },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'users' };
+        }
+        return undefined;
+      },
+    };
+    const usersCtx = createFieldContext(runtime);
+    usersCtx.defineProperty('blockModel', { value: blockModel });
+    usersCtx.defineProperty('collection', { value: rootCollection });
+    usersCtx.defineProperty('model', { value: usersFormItemModel });
+    usersFormItemModel.context = usersCtx;
+
+    const gridMaster: any = {
+      uid: 'users.grid',
+      subModels: { items: [] },
+    };
+    const gridMasterCtx = createFieldContext(runtime);
+    gridMasterCtx.defineProperty('blockModel', { value: blockModel });
+    gridMasterCtx.defineProperty('model', { value: gridMaster });
+    gridMaster.context = gridMasterCtx;
+
+    const createGridRow = (forkId: string, rowIndex: number) => {
+      const row: any = {
+        uid: 'users.grid',
+        isFork: true,
+        forkId,
+        subModels: { items: [] },
+      };
+      const ctx = createFieldContext(runtime);
+      ctx.defineProperty('blockModel', { value: blockModel });
+      ctx.defineProperty('fieldIndex', { value: [`users:${rowIndex}`] });
+      ctx.defineProperty('model', { value: row });
+      row.context = ctx;
+      return row;
+    };
+
+    const row0 = createGridRow('row0', 0);
+    gridMaster.forks = new Set([row0]);
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (cb: any) => {
+          cb(usersFormItemModel);
+          cb(gridMaster);
+        },
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'users.age',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: 99,
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'age'])).toBe(99));
+    expect(formStub.getFieldValue(['users', 0, '__is_new__'])).toBe(true);
+  });
+
   it('supports nested association assign under to-many using row context', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
