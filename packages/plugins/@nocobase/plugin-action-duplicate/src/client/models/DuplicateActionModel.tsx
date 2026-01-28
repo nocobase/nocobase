@@ -124,6 +124,7 @@ function EditFormContent({ model }) {
 export class DuplicateActionModel extends ActionModel {
   declare props: any;
   static scene = ActionSceneEnum.record;
+  duplicateLoading = false;
 
   defaultProps: any = {
     type: 'link',
@@ -158,6 +159,9 @@ export class DuplicateActionModel extends ActionModel {
         },
       );
     }
+  }
+  getTitle() {
+    return this.duplicateLoading ? this.context.t('Duplicating') : this.context.t('Duplicate');
   }
 }
 
@@ -439,6 +443,8 @@ DuplicateActionModel.registerFlow({
           ctx.message.error(ctx.t('Please configure the duplicate fields'));
           return;
         }
+        ctx.model.duplicateLoading = true;
+        ctx.model.rerender();
         const filterTargetKey = ctx.blockModel.collection.filterTargetKey;
         const dataId = Array.isArray(ctx.blockModel.collection.filterTargetKey)
           ? Object.assign(
@@ -467,6 +473,8 @@ DuplicateActionModel.registerFlow({
           params.requestConfig,
         );
         ctx.message.success(ctx.t('Saved successfully'));
+        ctx.model.duplicateLoading = false;
+        ctx.model.rerender();
       },
     },
   },
