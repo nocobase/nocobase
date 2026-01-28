@@ -261,7 +261,7 @@
   {
     "type": "custom-link",
     "label": "Gestión de versiones",
-    "link": "/workflow/advanced/revision"
+    "link": "/workflow/advanced/revisions"
   },
   {
     "type": "custom-link",
