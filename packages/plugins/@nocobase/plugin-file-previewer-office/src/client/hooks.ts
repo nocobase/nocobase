@@ -13,6 +13,7 @@ export interface FilePreviewerConfig {
   id?: string;
   previewType: 'microsoft' | 'kkfileview';
   kkFileViewUrl?: string;
+  kkFileViewExtensions?: string;
 }
 
 export const useFilePreviewerConfig = () => {

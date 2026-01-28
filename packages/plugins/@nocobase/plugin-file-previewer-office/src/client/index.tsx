@@ -52,7 +52,8 @@ function isOfficeFile(file: any): boolean {
       const parts = url.pathname.split('.');
       if (parts.length > 1) {
         const ext = parts[parts.length - 1].toLowerCase();
-        return ['docx', 'xlsx', 'pptx', 'odt'].includes(ext);
+        // Added support for legacy office formats
+        return ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'odt'].includes(ext);
       }
     } catch (e) {
       // Invalid URL, skip
@@ -91,6 +92,18 @@ function MicrosoftPreviewer({ index, list, onSwitchIndex }) {
     u.searchParams.set('src', src);
     return u.href;
   }, [file.url]);
+
+  const isPrivate = useMemo(() => {
+    const hostname = window.location.hostname;
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      !!hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./) ||
+      hostname.endsWith('.local')
+    );
+  }, []);
 
   const onOpen = useCallback(
     (e) => {
@@ -147,6 +160,16 @@ function MicrosoftPreviewer({ index, list, onSwitchIndex }) {
           overflowY: 'auto',
         }}
       >
+        {isPrivate && (
+          <Alert
+            message={t('Public access required')}
+            description={t('Microsoft Online Preview requires public network access')}
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16, maxWidth: '90%' }}
+            closable
+          />
+        )}
         <iframe
           src={url}
           style={{
@@ -299,14 +322,27 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
 
     attachmentFileTypes.add({
       match: (file) => {
-        // Exclude Images and PDFs to let them use default/native previewers
-        if (isImageOrPdf(file)) {
-          return false;
-        }
-
         // Use global preview config to dynamically determine file support
         if (globalPreviewConfig?.previewType === 'kkfileview') {
-          return true; // In kkFileView mode, support other file types
+          // If specific extensions are configured, ONLY support those
+          if (globalPreviewConfig.kkFileViewExtensions) {
+            const ext = file.extname?.replace(/^\./, '').toLowerCase();
+            const allowed = globalPreviewConfig.kkFileViewExtensions
+              .split(',')
+              .map((s) => s.trim().toLowerCase())
+              .filter(Boolean);
+
+            if (allowed.length > 0) {
+              return allowed.includes(ext);
+            }
+          }
+
+          // Default fallback: Exclude Images and PDFs to let them use default/native previewers
+          if (isImageOrPdf(file)) {
+            return false;
+          }
+
+          return true; // In kkFileView mode, support other file types by default
         }
         // In Microsoft mode, only support Office files
         return isOfficeFile(file);

@@ -12,5 +12,9 @@
   "Save": "Save",
   "Settings saved successfully": "Settings saved successfully",
   "Failed to save settings": "Failed to save settings",
-  "Select preview type": "Select preview type"
+  "Select preview type": "Select preview type",
+  "Microsoft Online Preview requires public network access": "Microsoft Online Preview requires public network access, it may not work on localhost or private networks.",
+  "Public access required": "Public access required",
+  "KKFileView Extensions": "KKFileView Extensions",
+  "Extensions to force use KKFileView (comma-separated, e.g., pdf,dwg). Be careful with case sensitivity. If left empty, all files except images will be previewed using KKFileView.": "Extensions to force use KKFileView (comma-separated, e.g., pdf,dwg). Be careful with case sensitivity. If left empty, all files except images will be previewed using KKFileView."
 }

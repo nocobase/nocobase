@@ -30,6 +30,7 @@ export const Configuration = () => {
   const [formData, setFormData] = useState({
     previewType: 'microsoft',
     kkFileViewUrl: 'http://localhost:8012',
+    kkFileViewExtensions: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,6 +47,7 @@ export const Configuration = () => {
           setFormData({
             previewType: config.previewType || 'microsoft',
             kkFileViewUrl: config.kkFileViewUrl || 'http://localhost:8012',
+            kkFileViewExtensions: config.kkFileViewExtensions || '',
           });
         }
       } catch (error) {
@@ -118,16 +120,38 @@ export const Configuration = () => {
           />
         </div>
 
+        {formData.previewType === 'microsoft' && (
+          <div style={{ marginBottom: 24 }}>
+            <Alert message={t('Microsoft Online Preview requires public network access')} type="warning" showIcon />
+          </div>
+        )}
+
         {formData.previewType === 'kkfileview' && (
           <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('KKFileView URL')}</label>
-            <Input
-              placeholder="http://localhost:8012"
-              value={formData.kkFileViewUrl}
-              onChange={(e) => setFormData({ ...formData, kkFileViewUrl: e.target.value })}
-            />
-            <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-              {t('KKFileView server address (e.g., http://localhost:8012)')}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('KKFileView URL')}</label>
+              <Input
+                placeholder="http://localhost:8012"
+                value={formData.kkFileViewUrl}
+                onChange={(e) => setFormData({ ...formData, kkFileViewUrl: e.target.value })}
+              />
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
+                {t('KKFileView server address (e.g., http://localhost:8012)')}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('KKFileView Extensions')}</label>
+              <Input
+                placeholder="pdf,dwg"
+                value={formData.kkFileViewExtensions}
+                onChange={(e) => setFormData({ ...formData, kkFileViewExtensions: e.target.value })}
+              />
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
+                {t(
+                  'Extensions to force use KKFileView (comma-separated, e.g., pdf,dwg). Be careful with case sensitivity. If left empty, all files except images will be previewed using KKFileView.',
+                )}
+              </div>
             </div>
           </div>
         )}
