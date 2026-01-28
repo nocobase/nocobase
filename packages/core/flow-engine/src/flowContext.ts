@@ -1325,7 +1325,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
-    this.defineMethod('loadCSS', async (url: string) => {
+    this.defineMethod('loadCSS', async (href: string) => {
+      let url = href.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        const ESM_CDN_BASE_URL = window['__esm_cdn_base_url__'] || '';
+        url = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+      }
       return new Promise((resolve, reject) => {
         // Check if CSS is already loaded
         const existingLink = document.querySelector(`link[href="${url}"]`);
@@ -1348,8 +1353,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           reject(new Error('requirejs is not available'));
           return;
         }
+        let u = url.trim();
+        if (!u.startsWith('http://') && !u.startsWith('https://')) {
+          const ESM_CDN_BASE_URL = window['__esm_cdn_base_url__'] || '';
+          u = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${u}`;
+        }
         this.requirejs(
-          [url],
+          [u],
           (...args: any[]) => {
             resolve(args[0]);
           },
@@ -1364,11 +1374,28 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       if (!url || typeof url !== 'string') {
         throw new Error('invalid url');
       }
-      const u = url.trim();
+      let u = url.trim();
+      // is url
+      if (!u.startsWith('http://') && !u.startsWith('https://')) {
+        const ESM_CDN_BASE_URL = window['__esm_cdn_base_url__'] || 'https://esm.sh';
+        const ESM_CDN_SUFFIX = window['__esm_cdn_suffix__'] || '';
+        u = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${u.replace(/^\//, '')}${ESM_CDN_SUFFIX}`;
+      }
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
       if (cache.has(u)) return cache.get(u) as Promise<any>;
+      const normalizeModule = (mod: any) => {
+        // 许多经由 esm.sh / esbuild 转换的模块会将主导出挂在 default 上
+        // 如果只有 default 一个导出，则直接返回 default，提升易用性
+        if (mod && typeof mod === 'object' && 'default' in mod) {
+          const keys = Object.keys(mod);
+          if (keys.length === 1 && keys[0] === 'default') {
+            return (mod as any).default;
+          }
+        }
+        return mod;
+      };
       // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
       const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
       // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
@@ -1378,11 +1405,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       };
       const p = (async () => {
         try {
-          return await nativeImport();
+          const mod = await nativeImport();
+          return normalizeModule(mod);
         } catch (err: any) {
           // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
           try {
-            return await evalImport();
+            const mod = await evalImport();
+            return normalizeModule(mod);
           } catch (err2) {
             throw err2 || err;
           }
