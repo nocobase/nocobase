@@ -36,7 +36,8 @@ import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
-import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
+import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import _ from 'lodash';
 import { SubFormFieldModel } from '../models';
@@ -121,6 +122,76 @@ const getFormFieldsByForkModel = (ctx: any) => {
     return [];
   }
 };
+
+type ParsedFieldIndexEntry = {
+  fieldName: string;
+  index: number;
+};
+
+function normalizeFieldKeyParts(fieldKey: string): string[] {
+  const s = fieldKey;
+  // tolerate array stringification like "a:0,b:1"
+  if (s.includes(',') && s.includes(':')) {
+    return s
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return s ? [s] : [];
+}
+
+function parseFieldIndexEntry(entry: string): ParsedFieldIndexEntry | null {
+  const [fieldName, indexStr] = String(entry || '').split(':');
+  if (!fieldName) return null;
+  const index = Number(indexStr);
+  if (!Number.isFinite(index)) return null;
+  return { fieldName, index };
+}
+
+function buildAbsoluteFieldPathArray(
+  fieldPath: string | undefined,
+  fieldKey: any,
+): {
+  fieldPathArray: Array<string | number>;
+  // path to the (innermost) Form.List root, e.g. ['user', 'comments'] (without index)
+  listRootPath?: Array<string | number>;
+  // row index for the innermost Form.List
+  listRowIndex?: number;
+  hasUnmatchedIndices: boolean;
+} | null {
+  if (!fieldPath) return null;
+
+  const pathParts = String(fieldPath)
+    .split('.')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  if (!pathParts.length) return null;
+
+  const indices = normalizeFieldKeyParts(fieldKey).map(parseFieldIndexEntry).filter(Boolean) as ParsedFieldIndexEntry[];
+
+  let idxPtr = 0;
+  const out: Array<string | number> = [];
+  let listRootPath: Array<string | number> | undefined;
+  let listRowIndex: number | undefined;
+
+  for (const part of pathParts) {
+    out.push(part);
+    const cur = indices[idxPtr];
+    if (cur && cur.fieldName === part) {
+      listRootPath = [...out];
+      listRowIndex = cur.index;
+      out.push(cur.index);
+      idxPtr += 1;
+    }
+  }
+
+  return {
+    fieldPathArray: out,
+    listRootPath,
+    listRowIndex,
+    hasUnmatchedIndices: idxPtr < indices.length,
+  };
+}
 
 function normalizeAssignRuleItemsFromLinkageParams(
   raw: any,
@@ -783,6 +854,39 @@ export const subFormLinkageAssignField = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
+      const resolveTargetFieldModel = (fieldUid: string) => {
+        const formItemModel = ctx.engine.getModel(fieldUid);
+        if (!formItemModel) return null;
+
+        const fieldKey = ctx?.model?.context?.fieldKey;
+        const forkKey = fieldKey ? `${fieldKey}:${fieldUid}` : null;
+
+        let model = forkKey ? formItemModel.getFork(forkKey) : null;
+
+        // 对多子表单（Form.List）场景：
+        // - 确保用于写入的 fieldPathArray 为可落地的“绝对路径”
+        if (fieldKey) {
+          const fieldPath =
+            formItemModel?.fieldPath || formItemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+          const built = buildAbsoluteFieldPathArray(fieldPath, fieldKey);
+
+          // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
+          if (!model && forkKey) {
+            model = formItemModel.createFork({}, forkKey);
+          }
+          if (model?.isFork && built) {
+            model?.context?.defineProperty?.('fieldPathArray', { value: built.fieldPathArray });
+          }
+        }
+
+        // 适配对一子表单的场景（无行级 fieldKey）
+        if (!model) {
+          model = formItemModel as any;
+        }
+
+        return model as any;
+      };
+
       for (const it of items) {
         if (it?.enable === false) continue;
         const targetPath = it?.targetPath ? String(it.targetPath) : '';
@@ -796,24 +900,16 @@ export const subFormLinkageAssignField = defineAction({
         }
 
         const top = targetPath.split('.')[0];
-        const collectionField = getCollectionFromModel((ctx.model as any)?.parent ?? ctx.model)?.getField?.(top);
+        const collectionField =
+          (itemModel as any)?.collectionField ??
+          getCollectionFromModel((ctx.model as any)?.parent ?? ctx.model)?.getField?.(top);
         const finalValue = coerceForToOneField(collectionField, it?.value);
 
         // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
         if (typeof finalValue === 'undefined') {
-          if (fieldUid) {
-            const formItemModel = ctx.engine.getModel(fieldUid);
-            const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
-
-            let model = forkModel;
-            // 适配对一子表单的场景
-            if (!forkModel) {
-              model = formItemModel;
-            }
-            if (model) {
-              setProps(model, {});
-            }
-          }
+          if (!fieldUid) continue;
+          const model = resolveTargetFieldModel(fieldUid);
+          if (model) setProps(model, {});
           continue;
         }
 
@@ -843,16 +939,7 @@ export const subFormLinkageAssignField = defineAction({
           continue;
         }
 
-        const formItemModel = ctx.engine.getModel(fieldUid);
-        const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
-
-        let model = forkModel;
-
-        // 适配对一子表单的场景
-        if (!forkModel) {
-          model = formItemModel;
-        }
-
+        const model = resolveTargetFieldModel(fieldUid);
         if (!model) continue;
 
         if (mode === 'default') {

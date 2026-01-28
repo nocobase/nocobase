@@ -243,12 +243,18 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   const handleVariableSelect = useCallback(
     (variableValue: string, metaTreeNode?: MetaTreeNode) => {
+      if (!metaTreeNode && variableValue === '') {
+        const cleared = clearValue !== undefined ? clearValue : null;
+        setInnerValue(cleared);
+        emitChange(cleared as any);
+        return;
+      }
       setCurrentMetaTreeNode(metaTreeNode);
       const finalValue = resolveValueFromPath?.(metaTreeNode) || variableValue;
       setInnerValue(finalValue);
       emitChange(finalValue, metaTreeNode);
     },
-    [emitChange, resolveValueFromPath],
+    [emitChange, resolveValueFromPath, clearValue],
   );
 
   const { disabled } = restProps;
@@ -288,7 +294,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   const inputProps = useMemo(() => {
     const baseProps = {
-      value: innerValue ?? '',
+      value: ValueComponent === Input ? innerValue ?? '' : innerValue,
       onChange: handleInputChange,
       disabled,
     };

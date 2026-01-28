@@ -355,10 +355,15 @@ FilterFormItemModel.registerFlow({
       // 默认值已统一到筛选表单级“默认值”配置，此处仅保留旧配置兼容读取（隐藏入口）
       hideInSettings: true,
       uiSchema: (ctx) => {
+        const baseFlags = ctx?.model?.context?.flags || {};
+        const flags = { ...baseFlags, isInSetDefaultValueDialog: true };
         return {
           defaultValue: {
             'x-component': 'DefaultValue',
             'x-decorator': 'FormItem',
+            'x-component-props': {
+              flags,
+            },
           },
         };
       },
