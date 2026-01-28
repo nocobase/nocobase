@@ -13,7 +13,7 @@ import { Button, ButtonProps, message, Modal, Dropdown, DatePicker } from 'antd'
 import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { submitHandler } from './submitHandler';
 
-export class BulkEditFormSubmitActionModel extends FormSubmitActionModel {
+export class BulkEditFormSubmitActionModel extends ActionModel {
   defaultProps: ButtonProps & { withScheduleSend?: boolean } = {
     title: tExpr('Submit'),
     type: 'primary',

@@ -10,7 +10,7 @@
 import { ActionModel, ActionSceneEnum, PopupActionModel, PopupCollectionActionModel } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE, lang } from '../locale';
 import { createTagPageOptions } from './utils';
 
 const SETTINGS_FLOW_KEY = 'bulkEditSettings';
@@ -67,8 +67,8 @@ BulkEditActionModel.registerFlow({
           key: 'value',
           props: {
             options: [
-              { label: tExpr('Selected'), value: 'selected' },
-              { label: tExpr('All'), value: 'all' },
+              { label: lang('Selected'), value: 'selected' },
+              { label: lang('Entire collection'), value: 'all' },
             ],
           },
         };

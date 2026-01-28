@@ -7,7 +7,6 @@
   "Are you sure you want to perform the bulk edit action?": "确定要执行批量编辑操作吗？",
   "Data scope to edit": "编辑数据范围",
   "Selected": "选中",
-  "All": "全部",
   "Assign field values": "字段赋值",
   "No assigned fields configured": "未配置字段赋值",
   "Collection is required to perform this action": "执行此操作需要指定数据表",

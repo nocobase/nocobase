@@ -12,6 +12,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
+import { BlockSceneEnum, DataBlockModel } from '@nocobase/client';
 
 /**
  * 页面 Tab 子内容渲染器组件
@@ -39,16 +40,28 @@ function PageTabChildrenRenderer({ ctx, options }) {
  * 只显示 BulkEditFormModel 作为可添加的区块
  */
 export class BulkEditBlockGridModel extends BlockGridModel {
-  get subModelBaseClasses() {
-    return ['BulkEditFormModel', 'MarkdownBlockModel'];
+  onInit(options: any): void {
+    super.onInit(options);
+    // 将 inputArgs 传递到 context.view.inputArgs
+    if (options.inputArgs) {
+      // 确保 context.view 存在
+      const currentView = this.context.view || {};
+      const currentInputArgs = this.context.view?.inputArgs || {};
+      this.context.defineProperty('view', {
+        value: {
+          ...currentView,
+          inputArgs: {
+            ...currentInputArgs,
+            scene: BlockSceneEnum.bulkEditForm,
+          },
+        },
+      });
+    }
   }
 
-  renderAddSubModelButton() {
-    return (
-      <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={this.subModelBaseClasses}>
-        <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add block')}</FlowSettingsButton>
-      </AddSubModelButton>
-    );
+  get subModelBaseClasses() {
+    // 返回基类，系统会根据 inputArgs.scene 自动过滤
+    return ['DataBlockModel', 'BlockModel'];
   }
 }
 

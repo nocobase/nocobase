@@ -9,6 +9,7 @@
 
 import { CreateFormModel, EditFormModel, FormBlockModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
 import React from 'react';
+import { tExpr } from '@nocobase/flow-engine';
 
 /**
  * 批量编辑表单模型
@@ -33,7 +34,7 @@ export class BulkEditFormModel extends CreateFormModel {
 }
 
 BulkEditFormModel.define({
-  label: 'Bulk Edit Form3',
+  label: tExpr('Form'),
   children: false,
   createModelOptions: async (ctx, extra) => {
     const { associationName, collectionName, dataSourceKey } = ctx.view?.inputArgs || {};
