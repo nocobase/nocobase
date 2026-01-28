@@ -85,7 +85,7 @@ export class CCTaskCardGridModel extends DetailsGridModel {
         subModelBaseClasses={[
           this.context.getModelClassName('CCTaskCardDetailsItemModel'),
           this.context.getModelClassName('CCTaskCardDetailsAssociationFieldGroupModel'),
-          this.context.getModelClassName('DetailsCustomItemModel'),
+          this.context.getModelClassName('CCDetailsCustomItemModel'),
         ].filter(Boolean)}
         keepDropdownOpen
       >

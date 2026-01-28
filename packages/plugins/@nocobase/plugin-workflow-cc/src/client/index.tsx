@@ -32,6 +32,7 @@ import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
 import { CCTaskCardGridModel } from './models/CCTaskCardGridModel';
 import { CCTaskCardDetailsItemModel } from './models/CCTaskCardDetailsItemModel';
 import { CCTaskCardDetailsAssociationFieldGroupModel } from './models/CCTaskCardDetailsAssociationFieldGroupModel';
+import { CCDetailsCustomItemModel } from './models/CCDetailsCustomItemModel';
 
 function WorkflowCCProvider(props) {
   return <ExtendCollectionsProvider collections={[ccCollection]}>{props.children}</ExtendCollectionsProvider>;
@@ -58,6 +59,7 @@ export class PluginWorkflowCCClient extends Plugin {
       CCTaskCardGridModel,
       CCTaskCardDetailsItemModel,
       CCTaskCardDetailsAssociationFieldGroupModel,
+      CCDetailsCustomItemModel,
     });
 
     this.app.schemaInitializerManager.add(addBlockButton);
