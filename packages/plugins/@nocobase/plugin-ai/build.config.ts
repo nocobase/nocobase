@@ -131,7 +131,7 @@ export default defineConfig({
       'decamelize',
       'zod',
       // 'zod-to-json-schema',
-      // 'langsmith',
+      'langsmith',
       'p-retry',
       'p-queue',
       'p-timeout',
@@ -142,6 +142,10 @@ export default defineConfig({
     ];
     for (const dep of deps) {
       const depPath = path.resolve(process.cwd(), 'node_modules', dep);
+      if (!fs.existsSync(depPath)) {
+        console.warn(`depPath not existed skip: ${depPath}`);
+        continue;
+      }
       await fs.promises.cp(depPath, path.resolve(__dirname, 'dist/node_modules/@langchain/core/node_modules', dep), {
         recursive: true,
         force: true,
