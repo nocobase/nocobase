@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
 import { DocumentManager } from './document-manager';
 
 export class AIManager {
   documentManager: DocumentManager;
 
-  constructor(app: Application) {
-    this.documentManager = new DocumentManager(app);
+  constructor() {
+    this.documentManager = new DocumentManager();
   }
 }

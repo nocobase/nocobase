@@ -7,12 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AppSupervisor } from '../app-supervisor';
+import { AppSupervisor } from '@nocobase/server';
+import { PluginMultiAppManagerServer } from '../server';
+
+AppSupervisor.prototype.initApp = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+};
 
 describe('App Supervisor', () => {
   let appSupervisor: AppSupervisor;
 
   beforeEach(() => {
+    PluginMultiAppManagerServer.staticImport();
     appSupervisor = AppSupervisor.getInstance();
   });
 
@@ -21,18 +27,14 @@ describe('App Supervisor', () => {
   });
 
   it('should get application initializing status', async () => {
-    expect(appSupervisor.getAppStatus('test')).toBe(undefined);
-
-    appSupervisor.setAppBootstrapper(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    expect(await appSupervisor.getAppStatus('test')).toBeFalsy();
 
     appSupervisor.getApp('test');
 
     await new Promise((resolve) => setTimeout(resolve, 500));
-    expect(appSupervisor.getAppStatus('test')).toBe('initializing');
+    expect(await appSupervisor.getAppStatus('test')).toBe('initializing');
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    expect(appSupervisor.getAppStatus('test')).toBe('not_found');
+    expect(await appSupervisor.getAppStatus('test')).toBe('not_found');
   });
 });

@@ -44,7 +44,7 @@ import { AIContextDatasourceManager } from './manager/ai-context-datasource-mana
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
-import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
+import { getCodeSnippet, listCodeSnippet, getContextApis, getContextEnvs, getContextVars } from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
 import { suggestions } from './tools/suggestions';
 import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocIndexKeys } from './tools/docs';
@@ -205,6 +205,18 @@ export class PluginAIServer extends Plugin {
       {
         groupName: docsGroupName,
         tool: createReadDocEntryTool({ description: docsIndexesDescription }),
+      },
+      {
+        groupName: codeEditorGroupName,
+        tool: getContextApis,
+      },
+      {
+        groupName: codeEditorGroupName,
+        tool: getContextEnvs,
+      },
+      {
+        groupName: codeEditorGroupName,
+        tool: getContextVars,
       },
     ]);
 

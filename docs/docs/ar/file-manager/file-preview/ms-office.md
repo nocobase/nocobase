@@ -5,7 +5,6 @@ pkg: '@nocobase/plugin-file-previewer-office'
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
 # معاينة ملفات Office <Badge>v1.8.11+</Badge>
 
 تُستخدم إضافة معاينة ملفات Office لمعاينة الملفات بصيغة Office، مثل Word و Excel و PowerPoint، مباشرةً ضمن تطبيق NocoBase.  
@@ -46,14 +45,16 @@ pkg: '@nocobase/plugin-file-previewer-office'
 
 ## صيغ الملفات المدعومة
 
-تدعم هذه الإضافة معاينة صيغ ملفات Office التالية فقط، ويتم تحديد ذلك بناءً على نوع MIME للملف:
+تدعم هذه الإضافة معاينة صيغ ملفات Office التالية فقط، ويتم تحديد ذلك بناءً على نوع MIME للملف أو امتداد الملف:
 
 - مستندات Word:
-  `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+  `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (`.docx`) أو `application/msword` (`.doc`)
 - جداول بيانات Excel:
-  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (`.xlsx`) أو `application/vnd.ms-excel` (`.xls`)
 - عروض PowerPoint التقديمية:
-  `application/vnd.openxmlformats-officedocument.presentationml.presentation`
+  `application/vnd.openxmlformats-officedocument.presentationml.presentation` (`.pptx`) أو `application/vnd.ms-powerpoint` (`.ppt`)
+- نص OpenDocument:
+  `application/vnd.oasis.opendocument.text` (`.odt`)
 
 لن يتم تفعيل ميزة المعاينة لهذه الإضافة لملفات الصيغ الأخرى.
 

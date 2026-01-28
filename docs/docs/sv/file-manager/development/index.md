@@ -6,11 +6,11 @@ Detta dokument har översatts av AI. För eventuella felaktigheter, se [den enge
 
 ## Utöka lagringsmotorer
 
-### Serversidan
+### Serversida
 
-1.  **Ärv `StorageType`**
-    
-    Skapa en ny klass och implementera metoderna `make()` och `delete()`. Vid behov kan ni även åsidosätta krokar som `getFileURL()`, `getFileStream()` och `getFileData()`.
+1. **Ärv `StorageType`**
+   
+   Skapa en ny klass och implementera metoderna `make()` och `delete()`. Vid behov, åsidosätt hooks som `getFileURL()`, `getFileStream()` och `getFileData()`.
 
 Exempel:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Registrera den nya typen**  
-    Injicera den nya lagringsimplementeringen under pluginets `beforeLoad`- eller `load`-livscykel:
+4. **Registrera den nya typen**  
+   Injicera den nya lagringsimplementeringen i pluginens `beforeLoad`- eller `load`-livscykel:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Efter registreringen kommer lagringskonfigurationen att visas i `storages`-resursen, precis som de inbyggda typerna. Konfigurationen som tillhandahålls av `StorageType.defaults()` kan användas för att automatiskt fylla i formulär eller initiera standardposter.
+Efter registreringen visas lagringskonfigurationen i resursen `storages`, precis som de inbyggda typerna. Konfigurationen från `StorageType.defaults()` kan användas för att autofylla formulär eller initiera standardposter.
 
-### Klientkonfiguration och administrationsgränssnitt
-På klientsidan behöver ni informera filhanteraren om hur konfigurationsformuläret ska renderas och om det finns anpassad uppladdningslogik. Varje lagringstypobjekt innehåller följande egenskaper:
+<!--
+### Klientsidekonfiguration och hanteringsgränssnitt
+På klientsidan behöver du tala om för filhanteraren hur konfigurationsformuläret ska renderas och om det finns anpassad uppladdningslogik. Varje lagringstyp-objekt innehåller följande egenskaper:
+-->
 
-## Utöka filtyper på frontend
+## Utöka filtyper i frontend
 
-För uppladdade filer kan ni visa olika förhandsgranskningsinnehåll på frontend-gränssnittet baserat på olika filtyper. Filhanterarens bilagefält har en inbyggd webbläsarbaserad filförhandsgranskning (inbäddad i en iframe), vilket stöder förhandsgranskning av de flesta filformat (som bilder, videor, ljud och PDF-filer) direkt i webbläsaren. När ett filformat inte stöds för förhandsgranskning i webbläsaren, eller när speciella förhandsgranskningsinteraktioner krävs, kan ni utöka den filtypsbaserade förhandsgranskningskomponenten.
+För uppladdade filer kan du visa olika förhandsvisningar i frontend beroende på filtyp. Filhanterarens bilagefält har en inbyggd webbläsarbaserad förhandsvisning (inbäddad i en iframe), som stödjer de flesta format (som bilder, video, ljud och PDF) direkt i webbläsaren. När ett filformat inte stöds av webbläsaren eller när särskilda förhandsvisningsinteraktioner krävs kan du utöka förhandsvisningskomponenten baserad på filtyp.
 
 ### Exempel
 
-Om ni till exempel vill utöka en bildfilstyp med en karusellkomponent kan ni använda följande kod:
+Om du till exempel vill integrera en anpassad onlineförhandsvisning för Office-filer kan du använda följande kod:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Här är `attachmentFileTypes` ett ingångsobjekt som tillhandahålls i paketet `@nocobase/client` för att utöka filtyper. Använd dess `add`-metod för att utöka ett beskrivningsobjekt för filtyper.
+Här är `filePreviewTypes` instegsobjektet som tillhandahålls av `@nocobase/plugin-file-manager/client` för att utöka filförhandsvisningar. Använd metoden `add` för att lägga till en filtypbeskrivare.
 
-Varje filtyp måste implementera en `match()`-metod för att kontrollera om filtypen uppfyller kraven. I exemplet används metoden från paketet `mime-match` för att kontrollera filens `mimetype`-attribut. Om den matchar typen `image/*` anses det vara den filtyp som ska behandlas. Om ingen matchning hittas, kommer den att falla tillbaka till den inbyggda typbehandlingen.
+Varje filtyp måste implementera en `match()`-metod för att kontrollera om filtypen uppfyller kraven. I exemplet används `matchMimetype` för att kontrollera filens `mimetype`-attribut. Om det matchar `docx`-typen betraktas den som den typ som ska hanteras. Om den inte matchar används den inbyggda typhanteringen.
 
-Egenskapen `Previewer` på typbeskrivningsobjektet är komponenten som används för förhandsgranskning. När filtypen matchar, kommer denna komponent att renderas för förhandsgranskning. Det rekommenderas generellt att använda en dialogruta-liknande komponent (som `<Modal />`) som baskontainer, och sedan placera förhandsgranskningen och det interaktiva innehållet i denna komponent för att implementera förhandsgranskningsfunktionen.
+Egenskapen `Previewer` på typbeskrivaren är komponenten som används för förhandsvisning. När filtypen matchar renderas komponenten i förhandsvisningsdialogen. Du kan returnera valfri React-vy (t.ex. en iframe, spelare eller diagram).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` är en global instans som importeras från `@nocobase/client`:
+`filePreviewTypes` är en global instans som importeras från `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Registrerar ett nytt beskrivningsobjekt för filtyper i filtypsregistret. Beskrivningsobjektets typ är `AttachmentFileType`.
+Registrerar ett nytt filtypbeskrivningsobjekt i filtypregistret. Typen på beskrivningsobjektet är `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Metod för att matcha filformat.
+Metod för matchning av filformat.
 
-Indataparametern `file` är dataobjektet för en uppladdad fil, som innehåller relevanta egenskaper som kan användas för typkontroll:
+Indataparametern `file` är dataobjektet för en uppladdad fil och innehåller relevanta egenskaper för typkontroll:
 
-*   `mimetype`: beskrivning av mimetype
-*   `extname`: filändelse, inklusive "."
-*   `path`: relativ lagringssökväg för filen
-*   `url`: filens URL
+* `mimetype`: beskrivning av mimetype
+* `extname`: filändelse, inklusive "."
+* `path`: relativ lagringssökväg för filen
+* `url`: filens URL
 
-Returnerar ett `boolean`-värde som indikerar om det matchar.
+Returnerar ett `boolean` som anger om det matchar.
+
+##### `getThumbnailURL`
+
+Returnerar miniatyr-URL som används i fillistan. Om returvärdet är tomt används den inbyggda platshållarbilden.
 
 ##### `Previewer`
 
-En React-komponent för förhandsgranskning av filer.
+En React-komponent för att förhandsgranska filer.
 
-De inkommande Props-parametrarna är:
+Inkommande props är:
 
-*   `index`: Filens index i bilagelistan
-*   `list`: Bilagelistan
-*   `onSwitchIndex`: En metod för att växla index
+* `file`: aktuellt filobjekt (kan vara en sträng-URL eller ett objekt med `url`/`preview`)
+* `index`: index för filen i listan
+* `list`: fillista
 
-`onSwitchIndex` kan skickas vilket index som helst från listan för att växla till en annan fil. Om `null` skickas som argument stängs förhandsgranskningskomponenten direkt.
-
-```ts
-onSwitchIndex(null);
-```

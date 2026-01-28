@@ -81,6 +81,8 @@ APP_COMMAND_REDIS_URL=
 ENVIRONMENT_NAME=
 # 环境访问 URL
 ENVIRONMENT_URL=
+# 环境代理访问 URL
+ENVIRONMENT_PROXY_URL=
 ```
 
 ### Docker Compose 示例
@@ -150,6 +152,7 @@ services:
       - APP_COMMAND_REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT_NAME=env_a
       - ENVIRONMENT_URL=http://localhost:15000
+      - ENVIRONMENT_PROXY_URL=http://worker_a
       - APPEND_PRESET_BUILT_IN_PLUGINS=@nocobase/plugin-app-supervisor
     volumes:
       - ./storage-worker-a:/app/nocobase/storage
@@ -180,6 +183,7 @@ services:
       - APP_COMMAND_REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT_NAME=env_b
       - ENVIRONMENT_URL=http://localhost:16000
+      - ENVIRONMENT_PROXY_URL=http://worker_b
       - APPEND_PRESET_BUILT_IN_PLUGINS=@nocobase/plugin-app-supervisor
     volumes:
       - ./storage-worker-b:/app/nocobase/storage
@@ -217,4 +221,12 @@ services:
 
 ### 应用访问代理
 
-待补充
+工作应用可以通过入口应用的子路径 `/apps/:appName/admin` 进行代理访问。
+
+![](https://static-docs.nocobase.com/202601082154230.png)
+
+如果应用部署在多个环境中，需要指定一个代理访问的目标环境。
+
+![](https://static-docs.nocobase.com/202601082155146.png)
+
+默认情况下，代理访问地址使用工作应用的访问地址，对应环境变量为 `ENVIRONMENT_URL`，需确保该地址在入口应用所在的网络环境中可访问。如需使用不同的代理访问地址，可通过环境变量 `ENVIRONMENT_PROXY_URL` 进行覆盖。

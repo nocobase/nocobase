@@ -69,6 +69,34 @@ const snippets: Record<string, () => Promise<any>> = {
 
 export default snippets;
 
+export type RunJSSnippetLoader = () => Promise<any>;
+
+/**
+ * Register a RunJS snippet loader for editors/AI coding.
+ *
+ * - By default, an existing ref will NOT be overwritten (returns false).
+ * - Use { override: true } to overwrite an existing ref (returns true).
+ */
+export function registerRunJSSnippet(
+  ref: string,
+  loader: RunJSSnippetLoader,
+  options?: {
+    override?: boolean;
+  },
+): boolean {
+  if (typeof ref !== 'string' || !ref.trim()) {
+    throw new Error('[flow-engine] registerRunJSSnippet: ref must be a non-empty string');
+  }
+  if (typeof loader !== 'function') {
+    throw new Error('[flow-engine] registerRunJSSnippet: loader must be a function returning a Promise');
+  }
+  const key = ref.trim();
+  const existed = Boolean((snippets as any)[key]);
+  if (existed && !options?.override) return false;
+  (snippets as any)[key] = loader;
+  return true;
+}
+
 // Cohesive snippet helpers for clients (editor, etc.)
 type EngineSnippetEntry = {
   name: string;
