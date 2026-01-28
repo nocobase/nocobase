@@ -273,6 +273,9 @@ DuplicateActionModel.registerFlow({
                 <a
                   onClick={async () => {
                     const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
+                    if (!model) {
+                      return;
+                    }
                     run(model.subModels.items[0].subModels.grid);
                   }}
                   style={{ float: 'right', position: 'relative', zIndex: 1200 }}
@@ -561,12 +564,7 @@ DuplicateActionModel.registerFlow({
             }) || [],
           collection: ctx.record.__collection || ctx.blockModel.collection.name,
         };
-
         const formData = await fetchTemplateData(ctx.resource, template);
-        ctx.model.context.defineProperty('record', {
-          get: () => ctx.view.inputArgs.formData || {},
-          cache: false,
-        });
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
