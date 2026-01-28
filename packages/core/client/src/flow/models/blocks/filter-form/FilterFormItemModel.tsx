@@ -19,6 +19,7 @@ import { Empty } from 'antd';
 import _, { debounce } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
+import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { FilterManager } from '../filter-manager';
@@ -302,10 +303,16 @@ FilterFormItemModel.registerFlow({
         const collectionField = ctx.model.collectionField;
         if (collectionField?.getComponentProps) {
           const componentProps = collectionField.getComponentProps();
-          const { rules, required, ...restProps } = componentProps || {};
+          const fieldModel = ctx.model.subModels?.field;
+          const shouldIgnoreMultiple = fieldModel instanceof RecordSelectFieldModel;
+          const { rules, required, multiple, allowMultiple, ...restProps } = componentProps || {};
 
           // 筛选表单不继承字段的后端校验
-          ctx.model.setProps({ ...restProps, rules: undefined, required: undefined });
+          ctx.model.setProps({
+            ...(shouldIgnoreMultiple ? restProps : { ...restProps, multiple, allowMultiple }),
+            rules: undefined,
+            required: undefined,
+          });
         }
         ctx.model.setProps({
           name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一

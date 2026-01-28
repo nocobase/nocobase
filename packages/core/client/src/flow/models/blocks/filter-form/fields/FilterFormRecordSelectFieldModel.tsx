@@ -13,7 +13,13 @@ import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel';
 export class FilterFormRecordSelectFieldModel extends RecordSelectFieldModel {
   onInit(options) {
     super.onInit(options);
-    const allowMultiple = this.props.allowMultiple ?? true;
+    const stepAllowMultiple = this.getStepParams('selectSettings', 'allowMultiple')?.allowMultiple;
+    const allowMultiple =
+      typeof stepAllowMultiple === 'boolean'
+        ? stepAllowMultiple
+        : typeof this.props.allowMultiple === 'boolean'
+          ? this.props.allowMultiple
+          : true;
     this.setProps({
       allowMultiple,
       multiple: allowMultiple,
@@ -43,7 +49,15 @@ FilterFormRecordSelectFieldModel.registerFlow({
         allowMultiple: true,
       },
       handler(ctx, params) {
-        const allowMultiple = params?.allowMultiple ?? true;
+        const stepAllowMultiple = ctx.model.getStepParams('selectSettings', 'allowMultiple')?.allowMultiple;
+        const allowMultiple =
+          typeof params?.allowMultiple === 'boolean'
+            ? params.allowMultiple
+            : typeof stepAllowMultiple === 'boolean'
+              ? stepAllowMultiple
+              : typeof ctx.model.props.allowMultiple === 'boolean'
+                ? ctx.model.props.allowMultiple
+                : true;
         ctx.model.setProps({
           allowMultiple,
           multiple: allowMultiple,
