@@ -26,7 +26,7 @@ const snippet: SnippetModule = {
 // Colorize based on numeric sign
 const n = Number(ctx.value ?? 0);
 const color = Number.isFinite(n) ? (n > 0 ? 'green' : n < 0 ? 'red' : '#999') : '#555';
-ctx.element.innerHTML = '<span style=' + JSON.stringify('color:' + color) + '>' + String(ctx.value ?? '') + '</span>';
+ctx.render('<span style=' + JSON.stringify('color:' + color) + '>' + String(ctx.value ?? '') + '</span>');
 `,
 };
 

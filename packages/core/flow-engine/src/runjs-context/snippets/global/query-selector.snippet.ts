@@ -16,15 +16,20 @@ const snippet: SnippetModule = {
   contexts: [JSBlockRunJSContext, JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-query-selector',
   label: 'Query selector',
-  description: 'Find a child element inside ctx.element using querySelector',
+  description: 'Find a child element inside rendered DOM using querySelector',
   locales: {
     'zh-CN': {
       label: '查询子元素',
-      description: '使用 querySelector 在 ctx.element 内查找子元素',
+      description: '使用 querySelector 在渲染的 DOM 内查找子元素',
     },
   },
   content: `
-const child = ctx.element.querySelector('.child-class');
+const wrapper = document.createElement('div');
+wrapper.innerHTML = '<div class="child-class"></div>';
+
+ctx.render(wrapper);
+
+const child = wrapper.querySelector('.child-class');
 if (child) {
   child.textContent = ctx.t('Hello from querySelector');
 }

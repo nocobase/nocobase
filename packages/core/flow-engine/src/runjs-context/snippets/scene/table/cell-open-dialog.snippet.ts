@@ -23,9 +23,10 @@ const snippet: SnippetModule = {
   },
   content: `
 // Render a button inside the cell
-ctx.element.innerHTML = '<button class="nb-cell-btn" style="padding:4px 8px">' + ctx.t('View') + '</button>';
-
-const button = ctx.element.querySelector('.nb-cell-btn');
+const button = document.createElement('button');
+button.className = 'nb-cell-btn';
+button.style.padding = '4px 8px';
+button.textContent = ctx.t('View');
 const popupUid = ctx.model.uid + '-1'; // popupUid should be stable and better bound to ctx.model.uid
 const primaryKey = ctx.collection?.primaryKey || 'id';
 
@@ -39,6 +40,8 @@ button?.addEventListener('click', async () => {
     },
   });
 });
+
+ctx.render(button);
 `,
 };
 

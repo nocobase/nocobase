@@ -229,7 +229,7 @@ JSColumnModel.registerFlow({
       defaultParams() {
         return {
           version: 'v1',
-          code: `ctx.element.innerHTML = \`<span class="nb-js-column">JS column</span>\`;`,
+          code: `ctx.render('<span class="nb-js-column">JS column</span>');`,
         };
       },
       async handler(ctx, params) {
