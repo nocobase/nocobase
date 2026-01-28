@@ -6,7 +6,6 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/server": "2.0.0-alpha.68",
     "@nocobase/resourcer": "2.0.0-alpha.68",
     "@nocobase/utils": "2.0.0-alpha.68",
     "flexsearch": "^0.8.2"
