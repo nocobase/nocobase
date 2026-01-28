@@ -12,6 +12,7 @@ import { Card, Select, Input, Button, Space, Spin, message, Alert } from 'antd';
 import { useRequest, useAPIClient } from '@nocobase/client';
 import { useT } from '../locale';
 import { updatePreviewConfig } from '../index';
+import { KKFILEVIEW_DEFAULT_EXTENSIONS } from '../utils';
 
 const PREVIEW_TYPE_OPTIONS = [
   {
@@ -142,15 +143,22 @@ export const Configuration = () => {
 
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('KKFileView Extensions')}</label>
-              <Input
-                placeholder="pdf,dwg"
-                value={formData.kkFileViewExtensions}
-                onChange={(e) => setFormData({ ...formData, kkFileViewExtensions: e.target.value })}
+              <Select
+                mode="tags"
+                style={{ width: '100%' }}
+                placeholder={t('Enter extensions (e.g. pdf, dwg)')}
+                value={formData.kkFileViewExtensions ? formData.kkFileViewExtensions.split(',').filter(Boolean) : []}
+                onChange={(values) => {
+                  setFormData({ ...formData, kkFileViewExtensions: values.join(',') });
+                }}
+                tokenSeparators={[',', ' ']}
               />
               <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
                 {t(
-                  'Extensions to force use KKFileView (comma-separated, e.g., pdf,dwg). Be careful with case sensitivity. If left empty, all files except images will be previewed using KKFileView.',
+                  'Extensions to force use KKFileView. If empty, a default safe list (Office, PDF, Text, Code) will be used.',
                 )}
+                <br />
+                {t('Default list')}: {KKFILEVIEW_DEFAULT_EXTENSIONS.slice(0, 10).join(', ')}...
               </div>
             </div>
           </div>

@@ -17,13 +17,14 @@ export interface FilePreviewerConfig {
 }
 
 export const useFilePreviewerConfig = () => {
-  const { data, loading } = useRequest<{ data: Array<FilePreviewerConfig> }>(
+  const { data, loading, refresh } = useRequest<{ data: Array<FilePreviewerConfig> }>(
     {
       resource: 'filePreviewer',
       action: 'list',
     },
     {
-      cacheTime: 60000, // 缓存 1 分钟
+      cacheTime: 300000, // 5 minutes cache
+      staleTime: 60000,
     },
   );
 
@@ -32,5 +33,5 @@ export const useFilePreviewerConfig = () => {
     kkFileViewUrl: 'http://localhost:8012',
   };
 
-  return { config, loading };
+  return { config, loading, refresh };
 };
