@@ -9,7 +9,7 @@
 
 import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
-import { ButtonProps, Popover, Select } from 'antd';
+import { ButtonProps, Popover, Transfer } from 'antd';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel } from '../base';
@@ -42,11 +42,7 @@ export class FilterActionModel extends ActionModel {
       return this.map.get(this.props.filterableFieldNames);
     }
 
-    const fields =
-      this.context.blockModel.collection?.getFields().filter((field) => {
-        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
-        return field.target !== 'attachments';
-      }) || [];
+    const fields = this.context.blockModel.collection?.getFields() || [];
 
     const result = getIgnoreFieldNames(
       this.props.filterableFieldNames || [],
@@ -142,12 +138,20 @@ FilterActionModel.registerFlow({
             const dm = model?.context?.app?.dataSourceManager;
             const fiMgr = dm?.collectionFieldInterfaceManager;
             const filterable = getFilterableFields(model.context.blockModel.collection, fiMgr);
-            const options = filterable.map((field: any) => ({ label: field.title, value: field.name }));
-            return <Select {...props} options={options} />;
+            const dataSource = filterable.map((field: any) => ({ key: field.name, title: field.title }));
+            return (
+              <Transfer
+                {...props}
+                dataSource={dataSource}
+                targetKeys={props.value || []}
+                onChange={(nextKeys) => props.onChange?.(nextKeys)}
+                render={(item) => item.title as string}
+              />
+            );
           },
           'x-component-props': {
-            mode: 'multiple',
-            placeholder: tExpr('Please select filterable fields'),
+            showSearch: true,
+            listStyle: { width: 280, height: 360 },
           },
         },
       },
@@ -259,7 +263,6 @@ function getFilterableFields(collection: any, fiMgr: any) {
   const fields = collection?.getFields?.() || [];
   if (!fiMgr) return [];
   return fields.filter((field: any) => {
-    if (field.target === 'attachments') return false;
     if (!field?.interface) return false;
     if (field?.filterable === false) return false;
     const fi = fiMgr.getFieldInterface(field.interface);

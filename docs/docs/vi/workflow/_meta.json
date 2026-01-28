@@ -261,7 +261,7 @@
   {
     "type": "custom-link",
     "label": "Quản lý phiên bản",
-    "link": "/workflow/advanced/revision"
+    "link": "/workflow/advanced/revisions"
   },
   {
     "type": "custom-link",

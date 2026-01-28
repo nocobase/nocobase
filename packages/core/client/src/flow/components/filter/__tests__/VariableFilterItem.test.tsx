@@ -328,4 +328,55 @@ describe('VariableFilterItem', () => {
     // 由于 $includes 存在于子项的 x-filter-operators 中，effect 不应清空它
     expect(value.operator).toBe('$includes');
   });
+
+  it('renders correct right-side component for formula dataType (number and boolean) and updates on change', async () => {
+    const value: VariableFilterItemValue = { path: '', operator: '$gt', value: '' };
+    const model = CreateModel();
+
+    // Number case
+    (globalThis as any).__TEST_PATH__ = 'formulaField';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'formula',
+      uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
+      options: { dataType: 'double' },
+      paths: ['collection', 'formulaField'],
+      name: 'formulaField',
+      title: 'Formula field',
+      type: 'number',
+    };
+
+    const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    // Expect an InputNumber (role spinbutton) to be rendered
+    await waitFor(() => {
+      expect(screen.getByRole('spinbutton')).toBeTruthy();
+    });
+
+    // Now change to boolean dataType and re-select the field
+    (globalThis as any).__TEST_META__ = {
+      ...(globalThis as any).__TEST_META__,
+      options: { dataType: 'boolean' },
+    };
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('switch')).toBeTruthy();
+    });
+
+    // Finally change to string and ensure Input is shown
+    (globalThis as any).__TEST_META__ = {
+      ...(globalThis as any).__TEST_META__,
+      options: { dataType: 'string' },
+    };
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter value')).toBeTruthy();
+    });
+
+    // cleanup
+    delete (globalThis as any).__TEST_PATH__;
+    delete (globalThis as any).__TEST_META__;
+  });
 });

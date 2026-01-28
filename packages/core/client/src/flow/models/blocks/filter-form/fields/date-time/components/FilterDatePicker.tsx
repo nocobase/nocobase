@@ -14,10 +14,10 @@ import React, { useMemo, useState } from 'react';
 import { inferPickerType } from '../../../../../../../schema-component';
 
 export const FilterDatePicker = (props: any) => {
-  const { picker = 'date', format, showTime, timeFormat } = props;
+  const { picker = 'date', format, showTime, timeFormat, onChange } = props;
   const ctx = useFlowContext();
-  const value = Array.isArray(props.value) ? props.value[0] : props.value;
-  const initPicker = value ? inferPickerType(value, picker) : picker;
+  const currentValue = Array.isArray(props.value) ? props.value[0] : props.value;
+  const initPicker = currentValue ? inferPickerType(currentValue, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
   const targetDateFormat = format || getPickerFormat(initPicker);
   const t = ctx.model.translate.bind(ctx.model);
@@ -31,7 +31,7 @@ export const FilterDatePicker = (props: any) => {
     picker: targetPicker,
   };
   const [stateProps, setStateProps] = useState(newProps);
-  const dayjsValue = useMemo(() => (value ? dayjs(value) : null), [value]);
+  const dayjsValue = useMemo(() => (currentValue ? dayjs(currentValue) : null), [currentValue]);
 
   return (
     <Space.Compact style={{ width: '100%' }}>
@@ -58,13 +58,21 @@ export const FilterDatePicker = (props: any) => {
             value: 'year',
           },
         ]}
-        onChange={(value) => {
-          setTargetPicker(value);
-          const nextDateFormat = format || getPickerFormat(value);
-          const dateTimeFormat = getDateTimeFormat(value, nextDateFormat, showTime, timeFormat);
-          newProps.picker = value;
+        onChange={(nextPicker) => {
+          setTargetPicker(nextPicker);
+          const nextDateFormat = format || getPickerFormat(nextPicker);
+          const dateTimeFormat = getDateTimeFormat(nextPicker, nextDateFormat, showTime, timeFormat);
+          newProps.picker = nextPicker;
           newProps.format = dateTimeFormat;
           setStateProps(newProps);
+          if (!currentValue || !onChange) {
+            return;
+          }
+          const parsedValue = dayjs(currentValue);
+          if (!parsedValue.isValid()) {
+            return;
+          }
+          onChange(parsedValue.format(dateTimeFormat));
         }}
       />
       <AntdDatePicker {...stateProps} style={{ flex: 1, ...stateProps?.style }} value={dayjsValue} />

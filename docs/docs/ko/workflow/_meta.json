@@ -261,7 +261,7 @@
   {
     "type": "custom-link",
     "label": "버전 관리",
-    "link": "/workflow/advanced/revision"
+    "link": "/workflow/advanced/revisions"
   },
   {
     "type": "custom-link",
