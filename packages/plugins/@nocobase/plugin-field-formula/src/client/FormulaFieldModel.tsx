@@ -93,7 +93,7 @@ const resolveFormulaUsageFlags = (form: any, ctx?: any) => {
 };
 
 export function FormulaResult(props) {
-  const { value, collectionField, form, id, ...others } = props;
+  const { value, collectionField, form, id, context, ...others } = props;
   const { dataType, expression, engine = 'math.js' } = collectionField?.options || {};
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
@@ -102,7 +102,7 @@ export function FormulaResult(props) {
   const fieldPath = Array.isArray(id) ? id?.join('.') : id;
   const { t } = useTranslation();
 
-  const { flags, isFilterContext, isDefaultValueDialog } = resolveFormulaUsageFlags(form);
+  const { flags, isFilterContext, isDefaultValueDialog } = resolveFormulaUsageFlags(form, context);
 
   useEffect(() => {
     setEditingValue(value);
@@ -143,7 +143,7 @@ export function FormulaResult(props) {
   // 筛选/默认值等场景下需要可编辑组件
   if (isFilterContext || isDefaultValueDialog) {
     const EditableComp = EditableComponents[dataType] ?? InputString;
-    return <EditableComp {...others} value={value} onChange={(v) => others?.onChange?.(v)} />;
+    return <EditableComp {...others} value={value} onChange={(...args) => others?.onChange?.(...args)} />;
   }
 
   const Component = TypedComponents[dataType] ?? InputString;
@@ -157,7 +157,14 @@ export function FormulaResult(props) {
 
 export class FormulaFieldModel extends FieldModel {
   render() {
-    return <FormulaResult {...this.props} collectionField={this.context.collectionField} form={this.context.form} />;
+    return (
+      <FormulaResult
+        {...this.props}
+        collectionField={this.context.collectionField}
+        form={this.context.form}
+        context={this.context}
+      />
+    );
   }
 }
 
