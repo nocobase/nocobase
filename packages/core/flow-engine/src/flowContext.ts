@@ -1381,6 +1381,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const ESM_CDN_SUFFIX = window['__esm_cdn_suffix__'] || '';
         u = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${u.replace(/^\//, '')}${ESM_CDN_SUFFIX}`;
       }
+      if (u.endsWith('.css')) {
+        return this.loadCSS(u);
+      }
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
