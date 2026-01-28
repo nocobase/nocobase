@@ -37,5 +37,7 @@
   "BaseMetas server address (e.g., http://localhost:9000)": "BaseMetas server address (e.g., http://localhost:9000)",
   "Your site is HTTPS but BaseMetas is HTTP. Preview will fail.": "Your site is HTTPS but BaseMetas is HTTP. Preview will fail due to browser security restrictions.",
   "Custom Extensions": "Custom Extensions",
-  "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.": "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used."
+  "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.": "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.",
+  "File too large": "File too large",
+  "The file size exceeds 30MB. Please download it for viewing.": "The file size exceeds 30MB. Please download it for viewing."
 }

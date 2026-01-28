@@ -51,6 +51,17 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
     let previewUrl = '';
     let hasIframeError = false;
 
+    // Check file size limit (30MB)
+    const MAX_SIZE = 30 * 1024 * 1024;
+    if (file.size && file.size > MAX_SIZE) {
+      warnings.push({
+        message: t('File too large'),
+        description: t('The file size exceeds 30MB. Please download it for viewing.'),
+        type: 'warning',
+      });
+      return { url: '', warnings, iframeError: false };
+    }
+
     // Determine effective preview type for this specific file
     const mode = config.previewType;
 

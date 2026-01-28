@@ -37,5 +37,7 @@
   "BaseMetas server address (e.g., http://localhost:9000;)": "BaseMetas 服务地址 (例如: http://localhost:9000)",
   "Your site is HTTPS but BaseMetas is HTTP. Preview will fail.": "当前站点是 HTTPS，但 BaseMetas 地址是 HTTP。受浏览器安全限制，预览将无法加载，请配置 BaseMetas 为 HTTPS。",
   "Custom Extensions": "自定义扩展名",
-  "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.": "强制使用该预览服务的文件扩展名。如果留空，将使用默认的支持列表（包含 Office、PDF、文本、代码等）。"
+  "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.": "强制使用该预览服务的文件扩展名。如果留空，将使用默认的支持列表（包含 Office、PDF、文本、代码等）。",
+  "File too large": "文件过大",
+  "The file size exceeds 30MB. Please download it for viewing.": "文件大小超过 30MB，请下载后再查看。"
 }
