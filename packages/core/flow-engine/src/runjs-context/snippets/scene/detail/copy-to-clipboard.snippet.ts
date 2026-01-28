@@ -23,10 +23,22 @@ const snippet: SnippetModule = {
   },
   content: `
 const text = String(ctx.value ?? '');
-ctx.element.innerHTML = '<a class="nb-copy" style="cursor:pointer;color:#1677ff">' +
-  ctx.t('Copy') + '</a>';
 
-ctx.element.querySelector('.nb-copy')?.addEventListener('click', async () => {
+const wrapper = document.createElement('span');
+wrapper.style.display = 'inline-flex';
+wrapper.style.alignItems = 'center';
+wrapper.style.gap = '8px';
+
+const valueEl = document.createElement('span');
+valueEl.textContent = text;
+valueEl.style.color = '#666';
+
+const copyEl = document.createElement('a');
+copyEl.textContent = ctx.t('Copy');
+copyEl.style.cursor = 'pointer';
+copyEl.style.color = '#1677ff';
+
+copyEl.addEventListener('click', async () => {
   if (navigator?.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
   } else {
@@ -39,6 +51,11 @@ ctx.element.querySelector('.nb-copy')?.addEventListener('click', async () => {
   }
   ctx.message.success(ctx.t('Copied'));
 });
+
+wrapper.appendChild(valueEl);
+wrapper.appendChild(copyEl);
+
+ctx.render(wrapper);
 `,
 };
 

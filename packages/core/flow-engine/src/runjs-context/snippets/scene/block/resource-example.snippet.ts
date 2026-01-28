@@ -21,8 +21,7 @@ const snippet: SnippetModule = {
       description: '使用 ctx.useResource 加载数据并渲染 JSON 输出',
     },
   },
-  content:
-    `
+  content: `
 // Create a resource and load a single record
 const resource = ctx.createResource('SingleRecordResource');
 resource.setDataSourceKey('main');
@@ -31,15 +30,11 @@ resource.setResourceName('users');
 // resource.setRequestOptions('params', { filterByTk: 1 });
 await resource.refresh();
 
-ctx.element.innerHTML = ` +
-    '`' +
-    `
+ctx.render(\`
   <pre style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
     \${JSON.stringify(resource.getData(), null, 2)}
   </pre>
-` +
-    '`' +
-    `;
+\`);
 `,
 };
 

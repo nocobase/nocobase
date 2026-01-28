@@ -32,7 +32,7 @@ const canvas = document.createElement('canvas');
 canvas.width = 480;
 canvas.height = 320;
 wrapper.appendChild(canvas);
-ctx.element.replaceChildren(wrapper);
+ctx.render(wrapper);
 
 async function renderChart() {
   const loaded = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js');

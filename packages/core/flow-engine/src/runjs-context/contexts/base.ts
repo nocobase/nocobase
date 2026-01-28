@@ -277,17 +277,6 @@ export function defineBaseContextMeta() {
           },
         },
       },
-      record: {
-        description:
-          'Current record object (read-only). Field-level completions (ctx.record.<field>) can be derived from collection meta in the editor when available.',
-        detail: 'Record<string, any>',
-        examples: ['const id = ctx.record?.id;', 'const status = ctx.record?.status;'],
-      },
-      formValues: {
-        description: 'Snapshot of current form values (object). Available in form contexts (CreateForm/EditForm).',
-        detail: 'Record<string, any>',
-        examples: ['const { name, status } = ctx.formValues || {};'],
-      },
       popup: {
         description:
           'Popup context when current view is opened as a popup/drawer. Recommended: `const popup = await ctx.getVar("ctx.popup")`.',
@@ -680,17 +669,6 @@ export function defineBaseContextMeta() {
               completion: { insertText: 'await ctx.viewer.embed({ target: document.body, content: <div /> })' },
             },
           },
-        },
-        record: {
-          description:
-            '当前记录对象（只读）。编辑器可在可用时基于 collection meta 提供字段级补全（ctx.record.<field>）。',
-          detail: 'Record<string, any>',
-          examples: ['const id = ctx.record?.id;', 'const status = ctx.record?.status;'],
-        },
-        formValues: {
-          description: '当前表单值快照（对象）。仅表单相关上下文可用（Create/Edit Form）。',
-          detail: 'Record<string, any>',
-          examples: ['const { name, status } = ctx.formValues || {};'],
         },
         popup: {
           description:
