@@ -22,7 +22,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { useAPIClient, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
+import { useAPIClient, useApp, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import PluginAIClient from '../../..';
 import { useChatBoxStore } from '../stores/chat-box';
@@ -39,11 +39,13 @@ const useDefaultAction = (messageId: string) => {
   const { callTool } = useChatMessageActions();
 
   return {
-    invoke: () => {
+    invoke: (toolCallIds?: string[], toolCallResults?: { id: string; [key: string]: any }[]) => {
       callTool({
         sessionId: currentConversation,
         messageId,
         aiEmployee: currentEmployee,
+        toolCallIds,
+        toolCallResults,
       });
     },
   };
@@ -51,11 +53,35 @@ const useDefaultAction = (messageId: string) => {
 
 const CallButton: React.FC<{
   messageId: string;
-}> = ({ messageId }) => {
+  tools: ToolCall<unknown>[];
+}> = ({ messageId, tools }) => {
   const t = useT();
   const { invoke: invokeDefault } = useDefaultAction(messageId);
+  const plugin = usePlugin('ai') as PluginAIClient;
+  const employeeTools = plugin.aiManager.useTools();
+  const app = useApp();
+
   const invoke = async () => {
-    invokeDefault();
+    if (tools?.length) {
+      const toolCallIds: string[] = [];
+      const toolCallResults = [];
+      for (const tool of tools) {
+        toolCallIds.push(tool.id);
+        const t = employeeTools.get(tool.name);
+        if (t && t.invoke) {
+          const result = await t.invoke(app, tool.args);
+          if (result) {
+            toolCallResults.push({
+              id: tool.id,
+              result,
+            });
+          }
+        }
+      }
+      invokeDefault(toolCallIds, toolCallResults);
+    } else {
+      invokeDefault();
+    }
   };
 
   return (
@@ -208,7 +234,7 @@ export const DefaultToolCard: React.FC<{
           <ToolOutlined /> {t('Use skills')}
         </span>
       }
-      extra={showCallButton && <CallButton messageId={messageId} />}
+      extra={showCallButton && <CallButton messageId={messageId} tools={tools} />}
     >
       <Collapse items={items} size="small" bordered={false} />
     </Card>

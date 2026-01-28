@@ -172,6 +172,9 @@ export class AIEmployee {
     const { signal, provider, allowEmpty = false } = options;
     let isMessageEmpty = true;
     try {
+      const tools = await this.getTools();
+      const toolMap = Object.fromEntries(tools.map((x) => [x.name, x]));
+      let toolCalls;
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk] = chunks;
@@ -197,13 +200,16 @@ export class AIEmployee {
             if (isMessageEmpty) {
               isMessageEmpty = false;
             }
-            console.log(`\n\nInterrupt: ${JSON.stringify(chunks.__interrupt__)}`);
+            if (toolCalls.map((x) => toolMap[x.name]).every((x) => x.execution === 'frontend' && x.autoCall)) {
+              this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_calls', body: toolCalls })}\n\n`);
+            }
           }
         } else if (mode === 'custom') {
           if (isMessageEmpty) {
             isMessageEmpty = false;
           }
           if (chunks.action === 'showToolCalls') {
+            toolCalls = chunks.body;
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
           } else if (chunks.action === 'beforeToolCall') {
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);

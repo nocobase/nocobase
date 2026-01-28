@@ -183,6 +183,7 @@ export const useChatMessageActions = () => {
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
+
     if (!error && tools && tools.length > 0) {
       const toolCallIds: string[] = [];
       const toolCallResults = [];
@@ -199,6 +200,12 @@ export const useChatMessageActions = () => {
           }
         }
       }
+      callTool({
+        sessionId: currentConversation,
+        aiEmployee,
+        toolCallIds,
+        toolCallResults,
+      });
     }
   };
 
@@ -369,11 +376,15 @@ export const useChatMessageActions = () => {
       messageId,
       aiEmployee,
       args,
+      toolCallIds,
+      toolCallResults,
     }: {
       sessionId: string;
       messageId?: string;
       aiEmployee: AIEmployee;
       args?: Record<string, any>;
+      toolCallIds?: string[];
+      toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
       try {
@@ -381,7 +392,7 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:callTool',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, args },
+          data: { sessionId, messageId, args, toolCallIds, toolCallResults },
           responseType: 'stream',
           adapter: 'fetch',
         });
