@@ -27,46 +27,26 @@ export class BulkEditActionModel extends PopupActionModel {
   getAclActionName() {
     return 'update';
   }
+
+  // getInputArgs() {
+  //   const base = super.getInputArgs();
+  //   console.log('BulkEditActionModel getInputArgs called', base);
+  //   return {
+  //     ...base,
+  //     scene: 'bulkEditForm',
+  //   };
+  // }
 }
 
 BulkEditActionModel.define({
   label: tExpr('Bulk edit'),
   createModelOptions: async (ctx, extra) => {
     console.log('BulkEditActionModel createModelOptions called', ctx, extra);
-    const item = {
-      use: 'BulkEditFormModel',
-      stepParams: {
-        resourceSettings: {
-          init: {
-            dataSourceKey: ctx.collection?.dataSourceKey,
-            collectionName: ctx.collection?.name,
-          },
-        },
-      },
-      subModels: {
-        actions: [
-          // {
-          //   use: 'BulkEditFormActionModel',
-          // },
-        ],
-        grid: {
-          // "uid": "b6dc58a1639",
-          use: 'FormGridModel',
-          // "parentId": "2021d179357",
-          // "subKey": "grid",
-          // "subType": "object",
-          // "stepParams": {},
-          // "sortIndex": 0,
-          // "flowRegistry": {}
-        },
-      },
-    };
     return {
       use: 'BulkEditActionModel',
       subModels: {
         page: createTagPageOptions({
           tabTitle: tExpr('Bulk edit'),
-          items: [item],
         }),
       },
     };
@@ -98,15 +78,8 @@ BulkEditActionModel.registerFlow({
         value: 'selected',
       },
     },
-  },
-});
-
-BulkEditActionModel.registerFlow({
-  key: 'apply',
-  on: 'click',
-  steps: {
-    openModal: {
-      async handler(ctx) {},
-    },
+    // openModal: {
+    //   async handler(ctx) { },
+    // },
   },
 });

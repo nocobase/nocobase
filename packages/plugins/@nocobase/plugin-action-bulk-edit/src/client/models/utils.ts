@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const createTagPageOptions = ({ tabTitle, items }: { tabTitle: string; items: any[] }) => {
+export const createTagPageOptions = ({ tabTitle }: { tabTitle: string }) => {
   return {
     async: true,
     use: 'ChildPageModel',
@@ -30,24 +30,6 @@ export const createTagPageOptions = ({ tabTitle, items }: { tabTitle: string; it
               },
             },
           },
-          // subModels: {
-          //   grid: {
-          //     async: true,
-          //     use: 'BlockGridModel',
-          //     stepParams: {
-          //       gridSettings: {
-          //         grid: {
-          //           rows: {},
-          //           sizes: {},
-          //         },
-          //       },
-          //     },
-          //     filterManager: [],
-          //     subModels: {
-          //       items: items,
-          //     },
-          //   },
-          // },
         },
       ],
     },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CreateFormModel, FormBlockModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
+import { CreateFormModel, EditFormModel, FormBlockModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
 import React from 'react';
 
 /**
@@ -15,7 +15,7 @@ import React from 'react';
  * 使用自定义的 BulkEditFormItemModel 替换标准的 FormItemModel
  */
 export class BulkEditFormModel extends CreateFormModel {
-  static scene = BlockSceneEnum.new;
+  static scene = BlockSceneEnum.bulkEditForm;
 
   customModelClasses = {
     FormActionGroupModel: 'BulkEditFormActionGroupModel',
@@ -33,8 +33,10 @@ export class BulkEditFormModel extends CreateFormModel {
 }
 
 BulkEditFormModel.define({
-  label: 'Bulk Edit Form',
+  label: 'Bulk Edit Form3',
+  children: false,
   createModelOptions: async (ctx, extra) => {
+    const { associationName, collectionName, dataSourceKey } = ctx.view?.inputArgs || {};
     return {
       use: 'BulkEditFormModel',
       subModels: {
@@ -45,8 +47,8 @@ BulkEditFormModel.define({
       stepParams: {
         resourceSettings: {
           init: {
-            dataSourceKey: ctx.collection?.dataSourceKey,
-            collectionName: ctx.collection?.name,
+            dataSourceKey: dataSourceKey,
+            collectionName: collectionName,
           },
         },
       },

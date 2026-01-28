@@ -39,6 +39,7 @@ export async function submitHandler(ctx, params) {
     const ids = rows.map((r) => ctx.collection.getFilterByTK(r)).filter((v) => v != null);
     if (!ids?.length) {
       ctx.message.error(ctx.t('Please select the records to be updated'));
+      ctx.exit();
       return;
     }
     updateData.filter = { $and: [{ [filterKey]: { $in: ids } }] };

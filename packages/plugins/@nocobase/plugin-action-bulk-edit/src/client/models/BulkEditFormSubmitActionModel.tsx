@@ -71,8 +71,6 @@ BulkEditFormSubmitActionModel.registerFlow({
           ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
-          // 显示保存失败提示
-          ctx.message.error(ctx.t('Save failed'));
           console.error('Form submission error:', error);
           ctx.exit();
         }

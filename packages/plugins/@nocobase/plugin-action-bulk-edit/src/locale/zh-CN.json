@@ -12,5 +12,8 @@
   "No assigned fields configured": "未配置字段赋值",
   "Collection is required to perform this action": "执行此操作需要指定数据表",
   "Please select the records to be edited": "请选择要编辑的记录",
-  "Saved successfully": "保存成功"
+  "Saved successfully": "保存成功",
+  "Remains the same": "不更新",
+  "Changed to": "修改为",
+  "Clear": "清空"
 }
