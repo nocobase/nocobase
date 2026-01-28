@@ -150,6 +150,7 @@ export interface MetaTreeNode {
   title: string;
   type: string;
   interface?: string;
+  options?: any;
   uiSchema?: ISchema;
   render?: (props: any) => JSX.Element;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
@@ -167,6 +168,7 @@ export interface PropertyMeta {
   type: string;
   title: string;
   interface?: string;
+  options?: any;
   uiSchema?: ISchema; // TODO: 这个是不是压根没必要啊？
   render?: (props: any) => JSX.Element; // 自定义渲染函数
   // 用于 VariableInput 的排序：数值越大，显示越靠前；相同值保持稳定顺序
@@ -2715,6 +2717,7 @@ export class FlowContext {
         title: metaOrFactory.title || initialTitle, // 初始使用 name 作为 title
         type: 'object', // 初始类型
         interface: undefined,
+        options: undefined,
         uiSchema: undefined,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
@@ -2746,6 +2749,7 @@ export class FlowContext {
                   node.title = finalTitle;
                   node.type = meta?.type;
                   node.interface = meta?.interface;
+                  node.options = meta?.options;
                   node.uiSchema = meta?.uiSchema;
                   // parentTitles 保持不变，因为它不包含自身 title
 
@@ -2778,6 +2782,7 @@ export class FlowContext {
         title: nodeTitle,
         type: metaOrFactory.type,
         interface: metaOrFactory.interface,
+        options: metaOrFactory.options,
         uiSchema: metaOrFactory.uiSchema,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,

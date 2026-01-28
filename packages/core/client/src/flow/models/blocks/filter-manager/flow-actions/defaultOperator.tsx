@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr, FlowContext, FlowModel } from '@nocobase/flow-engine';
+import { defineAction, tExpr, FlowModel } from '@nocobase/flow-engine';
 import { operators } from '../../../../../collection-manager';
 import { FilterFormFieldModel } from '../../filter-form/fields';
 
-export const defaultOperator = defineAction<FilterFormFieldModel>({
+export const defaultOperator: any = defineAction<FilterFormFieldModel>({
   name: 'defaultOperator',
   title: tExpr('Default operator'),
   uiMode(ctx) {
@@ -36,10 +36,13 @@ export const defaultOperator = defineAction<FilterFormFieldModel>({
 });
 
 function getOperatorOptions(model: FlowModel) {
-  return (model.context.collectionField?.filterable?.operators || operators[model.context.filterField.type]).map(
-    (op) => ({
+  const meta = model.context.collectionField || model.context.filterField;
+  const operatorList =
+    model.context.collectionField?.filterable?.operators || operators[model.context.filterField.type];
+  return (operatorList || [])
+    .filter((op) => !op.visible || op.visible(meta))
+    .map((op) => ({
       ...op,
       label: model.translate(op.label),
-    }),
-  );
+    }));
 }

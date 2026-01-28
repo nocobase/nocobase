@@ -88,6 +88,7 @@ function createMetaBaseProperties(field: CollectionField) {
   return {
     title: field.title || field.name,
     interface: field.interface,
+    options: field.options,
     uiSchema: field.uiSchema || {},
   };
 }
