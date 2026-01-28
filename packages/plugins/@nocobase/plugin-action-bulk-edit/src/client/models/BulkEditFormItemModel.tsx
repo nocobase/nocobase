@@ -9,48 +9,47 @@
 
 import { FormItemModel, FieldModelRenderer, FormItem, FieldModel } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
-import { Select, Space } from 'antd';
-import React, { useState } from 'react';
-import { css } from '@emotion/css';
 import _ from 'lodash';
-import { useField } from '@formily/react';
 
-/**
- * 批量编辑字段项模型
- * 在标准字段前添加编辑模式选择器：保持不变/修改为/清空
- */
 export class BulkEditFormItemModel extends FormItemModel {
   static defineChildren(ctx: any) {
-    // 调用父类方法获取子项定义
-    const children = FormItemModel.defineChildren(ctx);
-    // 修改 useModel 为 BulkEditFormItemModel
-    return children?.map((child: any) => ({
-      ...child,
-      useModel: 'BulkEditFormItemModel',
-      createModelOptions: () => {
-        const options = child.createModelOptions();
-        const field = options?.subModels?.field;
-        const fieldWarp = {
-          use: 'BulkEditFieldModel',
-          // props: field.props,
-          subModels: {
-            field,
-          },
-        };
-        return {
-          ...options,
-          subModels: {
-            field: fieldWarp,
-          },
-          use: 'BulkEditFormItemModel', // 使用批量编辑字段项模型
-        };
-      },
-    }));
+    const fileds = ctx.collection.getFields();
+    const children = FormItemModel.defineChildren(ctx) || [];
+    return children
+      .filter((child: any) => {
+        const field = fileds.find((f) => f.name === child.key);
+        const canEdit =
+          field?.interface &&
+          !field?.uiSchema?.['x-read-pretty'] &&
+          field.interface !== 'snapshot' &&
+          field.type !== 'sequence';
+
+        return canEdit;
+      })
+      .map((child: any) => ({
+        ...child,
+        useModel: 'BulkEditFormItemModel',
+        createModelOptions: () => {
+          const options = child.createModelOptions();
+          const field = options?.subModels?.field;
+          const fieldWarp = {
+            use: 'BulkEditFieldModel',
+            subModels: {
+              field,
+            },
+          };
+          return {
+            ...options,
+            subModels: {
+              field: fieldWarp,
+            },
+            use: 'BulkEditFormItemModel',
+          };
+        },
+      }));
   }
 }
 
-// 继承父类的基本配置
 BulkEditFormItemModel.define({
-  label: tExpr('Display fields'),
-  sort: 100,
+  label: tExpr('Bulk edit form item'),
 });

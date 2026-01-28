@@ -11,26 +11,17 @@ import { CreateFormModel, EditFormModel, FormBlockModel, BlockSceneEnum, Collect
 import React from 'react';
 import { tExpr } from '@nocobase/flow-engine';
 
-/**
- * 批量编辑表单模型
- * 使用自定义的 BulkEditFormItemModel 替换标准的 FormItemModel
- */
 export class BulkEditFormModel extends CreateFormModel {
   static scene = BlockSceneEnum.bulkEditForm;
 
+  getAclActionName() {
+    return 'update';
+  }
+
   customModelClasses = {
     FormActionGroupModel: 'BulkEditFormActionGroupModel',
-    FormItemModel: 'BulkEditFormItemModel', // 使用批量编辑专用的字段项
+    FormItemModel: 'BulkEditFormItemModel',
   };
-
-  /**
-   * 重写 defineChildren 方法，返回 undefined 表示不需要动态生成子菜单
-   * 批量编辑场景下，collection 信息已经从上下文中确定，无需用户选择
-   * 返回 undefined 会让系统直接使用 define 中的 createModelOptions，不展开子菜单
-   */
-  // static async defineChildren() {
-  //   return undefined;
-  // }
 }
 
 BulkEditFormModel.define({
@@ -42,7 +33,7 @@ BulkEditFormModel.define({
       use: 'BulkEditFormModel',
       subModels: {
         grid: {
-          use: 'FormGridModel',
+          use: 'BulkEditFormGridModel',
         },
       },
       stepParams: {

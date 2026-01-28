@@ -33,14 +33,9 @@ import * as models from './models';
 
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
-    // 注册 Flow 模型以支持新版流程引擎按钮动作
     this.app.flowEngine.registerModels(models);
 
-    // 注册组件（包含原有的和新的 FlowModel 专用组件）
-    this.app.addComponents({
-      BulkEditField,
-      BulkEditActionDecorator,
-    });
+    this.app.addComponents({ BulkEditField, BulkEditActionDecorator });
     this.app.addScopes({ useCustomizeBulkEditActionProps });
     this.app.schemaSettingsManager.add(bulkEditFormBlockSettings);
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);

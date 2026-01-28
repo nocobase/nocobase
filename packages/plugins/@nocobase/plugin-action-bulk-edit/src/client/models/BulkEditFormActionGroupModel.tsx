@@ -8,7 +8,7 @@
  */
 
 import { FormActionGroupModel, ActionGroupModel } from '@nocobase/client';
-import { AIEmployeeActionModel } from '@nocobase/plugin-ai/client';
+// import { AIEmployeeActionModel } from '@nocobase/plugin-ai/client';
 import { BulkEditFormSubmitActionModel } from './BulkEditFormSubmitActionModel';
 
 export class BulkEditFormActionGroupModel extends ActionGroupModel {}

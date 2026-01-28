@@ -27,15 +27,6 @@ export class BulkEditActionModel extends PopupActionModel {
   getAclActionName() {
     return 'update';
   }
-
-  // getInputArgs() {
-  //   const base = super.getInputArgs();
-  //   console.log('BulkEditActionModel getInputArgs called', base);
-  //   return {
-  //     ...base,
-  //     scene: 'bulkEditForm',
-  //   };
-  // }
 }
 
 BulkEditActionModel.define({
@@ -58,7 +49,6 @@ BulkEditActionModel.registerFlow({
   title: tExpr('Bulk edit action settings', { ns: NAMESPACE }),
   manual: true,
   steps: {
-    // 编辑范围：选中记录 or 全部记录
     editMode: {
       title: tExpr('Data will be updated'),
       uiMode: (ctx) => {
