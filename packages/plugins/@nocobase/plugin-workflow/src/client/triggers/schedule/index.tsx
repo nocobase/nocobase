@@ -107,4 +107,16 @@ export default class extends Trigger {
       dataPath: '$context.data',
     };
   }
+
+  useTempAssociationSource(config, workflow) {
+    if (!config?.collection || !workflow?.id) {
+      return null;
+    }
+    return {
+      collection: config.collection,
+      nodeId: workflow.id,
+      nodeKey: 'workflow',
+      nodeType: 'workflow' as const,
+    };
+  }
 }
