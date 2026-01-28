@@ -11,9 +11,11 @@ import { useRequest } from '@nocobase/client';
 
 export interface FilePreviewerConfig {
   id?: string;
-  previewType: 'microsoft' | 'kkfileview';
+  previewType: 'microsoft' | 'kkfileview' | 'basemetas';
   kkFileViewUrl?: string;
-  kkFileViewExtensions?: string;
+  kkFileViewExtensions?: string; // Deprecated, use customExtensions instead
+  customExtensions?: string;
+  basemetasUrl?: string;
 }
 
 export const useFilePreviewerConfig = () => {
@@ -31,6 +33,7 @@ export const useFilePreviewerConfig = () => {
   const config: FilePreviewerConfig = data?.data?.[0] || {
     previewType: 'microsoft',
     kkFileViewUrl: 'http://localhost:8012',
+    basemetasUrl: 'http://localhost:9000',
   };
 
   return { config, loading, refresh };

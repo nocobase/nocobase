@@ -23,6 +23,10 @@ const PREVIEW_TYPE_OPTIONS = [
     label: 'KKFileView',
     value: 'kkfileview',
   },
+  {
+    label: 'BaseMetas',
+    value: 'basemetas',
+  },
 ];
 
 export const Configuration = () => {
@@ -31,7 +35,8 @@ export const Configuration = () => {
   const [formData, setFormData] = useState({
     previewType: 'microsoft',
     kkFileViewUrl: 'http://localhost:8012',
-    kkFileViewExtensions: '',
+    customExtensions: '',
+    basemetasUrl: 'https://fileview.basemetas.cn',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,7 +53,8 @@ export const Configuration = () => {
           setFormData({
             previewType: config.previewType || 'microsoft',
             kkFileViewUrl: config.kkFileViewUrl || 'http://localhost:8012',
-            kkFileViewExtensions: config.kkFileViewExtensions || '',
+            customExtensions: config.customExtensions || config.kkFileViewExtensions || '',
+            basemetasUrl: config.basemetasUrl || 'https://fileview.basemetas.cn',
           });
         }
       } catch (error) {
@@ -142,20 +148,57 @@ export const Configuration = () => {
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('KKFileView Extensions')}</label>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('Custom Extensions')}</label>
               <Select
                 mode="tags"
                 style={{ width: '100%' }}
                 placeholder={t('Enter extensions (e.g. pdf, dwg)')}
-                value={formData.kkFileViewExtensions ? formData.kkFileViewExtensions.split(',').filter(Boolean) : []}
+                value={formData.customExtensions ? formData.customExtensions.split(',').filter(Boolean) : []}
                 onChange={(values) => {
-                  setFormData({ ...formData, kkFileViewExtensions: values.join(',') });
+                  setFormData({ ...formData, customExtensions: values.join(',') });
                 }}
                 tokenSeparators={[',', ' ']}
               />
               <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
                 {t(
-                  'Extensions to force use KKFileView. If empty, a default safe list (Office, PDF, Text, Code) will be used.',
+                  'Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.',
+                )}
+                <br />
+                {t('Default list')}: {KKFILEVIEW_DEFAULT_EXTENSIONS.slice(0, 10).join(', ')}...
+              </div>
+            </div>
+          </div>
+        )}
+
+        {formData.previewType === 'basemetas' && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('BaseMetas URL')}</label>
+              <Input
+                placeholder="https://fileview.basemetas.cn"
+                value={formData.basemetasUrl}
+                onChange={(e) => setFormData({ ...formData, basemetasUrl: e.target.value })}
+              />
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
+                {t('BaseMetas server address (e.g., https://fileview.basemetas.cn)')}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('Custom Extensions')}</label>
+              <Select
+                mode="tags"
+                style={{ width: '100%' }}
+                placeholder={t('Enter extensions (e.g. pdf, dwg)')}
+                value={formData.customExtensions ? formData.customExtensions.split(',').filter(Boolean) : []}
+                onChange={(values) => {
+                  setFormData({ ...formData, customExtensions: values.join(',') });
+                }}
+                tokenSeparators={[',', ' ']}
+              />
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
+                {t(
+                  'Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.',
                 )}
                 <br />
                 {t('Default list')}: {KKFILEVIEW_DEFAULT_EXTENSIONS.slice(0, 10).join(', ')}...

@@ -101,6 +101,29 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
       const filename = file.title ? `${file.title}${file.extname || ''}` : file.filename || '';
       const encodedFilename = encodeURIComponent(filename);
       previewUrl = `${kkUrl}/onlinePreview?url=${encodedFileUrl}&fullfilename=${encodedFilename}`;
+    } else if (mode === 'basemetas') {
+      // BaseMetas Mode
+      const basemetasUrl = config.basemetasUrl || 'http://localhost:9000';
+
+      // Mixed Content Check
+      if (isMixedContent(basemetasUrl)) {
+        warnings.push({
+          message: t('Mixed Content Warning'),
+          description: t('Your site is HTTPS but BaseMetas is HTTP. Preview will fail.'),
+          type: 'error',
+        });
+        hasIframeError = true;
+      }
+
+      const fileUrl = getAbsoluteFileUrl(file);
+      const encodedFileUrl = encodeURIComponent(fileUrl);
+      // fileName is used for file type detection
+      const fileName = file.filename || `${file.title}${file.extname || ''}`;
+      const encodedFileName = encodeURIComponent(fileName);
+      // displayName is used for display in title bar
+      const displayName = file.title || fileName;
+      const encodedDisplayName = encodeURIComponent(displayName);
+      previewUrl = `${basemetasUrl}/preview/view?url=${encodedFileUrl}&fileName=${encodedFileName}&displayName=${encodedDisplayName}`;
     }
 
     return { url: previewUrl, warnings, iframeError: hasIframeError };
@@ -147,13 +170,14 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
     attachmentFileTypes.add({
       match: (file) => {
         const config = globalPreviewConfig;
+        const extensions = config?.customExtensions || config?.kkFileViewExtensions;
 
-        // Priority 1: KKFileView Extensions (Explicit User Override)
+        // Priority 1: Custom Extensions (Explicit User Override)
         // If the user explicitly configured an extension (e.g. 'dwg'), we must honor it immediately,
         // even if it looks like an image or other format.
-        if (config?.previewType === 'kkfileview' && config.kkFileViewExtensions) {
+        if ((config?.previewType === 'kkfileview' || config?.previewType === 'basemetas') && extensions) {
           const ext = file.extname?.replace(/^\./, '').toLowerCase();
-          const allowed = config.kkFileViewExtensions
+          const allowed = extensions
             .split(',')
             .map((s) => s.trim().toLowerCase())
             .filter(Boolean);
@@ -167,9 +191,9 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
         }
 
         // Priority 3: Default logic based on preview mode
-        if (config?.previewType === 'kkfileview') {
+        if (config?.previewType === 'kkfileview' || config?.previewType === 'basemetas') {
           // Fallback to Safe List if no extensions configured
-          if (!config.kkFileViewExtensions) {
+          if (!extensions) {
             const ext = file.extname?.replace(/^\./, '').toLowerCase();
             if (KKFILEVIEW_DEFAULT_EXTENSIONS.includes(ext)) {
               return true;

@@ -13,7 +13,7 @@
   "Settings saved successfully": "设置保存成功",
   "Failed to save settings": "保存设置失败",
   "Select preview type": "选择预览类型",
-  "Microsoft Online Preview requires public network access": "微软在线预览需要文件可被公网访问，本地或内网环境请使用 KKFileView。",
+  "Microsoft Online Preview requires public network access": "微软在线预览需要文件可被公网访问，本地或内网环境请使用 KKFileView 或 BaseMetas。",
   "Public access required": "需要公网访问",
   "KKFileView Extensions": "强制使用 KKFileView 的扩展名",
   "Enter extensions (e.g. pdf, dwg)": "输入扩展名（如 pdf, dwg）",
@@ -31,5 +31,11 @@
   "KKFileView URL is configured correctly": "KKFileView 服务地址是否配置正确",
   "File URL is accessible from KKFileView server": "文件地址是否能被 KKFileView 服务器访问",
   "Network connection is stable": "网络连接是否稳定",
-  "You can try to download the file or open it in a new window.": "您可以尝试下载文件或在新窗口中打开。"
+  "You can try to download the file or open it in a new window.": "您可以尝试下载文件或在新窗口中打开。",
+  "BaseMetas": "BaseMetas 文件预览",
+  "BaseMetas URL": "BaseMetas 服务地址",
+  "BaseMetas server address (e.g., http://localhost:9000;)": "BaseMetas 服务地址 (例如: http://localhost:9000)",
+  "Your site is HTTPS but BaseMetas is HTTP. Preview will fail.": "当前站点是 HTTPS，但 BaseMetas 地址是 HTTP。受浏览器安全限制，预览将无法加载，请配置 BaseMetas 为 HTTPS。",
+  "Custom Extensions": "自定义扩展名",
+  "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.": "强制使用该预览服务的文件扩展名。如果留空，将使用默认的支持列表（包含 Office、PDF、文本、代码等）。"
 }

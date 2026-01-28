@@ -26,5 +26,14 @@ export default {
       type: 'string',
       name: 'kkFileViewExtensions',
     },
+    {
+      type: 'string',
+      name: 'customExtensions',
+    },
+    {
+      type: 'string',
+      name: 'basemetasUrl',
+      defaultValue: 'http://localhost:9000',
+    },
   ],
 };

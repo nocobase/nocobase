@@ -13,7 +13,7 @@
   "Settings saved successfully": "Settings saved successfully",
   "Failed to save settings": "Failed to save settings",
   "Select preview type": "Select preview type",
-  "Microsoft Online Preview requires public network access": "Microsoft Online Preview requires public network access, it may not work on localhost or private networks.",
+  "Microsoft Online Preview requires public network access": "Microsoft Online Preview requires public network access. For local or private networks, please use KKFileView or BaseMetas.",
   "Public access required": "Public access required",
   "KKFileView Extensions": "KKFileView Extensions",
   "Enter extensions (e.g. pdf, dwg)": "Enter extensions (e.g. pdf, dwg)",
@@ -31,5 +31,11 @@
   "KKFileView URL is configured correctly": "KKFileView URL is configured correctly",
   "File URL is accessible from KKFileView server": "File URL is accessible from KKFileView server",
   "Network connection is stable": "Network connection is stable",
-  "You can try to download the file or open it in a new window.": "You can try to download the file or open it in a new window."
+  "You can try to download the file or open it in a new window.": "You can try to download the file or open it in a new window.",
+  "BaseMetas": "BaseMetas",
+  "BaseMetas URL": "BaseMetas URL",
+  "BaseMetas server address (e.g., http://localhost:9000)": "BaseMetas server address (e.g., http://localhost:9000)",
+  "Your site is HTTPS but BaseMetas is HTTP. Preview will fail.": "Your site is HTTPS but BaseMetas is HTTP. Preview will fail due to browser security restrictions.",
+  "Custom Extensions": "Custom Extensions",
+  "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used.": "Extensions to force use this preview service. If empty, a default safe list (Office, PDF, Text, Code) will be used."
 }
