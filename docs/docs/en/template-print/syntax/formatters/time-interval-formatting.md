@@ -13,7 +13,6 @@ Parameters:
 
 ##### Example
 ```
-// Example environment: API options { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // Outputs 2
 2000:formatI('seconds')      // Outputs 2
 2000:formatI('s')            // Outputs 2
@@ -21,12 +20,7 @@ Parameters:
 3600000:formatI('hour')      // Outputs 1
 2419200000:formatI('days')   // Outputs 28
 
-// French example:
-2000:formatI('human')        // Outputs "quelques secondes"
-2000:formatI('human+')       // Outputs "dans quelques secondes"
--2000:formatI('human+')      // Outputs "il y a quelques secondes"
-
-// English example:
+// Human-friendly display:
 2000:formatI('human')        // Outputs "a few seconds"
 2000:formatI('human+')       // Outputs "in a few seconds"
 -2000:formatI('human+')      // Outputs "a few seconds ago"
