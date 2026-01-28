@@ -1,4 +1,5 @@
 import { defineConfig } from '@nocobase/build';
+import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -175,5 +176,14 @@ export default defineConfig({
         },
       },
     );
+
+    log('removing /**/*.d.ts');
+    fg.sync(['./**/*.d.ts', './**/*.d.cts'], {
+      cwd: path.resolve(__dirname, 'dist'),
+      absolute: true,
+      onlyFiles: true,
+    }).forEach((file) => {
+      fs.unlinkSync(file);
+    });
   },
 });
