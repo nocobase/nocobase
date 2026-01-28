@@ -409,7 +409,7 @@ function TaskItem() {
   );
 
   const mapModel = useCallback((model) => model.clone(), []);
-  const taskCardReloadKey = record.node?.updatedAt ?? record.node?.updatedAt?.valueOf?.();
+  const taskCardReloadKey = record.node?.updatedAt?.valueOf?.() ?? record.node?.updatedAt;
 
   if (taskCardUid) {
     return (
