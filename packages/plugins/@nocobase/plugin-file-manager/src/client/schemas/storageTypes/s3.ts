@@ -68,7 +68,7 @@ export default {
             dependencies: ['options.bucket', 'baseUrl'],
             fulfill: {
               state: {
-                description: `{{ ($self.value === "virtual" ? ($deps[1] || "").replace(/^(https?:\\/\\/)(.*)/, "$1" + ($deps[0] || "bucket") + ".$2") : ($deps[1] || "")).replace(/\\/+$/, "") + ($self.value === "path" ? "/" + ($deps[0] || "bucket") : "") + "/<object-key>" }}`,
+                description: `{{ (($self.value === "virtual" && ($deps[1] || "").indexOf($deps[0] || "bucket") === -1) ? ($deps[1] || "").replace(/^(https?:\\/\\/)(.*)/, "$1" + ($deps[0] || "bucket") + ".$2") : ($deps[1] || "")).replace(/\\/+$/, "") + ($self.value === "path" ? "/" + ($deps[0] || "bucket") : "") + "/<object-key>" }}`,
               },
             },
           },

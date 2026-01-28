@@ -48,7 +48,7 @@ export default class extends StorageType {
 
   constructor(storage: StorageModel) {
     super(storage);
-    const { accessKeyId, secretAccessKey, ...options } = this.storage.options;
+    const { accessKeyId, secretAccessKey, forcePathStyle, ...options } = this.storage.options;
     const params: any = {
       ...options,
       requestChecksumCalculation: 'WHEN_REQUIRED',
@@ -59,13 +59,16 @@ export default class extends StorageType {
         secretAccessKey,
       };
     }
-    if (options.forcePathStyle === 'path' || options.documentUrlType === 'bucketAsSubPath') {
+    // forcePathStyle: 'virtual' | 'path' | 'ignore'
+    // 'ignore' is default value, which means not set forcePathStyle
+    if (forcePathStyle === 'path') {
       params.forcePathStyle = true;
-    } else if (options.forcePathStyle === 'virtual') {
+    } else if (forcePathStyle === 'virtual') {
       params.forcePathStyle = false;
     } else if (options.endpoint) {
       params.forcePathStyle = true;
     } else {
+      // ignore
       params.endpoint = undefined;
     }
     this.client = new S3Client(params);
@@ -161,25 +164,15 @@ export default class extends StorageType {
     }
 
     const { bucket, forcePathStyle } = this.storage.options;
-    let baseUrl = this.storage.baseUrl;
+    const baseUrl = this.storage.baseUrl;
 
     let bucketInPath;
     if (forcePathStyle === 'virtual' && baseUrl) {
-      try {
-        const urlObj = new URL(baseUrl);
-        if (!urlObj.hostname.startsWith(bucket + '.')) {
-          urlObj.hostname = `${bucket}.${urlObj.hostname}`;
-          // remove trailing slash to be consistent with other logic
-          // urlObj.toString() returns string with trailing slash if path is /
-          const urlStr = urlObj.toString();
-          baseUrl = urlStr.replace(/\/+$/, '');
-        }
-      } catch (e) {
-        // ignore
-      }
+      // ignore
     } else if (forcePathStyle === 'path') {
-      const baseUrlHasBucket = baseUrl && new RegExp(`/${bucket}/?$`).test(baseUrl);
-      bucketInPath = !baseUrlHasBucket ? bucket : undefined;
+      bucketInPath = bucket;
+    } else if (baseUrl && forcePathStyle === 'ignore') {
+      // ignore
     }
 
     const keys = [
