@@ -534,4 +534,9 @@ export const ccTodo = {
   Actions: TodoExtraActions,
   Item: TaskItem,
   Detail: Drawer,
+  getPopupRecord: (apiClient, { params }) =>
+    apiClient.resource('workflowCcTasks').get({
+      ...params,
+      appends: ['node', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
+    }),
 };
