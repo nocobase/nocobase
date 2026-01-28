@@ -8,6 +8,7 @@
  */
 
 import type { FlowContext } from '../flowContext';
+import { createRunJSDeprecationProxy } from '../flowContext';
 import { JSRunner } from '../JSRunner';
 import type { JSRunnerOptions } from '../JSRunner';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './registry';
@@ -36,7 +37,16 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
     throw new Error('[RunJS] No RunJSContext registered for version/model.');
   }
   const runCtx = new (Ctor as any)(ensureFlowContext(this));
-  const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
+  let doc: any = {};
+  try {
+    const locale = getLocale(this);
+    if ((Ctor as any)?.getDoc?.length) doc = (Ctor as any).getDoc(locale) || {};
+    else doc = (Ctor as any)?.getDoc?.() || {};
+  } catch (_) {
+    doc = {};
+  }
+  const deprecatedCtx = createRunJSDeprecationProxy(runCtx, { doc });
+  const globals: Record<string, any> = { ctx: deprecatedCtx, ...(options?.globals || {}) };
   // 对字段/区块类上下文，默认注入 window/document 以支持在沙箱中访问 DOM API
   if (modelClass === 'JSFieldModel' || modelClass === 'JSBlockModel') {
     if (typeof window !== 'undefined') globals.window = window as any;

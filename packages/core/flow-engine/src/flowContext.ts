@@ -37,6 +37,7 @@ import {
   extractPropertyPath,
   extractUsedVariablePaths,
   FlowExitException,
+  FLOW_ENGINE_NAMESPACE,
   prepareRunJsCode,
   resolveDefaultParams,
   resolveExpressions,
@@ -131,6 +132,31 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
 export type FlowContextDocRef = string | { url: string; title?: string };
+
+export type FlowDeprecationDoc =
+  | boolean
+  | {
+      /**
+       * 废弃说明（面向人/大模型）。
+       */
+      message?: string;
+      /**
+       * 推荐替代 API（例如 'ctx.resolveJsonTemplate'）。
+       */
+      replacedBy?: string | string[];
+      /**
+       * 开始废弃的版本号（可选）。
+       */
+      since?: string;
+      /**
+       * 预计移除的版本号（可选）。
+       */
+      removedIn?: string;
+      /**
+       * 参考链接（可选）。
+       */
+      ref?: FlowContextDocRef;
+    };
 
 export type FlowContextDocParam = {
   name: string;
@@ -232,6 +258,7 @@ export type FlowContextMethodInfoInput = {
   examples?: string[];
   completion?: RunJSDocCompletionDoc;
   ref?: FlowContextDocRef;
+  deprecated?: FlowDeprecationDoc;
   params?: FlowContextDocParam[];
   returns?: FlowContextDocReturn;
   hidden?: boolean | ((ctx: any) => boolean | Promise<boolean>);
@@ -245,6 +272,7 @@ export type FlowContextMethodInfo = {
   examples?: string[];
   completion?: RunJSDocCompletionDoc;
   ref?: FlowContextDocRef;
+  deprecated?: FlowDeprecationDoc;
   params?: FlowContextDocParam[];
   returns?: FlowContextDocReturn;
   disabled?: boolean;
@@ -280,6 +308,7 @@ export type FlowContextPropertyInfo = {
   examples?: string[];
   completion?: RunJSDocCompletionDoc;
   ref?: FlowContextDocRef;
+  deprecated?: FlowDeprecationDoc;
   params?: FlowContextDocParam[];
   returns?: FlowContextDocReturn;
   disabled?: boolean;
@@ -295,6 +324,7 @@ export type FlowContextApiInfo = {
   examples?: string[];
   completion?: RunJSDocCompletionDoc;
   ref?: FlowContextDocRef;
+  deprecated?: FlowDeprecationDoc;
   params?: FlowContextDocParam[];
   returns?: FlowContextDocReturn;
   disabled?: boolean;
@@ -3432,7 +3462,16 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const modelClass = getModelClassName(this);
       const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
       const runCtx = new Ctor(this);
-      const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
+      let doc: RunJSDocMeta = {};
+      try {
+        const locale = (this as any)?.api?.auth?.locale || (this as any)?.i18n?.language || (this as any)?.locale;
+        if ((Ctor as any)?.getDoc?.length) doc = (Ctor as any).getDoc(locale) || {};
+        else doc = (Ctor as any)?.getDoc?.() || {};
+      } catch (_) {
+        doc = {};
+      }
+      const deprecatedCtx = createRunJSDeprecationProxy(runCtx, { doc });
+      const globals: Record<string, any> = { ctx: deprecatedCtx, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
     });
@@ -3857,6 +3896,7 @@ export type RunJSDocPropertyDoc =
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
       ref?: FlowContextDocRef;
+      deprecated?: FlowDeprecationDoc;
       params?: FlowContextDocParam[];
       returns?: FlowContextDocReturn;
       properties?: Record<string, RunJSDocPropertyDoc>;
@@ -3873,6 +3913,7 @@ export type RunJSDocMethodDoc =
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
       ref?: FlowContextDocRef;
+      deprecated?: FlowDeprecationDoc;
       params?: FlowContextDocParam[];
       returns?: FlowContextDocReturn;
       hidden?: RunJSDocHiddenDoc;
@@ -3907,6 +3948,388 @@ function __runjsDeepMerge(base: any, patch: any) {
 
 function __isPlainObject(val: any): val is Record<string, any> {
   return !!val && typeof val === 'object' && !Array.isArray(val);
+}
+
+type RunJSDeprecatedTreeNode = {
+  deprecated?: FlowDeprecationDoc;
+  children?: Record<string, RunJSDeprecatedTreeNode>;
+};
+
+function __isPromiseLike(v: any): v is Promise<any> {
+  return !!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as any).then === 'function';
+}
+
+function __normalizeDeprecationDoc(v: any): FlowDeprecationDoc | undefined {
+  if (v === true) return true;
+  if (!v) return undefined;
+  if (__isPlainObject(v)) return v as any;
+  return undefined;
+}
+
+function __addDeprecatedPath(root: RunJSDeprecatedTreeNode, path: string[], deprecated: FlowDeprecationDoc) {
+  if (!Array.isArray(path) || !path.length) return;
+  let cur = root;
+  for (const seg of path) {
+    if (!seg) return;
+    cur.children = cur.children || {};
+    cur.children[seg] = cur.children[seg] || {};
+    cur = cur.children[seg];
+  }
+  cur.deprecated = deprecated;
+}
+
+function __mergeDeprecatedTree(base: RunJSDeprecatedTreeNode, patch: RunJSDeprecatedTreeNode) {
+  if (patch.deprecated !== undefined) base.deprecated = patch.deprecated;
+  const pChildren = patch.children || {};
+  const keys = Object.keys(pChildren);
+  if (!keys.length) return;
+  base.children = base.children || {};
+  for (const k of keys) {
+    base.children[k] = base.children[k] || {};
+    __mergeDeprecatedTree(base.children[k], pChildren[k]);
+  }
+}
+
+function __buildDeprecatedTreeFromRunJSDoc(doc?: RunJSDocMeta): RunJSDeprecatedTreeNode {
+  const root: RunJSDeprecatedTreeNode = {};
+  if (!doc) return root;
+
+  const walkProps = (props: any, parentPath: string[]) => {
+    if (!__isPlainObject(props)) return;
+    for (const [key, raw] of Object.entries(props)) {
+      if (!key) continue;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      const node = raw as any;
+      const dep = __normalizeDeprecationDoc(node.deprecated);
+      if (dep) __addDeprecatedPath(root, [...parentPath, key], dep);
+      if (__isPlainObject(node.properties)) {
+        walkProps(node.properties, [...parentPath, key]);
+      }
+    }
+  };
+
+  const walkMethods = (methods: any) => {
+    if (!__isPlainObject(methods)) return;
+    for (const [key, raw] of Object.entries(methods)) {
+      if (!key) continue;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      const node = raw as any;
+      const dep = __normalizeDeprecationDoc(node.deprecated);
+      if (dep) __addDeprecatedPath(root, [key], dep);
+    }
+  };
+
+  walkProps((doc as any).properties, []);
+  walkMethods((doc as any).methods);
+
+  return root;
+}
+
+function __buildDeprecatedTreeFromFlowContextInfos(ctx: any): RunJSDeprecatedTreeNode {
+  const root: RunJSDeprecatedTreeNode = {};
+  const visited = new WeakSet<any>();
+
+  const collectInfoProperties = (basePath: string[], props: any) => {
+    if (!__isPlainObject(props)) return;
+    for (const [key, raw] of Object.entries(props)) {
+      if (!key) continue;
+      if (typeof raw === 'string') continue;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      const node = raw as any;
+      const dep = __normalizeDeprecationDoc(node.deprecated);
+      if (dep) __addDeprecatedPath(root, [...basePath, key], dep);
+      if (__isPlainObject(node.properties)) {
+        collectInfoProperties([...basePath, key], node.properties);
+      }
+    }
+  };
+
+  const walk = (c: any) => {
+    if (!c || (typeof c !== 'object' && typeof c !== 'function')) return;
+    if (visited.has(c)) return;
+    visited.add(c);
+
+    const methodInfos = (c as any)._methodInfos;
+    if (__isPlainObject(methodInfos)) {
+      for (const [name, info] of Object.entries(methodInfos)) {
+        if (!name) continue;
+        if (!info || typeof info !== 'object' || Array.isArray(info)) continue;
+        const dep = __normalizeDeprecationDoc((info as any).deprecated);
+        if (dep) __addDeprecatedPath(root, [name], dep);
+      }
+    }
+
+    const props = (c as any)._props;
+    if (__isPlainObject(props)) {
+      for (const [name, opt] of Object.entries(props)) {
+        if (!name) continue;
+        const info = (opt as any)?.info;
+        if (!info || typeof info !== 'object' || Array.isArray(info)) continue;
+        const dep = __normalizeDeprecationDoc((info as any).deprecated);
+        if (dep) __addDeprecatedPath(root, [name], dep);
+        if (__isPlainObject((info as any).properties)) {
+          collectInfoProperties([name], (info as any).properties);
+        }
+      }
+    }
+
+    const delegates = (c as any)._delegates;
+    if (Array.isArray(delegates)) {
+      for (const d of delegates) walk(d);
+    }
+  };
+
+  walk(ctx);
+  return root;
+}
+
+export function createRunJSDeprecationProxy(
+  ctx: any,
+  options: {
+    doc?: RunJSDocMeta;
+  } = {},
+) {
+  const fromDoc = __buildDeprecatedTreeFromRunJSDoc(options.doc);
+  const fromInfo = __buildDeprecatedTreeFromFlowContextInfos(ctx);
+  __mergeDeprecatedTree(fromDoc, fromInfo);
+
+  const warned = new Set<string>();
+  const proxyToTarget = new WeakMap<object, object>();
+  const objectProxyCache = new WeakMap<object, Map<string, any>>();
+  const functionProxyCache = new WeakMap<Function, Map<string, any>>();
+
+  const extractRunJSLocation = (
+    stack?: string,
+  ): { line?: number; column?: number; rawLine?: number; rawColumn?: number } => {
+    if (!stack || typeof stack !== 'string') return {};
+    const WRAPPER_PREFIX_LINES = 2; // JSRunner.run wraps user code with 2 lines before `${code}`
+    const lines = stack.split('\n');
+    for (const l of lines) {
+      if (!l) continue;
+      const m = l.match(/<anonymous>:(\d+):(\d+)/);
+      if (!m) continue;
+      const rawLine = Number(m[1]);
+      const rawColumn = Number(m[2]);
+      const line =
+        Number.isFinite(rawLine) && rawLine > WRAPPER_PREFIX_LINES ? rawLine - WRAPPER_PREFIX_LINES : rawLine;
+      const column = Number.isFinite(rawColumn) ? rawColumn : undefined;
+      return { line, column, rawLine, rawColumn };
+    }
+    return {};
+  };
+
+  const collectInfoProperties = (basePath: string[], props: any) => {
+    if (!__isPlainObject(props)) return;
+    for (const [key, raw] of Object.entries(props)) {
+      if (!key) continue;
+      if (typeof raw === 'string') continue;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      const node = raw as any;
+      const dep = __normalizeDeprecationDoc(node.deprecated);
+      if (dep) __addDeprecatedPath(fromDoc, [...basePath, key], dep);
+      if (__isPlainObject(node.properties)) {
+        collectInfoProperties([...basePath, key], node.properties);
+      }
+    }
+  };
+
+  const updateTreeFromDefineProperty = (name: string, options: any) => {
+    if (!name) return;
+    const info = options?.info;
+    if (!info || typeof info !== 'object' || Array.isArray(info)) return;
+    const dep = __normalizeDeprecationDoc((info as any).deprecated);
+    if (dep) __addDeprecatedPath(fromDoc, [name], dep);
+    if (__isPlainObject((info as any).properties)) {
+      collectInfoProperties([name], (info as any).properties);
+    }
+  };
+
+  const updateTreeFromDefineMethod = (name: string, info: any) => {
+    if (!name) return;
+    if (!info || typeof info !== 'object' || Array.isArray(info)) return;
+    const dep = __normalizeDeprecationDoc((info as any).deprecated);
+    if (dep) __addDeprecatedPath(fromDoc, [name], dep);
+  };
+
+  const unwrapProxy = (val: any) => {
+    let cur = val;
+    while (cur && (typeof cur === 'object' || typeof cur === 'function')) {
+      const mapped = proxyToTarget.get(cur as any);
+      if (!mapped) break;
+      cur = mapped;
+    }
+    return cur;
+  };
+
+  const formatReplacedBy = (replacedBy: any): string | undefined => {
+    if (!replacedBy) return undefined;
+    if (typeof replacedBy === 'string') return replacedBy.trim() || undefined;
+    if (Array.isArray(replacedBy)) {
+      const parts = replacedBy.map((x) => (typeof x === 'string' ? x.trim() : '')).filter(Boolean);
+      return parts.length ? parts.join(', ') : undefined;
+    }
+    return undefined;
+  };
+
+  const warnOnce = (apiPath: string, deprecated: FlowDeprecationDoc, stack?: string) => {
+    if (!apiPath) return;
+    if (warned.has(apiPath)) return;
+    warned.add(apiPath);
+
+    const logger = (ctx as any)?.logger;
+    const t =
+      typeof (ctx as any)?.t === 'function'
+        ? (key: string, options?: any) =>
+            (ctx as any).t(key, { ns: [FLOW_ENGINE_NAMESPACE, 'client'], nsMode: 'fallback', ...options })
+        : (key: string, options?: any) => {
+            const fallback = options?.defaultValue ?? key;
+            if (typeof fallback !== 'string' || !options) return fallback;
+            // lightweight interpolation for fallback strings (i18next-style: {{var}})
+            return fallback.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, k) => {
+              const v = options?.[k];
+              return typeof v === 'string' || typeof v === 'number' ? String(v) : '';
+            });
+          };
+    const meta = typeof deprecated === 'object' && deprecated ? deprecated : {};
+    const replacedBy = formatReplacedBy((meta as any).replacedBy);
+    const since = typeof (meta as any).since === 'string' ? String((meta as any).since) : undefined;
+    const removedIn = typeof (meta as any).removedIn === 'string' ? String((meta as any).removedIn) : undefined;
+    const message = typeof (meta as any).message === 'string' ? String((meta as any).message) : '';
+
+    const loc = extractRunJSLocation(stack);
+
+    const locText = loc.line ? `（line ${loc.line}${loc.column ? `:${loc.column}` : ''}）` : '';
+
+    const msg = message.trim();
+    const mainText = msg
+      ? t('RunJS deprecated warning with message', {
+          defaultValue: '[RunJS][Deprecated] {{api}} {{message}}{{location}}',
+          api: apiPath,
+          message: msg,
+          location: locText,
+        })
+      : t('RunJS deprecated warning', {
+          defaultValue: '[RunJS][Deprecated] {{api}} is deprecated{{location}}',
+          api: apiPath,
+          location: locText,
+        });
+
+    const separator = t('RunJS deprecated separator', { defaultValue: '; ' });
+    const textParts: string[] = [mainText];
+    if (replacedBy)
+      textParts.push(t('RunJS deprecated replacedBy', { defaultValue: 'Use {{replacedBy}} instead', replacedBy }));
+    if (since) textParts.push(t('RunJS deprecated since', { defaultValue: 'since {{since}}', since }));
+    if (removedIn)
+      textParts.push(t('RunJS deprecated removedIn', { defaultValue: 'will be removed in {{removedIn}}', removedIn }));
+    const text = textParts.filter(Boolean).join(separator);
+
+    try {
+      if (logger && typeof logger.warn === 'function') {
+        logger.warn(text);
+      } else {
+        // fail-open: avoid breaking runjs execution when logger is missing
+        console.warn(text);
+      }
+    } catch (_) {
+      // ignore logger failures
+    }
+  };
+
+  const createFunctionProxy = (fn: Function, node: RunJSDeprecatedTreeNode, path: string) => {
+    const dep = node.deprecated;
+    if (!dep) return fn;
+
+    const cacheByPath = functionProxyCache.get(fn) || new Map<string, any>();
+    functionProxyCache.set(fn, cacheByPath);
+    if (cacheByPath.has(path)) return cacheByPath.get(path);
+
+    const proxied = new Proxy(fn, {
+      apply(target, thisArg, argArray) {
+        const stack = warned.has(path) ? undefined : new Error().stack;
+        warnOnce(path, dep, stack);
+        const realThis = unwrapProxy(thisArg);
+        return Reflect.apply(target, realThis, argArray);
+      },
+      get(target, key, receiver) {
+        return Reflect.get(target, key, receiver);
+      },
+    });
+
+    cacheByPath.set(path, proxied);
+    return proxied as any;
+  };
+
+  const createObjectProxy = (target: any, node: RunJSDeprecatedTreeNode, path: string): any => {
+    if (!target || (typeof target !== 'object' && typeof target !== 'function')) return target;
+    if (__isPromiseLike(target)) return target;
+    const hasChildren = !!node.children && Object.keys(node.children).length > 0;
+    if (!hasChildren && path !== 'ctx') return target;
+
+    const cacheByPath = objectProxyCache.get(target) || new Map<string, any>();
+    objectProxyCache.set(target, cacheByPath);
+    if (cacheByPath.has(path)) return cacheByPath.get(path);
+
+    const proxied = new Proxy(target, {
+      get(t, key, receiver) {
+        if (typeof key === 'symbol') {
+          return Reflect.get(t, key, unwrapProxy(receiver));
+        }
+        const prop = String(key);
+        const value = Reflect.get(t, key, unwrapProxy(receiver));
+
+        // Support dynamic deprecation registration via ctx.defineProperty/defineMethod during RunJS execution.
+        // - This is especially useful when the deprecated API is introduced after JSRunner is created.
+        if (path === 'ctx' && prop === 'defineProperty' && typeof value === 'function') {
+          return (...args: any[]) => {
+            const result = value(...args);
+            try {
+              updateTreeFromDefineProperty(String(args?.[0] ?? ''), args?.[1]);
+            } catch (_) {
+              // ignore
+            }
+            return result;
+          };
+        }
+        if (path === 'ctx' && prop === 'defineMethod' && typeof value === 'function') {
+          return (...args: any[]) => {
+            const result = value(...args);
+            try {
+              updateTreeFromDefineMethod(String(args?.[0] ?? ''), args?.[2]);
+            } catch (_) {
+              // ignore
+            }
+            return result;
+          };
+        }
+
+        const child = node.children?.[prop];
+        if (!child) return value;
+
+        const childPath = `${path}.${prop}`;
+        if (typeof value === 'function' && child.deprecated) {
+          return createFunctionProxy(value, child, childPath);
+        }
+        if (child.deprecated) {
+          // For non-callable APIs, "use" happens on access (there is no apply step).
+          const stack = warned.has(childPath) ? undefined : new Error().stack;
+          warnOnce(childPath, child.deprecated, stack);
+        }
+        if (value && (typeof value === 'object' || typeof value === 'function') && child.children) {
+          return createObjectProxy(value, child, childPath);
+        }
+        return value;
+      },
+      has(t, key) {
+        return Reflect.has(t, key);
+      },
+    });
+
+    proxyToTarget.set(proxied as any, target);
+    cacheByPath.set(path, proxied);
+    return proxied;
+  };
+
+  return createObjectProxy(ctx, fromDoc, 'ctx');
 }
 
 function __mergeRunJSDocDocRecord(base: any, patch: any, mergeDoc: (b: any, p: any) => any): any {

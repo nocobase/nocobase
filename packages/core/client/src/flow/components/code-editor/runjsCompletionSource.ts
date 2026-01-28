@@ -192,24 +192,31 @@ export function createRunJSCompletionSource({
 
   const isPrivatePath = (paths: string[]): boolean => paths.some((p) => typeof p === 'string' && p.startsWith('_'));
 
-  const isHidden = (node: any): boolean => {
+  const isHidden = async (node: any): Promise<boolean> => {
     try {
       const raw = node?.hidden;
-      return typeof raw === 'function' ? !!raw() : !!raw;
+      const v = typeof raw === 'function' ? raw() : raw;
+      const resolved = isPromiseLike(v) ? await v : v;
+      return !!resolved;
     } catch (_) {
       // fail-open: if we cannot determine, do not hide
       return false;
     }
   };
 
-  const getDisabled = (node: any): { disabled: boolean; reason?: string } => {
+  const getDisabled = async (node: any): Promise<{ disabled: boolean; reason?: string }> => {
     try {
       const raw = node?.disabled;
-      const disabled = typeof raw === 'function' ? !!raw() : !!raw;
+      const v = typeof raw === 'function' ? raw() : raw;
+      const resolved = isPromiseLike(v) ? await v : v;
+      const disabled = !!resolved;
+      if (!disabled) return { disabled: false };
+
       const rawReason = node?.disabledReason;
-      const reason = typeof rawReason === 'function' ? rawReason() : rawReason;
-      const reasonText = translateText(toText(reason));
-      return { disabled, reason: reasonText || undefined };
+      const reasonValue = typeof rawReason === 'function' ? rawReason() : rawReason;
+      const resolvedReason = isPromiseLike(reasonValue) ? await reasonValue : reasonValue;
+      const reasonText = translateText(toText(resolvedReason));
+      return { disabled: true, reason: reasonText || undefined };
     } catch (_) {
       return { disabled: false };
     }
@@ -326,7 +333,7 @@ export function createRunJSCompletionSource({
 
       const label = `ctx.${paths.join('.')}`;
       if (!label.startsWith('ctx.')) continue;
-      if (isHidden(node)) continue;
+      if (await isHidden(node)) continue;
 
       const title = translateText(toText(node?.title)) || translateText(toText(node?.name)) || paths[paths.length - 1];
       const parentTitles = Array.isArray(node?.parentTitles)
@@ -334,7 +341,7 @@ export function createRunJSCompletionSource({
         : [];
       const breadcrumb = [...parentTitles, title].filter(Boolean).join(' / ');
 
-      const { disabled, reason } = getDisabled(node);
+      const { disabled, reason } = await getDisabled(node);
       const infoLines: string[] = [];
       if (breadcrumb) infoLines.push(breadcrumb);
       if (disabled) infoLines.push('Disabled:', `- ${reason || 'true'}`);
