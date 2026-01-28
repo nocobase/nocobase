@@ -389,13 +389,15 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
           if (item.collectionField && item.collectionField.isAssociationField()) {
             formData.add({ name: item.fieldPath, fieldMode: item.subModels.field?.use });
             if (item.subModels.field?.updateAssociation) {
-              console.log(item.subModels.field.subModels);
               if (item.subModels.field.subModels.grid) {
                 //子表单
                 getAssociationAppends(item.subModels.field.subModels.grid, 'items');
               } else if (item.subModels.field.subModels.subTableColumns) {
                 //子表格（弹窗编辑）subTableColumns
                 getAssociationAppends(item.subModels.field, 'subTableColumns');
+              } else if (item.subModels.field.subModels.columns) {
+                //子表格（行内编辑）subTableColumns
+                getAssociationAppends(item.subModels.field, 'columns');
               }
             }
           }
