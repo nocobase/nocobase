@@ -23,13 +23,16 @@ DataBlockModel.define({
       if (scene === 'select') {
         return M['_isScene']?.('select');
       }
+      if (scene === 'subForm') {
+        return M['_isScene']?.('subForm');
+      }
       if (scene === 'bulkEditForm') {
         return M['_isScene']?.('bulkEditForm');
       }
       if (scene === 'new' || (collectionName && !filterByTk)) {
         return M['_isScene']?.('new');
       }
-      return !M['_isScene'] || (!M['_isScene']?.('select') && !M['_isScene']?.('bulkEditForm'));
+      return !M['_isScene'] || (!M['_isScene']?.('select') && !M['_isScene']?.('subForm') && !M['_isScene']?.('bulkEditForm'));
     });
   },
 });

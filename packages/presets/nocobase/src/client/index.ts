@@ -44,7 +44,7 @@ export class NocoBaseClientPresetPlugin extends Plugin {
     this.router.setType('browser');
     this.router.setBasename(getBasename(this.app) || getBasenameOfNewMultiApp(this.app) || this.app.getPublicPath());
     this.app.apiClient.axios.interceptors.request.use((config) => {
-      config.headers['X-Hostname'] = window?.location?.hostname;
+      config.headers['X-Hostname'] = this.app.apiClient.getHostname();
       config.headers['X-Timezone'] = getCurrentTimezone();
       return config;
     });

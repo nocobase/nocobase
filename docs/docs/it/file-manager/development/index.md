@@ -4,13 +4,13 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 # Sviluppo di Estensioni
 
-## Estensione dei Motori di Archiviazione
+## Estensione dei motori di archiviazione
 
-### Lato Server
+### Lato server
 
-1.  **Ereditare `StorageType`**
-
-    Creare una nuova classe e implementare i metodi `make()` e `delete()`, e, se necessario, sovrascrivere i hook come `getFileURL()`, `getFileStream()`, `getFileData()`.
+1. **Ereditare `StorageType`**
+   
+   Crea una nuova classe e implementa i metodi `make()` e `delete()`. Se necessario, sovrascrivi hook come `getFileURL()`, `getFileStream()` e `getFileData()`.
 
 Esempio:
 
@@ -48,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Registrare il nuovo tipo**
-    Iniettare la nuova implementazione di archiviazione nel ciclo di vita `beforeLoad` o `load` del plugin:
+4. **Registrare il nuovo tipo**  
+   Inserisci la nuova implementazione di archiviazione nel ciclo di vita `beforeLoad` o `load` del plugin:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Dopo la registrazione, la configurazione di archiviazione apparirà nella risorsa `storages`, proprio come i tipi integrati. La configurazione fornita da `StorageType.defaults()` può essere utilizzata per compilare automaticamente i moduli o inizializzare i record predefiniti.
+Dopo la registrazione, la configurazione di archiviazione apparirà nella risorsa `storages`, proprio come i tipi integrati. La configurazione fornita da `StorageType.defaults()` può essere usata per compilare automaticamente i moduli o inizializzare i record predefiniti.
 
+<!--
 ### Configurazione lato client e interfaccia di gestione
-Sul lato client, è necessario informare il gestore di file su come renderizzare il modulo di configurazione e se esiste una logica di caricamento personalizzata. Ogni oggetto tipo di archiviazione contiene le seguenti proprietà:
+Sul lato client, devi informare il file manager su come renderizzare il modulo di configurazione e se esiste una logica di upload personalizzata. Ogni oggetto di tipo storage contiene le seguenti proprietà:
+-->
 
-## Estensione dei Tipi di File Frontend
+## Estendere i tipi di file nel frontend
 
-Per i file già caricati, l'interfaccia frontend può mostrare contenuti di anteprima diversi in base al tipo di file. Il campo allegato del gestore di file include un'anteprima di file basata su browser (incorporata in un iframe), che supporta la visualizzazione diretta nella maggior parte dei formati (come immagini, video, audio e PDF). Quando un formato di file non è supportato per l'anteprima dal browser, o quando sono richieste interazioni di anteprima speciali, è possibile estendere il componente di anteprima basato sul tipo di file.
+Per i file già caricati, è possibile mostrare contenuti di anteprima diversi nell'interfaccia frontend in base al tipo di file. Il campo allegati del file manager include una anteprima basata sul browser (integrata in un iframe), che supporta la visualizzazione della maggior parte dei formati (come immagini, video, audio e PDF) direttamente nel browser. Quando un formato non è supportato dal browser o sono necessarie interazioni di anteprima speciali, è possibile estendere il componente di anteprima basato sul tipo di file.
 
 ### Esempio
 
-Ad esempio, per estendere un tipo di file immagine con un componente di scorrimento (carousel), è possibile utilizzare il seguente codice:
+Ad esempio, se vuoi integrare una anteprima online personalizzata per file Office, puoi usare il seguente codice:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Qui, `attachmentFileTypes` è l'oggetto di ingresso fornito nel pacchetto `@nocobase/client` per estendere i tipi di file. Utilizzi il suo metodo `add` per estendere un oggetto di descrizione del tipo di file.
+Qui `filePreviewTypes` è l'oggetto di ingresso fornito da `@nocobase/plugin-file-manager/client` per estendere le anteprime dei file. Usa il suo metodo `add` per aggiungere un descrittore di tipo file.
 
-Ogni tipo di file deve implementare un metodo `match()` per verificare se il tipo di file soddisfa i requisiti. Nell'esempio, il metodo fornito dal pacchetto `mime-match` viene utilizzato per controllare l'attributo `mimetype` del file. Se corrisponde al tipo `image/*`, viene considerato il tipo di file da elaborare. Se non viene trovata alcuna corrispondenza, si ripiegherà sulla gestione del tipo integrata.
+Ogni tipo di file deve implementare un metodo `match()` per verificare se il tipo soddisfa i requisiti. Nell'esempio, `matchMimetype` è usato per controllare l'attributo `mimetype` del file. Se corrisponde al tipo `docx`, viene considerato il tipo da gestire. Se non corrisponde, verrà usata la gestione integrata.
 
-La proprietà `Previewer` sull'oggetto di descrizione del tipo è il componente utilizzato per l'anteprima. Quando il tipo di file corrisponde, questo componente verrà renderizzato per la visualizzazione. Si consiglia generalmente di utilizzare un componente di tipo finestra di dialogo (come `<Modal />`) come contenitore di base, e quindi inserire l'anteprima e il contenuto interattivo all'interno di tale componente per implementare la funzionalità di anteprima.
+La proprietà `Previewer` del descrittore di tipo è il componente usato per l'anteprima. Quando il tipo di file corrisponde, il componente verrà renderizzato nella finestra di anteprima. Puoi restituire qualsiasi vista React (ad esempio un iframe, un player o un grafico).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` è un'istanza globale, importata da `@nocobase/client`:
+`filePreviewTypes` è un'istanza globale importata da `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Registra un nuovo oggetto di descrizione del tipo di file nel registro dei tipi di file. Il tipo dell'oggetto di descrizione è `AttachmentFileType`.
+Registra un nuovo descrittore di tipo file nel registro. Il tipo del descrittore è `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Metodo di corrispondenza del formato file.
+Metodo di corrispondenza del formato del file.
 
-Il parametro di input `file` è l'oggetto dati di un file caricato, contenente proprietà rilevanti che possono essere utilizzate per il controllo del tipo:
+Il parametro di input `file` è l'oggetto dati di un file caricato, contenente proprietà rilevanti per il controllo del tipo:
 
-*   `mimetype`: descrizione del mimetype
-*   `extname`: estensione del file, incluso il "."
-*   `path`: percorso di archiviazione relativo del file
-*   `url`: URL del file
+* `mimetype`: descrizione del mimetype
+* `extname`: estensione del file, inclusa la "."
+* `path`: percorso di archiviazione relativo del file
+* `url`: URL del file
 
-Restituisce un valore `boolean` che indica se c'è una corrispondenza.
+Restituisce un valore `boolean` che indica se c'è corrispondenza.
+
+##### `getThumbnailURL`
+
+Restituisce l'URL della miniatura usata nell'elenco dei file. Se il valore restituito è vuoto, verrà utilizzata l'immagine segnaposto integrata.
 
 ##### `Previewer`
 
 Un componente React per l'anteprima dei file.
 
-I Props in ingresso sono:
+Le props in ingresso sono:
 
-*   `index`: L'indice del file nell'elenco degli allegati
-*   `list`: L'elenco degli allegati
-*   `onSwitchIndex`: Un metodo per cambiare l'indice
+* `file`: oggetto file corrente (può essere una URL stringa o un oggetto che contiene `url`/`preview`)
+* `index`: indice del file nell'elenco
+* `list`: elenco dei file
 
-`onSwitchIndex` può accettare qualsiasi valore di indice dalla lista per passare a un altro file. Se `null` viene passato come argomento, il componente di anteprima verrà chiuso direttamente.
-
-```ts
-onSwitchIndex(null);
-```

@@ -52,6 +52,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.resource.refresh();
   }
 
+  refresh() {
+    return this.resource.refresh();
+  }
+
   // 初始化注册 ChartResource | SQLResource
   initResource(mode = 'builder') {
     // 1) 先拿旧实例并解绑，防止旧实例残留监听
