@@ -15,13 +15,12 @@ import { Avatar, Popover, Tooltip } from 'antd';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
-import { EditorRef, useAPIClient } from '@nocobase/client';
+import { EditorRef } from '@nocobase/client';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { isEngineer } from '../built-in/utils';
 import { Task } from '../types';
 import { useT } from '../../locale';
 import prompts from './prompts';
-import { setRuntimeContext } from '../../skills';
 
 export interface AICodingButtonProps {
   uid: string;
@@ -33,7 +32,6 @@ export interface AICodingButtonProps {
 
 export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef, setActive }) => {
   const t = useT();
-  const api = useAPIClient();
   const { aiEmployees } = useAIEmployeesData();
   const open = useChatBoxStore.use.open();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -134,8 +132,8 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             border: '1px solid #eee',
           }}
           onClick={() => {
-            // Set runtime context for AI skills (main scenario: AI employee bound to block)
-            setRuntimeContext(api, ctx);
+            // Store flow context for frontend context tools
+            useChatMessagesStore.getState().setFlowContext(ctx);
 
             if (!open || currentEmployee?.username !== aiEmployee.username) {
               if (editorRef.logs.find((log) => log.level === 'error')) {

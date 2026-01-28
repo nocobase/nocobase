@@ -128,23 +128,6 @@ const aiResource: ResourceOptions = {
       ctx.body = await providerClient.testFlight();
       return next();
     },
-    setRuntimeContext: async (ctx, next) => {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const { apis, envs } = ctx.action.params.values ?? {};
-
-      if (!apis && !envs) {
-        ctx.throw(400, 'Missing runtime context data (apis or envs)');
-      }
-
-      plugin.skillManager.setContextData({ apis, envs });
-
-      ctx.body = {
-        success: true,
-        message: 'Runtime context data set successfully',
-      };
-
-      return next();
-    },
   },
 };
 

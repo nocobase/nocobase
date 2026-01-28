@@ -44,11 +44,10 @@ import { AIContextDatasourceManager } from './manager/ai-context-datasource-mana
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
-import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
+import { getCodeSnippet, listCodeSnippet, getContextApis, getContextEnvs, getContextVars } from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
 import { suggestions } from './tools/suggestions';
 import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocIndexKeys } from './tools/docs';
-import { SkillManager, getContextEnvsTool, getContextApisTool } from './skills';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -59,7 +58,6 @@ export class PluginAIServer extends Plugin {
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
   aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
-  skillManager = new SkillManager();
   snowflake: Snowflake;
 
   /**
@@ -115,7 +113,6 @@ export class PluginAIServer extends Plugin {
     const codeEditorGroupName = 'codeEditor';
     const dataSourceGroupName = 'dataSource';
     const docsGroupName = 'docs';
-    const skillsGroupName = 'skills';
     toolManager.registerToolGroup({
       groupName: frontendGroupName,
       title: '{{t("Frontend")}}',
@@ -145,11 +142,6 @@ export class PluginAIServer extends Plugin {
       groupName: docsGroupName,
       title: '{{t("Docs")}}',
       description: '{{t("Search and read generated documentation indexes")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: skillsGroupName,
-      title: '{{t("Skills")}}',
-      description: '{{t("Runtime context skills for progressive disclosure of APIs and environment variables")}}',
     });
 
     const docsIndexesDescription = describeDocIndexKeys('Docs indexes unavailable. Run ai:create-docs-index first.');
@@ -215,12 +207,16 @@ export class PluginAIServer extends Plugin {
         tool: createReadDocEntryTool({ description: docsIndexesDescription }),
       },
       {
-        groupName: skillsGroupName,
-        tool: getContextEnvsTool,
+        groupName: codeEditorGroupName,
+        tool: getContextApis,
       },
       {
-        groupName: skillsGroupName,
-        tool: getContextApisTool,
+        groupName: codeEditorGroupName,
+        tool: getContextEnvs,
+      },
+      {
+        groupName: codeEditorGroupName,
+        tool: getContextVars,
       },
     ]);
 

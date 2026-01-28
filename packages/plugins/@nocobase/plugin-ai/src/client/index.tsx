@@ -53,6 +53,11 @@ import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
+import {
+  getContextApisTool,
+  getContextEnvsTool,
+  getContextVarsTool,
+} from './ai-employees/ai-coding/tools/context-tools';
 import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
@@ -167,6 +172,9 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool(...listCodeSnippetTool);
     this.aiManager.registerTool(...getCodeSnippetTool);
     this.aiManager.registerTool(...suggestionsTool);
+    this.aiManager.registerTool(...getContextApisTool);
+    this.aiManager.registerTool(...getContextEnvsTool);
+    this.aiManager.registerTool(...getContextVarsTool);
   }
 
   setupWorkflow() {
@@ -190,4 +198,3 @@ export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
 export { ProfileCard } from './ai-employees/ProfileCard';
 export { avatars } from './ai-employees/avatars';
-export { setRuntimeContext } from './skills';
