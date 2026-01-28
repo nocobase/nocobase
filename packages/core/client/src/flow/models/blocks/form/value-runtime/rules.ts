@@ -90,6 +90,8 @@ export class RuleEngine {
   >();
   /** 当前表单中“已配置到 UI 的字段（FormItemModel）”的 targetPath 集合，用于避免对 row grid 重复注册规则 */
   private readonly formItemTargetPaths = new Set<string>();
+  /** targetPath -> updateAssociation（SubForm/SubTable 等） */
+  private readonly updateAssociationByTargetPath = new Map<string, boolean>();
   private readonly pendingRuleIds = new Set<string>();
   private readonly ruleDebounceUntilById = new Map<string, number>();
   private readonly ruleDebounceTimersById = new Map<string, ReturnType<typeof setTimeout>>();
@@ -292,11 +294,54 @@ export class RuleEngine {
 
     for (const p of prefixes) {
       const v = this.options.getFormValueAtPath(p);
-      if (v == null) return true;
+      if (v == null) {
+        // updateAssociation（子表单/子表格）场景下允许隐式创建关联对象/行，
+        // 以便嵌套字段的默认值/复制模式在首次渲染时即可生效。
+        const targetPath = p.filter((seg) => typeof seg === 'string').join('.');
+        if (targetPath && this.getUpdateAssociationForTargetPath(targetPath)) {
+          continue;
+        }
+        return true;
+      }
       if (typeof v !== 'object') return true;
     }
 
     return false;
+  }
+
+  private collectUpdateAssociationInitPatches(
+    baseCtx: any,
+    targetNamePath: NamePath,
+  ): Array<{ path: NamePath; value: any }> | null {
+    const prefixes = this.collectAssociationPrefixPaths(baseCtx, targetNamePath);
+    if (!prefixes.length) return [];
+
+    const patches: Array<{ path: NamePath; value: any }> = [];
+
+    for (const p of prefixes) {
+      const v = this.options.getFormValueAtPath(p);
+      if (v == null) {
+        const targetPath = p.filter((seg) => typeof seg === 'string').join('.');
+        if (!targetPath) return null;
+        if (!this.getUpdateAssociationForTargetPath(targetPath)) {
+          return null;
+        }
+        // 标记为“新增记录”，与子表单的 add({ __is_new__: true }) 行为一致。
+        patches.push({ path: [...p, '__is_new__'], value: true });
+        continue;
+      }
+      if (typeof v !== 'object') return null;
+    }
+
+    const byKey = new Map<string, { path: NamePath; value: any }>();
+    for (const it of patches) {
+      const k = namePathToPathKey(it.path as any);
+      if (!byKey.has(k)) {
+        byKey.set(k, it);
+      }
+    }
+
+    return Array.from(byKey.values());
   }
 
   dispose() {
@@ -343,6 +388,7 @@ export class RuleEngine {
     }
     this.assignTemplatesByTargetPath.clear();
     this.formItemTargetPaths.clear();
+    this.updateAssociationByTargetPath.clear();
 
     // 2) 归一化模板：按 targetPath 分组，后续在 model:mounted 时按实例注册
     let order = 0;
@@ -365,9 +411,11 @@ export class RuleEngine {
         if (!(model as any)?.subModels?.field) return;
         const p = this.getModelTargetPath(model);
         if (p) this.formItemTargetPaths.add(p);
+        this.cacheUpdateAssociationForModel(model);
       });
 
       const visit = (model: FlowModel) => {
+        this.cacheUpdateAssociationForModel(model);
         this.tryRegisterAssignRuleInstancesForModel(model, matchedTargetPaths);
 
         // fork models（例如子表单行内 item fork / 字段 fork）不会被注册到 FlowEngine.modelInstances，
@@ -419,6 +467,7 @@ export class RuleEngine {
     if (this.isModelInThisForm(model) && !(model as any)?.isFork && (model as any)?.subModels?.field) {
       const p = this.getModelTargetPath(model);
       if (p) this.formItemTargetPaths.add(p);
+      this.cacheUpdateAssociationForModel(model);
     }
     this.tryRegisterDefaultRuleInstance(model);
     this.tryRegisterAssignRuleInstancesForModel(model);
@@ -436,6 +485,7 @@ export class RuleEngine {
         this.ensureBlockAssignRuleInstancesForTargetPath(p);
 
         if (!(model as any)?.isFork) {
+          this.updateAssociationByTargetPath.delete(p);
           this.formItemTargetPaths.delete(p);
 
           // 对一关联字段可能承载其子属性规则实例；卸载时这些子属性规则也需要回退到 block-level。
@@ -470,6 +520,50 @@ export class RuleEngine {
     const block = model?.context?.blockModel;
     if (!block) return false;
     return String(block.uid) === String(this.options.getBlockModelUid());
+  }
+
+  private cacheUpdateAssociationForModel(model: FlowModel) {
+    if (this.options.isDisposed()) return;
+    if (!this.isModelInThisForm(model)) return;
+    if (!model || typeof model !== 'object') return;
+    if ((model as any)?.isFork) return;
+    if (!(model as any)?.subModels?.field) return;
+
+    const p = this.getModelTargetPath(model);
+    if (!p) return;
+
+    const fieldModel: any = (model as any)?.subModels?.field;
+    const next = !!fieldModel?.updateAssociation;
+    const prev = this.updateAssociationByTargetPath.get(p);
+
+    // once true, keep true (avoid being overwritten by another model instance)
+    if (prev === true) return;
+    this.updateAssociationByTargetPath.set(p, next);
+  }
+
+  private getUpdateAssociationForTargetPath(targetPath: string): boolean {
+    const key = String(targetPath || '');
+    if (!key) return false;
+
+    if (this.updateAssociationByTargetPath.has(key)) {
+      return !!this.updateAssociationByTargetPath.get(key);
+    }
+
+    // Fallback: scan existing models once (e.g. called before syncAssignRules finishes scanning).
+    const engine = this.options.getEngine();
+    if (engine?.forEachModel) {
+      engine.forEachModel((m: FlowModel) => {
+        this.cacheUpdateAssociationForModel(m);
+      });
+    }
+
+    if (this.updateAssociationByTargetPath.has(key)) {
+      return !!this.updateAssociationByTargetPath.get(key);
+    }
+
+    // Cache negative result; model:mounted will override when applicable.
+    this.updateAssociationByTargetPath.set(key, false);
+    return false;
   }
 
   private getDefaultRuleId(model: FlowModel) {
@@ -1016,13 +1110,26 @@ export class RuleEngine {
       }
     }
 
-    // 关联字段嵌套属性：关联对象为空/非对象时跳过，避免隐式创建
+    // 关联字段嵌套属性：默认避免在关联对象为空时隐式创建；但对 updateAssociation（子表单/子表格）允许自动创建以支持首次渲染落值。
     if (this.shouldSkipAssociationNestedWrite(baseCtx, targetNamePath!)) {
       return;
     }
 
     // 对多关联的子属性：缺少 index 时跳过，避免把数组字段写成对象，导致 Form.List add 报错
     if (this.shouldSkipToManyAssociationWriteWithoutIndex(baseCtx, targetNamePath!)) {
+      return;
+    }
+
+    // 若目标值本身无变化，则不应为了“初始化子表单对象/行”而产生额外写入
+    // （典型场景：assign 规则解析为 undefined，但当前值也是 undefined）
+    const currentValue = this.options.getFormValueAtPath(targetNamePath!);
+    const nextSnapshot = isObservable(resolved) ? toJS(resolved) : resolved;
+    if (_.isEqual(currentValue, nextSnapshot)) {
+      return;
+    }
+
+    const initPatches = this.collectUpdateAssociationInitPatches(baseCtx, targetNamePath!);
+    if (initPatches == null) {
       return;
     }
 
@@ -1038,7 +1145,8 @@ export class RuleEngine {
     }
 
     const beforeWriteSeq = this.options.getWriteSeq();
-    await this.options.setFormValues(evalCtx, [{ path: targetNamePath, value: resolved }], {
+    const patches = [...initPatches, { path: targetNamePath, value: resolved }];
+    await this.options.setFormValues(evalCtx, patches, {
       source: rule.source,
       txId: this.currentRuleTxId || undefined,
     });
