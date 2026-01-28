@@ -36,7 +36,7 @@ export const listCodeSnippet: ToolOptions = {
 export const getContextApis: ToolOptions = {
   name: 'getContextApis',
   title: '{{t("Get context APIs")}}',
-  description: '{{t("Get available API information from the current context")}}',
+  description: '{{t("Get available API methods from context")}}',
   execution: 'frontend',
   schema: z.object({}),
   invoke: async (ctx, _args, id) => {
@@ -58,8 +58,8 @@ export const getContextApis: ToolOptions = {
 
 export const getContextEnvs: ToolOptions = {
   name: 'getContextEnvs',
-  title: '{{t("Get context environment variables")}}',
-  description: '{{t("Get available environment variable information from the current context")}}',
+  title: '{{t("Get context environment")}}',
+  description: '{{t("Get current page/block/flow model metadata from context")}}',
   execution: 'frontend',
   schema: z.object({}),
   invoke: async (ctx, _args, id) => {
@@ -82,7 +82,7 @@ export const getContextEnvs: ToolOptions = {
 export const getContextVars: ToolOptions = {
   name: 'getContextVars',
   title: '{{t("Get context variables")}}',
-  description: '{{t("Get available variable information from the current context")}}',
+  description: '{{t("Get available variables from context")}}',
   execution: 'frontend',
   schema: z.object({
     path: z.string().optional().describe('Variable path for progressive disclosure'),

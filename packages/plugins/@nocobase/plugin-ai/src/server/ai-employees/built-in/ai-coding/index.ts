@@ -36,6 +36,18 @@ export default {
         autoCall: true,
       },
       {
+        name: 'codeEditor-getContextApis',
+        autoCall: true,
+      },
+      {
+        name: 'codeEditor-getContextEnvs',
+        autoCall: true,
+      },
+      {
+        name: 'codeEditor-getContextVars',
+        autoCall: true,
+      },
+      {
         name: 'dataSource-dataSourceCounting',
         autoCall: true,
       },
