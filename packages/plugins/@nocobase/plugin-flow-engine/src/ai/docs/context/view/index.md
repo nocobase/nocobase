@@ -1,9 +1,14 @@
 # ctx.view
 
-`ctx.view` is injected into components opened via `ctx.viewer`. It exposes `Header`, `Footer`, `close()`, `update()`, and `inputArgs`.
+当前视图控制器（如页面、弹窗、抽屉等），用于在 JSBlock / Action 中访问视图级别的信息或操作。
 
-## Usage Tips
+> 具体能力依赖视图类型，不在本页展开完整 API，这里仅给出概念说明。
 
-- `useFlowView()` is the easiest way to retrieve the active view helpers inside React.
-- Keep `viewUid` stable when opening views so nested models persist state.
-- Combine `ctx.view.inputArgs` with `ctx.viewer`'s `inputArgs` option to pass parameters.
+## 常见用途
+
+- 读取当前视图的参数（通常通过 `ctx.getVar` / `ctx.inputArgs` 获取）
+- 与 `ctx.openView` / `ctx.viewer` 配合，控制视图的打开/关闭
+
+- type
+- inputArgs
+- inputArgs.viewUid
