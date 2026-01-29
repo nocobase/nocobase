@@ -23,6 +23,7 @@ type ChatMessagesState = {
   editorRef?: Record<string, EditorRef>;
   currentEditorRefUid?: string;
   webSearching?: WebSearching;
+  flowContext?: any;
 };
 
 export interface ChatMessagesActions {
@@ -51,6 +52,8 @@ export interface ChatMessagesActions {
   setCurrentEditorRefUid: (uid: string) => void;
 
   setWebSearching: (webSearching: WebSearching) => void;
+
+  setFlowContext: (ctx: any) => void;
 }
 
 const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
@@ -64,6 +67,7 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   editorRef: {},
   currentEditorRefUid: null,
   webSearching: null,
+  flowContext: null,
 
   setMessages: (messages) => {
     set((state) => {
@@ -157,6 +161,10 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
 
   setWebSearching(webSearching) {
     set({ webSearching });
+  },
+
+  setFlowContext(flowContext) {
+    set({ flowContext });
   },
 }));
 

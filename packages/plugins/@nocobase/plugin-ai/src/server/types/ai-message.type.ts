@@ -51,3 +51,12 @@ export type AIMessageMetadata = {
 
   [key: string]: unknown;
 };
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: any;
+  };
+};

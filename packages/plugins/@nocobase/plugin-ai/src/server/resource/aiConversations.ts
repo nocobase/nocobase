@@ -73,6 +73,7 @@ export default {
             skillSettings,
             conversationSettings,
           },
+          thread: 1,
         },
       });
       await next();
@@ -353,7 +354,7 @@ export default {
           conversation.options?.conversationSettings?.webSearch,
         );
         await aiEmployee.cancelToolCall();
-        await aiEmployee.processMessages(messages, editingMessageId);
+        await aiEmployee.processMessages({ userMessages: messages, messageId: editingMessageId });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Tool call error');
@@ -417,7 +418,7 @@ export default {
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
         );
-        await aiEmployee.resendMessages(messageId);
+        await aiEmployee.processMessages({ messageId });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Chat error warning');
@@ -466,7 +467,7 @@ export default {
     async callTool(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId } = ctx.action.params.values || {};
+      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -521,69 +522,23 @@ export default {
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
         );
-        await aiEmployee.callTool(message.messageId, false);
+
+        const userDecisions = toolCallIds?.length
+          ? toolCallIds.map(() => ({
+              type: 'approve',
+            }))
+          : [
+              {
+                type: 'approve',
+              },
+            ];
+
+        await aiEmployee.processMessages({
+          userDecisions,
+        });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Tool call error');
-      }
-      await next();
-    },
-    async confirmToolCall(ctx: Context, next: Next) {
-      setupSSEHeaders(ctx);
-
-      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
-      if (!sessionId) {
-        sendErrorResponse(ctx, 'sessionId is required');
-        return next();
-      }
-      try {
-        const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId: ctx.auth?.user.id,
-          },
-        });
-        if (!conversation) {
-          sendErrorResponse(ctx, 'conversation not found');
-          return next();
-        }
-
-        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
-        if (!employee) {
-          sendErrorResponse(ctx, 'AI employee not found');
-          return next();
-        }
-
-        let message: Model;
-        if (messageId) {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-            filter: {
-              messageId,
-            },
-          });
-        } else {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-            sort: ['-messageId'],
-          });
-        }
-
-        if (!message) {
-          sendErrorResponse(ctx, 'message not found');
-          return next();
-        }
-
-        const aiEmployee = new AIEmployee(
-          ctx,
-          employee,
-          sessionId,
-          conversation.options?.systemMessage,
-          conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
-        );
-        await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
-      } catch (err) {
-        ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Tool call confirm error');
       }
       await next();
     },

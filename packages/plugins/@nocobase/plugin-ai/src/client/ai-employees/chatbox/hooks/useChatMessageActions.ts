@@ -183,6 +183,7 @@ export const useChatMessageActions = () => {
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
+
     if (!error && tools && tools.length > 0) {
       const toolCallIds: string[] = [];
       const toolCallResults = [];
@@ -199,7 +200,7 @@ export const useChatMessageActions = () => {
           }
         }
       }
-      await confirmToolCall({
+      await callTool({
         sessionId,
         aiEmployee,
         toolCallIds,
@@ -375,72 +376,23 @@ export const useChatMessageActions = () => {
       messageId,
       aiEmployee,
       args,
-    }: {
-      sessionId: string;
-      messageId?: string;
-      aiEmployee: AIEmployee;
-      args?: Record<string, any>;
-    }) => {
-      setResponseLoading(true);
-      addMessage({
-        key: uid(),
-        role: aiEmployee.username,
-        content: { type: 'text', content: '' },
-        loading: true,
-      });
-
-      try {
-        const sendRes = await api.request({
-          url: 'aiConversations:callTool',
-          method: 'POST',
-          headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, args },
-          responseType: 'stream',
-          adapter: 'fetch',
-        });
-
-        if (!sendRes?.data) {
-          setResponseLoading(false);
-          return;
-        }
-
-        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-      } catch (err) {
-        setResponseLoading(false);
-        throw err;
-      }
-    },
-    [],
-  );
-
-  const confirmToolCall = useCallback(
-    async ({
-      sessionId,
-      messageId,
-      aiEmployee,
       toolCallIds,
       toolCallResults,
     }: {
       sessionId: string;
       messageId?: string;
       aiEmployee: AIEmployee;
+      args?: Record<string, any>;
       toolCallIds?: string[];
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
-      addMessage({
-        key: uid(),
-        role: aiEmployee.username,
-        content: { type: 'text', content: '' },
-        loading: true,
-      });
-
       try {
         const sendRes = await api.request({
-          url: 'aiConversations:confirmToolCall',
+          url: 'aiConversations:callTool',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults },
+          data: { sessionId, messageId, args, toolCallIds, toolCallResults },
           responseType: 'stream',
           adapter: 'fetch',
         });
@@ -506,7 +458,6 @@ export const useChatMessageActions = () => {
     resendMessages,
     cancelRequest,
     callTool,
-    confirmToolCall,
     updateToolArgs,
     lastMessageRef,
     startEditingMessage,

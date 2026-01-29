@@ -13,6 +13,7 @@
 import { RunJSContextRegistry } from './registry';
 import { FlowRunJSContext } from '../flowContext';
 import { defineBaseContextMeta } from './contexts/base';
+import { applyRunJSContextContributions, markRunJSContextsSetupDone } from './contributions';
 
 let done = false;
 export async function setupRunJSContexts() {
@@ -23,6 +24,7 @@ export async function setupRunJSContexts() {
   const [
     { JSBlockRunJSContext },
     { JSFieldRunJSContext },
+    { JSEditableFieldRunJSContext },
     { JSItemRunJSContext },
     { JSColumnRunJSContext },
     { FormJSFieldItemRunJSContext },
@@ -31,6 +33,7 @@ export async function setupRunJSContexts() {
   ] = await Promise.all([
     import('./contexts/JSBlockRunJSContext'),
     import('./contexts/JSFieldRunJSContext'),
+    import('./contexts/JSEditableFieldRunJSContext'),
     import('./contexts/JSItemRunJSContext'),
     import('./contexts/JSColumnRunJSContext'),
     import('./contexts/FormJSFieldItemRunJSContext'),
@@ -42,10 +45,13 @@ export async function setupRunJSContexts() {
   RunJSContextRegistry.register(v1, '*', FlowRunJSContext);
   RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
   RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
+  RunJSContextRegistry.register(v1, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
   RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
   RunJSContextRegistry.register(v1, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
   RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
   RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
   RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext, { scenes: ['table'] });
+  await applyRunJSContextContributions(v1);
   done = true;
+  markRunJSContextsSetupDone(v1);
 }

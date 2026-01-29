@@ -20,7 +20,7 @@ export class TextField extends Field {
 
   init() {
     if (this.database.inDialect('mysql', 'mariadb')) {
-      this.options.defaultValue = null;
+      this.options.defaultValue = undefined;
     }
   }
 

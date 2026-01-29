@@ -53,7 +53,9 @@ const valueB = normalize(ctx.record?.[fieldB]);
 
 const parts = [valueA, valueB].filter((item) => item.length > 0);
 
-ctx.element.textContent = parts.length ? parts.join(' / ') : ctx.t('N/A');
+const result = document.createElement('span');
+result.textContent = parts.length ? parts.join(' / ') : ctx.t('N/A');
+ctx.render(result);
 `,
 };
 

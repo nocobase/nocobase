@@ -24,6 +24,7 @@ import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../hooks/useFullscreenOverlay';
+import { createRunJSCompletionSource } from './runjsCompletionSource';
 interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -118,6 +119,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
   }, [extraCompletions, dynamicCompletions]);
+
+  const completionSource = useMemo(() => {
+    return createRunJSCompletionSource({ hostCtx, staticOptions: finalExtra });
+  }, [hostCtx, finalExtra]);
 
   // JSX 转换支持暂时移除：直接按原样运行代码
 
@@ -231,7 +236,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         theme={theme}
         readonly={readonly}
         enableLinter={enableLinter}
-        extraCompletions={finalExtra}
+        completionSource={completionSource}
         viewRef={viewRef}
       />
       <LogsPanel

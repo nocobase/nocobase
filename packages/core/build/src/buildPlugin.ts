@@ -41,6 +41,7 @@ const sourceGlobalFiles: string[] = [
 
 const external = [
   // nocobase
+  '@nocobase/ai',
   '@nocobase/acl',
   '@nocobase/actions',
   '@nocobase/auth',

@@ -5567,6 +5567,13 @@
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
 
+"@langchain/langgraph-checkpoint-postgres@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmmirror.com/@langchain/langgraph-checkpoint-postgres/-/langgraph-checkpoint-postgres-1.0.0.tgz#14f710cd93a76296b883ad629e6921da608ad710"
+  integrity sha512-oTHCbQ9N1Zki2J0B/ulq9g/t2DRPePeQqTTJQdMYkdhpHEuWBbEPhpybSTbtXHD/6iT/UImBkUaum+nmPCIJZw==
+  dependencies:
+    pg "^8.12.0"
+
 "@langchain/langgraph-checkpoint@^1.0.0":
   version "1.0.0"
   resolved "https://registry.npmmirror.com/@langchain/langgraph-checkpoint/-/langgraph-checkpoint-1.0.0.tgz#ece2ede439d0d0b0b532c4be7817fd5029afe4f8"
@@ -18554,6 +18561,11 @@ flatted@^3.2.9:
   resolved "https://registry.npmmirror.com/flatted/-/flatted-3.2.9.tgz#7eb4c67ca1ba34232ca9d2d93e9886e611ad7daf"
   integrity sha512-36yxDn5H7OFZQla0/jFJmbIKTdZAQHngCedGxiMmpNfEZM0sdEeT+WczLQrjK6D7o2aiyLYDnkw0R3JK0Qv1RQ==
 
+flexsearch@^0.8.2:
+  version "0.8.212"
+  resolved "https://registry.npmjs.org/flexsearch/-/flexsearch-0.8.212.tgz#b9509af778a991b938292e36fe0809a4ece4b940"
+  integrity sha512-wSyJr1GUWoOOIISRu+X2IXiOcVfg9qqBRyCPRUdLMIGJqPzMo+jMRlvE83t14v1j0dRMEaBbER/adQjp6Du2pw==
+
 flru@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmmirror.com/flru/-/flru-1.0.2.tgz#1ae514c62b8b035ffff9ca9e4563ddcc817f4845"
@@ -27490,7 +27502,7 @@ pg@^8.11.3, pg@^8.7.3:
   optionalDependencies:
     pg-cloudflare "^1.1.1"
 
-pg@^8.16.3:
+pg@^8.12.0, pg@^8.16.3:
   version "8.16.3"
   resolved "https://registry.npmmirror.com/pg/-/pg-8.16.3.tgz#160741d0b44fdf64680e45374b06d632e86c99fd"
   integrity sha512-enxc1h0jA/aq5oSDMvqyW3q89ra6XIIDZgCX9vkMrnz5DFTw/Ny3Li2lFQ+pt3L6MCgm/5o2o8HW9hiJji+xvw==

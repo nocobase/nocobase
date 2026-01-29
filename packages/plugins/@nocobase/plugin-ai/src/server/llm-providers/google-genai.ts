@@ -36,7 +36,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
-      verbose: false,
+      verbose: true,
     });
   }
 
