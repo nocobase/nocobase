@@ -342,7 +342,11 @@ export default class extends Trigger {
   /**
    * 2.0
    */
-  getCreateModelMenuItem({ config }): SubModelItem {
+  getCreateModelMenuItem({ config }): SubModelItem | null {
+    // 无上下文数据源时，不提供触发器数据入口
+    if (!config?.collection) {
+      return null;
+    }
     return {
       key: 'triggerData',
       label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,

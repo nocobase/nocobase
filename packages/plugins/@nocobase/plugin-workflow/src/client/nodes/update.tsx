@@ -144,4 +144,8 @@ export default class extends Instruction {
     AssignedFieldsFormSchemaConfig,
     RadioWithTooltip,
   };
+  useTempAssociationSource(node) {
+    // 更新节点只返回更新结果（0/1/计数），不提供记录数据给下游使用
+    return null;
+  }
 }

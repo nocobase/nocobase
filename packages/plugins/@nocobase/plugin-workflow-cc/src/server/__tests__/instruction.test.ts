@@ -14,6 +14,7 @@ import PluginWorkflow, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-w
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import Plugin from '..';
 import { TASK_STATUS, TASK_TYPE_CC } from '../../common/constants';
+import { buildTempAssociationFieldName } from '../../common/tempAssociation';
 
 describe('workflow > instructions > cc', () => {
   let app: MockServer;
@@ -198,6 +199,175 @@ describe('workflow > instructions > cc', () => {
       const assignments = await AssignmentModel.findAll();
       expect(assignments.length).toBe(2);
       expect(assignments.map((item) => item.title)).toEqual(['test title for 123', 'test title for 123']);
+    });
+  });
+
+  describe('listMine temporary association fields', () => {
+    let PostRepo;
+
+    beforeEach(async () => {
+      PostRepo = db.getRepository('posts');
+      await workflow.update({
+        config: {
+          collection: 'posts',
+        },
+      });
+    });
+
+    it('should include workflow temporary association data', async () => {
+      const post = await PostRepo.create({ values: { title: 'cc-post-1' } });
+      const fieldName = buildTempAssociationFieldName('workflow', 'workflow');
+      await workflow.createNode({
+        type: 'cc',
+        config: {
+          users: [users[0].id],
+          tempAssociationFields: [
+            {
+              nodeId: workflow.id,
+              nodeKey: 'workflow',
+              nodeType: 'workflow',
+            },
+          ],
+        },
+      });
+
+      await workflowPlugin.trigger(workflow, {
+        data: post.get(),
+      });
+
+      await sleep(100);
+
+      await sleep(50);
+
+      const res = await userAgents[0].resource('workflowCcTasks').listMine({
+        appends: ['node', 'workflow', 'workflow.nodes'],
+        except: ['workflow.config'],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data[0][fieldName].id).toBe(post.id);
+    });
+
+    it('should handle invalid node config gracefully', async () => {
+      const post = await PostRepo.create({ values: { title: 'cc-post-2' } });
+      const fieldName = buildTempAssociationFieldName('node', 'missing');
+      await workflow.createNode({
+        type: 'cc',
+        config: {
+          users: [users[0].id],
+          tempAssociationFields: [
+            {
+              nodeId: 999999,
+              nodeKey: 'missing',
+              nodeType: 'node',
+            },
+          ],
+        },
+      });
+
+      await workflowPlugin.trigger(workflow, {
+        data: post.get(),
+      });
+
+      const res = await userAgents[0].resource('workflowCcTasks').listMine({
+        appends: ['node', 'workflow', 'workflow.nodes'],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data[0][fieldName]).toBeNull();
+    });
+
+    it('should skip empty configuration', async () => {
+      const post = await PostRepo.create({ values: { title: 'cc-post-3' } });
+      await workflow.createNode({
+        type: 'cc',
+        config: {
+          users: [users[0].id],
+          tempAssociationFields: [],
+        },
+      });
+
+      await workflowPlugin.trigger(workflow, {
+        data: post.get(),
+      });
+
+      const res = await userAgents[0].resource('workflowCcTasks').listMine({
+        appends: ['node', 'workflow', 'workflow.nodes'],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data[0].ccTempAssoc_workflow_workflow).toBeUndefined();
+    });
+
+    it('should include upstreamNode node configs', async () => {
+      const upstreamNode = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          multiple: false,
+          params: {},
+        },
+      });
+      const ccNode = await workflow.createNode({
+        type: 'cc',
+        upstreamId: upstreamNode.id,
+        config: {
+          users: [users[0].id],
+          tempAssociationFields: [
+            {
+              nodeId: upstreamNode.id,
+              nodeKey: upstreamNode.key,
+              nodeType: 'node',
+            },
+          ],
+        },
+      });
+      const downstreamNode = await workflow.createNode({
+        type: 'query',
+        upstreamId: ccNode.id,
+        config: {
+          collection: 'posts',
+          multiple: false,
+          params: {},
+        },
+      });
+
+      await upstreamNode.setDownstream(ccNode);
+      await ccNode.setDownstream(downstreamNode);
+
+      await ccNode.update({
+        config: {
+          users: [users[0].id],
+          tempAssociationFields: [
+            {
+              nodeId: upstreamNode.id,
+              nodeKey: upstreamNode.key,
+              nodeType: 'node',
+            },
+          ],
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 'cc-post-4' } });
+      await workflowPlugin.trigger(workflow, {
+        data: post.get(),
+      });
+
+      const res = await userAgents[0].resource('workflowCcTasks').listMine({
+        appends: ['node', 'workflow', 'workflow.nodes'],
+      });
+
+      const upstreamField = buildTempAssociationFieldName('node', upstreamNode.key);
+      const data = res.body.data || res.body.rows || [];
+      expect(res.status).toBe(200);
+      expect(data.length).toBeGreaterThan(0);
+      expect(upstreamField in data[0]).toBe(true);
+    });
+  });
+
+  describe('temp association helpers', () => {
+    it('should build field name consistently', () => {
+      expect(buildTempAssociationFieldName('node', 'node1')).toBe('ccTempAssoc_node_node1');
     });
   });
 

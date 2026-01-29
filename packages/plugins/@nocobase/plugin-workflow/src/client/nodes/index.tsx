@@ -102,7 +102,18 @@ export abstract class Instruction {
    * 2.0
    */
   getCreateModelMenuItem?({ node, workflow }): SubModelItem | null;
+  /**
+   * @experimental
+   */
+  useTempAssociationSource?(node): TempAssociationSource | null;
 }
+
+export type TempAssociationSource = {
+  collection: string;
+  nodeId: string | number;
+  nodeKey: string;
+  nodeType: 'workflow' | 'node';
+};
 
 function useUpdateAction() {
   const form = useForm();
@@ -172,10 +183,17 @@ export function useAvailableUpstreams(node, filter?) {
  * @experimental
  */
 export function useUpstreamScopes(node) {
+  const { instructions } = usePlugin(WorkflowPlugin);
   const stack: any[] = [];
 
   for (let current = node; current; current = current.upstream) {
-    if (current.upstream && current.branchIndex != null) {
+    if (!current.upstream) {
+      continue;
+    }
+    const instruction = instructions.get(current.upstream.type);
+    const hasScopeVariables = typeof instruction?.useScopeVariables === 'function';
+    // 允许带 scope 变量的节点（如循环）进入作用域列表
+    if (current.branchIndex != null || hasScopeVariables) {
       stack.push(current.upstream);
     }
   }

@@ -11,6 +11,7 @@ import { NAMESPACE } from '../constants';
 
 export default {
   name: 'workflowCcTasks',
+  filterTargetKey: 'id',
   dumpRules: {
     group: 'log',
   },
@@ -58,6 +59,10 @@ export default {
       type: 'belongsTo',
       name: 'node',
       target: 'flow_nodes',
+      uiSchema: {
+        type: 'object',
+        title: `{{t("CC node", { ns: "${NAMESPACE}" })}}`,
+      },
     },
     {
       type: 'belongsTo',
