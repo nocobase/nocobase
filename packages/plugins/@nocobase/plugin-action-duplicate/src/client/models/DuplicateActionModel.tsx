@@ -439,6 +439,18 @@ DuplicateActionModel.registerFlow({
   title: tExpr('Duplicate mode settings'),
   on: 'quickCreateClick',
   steps: {
+    confirm: {
+      use: 'confirm',
+      hideInSettings(ctx) {
+        const duplicateMode = ctx.model.getStepParams?.('duplicateModeSettings', 'duplicateMode')?.duplicateMode;
+        return duplicateMode !== 'quickDulicate';
+      },
+      defaultParams: {
+        enable: false,
+        title: tExpr('Duplicate record'),
+        content: tExpr('Are you sure you want to duplicate it?'),
+      },
+    },
     duplicate: {
       async handler(ctx, params) {
         const { duplicateFields = [] } = ctx.model.props;
@@ -494,12 +506,25 @@ DuplicateActionModel.registerFlow({
   },
   sort: 300,
   steps: {
+    confirm: {
+      use: 'confirm',
+      hideInSettings(ctx) {
+        const duplicateMode = ctx.model.getStepParams?.('duplicateModeSettings', 'duplicateMode')?.duplicateMode;
+        return duplicateMode === 'quickDulicate';
+      },
+      defaultParams: {
+        enable: false,
+        title: tExpr('Duplicate record'),
+        content: tExpr('Are you sure you want to duplicate it?'),
+      },
+    },
     openView: {
       title: tExpr('Edit popup'),
       hideInSettings(ctx) {
         const duplicateMode = ctx.model.getStepParams?.('duplicateModeSettings', 'duplicateMode')?.duplicateMode;
         return duplicateMode === 'quickDulicate';
       },
+      // use: 'openView',
       uiSchema: {
         mode: {
           type: 'string',
