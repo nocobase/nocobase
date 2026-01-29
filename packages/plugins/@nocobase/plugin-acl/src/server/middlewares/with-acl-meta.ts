@@ -101,6 +101,7 @@ function createWithACLMetaMiddleware() {
           mergeParams() {},
         },
         state: {
+          ...ctx.state,
           currentRole: ctx.state.currentRole,
           currentRoles: ctx.state.currentRoles,
           currentUser: (() => {
