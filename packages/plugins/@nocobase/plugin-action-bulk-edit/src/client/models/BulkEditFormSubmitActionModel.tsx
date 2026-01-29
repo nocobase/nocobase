@@ -12,8 +12,9 @@ import React from 'react';
 import { Button, ButtonProps, message, Modal, Dropdown, DatePicker } from 'antd';
 import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { submitHandler } from './submitHandler';
+import { BulkEditFormModel } from './BulkEditFormModel';
 
-export class BulkEditFormSubmitActionModel extends ActionModel {
+export class BulkEditFormSubmitActionModel extends FormSubmitActionModel {
   defaultProps: ButtonProps & { withScheduleSend?: boolean } = {
     title: tExpr('Submit'),
     type: 'primary',
@@ -23,6 +24,12 @@ export class BulkEditFormSubmitActionModel extends ActionModel {
 BulkEditFormSubmitActionModel.define({
   label: tExpr('Submit'),
   sort: 1,
+  hide: (context) => {
+    if (context.model instanceof BulkEditFormModel) {
+      return false;
+    }
+    return true;
+  },
 });
 
 BulkEditFormSubmitActionModel.registerFlow({
