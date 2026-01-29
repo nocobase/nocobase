@@ -37,9 +37,11 @@ import {
   extractPropertyPath,
   extractUsedVariablePaths,
   FlowExitException,
+  isCssFile,
   prepareRunJsCode,
   resolveDefaultParams,
   resolveExpressions,
+  resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
@@ -1326,11 +1328,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }),
     });
     this.defineMethod('loadCSS', async (href: string) => {
-      let url = href.trim();
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        const ESM_CDN_BASE_URL = window['__esm_cdn_base_url__'] || '';
-        url = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
-      }
+      const url = resolveModuleUrl(href);
       return new Promise((resolve, reject) => {
         // Check if CSS is already loaded
         const existingLink = document.querySelector(`link[href="${url}"]`);
@@ -1353,11 +1351,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           reject(new Error('requirejs is not available'));
           return;
         }
-        let u = url.trim();
-        if (!u.startsWith('http://') && !u.startsWith('https://')) {
-          const ESM_CDN_BASE_URL = window['__esm_cdn_base_url__'] || '';
-          u = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${u}`;
-        }
+        const u = resolveModuleUrl(url);
         this.requirejs(
           [u],
           (...args: any[]) => {
@@ -1371,21 +1365,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
     // - 返回模块命名空间对象（包含 default 与命名导出）
     this.defineMethod('importAsync', async (url: string) => {
-      if (!url || typeof url !== 'string') {
-        throw new Error('invalid url');
+      // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
+      if (isCssFile(url)) {
+        return this.loadCSS(url);
       }
-      let u = url.trim();
-      // is url
-      if (!u.startsWith('http://') && !u.startsWith('https://')) {
-        const ESM_CDN_BASE_URL = window['__esm_cdn_base_url__'] || 'https://esm.sh';
-        const ESM_CDN_SUFFIX = window['__esm_cdn_suffix__'] || '';
-        u = `${ESM_CDN_BASE_URL.replace(/\/$/, '')}/${u.replace(/^\//, '')}${ESM_CDN_SUFFIX}`;
-      }
-      // 去掉 query 和 hash 后判断是否为 CSS（支持 example.css?v=123 等形式）
-      const pathPart = u.split('?')[0].split('#')[0];
-      if (pathPart.endsWith('.css')) {
-        return this.loadCSS(u);
-      }
+      const u = resolveModuleUrl(url, { addSuffix: true });
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
