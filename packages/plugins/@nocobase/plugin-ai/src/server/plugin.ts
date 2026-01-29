@@ -47,7 +47,7 @@ import { AICodingManager } from './manager/ai-coding-manager';
 import { getCodeSnippet, listCodeSnippet, getContextApis, getContextEnvs, getContextVars } from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
 import { suggestions } from './tools/suggestions';
-import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocIndexKeys } from './tools/docs';
+import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocModules } from './tools/docs';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -144,7 +144,7 @@ export class PluginAIServer extends Plugin {
       description: '{{t("Search and read generated documentation indexes")}}',
     });
 
-    const docsIndexesDescription = describeDocIndexKeys('Docs indexes unavailable. Run ai:create-docs-index first.');
+    const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
 
     this.aiManager.toolManager.registerTools([
       {
@@ -200,11 +200,11 @@ export class PluginAIServer extends Plugin {
       },
       {
         groupName: docsGroupName,
-        tool: createDocsSearchTool({ description: docsIndexesDescription }),
+        tool: createDocsSearchTool({ description: docsModulesDescription }),
       },
       {
         groupName: docsGroupName,
-        tool: createReadDocEntryTool({ description: docsIndexesDescription }),
+        tool: createReadDocEntryTool({ description: docsModulesDescription }),
       },
       {
         groupName: codeEditorGroupName,

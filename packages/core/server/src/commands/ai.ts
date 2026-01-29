@@ -32,106 +32,7 @@ async function resolvePkgs(pkg?: string | string[]) {
 interface BuildResult {
   created: boolean;
   reason?: string;
-}
-
-async function buildDocsIndex(packageName: string): Promise<BuildResult> {
-  const packageJsonPath = require.resolve(`${packageName}/package.json`);
-  const packageDir = path.dirname(packageJsonPath);
-  const docsDir = path.join(packageDir, 'src', 'ai', 'docs');
-  const outputDir = path.join(DOCS_STORAGE_DIR, packageName);
-
-  if (!(await fs.pathExists(docsDir))) {
-    await fs.remove(outputDir);
-    return { created: false, reason: 'docs directory not found' };
-  }
-
-  const files = await fg(['**/*.md'], {
-    cwd: docsDir,
-    onlyFiles: true,
-    absolute: true,
-  });
-
-  if (!files.length) {
-    await fs.remove(outputDir);
-    return { created: false, reason: 'no doc files found' };
-  }
-
-  files.sort();
-
-  const directoryChildren = buildDirectoryChildren(files, docsDir);
-  const docEntries: DocEntryMeta[] = await Promise.all(
-    files.map(async (file) => {
-      const relativePath = path.relative(docsDir, file);
-      const normalizedRelativePath = relativePath.split(path.sep).join('/');
-      const canonicalPath = path.posix.join(packageName, normalizedRelativePath);
-      const content = await fs.readFile(file, 'utf8');
-      const meta = extractDocMetadata(content, file);
-      return {
-        absolutePath: file,
-        relativePath,
-        canonicalPath,
-        content,
-        ...meta,
-      };
-    }),
-  );
-  const docMap = new Map<string, DocEntryMeta>(docEntries.map((entry) => [entry.absolutePath, entry]));
-
-  await fs.remove(outputDir);
-  await fs.ensureDir(outputDir);
-  const docsOutputDir = path.join(outputDir, 'docs');
-
-  const index = new FlexSearchIndex();
-  const fileMap: Record<number, string> = {};
-  let currentId = 1;
-
-  let indexedDocs = 0;
-  const markdownExt = new Set(['.md']);
-
-  for (const entry of docEntries) {
-    const storageDocPath = path.join(docsOutputDir, entry.relativePath);
-    await fs.ensureDir(path.dirname(storageDocPath));
-    let processedContent = entry.content;
-
-    if (entry.isIndex) {
-      processedContent = applyReferencesToIndex(processedContent, entry.absolutePath, directoryChildren, docMap);
-    } else if (!entry.hasFrontMatter) {
-      processedContent = injectFrontMatter(processedContent, entry);
-    }
-
-    await fs.writeFile(storageDocPath, processedContent, 'utf8');
-
-    const ext = path.extname(entry.absolutePath).toLowerCase();
-    if (!markdownExt.has(ext)) {
-      continue;
-    }
-    if (entry.isIndex) {
-      const content = processedContent.trim();
-      if (!content) {
-        continue;
-      }
-      const docId = currentId++;
-      await index.addAsync(docId, processedContent);
-      fileMap[docId] = entry.canonicalPath;
-      indexedDocs++;
-    }
-  }
-
-  if (!indexedDocs) {
-    await fs.remove(outputDir);
-    return { created: false, reason: 'no markdown doc content to index' };
-  }
-
-  const indexData: Record<string, string> = {};
-  index.export((key, data) => {
-    indexData[key] = data;
-  });
-
-  await fs.ensureDir(outputDir);
-  await fs.writeJSON(path.join(outputDir, 'index.json'), indexData, { spaces: 2 });
-  await fs.writeJSON(path.join(outputDir, 'files.json'), fileMap, { spaces: 2 });
-
-  return { created: true };
+  conflicts?: string[];
 }
 
 type DirectoryChildren = Map<
@@ -154,6 +55,19 @@ interface DocEntryMeta {
   description: string;
   hasFrontMatter: boolean;
   isIndex: boolean;
+  moduleName: string;
+  moduleRoot: string;
+  packageName: string;
+}
+
+interface ModuleGroup {
+  moduleName: string;
+  description: string;
+  moduleRoot: string;
+  packageName: string;
+  entries: DocEntryMeta[];
+  directoryChildren: DirectoryChildren;
+  docMap: Map<string, DocEntryMeta>;
 }
 
 function buildDirectoryChildren(files: string[], docsDir: string): DirectoryChildren {
@@ -189,6 +103,234 @@ function buildDirectoryChildren(files: string[], docsDir: string): DirectoryChil
   });
 
   return map;
+}
+
+async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> {
+  const packageJsonPath = require.resolve(`${packageName}/package.json`);
+  const packageDir = path.dirname(packageJsonPath);
+  const docsDir = path.join(packageDir, 'src', 'ai', 'docs');
+
+  if (!(await fs.pathExists(docsDir))) {
+    return [];
+  }
+
+  const moduleMetaFiles = await fg(['*/meta.json'], {
+    cwd: docsDir,
+    onlyFiles: true,
+    absolute: true,
+  });
+
+  if (!moduleMetaFiles.length) {
+    return [];
+  }
+
+  moduleMetaFiles.sort();
+
+  const groups: ModuleGroup[] = [];
+  for (const metaFile of moduleMetaFiles) {
+    const moduleRoot = path.dirname(metaFile);
+    const moduleDirName = path.basename(moduleRoot);
+    let moduleName = moduleDirName;
+    let description = '';
+    try {
+      const meta = await fs.readJson(metaFile);
+      if (meta?.module && typeof meta.module === 'string') {
+        moduleName = meta.module.trim() || moduleDirName;
+      }
+      if (meta?.description && typeof meta.description === 'string') {
+        description = meta.description.trim();
+      }
+    } catch {
+      moduleName = moduleDirName;
+      description = '';
+    }
+
+    const files = await fg(['**/*.md'], {
+      cwd: moduleRoot,
+      onlyFiles: true,
+      absolute: true,
+    });
+
+    if (!files.length) {
+      continue;
+    }
+
+    files.sort();
+
+    const directoryChildren = buildDirectoryChildren(files, moduleRoot);
+    const docEntries: DocEntryMeta[] = await Promise.all(
+      files.map(async (file) => {
+        const relativePath = path.relative(moduleRoot, file);
+        const normalizedRelativePath = relativePath.split(path.sep).join('/');
+        const canonicalPath = path.posix.join(moduleName, normalizedRelativePath);
+        const content = await fs.readFile(file, 'utf8');
+        const meta = extractDocMetadata(content, file);
+        return {
+          absolutePath: file,
+          relativePath,
+          canonicalPath,
+          content,
+          moduleName,
+          moduleRoot,
+          packageName,
+          ...meta,
+        };
+      }),
+    );
+
+    const docMap = new Map<string, DocEntryMeta>(docEntries.map((entry) => [entry.absolutePath, entry]));
+    groups.push({
+      moduleName,
+      description,
+      moduleRoot,
+      packageName,
+      entries: docEntries,
+      directoryChildren,
+      docMap,
+    });
+  }
+
+  return groups;
+}
+
+async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<string, BuildResult>> {
+  const moduleGroups: Map<string, ModuleGroup[]> = new Map();
+  const moduleDescriptions: Map<string, string> = new Map();
+  const conflicts: Map<string, string[]> = new Map();
+
+  for (const packageName of packageNames) {
+    const groups = await collectModuleGroups(packageName);
+    for (const group of groups) {
+      const existing = moduleGroups.get(group.moduleName);
+      if (existing) {
+        existing.push(group);
+      } else {
+        moduleGroups.set(group.moduleName, [group]);
+      }
+
+      if (group.description) {
+        const existingDesc = moduleDescriptions.get(group.moduleName);
+        if (existingDesc && existingDesc !== group.description) {
+          const list = conflicts.get(group.moduleName) || [];
+          list.push(
+            `${group.packageName}: description mismatch (existing="${existingDesc}", new="${group.description}")`,
+          );
+          conflicts.set(group.moduleName, list);
+        } else if (!existingDesc) {
+          moduleDescriptions.set(group.moduleName, group.description);
+        }
+      }
+    }
+  }
+
+  const results = new Map<string, BuildResult>();
+
+  for (const [moduleName, groups] of moduleGroups.entries()) {
+    const outputDir = path.join(DOCS_STORAGE_DIR, moduleName);
+
+    if (!groups.length) {
+      results.set(moduleName, { created: false, reason: 'no doc files found' });
+      continue;
+    }
+
+    const docsOutputDir = outputDir;
+    const index = new FlexSearchIndex();
+    const fileMap: Record<number, string> = {};
+    let currentId = 1;
+    let indexedDocs = 0;
+    const markdownExt = new Set(['.md']);
+    const storagePathMap = new Map<string, DocEntryMeta>();
+    const moduleConflicts: string[] = [];
+
+    await fs.remove(outputDir);
+    await fs.ensureDir(docsOutputDir);
+
+    const sortedGroups = groups.slice().sort((a, b) => {
+      if (a.packageName !== b.packageName) {
+        return a.packageName.localeCompare(b.packageName);
+      }
+      return a.moduleRoot.localeCompare(b.moduleRoot);
+    });
+
+    for (const group of sortedGroups) {
+      for (const entry of group.entries) {
+        const storageDocPath = path.join(docsOutputDir, entry.relativePath);
+        const existing = storagePathMap.get(storageDocPath);
+        if (existing) {
+          moduleConflicts.push(
+            `Duplicate path "${entry.relativePath}" from ${entry.packageName} and ${existing.packageName}`,
+          );
+          continue;
+        }
+        storagePathMap.set(storageDocPath, entry);
+
+        await fs.ensureDir(path.dirname(storageDocPath));
+        let processedContent = entry.content;
+
+        if (entry.isIndex) {
+          processedContent = applyReferencesToIndex(
+            processedContent,
+            entry.absolutePath,
+            group.directoryChildren,
+            group.docMap,
+          );
+        } else if (!entry.hasFrontMatter) {
+          processedContent = injectFrontMatter(processedContent, entry);
+        }
+
+        await fs.writeFile(storageDocPath, processedContent, 'utf8');
+
+        const ext = path.extname(entry.absolutePath).toLowerCase();
+        if (!markdownExt.has(ext)) {
+          continue;
+        }
+        if (entry.isIndex) {
+          const content = processedContent.trim();
+          if (!content) {
+            continue;
+          }
+          const docId = currentId++;
+          await index.addAsync(docId, processedContent);
+          fileMap[docId] = entry.canonicalPath;
+          indexedDocs++;
+        }
+      }
+    }
+
+    if (!indexedDocs) {
+      await fs.remove(outputDir);
+      results.set(moduleName, { created: false, reason: 'no markdown doc content to index' });
+      continue;
+    }
+
+    const indexData: Record<string, string> = {};
+    index.export((key, data) => {
+      indexData[key] = data;
+    });
+
+    await fs.ensureDir(outputDir);
+    await fs.writeJSON(path.join(outputDir, 'index.json'), indexData, { spaces: 2 });
+    await fs.writeJSON(path.join(outputDir, 'files.json'), fileMap, { spaces: 2 });
+    const allConflicts = [...(conflicts.get(moduleName) || []), ...moduleConflicts];
+    if (allConflicts.length) {
+      results.set(moduleName, { created: true, conflicts: allConflicts });
+    } else {
+      results.set(moduleName, { created: true });
+    }
+  }
+
+  if (moduleGroups.size) {
+    const metaOutput: Record<string, { description: string }> = {};
+    for (const moduleName of moduleGroups.keys()) {
+      metaOutput[moduleName] = {
+        description: moduleDescriptions.get(moduleName) || '',
+      };
+    }
+    await fs.ensureDir(DOCS_STORAGE_DIR);
+    await fs.writeJSON(path.join(DOCS_STORAGE_DIR, 'meta.json'), metaOutput, { spaces: 2 });
+  }
+
+  return results;
 }
 
 function extractDocMetadata(content: string, filePath: string) {
@@ -339,17 +481,35 @@ export default (app: Application) => {
         return;
       }
 
+      const packageNames: string[] = [];
       for (const pkg of pkgs) {
         try {
           const { packageName } = await PluginManager.parseName(pkg);
-          const result = await buildDocsIndex(packageName);
-          if (result.created) {
-            app.log.info(`Docs index generated for ${packageName}`);
-          } else {
-            app.log.info(`Skipped docs index for ${packageName}: ${result.reason}`);
-          }
+          packageNames.push(packageName);
         } catch (error) {
           app.log.error(error, { pkg });
+        }
+      }
+
+      if (!packageNames.length) {
+        app.log.info('No plugin packages resolved for docs index generation');
+        return;
+      }
+
+      const results = await buildDocsIndexForPackages(packageNames);
+      if (!results.size) {
+        app.log.info('No module docs found to index');
+        return;
+      }
+
+      for (const [moduleName, result] of results.entries()) {
+        if (result.created) {
+          app.log.info(`Docs index generated for module "${moduleName}"`);
+          if (result.conflicts?.length) {
+            app.log.warn(`Module "${moduleName}" has conflicts: ${result.conflicts.join('; ')}`);
+          }
+        } else {
+          app.log.info(`Skipped docs index for module "${moduleName}": ${result.reason}`);
         }
       }
     });
