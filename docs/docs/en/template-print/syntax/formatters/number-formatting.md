@@ -10,7 +10,6 @@ Parameter:
 
 ##### Example
 ```
-// Example environment: API options { "lang": "en-us" }
 '10':formatN()         // Outputs "10.000"
 '1000.456':formatN()   // Outputs "1,000.456"
 ```

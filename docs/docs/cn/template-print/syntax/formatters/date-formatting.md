@@ -3,21 +3,25 @@
 #### 1. :formatD(patternOut, patternIn)
 
 ##### 语法说明
-格式化日期，接受输出格式模式 `patternOut`，输入格式模式 `patternIn`（默认为 ISO 8601）。  
-可通过 `options.timezone` 和 `options.lang` 调整时区和语言。
+格式化日期，接受输出格式模式 `patternOut`，输入格式模式 `patternIn`（默认为 ISO 8601）。
 
-##### 示例
+##### 常用示例
 ```
-// 示例环境：API 选项 { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // 输出 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // 输出 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // 输出 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // 输出 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // 输出 1月15日
+{d.meetingTime:formatD(HH:mm)}              // 输出 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // 输出 2024年1月15日 星期一
+```
+
+##### 更多格式示例
+```
 '20160131':formatD(L)      // 输出 01/31/2016
 '20160131':formatD(LL)     // 输出 January 31, 2016
 '20160131':formatD(LLLL)   // 输出 Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // 输出 Sunday
-
-// 法语示例：
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // 输出 mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // 输出 dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // 输出 dimanche 14 septembre 2014 19:27
 ```
 
 ##### 结果
@@ -35,7 +39,6 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // 输出 "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // 输出 "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // 输出 "2016-02-03T00:00:00.000Z"
@@ -54,7 +57,6 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // 输出 "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // 输出 "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // 输出 "2016-01-28T00:00:00.000Z"
@@ -76,7 +78,6 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // 输出 "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // 输出 "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // 输出 "2016-01-31T00:00:00.000Z"
@@ -96,7 +97,6 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // 输出 "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // 输出 "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // 输出 "2016-01-31T23:59:59.999Z"
@@ -154,15 +154,11 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "en", "timezone": "Europe/Paris" }
 '20160131':convDate('YYYYMMDD', 'L')      // 输出 "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // 输出 "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // 输出 "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // 输出 "Sunday"
 1410715640:convDate('X', 'LLLL')          // 输出 "Sunday, September 14, 2014 7:27 PM"
-// 法语示例：
-'20160131':convDate('YYYYMMDD', 'LLLL')   // 输出 "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // 输出 "dimanche"
 ```
 
 ##### 结果

@@ -76,6 +76,7 @@ const EditableDepartmentOwnersField: React.FC = () => {
         resource: `departments/${department.id}/members`,
         action: 'list',
         params: {
+          disableDefaultAppends: true,
           filter: field.value?.length
             ? {
                 id: {

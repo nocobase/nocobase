@@ -3,21 +3,25 @@
 #### 1. :formatD(patternOut, patternIn)
 
 ##### Syntax Explanation
-Formats a date by accepting an output format `patternOut` and an optional input format `patternIn` (defaults to ISO 8601).  
-Timezone and language adjustments can be made via `options.timezone` and `options.lang`.
+Formats a date by accepting an output format `patternOut` and an optional input format `patternIn` (defaults to ISO 8601).
 
-##### Example
+##### Common Examples
 ```
-// Example environment: API options { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // Outputs 2024-01-15
+{d.createdAt:formatD(MMM D, YYYY)}          // Outputs Jan 15, 2024
+{d.updatedAt:formatD(MMMM D, YYYY HH:mm)}   // Outputs January 15, 2024 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Outputs 2024/01/15 14:30:25
+{d.birthday:formatD(MM/DD)}                 // Outputs 01/15
+{d.meetingTime:formatD(HH:mm)}              // Outputs 14:30
+{d.deadline:formatD(dddd, MMMM D, YYYY)}    // Outputs Monday, January 15, 2024
+```
+
+##### More Format Examples
+```
 '20160131':formatD(L)      // Outputs 01/31/2016
 '20160131':formatD(LL)     // Outputs January 31, 2016
 '20160131':formatD(LLLL)   // Outputs Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // Outputs Sunday
-
-// French example:
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Outputs mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Outputs dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Outputs dimanche 14 septembre 2014 19:27
 ```
 
 ##### Result
@@ -35,7 +39,6 @@ Parameters:
 
 ##### Example
 ```
-// Example environment: API options { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // Outputs "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // Outputs "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // Outputs "2016-02-03T00:00:00.000Z"
@@ -54,7 +57,6 @@ Subtracts a specified amount of time from a date. The parameters are the same as
 
 ##### Example
 ```
-// Example environment: API options { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // Outputs "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // Outputs "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // Outputs "2016-01-28T00:00:00.000Z"
@@ -76,7 +78,6 @@ Parameters:
 
 ##### Example
 ```
-// Example environment: API options { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // Outputs "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // Outputs "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // Outputs "2016-01-31T00:00:00.000Z"
@@ -96,7 +97,6 @@ Parameters are the same as for `startOfD`.
 
 ##### Example
 ```
-// Example environment: API options { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // Outputs "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // Outputs "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // Outputs "2016-01-31T23:59:59.999Z"
@@ -154,15 +154,11 @@ Parameters:
 
 ##### Example
 ```
-// Example environment: API options { "lang": "en", "timezone": "Europe/Paris" }
 '20160131':convDate('YYYYMMDD', 'L')      // Outputs "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // Outputs "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // Outputs "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // Outputs "Sunday"
 1410715640:convDate('X', 'LLLL')          // Outputs "Sunday, September 14, 2014 7:27 PM"
-// French example:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Outputs "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Outputs "dimanche"
 ```
 
 ##### Result

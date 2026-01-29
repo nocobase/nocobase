@@ -14,16 +14,11 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
 '1000.456':formatC()      // 输出 "$2,000.91"
 '1000.456':formatC('M')    // 输出 "dollars"
 '1':formatC('M')           // 输出 "dollar"
 '1000':formatC('L')        // 输出 "$2,000.00"
 '1000':formatC('LL')       // 输出 "2,000.00 dollars"
-
-// 法语示例（环境设置不同时）：
-'1000.456':formatC()      // 输出 "2 000,91 ..."  
-'1000.456':formatC()      // 当源货币与目标货币相同时输出 "1 000,46 €"
 ```
 
 ##### 结果
@@ -41,7 +36,6 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
 10:convCurr()              // 输出 20
 1000:convCurr()            // 输出 2000
 1000:convCurr('EUR')        // 输出 1000

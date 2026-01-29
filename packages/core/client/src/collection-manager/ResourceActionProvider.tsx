@@ -39,7 +39,10 @@ const CollectionResourceActionProvider = (props) => {
   if (actionName === 'get') {
     others['filterByTk'] = record[collection.targetKey || collection.filterTargetKey || 'id'];
   }
-  const appends = request?.params?.appends || [];
+  const { appends: requestAppends, disableDefaultAppends, ...restParams } = request?.params || {};
+  const defaultAppends = collection?.fields?.filter?.((field) => field.target).map((field) => field.name) || [];
+  const mergedAppends = disableDefaultAppends ? requestAppends || [] : [...defaultAppends, ...(requestAppends || [])];
+  const shouldAppend = mergedAppends.length > 0;
   const service = useRequest<{
     data: any;
   }>(
@@ -47,11 +50,8 @@ const CollectionResourceActionProvider = (props) => {
       ...request,
       params: {
         ...others,
-        ...request?.params,
-        appends: [
-          ...(collection?.fields?.filter?.((field) => field.target).map((field) => field.name) || []),
-          ...appends,
-        ],
+        ...restParams,
+        ...(shouldAppend ? { appends: mergedAppends } : {}),
         sort: dragSort ? [collection.sortable === true ? 'sort' : collection.sortable] : request?.params?.sort,
       },
     },
@@ -78,17 +78,17 @@ const AssociationResourceActionProvider = (props) => {
   const api = useAPIClient();
   const record = useRecord();
   const resourceOf = record[association.sourceKey];
-  const appends = request?.params?.appends || [];
+  const { appends: requestAppends, disableDefaultAppends, ...restParams } = request?.params || {};
+  const defaultAppends = collection?.fields?.filter?.((field) => field.target).map((field) => field.name) || [];
+  const mergedAppends = disableDefaultAppends ? requestAppends || [] : [...defaultAppends, ...(requestAppends || [])];
+  const shouldAppend = mergedAppends.length > 0;
   const service = useRequest(
     {
       resourceOf,
       ...request,
       params: {
-        ...request?.params,
-        appends: [
-          ...(collection?.fields?.filter?.((field) => field.target).map((field) => field.name) || []),
-          ...appends,
-        ],
+        ...restParams,
+        ...(shouldAppend ? { appends: mergedAppends } : {}),
       },
     },
     { uid },
