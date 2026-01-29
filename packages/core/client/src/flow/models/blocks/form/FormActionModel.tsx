@@ -93,13 +93,6 @@ FormSubmitActionModel.registerFlow({
     refreshAndClose: {
       async handler(ctx) {
         if (ctx.view) {
-          const viewUid = ctx.view.inputArgs?.viewUid;
-          const actionModel = ctx.engine.getModel(viewUid, true);
-
-          if (actionModel) {
-            actionModel.context.blockModel?.resource?.refresh();
-          }
-
           ctx.view.close();
         }
       },
