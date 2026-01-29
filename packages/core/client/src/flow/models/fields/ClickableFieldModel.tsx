@@ -140,7 +140,12 @@ export class ClickableFieldModel extends FieldModel {
       return;
     }
     const result = this.renderComponent(value, wrap);
-    const display = record ? (value ? result : 'N/A') : result;
+    const isEmptyValue =
+      value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+    // 开启点击打开且字段值为空时，显示占位符提示配置弹窗内容
+    const shouldShowPlaceholder = clickToOpen && isEmptyValue;
+    const placeholder = shouldShowPlaceholder ? this.context.t('Click to configure') : null;
+    const display = shouldShowPlaceholder ? placeholder : record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
@@ -155,7 +160,7 @@ export class ClickableFieldModel extends FieldModel {
 
     if (isTag) {
       return (
-        value && (
+        (value || shouldShowPlaceholder) && (
           <Tag {...restProps} style={commonStyle} onClick={handleClick}>
             {display}
           </Tag>
@@ -180,10 +185,15 @@ export class ClickableFieldModel extends FieldModel {
    * 基类统一渲染逻辑
    */
   render(): any {
-    const { value, displayStyle, fieldNames, overflowMode } = this.props;
+    const { value, displayStyle, fieldNames, overflowMode, clickToOpen } = this.props;
     const titleField = this.props.titleField || fieldNames?.label;
     const ellipsis = overflowMode === 'ellipsis';
+    const isEmptyValue =
+      value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
     if (titleField) {
+      if (clickToOpen && isEmptyValue) {
+        return <EllipsisWithTooltip ellipsis={ellipsis}>{this.renderInDisplayStyle(value)}</EllipsisWithTooltip>;
+      }
       if (displayStyle === 'tag') {
         const result = castArray(value).map((v, idx) => (
           <React.Fragment key={idx}>{this.renderInDisplayStyle(v?.[titleField], v)}</React.Fragment>
