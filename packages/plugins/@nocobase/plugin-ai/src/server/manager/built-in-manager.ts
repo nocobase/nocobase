@@ -45,6 +45,24 @@ export class BuiltInManager {
 
   constructor(protected plugin: PluginAIServer) {}
 
+  registerBuiltInEmployees(employees: Array<{ username: string } & Record<string, any>>) {
+    if (!Array.isArray(employees) || employees.length === 0) {
+      return;
+    }
+    for (const employee of employees) {
+      if (!employee?.username) {
+        continue;
+      }
+      const index = this.builtInEmployees.findIndex((item) => item.username === employee.username);
+      if (index >= 0) {
+        this.builtInEmployees[index] = employee;
+      } else {
+        this.builtInEmployees.push(employee);
+      }
+    }
+    this.builtInEmployeeMap = Object.fromEntries(this.builtInEmployees.map((x) => [x.username, x]));
+  }
+
   setupBuiltInInfo(locale: string, aiEmployee: AIEmployee) {
     if (!aiEmployee) {
       return;
@@ -54,13 +72,15 @@ export class BuiltInManager {
       return;
     }
     const { profile } = builtInEmployeeInfo;
-    const { avatar, nickname, position, bio, greeting, about } = profile[locale] ?? profile[DEFAULT_LANGUAGE];
+    const { avatar, nickname, position, bio, greeting, about, defaultPrompt } =
+      profile?.[locale] ?? profile?.[DEFAULT_LANGUAGE] ?? {};
+    const prompt = about ?? defaultPrompt ?? '';
     aiEmployee.avatar = avatar;
     aiEmployee.nickname = nickname;
     aiEmployee.position = position;
     aiEmployee.bio = bio;
     aiEmployee.greeting = greeting;
-    aiEmployee.defaultPrompt = about; // 内置 AI 员工默认系统提示词
+    aiEmployee.defaultPrompt = prompt || aiEmployee.defaultPrompt || ''; // 内置 AI 员工默认系统提示词
     // 不再修改 aiEmployee.about，保持字段语义简单明确，上层按需使用
 
     const builtInSkills = builtInEmployeeInfo.skillSettings?.skills ?? [];
@@ -83,6 +103,7 @@ export class BuiltInManager {
       },
     });
     const existedUsername = existed.map((x) => x.username);
+    const existedMap = new Map(existed.map((item) => [item.username, item]));
     const setups = this.builtInEmployees.filter((x) => !existedUsername.includes(x.username));
     if (setups.length) {
       this.plugin.log.info('setup built-in employees');
@@ -94,7 +115,7 @@ export class BuiltInManager {
         if (!p) {
           continue;
         }
-        const { nickname, avatar, position, bio, greeting } = p;
+        const { nickname, avatar, position, bio, greeting, about, defaultPrompt } = p;
         await aiEmployeesRepo.create({
           values: {
             username,
@@ -103,7 +124,7 @@ export class BuiltInManager {
             avatar,
             bio,
             greeting,
-            about: null,
+            about: about ?? defaultPrompt ?? null,
             skillSettings,
             enableKnowledgeBase: false,
             knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
@@ -127,11 +148,17 @@ export class BuiltInManager {
         if (!p) {
           continue;
         }
-        const { nickname, avatar, position, bio, greeting, about } = p;
+        const { nickname, avatar, position, bio, greeting, about, defaultPrompt } = p;
+        const existing = existedMap.get(username);
+        const nextAbout = about ?? defaultPrompt ?? null;
+        const values: Record<string, any> = {
+          builtIn: true,
+        };
+        if (!existing?.about && nextAbout) {
+          values.about = nextAbout;
+        }
         await aiEmployeesRepo.update({
-          values: {
-            builtIn: true,
-          },
+          values,
           filter: {
             username,
           },
