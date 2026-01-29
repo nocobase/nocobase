@@ -34,6 +34,10 @@ export class CCTaskCardDetailsModel extends DetailsBlockModel {
     this.context.defineMethod('aclCheck', () => {
       return true;
     });
+
+    this.context.defineProperty('disableFieldClickToOpen', {
+      get: () => true,
+    });
   }
 
   createResource(ctx, params) {

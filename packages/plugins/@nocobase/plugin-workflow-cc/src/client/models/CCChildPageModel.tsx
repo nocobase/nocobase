@@ -15,6 +15,9 @@ export class CCChildPageModel extends ChildPageModel {
     this.context.defineMethod('aclCheck', () => {
       return true;
     });
+    this.context.defineProperty('disableFieldClickToOpen', {
+      get: () => true,
+    });
   }
 }
 
