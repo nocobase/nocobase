@@ -1,28 +1,28 @@
 # ctx.modal
 
-基于 Ant Design Modal 的快捷 API，用于在 JSBlock / Action / JSField 中主动打开模态对话框。
+Quick API based on Ant Design Modal, used to open modal dialogs proactively in JSBlock / Action / JSField.
 
-> 底层由 `ctx.viewer` / 视图系统实现，这里只给出常用能力的简化说明。
+> Implemented by `ctx.viewer` / the view system. This page only lists common capabilities in a simplified form.
 
-## 常见用法
+## Common Usage
 
 ```ts
-// 弹出一个简单的提示对话框
+// Show a simple info dialog
 ctx.modal.info?.({
-  title: '提示',
-  content: '操作已完成',
+  title: 'Notice',
+  content: 'Operation completed',
 });
 
-// 确认对话框，结合 ctx.exit/ctx.exitAll 控制流
+// Confirm dialog, combined with ctx.exit/ctx.exitAll to control flow
 ctx.modal.confirm?.({
-  title: '确认删除',
-  content: '确定要删除这条记录吗？',
+  title: 'Confirm deletion',
+  content: 'Are you sure you want to delete this record?',
   async onOk() {
     await ctx.runAction('destroy', { filterByTk: ctx.record?.id });
   },
 });
 ```
 
-> 提示：
-> - 具体可用方法与参数与 Ant Design `Modal` 组件保持一致（如 `info`、`success`、`error`、`warning`、`confirm` 等）
-> - 在复杂交互中，更推荐通过 `ctx.openView` 打开自定义视图（页面/抽屉/弹窗），`ctx.modal` 适合轻量提示
+> Tip:
+> - Available methods and parameters align with Ant Design `Modal` (e.g., `info`, `success`, `error`, `warning`, `confirm`)
+> - For complex interactions, prefer `ctx.openView` to open custom views (page/drawer/dialog). `ctx.modal` is best for lightweight tips

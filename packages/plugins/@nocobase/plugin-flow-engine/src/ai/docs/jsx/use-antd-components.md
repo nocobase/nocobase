@@ -1,13 +1,13 @@
 ---
-title: "使用 ctx.libs.antd 组件"
-description: "使用 Ant Design 组件获得更好的主题效果"
+title: "Use ctx.libs.antd Components"
+description: "Use Ant Design components for better theming"
 ---
 
-# 使用 ctx.libs.antd 组件
+# Use ctx.libs.antd Components
 
-Ant Design 组件库已内置在 `ctx.libs.antd` 中。**建议使用 antd 组件而不是原生 HTML 元素**，这样可以获得更好的主题效果、样式一致性和交互体验。
+The Ant Design component library is built into `ctx.libs.antd`. **We recommend using antd components instead of native HTML elements**, which provides better theming, consistent styles, and interactions.
 
-## 基本使用
+## Basic Usage
 
 ```tsx
 const { Button, Card } = ctx.libs.antd;
@@ -21,20 +21,20 @@ ctx.render(
 );
 ```
 
-## 使用 antd 组件的优势
+## Advantages of Using antd Components
 
-- **主题一致性**：自动继承应用的主题配置，支持暗色模式、自定义主题等
-- **样式统一**：与系统其他部分保持一致的视觉风格
-- **交互体验**：内置丰富的交互效果和动画
-- **响应式设计**：自动适配不同屏幕尺寸
-- **无障碍支持**：内置 ARIA 属性和键盘导航支持
+- **Theme consistency**: Automatically inherits the app's theme configuration, including dark mode and custom themes
+- **Unified styling**: Consistent visual style across the system
+- **Interaction**: Rich built-in interactions and animations
+- **Responsive design**: Adapts to different screen sizes
+- **Accessibility**: Built-in ARIA attributes and keyboard navigation
 
-## 常用组件示例
+## Common Component Examples
 
 ```tsx
 const { Button, Card, Input, Space, Tag, Statistic, Row, Col } = ctx.libs.antd;
 
-// 表单输入
+// Form input
 const FormExample = () => (
   <Card title={ctx.t('Form')}>
     <Space direction="vertical" style={{ width: '100%' }}>
@@ -44,7 +44,7 @@ const FormExample = () => (
   </Card>
 );
 
-// 标签和统计
+// Tags and statistics
 const StatsExample = () => (
   <Row gutter={16}>
     <Col span={6}>
@@ -63,7 +63,7 @@ const StatsExample = () => (
 ctx.render(<FormExample />);
 ```
 
-## 使用 Ant Design Icons
+## Use Ant Design Icons
 
 ```tsx
 const { Button } = ctx.libs.antd;

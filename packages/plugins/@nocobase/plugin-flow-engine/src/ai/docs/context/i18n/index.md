@@ -1,8 +1,8 @@
 # ctx.i18n
 
-i18next 实例。
+i18next instance.
 
-## 类型定义
+## Type Definition
 
 ```ts
 interface i18n: {
@@ -11,9 +11,5 @@ interface i18n: {
 };
 ```
 
-- `language`：当前激活的语言代码（如 `zh-CN`、`en-US`）
-- `t(key, options?)`：翻译函数，等价于应用中的 `i18n.t`
-
-## 使用示例
-
-- [翻译文案](./i18n-basic.md)
+- `language`: current active locale code (e.g., `zh-CN`, `en-US`)
+- `t(key, options?)`: translation function, equivalent to the app's `i18n.t`

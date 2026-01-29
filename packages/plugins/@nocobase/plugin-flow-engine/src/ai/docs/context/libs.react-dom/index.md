@@ -1,20 +1,20 @@
 # ctx.libs.ReactDOM
 
-内置的 ReactDOM 客户端 API，与 `ctx.ReactDOM` 等价。通常不需要直接使用，更多通过 `ctx.render` 进行渲染；在少数场景下也可以手动创建根节点。
+Built-in ReactDOM client API, equivalent to `ctx.ReactDOM`. Typically you won't need to use it directly, since rendering is done via `ctx.render`; in rare cases you can manually create root nodes.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 libs.ReactDOM: typeof import('react-dom/client');
 ```
 
-## 使用示例
+## Examples
 
 ```ts
-// 推荐：直接使用 ctx.render 渲染 JSX
+// Recommended: render JSX directly with ctx.render
 ctx.render(<div>Hello from ReactDOM</div>);
 ```
 
-> 提示：
-> - 一般情况下使用 `ctx.render(jsx)` 即可完成渲染，无需直接操作 `ReactDOM`
-> - 只有在需要更精细控制根节点/多根渲染时，才建议使用 `ctx.libs.ReactDOM`，此类场景可参考高级用法文档
+> Tip:
+> - In most cases, `ctx.render(jsx)` is enough; no need to operate `ReactDOM` directly
+> - Only use `ctx.libs.ReactDOM` when you need fine-grained control of root nodes or multi-root rendering; see advanced docs for such cases

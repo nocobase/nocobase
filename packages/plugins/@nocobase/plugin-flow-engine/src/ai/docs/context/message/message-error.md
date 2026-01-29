@@ -1,19 +1,19 @@
 ---
-title: "显示错误消息"
-description: "使用 ctx.message.error 显示错误提示"
+title: "Show Error Message"
+description: "Use ctx.message.error to show an error toast"
 ---
 
-# 显示错误消息
+# Show Error Message
 
-使用 `ctx.message.error()` 显示错误提示消息。
+Use `ctx.message.error()` to show an error toast.
 
-## 基本用法
+## Basic Usage
 
 ```javascript
 ctx.message.error(ctx.t('Operation failed'));
 ```
 
-## 在错误处理中使用
+## Use in error handling
 
 ```javascript
 try {
@@ -24,7 +24,7 @@ try {
 }
 ```
 
-## 显示 API 请求错误
+## Show API request errors
 
 ```javascript
 try {

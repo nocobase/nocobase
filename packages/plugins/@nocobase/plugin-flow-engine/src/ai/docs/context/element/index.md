@@ -1,36 +1,36 @@
 # ctx.element
 
-ElementProxy 实例，指向沙箱化的 DOM 容器。
+ElementProxy instance pointing to the sandboxed DOM container.
 
-## 类型定义
+## Type Definition
 
 ```typescript
 element: ElementProxy
 ```
 
-## 说明
+## Notes
 
-`ctx.element` 是一个 ElementProxy，指向沙箱化的 DOM 容器。**为了安全考虑，不应直接使用 `ctx.element` 的 API**（如 `innerHTML`、`appendChild`、`querySelector` 等）。
+`ctx.element` is an ElementProxy pointing to a sandboxed DOM container. **For safety, do not use the `ctx.element` APIs directly** (such as `innerHTML`, `appendChild`, `querySelector`, etc.).
 
-## 安全要求
+## Safety Requirements
 
-**禁止直接使用 `ctx.element` 的 API**，所有 DOM 操作都应通过 `ctx.render()` 完成。
+**Direct use of `ctx.element` APIs is prohibited.** All DOM operations should be done through `ctx.render()`.
 
-### ❌ 错误用法
+### ❌ Incorrect usage
 
 ```ts
-// ❌ 禁止：直接使用 ctx.element 的 API
+// ❌ Not allowed: direct use of ctx.element APIs
 ctx.element.innerHTML = '<div>Content</div>';
 ctx.element.appendChild(node);
 ctx.element.querySelector('.class');
 ```
 
-### ✅ 正确用法：使用 ctx.render()
+### ✅ Correct usage: use ctx.render()
 
-所有内容渲染都应使用 `ctx.render()`：
+All rendering should use `ctx.render()`:
 
 ```ts
-// ✅ 正确：使用 ctx.render() 渲染 React 组件
+// ✅ Correct: render a React component with ctx.render()
 const { Button, Card } = ctx.libs.antd;
 
 ctx.render(
@@ -41,28 +41,28 @@ ctx.render(
 ```
 
 ```ts
-// ✅ 正确：使用 ctx.render() 渲染 HTML 字符串
+// ✅ Correct: render an HTML string with ctx.render()
 ctx.render('<div style="padding:16px;">' + ctx.t('Content') + '</div>');
 ```
 
 ```ts
-// ✅ 正确：使用 ctx.render() 渲染 DOM 节点
+// ✅ Correct: render a DOM node with ctx.render()
 const div = document.createElement('div');
 div.textContent = ctx.t('Hello');
 ctx.render(div);
 ```
 
-## 为什么必须使用 ctx.render()
+## Why ctx.render() is required
 
-使用 `ctx.render()` 的优势：
-- **安全性**：统一的安全控制，避免直接 DOM 操作带来的风险
-- **React 支持**：支持完整的 React 功能和 JSX
-- **上下文继承**：自动继承应用的上下文
-- **生命周期管理**：更好的组件生命周期管理
-- **冲突处理**：自动处理 React 根的创建和卸载，避免冲突
+Advantages of using `ctx.render()`:
+- **Security**: centralized safety controls, avoids risks from direct DOM manipulation
+- **React support**: full React and JSX support
+- **Context inheritance**: automatically inherits app context
+- **Lifecycle management**: better component lifecycle handling
+- **Conflict handling**: automatically manages React root creation/unmounting to avoid conflicts
 
-## 注意事项
+## Notes
 
-- `ctx.element` 仅作为 `ctx.render()` 的内部容器使用
-- 不要直接访问或操作 `ctx.element` 的任何属性或方法
-- 所有渲染操作必须通过 `ctx.render()` 完成
+- `ctx.element` is only used as the internal container for `ctx.render()`
+- Do not access or manipulate any properties or methods of `ctx.element` directly
+- All rendering must go through `ctx.render()`

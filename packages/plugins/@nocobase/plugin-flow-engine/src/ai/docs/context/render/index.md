@@ -1,8 +1,8 @@
 # ctx.render()
 
-将 React 元素、HTML 字符串或 DOM 节点渲染到 `ctx.element` 容器中。
+Render React elements, HTML strings, or DOM nodes into the `ctx.element` container.
 
-## 类型定义
+## Type Definition
 
 ```typescript
 render(
@@ -10,29 +10,22 @@ render(
 ): ReactDOMClient.Root | null
 ```
 
-## 参数
+## Parameters
 
-- **vnode**: 要渲染的内容
-  - `React.ReactElement`: React 元素（JSX），支持完整的 React 功能
-  - `Node`: DOM 节点，会直接追加到容器中
-  - `DocumentFragment`: 文档片段，会将其子节点追加到容器中
-  - `string`: HTML 字符串，会设置容器的 `innerHTML`
+- **vnode**: content to render
+  - `React.ReactElement`: React element (JSX), with full React capabilities
+  - `Node`: DOM node, appended directly to the container
+  - `DocumentFragment`: fragment whose child nodes are appended to the container
+  - `string`: HTML string, sets the container's `innerHTML`
 
-## 返回值
+## Returns
 
-- 渲染 React 元素时：返回 `ReactDOMClient.Root` 实例，可用于后续的更新操作
-- 渲染 HTML 字符串或 DOM 节点时：返回 `null`
+- When rendering a React element: returns a `ReactDOMClient.Root` instance for future updates
+- When rendering an HTML string or DOM node: returns `null`
 
-## 说明
+## Notes
 
-- 内容会渲染到 `ctx.element` 容器中
-- 多次调用 `ctx.render()` 会替换容器中的内容
-- 渲染 React 元素时，会使用 React 的 `createRoot` API，并自动继承应用的上下文
-- 渲染 HTML 字符串时，如果容器中已有 React 根，会先卸载它
-
-## 使用示例
-
-- [渲染 React 元素](./render-react-element.md)
-- [渲染 HTML 字符串](./render-html-string.md)
-- [渲染 DOM 节点](./render-dom-node.md)
-- [条件渲染](./render-conditional.md)
+- Content is rendered into the `ctx.element` container
+- Multiple calls to `ctx.render()` replace the container's content
+- When rendering React elements, React's `createRoot` API is used and app context is inherited automatically
+- When rendering an HTML string, any existing React root in the container is unmounted first

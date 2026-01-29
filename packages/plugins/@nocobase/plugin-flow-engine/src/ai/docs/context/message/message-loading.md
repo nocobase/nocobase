@@ -1,25 +1,25 @@
 ---
-title: "显示加载消息"
-description: "使用 ctx.message.loading 显示加载提示"
+title: "Show Loading Message"
+description: "Use ctx.message.loading to show a loading toast"
 ---
 
-# 显示加载消息
+# Show Loading Message
 
-使用 `ctx.message.loading()` 显示加载提示消息。
+Use `ctx.message.loading()` to show a loading toast.
 
-## 基本用法
+## Basic Usage
 
 ```javascript
 const hide = ctx.message.loading(ctx.t('Loading...'));
 
-// 执行异步操作
+// Execute async operation
 await ctx.api.request({ url: '/api/data' });
 
-// 手动关闭加载消息
+// Manually close the loading message
 hide();
 ```
 
-## 在异步操作中使用
+## Use in async operations
 
 ```javascript
 const hide = ctx.message.loading(ctx.t('Processing data...'));

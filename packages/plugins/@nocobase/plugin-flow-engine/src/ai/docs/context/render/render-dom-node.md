@@ -1,11 +1,11 @@
 ---
-title: "渲染 DOM 节点"
-description: "使用 ctx.render() 渲染 DOM 节点"
+title: "Render DOM Nodes"
+description: "Use ctx.render() to render DOM nodes"
 ---
 
-# 渲染 DOM 节点
+# Render DOM Nodes
 
-使用 `ctx.render()` 渲染 DOM 节点，会直接追加到容器中。
+Use `ctx.render()` to render DOM nodes and append them directly to the container.
 
 ```ts
 const div = document.createElement('div');

@@ -1,18 +1,18 @@
 # ctx.libs.lodash
 
-内置的 Lodash 工具库，在 RunJS 环境中可直接使用，适合做对象访问、数组处理等常见数据操作。
+Built-in Lodash utility library, available directly in RunJS for common operations like object access and array processing.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 libs.lodash: typeof import('lodash');
 ```
 
-## 使用示例
+## Examples
 
 ```ts
 const user = { profile: { name: 'Alice' } };
 const name = ctx.libs.lodash.get(user, 'profile.name', 'Unknown');
 
-ctx.render(<div>用户名：{name}</div>);
+ctx.render(<div>User name: {name}</div>);
 ```

@@ -1,21 +1,21 @@
 ---
-title: "读取变量 (ctx.getVar)"
-description: "从运行时上下文中读取用户、记录或参数等变量。"
+title: "Read Variables (ctx.getVar)"
+description: "Read user, record, or parameter variables from the runtime context."
 ---
 
-# 读取变量
+# Read Variables
 
 ```ts
-// 读取当前登录用户 ID（等价于 {{ctx.user.id}}）
+// Read current logged-in user ID (equivalent to {{ctx.user.id}})
 const userId = ctx.getVar('ctx.user.id');
 
-// 读取当前记录主键
+// Read current record primary key
 const recordId = ctx.getVar('ctx.record.id');
 
-// 读取自定义注入的变量，提供默认值
+// Read a custom injected variable with a default value
 const token = ctx.getVar('token', '');
 ```
 
-> 提示：
-> - `ctx.getVar(path)` 与 SQL / JSON 模板中的变量解析保持一致，便于在不同场景复用同一套变量命名
-> - 当路径不存在时会返回 `undefined`，可以通过第二个参数提供默认值
+> Tip:
+> - `ctx.getVar(path)` uses the same variable resolution as SQL / JSON templates, making it easy to reuse the same variable names across contexts
+> - When a path does not exist, it returns `undefined`; you can provide a default value with the second argument

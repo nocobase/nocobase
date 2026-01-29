@@ -1,17 +1,17 @@
 ---
-title: "使用 importAsync 加载 frappe-gantt 甘特图组件"
-description: "通过 ctx.importAsync 动态导入 frappe-gantt 并渲染可交互的甘特图。"
+title: "Load frappe-gantt with importAsync"
+description: "Dynamically import frappe-gantt via ctx.importAsync and render an interactive Gantt chart."
 ---
 
-# 使用 importAsync 加载 frappe-gantt 甘特图组件
+# Load frappe-gantt with importAsync
 
 ```ts
-// 1. 动态导入 Gantt 构造函数
-// 依赖 NPM_MODULE_BASE_URL 配置为 https://esm.sh 或你的私有 esm.sh 服务，
-// 因此可以直接使用相对路径 /frappe-gantt@1.0.4
+// 1. Dynamically import the Gantt constructor
+// This depends on NPM_MODULE_BASE_URL being set to https://esm.sh or your private esm.sh,
+// so you can use a short path like /frappe-gantt@1.0.4
 const Gantt = await ctx.importAsync('frappe-gantt@1.0.4');
 
-// 2. 准备任务数据
+// 2. Prepare task data
 let tasks = [
   {
     id: '1',
@@ -38,15 +38,15 @@ let tasks = [
   },
 ];
 
-// 3. 创建容器并渲染到当前上下文
+// 3. Create a container and render it into the current context
 const ganttEl = document.createElement('div');
 ganttEl.id = 'gantt';
 ganttEl.style.height = '400px';
 ctx.render(ganttEl);
 
-// 4. 初始化 Gantt 图
+// 4. Initialize the Gantt chart
 let gantt = new Gantt('#gantt', tasks, {
-  view_mode: 'Day', // 视图粒度：'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month'
+  view_mode: 'Day', // view granularity: 'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month'
   language: 'en',
   bar_height: 24,
   padding: 18,

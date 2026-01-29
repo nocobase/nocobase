@@ -1,11 +1,11 @@
 ---
-title: "渲染 React 元素"
-description: "使用 ctx.render() 渲染 React 元素（JSX）"
+title: "Render React Elements"
+description: "Use ctx.render() to render React elements (JSX)"
 ---
 
-# 渲染 React 元素
+# Render React Elements
 
-使用 `ctx.render()` 渲染 React 元素（JSX），支持完整的 React 功能。
+Use `ctx.render()` to render React elements (JSX), with full React functionality.
 
 ```ts
 const { Button, Card } = ctx.libs.antd;

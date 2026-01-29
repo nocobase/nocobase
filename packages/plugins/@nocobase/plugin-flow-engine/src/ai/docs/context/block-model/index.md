@@ -1,40 +1,39 @@
 # ctx.blockModel
 
-当前 JS 字段 / JS 区块所在的父块模型（BlockModel 实例）。
+The parent block model (BlockModel instance) for the current JS field / JS block.
 
-在表单块、表格块等场景中，`ctx.blockModel` 指向承载当前 JS 逻辑的块模型，可用于：
+In form blocks, table blocks, and similar scenarios, `ctx.blockModel` points to the block model that hosts the current JS logic, and can be used to:
 
-- 访问当前块绑定的数据表（`collection`）
-- 访问当前块的数据资源（`resource`），执行刷新、获取选中行等操作
-- 访问块内部的表单实例（`form`），读取或校验表单值
-- 监听块事件（如 `formValuesChange`），实现联动或重渲染
+- Access the collection bound to the current block (`collection`)
+- Access the block's resource (`resource`) and perform operations like refresh or get selected rows
+- Access the form instance (`form`) inside the block to read/validate form values
+- Listen to block events (e.g., `formValuesChange`) to implement linkage or re-rendering
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 blockModel: BlockModel | FormBlockModel | TableBlockModel | CollectionBlockModel | DataBlockModel | null;
 ```
 
-具体类型取决于当前块的类型，例如表单块通常是 `FormBlockModel`，表格块通常是 `TableBlockModel`。
+The actual type depends on the current block type. For example, a form block is usually `FormBlockModel`, and a table block is usually `TableBlockModel`.
 
-## 常用属性与方法
+## Common Properties and Methods
 
 ```ts
-ctx.blockModel.collection; // 当前块绑定的数据表（Collection）
-ctx.blockModel.resource;   // 当前块使用的数据资源（SingleRecordResource / MultiRecordResource 等）
-ctx.blockModel.form;       // 对于表单块：Antd Form 实例，支持 getFieldsValue/validateFields 等
+ctx.blockModel.collection; // Collection bound to the current block
+ctx.blockModel.resource;   // Resource used by the current block (SingleRecordResource / MultiRecordResource, etc.)
+ctx.blockModel.form;       // For form blocks: Antd Form instance, supports getFieldsValue/validateFields, etc.
 
-// 事件监听（例如联动渲染摘要信息）
+// Listen to events (e.g., render a summary based on form changes)
 ctx.blockModel.on?.('formValuesChange', (values) => {
-  // 根据最新表单值做联动
+  // react to latest form values
 });
 
-// 重新渲染当前块（部分块模型实现了 rerender）
+// Re-render the current block (some block models implement rerender)
 ctx.blockModel.rerender?.();
 ```
 
-> 提示：
-> - 在表单相关场景中，可通过 `ctx.blockModel.form.getFieldsValue()` 获取当前表单全部字段值
-> - 在表格相关场景中，可通过 `ctx.blockModel.resource.getSelectedRows()` 获取当前选中行
-> - 不同 BlockModel 子类可能扩展了各自特有的方法，如展开/折叠、刷新等，可结合具体块类型使用
-
+> Tip:
+> - In form-related scenarios, use `ctx.blockModel.form.getFieldsValue()` to get all form field values
+> - In table-related scenarios, use `ctx.blockModel.resource.getSelectedRows()` to get currently selected rows
+> - Different BlockModel subclasses may expose additional methods like expand/collapse or refresh; use them based on the block type

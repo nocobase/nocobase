@@ -1,23 +1,23 @@
 ---
-title: "使用 importAsync 加载 FullCalendar ESM 模块"
-description: "通过 ctx.importAsync 动态导入 FullCalendar 的 ESM 模块并渲染日历。"
+title: "Load FullCalendar ESM with importAsync"
+description: "Dynamically import FullCalendar ESM modules via ctx.importAsync and render a calendar."
 ---
 
-# 使用 importAsync 加载 FullCalendar ESM 模块
+# Load FullCalendar ESM with importAsync
 
 ```ts
-// 1. 动态导入 FullCalendar 核心模块
+// 1. Dynamically import the FullCalendar core module
 const { Calendar } = await ctx.importAsync('@fullcalendar/core@6.1.20');
 
-// 2. 动态导入 dayGrid 插件
+// 2. Dynamically import the dayGrid plugin
 const dayGridPlugin = await ctx.importAsync('@fullcalendar/daygrid@6.1.20');
 
-// 3. 创建日历容器并渲染
+// 3. Create a calendar container and render it
 const calendarEl = document.createElement('div');
 calendarEl.id = 'calendar';
 ctx.render(calendarEl);
 
-// 4. 初始化并渲染日历
+// 4. Initialize and render the calendar
 const calendar = new Calendar(calendarEl, {
   plugins: [dayGridPlugin.default || dayGridPlugin],
   headerToolbar: {
@@ -30,7 +30,7 @@ const calendar = new Calendar(calendarEl, {
 calendar.render();
 ```
 
-> 提示：
-> - `ctx.importAsync` 适合加载 ESM 模块，返回模块命名空间对象
-> - 某些 CDN（如 skypack.dev）会自动处理模块依赖，无需手动配置 importmap
-> - 插件模块可能导出为 `default` 或命名导出，需要根据实际情况处理（如 `dayGridPlugin.default || dayGridPlugin`）
+> Tip:
+> - `ctx.importAsync` is suitable for ESM modules and returns a module namespace object
+> - Some CDNs (e.g., skypack.dev) automatically resolve module dependencies without an importmap
+> - Plugin modules may export via `default` or named exports, so handle both cases (e.g., `dayGridPlugin.default || dayGridPlugin`)

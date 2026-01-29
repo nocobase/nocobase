@@ -1,11 +1,11 @@
 ---
-title: "根据 UID 获取模型实例"
-description: "在 JS Action/JS Field 中使用 ctx.getModel(uid) 获取其他模型实例。"
+title: "Get Model Instance by UID"
+description: "Use ctx.getModel(uid) in JS Action/JS Field to get other model instances."
 ---
 
-# 根据 UID 获取模型实例
+# Get Model Instance by UID
 
 ```ts
-// 假设在当前上下文中拿到了某个模型的 uid
+// Assume you already have a model uid in the current context
 const model = ctx.getModel(modelUid);
 ```

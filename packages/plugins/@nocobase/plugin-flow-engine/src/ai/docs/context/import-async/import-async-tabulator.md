@@ -1,22 +1,22 @@
 ---
-title: "使用 importAsync 加载 Tabulator 表格库"
-description: "通过 ctx.importAsync 动态导入 Tabulator ESM 模块并渲染数据表格。"
+title: "Load Tabulator with importAsync"
+description: "Dynamically import Tabulator ESM modules via ctx.importAsync and render a data table."
 ---
 
-# 使用 importAsync 加载 Tabulator 表格库
+# Load Tabulator with importAsync
 
 ```ts
-// 1. 加载 Tabulator 的 CSS 样式
+// 1. Load Tabulator CSS styles
 await ctx.loadCSS('tabulator-tables@6.2.5/dist/css/tabulator.min.css');
 
-// 2. 动态导入 Tabulator 模块
+// 2. Dynamically import the Tabulator module
 const { TabulatorFull } = await ctx.importAsync('tabulator-tables@6.2.5');
 
-// 3. 创建表格容器并渲染
+// 3. Create a table container and render it
 const tableEl = document.createElement('div');
 ctx.render(tableEl);
 
-// 4. 初始化 Tabulator 表格
+// 4. Initialize the Tabulator table
 const table = new TabulatorFull(tableEl, {
   data: [
     { id: 1, name: 'Alice', age: 25, city: 'Beijing' },
@@ -25,18 +25,18 @@ const table = new TabulatorFull(tableEl, {
   ],
   columns: [
     { title: 'ID', field: 'id', width: 80 },
-    { title: '姓名', field: 'name', width: 150 },
-    { title: '年龄', field: 'age', width: 100 },
-    { title: '城市', field: 'city', width: 150 },
+    { title: 'Name', field: 'name', width: 150 },
+    { title: 'Age', field: 'age', width: 100 },
+    { title: 'City', field: 'city', width: 150 },
   ],
   layout: 'fitColumns',
   pagination: true,
   paginationSize: 10,
 });
 
-// 5. 可选：添加事件监听
+// 5. Optional: add event listeners
 table.on('rowClick', (e, row) => {
   const rowData = row.getData();
-  ctx.message.info(`点击了行：${rowData.name}`);
+  ctx.message.info(`Row clicked: ${rowData.name}`);
 });
 ```

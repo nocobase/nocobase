@@ -1,18 +1,14 @@
 # ctx.setValue()
 
-在 JSField / JSItem 等场景下，设置当前字段的值。  
-与 `ctx.getValue()` 搭配使用，可实现与表单的双向绑定。
+In JSField / JSItem and similar scenarios, set the value of the current field.  
+Use with `ctx.getValue()` to achieve two-way binding with the form.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 setValue<T = any>(value: T): void;
 ```
 
-- `value`：要写入的字段值，类型由该字段对应的表单项类型决定。
+- `value`: the field value to write. The type is determined by the field's form item type.
 
-> 说明：`ctx.setValue(v)` 会更新当前字段在表单中的值，并触发与该字段相关的表单联动与校验逻辑。
-
-## 使用示例
-
-- [设置当前字段值](./set-value-basic.md)
+> Notes: `ctx.setValue(v)` updates the current field's value in the form and triggers related form linkage and validation logic.

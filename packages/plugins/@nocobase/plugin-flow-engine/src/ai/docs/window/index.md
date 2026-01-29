@@ -1,51 +1,51 @@
 # window
 
-安全的 `window` 对象代理，提供受限的全局 API 访问。
+A safe `window` proxy that provides limited access to global APIs.
 
-## 说明
+## Notes
 
-在 RunJS 执行环境中，`window` 是一个安全的代理对象，仅允许访问特定的全局 API。`window.console` 代理到 `ctx.logger`。
+In the RunJS execution environment, `window` is a safe proxy object that only allows access to specific global APIs. `window.console` is proxied to `ctx.logger`.
 
-## 可用的 API
+## Available APIs
 
-- **定时器**：`setTimeout`、`clearTimeout`、`setInterval`、`clearInterval`
-- **console**：`window.console`（代理到 `ctx.logger`）
-- **Math**：数学函数
-- **Date**：日期构造函数
-- **FormData**：表单数据构造函数
-- **addEventListener**：事件监听
-- **open**：安全的 `window.open` 代理（仅允许 http/https/about:blank）
-- **location**：安全的 location 代理（只读部分属性，支持安全的导航）
+- **Timers**: `setTimeout`, `clearTimeout`, `setInterval`, `clearInterval`
+- **console**: `window.console` (proxied to `ctx.logger`)
+- **Math**: math functions
+- **Date**: date constructor
+- **FormData**: form data constructor
+- **addEventListener**: event listener
+- **open**: safe `window.open` proxy (only http/https/about:blank allowed)
+- **location**: safe location proxy (read-only properties, safe navigation supported)
 
-## 使用示例
+## Examples
 
 ```ts
-// 使用定时器
+// Use timers
 const timer = window.setTimeout(() => {
-  console.log('定时器触发');
+  console.log('Timer fired');
 }, 1000);
 
-// 使用 console（代理到 ctx.logger）
-window.console.log('通过 window.console 记录');
-window.console.error('错误信息');
+// Use console (proxied to ctx.logger)
+window.console.log('Logged via window.console');
+window.console.error('Error message');
 
-// 使用 Math
+// Use Math
 const result = window.Math.max(1, 2, 3);
 
-// 使用 Date
+// Use Date
 const now = new window.Date();
 
-// 安全的 window.open
+// Safe window.open
 window.open('https://example.com', '_blank');
 
-// 安全的 location 访问
+// Safe location access
 const origin = window.location.origin;
-window.location.href = '/new-page'; // 安全导航
+window.location.href = '/new-page'; // safe navigation
 ```
 
-## 注意事项
+## Notes
 
-- `window.console` 代理到 `ctx.logger`，等同于使用 `console` 或 `ctx.logger`
-- 访问未声明的属性会抛出错误
-- `window.open` 仅允许 http/https/about:blank 协议
-- `location` 对象是只读代理，仅暴露安全的属性和方法
+- `window.console` is proxied to `ctx.logger`, equivalent to using `console` or `ctx.logger`
+- Accessing undeclared properties throws an error
+- `window.open` only allows http/https/about:blank schemes
+- `location` is a read-only proxy that exposes only safe properties and methods

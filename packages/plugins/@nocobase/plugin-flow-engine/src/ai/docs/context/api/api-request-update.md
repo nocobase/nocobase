@@ -1,16 +1,16 @@
 ---
-title: "更新记录：写入数据"
-description: "使用 ctx.api.request 发送写请求（POST/PUT/PATCH/DELETE）更新记录。"
+title: "Update Records: Write Data"
+description: "Use ctx.api.request to send write requests (POST/PUT/PATCH/DELETE) to update records."
 ---
 
-# 更新记录：写入数据
+# Update Records: Write Data
 
-使用 `ctx.api.request()` 发送写请求更新后端数据。
+Use `ctx.api.request()` to send write requests to update backend data.
 
-## 创建记录
+## Create a record
 
 ```ts
-// 创建一条记录
+// Create a record
 const response = await ctx.api.request({
   method: 'post',
   url: '/posts:create',
@@ -23,10 +23,10 @@ const response = await ctx.api.request({
 return response.data;
 ```
 
-## 更新记录
+## Update a record
 
 ```ts
-// 根据主键更新记录
+// Update a record by primary key
 const response = await ctx.api.request({
   method: 'post',
   url: '/posts:update',
@@ -40,4 +40,3 @@ const response = await ctx.api.request({
 
 return response.data;
 ```
-

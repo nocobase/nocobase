@@ -1,7 +1,7 @@
 # ctx.libs.echarts
 
-（预留）当需要在 RunJS 中使用 ECharts 时，可通过 `ctx.importAsync` 或内置封装访问。本上下文仅作为占位说明，不保证在所有版本中都已默认挂载。
+(Reserved) When you need to use ECharts in RunJS, you can access it via `ctx.importAsync` or a built-in wrapper. This context is only a placeholder and is not guaranteed to be available in all versions by default.
 
-> 如需在 JSBlock 中使用 ECharts，推荐：
-> - 使用可视化图表区块
-> - 或自行通过 `ctx.importAsync('https://cdn.jsdelivr.net/npm/echarts/+esm')` 按需加载
+> If you need ECharts in a JSBlock, recommended options:
+> - Use a visualization chart block
+> - Or load on demand via `ctx.importAsync('https://cdn.jsdelivr.net/npm/echarts/+esm')`

@@ -1,20 +1,16 @@
 # ctx.getVar()
 
-从当前运行时上下文中读取变量值。变量来源与 SQL、模板等场景中的变量解析一致，通常来自当前用户、当前记录、视图参数等。
+Read variable values from the current runtime context. Variable sources are consistent with variable resolution in SQL and templates, typically coming from the current user, current record, view parameters, and more.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 getVar<T = any>(path: string, defaultValue?: T): T | undefined;
 ```
 
-- `path`：变量路径，支持点号访问（如 `user.id`）或完整表达式（如 `ctx.user.id`），在 FlowEngine 内部会映射到对应的上下文对象
-- `defaultValue`：可选，变量不存在或为 `undefined` 时返回的默认值
+- `path`: variable path, supports dot access (e.g. `user.id`) or full expressions (e.g. `ctx.user.id`); inside FlowEngine it is mapped to the corresponding context object
+- `defaultValue`: optional default value when the variable does not exist or is `undefined`
 
-> 说明：
-> - `ctx.getVar()` 与 SQL 中的 `{{ctx.xxx}}`、模板中的变量解析使用同一套上下文解析规则
-> - 常见可用变量包括：`ctx.user.*`、`ctx.record.*`、流输入参数、视图/弹窗参数等
-
-## 使用示例
-
-- [读取变量](./get-var-basic.md)
+> Notes:
+> - `ctx.getVar()` uses the same context parsing rules as `{{ctx.xxx}}` in SQL and template variables
+> - Common variables include `ctx.user.*`, `ctx.record.*`, flow input parameters, and view/dialog parameters

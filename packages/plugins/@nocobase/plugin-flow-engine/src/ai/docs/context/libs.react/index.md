@@ -1,14 +1,14 @@
 # ctx.libs.React
 
-内置的 React 命名空间，与 `ctx.React` 等价。用于在 RunJS 环境中编写 JSX 组件、使用 React hooks 等。
+Built-in React namespace, equivalent to `ctx.React`. Used to write JSX components and use React hooks in the RunJS environment.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 libs.React: typeof import('react');
 ```
 
-## 使用示例
+## Examples
 
 ```ts
 const { useState } = ctx.libs.React;

@@ -1,25 +1,25 @@
 ---
-title: "终止当前流 (ctx.exit)"
-description: "在业务条件不满足或用户取消操作时，终止当前这条流的后续步骤。"
+title: "Terminate Current Flow (ctx.exit)"
+description: "Stop subsequent steps when conditions are not met or the user cancels."
 ---
 
-# 终止当前流
+# Terminate Current Flow
 
 ```ts
-// 在确认对话框中，用户点击取消时，终止当前流
+// In a confirmation dialog, terminate the flow when the user cancels
 if (!confirmed) {
   ctx.exit();
 }
 
-// 在参数校验失败时，终止当前流
+// Terminate the flow when parameter validation fails
 if (!isValid(params)) {
-  // 可先给出提示
-  ctx.message.error('参数不合法');
-  // 然后终止当前流，后续步骤不会再执行
+  // Show a message first
+  ctx.message.error('Invalid parameters');
+  // Then terminate the flow; subsequent steps will not run
   ctx.exit();
 }
 ```
 
-> 提示：
-> - `ctx.exit()` 只终止当前这条流，不会影响同一事件中其他流的执行
-> - 若希望终止当前事件中所有相关流，请使用 `ctx.exitAll()`
+> Tip:
+> - `ctx.exit()` only stops the current flow; it does not affect other flows triggered by the same event
+> - To stop all related flows in the current event, use `ctx.exitAll()`

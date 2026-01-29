@@ -1,12 +1,12 @@
 # document
 
-RunJS 执行环境中的 `document` 是一个**安全封装后的全局对象**，只暴露少量用于创建和查询 DOM 的方法，防止脚本随意访问和篡改页面结构。
+In the RunJS execution environment, `document` is a **safely wrapped global object** that only exposes a small set of DOM creation and query methods to prevent scripts from arbitrarily accessing or mutating the page structure.
 
-> 在 RunJS 中，`document` 通常通过安全的 `window` 代理暴露出来，其能力由 `createSafeDocument()` 控制。
+> In RunJS, `document` is typically exposed through the safe `window` proxy, and its capabilities are controlled by `createSafeDocument()`.
 
-## 允许的方法
+## Allowed methods
 
-安全 `document` 仅支持以下方法（以及平台注入的少量额外方法）：
+The safe `document` only supports the following methods (plus a small number of platform-injected methods):
 
 ```ts
 document.createElement(tagName: string): HTMLElement;
@@ -14,56 +14,56 @@ document.querySelector(selectors: string): Element | null;
 document.querySelectorAll(selectors: string): NodeListOf<Element>;
 ```
 
-其他属性与方法（例如 `document.body`、`document.cookie`、`document.write` 等）**一律不可用**，访问会抛出错误：
+All other properties and methods (such as `document.body`, `document.cookie`, `document.write`, etc.) are **not available**, and access will throw an error:
 
 ```ts
-// ❌ 不允许：访问未在白名单中的属性
-document.body; // 会抛出错误
+// ❌ Not allowed: access to properties not on the allowlist
+document.body; // throws an error
 ```
 
-## 说明
+## Notes
 
-- `document` 是对真实 `window.document` 的**代理**：
-  - `createElement` 内部调用真实的 `document.createElement`
-  - `querySelector` / `querySelectorAll` 内部调用真实方法
-  - 只允许访问白名单中的方法，其余访问会抛出错误
-- 设计目标：
-  - **最小权限原则**：仅暴露创建节点和查询节点的能力
-  - 避免通过 `document` 访问到敏感信息或进行危险操作（如注入脚本、修改全局结构等）
-- 更推荐在 RunJS 中通过 `ctx.render()` 与 `ctx.element` 渲染 UI，而不是大量直接操作 DOM
+- `document` is a **proxy** for the real `window.document`:
+  - `createElement` calls the real `document.createElement`
+  - `querySelector` / `querySelectorAll` call the real methods
+  - Only allowlisted methods are accessible; others throw errors
+- Design goals:
+  - **Principle of least privilege**: only expose node creation and query capabilities
+  - Prevent access to sensitive information or dangerous operations via `document` (e.g., injecting scripts, modifying global structure)
+- It is recommended to render UI through `ctx.render()` and `ctx.element` in RunJS instead of directly manipulating the DOM
 
-## 基本用法
+## Basic Usage
 
-### 创建元素并交给 ctx.render()
+### Create an element and pass it to ctx.render()
 
 ```ts
-// 创建一个容器元素
+// Create a container element
 const div = document.createElement('div');
 div.textContent = 'Hello from safe document';
 
-// 推荐：最终交给 ctx.render() 渲染到安全容器中
+// Recommended: hand off to ctx.render() to render into the safe container
 ctx.render(div);
 ```
 
-### 查询已有元素（只读或受控操作）
+### Query existing elements (read-only or controlled operations)
 
 ```ts
-// 查询第一个匹配的元素
+// Query the first matching element
 const firstButton = document.querySelector('button.primary');
 
-// 查询所有匹配的元素
+// Query all matching elements
 const links = document.querySelectorAll('a[data-track]');
 
-// 建议只做受控、无副作用的读取或受限操作
+// Prefer controlled, side-effect-free reads or limited operations
 links.forEach((link) => {
   console.log('Tracked link:', link.getAttribute('href'));
 });
 ```
 
-## 注意事项
+## Notes
 
-- `document` 仅暴露白名单方法，任何未列出的方法 / 属性访问都会抛出错误
-- 避免依赖全局 DOM 结构做复杂操作，更推荐：
-  - 使用 `ctx.render()` 渲染 React 组件或节点
-  - 使用 `ctx.element` 作为渲染容器（通过 `ctx.render()` 间接使用）
-- 若需要访问剪贴板、网络等能力，请使用对应的安全 API（例如 `navigator.clipboard`、`ctx.api` 等），而不是通过 `document` 间接实现
+- `document` only exposes allowlisted methods; any other method/property access will throw an error
+- Avoid relying on the global DOM structure for complex operations; prefer:
+  - Render React components or nodes with `ctx.render()`
+  - Use `ctx.element` as the render container (via `ctx.render()`)
+- If you need access to the clipboard, network, or other capabilities, use the corresponding safe APIs (e.g., `navigator.clipboard`, `ctx.api`) instead of indirect access via `document`

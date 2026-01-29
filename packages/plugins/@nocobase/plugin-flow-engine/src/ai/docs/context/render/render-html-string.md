@@ -1,19 +1,19 @@
 ---
-title: "渲染 HTML 字符串"
-description: "使用 ctx.render() 渲染 HTML 字符串"
+title: "Render HTML Strings"
+description: "Use ctx.render() to render HTML strings"
 ---
 
-# 渲染 HTML 字符串
+# Render HTML Strings
 
-使用 `ctx.render()` 渲染 HTML 字符串，会设置容器的 `innerHTML`。
+Use `ctx.render()` to render HTML strings and set the container's `innerHTML`.
 
-## 简单文本
+## Simple text
 
 ```ts
 ctx.render('<div style="padding:16px;color:#999;">' + ctx.t('No data') + '</div>');
 ```
 
-## 带样式的 HTML
+## Styled HTML
 
 ```ts
 ctx.render(`

@@ -1,8 +1,8 @@
 # ctx.dataSource
 
-当前数据源实例（`DataSource`）。
+The current data source instance (`DataSource`).
 
-## 类型定义
+## Type Definition
 
 ```ts
 dataSource: DataSource;
@@ -10,17 +10,17 @@ dataSource: DataSource;
 class DataSource {
   constructor(options?: Record<string, any>);
 
-  // 只读属性
-  get flowEngine(): FlowEngine;   // 当前 FlowEngine 实例
-  get displayName(): string;      // 友好名称（支持多语言）
-  get key(): string;              // 数据源标识，如 'main'
+  // Read-only properties
+  get flowEngine(): FlowEngine;   // current FlowEngine instance
+  get displayName(): string;      // display name (i18n supported)
+  get key(): string;              // data source key, e.g. 'main'
 
-  // 数据表（Collection）相关方法
-  getCollections(): Collection[];                      // 获取所有数据表
-  getCollection(name: string): Collection | undefined; // 获取指定数据表
-  getAssociation(associationName: string): CollectionField | undefined; // 获取关联字段（如 hasMany / belongsTo）
+  // Collection-related methods
+  getCollections(): Collection[];                      // get all collections
+  getCollection(name: string): Collection | undefined; // get a collection by name
+  getAssociation(associationName: string): CollectionField | undefined; // get association fields (e.g. hasMany / belongsTo)
 
-  // 数据表管理
+  // Collection management
   addCollection(collection: Collection | CollectionOptions): void;
   updateCollection(newOptions: CollectionOptions): void;
   upsertCollection(options: CollectionOptions): Collection | undefined;
@@ -28,40 +28,39 @@ class DataSource {
   removeCollection(name: string): void;
   clearCollections(): void;
 
-  // 字段元数据
+  // Field metadata
   getCollectionField(fieldPath: string): CollectionField | undefined;
 }
 ```
 
-## 常用属性
+## Common Properties
 
 ```ts
-ctx.dataSource.key;         // 数据源标识，如 'main'
-ctx.dataSource.displayName; // 友好名称（支持多语言）
+ctx.dataSource.key;         // data source key, e.g. 'main'
+ctx.dataSource.displayName; // display name (i18n supported)
 ```
 
-### 数据表（Collection）相关
+### Collection-related
 
 ```ts
-// 获取所有数据表（Collections）
+// Get all collections
 const collections = ctx.dataSource.getCollections();
 
-// 获取指定数据表
+// Get a collection by name
 const users = ctx.dataSource.getCollection('users');
 
-// 通过「数据表名.字段路径」获取字段定义
+// Get a field definition by "collection.fieldPath"
 const field = ctx.dataSource.getCollectionField('users.profile.avatar');
 ```
 
-> 说明：`getCollectionField('users.profile.avatar')` 会解析数据表名和字段路径，并返回对应的字段定义（`CollectionField`），常用于根据字段元数据生成动态界面或校验逻辑。
+> Notes: `getCollectionField('users.profile.avatar')` resolves the collection name and field path and returns the field definition (`CollectionField`). This is commonly used for dynamic UI generation or validation based on field metadata.
 
-## 与 ctx.dataSourceManager 的关系
+## Relationship with ctx.dataSourceManager
 
-- `ctx.dataSource`：当前上下文所在的 **单个数据源**（已选中的 dataSource，如 `main`）
-- `ctx.dataSourceManager`：管理所有数据源，可通过 `getDataSource(key)` 获取其他数据源
+- `ctx.dataSource`: the **single data source** for the current context (the selected data source, e.g. `main`)
+- `ctx.dataSourceManager`: manages all data sources; use `getDataSource(key)` to access others
 
-一般情况下：
+In general:
 
-- 只关心当前数据源时使用 `ctx.dataSource`
-- 需要枚举或切换数据源时使用 `ctx.dataSourceManager`
-
+- Use `ctx.dataSource` when you only care about the current data source
+- Use `ctx.dataSourceManager` when you need to enumerate or switch data sources

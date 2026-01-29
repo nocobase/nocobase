@@ -1,28 +1,28 @@
 # ctx.api
 
-基于应用 Axios 实例的 HTTP 客户端，用于在流程中发起带鉴权的 HTTP 请求。
+An HTTP client based on the app's Axios instance, used to send authenticated HTTP requests in flows.
 
-## 类型定义
+## Type Definition
 
 ```typescript
 api: APIClient
 ```
 
-其中 `APIClient` 来自 `@nocobase/sdk`。
+`APIClient` comes from `@nocobase/sdk`.
 
-## 说明
+## Notes
 
-- 所有请求都会复用应用中的 Axios 实例（自动带上 baseURL、Token、Cookies、拦截器等配置）
-- 推荐统一使用 `ctx.api.request()` 发送请求，而不是直接使用 `fetch` 或手动创建 Axios 实例
-- 支持 REST / 资源风格 URL（例如 `/users:list`、`/posts:update` 等）
+- All requests reuse the app's Axios instance (automatically includes baseURL, Token, Cookies, interceptors, etc.)
+- Prefer `ctx.api.request()` instead of using `fetch` or manually creating Axios instances
+- Supports REST / resource-style URLs (e.g., `/users:list`, `/posts:update`)
 
-## 常用方法
+## Common Methods
 
 ### ctx.api.request()
 
-发送 HTTP 请求的通用方法。
+A generic method for sending HTTP requests.
 
-**签名（简化）：**
+**Signature (simplified):**
 
 ```typescript
 request<T = any>(options: {
@@ -33,15 +33,9 @@ request<T = any>(options: {
 }): Promise<{ data: T }>;
 ```
 
-**参数：**
+**Parameters:**
 
-- `method`：HTTP 方法，默认为 `'get'`
-- `url`：请求地址（可以是资源风格，如 `/users:list`）
-- `params`：查询参数（会编码到 URL 上）
-- `data`：请求体数据（用于 `post`、`put`、`patch` 等）
-
-## 使用示例
-
-- [基础请求：获取 / 更新用户信息](./api-request-basic.md)
-- [更新记录：发送写请求](./api-request-update.md)
-
+- `method`: HTTP method, defaults to `'get'`
+- `url`: request URL (can be resource-style, e.g. `/users:list`)
+- `params`: query parameters (encoded into the URL)
+- `data`: request body data (for `post`, `put`, `patch`, etc.)

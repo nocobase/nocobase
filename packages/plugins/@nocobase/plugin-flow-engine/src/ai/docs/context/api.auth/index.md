@@ -1,57 +1,53 @@
 # ctx.api.auth
 
-认证相关信息与操作，基于 `@nocobase/sdk` 提供的 `Auth` 封装。所有认证相关的请求都会自动带上 Token、角色、语言等信息。
+Authentication-related information and operations, based on the `Auth` wrapper from `@nocobase/sdk`. All auth-related requests automatically include Token, role, locale, and other info.
 
-## 说明
+## Notes
 
-- 通过 `ctx.api.auth` 可以：
-  - 登录 / 注册 / 退出
-  - 读取或设置当前 Token、角色、语言
-  - 触发找回密码、重置密码等流程
-- SDK 会自动把 Token、Locale、Role 等信息持久化到本地存储，并在每次请求时通过请求头带给服务端
+- With `ctx.api.auth`, you can:
+  - Sign in / sign up / sign out
+  - Read or set the current Token, role, and locale
+  - Trigger flows like password recovery and reset
+- The SDK automatically persists Token, Locale, Role, etc. to local storage and includes them in request headers
 
-## 常用属性
+## Common Properties
 
 ```ts
-api.auth.token   // 当前登录用户的 Token
-api.auth.role    // 当前角色名称，例如 'admin'、'root'
-api.auth.locale  // 当前语言，例如 'zh-CN'、'en-US'
-api.auth.authenticator // 当前使用的认证器标识
+api.auth.token   // Token for the current user
+api.auth.role    // Current role name, e.g. 'admin', 'root'
+api.auth.locale  // Current locale, e.g. 'zh-CN', 'en-US'
+api.auth.authenticator // Current authenticator identifier
 ```
 
-## 常用方法（简化）
+## Common Methods (simplified)
 
 ```ts
-// 登录 / 注册 / 退出
+// Sign in / Sign up / Sign out
 api.auth.signIn(values, authenticator?): Promise<any>;
 api.auth.signUp(values, authenticator?): Promise<any>;
 api.auth.signOut(): Promise<any>;
 
-// 密码找回
+// Password recovery
 api.auth.lostPassword(values): Promise<any>;
 api.auth.resetPassword(values): Promise<any>;
 
-// 读取 / 设置 Token
+// Get / Set Token
 api.auth.getToken(): string | null;
 api.auth.setToken(token: string | null): void;
 
-// 读取 / 设置当前认证器
+// Get / Set authenticator
 api.auth.getAuthenticator(): string | null;
 api.auth.setAuthenticator(authenticator: string | null): void;
 
-// 读取 / 设置语言
+// Get / Set locale
 api.auth.getLocale(): string | null;
 api.auth.setLocale(locale: string | null): void;
 
-// 读取 / 设置角色
+// Get / Set role
 api.auth.getRole(): string | null;
 api.auth.setRole(role: string | null): void;
 
-// 读写自定义选项（底层使用 api.storage）
+// Read / write custom options (uses api.storage underneath)
 api.auth.getOption(key: string): string | null;
 api.auth.setOption(key: string, value?: string): void;
 ```
-
-## 使用示例
-
-- [认证：登录 / 退出 / 读取 Token](../api/api-auth-basic.md)

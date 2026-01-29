@@ -1,20 +1,20 @@
 ---
-title: "在事件处理中使用"
-description: "在事件处理函数中使用 ctx.router.navigate() 进行导航"
+title: "Use in Event Handlers"
+description: "Use ctx.router.navigate() inside event handlers"
 ---
 
-# 在事件处理中使用
+# Use in Event Handlers
 
-在事件处理函数中使用 `ctx.router.navigate()` 进行导航。
+Use `ctx.router.navigate()` inside event handlers.
 
 ```ts
-// 在表单提交后导航并替换历史记录
+// Navigate after form submission and replace history
 const handleSubmit = async () => {
   await ctx.api.request({ url: '/api/users', method: 'POST', data: formData });
   ctx.router.navigate('/users', { replace: true });
 };
 
-// 导航并传递状态
+// Navigate and pass state
 const handleViewDetail = (userId) => {
   ctx.router.navigate(`/users/${userId}`, {
     state: { from: 'list' }

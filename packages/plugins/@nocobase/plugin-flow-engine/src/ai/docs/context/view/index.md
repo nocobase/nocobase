@@ -1,13 +1,13 @@
 # ctx.view
 
-当前视图控制器（如页面、弹窗、抽屉等），用于在 JSBlock / Action 中访问视图级别的信息或操作。
+The current view controller (page, dialog, drawer, etc.), used in JSBlock / Action to access view-level info or operations.
 
-> 具体能力依赖视图类型，不在本页展开完整 API，这里仅给出概念说明。
+> Capabilities depend on the view type. This page only provides conceptual notes rather than the full API.
 
-## 常见用途
+## Common Use Cases
 
-- 读取当前视图的参数（通常通过 `ctx.getVar` / `ctx.inputArgs` 获取）
-- 与 `ctx.openView` / `ctx.viewer` 配合，控制视图的打开/关闭
+- Read parameters for the current view (usually via `ctx.getVar` / `ctx.inputArgs`)
+- Use with `ctx.openView` / `ctx.viewer` to control opening/closing views
 
 - type
 - inputArgs

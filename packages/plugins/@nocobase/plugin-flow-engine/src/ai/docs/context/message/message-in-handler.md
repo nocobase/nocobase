@@ -1,13 +1,13 @@
 ---
-title: "在事件处理中使用"
-description: "在按钮点击等事件处理函数中使用消息提示"
+title: "Use in Event Handlers"
+description: "Use toast messages in button clicks and other handlers"
 ---
 
-# 在事件处理中使用
+# Use in Event Handlers
 
-在按钮点击、表单提交等事件处理函数中使用消息提示。
+Use toast messages in button click handlers, form submissions, and similar events.
 
-## 在按钮点击事件中
+## In a button click handler
 
 ```tsx
 const { Button } = ctx.libs.antd;
@@ -22,7 +22,7 @@ ctx.render(
 );
 ```
 
-## 在原生 DOM 事件中
+## In native DOM events
 
 ```javascript
 const btn = ctx.element.querySelector('button');
@@ -31,7 +31,7 @@ btn.addEventListener('click', () => {
 });
 ```
 
-## 在表单提交中
+## In form submission
 
 ```javascript
 const handleSubmit = async () => {

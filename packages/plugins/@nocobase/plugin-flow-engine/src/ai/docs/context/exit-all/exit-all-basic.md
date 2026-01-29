@@ -1,22 +1,21 @@
 ---
-title: "终止整个流程 (ctx.exitAll)"
-description: "在满足特定条件时中断当前流程及其所有后续步骤和子流程。"
+title: "Terminate Entire Flow (ctx.exitAll)"
+description: "Abort the current flow and all subsequent steps and sub-flows when conditions are met."
 ---
 
-# 终止整个流程
+# Terminate Entire Flow
 
-当在某个步骤中调用 `ctx.exitAll()` 时，会立刻抛出 `FlowExitAllException`，
-FlowEngine 捕获后会终止当前流程实例及其所有后续步骤，包括嵌套调用的子流程。
+When you call `ctx.exitAll()` at any step, it immediately throws `FlowExitAllException`. The FlowEngine catches it and terminates the current flow instance and all subsequent steps, including nested sub-flows.
 
-## 基本用法
+## Basic Usage
 
 ```ts
 if (!ctx.user) {
-  // 如果用户未登录，直接终止整个流程（不再执行后续步骤）
+  // If the user is not logged in, terminate the entire flow (no further steps will run)
   ctx.exitAll();
 }
 ```
 
-> 与 `ctx.exit()` 的区别：
-> - `ctx.exit()` 只终止当前流程实例（当前 FlowRuntimeContext）
-> - `ctx.exitAll()` 会终止当前流程以及由当前流程触发的所有子流程（适用于全局中止场景，如权限校验失败）
+> Difference from `ctx.exit()`:
+> - `ctx.exit()` only terminates the current flow instance (current FlowRuntimeContext)
+> - `ctx.exitAll()` terminates the current flow and all sub-flows triggered by it (useful for global abort scenarios like permission failures)

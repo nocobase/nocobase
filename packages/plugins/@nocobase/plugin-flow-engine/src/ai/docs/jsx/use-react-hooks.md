@@ -1,11 +1,11 @@
 ---
-title: "使用 React Hooks"
-description: "在 JSX 组件中使用 React Hooks"
+title: "Use React Hooks"
+description: "Use React Hooks in JSX components"
 ---
 
-# 使用 React Hooks
+# Use React Hooks
 
-在 JSX 组件中使用 React Hooks（如 `useState`、`useEffect` 等）。
+Use React Hooks in JSX components (e.g., `useState`, `useEffect`).
 
 ```tsx
 const { useState } = ctx.libs.React;

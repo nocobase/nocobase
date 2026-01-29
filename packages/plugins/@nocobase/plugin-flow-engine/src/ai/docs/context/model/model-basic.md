@@ -1,22 +1,22 @@
 ---
-title: "读取和更新模型属性"
-description: "通过 ctx.model 访问当前 FlowModel 的属性、状态和事件。"
+title: "Read and Update Model Properties"
+description: "Access properties, state, and events of the current FlowModel via ctx.model."
 ---
 
-# 读取和更新模型属性
+# Read and Update Model Properties
 
 ```ts
-// 读取当前模型的基本信息
+// Read basic info of the current model
 const uid = ctx.model.uid;
 const collection = ctx.model.collection;
 
-// 更新模型属性（如资源的查询参数、显示配置等）
+// Update model properties (e.g., resource query params, display config)
 ctx.model.setProps({
   pageSize: 20,
   showHeader: true,
 });
 
-// 分发自定义事件，触发模型内部逻辑
+// Dispatch a custom event to trigger internal model logic
 ctx.model.dispatchEvent({
   type: 'refresh',
   payload: {
@@ -25,7 +25,7 @@ ctx.model.dispatchEvent({
 });
 ```
 
-> 提示：
-> - `ctx.model` 始终指向当前正在执行的 FlowModel 实例
-> - 不同类型的模型（BlockModel / ActionModel / PageModel 等）在 `setProps`、`dispatchEvent` 等方法上的可用字段会有所不同
-> - 若需要按 uid 访问其他模型，请使用 `ctx.getModel(uid)`
+> Tip:
+> - `ctx.model` always points to the FlowModel instance currently being executed
+> - Different model types (BlockModel / ActionModel / PageModel, etc.) may expose different fields for `setProps`, `dispatchEvent`, and more
+> - To access other models by uid, use `ctx.getModel(uid)`

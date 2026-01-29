@@ -1,37 +1,37 @@
 # ctx.loadCSS()
 
-按 URL 异步加载外部 CSS 样式表。适合在 JSBlock / JSField / JSAction 中动态引入第三方库的样式文件。
+Load external CSS stylesheets asynchronously by URL. Suitable for dynamically loading third-party library styles in JSBlock / JSField / JSAction.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 loadCSS(url: string): Promise<void>;
 ```
 
-- `url`：CSS 文件的 CDN 地址
-- 返回值：Promise，加载成功时 resolve，失败时 reject
+- `url`: CDN URL of the CSS file
+- Returns: Promise; resolves on success, rejects on failure
 
-> 说明：
-> - `ctx.loadCSS` 会自动检查 CSS 是否已加载，避免重复加载
-> - CSS 会被添加到 `document.head` 中，全局生效
-> - 适合在加载第三方库（如 Tabulator、FullCalendar 等）时，同时加载其样式文件
+> Notes:
+> - `ctx.loadCSS` automatically checks whether the CSS has already been loaded to avoid duplicates
+> - CSS is appended to `document.head` and applied globally
+> - Useful when loading third-party libraries (e.g., Tabulator, FullCalendar) and their styles
 
-## 使用示例
+## Examples
 
 ```ts
-// 加载 Tabulator 的样式
+// Load Tabulator styles
 await ctx.loadCSS('https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/css/tabulator.min.css');
 
-// 加载 FullCalendar 的样式
+// Load FullCalendar styles
 await ctx.loadCSS('https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.min.css');
 
-// 加载多个样式文件
+// Load multiple stylesheets
 await Promise.all([
   ctx.loadCSS('https://cdn.jsdelivr.net/npm/library@1.0.0/dist/css/main.css'),
   ctx.loadCSS('https://cdn.jsdelivr.net/npm/library@1.0.0/dist/css/theme.css'),
 ]);
 ```
 
-> 提示：
-> - 通常在使用 `ctx.importAsync` 或 `ctx.requireAsync` 加载第三方库后，需要同时加载其 CSS 文件
-> - 建议在加载库之前或之后立即加载对应的 CSS，确保样式正确应用
+> Tip:
+> - When using `ctx.importAsync` or `ctx.requireAsync` to load third-party libraries, you usually need to load their CSS as well
+> - Load the CSS immediately before or after loading the library to ensure styles are applied

@@ -1,21 +1,21 @@
 # ctx.on()
 
-在 RunJS 环境中订阅上下文事件（如字段值变更、属性变更、资源刷新等）。
+Subscribe to context events in RunJS (e.g., field value changes, property changes, resource refresh).
 
-> 事件最终会映射到 `ctx.element` 的自定义事件或内部事件总线，具体事件名可参考各组件文档。
+> Events are ultimately mapped to custom events on `ctx.element` or an internal event bus. Refer to component docs for specific event names.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 on(eventName: string, handler: (event?: any) => void): void;
 ```
 
-## 常见事件示例
+## Common Event Examples
 
-- `js-field:value-change`：自定义字段值变化
-- `resource:refresh`：资源刷新
+- `js-field:value-change`: custom field value change
+- `resource:refresh`: resource refresh
 
-## 使用示例
+## Examples
 
 ```ts
 React.useEffect(() => {

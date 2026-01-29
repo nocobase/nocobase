@@ -1,16 +1,16 @@
 # ctx.off()
 
-取消通过 `ctx.on(eventName, handler)` 注册的事件监听器。
+Remove an event listener registered with `ctx.on(eventName, handler)`.
 
-> 常与 `ctx.on` 配合使用，用于清理订阅，避免内存泄漏或重复触发。
+> Often used with `ctx.on` to clean up subscriptions and avoid memory leaks or duplicate triggers.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 off(eventName: string, handler: (...args: any[]) => void): void;
 ```
 
-## 使用示例
+## Examples
 
 ```ts
 const handler = (ev) => {
@@ -19,6 +19,6 @@ const handler = (ev) => {
 
 ctx.on('js-field:value-change', handler);
 
-// 在适当时机取消监听
+// Remove the listener when appropriate
 ctx.off('js-field:value-change', handler);
 ```

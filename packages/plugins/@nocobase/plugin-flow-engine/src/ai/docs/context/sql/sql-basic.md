@@ -1,12 +1,12 @@
 ---
-title: "执行临时 SQL (ctx.sql.run)"
-description: "在 JSBlock 中直接执行一段带参数的 SQL。"
+title: "Run Ad-hoc SQL (ctx.sql.run)"
+description: "Execute parameterized SQL directly in JSBlock."
 ---
 
-# 执行临时 SQL
+# Run Ad-hoc SQL
 
 ```ts
-// 查询指定状态的用户列表
+// Query users with a specific status
 const users = await ctx.sql.run(
   'SELECT * FROM users WHERE status = $status ORDER BY created_at DESC',
   {
@@ -15,7 +15,7 @@ const users = await ctx.sql.run(
   },
 );
 
-// 只取总数
+// Get total count only
 const total = await ctx.sql.run(
   'SELECT COUNT(*) AS total FROM users WHERE status = :status',
   {
@@ -25,6 +25,6 @@ const total = await ctx.sql.run(
 );
 ```
 
-> 提示：
-> - 建议总是通过 `bind` 传参数，避免字符串拼接带来的 SQL 注入风险
-> - `type` 可控制返回形式，如 `select`/`selectRow`/`selectVar` 等
+> Tip:
+> - Always pass parameters via `bind` to avoid SQL injection risks from string concatenation
+> - Use `type` to control the return shape, e.g. `select` / `selectRow` / `selectVar`

@@ -1,14 +1,14 @@
 # ctx.libs.formula
 
-内置的 Formula.js 电子表格公式库，在 RunJS 环境中可直接使用，适合做汇总、统计等类似 Excel 的公式计算。
+Built-in Formula.js spreadsheet formula library, available directly in RunJS for Excel-like calculations such as sums and statistics.
 
-## 类型定义（简化）
+## Type Definition (Simplified)
 
 ```ts
 libs.formula: typeof import('formulajs');
 ```
 
-## 使用示例
+## Examples
 
 ```ts
 const values = [1, 2, 3, 4];

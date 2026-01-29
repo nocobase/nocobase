@@ -1,13 +1,13 @@
 ---
-title: "替换路由"
-description: "使用 replace 选项替换当前历史记录，不添加新条目"
+title: "Replace Route"
+description: "Use replace to replace the current history entry without adding a new one"
 ---
 
-# 替换路由
+# Replace Route
 
-使用 `replace: true` 选项替换当前历史记录条目，不会添加新条目，适合登录后跳转等场景。
+Use the `replace: true` option to replace the current history entry without adding a new one. This is useful for post-login redirects.
 
 ```ts
-// 登录成功后，替换当前路由到首页
+// After login, replace current route to the home page
 ctx.router.navigate('/home', { replace: true });
 ```

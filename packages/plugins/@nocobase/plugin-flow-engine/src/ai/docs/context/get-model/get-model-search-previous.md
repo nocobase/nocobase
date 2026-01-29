@@ -1,15 +1,15 @@
 ---
-title: "在不同视图/弹窗中查找"
-description: "通过 ctx.getModel(uid, true) 在上游引擎中查找模型实例。"
+title: "Find Across Views/Dialogs"
+description: "Use ctx.getModel(uid, true) to find model instances in upstream engines."
 ---
 
-# 在不同视图/弹窗中查找
+# Find Across Views/Dialogs
 
-在视图作用域或弹窗场景中，当前引擎可能只持有子模型，需要从上游引擎中查找父模型。这时可以使用 `ctx.getModel(uid, true)`：
+In view scope or dialog scenarios, the current engine may only hold child models and needs to search parent models from upstream engines. In this case, you can use `ctx.getModel(uid, true)`:
 
 ```ts
 const model = ctx.getModel(otherViewModelUid, true);
 ```
 
-> `searchInPreviousEngines: true` 会在当前引擎找不到模型时，继续向上游引擎查找，
-> 常用于多层视图 / 弹窗嵌套下重用已加载的模型树。
+> `searchInPreviousEngines: true` will keep searching upstream engines when the model is not found in the current engine,
+> commonly used to reuse an already loaded model tree across nested views/dialogs.

@@ -1,14 +1,14 @@
 # ctx.message
 
-Ant Design 全局消息 API，用于显示临时提示消息。
+Ant Design global message API for displaying temporary toast messages.
 
-## 类型定义
+## Type Definition
 
 ```typescript
 message: MessageInstance
 ```
 
-`MessageInstance` 是 Ant Design 的消息实例接口，提供以下方法：
+`MessageInstance` is the Ant Design message interface and provides the following methods:
 
 - `success(content: string | ConfigOptions, duration?: number): MessageType`
 - `error(content: string | ConfigOptions, duration?: number): MessageType`
@@ -16,85 +16,75 @@ message: MessageInstance
 - `info(content: string | ConfigOptions, duration?: number): MessageType`
 - `loading(content: string | ConfigOptions, duration?: number): MessageType`
 
-## 说明
+## Notes
 
-`ctx.message` 是 Ant Design 的全局消息 API，用于在页面顶部显示临时提示消息。消息会在指定时间后自动消失，或用户点击后关闭。
+`ctx.message` is the Ant Design global message API, used to show temporary toast messages at the top of the page. Messages auto-dismiss after a duration or can be closed by the user.
 
-**与 `ctx.notification` 的区别**：
-- `ctx.message`：临时提示，显示在页面顶部中央，自动消失
-- `ctx.notification`：通知框，显示在页面右上角，需要手动关闭或自动消失
+**Difference from `ctx.notification`:**
+- `ctx.message`: temporary toast at the top center, auto-dismisses
+- `ctx.notification`: notification panel at the top-right, can be closed manually or auto-dismissed
 
-## 方法说明
+## Method Notes
 
 ### success(content, duration?)
 
-显示成功消息。
+Show a success message.
 
-**参数**：
-- `content` (string | ConfigOptions): 消息内容或配置对象
-- `duration` (number, 可选): 自动关闭的延迟时间（秒），默认 3 秒
+**Parameters:**
+- `content` (string | ConfigOptions): message content or config object
+- `duration` (number, optional): auto-close delay (seconds), default is 3 seconds
 
-**返回值**：`MessageType` - 可用于手动关闭消息
+**Returns**: `MessageType` - can be used to close the message manually
 
 ### error(content, duration?)
 
-显示错误消息。
+Show an error message.
 
-**参数**：
-- `content` (string | ConfigOptions): 消息内容或配置对象
-- `duration` (number, 可选): 自动关闭的延迟时间（秒），默认 3 秒
+**Parameters:**
+- `content` (string | ConfigOptions): message content or config object
+- `duration` (number, optional): auto-close delay (seconds), default is 3 seconds
 
-**返回值**：`MessageType` - 可用于手动关闭消息
+**Returns**: `MessageType` - can be used to close the message manually
 
 ### warning(content, duration?)
 
-显示警告消息。
+Show a warning message.
 
-**参数**：
-- `content` (string | ConfigOptions): 消息内容或配置对象
-- `duration` (number, 可选): 自动关闭的延迟时间（秒），默认 3 秒
+**Parameters:**
+- `content` (string | ConfigOptions): message content or config object
+- `duration` (number, optional): auto-close delay (seconds), default is 3 seconds
 
-**返回值**：`MessageType` - 可用于手动关闭消息
+**Returns**: `MessageType` - can be used to close the message manually
 
 ### info(content, duration?)
 
-显示信息消息。
+Show an informational message.
 
-**参数**：
-- `content` (string | ConfigOptions): 消息内容或配置对象
-- `duration` (number, 可选): 自动关闭的延迟时间（秒），默认 3 秒
+**Parameters:**
+- `content` (string | ConfigOptions): message content or config object
+- `duration` (number, optional): auto-close delay (seconds), default is 3 seconds
 
-**返回值**：`MessageType` - 可用于手动关闭消息
+**Returns**: `MessageType` - can be used to close the message manually
 
 ### loading(content, duration?)
 
-显示加载消息。
+Show a loading message.
 
-**参数**：
-- `content` (string | ConfigOptions): 消息内容或配置对象
-- `duration` (number, 可选): 自动关闭的延迟时间（秒），默认 3 秒
+**Parameters:**
+- `content` (string | ConfigOptions): message content or config object
+- `duration` (number, optional): auto-close delay (seconds), default is 3 seconds
 
-**返回值**：`MessageType` - 可用于手动关闭消息
+**Returns**: `MessageType` - can be used to close the message manually
 
-## ConfigOptions 配置对象
+## ConfigOptions
 
-当 `content` 为对象时，支持以下配置：
+When `content` is an object, the following options are supported:
 
 ```typescript
 interface ConfigOptions {
-  content: React.ReactNode;  // 消息内容
-  duration?: number;          // 自动关闭的延迟时间（秒）
-  onClose?: () => void;       // 关闭时的回调函数
-  icon?: React.ReactNode;     // 自定义图标
+  content: React.ReactNode;  // message content
+  duration?: number;          // auto-close delay (seconds)
+  onClose?: () => void;       // callback on close
+  icon?: React.ReactNode;     // custom icon
 }
 ```
-
-## 使用示例
-
-- [显示成功消息](./message-success.md)
-- [显示错误消息](./message-error.md)
-- [显示警告消息](./message-warning.md)
-- [显示信息消息](./message-info.md)
-- [显示加载消息](./message-loading.md)
-- [在事件处理中使用](./message-in-handler.md)
-- [自定义持续时间](./message-duration.md)

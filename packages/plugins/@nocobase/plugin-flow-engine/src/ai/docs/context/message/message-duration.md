@@ -1,27 +1,27 @@
 ---
-title: "自定义持续时间"
-description: "自定义消息显示的持续时间"
+title: "Customize Duration"
+description: "Customize how long messages are displayed"
 ---
 
-# 自定义持续时间
+# Customize Duration
 
-通过 `duration` 参数自定义消息显示的持续时间。
+Use the `duration` parameter to customize how long a message is displayed.
 
-## 指定持续时间
+## Specify a duration
 
 ```javascript
-// 显示 5 秒后自动关闭
+// Auto-close after 5 seconds
 ctx.message.success(ctx.t('Operation succeeded'), 5);
 ```
 
-## 不自动关闭
+## Do not auto-close
 
 ```javascript
-// 设置为 0 表示不自动关闭，需要用户手动点击关闭
+// Set to 0 to keep it open; user must close manually
 ctx.message.info(ctx.t('Important information'), 0);
 ```
 
-## 使用配置对象
+## Use a config object
 
 ```javascript
 ctx.message.success({

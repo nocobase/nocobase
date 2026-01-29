@@ -1,11 +1,11 @@
 ---
-title: "基本 JSX 组件"
-description: "使用 JSX 创建基本的 React 组件"
+title: "Basic JSX Components"
+description: "Create basic React components with JSX"
 ---
 
-# 基本 JSX 组件
+# Basic JSX Components
 
-使用 JSX 创建基本的 React 组件。
+Create basic React components with JSX.
 
 ```tsx
 const App = () => (

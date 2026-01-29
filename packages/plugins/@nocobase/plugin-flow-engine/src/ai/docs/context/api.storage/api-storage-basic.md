@@ -1,32 +1,32 @@
 ---
-title: "本地存储：使用 api.storage 保存状态"
-description: "通过 ctx.api.storage 在本地存储中读写带前缀的键值。"
+title: "Local Storage: Save State with api.storage"
+description: "Use ctx.api.storage to read and write prefixed key-value pairs in local storage."
 ---
 
-# 本地存储：使用 api.storage 保存状态
+# Local Storage: Save State with api.storage
 
-`ctx.api.storage` 是对 `localStorage` 的一层封装，会自动带上应用前缀，避免键名冲突。
+`ctx.api.storage` is a wrapper around `localStorage`. It automatically adds an app-specific prefix to avoid key collisions.
 
-## 写入数据
+## Write data
 
 ```ts
-// 保存当前选中的空间 ID
+// Save the currently selected space ID
 ctx.api.storage.setItem('CURRENT_SPACE', spaceId);
 ```
 
-## 读取数据
+## Read data
 
 ```ts
 const spaceId = ctx.api.storage.getItem('CURRENT_SPACE');
 if (!spaceId) {
-  // 还没有选择空间
+  // No space selected yet
 }
 ```
 
-## 删除数据
+## Remove data
 
 ```ts
 ctx.api.storage.removeItem('CURRENT_SPACE');
 ```
 
-> 提示：实际保存到浏览器时，键名会加上前缀，例如 `NOCOBASE_CURRENT_SPACE`，无需手动处理。
+> Tip: When saved to the browser, the key will be prefixed, e.g. `NOCOBASE_CURRENT_SPACE`. No manual handling is needed.

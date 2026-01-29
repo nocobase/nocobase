@@ -1,29 +1,29 @@
 ---
-title: "基础请求：获取用户信息"
-description: "使用 ctx.api.request 发送 GET/POST 请求，获取或更新用户信息。"
+title: "Basic Requests: Get User Info"
+description: "Use ctx.api.request to send GET/POST requests to fetch or update user info."
 ---
 
-# 基础请求：获取用户信息
+# Basic Requests: Get User Info
 
-使用 `ctx.api.request()` 发送基础的 GET / POST 请求。
+Use `ctx.api.request()` to send basic GET / POST requests.
 
-## 获取用户信息
+## Get user info
 
 ```ts
-// 获取当前用户信息
+// Get current user info
 const response = await ctx.api.request({
   method: 'get',
-  url: '/users:get', // 资源风格 URL
+  url: '/users:get', // resource-style URL
 });
 
-// 一般直接返回 data 部分
+// Usually return the data field
 return response.data;
 ```
 
-## 更新用户信息
+## Update user info
 
 ```ts
-// payload 为要更新的字段
+// payload contains fields to update
 const response = await ctx.api.request({
   method: 'post',
   url: '/users:update',
@@ -32,4 +32,3 @@ const response = await ctx.api.request({
 
 return response.data;
 ```
-

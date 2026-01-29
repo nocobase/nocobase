@@ -1,14 +1,14 @@
 # ctx.api.storage
 
-本地存储封装，基于浏览器 `localStorage`，会自动加上前缀（`storagePrefix`），避免与其他应用或实例的键名冲突。
+A local storage wrapper based on browser `localStorage`. It automatically adds a prefix (`storagePrefix`) to avoid key collisions with other apps or instances.
 
-## 说明
+## Notes
 
-- 通过 `ctx.api.storage` 可以在本地保存简单的键值数据
-- 所有键都会自动带上前缀（如 `NOCOBASE_`），无需手动处理
-- 适合保存：当前空间 ID、最近访问记录、开关状态等轻量数据
+- `ctx.api.storage` lets you store simple key-value data locally
+- All keys are automatically prefixed (e.g., `NOCOBASE_`), no manual handling needed
+- Suitable for lightweight data like current space ID, recent items, toggle states, etc.
 
-## 常用方法
+## Common Methods
 
 ```ts
 api.storage.getItem(key: string): string | null;
@@ -16,10 +16,6 @@ api.storage.setItem(key: string, value: string): void;
 api.storage.removeItem(key: string): void;
 ```
 
-> 注意：
-> - 所有值都是字符串，若要保存对象，请使用 `JSON.stringify` / `JSON.parse`
-> - 不适合保存敏感信息（如明文密码），敏感信息应放在服务端或更安全的存储方案中
-
-## 使用示例
-
-- [本地存储：使用 api.storage 保存状态](../api/api-storage-basic.md)
+> Note:
+> - All values are strings. To store objects, use `JSON.stringify` / `JSON.parse`.
+> - Not suitable for sensitive information (e.g., plaintext passwords). Store sensitive data on the server or in a safer storage mechanism.

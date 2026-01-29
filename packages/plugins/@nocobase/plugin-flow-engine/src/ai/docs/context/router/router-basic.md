@@ -1,16 +1,16 @@
 ---
-title: "基本导航"
-description: "使用 ctx.router.navigate() 进行基本的路由导航"
+title: "Basic Navigation"
+description: "Use ctx.router.navigate() for basic routing"
 ---
 
-# 基本导航
+# Basic Navigation
 
-使用 `ctx.router.navigate()` 进行基本的路由导航。
+Use `ctx.router.navigate()` for basic routing.
 
 ```ts
-// 导航到用户列表页
+// Navigate to the user list page
 ctx.router.navigate('/users');
 
-// 导航到特定用户详情页
+// Navigate to a specific user detail page
 ctx.router.navigate('/users/123');
 ```

@@ -1,16 +1,16 @@
 ---
-title: "使用 Fragment"
-description: "在 JSX 中使用 Fragment 包裹多个元素"
+title: "Use Fragment"
+description: "Wrap multiple elements with Fragment in JSX"
 ---
 
-# 使用 Fragment
+# Use Fragment
 
-在 JSX 中使用 Fragment 包裹多个元素，避免添加额外的 DOM 节点。
+Use Fragment in JSX to wrap multiple elements and avoid adding extra DOM nodes.
 
-## 推荐：使用简写语法
+## Recommended: Shorthand syntax
 
 ```tsx
-// 推荐：使用简写语法（不需要解构）
+// Recommended: shorthand syntax (no destructuring needed)
 const App = () => (
   <>
     <h1>Title</h1>
@@ -21,10 +21,10 @@ const App = () => (
 ctx.render(<App />);
 ```
 
-## 使用 Fragment（需要解构）
+## Use Fragment (requires destructuring)
 
 ```tsx
-// 或使用 Fragment（需要解构）
+// Or use Fragment (requires destructuring)
 const { React } = ctx.libs;
 const { Fragment } = React;
 

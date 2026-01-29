@@ -1,14 +1,14 @@
 # ctx.form
 
-当前区块中的表单实例。
+The form instance within the current block.
 
-在表单相关的 JSField、JSItem 中，可以通过 `ctx.form`：
+In form-related JSField and JSItem, you can use `ctx.form` to:
 
-- 读取当前表单的所有字段值
-- 更新其他字段的值，实现字段间联动
-- 触发表单校验或提交逻辑
+- Read values of all fields in the current form
+- Update other field values to implement field linkage
+- Trigger form validation or submission logic
 
-## 类型定义
+## Type Definition
 
 ```ts
 form: FormInstance<any>;
@@ -32,30 +32,30 @@ interface FormInstance<Values = any> {
 }
 ```
 
-## 常用方法
+## Common Methods
 
 ```ts
-// 读取当前已注册字段的值（默认只包含已经渲染/注册过的字段）
+// Read values of currently registered fields (only rendered/registered fields by default)
 const values = ctx.form.getFieldsValue();
 
-// 读取所有字段的值（包括未渲染但已注册的字段）
+// Read values of all fields (including registered but not rendered fields)
 const allValues = ctx.form.getFieldsValue(true);
 
-// 读取单个字段值
+// Read a single field value
 const email = ctx.form.getFieldValue('email');
 
-// 批量更新字段值（联动场景）
+// Bulk update field values (for linkage scenarios)
 ctx.form.setFieldsValue({
   status: 'active',
   updatedAt: new Date(),
 });
 
-// 触发校验 / 提交
+// Trigger validation / submission
 await ctx.form.validateFields();
 await ctx.form.submit();
 ```
 
-> 提示：
-> - `getFieldsValue()` 只会返回当前已渲染/注册的字段值；`getFieldsValue(true)` 会返回所有字段的值（包括未渲染但已注册的字段）
-> - 在 JS 字段中，推荐通过 `ctx.form.getFieldsValue()` / `ctx.form.getFieldValue()` 获取其它字段值做运算或联动
-> - 避免直接操作 DOM 表单元素，应始终通过 `ctx.form` 来读写表单状态
+> Tip:
+> - `getFieldsValue()` returns values only for fields that are currently rendered/registered; `getFieldsValue(true)` returns all fields (including registered but not rendered)
+> - In JS fields, prefer `ctx.form.getFieldsValue()` / `ctx.form.getFieldValue()` to read other field values for calculations or linkage
+> - Avoid manipulating DOM form elements directly; always read/write form state via `ctx.form`

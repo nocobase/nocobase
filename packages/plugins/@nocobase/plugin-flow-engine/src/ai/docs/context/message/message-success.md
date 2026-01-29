@@ -1,30 +1,30 @@
 ---
-title: "显示成功消息"
-description: "使用 ctx.message.success 显示成功提示"
+title: "Show Success Message"
+description: "Use ctx.message.success to show a success toast"
 ---
 
-# 显示成功消息
+# Show Success Message
 
-使用 `ctx.message.success()` 显示成功提示消息。
+Use `ctx.message.success()` to show a success toast.
 
-## 基本用法
+## Basic Usage
 
 ```javascript
 ctx.message.success(ctx.t('Operation succeeded'));
 ```
 
-## 带变量的消息
+## Message with variables
 
 ```javascript
 ctx.message.success(ctx.t('Processed {{count}} rows', { count: rows.length }));
 ```
 
-## 在操作完成后显示
+## Show after an operation completes
 
 ```javascript
-// 执行某个操作
+// Execute an operation
 await ctx.runAction('create', { values: { name: 'test' } });
 
-// 显示成功消息
+// Show success message
 ctx.message.success(ctx.t('Record created successfully'));
 ```

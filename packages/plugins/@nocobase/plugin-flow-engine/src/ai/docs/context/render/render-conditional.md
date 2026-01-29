@@ -1,11 +1,11 @@
 ---
-title: "条件渲染"
-description: "根据数据条件使用 ctx.render() 进行条件渲染"
+title: "Conditional Rendering"
+description: "Render conditionally with ctx.render() based on data"
 ---
 
-# 条件渲染
+# Conditional Rendering
 
-根据数据条件使用 `ctx.render()` 进行条件渲染。
+Use `ctx.render()` to render conditionally based on data.
 
 ```ts
 const { data } = await ctx.api.request({ url: 'users:list' });

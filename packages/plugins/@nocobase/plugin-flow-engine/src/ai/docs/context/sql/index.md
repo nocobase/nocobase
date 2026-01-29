@@ -1,9 +1,9 @@
 # ctx.sql
 
-`ctx.sql` 提供 SQL 执行和管理能力，常用于 JSBlock 中直接访问数据库。  
-支持临时 SQL 执行、参数绑定、结果类型控制，以及保存/复用 SQL 模板等能力。
+`ctx.sql` provides SQL execution and management capabilities, commonly used in JSBlock to access the database directly.  
+It supports temporary SQL execution, parameter binding, result type control, and saving/reusing SQL templates.
 
-## 类型定义
+## Type Definition
 
 ```ts
 sql: FlowSQLRepository;
@@ -39,17 +39,11 @@ interface FlowSQLRepository {
 };
 ```
 
-> 说明：实际实现位于 FlowSQLRepository 中，这里只展示常用方法和参数，便于在 JSBlock 中直接调用。
+> Notes: The implementation lives in FlowSQLRepository. This section only lists common methods and parameters for direct use in JSBlock.
 
-## 常用方法
+## Common Methods
 
-- `ctx.sql.run(sql, options?)`：执行一段临时 SQL，支持参数绑定、返回类型控制
-- `ctx.sql.save({ uid, sql, dataSourceKey? })`：保存/更新一条 SQL 模板，供后续按 ID 复用
-- `ctx.sql.runById(uid, options?)`：根据模板 ID 执行 SQL，`options` 与 `run` 一致
-- `ctx.sql.destroy(uid)`：删除不再需要的 SQL 模板
-
-## 使用示例
-
-- [执行临时 SQL](./sql-basic.md)
-- [保存并复用 SQL 模板](./sql-save-and-run-by-id.md)
-- [使用字符串变量占位符](./sql-vars.md)
+- `ctx.sql.run(sql, options?)`: run a temporary SQL statement with parameter binding and result type control
+- `ctx.sql.save({ uid, sql, dataSourceKey? })`: save/update a SQL template for reuse by ID
+- `ctx.sql.runById(uid, options?)`: execute a saved SQL template by ID; `options` is the same as `run`
+- `ctx.sql.destroy(uid)`: delete an unused SQL template
