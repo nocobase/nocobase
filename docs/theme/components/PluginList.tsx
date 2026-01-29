@@ -1,4 +1,4 @@
-import { useFrontmatter, useLang, useNavigate, usePageData } from '@rspress/core/runtime';
+import { useFrontmatter, useLang, useNavigate, usePages } from '@rspress/core/runtime';
 import { PluginCard } from './PluginCard';
 import { PluginPrice } from './PluginPrice';
 import { type PluginInfoFrontmatter } from './PluginInfo';
@@ -7,7 +7,7 @@ import { Badge, renderHtmlOrText } from '@rspress/core/theme';
 import './PluginList.scss';
 
 export function PluginList() {
-  const { siteData } = usePageData();
+  const { pages } = usePages();
   const lang = useLang();
   const { frontmatter } = useFrontmatter();
 
@@ -18,7 +18,7 @@ export function PluginList() {
         <p className="rp-home-feature-desc">{frontmatter.description}</p>
       </div>
       <div className="rp-home-feature rp-plugin-list">
-        {siteData.pages.filter(page => !page.frontmatter?.deprecated && page.frontmatter?.packageName && page.lang === lang && page.routePath.includes('/plugins/')).map(page => {
+        {pages.filter(page => !page.frontmatter?.deprecated && page.frontmatter?.packageName && page.lang === lang && page.routePath.includes('/plugins/')).map(page => {
           const points = Number(page.frontmatter.points as number);
           return <PluginCard
             float={true}
