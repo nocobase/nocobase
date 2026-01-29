@@ -376,6 +376,43 @@ export function defineBaseContextMeta() {
         returns: { type: 'Promise<any>' },
         examples: ["const id = await ctx.getVar('ctx.record.id');"],
       },
+      getApiInfos: {
+        description: 'All available APIs under context namespace',
+        detail: '(options?: { version?: string }) => Promise<Record<string, any>>',
+        completion: { insertText: 'await ctx.getApiInfos()' },
+        params: [
+          {
+            name: 'options',
+            type: '{ version?: string }',
+            optional: true,
+            description: 'Options (e.g. version).',
+          },
+        ],
+        returns: { type: 'Promise<Record<string, any>>' },
+        examples: ['const apis = await ctx.getApiInfos();'],
+      },
+      getVarInfos: {
+        description: 'All available variables could be used to get deeper data.',
+        detail: '(options?: { path?: string|string[]; maxDepth?: number }) => Promise<Record<string, any>>',
+        completion: { insertText: "await ctx.getVarInfos({ path: 'record', maxDepth: 3 })" },
+        params: [
+          {
+            name: 'options',
+            type: '{ path?: string|string[]; maxDepth?: number }',
+            optional: true,
+            description: 'Options for path trimming and maxDepth expansion.',
+          },
+        ],
+        returns: { type: 'Promise<Record<string, any>>' },
+        examples: ["const vars = await ctx.getVarInfos({ path: 'record', maxDepth: 3 });"],
+      },
+      getEnvInfos: {
+        description: 'current runtime environment',
+        detail: '() => Promise<Record<string, any>>',
+        completion: { insertText: 'await ctx.getEnvInfos()' },
+        returns: { type: 'Promise<Record<string, any>>' },
+        examples: ['const envs = await ctx.getEnvInfos();'],
+      },
       runAction: {
         description:
           'Execute a data action on the current resource. Parameters: (actionName: string, params: object) => Promise<any>. Example: `await ctx.runAction("create", { values: { name: "test" } })`',
@@ -772,6 +809,43 @@ export function defineBaseContextMeta() {
           ],
           returns: { type: 'Promise<any>' },
           examples: ["const id = await ctx.getVar('ctx.record.id');"],
+        },
+        getApiInfos: {
+          description: '上下文命名空间下的所有可用 API',
+          detail: '(options?: { version?: string }) => Promise<Record<string, any>>',
+          completion: { insertText: 'await ctx.getApiInfos()' },
+          params: [
+            {
+              name: 'options',
+              type: '{ version?: string }',
+              optional: true,
+              description: '可选参数（例如 version）。',
+            },
+          ],
+          returns: { type: 'Promise<Record<string, any>>' },
+          examples: ['const apis = await ctx.getApiInfos();'],
+        },
+        getVarInfos: {
+          description: '所有可用变量，可用于获取更深层数据。',
+          detail: '(options?: { path?: string|string[]; maxDepth?: number }) => Promise<Record<string, any>>',
+          completion: { insertText: "await ctx.getVarInfos({ path: 'record', maxDepth: 3 })" },
+          params: [
+            {
+              name: 'options',
+              type: '{ path?: string|string[]; maxDepth?: number }',
+              optional: true,
+              description: 'path 剪裁与 maxDepth 展开参数。',
+            },
+          ],
+          returns: { type: 'Promise<Record<string, any>>' },
+          examples: ["const vars = await ctx.getVarInfos({ path: 'record', maxDepth: 3 });"],
+        },
+        getEnvInfos: {
+          description: '当前运行时环境',
+          detail: '() => Promise<Record<string, any>>',
+          completion: { insertText: 'await ctx.getEnvInfos()' },
+          returns: { type: 'Promise<Record<string, any>>' },
+          examples: ['const envs = await ctx.getEnvInfos();'],
         },
         resolveJsonTemplate: '解析含 {{ }} 变量表达式的 JSON 模板。参数：(template: any, context?: object) => any',
         runAction: {
