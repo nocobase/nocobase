@@ -120,14 +120,21 @@ async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> 
     absolute: true,
   });
 
-  if (!moduleMetaFiles.length) {
+  const rootMetaPath = path.join(docsDir, 'meta.json');
+  const moduleMetaPaths = moduleMetaFiles.slice();
+  if (await fs.pathExists(rootMetaPath)) {
+    moduleMetaPaths.unshift(rootMetaPath);
+  }
+
+  if (!moduleMetaPaths.length) {
     return [];
   }
 
-  moduleMetaFiles.sort();
+  moduleMetaPaths.sort();
+  const moduleRoots = moduleMetaPaths.map((metaPath) => path.dirname(metaPath));
 
   const groups: ModuleGroup[] = [];
-  for (const metaFile of moduleMetaFiles) {
+  for (const metaFile of moduleMetaPaths) {
     const moduleRoot = path.dirname(metaFile);
     const moduleDirName = path.basename(moduleRoot);
     let moduleName = moduleDirName;
@@ -145,10 +152,22 @@ async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> 
       description = '';
     }
 
+    const ignore: string[] = [];
+    if (moduleRoot === docsDir) {
+      for (const otherRoot of moduleRoots) {
+        if (otherRoot === moduleRoot) continue;
+        const rel = path.relative(moduleRoot, otherRoot).split(path.sep).join('/');
+        if (rel && !rel.startsWith('..')) {
+          ignore.push(`${rel}/**`);
+        }
+      }
+    }
+
     const files = await fg(['**/*.md'], {
       cwd: moduleRoot,
       onlyFiles: true,
       absolute: true,
+      ignore,
     });
 
     if (!files.length) {
