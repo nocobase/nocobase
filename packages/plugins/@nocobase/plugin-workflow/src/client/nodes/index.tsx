@@ -183,17 +183,10 @@ export function useAvailableUpstreams(node, filter?) {
  * @experimental
  */
 export function useUpstreamScopes(node) {
-  const { instructions } = usePlugin(WorkflowPlugin);
   const stack: any[] = [];
 
   for (let current = node; current; current = current.upstream) {
-    if (!current.upstream) {
-      continue;
-    }
-    const instruction = instructions.get(current.upstream.type);
-    const hasScopeVariables = typeof instruction?.useScopeVariables === 'function';
-    // 允许带 scope 变量的节点（如循环）进入作用域列表
-    if (current.branchIndex != null || hasScopeVariables) {
+    if (current.upstream && current.branchIndex != null) {
       stack.push(current.upstream);
     }
   }
