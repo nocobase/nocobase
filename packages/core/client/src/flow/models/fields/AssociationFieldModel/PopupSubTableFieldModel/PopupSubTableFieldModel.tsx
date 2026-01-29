@@ -178,7 +178,7 @@ const AddFieldColumn = ({ model }) => {
     <AddSubModelButton
       model={model}
       subModelKey={'subTableColumns'}
-      subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
+      subModelBaseClasses={['TableColumnModel', 'TableAssociationFieldGroupModel', 'TableCustomColumnModel']}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>

@@ -13,7 +13,6 @@ export class AssociationFieldGroupModel extends FlowModel {
   static itemModelName = 'DetailsItemModel';
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = this.itemModelName;
-
     const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
       return targetCollection
         .getToOneAssociationFields()
@@ -60,7 +59,9 @@ export class AssociationFieldGroupModel extends FlowModel {
                             fieldSettings: {
                               init: {
                                 dataSourceKey: ctx.collection.dataSourceKey,
-                                collectionName: ctx.collection.name,
+                                collectionName: ctx.prefixFieldPath
+                                  ? ctx.blockModel.context.collection.name
+                                  : ctx.collection.name,
                                 fieldPath: fp,
                                 associationPathName: fPath,
                               },
@@ -89,7 +90,7 @@ export class AssociationFieldGroupModel extends FlowModel {
         .filter(Boolean);
     };
 
-    return displayAssociationFields(ctx.collection);
+    return displayAssociationFields(ctx.collection, ctx.prefixFieldPath);
   }
 }
 
