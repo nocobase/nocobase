@@ -79,7 +79,18 @@ export const updateWorkflowCcTaskAssociationFields = ({
   if (!flowEngine) return;
   const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
   if (!collection) return;
-  const associations = getEligibleTempAssociationSources(tempAssociationSources || [], collection);
+  const sources = tempAssociationSources || [];
+  const desiredFieldNames = new Set(
+    sources.map((source) => buildTempAssociationFieldName(source.nodeType, source.nodeKey)),
+  );
+
+  collection.getFields().forEach((field) => {
+    if (!field.name.startsWith(TEMP_ASSOCIATION_PREFIX)) return;
+    if (desiredFieldNames.has(field.name)) return;
+    collection.removeField(field.name);
+  });
+
+  const associations = getEligibleTempAssociationSources(sources, collection);
 
   if (!associations.length) {
     return;
