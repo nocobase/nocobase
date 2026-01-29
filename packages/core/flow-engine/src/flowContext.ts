@@ -37,9 +37,11 @@ import {
   extractPropertyPath,
   extractUsedVariablePaths,
   FlowExitException,
+  isCssFile,
   prepareRunJsCode,
   resolveDefaultParams,
   resolveExpressions,
+  resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
@@ -3350,16 +3352,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
-    this.defineMethod(
-      'loadCSS',
-      async (url: string) => {
-        return new Promise((resolve, reject) => {
-          // Check if CSS is already loaded
-          const existingLink = document.querySelector(`link[href="${url}"]`);
-          if (existingLink) {
-            resolve(null);
-            return;
-          }
+    this.defineMethod('loadCSS', async (href: string) => {
+      const url = resolveModuleUrl(href);
+      return new Promise((resolve, reject) => {
+        // Check if CSS is already loaded
+        const existingLink = document.querySelector(`link[href="${url}"]`);
+        if (existingLink) {
+          resolve(null);
+          return;
+        }
 
           const link = document.createElement('link');
           link.rel = 'stylesheet';
@@ -3383,8 +3384,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           reject(new Error('requirejs is not available'));
           return;
         }
+        const u = resolveModuleUrl(url);
         this.requirejs(
-          [url],
+          [u],
           (...args: any[]) => {
             resolve(args[0]);
           },
@@ -3396,14 +3398,26 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
     // - 返回模块命名空间对象（包含 default 与命名导出）
     this.defineMethod('importAsync', async (url: string) => {
-      if (!url || typeof url !== 'string') {
-        throw new Error('invalid url');
+      // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
+      if (isCssFile(url)) {
+        return this.loadCSS(url);
       }
-      const u = url.trim();
+      const u = resolveModuleUrl(url, { addSuffix: true });
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
       if (cache.has(u)) return cache.get(u) as Promise<any>;
+      const normalizeModule = (mod: any) => {
+        // 许多经由 esm.sh / esbuild 转换的模块会将主导出挂在 default 上
+        // 如果只有 default 一个导出，则直接返回 default，提升易用性
+        if (mod && typeof mod === 'object' && 'default' in mod) {
+          const keys = Object.keys(mod);
+          if (keys.length === 1 && keys[0] === 'default') {
+            return (mod as any).default;
+          }
+        }
+        return mod;
+      };
       // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
       const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
       // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
@@ -3413,11 +3427,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       };
       const p = (async () => {
         try {
-          return await nativeImport();
+          const mod = await nativeImport();
+          return normalizeModule(mod);
         } catch (err: any) {
           // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
           try {
-            return await evalImport();
+            const mod = await evalImport();
+            return normalizeModule(mod);
           } catch (err2) {
             throw err2 || err;
           }
