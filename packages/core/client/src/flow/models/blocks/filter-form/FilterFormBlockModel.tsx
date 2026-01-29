@@ -36,6 +36,8 @@ import { FilterFormItemModel } from './FilterFormItemModel';
 import { clearLegacyDefaultValuesFromFilterFormModel } from './legacyDefaultValueMigration';
 import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils';
 import { FormItemModel } from '../form';
+import { getDefaultOperator } from '../filter-manager/utils';
+import { normalizeFilterValueByOperator } from './valueNormalization';
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -157,10 +159,13 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       const resolved = await resolveValue(rule.value);
       if (typeof resolved === 'undefined') continue;
 
+      const operator = getDefaultOperator(itemModel as any);
+      const normalized = normalizeFilterValueByOperator(operator, resolved);
+
       if (typeof (form as any).setFieldValue === 'function') {
-        (form as any).setFieldValue(name, resolved);
+        (form as any).setFieldValue(name, normalized);
       } else {
-        (form as any).setFieldsValue?.({ [String(name)]: resolved });
+        (form as any).setFieldsValue?.({ [String(name)]: normalized });
       }
     }
   }
