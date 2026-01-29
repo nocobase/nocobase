@@ -18,5 +18,9 @@
   {
     "text": "API",
     "link": "/api"
+  },
+  {
+    "text": "Home",
+    "link": "https://www.nocobase.com/"
   }
 ]
