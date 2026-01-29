@@ -15,3 +15,4 @@ export * from './BulkEditFormActionGroupModel';
 export * from './BulkEditFormSubmitActionModel';
 export * from './BulkEditChildPageTabModel';
 export * from './BulkEditFormGridModel';
+export * from './BulkEditDataBlockModel';
