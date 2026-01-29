@@ -96,8 +96,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       value: this.subModels.grid,
     });
 
-    // 应用表单级默认值（不会覆盖非空值）
-    void this.applyFormDefaultValues().then(() => this.context.refreshTargets?.());
+    // 首次进入页面：等待子模型 beforeRender 完成（例如 name 初始化），再应用表单级默认值并触发筛选
+    void this.applyDefaultsAndInitialFilter();
 
     // 监听页面区块删除，自动清理已失效的筛选字段
     const blockGridModel = this.context.blockGridModel;
@@ -114,6 +114,24 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   onUnmount() {
     this.removeTargetBlockListener?.();
     super.onUnmount();
+  }
+
+  private async applyDefaultsAndInitialFilter() {
+    await this.ensureFilterItemsBeforeRender();
+    await this.applyFormDefaultValues();
+    await this.context.refreshTargets?.();
+  }
+
+  private async ensureFilterItemsBeforeRender() {
+    const gridModel = this.subModels?.grid;
+    const items = (gridModel as any)?.subModels?.items || [];
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    for (const itemModel of items) {
+      if (typeof itemModel?.dispatchEvent === 'function') {
+        await itemModel.dispatchEvent('beforeRender');
+      }
+    }
   }
 
   async applyFormDefaultValues(options?: { force?: boolean }) {
