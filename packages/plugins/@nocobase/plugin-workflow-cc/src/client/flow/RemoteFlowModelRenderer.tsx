@@ -84,12 +84,6 @@ export function RemoteFlowModelRenderer({
     });
   }, [enableUIConfiguration]);
 
-  useEffect(() => {
-    if (!model) return;
-    // 记录变化时重新注入回调，确保卡片点击行为可用
-    onModelLoadedRef.current?.(model);
-  }, [model, onModelLoaded]);
-
   return (
     <FlowModelRenderer
       model={model}
