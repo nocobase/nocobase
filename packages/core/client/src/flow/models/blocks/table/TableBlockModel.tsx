@@ -661,6 +661,48 @@ TableBlockModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
+    dragSort: {
+      title: tExpr('Enable drag and drop sorting'),
+      uiMode: { type: 'switch', key: 'dragSort' },
+      defaultParams: {
+        dragSort: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('dragSort', params.dragSort);
+      },
+    },
+    dragSortBy: {
+      title: tExpr('Drag and drop sorting field'),
+      hideInSettings(ctx) {
+        const dragSort = ctx.model.getStepParams('tableSettings', 'dragSort')?.dragSort;
+        if (!dragSort) {
+          return true;
+        }
+      },
+      uiMode: (ctx) => {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          key: 'dragSortBy',
+          props: {
+            options: [
+              { label: t('Large'), value: 'large' },
+              { label: t('Middle'), value: 'middle' },
+              { label: t('Small'), value: 'small' },
+            ],
+          },
+        };
+      },
+      defaultParams: {
+        dragSortBy: null,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('dragSortBy', params.dragSortBy);
+        // ctx.model.resource.setRequestParameters({
+        //   sort: params.dragSortBy,
+        // });
+      },
+    },
     // virtualScrolling: {
     //   title: tExpr('Enable virtual scrolling'),
     //   uiSchema: {
