@@ -9,3 +9,4 @@
 
 export { NodeDetailsModel } from './NodeDetailsModel';
 export { NodeValueModel } from './NodeValueModel';
+export { TaskCardCommonItemModel } from './TaskCardCommonItemModel';
