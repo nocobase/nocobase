@@ -161,7 +161,7 @@ export class DuplicateActionModel extends ActionModel {
     }
   }
   getTitle() {
-    return this.duplicateLoading ? this.context.t('Duplicating') : this.context.t('Duplicate');
+    return this.duplicateLoading ? this.context.t('Duplicating') : this.props.title || this.context.t('Duplicate');
   }
 }
 
@@ -444,6 +444,9 @@ DuplicateActionModel.registerFlow({
         const { duplicateFields = [] } = ctx.model.props;
         if (!duplicateFields?.length) {
           ctx.message.error(ctx.t('Please configure the duplicate fields'));
+          return;
+        }
+        if (ctx.model.duplicateLoading) {
           return;
         }
         ctx.model.duplicateLoading = true;
