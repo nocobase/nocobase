@@ -8,7 +8,6 @@
  */
 
 import { defineFlow, tExpr, FlowModel, FlowModelContext, CollectionField } from '@nocobase/flow-engine';
-import { EditFormModel } from '../models/blocks/form/';
 
 export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
