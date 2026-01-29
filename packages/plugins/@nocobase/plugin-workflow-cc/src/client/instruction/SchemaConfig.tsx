@@ -610,8 +610,6 @@ export function CCTaskCardConfigButton() {
   const { setFormValueChanged } = useActionContext();
   const t = ctx.t;
 
-  const taskCardUid = form.values.taskCardUid;
-
   const onUidChange = useCallback(
     (uid: string) => {
       form.setValuesIn('taskCardUid', uid);
@@ -634,7 +632,7 @@ export function CCTaskCardConfigButton() {
       },
       content: (
         <CCTaskCardDrawerContent
-          uid={taskCardUid}
+          uid={form.values.taskCardUid}
           onUidChange={onUidChange}
           formDisabled={form.disabled}
           workflow={flowContext.workflow}
@@ -645,7 +643,7 @@ export function CCTaskCardConfigButton() {
         />
       ),
     });
-  }, [ctx.viewer, flowContext.workflow, form, node, onUidChange, setFormValueChanged, t, taskCardUid, upstreamNodes]);
+  }, [ctx.viewer, flowContext.workflow, form, node, onUidChange, setFormValueChanged, t, upstreamNodes]);
 
   return (
     <Button icon={<CreditCardOutlined />} type="default" onClick={openConfig} disabled={false}>
