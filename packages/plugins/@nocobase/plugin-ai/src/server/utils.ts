@@ -93,7 +93,7 @@ async function getUser(ctx: Context, fields: string[]) {
   return user;
 }
 
-export async function parseVariables(ctx: Context, value: string) {
+export async function parseVariables(ctx: Context, value = '') {
   const re = /\{\{\$user\.([^}]+)\}\}/g;
   const userFieldsSet = new Set<string>();
   const matches = value.matchAll(re);

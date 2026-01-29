@@ -103,6 +103,8 @@ export abstract class LLMProvider {
 
   async getAgentStream(context: AIChatContext, options?: any, state?: any) {
     const agent = this.prepareAgent(context);
+    const recursionLimit = options?.recursionLimit ?? this.modelOptions?.recursionLimit ?? 200;
+    const streamOptions = recursionLimit ? { ...options, recursionLimit } : options;
     if (context.decisions?.length) {
       return agent.stream(
         // @ts-ignore
@@ -111,12 +113,12 @@ export abstract class LLMProvider {
             decisions: context.decisions,
           },
         }),
-        options,
+        streamOptions,
       );
     } else if (context.messages) {
-      return agent.stream({ messages: context.messages, ...state }, options);
+      return agent.stream({ messages: context.messages, ...state }, streamOptions);
     } else {
-      return agent.stream(null, options);
+      return agent.stream(null, streamOptions);
     }
   }
 

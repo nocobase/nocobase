@@ -36,6 +36,7 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
+import { registerWorkflowAIIntegration } from './ai/integration';
 
 import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
@@ -398,6 +399,13 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.eventQueue.subscribe(this.channelPendingExecution, {
       idle: () => this.serving() && this.dispatcher.idle,
       process: this.dispatcher.onQueueExecution,
+    });
+
+    this.app.on('afterStart', async () => {
+      const aiPlugin = this.app.pm.get('ai') as any;
+      if (aiPlugin) {
+        await registerWorkflowAIIntegration(aiPlugin);
+      }
     });
   }
 
