@@ -38,8 +38,7 @@ BulkEditBlockModel.define({
   label: tExpr('Data blocks'),
   async children(ctx) {
     const children = await buildSubModelItems(BlockModel)(ctx);
-    const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
-    console.log('BulkEditBlockModel children scene:', children, scene);
+    // const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
     return children.filter((item) => {
       return item.useModel === 'MarkdownBlockModel';
     });

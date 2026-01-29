@@ -53,3 +53,135 @@ export class BulkEditFormItemModel extends FormItemModel {
 BulkEditFormItemModel.define({
   label: tExpr('Bulk edit form item'),
 });
+
+BulkEditFormItemModel.registerFlow({
+  key: 'editItemSettings',
+  sort: 300,
+  title: tExpr('Form item settings'),
+  steps: {
+    showLabel: {
+      title: tExpr('Show label'),
+      uiMode: { type: 'switch', key: 'showLabel' },
+      defaultParams: {
+        showLabel: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ showLabel: params.showLabel });
+      },
+    },
+    label: {
+      title: tExpr('Label'),
+      uiSchema: (ctx) => {
+        return {
+          label: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const model = ctx.model;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          label: ctx.collectionField?.title,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ label: params.label || ctx.collectionField?.title });
+      },
+    },
+    aclCheck: {
+      use: 'aclCheck',
+      async handler(ctx, params) {
+        if (!ctx.collectionField || !ctx.blockModel) {
+          return;
+        }
+        const blockActionName = 'update';
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField?.name],
+          actionName: blockActionName,
+        });
+        // 编辑表单
+        const resultView = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField.name],
+          actionName: 'view',
+        });
+        if (ctx.prefixFieldPath && ctx.currentObject) {
+          //子表单下的新增
+          const createFieldAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'create',
+          });
+
+          if (!createFieldAclResult) {
+            ctx.model.setProps({
+              aclCreateDisabled: true,
+            });
+          }
+        }
+
+        if (!resultView && !ctx.currentObject?.__is_new__) {
+          ctx.model.hidden = true;
+          ctx.model.forbidden = {
+            actionName: 'view',
+          };
+          ctx.exitAll();
+        }
+
+        if (!result) {
+          ctx.model.setProps({
+            aclDisabled: true,
+          });
+        }
+      },
+    },
+    init: {
+      async handler(ctx) {
+        const fieldPath = ctx.model.fieldPath;
+        const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
+        ctx.model.setProps({
+          name: fullName,
+        });
+      },
+    },
+    tooltip: {
+      title: tExpr('Tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ tooltip: params.tooltip });
+      },
+    },
+    description: {
+      title: tExpr('Description'),
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            autoSize: true,
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ extra: params.description });
+      },
+    },
+  },
+});

@@ -34,8 +34,6 @@ const BulkEditField = (props) => {
   const [value, setValue] = useState(null);
   const form = formItemModel.context.blockModel.form;
 
-  console.log('BulkEditField render called', { fieldModel, formItemModel, field, type, value, props, form });
-
   const typeChangeHandler = (val) => {
     setType(val);
     const required = val === BulkEditFormItemValueType.ChangedTo;
@@ -62,7 +60,7 @@ const BulkEditField = (props) => {
       `}
       direction="vertical"
     >
-      <Select defaultValue={type} value={type} onChange={typeChangeHandler}>
+      <Select defaultValue={type} value={type} onChange={typeChangeHandler} disabled={props.aclDisabled}>
         <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{lang('Remains the same')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{lang('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{lang('Clear')}</Select.Option>
@@ -85,7 +83,6 @@ const BulkEditField = (props) => {
 export class BulkEditFieldModel extends FieldModel {
   public render() {
     const fieldModel = this.subModels.field as FieldModel;
-    console.log('BulkEditFieldModel render called', { fieldModel, parentModel: this.parent, props: this.props });
     const t = (s) => s;
 
     return <BulkEditField formItemModel={this.parent} fieldModel={fieldModel} {...this.props} />;

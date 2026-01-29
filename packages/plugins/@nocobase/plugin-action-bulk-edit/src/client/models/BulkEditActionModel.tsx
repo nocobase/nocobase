@@ -32,7 +32,6 @@ export class BulkEditActionModel extends PopupActionModel {
 BulkEditActionModel.define({
   label: tExpr('Bulk edit'),
   createModelOptions: async (ctx, extra) => {
-    console.log('BulkEditActionModel createModelOptions called', ctx, extra);
     return {
       use: 'BulkEditActionModel',
       subModels: {
