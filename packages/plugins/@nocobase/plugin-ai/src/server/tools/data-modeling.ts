@@ -312,7 +312,8 @@ export const defineCollections: ToolOptions = {
       .describe('An array of collections to be defined or edited.'),
   }),
   invoke: async (ctx: Context, args: any) => {
-    const { intent, collections: originalCollections } = ctx.action?.params?.values?.args ?? args ?? {};
+    const toolCallArgs = ctx.action?.params?.values?.args?.intent ? ctx.action?.params?.values?.args : args;
+    const { intent, collections: originalCollections } = toolCallArgs ?? {};
     if (!intent || !['create', 'edit'].includes(intent)) {
       return {
         status: 'error',
