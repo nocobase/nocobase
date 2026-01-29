@@ -18,5 +18,9 @@
   {
     "text": "API",
     "link": "/api"
+  },
+  {
+    "text": "首页",
+    "link": "https://www.nocobase.com/cn/"
   }
 ]
