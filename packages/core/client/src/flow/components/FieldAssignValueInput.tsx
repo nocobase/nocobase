@@ -29,6 +29,9 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor } from './RunJSValueEditor';
+import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
+import { InputFieldModel } from '../models/fields/InputFieldModel';
+import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
 
 interface Props {
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
@@ -38,6 +41,12 @@ interface Props {
   placeholder?: string;
   /** 额外变量树（置于 Constant/Null/RunJS 与 base metaTree 之间） */
   extraMetaTree?: MetaTreeNode[];
+  /** 可选：当前字段的筛选操作符，用于在默认值/赋值编辑器中按 operator schema 适配输入组件 */
+  operator?: string;
+  /** 可选：操作符元数据列表（通常来自 collectionField.filterable.operators） */
+  operatorMetaList?: Array<any>;
+  /** 可选：当字段已存在于表单时，优先复用表单字段的模型（用于筛选表单默认值等场景） */
+  preferFormItemFieldModel?: boolean;
 }
 
 type ResolvedFieldContext = {
@@ -62,12 +71,27 @@ function withFullWidthStyle(style?: React.CSSProperties): React.CSSProperties {
   return { ...style, width: '100%', minWidth: 0 };
 }
 
+function rewrapReactiveRender(fieldModel: any) {
+  if (!fieldModel) return;
+  fieldModel._reactiveWrapperCache = undefined;
+  fieldModel.setupReactiveRender?.();
+}
+
 /**
  * 根据所选字段渲染对应的赋值编辑器：
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
  * - 支持变量引用，并提供 Constant / Null 两种快捷项
  */
-export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onChange, placeholder, extraMetaTree }) => {
+export const FieldAssignValueInput: React.FC<Props> = ({
+  targetPath,
+  value,
+  onChange,
+  placeholder,
+  extraMetaTree,
+  operator,
+  operatorMetaList,
+  preferFormItemFieldModel,
+}) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
     if (!eventOrValue || typeof eventOrValue !== 'object') return eventOrValue;
@@ -216,15 +240,20 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
 
   const coerceEmptyValueForRenderer = React.useCallback(
     (v: any) => {
+      let out = v;
+      // operator 驱动的值形态（筛选默认值场景）：例如 $in 期望数组、$dateBetween 期望 [start,end]
+      if (operator) {
+        out = normalizeFilterValueByOperator(operator, out);
+      }
       // VariableInput 会把 undefined/null 统一传成空字符串，这会导致 array 值组件（如 DynamicCascadeList）崩溃。
       if (isArrayValueField) {
-        if (v == null || v === '') return [];
+        if (out == null || out === '') return [];
         // 兼容历史配置：部分 array 值字段曾以单值保存（例如 multipleSelect 被渲染为单选），这里统一包装为数组以避免组件报错。
-        if (!Array.isArray(v)) return [v];
+        if (!Array.isArray(out)) return [out];
       }
-      return v;
+      return out;
     },
-    [isArrayValueField],
+    [isArrayValueField, operator],
   );
 
   // 生成临时根模型 + 子字段模型
@@ -246,7 +275,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
 
     const subField = itemModel?.subModels?.field;
     const subFieldUse = subField && !Array.isArray(subField) ? subField.use : undefined;
-    const effectiveFieldModelUse: string | undefined = fieldModelUse || subFieldUse;
+    const effectiveFieldModelUse: string | undefined = preferFormItemFieldModel
+      ? subFieldUse || fieldModelUse
+      : fieldModelUse || subFieldUse;
     if (!effectiveFieldModelUse) return;
 
     const created = engine?.createModel?.({
@@ -331,7 +362,58 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
       created.subModels.fields.forEach?.((m) => m.remove());
       created.remove();
     };
-  }, [collection, dataSource, blockModel, fieldPath, fieldName, flowCtx, placeholder, resolved, cf, itemModel]);
+  }, [
+    collection,
+    dataSource,
+    blockModel,
+    fieldPath,
+    fieldName,
+    flowCtx,
+    placeholder,
+    resolved,
+    cf,
+    itemModel,
+    preferFormItemFieldModel,
+  ]);
+
+  // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。
+  // 典型场景：筛选表单的“默认值”配置需要与筛选字段当前 operator 的输入体验一致（如 multi-keywords、日期动态筛选等）。
+  React.useEffect(() => {
+    const fieldModel = tempRoot?.subModels?.fields?.[0];
+    if (!fieldModel || !operator || !Array.isArray(operatorMetaList) || operatorMetaList.length === 0) {
+      return;
+    }
+
+    // 1) 先应用 schema 的 x-component-props（例如 DateFilterDynamicComponent 的 isRange）
+    const meta = operatorMetaList.find((op) => op?.value === operator);
+    const xComponentProps = meta?.schema?.['x-component-props'];
+    if (xComponentProps && typeof fieldModel?.setProps === 'function') {
+      const style = withFullWidthStyle(
+        pickStyle((xComponentProps as any)?.style) || pickStyle((fieldModel as any)?.props?.style),
+      );
+      fieldModel.setProps({ ...xComponentProps, style });
+    }
+
+    // 2) 文本类多关键词：若 operator schema 声明了输入组件，则覆写 InputFieldModel.render
+    const app = (resolved as any)?.itemModel?.context?.app || (flowCtx as any)?.model?.context?.app;
+    const resolvedComponent = resolveOperatorComponent(app, operator, operatorMetaList);
+    if (resolvedComponent && fieldModel instanceof InputFieldModel) {
+      const originalRender = fieldModel['__originalRender'] || fieldModel.render;
+      fieldModel['__originalRender'] = originalRender;
+      const { Comp, props: xProps } = resolvedComponent;
+      fieldModel.render = () => (
+        <Comp
+          {...fieldModel.props}
+          {...xProps}
+          style={{ width: '100%', ...(fieldModel.props as any)?.style, ...xProps?.style }}
+        />
+      );
+      rewrapReactiveRender(fieldModel);
+    } else if (typeof fieldModel['__originalRender'] === 'function') {
+      fieldModel.render = fieldModel['__originalRender'];
+      rewrapReactiveRender(fieldModel);
+    }
+  }, [operator, operatorMetaList, tempRoot, flowCtx, resolved]);
 
   // 常量/空值的两个占位渲染器
   const ConstantValueEditor = React.useMemo(() => {
@@ -341,12 +423,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({ targetPath, value, onCh
         const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
         const handleChange = (ev: any) => {
           const nextRaw = normalizeEventValue(ev);
-          const nextValue = coerceEmptyValueForRenderer(nextRaw);
+          const normalizedForStore = operator ? normalizeFilterValueByOperator(operator, nextRaw) : nextRaw;
+          const nextValue = coerceEmptyValueForRenderer(normalizedForStore);
           // 关键：同步更新临时字段的受控 value，避免每次输入都“先渲染旧值、effect 再写新值”导致光标跳到末尾
           tempRoot?.setProps?.({ value: nextValue });
           const fmInner = tempRoot?.subModels?.fields?.[0];
           fmInner?.setProps?.({ value: nextValue });
-          inputProps?.onChange?.(nextRaw);
+          inputProps?.onChange?.(normalizedForStore);
         };
         const fm = tempRoot?.subModels?.fields?.[0];
         fm?.setProps?.({

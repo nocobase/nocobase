@@ -58,6 +58,11 @@ export interface FieldAssignRulesEditorProps {
   showEnable?: boolean;
   /** 未选字段时也展示 Value 编辑器（用于表单设置里的占位体验） */
   showValueEditorWhenNoField?: boolean;
+  /** 为 Value 编辑器补充额外 props（例如按筛选操作符适配输入组件） */
+  getValueInputProps?: (
+    item: FieldAssignRuleItem,
+    index: number,
+  ) => Partial<React.ComponentProps<typeof FieldAssignValueInput>>;
 }
 
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
@@ -72,6 +77,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     showCondition = true,
     showEnable = true,
     showValueEditorWhenNoField = false,
+    getValueInputProps,
   } = props;
 
   const value = Array.isArray(rawValue) ? rawValue : [];
@@ -525,6 +531,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 value={item.value}
                 onChange={(v) => patchItem(index, { value: v })}
                 extraMetaTree={extraMetaTree}
+                {...(getValueInputProps?.(item, index) || {})}
               />
             </div>
           )}

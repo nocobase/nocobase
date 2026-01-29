@@ -12,11 +12,13 @@ import { isEqual } from 'lodash';
 import React from 'react';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
-import { getCollectionFromModel } from '../internal/utils/modelUtils';
+import { findFormItemModelByFieldPath, getCollectionFromModel } from '../internal/utils/modelUtils';
 import {
   collectLegacyDefaultValueRulesFromFilterFormModel,
   mergeAssignRulesWithLegacyDefaults,
 } from '../models/blocks/filter-form/legacyDefaultValueMigration';
+import { getDefaultOperator } from '../models/blocks/filter-manager/utils';
+import { operators } from '../../collection-manager';
 
 const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
@@ -31,6 +33,26 @@ const FilterFormDefaultValuesUI = observer(
     const legacyDefaults = React.useMemo(() => {
       return collectLegacyDefaultValueRulesFromFilterFormModel(ctx.model);
     }, [ctx.model]);
+
+    const getValueInputProps = React.useCallback(
+      (item: FieldAssignRuleItem) => {
+        const targetPath = item?.targetPath ? String(item.targetPath) : '';
+        if (!targetPath) return {};
+        const fieldModel: any = findFormItemModelByFieldPath(ctx.model, targetPath);
+        if (!fieldModel) return {};
+        const operator = getDefaultOperator(fieldModel);
+        const opList =
+          fieldModel?.collectionField?.filterable?.operators ||
+          (fieldModel?.context?.filterField?.type ? (operators as any)?.[fieldModel.context.filterField.type] : []) ||
+          [];
+        return {
+          operator,
+          operatorMetaList: opList,
+          preferFormItemFieldModel: true,
+        };
+      },
+      [ctx.model],
+    );
 
     // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示。
     // 仅在首次打开时合并，后续以当前 step 表单值为准（便于用户在此处编辑/删除后统一保存）。
@@ -80,6 +102,7 @@ const FilterFormDefaultValuesUI = observer(
         fixedMode="default"
         showCondition={false}
         showValueEditorWhenNoField
+        getValueInputProps={getValueInputProps}
       />
     );
   },
