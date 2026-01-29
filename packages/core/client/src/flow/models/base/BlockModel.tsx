@@ -15,7 +15,7 @@ import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 import { BlockPlaceholder, BlockDeletePlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
-export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | 'subForm' | BlockSceneType[];
+export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | 'subForm'| 'bulkEditForm' | BlockSceneType[];
 
 export const BlockSceneEnum = {
   new: 'new' as BlockSceneType,
@@ -25,6 +25,7 @@ export const BlockSceneEnum = {
   filter: 'filter' as BlockSceneType,
   oam: ['one', 'many'] as BlockSceneType,
   subForm: 'subForm' as BlockSceneType,
+  bulkEditForm: 'bulkEditForm' as BlockSceneType,
 };
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {

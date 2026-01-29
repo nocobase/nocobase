@@ -1,5 +1,18 @@
 {
   "Bulk edit": "批量编辑",
   "Data will be updated": "更新的数据",
-  "Entire collection": "全表"
+  "Entire collection": "全表",
+  "Bulk edit action settings": "批量编辑操作设置",
+  "Secondary confirmation": "二次确认",
+  "Are you sure you want to perform the bulk edit action?": "确定要执行批量编辑操作吗？",
+  "Data scope to edit": "编辑数据范围",
+  "Selected": "选中",
+  "Assign field values": "字段赋值",
+  "No assigned fields configured": "未配置字段赋值",
+  "Collection is required to perform this action": "执行此操作需要指定数据表",
+  "Please select the records to be edited": "请选择要编辑的记录",
+  "Saved successfully": "保存成功",
+  "Remains the same": "不更新",
+  "Changed to": "修改为",
+  "Clear": "清空"
 }
