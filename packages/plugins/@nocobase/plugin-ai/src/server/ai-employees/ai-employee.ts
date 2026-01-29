@@ -720,7 +720,7 @@ export class AIEmployee {
           role: 'tool',
           content: {
             type: 'text',
-            content: toolCall.content,
+            content: toolCall.content ?? '',
           },
           metadata: {
             model,
