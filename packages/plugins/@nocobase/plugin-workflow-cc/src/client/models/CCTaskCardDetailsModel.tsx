@@ -44,7 +44,7 @@ export class CCTaskCardDetailsModel extends DetailsBlockModel {
     const resource = this.context.createResource(SingleRecordResource);
     resource.isNewRecord = false;
     // @ts-ignore
-    resource.refresh = _.noop;
+    resource.refresh = () => Promise.resolve();
     return resource;
   }
 
