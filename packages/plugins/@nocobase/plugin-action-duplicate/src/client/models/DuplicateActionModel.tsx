@@ -524,30 +524,30 @@ DuplicateActionModel.registerFlow({
         const duplicateMode = ctx.model.getStepParams?.('duplicateModeSettings', 'duplicateMode')?.duplicateMode;
         return duplicateMode === 'quickDulicate';
       },
-      // use: 'openView',
-      uiSchema: {
-        mode: {
-          type: 'string',
-          title: tExpr('Open mode'),
-          enum: [
-            { label: tExpr('Drawer'), value: 'drawer' },
-            { label: tExpr('Dialog'), value: 'dialog' },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-        },
-        size: {
-          type: 'string',
-          title: tExpr('Popup size'),
-          enum: [
-            { label: tExpr('Small'), value: 'small' },
-            { label: tExpr('Medium'), value: 'medium' },
-            { label: tExpr('Large'), value: 'large' },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-        },
-      },
+      use: 'openView',
+      // uiSchema: {
+      //   mode: {
+      //     type: 'string',
+      //     title: tExpr('Open mode'),
+      //     enum: [
+      //       { label: tExpr('Drawer'), value: 'drawer' },
+      //       { label: tExpr('Dialog'), value: 'dialog' },
+      //     ],
+      //     'x-decorator': 'FormItem',
+      //     'x-component': 'Radio.Group',
+      //   },
+      //   size: {
+      //     type: 'string',
+      //     title: tExpr('Popup size'),
+      //     enum: [
+      //       { label: tExpr('Small'), value: 'small' },
+      //       { label: tExpr('Medium'), value: 'medium' },
+      //       { label: tExpr('Large'), value: 'large' },
+      //     ],
+      //     'x-decorator': 'FormItem',
+      //     'x-component': 'Radio.Group',
+      //   },
+      // },
       defaultParams: {
         mode: 'drawer',
         size: 'medium',
