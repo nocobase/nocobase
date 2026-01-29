@@ -467,7 +467,7 @@ export default {
     async callTool(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId } = ctx.action.params.values || {};
+      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -522,12 +522,19 @@ export default {
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
         );
-        await aiEmployee.processMessages({
-          userDecisions: [
-            {
+
+        const userDecisions = toolCallIds?.length
+          ? toolCallIds.map(() => ({
               type: 'approve',
-            },
-          ],
+            }))
+          : [
+              {
+                type: 'approve',
+              },
+            ];
+
+        await aiEmployee.processMessages({
+          userDecisions,
         });
       } catch (err) {
         ctx.log.error(err);

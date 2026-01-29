@@ -39,8 +39,8 @@ const useDefaultAction = (messageId: string) => {
   const { callTool } = useChatMessageActions();
 
   return {
-    invoke: (toolCallIds?: string[], toolCallResults?: { id: string; [key: string]: any }[]) => {
-      callTool({
+    invoke: async (toolCallIds?: string[], toolCallResults?: { id: string; [key: string]: any }[]) => {
+      await callTool({
         sessionId: currentConversation,
         messageId,
         aiEmployee: currentEmployee,
@@ -78,9 +78,9 @@ const CallButton: React.FC<{
           }
         }
       }
-      invokeDefault(toolCallIds, toolCallResults);
+      await invokeDefault(toolCallIds, toolCallResults);
     } else {
-      invokeDefault();
+      await invokeDefault();
     }
   };
 
