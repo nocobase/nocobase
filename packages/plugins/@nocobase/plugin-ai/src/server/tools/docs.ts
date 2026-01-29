@@ -39,11 +39,24 @@ export type DocEntryResult =
 const docsModules = new Map<string, DocsIndexMeta>();
 let docsBaseDir = DEFAULT_DOCS_DIR;
 let docsMeta: Record<string, { description?: string }> = {};
+const DOCS_INDEX_TTL_MS = 5 * 60 * 1000;
+const DOCS_INDEX_MAX_CACHE = 5;
+const docsIndexCache = new Map<
+  string,
+  {
+    index: FlexSearchIndex;
+    fileMap: Record<string, string>;
+    lastAccess: number;
+  }
+>();
+const docsIndexLoading = new Map<string, Promise<{ index: FlexSearchIndex; fileMap: Record<string, string> }>>();
 
 export async function loadDocsIndexes(baseDir = DEFAULT_DOCS_DIR) {
   docsBaseDir = baseDir;
   docsModules.clear();
   docsMeta = {};
+  docsIndexCache.clear();
+  docsIndexLoading.clear();
   const exists = await fs.pathExists(docsBaseDir);
   if (!exists) {
     return;
@@ -118,13 +131,7 @@ export async function searchDocsModule(moduleKey: string, query: string, limit =
     throw new Error(`Document module "${key}" not found.`);
   }
 
-  const [indexData, fileMap] = await Promise.all([fs.readJSON(entry.indexFile), fs.readJSON(entry.filesMapFile)]);
-  const flexIndex = new FlexSearchIndex();
-  Object.entries(indexData).forEach(([importKey, data]) => {
-    if (typeof data === 'string') {
-      flexIndex.import(importKey, data);
-    }
-  });
+  const { index: flexIndex, fileMap } = await getOrLoadDocsIndex(entry);
 
   const boundedLimit = Math.min(Math.max(limit ?? 5, 1), 20);
   const hits = ((await flexIndex.searchAsync(query, { limit: boundedLimit })) as (string | number)[]) || [];
@@ -387,4 +394,52 @@ function normalizeDocInput(input: string) {
   }
 
   return segments;
+}
+
+async function getOrLoadDocsIndex(entry: DocsIndexMeta) {
+  const now = Date.now();
+  const cached = docsIndexCache.get(entry.key);
+  if (cached && now - cached.lastAccess <= DOCS_INDEX_TTL_MS) {
+    cached.lastAccess = now;
+    return cached;
+  }
+
+  const loading = docsIndexLoading.get(entry.key);
+  if (loading) {
+    const result = await loading;
+    docsIndexCache.set(entry.key, { ...result, lastAccess: Date.now() });
+    return docsIndexCache.get(entry.key);
+  }
+
+  const loadPromise = (async () => {
+    const [indexData, fileMap] = await Promise.all([fs.readJSON(entry.indexFile), fs.readJSON(entry.filesMapFile)]);
+    const flexIndex = new FlexSearchIndex();
+    Object.entries(indexData).forEach(([importKey, data]) => {
+      if (typeof data === 'string') {
+        flexIndex.import(importKey, data);
+      }
+    });
+    return { index: flexIndex, fileMap };
+  })();
+
+  docsIndexLoading.set(entry.key, loadPromise);
+  try {
+    const result = await loadPromise;
+    docsIndexCache.set(entry.key, { ...result, lastAccess: Date.now() });
+    enforceDocsIndexCacheLimit();
+    return docsIndexCache.get(entry.key);
+  } finally {
+    docsIndexLoading.delete(entry.key);
+  }
+}
+
+function enforceDocsIndexCacheLimit() {
+  if (docsIndexCache.size <= DOCS_INDEX_MAX_CACHE) {
+    return;
+  }
+  const entries = Array.from(docsIndexCache.entries()).sort((a, b) => a[1].lastAccess - b[1].lastAccess);
+  const overflow = entries.length - DOCS_INDEX_MAX_CACHE;
+  for (let i = 0; i < overflow; i++) {
+    docsIndexCache.delete(entries[i][0]);
+  }
 }

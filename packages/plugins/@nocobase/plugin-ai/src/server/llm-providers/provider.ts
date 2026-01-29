@@ -103,6 +103,7 @@ export abstract class LLMProvider {
 
   async getAgentStream(context: AIChatContext, options?: any, state?: any) {
     const agent = this.prepareAgent(context);
+    options = { ...options, recursionLimit: 200 };
     if (context.decisions?.length) {
       return agent.stream(
         // @ts-ignore

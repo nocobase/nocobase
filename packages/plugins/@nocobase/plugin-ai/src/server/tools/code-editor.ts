@@ -82,7 +82,8 @@ export const getContextEnvs: ToolOptions = {
 export const getContextVars: ToolOptions = {
   name: 'getContextVars',
   title: '{{t("Get context variables")}}',
-  description: '{{t("Get available variables from context")}}',
+  description:
+    '{{t("Available variables from context, the actual value should be got via `await ctx.getVar()`, e.g. `await ctx.getVar(\'ctx.popup.record\')`")}}',
   execution: 'frontend',
   schema: z.object({
     path: z.string().optional().describe('Variable path for progressive disclosure'),
