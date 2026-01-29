@@ -15,6 +15,24 @@ import { EXECUTION_STATUS } from '../../constants';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import PluginWorkflowServer from '../../Plugin';
 
+async function waitForExpect<T>(
+  fn: () => Promise<T>,
+  predicate: (value: T) => boolean,
+  timeout = 3000,
+  interval = 100,
+): Promise<T> {
+  const end = Date.now() + timeout;
+  let lastValue: T;
+  while (Date.now() < end) {
+    lastValue = await fn();
+    if (predicate(lastValue)) {
+      return lastValue;
+    }
+    await sleep(interval);
+  }
+  throw new Error(`waitForExpect timeout: ${JSON.stringify(lastValue)}`);
+}
+
 describe('workflow > triggers > collection', () => {
   let app: MockServer;
   let db: MockDatabase;
@@ -1096,7 +1114,12 @@ describe('workflow > triggers > collection', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await waitForExpect(
+        async () => {
+          return PostRepo.find();
+        },
+        (posts) => posts.length === 4,
+      );
 
       const posts = await PostRepo.find();
       expect(posts.length).toBe(4);
