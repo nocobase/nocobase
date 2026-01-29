@@ -203,12 +203,19 @@ const Edit = (props) => {
       const editor = vdRef.current;
       if (value !== editor.getValue()) {
         editor.setValue(value ?? '');
-        // editor.focus();
 
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
         ) as HTMLPreElement;
-        if (preArea) {
+        const vditorContent = containerRef.current?.querySelector('.vditor-content');
+        const isEditorFocused =
+          preArea &&
+          (document.activeElement === preArea ||
+            preArea.contains(document.activeElement) ||
+            (document.activeElement as HTMLElement)?.closest?.('.vditor-content') === vditorContent);
+
+        // 避免在未聚焦状态下强制设置 selection，导致抢焦点/滚动
+        if (preArea && isEditorFocused) {
           const range = document.createRange();
           const selection = window.getSelection();
           if (selection) {
