@@ -174,6 +174,7 @@ export class AIEmployee {
     try {
       const tools = await this.getTools();
       const toolMap = Object.fromEntries(tools.map((x) => [x.name, x]));
+      let toolCallStarted = false;
       let toolCalls;
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
@@ -201,6 +202,8 @@ export class AIEmployee {
               isMessageEmpty = false;
             }
             if (toolCalls.map((x) => toolMap[x.name]).every((x) => x.execution === 'frontend' && x.autoCall)) {
+              toolCallStarted = true;
+              this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
               this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_calls', body: toolCalls })}\n\n`);
             }
           }
@@ -211,7 +214,8 @@ export class AIEmployee {
           if (chunks.action === 'showToolCalls') {
             toolCalls = chunks.body;
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
-          } else if (chunks.action === 'beforeToolCall') {
+          } else if (chunks.action === 'beforeToolCall' && !toolCallStarted) {
+            toolCallStarted = true;
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
           }
         }

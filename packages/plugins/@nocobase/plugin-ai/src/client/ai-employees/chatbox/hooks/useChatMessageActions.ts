@@ -200,8 +200,8 @@ export const useChatMessageActions = () => {
           }
         }
       }
-      callTool({
-        sessionId: currentConversation,
+      await callTool({
+        sessionId,
         aiEmployee,
         toolCallIds,
         toolCallResults,
