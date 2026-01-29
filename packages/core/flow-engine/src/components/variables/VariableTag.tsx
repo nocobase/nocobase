@@ -30,65 +30,74 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
 
   const { data: displayedValue } = useRequest(
     async () => {
-      // 1) 优先使用已解析到的节点（包含完整父标题链）
-      if (metaTreeNode) {
-        return metaTreeNode.parentTitles
-          ? [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/')
-          : ctx.t(metaTreeNode.title) || '';
-      }
+      const resolveLabelFromPath = async (rawPath?: (string | number)[]): Promise<string | null> => {
+        if (!rawPath) return null;
+        if (!Array.isArray(rawPath)) return null;
+        if (!Array.isArray(resolvedMetaTree)) return null;
 
-      // 2) 无 metaTreeNode 时，尝试从值还原路径，并在 metaTree 中寻找“最深前缀节点”，
-      //    即便最后一段无效，也能显示前缀的翻译标题。
-      if (!value) return String(value);
-      const rawPath = parseValueToPath(value);
-      if (!rawPath || !Array.isArray(resolvedMetaTree)) {
-        return Array.isArray(rawPath) ? rawPath.join('/') : String(value);
-      }
+        // 兼容 metaTree 为子树：顶层不含首段时，裁剪首段
+        const topNames = new Set((resolvedMetaTree || []).map((n: any) => String(n?.name)));
+        const path = !topNames.has(String(rawPath[0])) ? rawPath.slice(1) : rawPath;
+        if (!path.length) return '';
 
-      // 兼容 metaTree 为子树：顶层不含首段时，裁剪首段
-      const topNames = new Set((resolvedMetaTree || []).map((n: any) => String(n?.name)));
-      const path = !topNames.has(String(rawPath[0])) ? rawPath.slice(1) : rawPath;
-      if (!path.length) return '';
+        let nodes: MetaTreeNode[] | undefined = resolvedMetaTree as MetaTreeNode[];
+        const titleChain: string[] = [];
+        let matchedCount = 0;
 
-      let nodes: MetaTreeNode[] | undefined = resolvedMetaTree as MetaTreeNode[];
-      let deepest: MetaTreeNode | null = null;
-      let matchedCount = 0;
-      for (let i = 0; i < path.length; i++) {
-        if (!nodes) break;
-        const seg = String(path[i]);
-        const node = nodes.find((n) => String(n?.name) === seg) as MetaTreeNode | undefined;
-        if (!node) break; // 停在第一个无效段之前
-        deepest = node;
-        matchedCount = i + 1;
-        if (i < path.length - 1) {
-          if (Array.isArray(node.children)) {
-            nodes = node.children as any;
-          } else if (typeof node.children === 'function') {
-            try {
-              const childNodes = await (node.children as any)();
-              (node as any).children = childNodes;
-              nodes = childNodes as any;
-            } catch {
+        for (let i = 0; i < path.length; i++) {
+          if (!nodes) break;
+          const seg = String(path[i]);
+          const node = nodes.find((n) => String(n?.name) === seg) as MetaTreeNode | undefined;
+          if (!node) break; // 停在第一个无效段之前
+
+          titleChain.push(String(node.title ?? node.name ?? seg));
+          matchedCount = i + 1;
+
+          if (i < path.length - 1) {
+            if (Array.isArray(node.children)) {
+              nodes = node.children as any;
+            } else if (typeof node.children === 'function') {
+              try {
+                const childNodes = await (node.children as any)();
+                (node as any).children = childNodes;
+                nodes = childNodes as any;
+              } catch {
+                nodes = undefined;
+              }
+            } else {
               nodes = undefined;
             }
-          } else {
-            nodes = undefined;
           }
         }
-      }
 
-      if (deepest) {
-        const titles = deepest.parentTitles ? [...deepest.parentTitles, deepest.title] : [deepest.title];
-        let label = titles.map(ctx.t).join('/');
+        if (matchedCount === 0) return null;
+
+        let label = titleChain.map(ctx.t).join('/');
         if (matchedCount < path.length) {
           const tail = path.slice(matchedCount).join('/');
           label = tail ? `${label}/${tail}` : label;
         }
         return label;
+      };
+
+      // 1) 优先使用已解析到的节点（包含完整父标题链）
+      if (metaTreeNode?.parentTitles) {
+        return [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/');
       }
 
-      // 3) 完全找不到任何前缀时，退回原始路径字符串
-      return path.join('/');
+      // 2) metaTreeNode 存在但缺少 parentTitles：尝试根据 value/metaTreeNode.paths 从 metaTree 还原完整路径
+      if (metaTreeNode) {
+        const rawPath = parseValueToPath(value) || metaTreeNode.paths;
+        const label = await resolveLabelFromPath(rawPath as any);
+        return label ?? ctx.t(metaTreeNode.title) ?? '';
+      }
+
+      // 3) 无 metaTreeNode：从 value 还原路径并拼接标题链；若找不到任何前缀则回退原始路径字符串
+      if (!value) return String(value);
+      const rawPath = parseValueToPath(value);
+      const label = await resolveLabelFromPath(rawPath as any);
+      if (label != null) return label;
+      return Array.isArray(rawPath) ? rawPath.join('/') : String(value);
     },
     { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
   );

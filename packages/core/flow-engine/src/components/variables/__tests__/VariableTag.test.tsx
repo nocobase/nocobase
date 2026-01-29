@@ -272,6 +272,56 @@ describe('VariableTag', () => {
     );
   });
 
+  it('should display full path when metaTreeNode has no parentTitles but metaTree is provided', async () => {
+    const metaTree = [
+      {
+        name: 'item',
+        title: 'Current item',
+        type: 'object',
+        paths: ['item'],
+        children: [
+          {
+            name: 'value',
+            title: 'Attributes',
+            type: 'object',
+            paths: ['item', 'value'],
+            children: [
+              {
+                name: 'nickname',
+                title: 'Nickname',
+                type: 'string',
+                paths: ['item', 'value', 'nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const mockMetaTreeNode = {
+      name: 'nickname',
+      title: 'Nickname',
+      type: 'string',
+      paths: ['item', 'value', 'nickname'],
+      // 没有 parentTitles 属性
+    };
+
+    renderWithCtx(
+      <VariableTag
+        value="{{ ctx.item.value.nickname }}"
+        metaTreeNode={mockMetaTreeNode as any}
+        metaTree={metaTree as any}
+      />,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Current item/Attributes/Nickname')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
   it('should handle function type metaTree gracefully', async () => {
     const mockMetaTreeFunction = () => [
       {

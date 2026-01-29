@@ -39,6 +39,8 @@ export interface LinkageFilterItemProps {
   /** 条件值对象（响应式） */
   value: LinkageFilterItemValue;
   model: FlowModel;
+  /** 向变量树额外注入节点（置于根部） */
+  extraMetaTree?: MetaTreeNode[];
 }
 
 function createStaticInputRenderer(
@@ -102,7 +104,7 @@ const fallbackStringOperators: OperatorMeta[] = [
  * LinkageFilterItem：左/右均为可变量输入，适用于联动规则等“前端逻辑”场景
  */
 export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((props) => {
-  const { value, model } = props;
+  const { value, model, extraMetaTree } = props;
   const ctx = useFlowViewContext();
   const t = model.translate;
   const { path: leftPath, operator: selectedOperator, value: rightOperandValue } = value || {};
@@ -214,19 +216,23 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
   const rightMetaTreeGetter = useMemo(() => {
     return async () => {
       const baseMetaTree = (model?.context.getPropertyMetaTree() || ctx.getPropertyMetaTree()) as MetaTreeNode[];
+      const extra = Array.isArray(extraMetaTree) ? extraMetaTree : [];
       return [
         { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'] },
         { title: t('Null'), name: 'null', type: 'object', paths: ['null'] },
+        ...extra,
         ...(Array.isArray(baseMetaTree) ? baseMetaTree : []),
       ];
     };
-  }, [ctx, model, t]);
+  }, [ctx, model, t, extraMetaTree]);
 
   // 左侧变量树：默认整棵 ctx（不追加 Constant/Null），确保可获取字段 interface
   const leftMetaTreeGetter = useCallback(() => {
     const tree = model?.context?.getPropertyMetaTree?.() || ctx.getPropertyMetaTree();
-    return tree;
-  }, [ctx, model]);
+    const base = Array.isArray(tree) ? tree : [];
+    const extra = Array.isArray(extraMetaTree) ? extraMetaTree : [];
+    return extra.length ? [...extra, ...base] : base;
+  }, [ctx, model, extraMetaTree]);
 
   // 右侧 converters：常量/空值特殊处理；变量沿用默认（表达式）
   const rightSideConverters = useMemo<Converters>(() => {

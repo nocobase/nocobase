@@ -15,6 +15,7 @@ import { debounce } from 'lodash';
 import { SourceCascader } from '../SourceCascader';
 import { FieldModelSelect } from '../FieldModelSelect';
 import { uid } from '@nocobase/utils/client';
+import { normalizeFilterValueByOperator } from '../valueNormalization';
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   customFieldModelInstance = null;
@@ -53,7 +54,8 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
    * @returns
    */
   getFilterValue() {
-    return this.context.form?.getFieldValue(this.props.name);
+    const rawValue = this.context.form?.getFieldValue(this.props.name);
+    return normalizeFilterValueByOperator(this.operator, rawValue);
   }
 
   /**

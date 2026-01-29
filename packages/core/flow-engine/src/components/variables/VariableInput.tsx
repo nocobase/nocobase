@@ -204,8 +204,10 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   useEffect(() => {
     if (!resolvedMetaTreeNode) return;
     if (!Array.isArray(resolvedMetaTree) || innerValue == null) return;
-    const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || innerValue;
-    emitChange(finalValue, resolvedMetaTreeNode);
+    // During initial restoration, `innerValue` already represents the persisted value.
+    // Do NOT override it with `resolveValueFromPath`, otherwise truthy defaults (e.g. RunJSValue objects)
+    // may accidentally wipe persisted content when reopening.
+    emitChange(innerValue, resolvedMetaTreeNode);
     setCurrentMetaTreeNode(resolvedMetaTreeNode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedMetaTreeNode]);

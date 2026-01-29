@@ -527,7 +527,7 @@ RecordSelectFieldModel.registerFlow({
         resource.setPageSize(paginationState.pageSize);
         const isFilterScene = ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter;
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
-        const record = ctx.currentObject || ctx.record;
+        const record = ctx.item?.value || ctx.record;
         const sourceValue = record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
@@ -741,7 +741,7 @@ RecordSelectFieldModel.registerFlow({
         const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
         const size = ctx.inputArgs.size || params.size || 'medium';
         const sourceCollection = ctx.collectionField?.collection;
-        const sourceRecord = ctx.currentObject || ctx.record;
+        const sourceRecord = ctx.item?.value ?? ctx.record;
         const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
         const associationName = ctx.collectionField?.resourceName;
         const openerUids = buildOpenerUids(ctx, ctx.inputArgs);

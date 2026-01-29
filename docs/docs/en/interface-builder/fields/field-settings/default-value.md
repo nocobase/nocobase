@@ -46,7 +46,7 @@ Only **Many-to-One** and **Many-to-Many** type relationships have default values
 - Current user;
 - Current record; this only applies to existing records;
 - Current form, ideally only lists the fields in the form;
-- Current object, a concept within sub-forms (the data object for each row in the sub-form);
+- Current item, a concept within sub-forms (the data object for each row in the sub-form);
 - URL parameters
   For more information on variables, see [Variables](/interface-builder/variables)
 

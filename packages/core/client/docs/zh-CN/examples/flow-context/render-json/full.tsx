@@ -20,32 +20,35 @@ HelloBlockModel.registerFlow({
   steps: {
     refReady: {
       handler: async (ctx) => {
-        ctx.defineProperty('current', {
+        ctx.defineProperty('item', {
           get: async () => {
             return {
-              key1: 'val1',
-              key2: null,
-              key3: 3,
-              key4: { k: 'v' },
-              key5: [1, 2, 3],
-              key6: undefined,
+              value: {
+                key1: 'val1',
+                key2: null,
+                key3: 3,
+                key4: { k: 'v' },
+                key5: [1, 2, 3],
+                key6: undefined,
+              },
             };
           },
         });
         ctx.onRefReady(ctx.ref, async (el) => {
           const json = await ctx.resolveJsonTemplate({
-            key1: '{{ctx.current.key1}}',
-            key2: '{{ctx.current.key2}}',
-            key3: '{{ctx.current.key3}}',
-            key4: '{{ctx.current.key4}}',
-            key5: '{{ctx.current.key5}}',
-            key6: '{{ctx.current.key6}}',
+            key1: '{{ctx.item.value.key1}}',
+            key2: '{{ctx.item.value.key2}}',
+            key3: '{{ctx.item.value.key3}}',
+            key4: '{{ctx.item.value.key4}}',
+            key5: '{{ctx.item.value.key5}}',
+            key6: '{{ctx.item.value.key6}}',
             key7: {
-              key1: '{{ctx.current.key1}}',
-              key2: '{{ctx.current.key2}}',
+              key1: '{{ctx.item.value.key1}}',
+              key2: '{{ctx.item.value.key2}}',
             },
-            key8: ['{{ctx.current.key1}}', '{{ctx.current.key3}}', '{{ctx.current.key6}}'],
-            key9: '{{ctx.current.key1}} - "{{ctx.current.key3}}" - {{ctx.current.key3}} - val9',
+            key8: ['{{ctx.item.value.key1}}', '{{ctx.item.value.key3}}', '{{ctx.item.value.key6}}'],
+            key9:
+              '{{ctx.item.value.key1}} - "{{ctx.item.value.key3}}" - {{ctx.item.value.key3}} - val9',
           });
           el.innerHTML = `<pre>${JSON.stringify(json, null, 2)}</pre>`;
         });
