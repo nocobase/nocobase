@@ -63,6 +63,7 @@ function resolveCorsOrigin(ctx: any) {
     return origin;
   }
 
+  // for cors test
   return false;
 }
 
