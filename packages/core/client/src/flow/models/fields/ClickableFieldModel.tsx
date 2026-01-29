@@ -154,10 +154,12 @@ export class ClickableFieldModel extends FieldModel {
     };
 
     if (isTag) {
-      return !value && !clickToOpen ? null : (
-        <Tag {...restProps} style={commonStyle} onClick={handleClick}>
-          {display}
-        </Tag>
+      return (
+        value && (
+          <Tag {...restProps} style={commonStyle} onClick={handleClick}>
+            {display}
+          </Tag>
+        )
       );
     }
     if (clickToOpen) {
