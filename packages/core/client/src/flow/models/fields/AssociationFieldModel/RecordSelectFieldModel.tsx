@@ -10,7 +10,6 @@ import {
   CollectionField,
   EditableItemModel,
   tExpr,
-  FilterableItemModel,
   MultiRecordResource,
   useFlowViewContext,
   FlowModelRenderer,
@@ -805,10 +804,4 @@ EditableItemModel.bindModelToInterface(
   'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   { isDefault: true, order: 1 },
-);
-
-FilterableItemModel.bindModelToInterface(
-  'RecordSelectFieldModel',
-  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
-  { isDefault: true },
 );
