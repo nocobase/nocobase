@@ -22,6 +22,7 @@ import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { FilterManager } from '../filter-manager';
+import { normalizeFilterValueByOperator } from './valueNormalization';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
@@ -209,6 +210,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
       rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
     }
 
+    const operator = getDefaultOperator(this);
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
       const options = operatorMeta?.schema?.['x-component-props']?.options;
@@ -218,7 +220,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
       return true;
     }
 
-    return rawValue;
+    return normalizeFilterValueByOperator(operator, rawValue);
   }
 
   getDefaultValue() {
