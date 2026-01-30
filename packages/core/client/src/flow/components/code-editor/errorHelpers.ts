@@ -14,7 +14,7 @@ export const WRAPPER_PRELUDE_LINES = 2; // (async () => {\n  try {\n  // user co
 
 export function clearDiagnostics(view: EditorView | null | undefined) {
   try {
-    if (view) setDiagnostics(view.state, []);
+    if (view) view.dispatch(setDiagnostics(view.state, []));
   } catch (err) {
     // Debug: failed to clear diagnostics
     try {
@@ -57,7 +57,7 @@ export function markErrorAt(
     const from = Math.min(lineInfo.from + Math.max(0, column - 1), lineInfo.to);
     const to = from;
     const diags: Diagnostic[] = [{ from, to, severity: 'error', message }];
-    setDiagnostics(view.state, diags);
+    view.dispatch(setDiagnostics(view.state, diags));
     view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
   } catch (err) {
     // Debug: failed to mark diagnostics

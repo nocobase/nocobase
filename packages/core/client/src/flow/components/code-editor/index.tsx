@@ -45,6 +45,7 @@ interface CodeEditorProps {
 
 export * from './types';
 export * from './extension';
+export * from './runjsDiagnostics';
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
@@ -123,6 +124,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const completionSource = useMemo(() => {
     return createRunJSCompletionSource({ hostCtx, staticOptions: finalExtra });
   }, [hostCtx, finalExtra]);
+
+  const knownCtxMemberRoots = useMemo(() => {
+    const roots = new Set<string>();
+    const list = Array.isArray(dynamicCompletions) ? dynamicCompletions : [];
+    for (const c of list) {
+      const label = typeof (c as any)?.label === 'string' ? String((c as any).label) : '';
+      if (!label.startsWith('ctx.')) continue;
+      let rest = label.slice(4);
+      if (rest.endsWith('()')) rest = rest.slice(0, -2);
+      const root = rest.split('.')[0]?.trim();
+      if (!root) continue;
+      roots.add(root);
+    }
+    return roots.size ? Array.from(roots) : undefined;
+  }, [dynamicCompletions]);
 
   // JSX 转换支持暂时移除：直接按原样运行代码
 
@@ -236,6 +252,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         theme={theme}
         readonly={readonly}
         enableLinter={enableLinter}
+        knownCtxMemberRoots={knownCtxMemberRoots}
         completionSource={completionSource}
         viewRef={viewRef}
       />
