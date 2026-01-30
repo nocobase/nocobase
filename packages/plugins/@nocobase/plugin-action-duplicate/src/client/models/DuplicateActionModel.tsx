@@ -598,6 +598,31 @@ DuplicateActionModel.registerFlow({
           collection: ctx.record.__collection || ctx.blockModel.collection.name,
         };
         const formData = await fetchTemplateData(ctx.resource, template);
+
+        const popupTemplateUid =
+          typeof (params as any)?.popupTemplateUid === 'string' ? (params as any).popupTemplateUid.trim() : '';
+        const targetUid = typeof (params as any)?.uid === 'string' ? (params as any).uid.trim() : '';
+        const shouldDelegateToOpenView = !!popupTemplateUid || (!!targetUid && targetUid !== ctx.model.uid);
+        if (shouldDelegateToOpenView) {
+          const delegatedParams: any = {
+            ...(params || {}),
+            // DuplicateAction 的弹窗是自定义打开逻辑（openDuplicatePopup），
+            // 不能走 openView 动作默认的路由导航（否则路由会触发 model.click，而该模型并不监听 click）。
+            navigation: false,
+            scene: 'new',
+            formData,
+            viewUid: (params as any)?.viewUid || ctx.blockModel.uid,
+            dataSourceKey: (params as any)?.dataSourceKey || ctx.blockModel.collection.dataSourceKey,
+            collectionName:
+              (params as any)?.collectionName || ctx.record.__collection || ctx.blockModel.collection.name,
+          };
+          if (targetUid) {
+            delegatedParams.uid = targetUid;
+          }
+          await ctx.runAction('openView', delegatedParams);
+          return;
+        }
+
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
