@@ -556,6 +556,7 @@ DuplicateActionModel.registerFlow({
         size: 'medium',
       },
       async handler(ctx, params) {
+        await ctx.model.dispatchEvent('beforeRender'); // 确保 duplicateFields 已经分析过了
         const { duplicateFields = [] } = ctx.model.props;
         if (!duplicateFields?.length) {
           ctx.message.error(
@@ -599,10 +600,13 @@ DuplicateActionModel.registerFlow({
         };
         const formData = await fetchTemplateData(ctx.resource, template);
 
-        const popupTemplateUid =
-          typeof (params as any)?.popupTemplateUid === 'string' ? (params as any).popupTemplateUid.trim() : '';
-        const targetUid = typeof (params as any)?.uid === 'string' ? (params as any).uid.trim() : '';
+        const popupTemplateUid = typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
+        const targetUid = typeof params?.uid === 'string' ? params.uid.trim() : '';
         const shouldDelegateToOpenView = !!popupTemplateUid || (!!targetUid && targetUid !== ctx.model.uid);
+        const runtimeViewUid = params?.viewUid || ctx.blockModel.uid;
+        const runtimeDataSourceKey = params?.dataSourceKey || ctx.blockModel.collection.dataSourceKey;
+        const runtimeCollectionName =
+          params?.collectionName || ctx.record.__collection || ctx.blockModel.collection.name;
         if (shouldDelegateToOpenView) {
           const delegatedParams: any = {
             ...(params || {}),
@@ -611,14 +615,14 @@ DuplicateActionModel.registerFlow({
             navigation: false,
             scene: 'new',
             formData,
-            viewUid: (params as any)?.viewUid || ctx.blockModel.uid,
-            dataSourceKey: (params as any)?.dataSourceKey || ctx.blockModel.collection.dataSourceKey,
-            collectionName:
-              (params as any)?.collectionName || ctx.record.__collection || ctx.blockModel.collection.name,
+            viewUid: runtimeViewUid,
+            dataSourceKey: runtimeDataSourceKey,
+            collectionName: runtimeCollectionName,
           };
           if (targetUid) {
             delegatedParams.uid = targetUid;
           }
+
           await ctx.runAction('openView', delegatedParams);
           return;
         }
@@ -631,10 +635,10 @@ DuplicateActionModel.registerFlow({
           inputArgs: {
             parentId: ctx.model.uid,
             scene: 'new',
-            dataSourceKey: ctx.blockModel.collection.dataSourceKey,
-            collectionName: ctx.record.__collection || ctx.blockModel.collection.name,
+            dataSourceKey: runtimeDataSourceKey,
+            collectionName: runtimeCollectionName,
             formData,
-            viewUid: ctx.blockModel.uid,
+            viewUid: runtimeViewUid,
           },
           content: () => <EditFormContent model={ctx.model} />,
           styles: {
