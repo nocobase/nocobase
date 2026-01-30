@@ -1,4 +1,5 @@
 export const locales = [
+  // Preferred languages first: en, zh(cn), ja, ko, es, pt, de, fr
   {
     code: 'en',
     label: 'English',
@@ -20,16 +21,6 @@ export const locales = [
     href: '/ko/',
   },
   {
-    code: 'de',
-    label: 'Deutsch',
-    href: '/de/',
-  },
-  {
-    code: 'fr',
-    label: 'Français',
-    href: '/fr/',
-  },
-  {
     code: 'es',
     label: 'Español',
     href: '/es/',
@@ -39,6 +30,18 @@ export const locales = [
     label: 'Português',
     href: '/pt/',
   },
+  {
+    code: 'de',
+    label: 'Deutsch',
+    href: '/de/',
+  },
+  {
+    code: 'fr',
+    label: 'Français',
+    href: '/fr/',
+  },
+
+  // Other languages afterwards, keeping original relative order
   {
     code: 'ru',
     label: 'Русский',
