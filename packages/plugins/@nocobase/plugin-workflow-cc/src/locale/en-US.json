@@ -16,6 +16,8 @@
   "Recipients": "Recipients",
   "Task card": "Task card",
   "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "Title of each CC item in tasks center. Could use variables in string template. Default to node title.",
+  "Read at": "Read at",
+  "Updated at": "Updated at",
   "Unread": "Unread",
   "User interface": "User interface",
   "View user interface": "View user interface",

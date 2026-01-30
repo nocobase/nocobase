@@ -138,7 +138,7 @@ export default {
       interface: 'updatedAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Updated at")}}',
+        title: `{{t("Updated at", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'DatePicker',
         'x-component-props': {
           showTime: true,
