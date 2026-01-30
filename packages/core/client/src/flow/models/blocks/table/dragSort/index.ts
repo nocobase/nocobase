@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// 导出工具函数
 export * from './dragSortUtils';
-
-// 导出组件
 export * from './dragSortComponents';
-
-// 导出 Hooks
 export * from './dragSortHooks';
-
-// 导出配置
 export * from './dragSortSettings';

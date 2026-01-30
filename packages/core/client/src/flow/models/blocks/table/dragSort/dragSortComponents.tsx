@@ -14,10 +14,6 @@ import { TinyColor } from '@ctrl/tinycolor';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 
-/**
- * 拖拽排序手柄组件
- * 用于显示可拖拽的图标
- */
 export const SortHandle: React.FC<{ id: string | number }> = (props) => {
   const { id, ...otherProps } = props;
   const { listeners, setNodeRef } = useSortable({
@@ -26,10 +22,6 @@ export const SortHandle: React.FC<{ id: string | number }> = (props) => {
   return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
 };
 
-/**
- * 可排序的表格行组件
- * 支持拖拽时的视觉反馈
- */
 export const SortableRow: React.FC<any> = (props) => {
   const id = props['data-row-key']?.toString();
   const { setNodeRef, active, over } = useSortable({

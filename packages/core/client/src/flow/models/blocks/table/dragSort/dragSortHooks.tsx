@@ -15,10 +15,6 @@ import type { TableBlockModel } from '../TableBlockModel';
 import { getRowKey } from '../utils';
 import { SortableRow } from './dragSortComponents';
 
-/**
- * 拖拽排序的 Body Wrapper 组件 Hook
- * 根据是否启用拖拽排序返回不同的组件
- */
 export function useDragSortBodyWrapper(
   model: TableBlockModel,
   dataSourceRef: React.MutableRefObject<any>,
@@ -41,7 +37,6 @@ export function useDragSortBodyWrapper(
         const to = dataSourceRef.current?.[toIndex];
 
         if (from && to) {
-          // 调用move action,参数会被转换为URL query参数
           model.resource
             .runAction('move', {
               method: 'post',
@@ -73,10 +68,6 @@ export function useDragSortBodyWrapper(
   }, [model.props.dragSort, model.props.dragSortBy, model.resource, model.collection.filterTargetKey, getRowKeyFunc]);
 }
 
-/**
- * 拖拽排序的行组件 Hook
- * 根据是否启用拖拽排序返回不同的组件
- */
 export function useDragSortRowComponent(dragSort: boolean) {
   return useMemo(() => {
     if (!dragSort) {
@@ -86,10 +77,6 @@ export function useDragSortRowComponent(dragSort: boolean) {
   }, [dragSort]);
 }
 
-/**
- * 初始化拖拽排序的 sort 参数
- * 在组件挂载时调用
- */
 export function initDragSortParams(model: TableBlockModel) {
   if (model.props.dragSort && model.props.dragSortBy) {
     model.resource.setSort([model.props.dragSortBy]);

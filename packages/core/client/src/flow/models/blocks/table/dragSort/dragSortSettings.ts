@@ -11,9 +11,6 @@ import { tExpr } from '@nocobase/flow-engine';
 import type { TableBlockModel } from '../TableBlockModel';
 import { convertFieldsToOptions, getFirstSortField, getSortFields } from './dragSortUtils';
 
-/**
- * 拖拽排序开关配置
- */
 export const dragSortSettings = {
   title: tExpr('Enable drag and drop sorting'),
   uiMode: { type: 'switch' as const, key: 'dragSort' },
@@ -41,9 +38,6 @@ export const dragSortSettings = {
   },
 };
 
-/**
- * 拖拽排序字段选择配置
- */
 export const dragSortBySettings = {
   title: tExpr('Drag and drop sorting field'),
   hideInSettings(ctx) {
