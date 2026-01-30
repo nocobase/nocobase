@@ -37,6 +37,14 @@ import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
+import {
+  SortHandle,
+  initDragSortParams,
+  useDragSortBodyWrapper,
+  useDragSortRowComponent,
+  dragSortSettings,
+  dragSortBySettings,
+} from './dragSort';
 
 const MemoizedTable = React.memo(Table);
 
@@ -177,6 +185,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     this.disposeAutorun = autorun(() => {
       this.columns.value = this.getColumns();
     });
+
+    // 初始化拖拽排序参数
+    initDragSortParams(this);
   }
 
   onUnmount() {
@@ -357,6 +368,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     if (record.__index) {
       index = extractIndex(record.__index);
     }
+    const rowKey = getRowKey(record, this.collection.filterTargetKey);
     return (
       <div
         role="button"
@@ -366,6 +378,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         })}
       >
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+          {this.props.dragSort && this.props.dragSortBy && <SortHandle id={rowKey} />}
           {this.props.showIndex && <TableIndex index={index} />}
         </div>
 
@@ -661,48 +674,8 @@ TableBlockModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
-    dragSort: {
-      title: tExpr('Enable drag and drop sorting'),
-      uiMode: { type: 'switch', key: 'dragSort' },
-      defaultParams: {
-        dragSort: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('dragSort', params.dragSort);
-      },
-    },
-    dragSortBy: {
-      title: tExpr('Drag and drop sorting field'),
-      hideInSettings(ctx) {
-        const dragSort = ctx.model.getStepParams('tableSettings', 'dragSort')?.dragSort;
-        if (!dragSort) {
-          return true;
-        }
-      },
-      uiMode: (ctx) => {
-        const t = ctx.t;
-        return {
-          type: 'select',
-          key: 'dragSortBy',
-          props: {
-            options: [
-              { label: t('Large'), value: 'large' },
-              { label: t('Middle'), value: 'middle' },
-              { label: t('Small'), value: 'small' },
-            ],
-          },
-        };
-      },
-      defaultParams: {
-        dragSortBy: null,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('dragSortBy', params.dragSortBy);
-        // ctx.model.resource.setRequestParameters({
-        //   sort: params.dragSortBy,
-        // });
-      },
-    },
+    dragSort: dragSortSettings,
+    dragSortBy: dragSortBySettings,
     // virtualScrolling: {
     //   title: tExpr('Enable virtual scrolling'),
     //   uiSchema: {
@@ -779,9 +752,20 @@ const HighPerformanceTable = React.memo(
       defaultExpandAllRows,
       expandedRowKeys,
     } = props;
+    const dataSourceRef = useRef(dataSource);
+    dataSourceRef.current = dataSource;
+
     const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
       model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
     );
+
+    const getRowKeyFunc = useCallback(
+      (record) => {
+        return getRowKey(record, model.collection.filterTargetKey);
+      },
+      [model.collection.filterTargetKey],
+    );
+
     const rowSelection = useMemo(() => {
       return {
         columnWidth: 50,
@@ -795,6 +779,7 @@ const HighPerformanceTable = React.memo(
         ...model.rowSelectionProps,
       };
     }, [model, selectedRowKeys]);
+
     const handleChange = useCallback(
       async (pagination, filters, sorter) => {
         const globalSort = model.props.globalSort;
@@ -817,13 +802,16 @@ const HighPerformanceTable = React.memo(
       },
       [model, defaultExpandAllRows],
     );
+
     const rowClassName = useCallback(
       (record) => {
         return getRowKey(record, model.collection?.filterTargetKey) === highlightedRowKey ? highlightedRowClass : '';
       },
       [highlightedRowKey, model.collection?.filterTargetKey],
     );
+
     const pagination = useMemo(() => _pagination, [dataSource]);
+
     const onRow = useCallback(
       (record, rowIndex) => {
         const rowKey = getRowKey(record, model.collection.filterTargetKey);
@@ -838,6 +826,8 @@ const HighPerformanceTable = React.memo(
               await model.dispatchEvent('rowClick', { record, rowIndex, event });
             }
           },
+          rowIndex,
+          'data-row-key': rowKey,
         };
       },
       [highlightedRowKey, model],
@@ -848,6 +838,7 @@ const HighPerformanceTable = React.memo(
     useEffect(() => {
       setExpandedRowKeys(expandedRowKeys);
     }, [expandedRowKeys]);
+
     const expandable = useMemo(() => {
       return {
         expandedRowKeys: rowKeys,
@@ -865,12 +856,29 @@ const HighPerformanceTable = React.memo(
       };
     }, [rowKeys]);
 
+    // 拖拽相关的 Body Wrapper 组件
+    const BodyWrapperComponent = useDragSortBodyWrapper(model, dataSourceRef, getRowKeyFunc);
+
+    // 行组件
+    const RowComponent = useDragSortRowComponent(model.props.dragSort);
+
+    const components = useMemo(() => {
+      return {
+        ...model.components,
+        body: {
+          ...model.components.body,
+          wrapper: BodyWrapperComponent,
+          row: RowComponent,
+        },
+      };
+    }, [model.components, BodyWrapperComponent, RowComponent]);
+
     return (
       <MemoizedTable
-        components={model.components}
+        components={components}
         tableLayout="fixed"
         size={size}
-        rowKey={(record) => getRowKey(record, model.collection.filterTargetKey)}
+        rowKey={getRowKeyFunc}
         rowSelection={rowSelection as any}
         virtual={virtual}
         scroll={tableScroll}
