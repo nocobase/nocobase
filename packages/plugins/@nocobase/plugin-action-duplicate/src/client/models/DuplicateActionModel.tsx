@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, useFlowContext, useFlowViewContext, FlowModelRenderer } from '@nocobase/flow-engine';
+import {
+  tExpr,
+  useFlowContext,
+  useFlowViewContext,
+  FlowModelRenderer,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
 import { onFieldInputValueChange } from '@formily/core';
 import { connect, mapProps, useForm } from '@formily/react';
 import { ActionModel, ActionSceneEnum, useRequest, SkeletonFallback } from '@nocobase/client';
@@ -187,9 +193,7 @@ DuplicateActionModel.registerFlow({
           label: ctx.dataSourceManager.getDataSource('main').collectionManager.getCollection(name)?.title,
           value: name,
         }));
-
         const duplicateValues = cloneDeep((ctx.model.props as any)?.duplicateFields || []);
-
         const getAllkeys = (data, result) => {
           for (let i = 0; i < data?.length; i++) {
             const { children, ...rest } = data[i];
@@ -231,7 +235,6 @@ DuplicateActionModel.registerFlow({
             title: '{{ t("Target collection") }}',
             required: true,
             description: t('If collection inherits, choose inherited collections as templates'),
-            default: '{{ collectionName }}',
             'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
             'x-decorator': 'FormItem',
             'x-component': 'Select',
@@ -247,6 +250,11 @@ DuplicateActionModel.registerFlow({
                     value: `{{ $deps[0]==="quickDulicate"? currentCollection:collectionName }}`,
                   },
                 },
+              },
+              (field) => {
+                if (field.form.values.duplicateMode === 'quickDulicate') {
+                  field.form.setValuesIn('collection', ctx.record?.__collection || ctx.blockModel.collection.name);
+                }
               },
             ],
           },
@@ -401,8 +409,11 @@ DuplicateActionModel.registerFlow({
           },
         };
       },
-      defaultParams: {
-        duplicateMode: 'quickDulicate',
+      defaultParams: (ctx) => {
+        return {
+          duplicateMode: 'quickDulicate',
+          collection: ctx.record?.__collection || ctx.blockModel.collection.name,
+        };
       },
       async handler(ctx, params) {
         const { duplicateMode, duplicateFields, collection, treeData } = params;
@@ -418,7 +429,7 @@ DuplicateActionModel.registerFlow({
   },
 });
 
-async function fetchTemplateData(resource: any, template: { collection: string; dataId: number; fields: string[] }) {
+async function fetchTemplateData(resource: any, template: { dataId: number; fields: string[] }) {
   if (!template?.dataId || template.fields?.length === 0) {
     return;
   }
@@ -476,17 +487,19 @@ DuplicateActionModel.registerFlow({
             )
           : ctx.record[filterTargetKey] || ctx.record.id;
         const template = {
-          key: 'duplicate',
           dataId,
           default: true,
           fields:
             duplicateFields?.filter((v) => {
               return [...ctx.collection.fields.values()].find((k) => v.includes(k.name));
             }) || [],
-          collection: ctx.record.__collection || ctx.blockModel.collection.name,
         };
+        const resource = ctx.createResource(MultiRecordResource);
+        const { dataSourceKey } = ctx.blockModel.collection;
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(ctx.record.__collection || ctx.blockModel.collection.name);
 
-        const data = await fetchTemplateData(ctx.resource, template);
+        const data = await fetchTemplateData(resource, template);
         await ctx.blockModel.resource.create(
           {
             ...data,
@@ -528,29 +541,6 @@ DuplicateActionModel.registerFlow({
         return duplicateMode === 'quickDulicate';
       },
       use: 'openView',
-      // uiSchema: {
-      //   mode: {
-      //     type: 'string',
-      //     title: tExpr('Open mode'),
-      //     enum: [
-      //       { label: tExpr('Drawer'), value: 'drawer' },
-      //       { label: tExpr('Dialog'), value: 'dialog' },
-      //     ],
-      //     'x-decorator': 'FormItem',
-      //     'x-component': 'Radio.Group',
-      //   },
-      //   size: {
-      //     type: 'string',
-      //     title: tExpr('Popup size'),
-      //     enum: [
-      //       { label: tExpr('Small'), value: 'small' },
-      //       { label: tExpr('Medium'), value: 'medium' },
-      //       { label: tExpr('Large'), value: 'large' },
-      //     ],
-      //     'x-decorator': 'FormItem',
-      //     'x-component': 'Radio.Group',
-      //   },
-      // },
       defaultParams: {
         mode: 'drawer',
         size: 'medium',
@@ -588,17 +578,18 @@ DuplicateActionModel.registerFlow({
             )
           : ctx.record[filterTargetKey] || ctx.record.id;
         const template = {
-          key: 'duplicate',
           dataId,
           default: true,
           fields:
             duplicateFields?.filter((v) => {
               return [...ctx.collection.fields.values()].find((k) => v.includes(k.name));
             }) || [],
-          collection: ctx.record.__collection || ctx.blockModel.collection.name,
         };
-        const formData = await fetchTemplateData(ctx.resource, template);
-
+        const resource = ctx.createResource(MultiRecordResource);
+        const { dataSourceKey } = ctx.blockModel.collection;
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(ctx.record.__collection || ctx.blockModel.collection.name);
+        const formData = await fetchTemplateData(resource, template);
         const popupTemplateUid =
           typeof (params as any)?.popupTemplateUid === 'string' ? (params as any).popupTemplateUid.trim() : '';
         const targetUid = typeof (params as any)?.uid === 'string' ? (params as any).uid.trim() : '';

@@ -456,7 +456,7 @@ export class CollectionManager {
   }
 
   getChildrenCollectionsName(name, isSupportView = false) {
-    const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
+    const cacheKey = isSupportView ? name + '_supportView' : name + '_notSupportView';
     if (this.childrenCollectionsName[cacheKey]) {
       return this.childrenCollectionsName[cacheKey].slice();
     }
@@ -465,7 +465,7 @@ export class CollectionManager {
     const collections = [...this.getCollections()];
     const getChildrenCollectionsInner = (collectionName: string) => {
       const inheritCollections = collections.filter((v: any) => {
-        return [...v.inherits]?.includes(collectionName);
+        return [...v.inherits.keys()]?.includes(collectionName);
       });
       inheritCollections.forEach((v) => {
         const collectionKey = v.name;
@@ -494,41 +494,43 @@ export class CollectionManager {
       return this.allCollectionsInheritChain.slice();
     }
 
+    const visited = new Set<string>([name]);
     const collectionsInheritChain = [name];
+
     const getInheritChain = (name: string) => {
-      const collection = this.getCollection(name);
-      if (collection) {
-        const { inherits } = collection as any;
-        const children = this.getChildrenCollectionsName(name);
-        // 搜寻祖先表
-        if (inherits) {
-          for (let index = 0; index < inherits.length; index++) {
-            const collectionKey = inherits[index];
-            if (collectionsInheritChain.includes(collectionKey)) {
-              continue;
-            }
-            collectionsInheritChain.push(collectionKey);
-            getInheritChain(collectionKey);
-          }
-        }
-        // 搜寻后代表
-        if (children) {
-          for (let index = 0; index < children.length; index++) {
-            const collection = this.getCollection(children[index]);
-            const collectionKey = collection.name;
-            if (collectionsInheritChain.includes(collectionKey)) {
-              continue;
-            }
-            collectionsInheritChain.push(collectionKey);
-            getInheritChain(collectionKey);
-          }
+      const current = this.getCollection(name);
+      if (!current) return;
+
+      const { inherits } = current;
+      const children = this.getChildrenCollectionsName(name);
+      // 向上：祖先
+      if (Array.isArray(inherits)) {
+        for (const parentName of inherits) {
+          if (visited.has(parentName)) continue;
+          visited.add(parentName);
+          collectionsInheritChain.push(parentName);
+          getInheritChain(parentName);
         }
       }
-      return collectionsInheritChain;
+
+      // 向下：后代
+      if (Array.isArray(children)) {
+        for (const childName of children) {
+          const child = this.getCollection(childName);
+          if (!child) continue;
+
+          if (visited.has(child.name)) continue;
+          visited.add(child.name);
+          collectionsInheritChain.push(child.name);
+          getInheritChain(child.name);
+        }
+      }
     };
 
-    this.allCollectionsInheritChain = getInheritChain(name);
-    return this.allCollectionsInheritChain || [];
+    getInheritChain(name);
+
+    this.allCollectionsInheritChain = collectionsInheritChain;
+    return collectionsInheritChain.slice();
   }
 }
 
