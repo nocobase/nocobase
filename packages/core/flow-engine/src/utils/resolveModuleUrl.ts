@@ -29,12 +29,16 @@
  * resolveModuleUrl('vue@3.4.0', { addSuffix: false })
  * // => 'https://esm.sh/vue@3.4.0' (即使配置了 suffix 也不会添加)
  *
+ * // 原始 URL（适用于 UMD 库）
+ * resolveModuleUrl('lodash@4.17.21/lodash.js', { raw: true })
+ * // => 'https://esm.sh/lodash@4.17.21/lodash.js?raw' (即使配置了 suffix 也不会添加)
+ *
  * // 完整 URL 保持不变
  * resolveModuleUrl('https://cdn.jsdelivr.net/npm/vue@3.4.0')
  * // => 'https://cdn.jsdelivr.net/npm/vue@3.4.0'
  * ```
  */
-export function resolveModuleUrl(url: string, options?: { addSuffix?: boolean }): string {
+export function resolveModuleUrl(url: string, options?: { addSuffix?: boolean; raw?: boolean }): string {
   if (!url || typeof url !== 'string') {
     throw new Error('invalid url');
   }
@@ -53,6 +57,11 @@ export function resolveModuleUrl(url: string, options?: { addSuffix?: boolean })
   // 移除 base URL 末尾的斜杠，移除相对路径开头的斜杠
   const base = ESM_CDN_BASE_URL.replace(/\/$/, '');
   const path = u.replace(/^\//, '');
+
+  if (options?.raw) {
+    const sep = path.includes('?') ? '&' : '?';
+    return `${base}/${path}${sep}raw`;
+  }
 
   return `${base}/${path}${ESM_CDN_SUFFIX}`;
 }

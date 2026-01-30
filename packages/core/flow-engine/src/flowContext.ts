@@ -53,6 +53,7 @@ import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './ru
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
 import { setupRunJSLibs } from './runjsLibs';
+import { runjsImportAsync, runjsRequireAsync } from './utils/runjsModuleLoader';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -3379,20 +3380,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     );
     this.defineMethod('requireAsync', async (url: string) => {
-      return new Promise((resolve, reject) => {
-        if (!this.requirejs) {
-          reject(new Error('requirejs is not available'));
-          return;
-        }
-        const u = resolveModuleUrl(url);
-        this.requirejs(
-          [u],
-          (...args: any[]) => {
-            resolve(args[0]);
-          },
-          reject,
-        );
-      });
+      const u = resolveModuleUrl(url, { raw: true });
+      return await runjsRequireAsync(this.requirejs, u);
     });
     // 动态按 URL 加载 ESM 模块
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
@@ -3418,26 +3407,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         }
         return mod;
       };
-      // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
-      const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
-      // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
-      const evalImport = () => {
-        const importer = (0, eval)('u => import(u)');
-        return importer(u);
-      };
       const p = (async () => {
-        try {
-          const mod = await nativeImport();
-          return normalizeModule(mod);
-        } catch (err: any) {
-          // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
-          try {
-            const mod = await evalImport();
-            return normalizeModule(mod);
-          } catch (err2) {
-            throw err2 || err;
-          }
-        }
+        const mod = await runjsImportAsync(u);
+        return normalizeModule(mod);
       })();
       cache.set(u, p);
       return p;
