@@ -1593,5 +1593,7 @@
   "Edit popup (Add new)":"编辑弹窗（添加）",
   "Edit popup (Select record)":"编辑弹窗（选择纪录）",
   "Remove record":"移除纪录",
-  "Are you sure you want to remove it?":"你确定要移除吗？"
+  "Are you sure you want to remove it?":"你确定要移除吗？",
+  "Duplicate record":"复制纪录",
+  "Are you sure you want to duplicate it?":"你确定要复制吗？"
 }
