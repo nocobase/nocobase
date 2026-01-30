@@ -488,7 +488,7 @@ function TodoExtraActions(props) {
         properties: {
           refresh: {
             type: 'void',
-            title: '{{ t("Refresh") }}',
+            title: `{{t("Refresh", { ns: "${NAMESPACE}" })}}`,
             'x-component': 'Action',
             'x-use-component-props': 'useRefreshActionProps',
             'x-component-props': {
@@ -498,7 +498,7 @@ function TodoExtraActions(props) {
           },
           filter: {
             type: 'void',
-            title: '{{t("Filter")}}',
+            title: `{{t("Filter", { ns: "${NAMESPACE}" })}}`,
             'x-component': 'Filter.Action',
             'x-use-component-props': 'useFilterActionProps',
             'x-component-props': {

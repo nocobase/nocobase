@@ -125,7 +125,7 @@ export default {
       interface: 'createdAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Created at")}}',
+        title: `{{t("Created at", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'DatePicker',
         'x-component-props': {
           showTime: true,
