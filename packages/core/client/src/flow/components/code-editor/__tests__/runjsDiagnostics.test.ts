@@ -73,7 +73,7 @@ describe('runjsDiagnostics', () => {
     const res = await previewRunJS(spam);
     expect(res.success).toBe(false);
     expect(res.message.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
-    expect(res.message.includes('已截断')).toBe(true);
+    expect(/truncat(ed|ion)/i.test(res.message)).toBe(true);
     // Must preserve key runtime error information.
     expect(/boom/i.test(res.message)).toBe(true);
   });

@@ -12,8 +12,8 @@ import { Text } from '@codemirror/state';
 import type { TreeCursor } from '@lezer/common';
 import * as acorn from 'acorn';
 import jsx from 'acorn-jsx';
-// acorn-walk 仅用于轻量遍历做一些静态启发式检查（非类型检查）
-// 类型定义可缺省，因此用 any 兼容
+// acorn-walk is only used for lightweight AST traversal in heuristic checks (not type-checking).
+// Its types can be absent in some environments, so we keep it as any-friendly.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as acornWalk from 'acorn-walk';
@@ -631,7 +631,7 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
       pushAtPos(
         pos,
         'possible-undefined-ctx-member-call',
-        `Possible undefined ctx method call: ctx.${normalized}(). 可能是拼写错误或未在当前 ctx API 中定义。`,
+        `Possible undefined ctx method call: ctx.${normalized}(). This may be a typo or not available in the current ctx API.`,
       );
       reported.add(normalized);
     });
@@ -726,9 +726,9 @@ function formatIssueLine(issue: RunJSIssue): string {
 }
 
 function formatExecution(exec?: DiagnoseRunJSResult['execution']): string {
-  if (!exec) return '预览执行：未知';
+  if (!exec) return 'Preview execution: unknown';
   const dur = typeof exec.durationMs === 'number' ? `${Math.round(exec.durationMs)}ms` : 'unknown';
-  return `预览执行：started=${exec.started}, finished=${exec.finished}, timeout=${exec.timeout}, duration=${dur}`;
+  return `Preview execution: started=${exec.started}, finished=${exec.finished}, timeout=${exec.timeout}, duration=${dur}`;
 }
 
 function clampText(s: string, max: number, tail = '…'): string {
@@ -760,7 +760,7 @@ function buildPreviewMessage(
   const logsCount = logs.length;
 
   if (total === 0) {
-    lines.push(`RunJS 预览成功：未发现问题。日志 ${logsCount} 条。`);
+    lines.push(`RunJS preview succeeded: no issues found. Logs: ${logsCount}.`);
     lines.push(formatExecution(execution));
     return {
       message: clampText(lines.join('\n'), options.maxChars),
@@ -769,7 +769,7 @@ function buildPreviewMessage(
   }
 
   lines.push(
-    `RunJS 预览失败：共 ${total} 个问题（lint ${lintCount} / runtime ${runtimeCount}），日志 ${logsCount} 条。`,
+    `RunJS preview failed: ${total} issues (lint ${lintCount} / runtime ${runtimeCount}), logs: ${logsCount}.`,
   );
   lines.push(formatExecution(execution));
   lines.push('');
@@ -787,7 +787,7 @@ function buildPreviewMessage(
       }
     });
     if (list.length > limited.length) {
-      lines.push(`… 还有 ${list.length - limited.length} 条未展示`);
+      lines.push(`... ${list.length - limited.length} more not shown`);
     }
     lines.push('');
   };
@@ -798,8 +798,8 @@ function buildPreviewMessage(
       ? [keyRuntime, ...runtimeIssues.filter((x) => x !== keyRuntime)]
       : runtimeIssues;
 
-  pushIssueSection('静态问题', lintIssues);
-  pushIssueSection('运行时问题', runtimeOrdered);
+  pushIssueSection('Static issues', lintIssues);
+  pushIssueSection('Runtime issues', runtimeOrdered);
 
   const selectLogs = (): RunJSLog[] => {
     const prioritized = logs.filter((l) => l.level === 'error' || l.level === 'warn');
@@ -810,12 +810,12 @@ function buildPreviewMessage(
 
   const pickedLogs = selectLogs();
   if (pickedLogs.length) {
-    lines.push('关键日志：');
+    lines.push('Key logs:');
     pickedLogs.forEach((l) => {
       lines.push(`[${l.level}] ${clampText(l.message, options.maxLogChars)}`);
     });
     if (logs.length > pickedLogs.length) {
-      lines.push(`… 还有 ${logs.length - pickedLogs.length} 条日志未展示`);
+      lines.push(`... ${logs.length - pickedLogs.length} more logs not shown`);
     }
   }
 
@@ -825,7 +825,7 @@ function buildPreviewMessage(
 }
 
 function buildPreviewMessageWithTruncation(result: DiagnoseRunJSResult): string {
-  const summaryLine = `（issues 总数 ${result.issues.length}，logs 总数 ${result.logs.length}）`;
+  const summaryLine = `(issues total ${result.issues.length}, logs total ${result.logs.length})`;
 
   const attempts = [
     { maxLogs: 40, maxLogChars: 220, maxIssues: 12, includeStack: true, maxStackChars: 800 },
@@ -842,7 +842,7 @@ function buildPreviewMessageWithTruncation(result: DiagnoseRunJSResult): string 
     overflowed = overflowed || truncated;
     if (!truncated) {
       if (!overflowed) return message;
-      const withNote = `RunJS 预览输出已截断。\n${summaryLine}\n\n${message}`;
+      const withNote = `RunJS preview output was truncated.\n${summaryLine}\n\n${message}`;
       return clampText(withNote, MAX_MESSAGE_CHARS);
     }
   }
@@ -850,10 +850,10 @@ function buildPreviewMessageWithTruncation(result: DiagnoseRunJSResult): string 
   // Hard truncate fallback but MUST preserve summary + key runtime issue when present.
   const runtimeIssues = result.issues.filter((i) => i.type === 'runtime');
   const keyRuntime = pickKeyRuntimeIssue(runtimeIssues);
-  const keyRuntimeLine = keyRuntime ? `关键运行时问题：${formatIssueLine(keyRuntime)}` : '';
+  const keyRuntimeLine = keyRuntime ? `Key runtime issue: ${formatIssueLine(keyRuntime)}` : '';
 
   const baseLines = [
-    'RunJS 预览输出已截断。',
+    'RunJS preview output was truncated.',
     summaryLine,
     result.execution ? formatExecution(result.execution) : undefined,
     keyRuntimeLine || undefined,
