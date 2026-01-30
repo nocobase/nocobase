@@ -305,11 +305,11 @@ FilterFormItemModel.registerFlow({
           const componentProps = collectionField.getComponentProps();
           const fieldModel = ctx.model.subModels?.field;
           const shouldIgnoreMultiple = fieldModel instanceof RecordSelectFieldModel;
-          const { rules, required, multiple, allowMultiple, ...restProps } = componentProps || {};
+          const { rules, required, multiple, allowMultiple, maxCount, ...restProps } = componentProps || {};
 
           // 筛选表单不继承字段的后端校验
           ctx.model.setProps({
-            ...(shouldIgnoreMultiple ? restProps : { ...restProps, multiple, allowMultiple }),
+            ...(shouldIgnoreMultiple ? restProps : { ...restProps, multiple, allowMultiple, maxCount }),
             rules: undefined,
             required: undefined,
           });
