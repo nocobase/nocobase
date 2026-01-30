@@ -14,24 +14,27 @@ import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base';
 
 export class InputFieldModel extends FieldModel {
-  onInit(options: any): void {
-    super.onInit(options);
-
-    // 监听表单reset
-    this.context.blockModel.emitter.on('onFieldReset', () => {
-      if (
-        this.context.collectionField.interface === 'nanoid' &&
-        this.context.collectionField.options.autoFill !== false
-      ) {
-        const { size, customAlphabet } = this.context.collectionField.options || { size: 21 };
-        this.props.onChange(Alphabet(customAlphabet, size)());
-      }
-    });
-  }
   render() {
     return <Input {...this.props} />;
   }
 }
+
+InputFieldModel.registerFlow({
+  key: 'defaultValueForNanoid',
+  steps: {
+    generateNanoid: {
+      handler(ctx, params) {
+        // 监听表单reset
+        ctx.blockModel.emitter.on('onFieldReset', () => {
+          if (ctx.collectionField.interface === 'nanoid' && ctx.collectionField.options.autoFill !== false) {
+            const { size, customAlphabet } = ctx.collectionField.options || { size: 21 };
+            ctx.model.props.onChange(Alphabet(customAlphabet, size)());
+          }
+        });
+      },
+    },
+  },
+});
 
 InputFieldModel.define({
   label: tExpr('Input'),
