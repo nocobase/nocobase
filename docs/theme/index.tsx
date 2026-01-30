@@ -5,7 +5,7 @@ import {
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useLocation, useNavigate, usePageData, usePages } from '@rspress/runtime';
+import { useFrontmatter, useLocation, useNavigate, usePage, usePages } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
 import { locales } from '../locales';
@@ -188,7 +188,7 @@ export function HomeLayout(props: HomeLayoutProps) {
   } = props;
   const {
     page: { frontmatter, routePath },
-  } = usePageData();
+  } = usePage();
 
   return (
     <div

@@ -47,6 +47,14 @@ export type { RunJSSnippetLoader } from './runjs-context/snippets';
 export { getSnippetBody, listSnippetsForContext, registerRunJSSnippet } from './runjs-context/snippets';
 
 export * from './views';
+export {
+  DATA_SOURCE_DIRTY_EVENT,
+  ENGINE_SCOPE_KEY,
+  getEmitterViewActivatedVersion,
+  VIEW_ACTIVATED_EVENT,
+  VIEW_ACTIVATED_VERSION,
+  VIEW_ENGINE_SCOPE,
+} from './views/viewEvents';
 
 export * from './FlowDefinition';
 export { createViewScopedEngine } from './ViewScopedFlowEngine';
