@@ -1347,7 +1347,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('requireAsync', async (url: string) => {
-      const u = resolveModuleUrl(url);
+      const u = resolveModuleUrl(url, { raw: true });
       return await runjsRequireAsync(this.requirejs, u);
     });
     // 动态按 URL 加载 ESM 模块
