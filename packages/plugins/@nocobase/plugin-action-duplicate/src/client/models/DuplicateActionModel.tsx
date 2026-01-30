@@ -15,6 +15,7 @@ import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { getCollectionState, getSyncFromForm } from './utils';
+import { NAMESPACE } from '../locale';
 
 const Tree = connect(
   AntdTree,
@@ -467,7 +468,9 @@ DuplicateActionModel.registerFlow({
       async handler(ctx, params) {
         const { duplicateFields = [] } = ctx.model.props;
         if (!duplicateFields?.length) {
-          ctx.message.error(ctx.t('Please configure the duplicate fields'));
+          ctx.message.error(
+            ctx.t('Please configure the duplicate fields in duplicate mode configuration', { ns: NAMESPACE }),
+          );
           return;
         }
         if (ctx.model.duplicateLoading) {
@@ -567,7 +570,9 @@ DuplicateActionModel.registerFlow({
       async handler(ctx, params) {
         const { duplicateFields = [] } = ctx.model.props;
         if (!duplicateFields?.length) {
-          ctx.message.error(ctx.t('Please configure the duplicate fields'));
+          ctx.message.error(
+            ctx.t('Please configure the duplicate fields in duplicate mode configuration', { ns: NAMESPACE }),
+          );
           return;
         }
         const sizeToWidthMap: Record<string, any> = {
