@@ -10,9 +10,24 @@
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React from 'react';
+import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base';
 
 export class InputFieldModel extends FieldModel {
+  onInit(options: any): void {
+    super.onInit(options);
+
+    // 监听表单reset
+    this.context.blockModel.emitter.on('onFieldReset', () => {
+      if (
+        this.context.collectionField.interface === 'nanoid' &&
+        this.context.collectionField.options.autoFill !== false
+      ) {
+        const { size, customAlphabet } = this.context.collectionField.options || { size: 21 };
+        this.props.onChange(Alphabet(customAlphabet, size)());
+      }
+    });
+  }
   render() {
     return <Input {...this.props} />;
   }
