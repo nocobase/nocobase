@@ -138,6 +138,9 @@ BlockModel.registerFlow({
     linkageRules: {
       use: 'blockLinkageRules',
     },
+    blockHeight: {
+      use: 'blockHeight',
+    },
     // setBlockHeight: {
     //   title: tval('Set block height'),
     //   uiSchema: {
