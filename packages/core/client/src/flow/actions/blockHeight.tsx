@@ -7,14 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, MultiRecordResource, pruneFilter, tExpr, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
+import { InputNumber } from 'antd';
 import _ from 'lodash';
-import React from 'react';
-import { FilterGroup, VariableFilterItem } from '../components/filter';
-import { FieldModel } from '../models/base/FieldModel';
 
-export const HeightMode = {
+const HeightMode = {
   DEFAULT: 'defaultHeight',
   SPECIFY_VALUE: 'specifyValue',
   FULL_HEIGHT: 'fullHeight',
@@ -45,10 +42,10 @@ export const blockHeight = defineAction({
       },
       height: {
         title: t('Height'),
-        type: 'string',
+        type: 'number',
         required: true,
         'x-decorator': 'FormItem',
-        'x-component': 'InputNumber',
+        'x-component': InputNumber,
         'x-component-props': {
           addonAfter: 'px',
         },
@@ -75,7 +72,7 @@ export const blockHeight = defineAction({
     };
   },
   async handler(ctx, params) {
-    ctx.model.setProps({
+    ctx.model.setDecoratorProps({
       heightMode: params.heightMode,
       height: params.height,
     });
