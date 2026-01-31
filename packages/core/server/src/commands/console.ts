@@ -16,7 +16,7 @@ export default (app: Application) => {
     .command('console')
     .preload()
     .action(async () => {
-      // NOTE: move require('repl') here to lazy load, which could successfully lockdown by ses
+      // NOTE: move require('repl') here to lazy load, so it can be locked down by SES
       const REPL = require('repl');
       await app.start();
       const repl = (REPL.start('nocobase > ').context.app = app);
