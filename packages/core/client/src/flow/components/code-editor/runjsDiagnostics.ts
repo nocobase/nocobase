@@ -19,6 +19,7 @@ import jsx from 'acorn-jsx';
 import * as acornWalk from 'acorn-walk';
 import {
   JSRunner,
+  type FlowContext,
   createSafeDocument,
   createSafeNavigator,
   createSafeWindow,
@@ -118,21 +119,6 @@ function createIgnoredPosChecker(code: string): (pos: number) => boolean {
   };
 
   return (pos: number) => ignoredLines.has(posToLine(pos));
-}
-
-function createDeepNoop(path: string[] = []): any {
-  const fn = () => undefined;
-  return new Proxy(fn, {
-    get(_t, prop: any) {
-      if (prop === 'then') return undefined; // avoid thenable/promise-like behavior
-      if (prop === 'toString') return () => `[RunJSStub:${path.join('.') || 'ctx'}]`;
-      if (prop === Symbol.toStringTag) return 'RunJSStub';
-      return createDeepNoop([...path, String(prop)]);
-    },
-    apply() {
-      return undefined;
-    },
-  });
 }
 
 function posToLineColumn(text: Text, pos: number): { line: number; column: number } {
@@ -703,6 +689,16 @@ function createLogCollectors(out: RunJSLog[]) {
   return { consoleCapture, loggerCapture };
 }
 
+function wrapPreviewCtx(runtimeCtx: any, loggerCapture: any): any {
+  return new Proxy(runtimeCtx, {
+    get(target, prop: any, receiver) {
+      if (prop === 'then') return undefined; // avoid thenable/promise-like behavior
+      if (prop === 'logger') return loggerCapture;
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+}
+
 function pickKeyRuntimeIssue(runtimeIssues: RunJSIssue[]): RunJSIssue | undefined {
   if (!runtimeIssues.length) return undefined;
   const priority: Record<string, number> = {
@@ -868,7 +864,7 @@ export function formatRunJSPreviewMessage(result: DiagnoseRunJSResult): string {
   return buildPreviewMessageWithTruncation(result);
 }
 
-export async function diagnoseRunJS(code: string): Promise<DiagnoseRunJSResult> {
+export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<DiagnoseRunJSResult> {
   const src = typeof code === 'string' ? code : String(code ?? '');
   const logs: RunJSLog[] = [];
   const issues: RunJSIssue[] = [];
@@ -885,28 +881,9 @@ export async function diagnoseRunJS(code: string): Promise<DiagnoseRunJSResult> 
     execution.started = true;
 
     const { consoleCapture, loggerCapture } = createLogCollectors(logs);
+    const previewCtx = wrapPreviewCtx(ctx, loggerCapture);
 
-    const libs = createDeepNoop(['ctx', 'libs']);
-    const ctx: any = new Proxy(
-      {
-        logger: loggerCapture,
-        t: (s: any) => String(s ?? ''),
-        libs,
-        __ensureLib: async () => undefined,
-        __ensureLibs: async () => undefined,
-        resolveJsonTemplate: async (tpl: any) => tpl,
-        getVar: async () => undefined,
-      },
-      {
-        get(target, prop: any) {
-          if (prop === 'then') return undefined;
-          if (prop in target) return (target as any)[prop];
-          return createDeepNoop(['ctx', String(prop)]);
-        },
-      },
-    );
-
-    const extraGlobals: Record<string, any> = { console: consoleCapture, ctx };
+    const extraGlobals: Record<string, any> = { console: consoleCapture, ctx: previewCtx };
     try {
       if (typeof window !== 'undefined') {
         const navigator = createSafeNavigator();
@@ -972,8 +949,8 @@ export async function diagnoseRunJS(code: string): Promise<DiagnoseRunJSResult> 
   return { issues: sortIssuesStable(issues), logs, execution };
 }
 
-export async function previewRunJS(code: string): Promise<PreviewRunJSResult> {
-  const result = await diagnoseRunJS(code);
+export async function previewRunJS(code: string, ctx: FlowContext): Promise<PreviewRunJSResult> {
+  const result = await diagnoseRunJS(code, ctx);
   const success = result.issues.length === 0;
   const message = formatRunJSPreviewMessage(result);
   const final = message.length > MAX_MESSAGE_CHARS ? clampText(message, MAX_MESSAGE_CHARS) : message;
