@@ -49,7 +49,7 @@ function enableBufferPrototypeOverrides() {
       }
       Object.defineProperty(this as object, key, {
         configurable: true,
-        enumerable: true,
+        enumerable: descriptor.enumerable,
         writable: true,
         value,
       });
