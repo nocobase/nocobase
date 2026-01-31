@@ -1,15 +1,16 @@
 {
   "name": "@nocobase/plugin-file-previewer-office",
   "displayName": "Office File Previewer",
-  "displayName.ru-RU": "Просмотр офисных файлов",
-  "displayName.zh-CN": "Office 文件预览器",
-  "description": "A flexible file preview plugin supporting Microsoft Online Preview and kkFileView modes for office documents and universal file formats.",
-  "description.ru-RU": "Гибкий плагин предпросмотра файлов с поддержкой Microsoft Online Preview и режимов kkFileView для офисных документов и универсальных форматов файлов.",
-  "description.zh-CN": "灵活的文件预览插件，支持微软在线预览和 kkFileView 两种模式，可预览 Office 文档和所有文件格式。",
-  "version": "2.0.0-beta.15",
+  "displayName.ru-RU": "Просмотр MS Office-файлов",
+  "displayName.zh-CN": "Office 文件预览",
+  "description": "A plugin for previewing office files via Microsoft live preview service.",
+  "description.ru-RU": "Плагин для просмотра Office-файлов через Microsoft live preview service.",
+  "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
+  "version": "2.0.0-beta.17",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

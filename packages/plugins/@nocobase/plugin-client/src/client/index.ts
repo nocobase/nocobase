@@ -8,10 +8,10 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { ClearCache } from './ClearCache';
 import { DesktopRoutesManager } from './DesktopRoutesManager';
 import { lang as t } from './locale';
 import { MobileRoutesManager } from './MobileRoutesManager';
-import { ClearCache } from './ClearCache';
 import { RestartApplication } from './RestartApplication';
 
 class PluginClient extends Plugin {
@@ -50,7 +50,7 @@ class PluginClient extends Plugin {
 
     const mobilePlugin: any = this.app.pluginManager.get('@nocobase/plugin-mobile');
 
-    if (mobilePlugin?.options?.enabled) {
+    if (mobilePlugin && !mobilePlugin.options?.options?.deprecated) {
       this.app.pluginSettingsManager.add(`routes.mobile`, {
         title: t('Mobile routes'),
         Component: MobileRoutesManager,

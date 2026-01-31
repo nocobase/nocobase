@@ -156,6 +156,14 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
   );
 }
 
+function OfficeInlinePreviewer({ file }) {
+  const url = useMemo(() => getOfficePreviewUrl(file), [typeof file === 'string' ? file : file?.url]);
+  if (!url) {
+    return null;
+  }
+  return <iframe src={url} width="100%" height="100%" style={{ border: 'none' }} />;
+}
+
 export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
     // Initial fetch to populate cache

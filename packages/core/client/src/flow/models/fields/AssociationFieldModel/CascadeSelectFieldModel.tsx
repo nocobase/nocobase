@@ -9,10 +9,10 @@
 
 import { Cascader, Space, Button } from 'antd';
 import { last } from 'lodash';
-import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
+import { CollectionField, EditableItemModel, tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { debounce, castArray } from 'lodash';
+import { debounce, castArray, omit } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -40,6 +40,15 @@ function buildTree(data, idField = 'id', parentField = 'parentId') {
 
   return tree;
 }
+
+function buildParentChain(options = []) {
+  return options.reduce((parent, cur) => {
+    return {
+      ...cur,
+      parent: parent ? omit(parent, ['children']) : null,
+    };
+  }, null);
+}
 interface Props {
   value: any[]; // 当前选中数组，每一项是 Cascader 的 value
   onChange?: (val: any[]) => void;
@@ -60,7 +69,7 @@ const SortableItem: React.FC<{
   disabled?: boolean;
   others?: any;
   [key: string]: any;
-}> = ({ id, item, index, onChange, onRemove, options, fieldNames, disabled, ...others }) => {
+}> = ({ id, item, index, onChange, onRemove, options, fieldNames, disabled, underDefaultValueConfig, ...others }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -128,8 +137,12 @@ const SortableItem: React.FC<{
           )}
           fieldNames={fieldNames}
           onChange={(value, item) => {
-            const val = last(item);
-            onChange(index, val);
+            if (underDefaultValueConfig) {
+              onChange(index, buildParentChain(item));
+            } else {
+              const val = last(item);
+              onChange(index, val);
+            }
           }}
           changeOnSelect
           disabled={disabled}
@@ -255,6 +268,7 @@ export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
 }
 
 const ToOneCascadeSelect: React.FC<any> = (props: any) => {
+  const { onChange, onSearch, underDefaultValueConfig, fieldNames, options, disabled } = props;
   const initOptions = buildTree(transformNestedData(props.value));
   const popupClassName = `cascade-scroll-${props.name || props.id}`;
   const bindScroll = () => {
@@ -274,7 +288,7 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
   };
   return (
     <Cascader
-      disabled={props.disabled}
+      disabled={disabled}
       popupClassName={cx(
         popupClassName,
         css`
@@ -296,7 +310,7 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
         `,
       )}
       changeOnSelect
-      options={props.options || initOptions}
+      options={options || initOptions}
       onDropdownVisibleChange={(visible) => {
         props.onDropdownVisibleChange(visible);
         if (visible) {
@@ -305,12 +319,16 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
           }, 100);
         }
       }}
-      fieldNames={props.fieldNames}
+      fieldNames={fieldNames}
       showSearch={true}
-      onSearch={(value) => props.onSearch(value)}
+      onSearch={(value) => onSearch(value)}
       onChange={(value, item) => {
-        const val = last(item);
-        props.onChange(val);
+        if (underDefaultValueConfig) {
+          onChange(buildParentChain(item));
+        } else {
+          const val = last(item);
+          onChange(val);
+        }
       }}
       defaultValue={transformNestedData(props.value).map((v) => {
         return v[props.collectionField.collection.filterTargetKey];
@@ -322,7 +340,13 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
 // 对一
 export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
   render() {
-    return <ToOneCascadeSelect {...this.props} collectionField={this.collectionField} />;
+    return (
+      <ToOneCascadeSelect
+        {...this.props}
+        collectionField={this.collectionField}
+        underDefaultValueConfig={this.use !== 'CascadeSelectFieldModel'}
+      />
+    );
   }
 }
 
@@ -343,6 +367,7 @@ export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
           this.props.onChange(value);
         }}
         value={castArray(this.props.value).filter(Boolean)}
+        underDefaultValueConfig={this.use !== 'CascadeSelectListFieldModel'}
       />
     );
   }
@@ -550,7 +575,7 @@ CascadeSelectInnerFieldModel.registerFlow({
 /** --------------------------- 可视化配置 --------------------------- */
 CascadeSelectInnerFieldModel.registerFlow({
   key: 'selectSettings',
-  title: escapeT('Cascade select settings'),
+  title: tExpr('Cascader select settings'),
   sort: 800,
   steps: {
     fieldNames: { use: 'titleField' },
@@ -560,19 +585,21 @@ CascadeSelectInnerFieldModel.registerFlow({
 });
 
 CascadeSelectFieldModel.define({
-  label: escapeT('Cascade select'),
+  label: tExpr('Cascader'),
 });
 
 CascadeSelectListFieldModel.define({
-  label: escapeT('Cascade select'),
+  label: tExpr('Cascader'),
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
   when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
+  order: 60,
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
+  order: 60,
 });

@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Table as AntdTable, Checkbox, Tag, Select, Input, Form, GetRef, TableProps, theme } from 'antd';
-import type { TableColumnsType } from 'antd';
 import { useT } from '../../../locale';
-import { useApp, useToken } from '@nocobase/client';
+import { useApp, useCollectionManager_deprecated, useRequest } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useFieldInterfaceOptions } from './useFieldInterfaceOptions';
-import { ToolCall } from '../../types';
 import { CollectionDataType, FieldDataType } from '../types';
 
 const editableRowClassName = cx(
@@ -256,6 +254,7 @@ const useColumns = (
 };
 
 const useExpandColumns = (
+  record: CollectionDataType,
   collectionIndex: number,
   updateFieldRecord: (collectionIndex: number, fieldIndex: number, field: FieldDataType) => Promise<void>,
 ) => {
@@ -295,12 +294,70 @@ const useExpandColumns = (
       key: 'interface',
       editable: true,
       EditComponent: ({ interface: value, save, ref }) => {
+        const result = useRequest<{
+          data: {
+            database: {
+              dialect: string;
+            };
+          };
+        }>({
+          url: 'app:getInfo',
+        });
+
         const interfaceOptions = useFieldInterfaceOptions();
         const fieldInterface = fim.getFieldInterface(value);
+        const { getTemplate } = useCollectionManager_deprecated();
+        const { availableFieldInterfaces } = getTemplate(record.template) || {};
+        const { exclude, include } = (availableFieldInterfaces || {}) as any;
+
+        const optionArr = [];
+        interfaceOptions.forEach((v) => {
+          if (v.key === 'systemInfo') {
+            optionArr.push({
+              ...v,
+              options: v.options.filter((v) => {
+                if (v.hidden) {
+                  return false;
+                } else if (v.value === 'tableoid') {
+                  if (include?.length) {
+                    return include.includes(v.value);
+                  }
+                  return result.data?.data?.database?.dialect === 'postgres';
+                } else {
+                  return typeof record[v.value] === 'boolean' ? record[v.value] : true;
+                }
+              }),
+            });
+          } else {
+            let options = [];
+            if (include?.length) {
+              include.forEach((k) => {
+                const field = v?.options?.find((h) => [k, k.interface].includes(h.name));
+                field &&
+                  options.push({
+                    ...field,
+                    targetScope: k?.targetScope,
+                  });
+              });
+            } else if (exclude?.length) {
+              options = v?.options?.filter((v) => {
+                return !exclude.includes(v.name);
+              });
+            } else {
+              options = v?.options;
+            }
+            options?.length &&
+              optionArr.push({
+                ...v,
+                options: options.filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name)),
+              });
+          }
+        });
+
         return (
           <Select
             ref={ref}
-            options={interfaceOptions}
+            options={optionArr}
             defaultValue={fieldInterface ? Schema.compile(fieldInterface.title, { t }) : value}
             onBlur={save}
           />
@@ -443,7 +500,7 @@ const ExpandedCollectionRowRender: React.FC<{
   collectionIndex: number;
   updateFieldRecord: (collectionIndex: number, fieldIndex: number, field: FieldDataType) => Promise<void>;
 }> = ({ record, collectionIndex, updateFieldRecord }) => {
-  const expandColumns = useExpandColumns(collectionIndex, updateFieldRecord);
+  const expandColumns = useExpandColumns(record, collectionIndex, updateFieldRecord);
 
   return (
     <AntdTable<FieldDataType>

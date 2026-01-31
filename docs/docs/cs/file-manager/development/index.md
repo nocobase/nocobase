@@ -2,16 +2,15 @@
 Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
 :::
 
-
 # Vývoj rozšíření
 
 ## Rozšíření úložných mechanismů
 
 ### Na straně serveru
 
-1.  **Dědění z `StorageType`**
-
-    Vytvořte novou třídu a implementujte metody `make()` a `delete()`. V případě potřeby přepište hooky jako `getFileURL()`, `getFileStream()` nebo `getFileData()`.
+1. **Zdědit `StorageType`**
+   
+   Vytvořte novou třídu a implementujte metody `make()` a `delete()`. Podle potřeby přepište hooky jako `getFileURL()`, `getFileStream()` a `getFileData()`.
 
 Příklad:
 
@@ -49,8 +48,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4.  **Registrace nového typu**  
-    Novou implementaci úložiště vložte do životního cyklu pluginu `beforeLoad` nebo `load`:
+4. **Zaregistrovat nový typ**  
+   Vložte novou implementaci úložiště do životního cyklu `beforeLoad` nebo `load` pluginu:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -66,145 +65,113 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Po registraci se konfigurace úložiště objeví v rámci zdroje `storages` stejně jako vestavěné typy. Konfigurace poskytnutá metodou `StorageType.defaults()` může být použita pro automatické vyplňování formulářů nebo inicializaci výchozích záznamů.
+Po registraci se konfigurace úložiště objeví ve zdroji `storages`, stejně jako u vestavěných typů. Konfiguraci poskytovanou `StorageType.defaults()` lze použít pro automatické vyplnění formulářů nebo inicializaci výchozích záznamů.
 
-### Konfigurace na straně klienta a rozhraní pro správu
-Na straně klienta je potřeba informovat správce souborů, jak má vykreslit konfigurační formulář a zda existuje vlastní logika nahrávání. Každý objekt typu úložiště obsahuje následující vlastnosti:
+<!--
+### Konfigurace na straně klienta a správa
+Na straně klienta je potřeba říct správci souborů, jak vykreslit konfigurační formulář a zda existuje vlastní logika nahrávání. Každý objekt typu úložiště obsahuje následující vlastnosti:
+-->
 
 ## Rozšíření typů souborů na frontendu
 
-Pro již nahrané soubory můžete na frontendu zobrazovat různý obsah náhledu v závislosti na jejich typu. Pole příloh správce souborů má vestavěný náhled souborů založený na prohlížeči (vložený do iframe), který podporuje přímé prohlížení většiny formátů souborů (jako jsou obrázky, videa, audio a PDF) přímo v prohlížeči. Pokud formát souboru není podporován pro náhled v prohlížeči, nebo pokud jsou vyžadovány speciální interakce s náhledem, můžete toho dosáhnout rozšířením komponenty náhledu založené na typu souboru.
+U nahraných souborů můžete v uživatelském rozhraní zobrazovat různé náhledy podle typu souboru. Pole příloh správce souborů obsahuje vestavěný náhled založený na prohlížeči (vložený v iframe), který podporuje náhled většiny formátů (např. obrázky, video, audio a PDF) přímo v prohlížeči. Pokud prohlížeč nepodporuje daný formát nebo jsou potřeba speciální interakce, můžete rozšířit komponentu náhledu podle typu souboru.
 
 ### Příklad
 
-Pokud například chcete rozšířit typ souboru obrázku o komponentu pro přepínání karuselu, můžete použít následující kód:
+Pokud chcete například přidat vlastní online náhled pro soubory Office, můžete použít následující kód:
 
 ```tsx
-import React, { useCallback } from 'react';
-import match from 'mime-match';
-import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Plugin, matchMimetype } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 class MyPlugin extends Plugin {
   load() {
-    attachmentFileTypes.add({
+    filePreviewTypes.add({
       match(file) {
-        return match(file.mimetype, 'image/*');
+        return matchMimetype(file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       },
-      Previewer({ index, list, onSwitchIndex }) {
-        const onDownload = useCallback(
-          (e) => {
-            e.preventDefault();
-            const file = list[index];
-            saveAs(file.url, `${file.title}${file.extname}`);
-          },
-          [index, list],
-        );
-        return (
-          <LightBox
-            // discourageDownloads={true}
-            mainSrc={list[index]?.url}
-            nextSrc={list[(index + 1) % list.length]?.url}
-            prevSrc={list[(index + list.length - 1) % list.length]?.url}
-            onCloseRequest={() => onSwitchIndex(null)}
-            onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-            onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-            imageTitle={list[index]?.title}
-            toolbarButtons={[
-              <button
-                key={'preview-img'}
-                style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-                type="button"
-                aria-label="Download"
-                title="Download"
-                className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-                onClick={onDownload}
-              >
-                <DownloadOutlined />
-              </button>,
-            ]}
-          />
-        );
+      Previewer({ file }) {
+        const url = useMemo(() => {
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+          u.searchParams.set('src', src);
+          return u.href;
+        }, [file.url]);
+        return <iframe src={url} width="100%" height="600px" style={{ border: 'none' }} />;
       },
     });
   }
 }
 ```
 
-Zde je `attachmentFileTypes` vstupní objekt poskytovaný v balíčku `@nocobase/client` pro rozšíření typů souborů. Použijte jeho metodu `add` k rozšíření objektu popisu typu souboru.
+Zde je `filePreviewTypes` vstupní objekt poskytovaný `@nocobase/plugin-file-manager/client` pro rozšíření náhledů souborů. Použijte metodu `add` pro přidání popisu typu souboru.
 
-Každý typ souboru musí implementovat metodu `match()`, která kontroluje, zda typ souboru splňuje požadavky. V příkladu je použita metoda z balíčku `mime-match` pro kontrolu atributu `mimetype` souboru. Pokud se shoduje s typem `image/*`, je považován za typ souboru, který má být zpracován. Pokud shoda nenastane, dojde k návratu na vestavěné zpracování typu.
+Každý typ souboru musí implementovat metodu `match()`, která ověří, zda typ souboru odpovídá požadavkům. V příkladu se `matchMimetype` používá ke kontrole atributu `mimetype` souboru. Pokud odpovídá typu `docx`, je považován za typ, který se má zpracovat. Pokud neodpovídá, použije se vestavěné zpracování.
 
-Vlastnost `Previewer` na objektu popisu typu je komponenta použitá pro náhled. Když se typ souboru shoduje, tato komponenta se vykreslí pro zobrazení náhledu. Obecně se doporučuje použít komponentu typu dialogu (například `<Modal />`) jako základní kontejner a poté do ní umístit náhled a interaktivní obsah pro implementaci funkce náhledu.
+Vlastnost `Previewer` v popisu typu je komponenta pro náhled. Když typ souboru odpovídá, komponenta se vykreslí v dialogu náhledu. Můžete vrátit libovolný React view (například iframe, přehrávač nebo graf).
 
 ### API
 
 ```ts
-export interface FileModel {
-  id: number;
-  filename: string;
-  path: string;
-  title: string;
-  url: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface PreviewerProps {
+export interface FilePreviewerProps {
+  file: any;
   index: number;
-  list: FileModel[];
-  onSwitchIndex(index): void;
+  list: any[];
 }
 
-export interface AttachmentFileType {
+export interface FilePreviewType {
   match(file: any): boolean;
-  Previewer?: React.ComponentType<PreviewerProps>;
+  getThumbnailURL?: (file: any) => string | null;
+  Previewer?: React.ComponentType<FilePreviewerProps>;
 }
 
-export class AttachmentFileTypes {
-  add(type: AttachmentFileType): void;
+export class FilePreviewTypes {
+  add(type: FilePreviewType): void;
 }
 ```
 
-#### `attachmentFileTypes`
+#### `filePreviewTypes`
 
-`attachmentFileTypes` je globální instance, kterou importujete z `@nocobase/client`:
+`filePreviewTypes` je globální instance importovaná z `@nocobase/plugin-file-manager/client`:
 
 ```ts
-import { attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 ```
 
-#### `attachmentFileTypes.add()`
+#### `filePreviewTypes.add()`
 
-Registruje nový objekt popisu typu souboru do registru typů souborů. Typ popisného objektu je `AttachmentFileType`.
+Registruje nový popis typu souboru v registru typů. Typ popisu je `FilePreviewType`.
 
-#### `AttachmentFileType`
+#### `FilePreviewType`
 
 ##### `match()`
 
-Metoda pro shodu formátu souboru.
+Metoda pro porovnání formátu souboru.
 
-Vstupní parametr `file` je datový objekt nahraného souboru, který obsahuje relevantní vlastnosti použitelné pro určení typu:
+Vstupní parametr `file` je datový objekt nahraného souboru a obsahuje relevantní vlastnosti pro kontrolu typu:
 
-*   `mimetype`: popis mimetype
-*   `extname`: přípona souboru, včetně „.“
-*   `path`: relativní cesta k úložišti souboru
-*   `url`: URL souboru
+* `mimetype`: popis mimetype
+* `extname`: přípona souboru včetně "."
+* `path`: relativní cesta uložení souboru
+* `url`: URL souboru
 
-Vrací hodnotu typu `boolean`, která indikuje výsledek shody.
+Vrací hodnotu `boolean`, která označuje shodu.
+
+##### `getThumbnailURL`
+
+Vrací URL miniatury používané v seznamu souborů. Pokud je návratová hodnota prázdná, použije se vestavěný zástupný obrázek.
 
 ##### `Previewer`
 
 React komponenta pro náhled souborů.
 
-Příchozí parametry Props jsou:
+Předávané props jsou:
 
-*   `index`: index souboru v seznamu příloh
-*   `list`: seznam příloh
-*   `onSwitchIndex`: metoda pro přepínání indexu
+* `file`: aktuální objekt souboru (může být řetězcová URL nebo objekt obsahující `url`/`preview`)
+* `index`: index souboru v seznamu
+* `list`: seznam souborů
 
-Metodě `onSwitchIndex` můžete předat libovolný index ze seznamu `list` pro přepnutí na jiný soubor. Pokud jako argument předáte `null`, komponenta náhledu se přímo zavře.
-
-```ts
-onSwitchIndex(null);
-```

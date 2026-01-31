@@ -7,30 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  UploadOutlined,
-  PlusOutlined,
-  DownloadOutlined,
-  LeftOutlined,
-  RightOutlined,
-  RotateLeftOutlined,
-  RotateRightOutlined,
-  SwapOutlined,
-  UndoOutlined,
-  ZoomInOutlined,
-  ZoomOutOutlined,
-} from '@ant-design/icons';
+import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
-import { Image, Space, Alert } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
 import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
-import { FieldModel } from '../base';
-import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
-import { matchMimetype, getThumbnailPlaceholderURL } from '../../../schema-component/antd/upload/shared';
+import { FieldModel, RecordPickerContent } from '@nocobase/client';
+import { FilePreviewRenderer, getPreviewThumbnailUrl } from '../previewer/filePreviewTypes';
 
 export const CardUpload = (props) => {
   const {
@@ -68,23 +54,26 @@ export const CardUpload = (props) => {
     setPreviewOpen(true);
   };
 
-  const goToPreviousImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : fileList.length - 1));
-    const file = fileList[currentImageIndex - 1];
-    setPreviewImage(file);
+  const switchPreviewIndex = (nextIndex: number) => {
+    if (nextIndex < 0 || nextIndex >= fileList.length) {
+      return;
+    }
+    setCurrentImageIndex(nextIndex);
+    setPreviewImage(fileList[nextIndex]);
   };
-
-  const goToNextImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex < fileList.length - 1 ? prevIndex + 1 : 0));
-    const file = fileList[currentImageIndex + 1];
-    setPreviewImage(file);
-  };
-  const onDownload = () => {
-    const url = previewImage.url || previewImage.preview;
+  const onDownload = (file?: any) => {
+    const target = file || previewImage;
+    if (!target) {
+      return;
+    }
+    const url = target.url || target.preview;
+    if (!url) {
+      return;
+    }
     const cleanUrl = url.split('?')[0].split('#')[0];
     const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
     const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
-    const filename = `${Date.now()}_${previewImage.filename}${suffix}`;
+    const filename = `${Date.now()}_${target.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())
@@ -104,7 +93,7 @@ export const CardUpload = (props) => {
     return data.map((file) => {
       return {
         ...file,
-        thumbUrl: matchMimetype(file, 'image/*') ? file.preview || file.url : getThumbnailPlaceholderURL(file),
+        thumbUrl: getPreviewThumbnailUrl(file),
       };
     });
   };
@@ -173,97 +162,15 @@ export const CardUpload = (props) => {
         </Upload>
 
         {previewImage && (
-          <Image
-            wrapperStyle={{ display: 'none' }}
-            preview={{
-              visible: previewOpen,
-              onVisibleChange: (visible) => setPreviewOpen(visible),
-              afterOpenChange: (visible) => !visible && setPreviewImage(null),
-              toolbarRender: (
-                _,
-                {
-                  transform: { scale },
-                  actions: { onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
-                },
-              ) => (
-                <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
-                  <LeftOutlined
-                    style={{
-                      cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
-                    }}
-                    disabled={currentImageIndex === 0}
-                    onClick={() => currentImageIndex !== 0 && goToPreviousImage()}
-                  />
-
-                  <RightOutlined
-                    style={{
-                      cursor: currentImageIndex === fileList.length - 1 ? 'not-allowed' : 'pointer',
-                    }}
-                    disabled={currentImageIndex === fileList.length - 1}
-                    onClick={() => currentImageIndex !== value.length - 1 && goToNextImage()}
-                  />
-
-                  <DownloadOutlined onClick={onDownload} />
-                  <SwapOutlined rotate={90} onClick={onFlipY} />
-                  <SwapOutlined onClick={onFlipX} />
-                  <RotateLeftOutlined onClick={onRotateLeft} />
-                  <RotateRightOutlined onClick={onRotateRight} />
-                  <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
-                  <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
-                  <UndoOutlined onClick={onReset} />
-                </Space>
-              ),
-              imageRender: (originalNode, info) => {
-                const file: any = info.image;
-                // 根据文件类型决定如何渲染预览
-                if (matchMimetype(file, 'application/pdf')) {
-                  // PDF 文件的预览
-                  return (
-                    <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />
-                  );
-                } else if (matchMimetype(file, 'audio/*')) {
-                  // 音频文件的预览
-                  return (
-                    <audio controls>
-                      <source src={file.url || file.preview} type={file.type} />
-                      {t('Your browser does not support the audio tag.')}
-                    </audio>
-                  );
-                } else if (matchMimetype(file, 'video/*')) {
-                  // 视频文件的预览
-                  return (
-                    <video controls width="100%">
-                      <source src={file.url || file.preview} type={file.type} />
-                      {t('Your browser does not support the video tag.')}
-                    </video>
-                  );
-                } else if (matchMimetype(file, 'text/plain')) {
-                  // 文本文件的预览
-                  return (
-                    <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />
-                  );
-                } else if (matchMimetype(file, 'image/*')) {
-                  // 图片文件的预览
-                  return originalNode;
-                } else {
-                  return (
-                    <Alert
-                      type="warning"
-                      description={
-                        <span>
-                          {t('File type is not supported for previewing,')}
-                          <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-                            {t('download it to preview')}
-                          </a>
-                        </span>
-                      }
-                      showIcon
-                    />
-                  );
-                }
-              },
-            }}
-            src={previewImage.url || previewImage.preview}
+          <FilePreviewRenderer
+            open={previewOpen}
+            file={previewImage}
+            list={fileList}
+            index={currentImageIndex}
+            onOpenChange={setPreviewOpen}
+            onClose={() => setPreviewImage(null)}
+            onSwitchIndex={switchPreviewIndex}
+            onDownload={onDownload}
           />
         )}
         {allowSelectExistingRecord ? (
@@ -627,13 +534,14 @@ UploadFieldModel.registerFlow({
 });
 
 UploadFieldModel.define({
-  label: tExpr('Upload'),
+  label: tExpr('File picker'),
 });
 EditableItemModel.bindModelToInterface(
   'UploadFieldModel',
   ['attachment', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   {
     isDefault: true,
+    order: 30,
     when: (ctx, field) => {
       if (field.targetCollection) {
         return field.targetCollection.template === 'file';

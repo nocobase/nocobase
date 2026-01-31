@@ -337,10 +337,10 @@
   resolved "https://registry.npmmirror.com/@antfu/utils/-/utils-0.7.7.tgz#26ea493a831b4f3a85475e7157be02fb4eab51fb"
   integrity sha512-gFPqTG7otEJ8uP6wrhDv6mqwGWYZKNvAcCq6u9hOj0c+IKCEsY4L1oC9trPq2SaWIzAfHvqfBDxF591JkMf+kg==
 
-"@anthropic-ai/sdk@^0.65.0":
-  version "0.65.0"
-  resolved "https://registry.npmmirror.com/@anthropic-ai/sdk/-/sdk-0.65.0.tgz#3f464fe2029eacf8e7e7fb8197579d00c8ca7502"
-  integrity sha512-zIdPOcrCVEI8t3Di40nH4z9EoeyGZfXbYSvWdDLsB/KkaSYMnEgC7gmcgWu83g2NTn1ZTpbMvpdttWDGGIk6zw==
+"@anthropic-ai/sdk@^0.71.0":
+  version "0.71.2"
+  resolved "https://registry.npmmirror.com/@anthropic-ai/sdk/-/sdk-0.71.2.tgz#1e3e08a7b2c3129828480a3d0ca4487472fdde3d"
+  integrity sha512-TGNDEUuEstk/DKu0/TflXAEt+p+p/WhTlFzEnoosvbaDU2LTjm42igSdlL0VijrKpWejtOKxX0b8A7uc+XiSAQ==
   dependencies:
     json-schema-to-ts "^3.1.1"
 
@@ -2760,6 +2760,13 @@
   resolved "https://registry.npmmirror.com/@babel/regjsgen/-/regjsgen-0.8.0.tgz#f0ba69b075e1f05fb2825b7fad991e7adbb18310"
   integrity sha512-x/rqGMdzj+fWZvCOYForTghzbtqPDZ5gPwaoNGHdgDfF2QA/XZbCBp4Moo5scrkAMPhB7z26XM/AaHuIJdgauA==
 
+"@babel/runtime-corejs3@^7.15.4":
+  version "7.28.4"
+  resolved "https://registry.npmmirror.com/@babel/runtime-corejs3/-/runtime-corejs3-7.28.4.tgz#c25be39c7997ce2f130d70b9baecb8ed94df93fa"
+  integrity sha512-h7iEYiW4HebClDEhtvFObtPmIvrd1SSfpI9EhOeKk4CtIK/ngBWFpuhCzhdmRKtg71ylcue+9I6dv54XYO1epQ==
+  dependencies:
+    core-js-pure "^3.43.0"
+
 "@babel/runtime@7.23.2":
   version "7.23.2"
   resolved "https://registry.npmmirror.com/@babel/runtime/-/runtime-7.23.2.tgz#062b0ac103261d68a966c4c7baf2ae3e62ec3885"
@@ -5059,70 +5066,107 @@
     koa-compose "^4.1.0"
     path-to-regexp "^6.3.0"
 
-"@langchain/anthropic@^0.3.34":
-  version "0.3.34"
-  resolved "https://registry.npmmirror.com/@langchain/anthropic/-/anthropic-0.3.34.tgz#ff131b9b612a76d7e97d960058efe3f0ccad8179"
-  integrity sha512-8bOW1A2VHRCjbzdYElrjxutKNs9NSIxYRGtR+OJWVzluMqoKKh2NmmFrpPizEyqCUEG2tTq5xt6XA1lwfqMJRA==
+"@langchain/anthropic@^1.3.7":
+  version "1.3.7"
+  resolved "https://registry.npmmirror.com/@langchain/anthropic/-/anthropic-1.3.7.tgz#a0a51faea2b6a46ddb42c9fd82f58af1343f24a3"
+  integrity sha512-tuj877NsygqpQXdv1QCnhcycRNntZnv8S86oY4/0TEkq4aKqyB8VfCcKxcf03EdKufdPkF6phmWY59czV2CM0g==
   dependencies:
-    "@anthropic-ai/sdk" "^0.65.0"
-    fast-xml-parser "^4.4.1"
+    "@anthropic-ai/sdk" "^0.71.0"
+    zod "^3.25.76 || ^4"
 
-"@langchain/core@^0.3.61":
-  version "0.3.61"
-  resolved "https://registry.npmjs.org/@langchain/core/-/core-0.3.61.tgz#73e0f7971e99bd45985d2ba58229e41b93b6149d"
-  integrity sha512-4O7fw5SXNSE+uBnathLQrhm3t+7dZGagt/5kt37A+pXw0AkudxEBvveg73sSnpBd9SIz3/Vc7F4k8rCKXGbEDA==
+"@langchain/community@^0.3.50":
+  version "0.3.57"
+  resolved "https://registry.npmmirror.com/@langchain/community/-/community-0.3.57.tgz#7c5e7dfdf90d764df4314944eb6de3a8a2eaa86b"
+  integrity sha512-xUe5UIlh1yZjt/cMtdSVlCoC5xm/RMN/rp+KZGLbquvjQeONmQ2rvpCqWjAOgQ6SPLqKiXvoXaKSm20r+LHISw==
+  dependencies:
+    "@langchain/openai" ">=0.2.0 <0.7.0"
+    "@langchain/weaviate" "^0.2.0"
+    binary-extensions "^2.2.0"
+    expr-eval "^2.0.2"
+    flat "^5.0.2"
+    js-yaml "^4.1.0"
+    langchain ">=0.2.3 <0.3.0 || >=0.3.4 <0.4.0"
+    langsmith "^0.3.67"
+    uuid "^10.0.0"
+    zod "^3.25.32"
+
+"@langchain/core@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.npmmirror.com/@langchain/core/-/core-1.1.12.tgz#cd7aad4d118a7808ed66adf138d4a774816d0280"
+  integrity sha512-sHWLvhyLi3fntlg3MEPB89kCjxEX7/+imlIYJcp6uFGCAZfGxVWklqp22HwjT1szorUBYrkO8u0YA554ReKxGQ==
   dependencies:
     "@cfworker/json-schema" "^4.0.2"
     ansi-styles "^5.0.0"
     camelcase "6"
     decamelize "1.2.0"
     js-tiktoken "^1.0.12"
-    langsmith "^0.3.33"
+    langsmith ">=0.4.0 <1.0.0"
     mustache "^4.2.0"
     p-queue "^6.6.2"
-    p-retry "4"
     uuid "^10.0.0"
-    zod "^3.25.32"
-    zod-to-json-schema "^3.22.3"
+    zod "^3.25.76 || ^4"
 
-"@langchain/deepseek@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.npmjs.org/@langchain/deepseek/-/deepseek-0.0.2.tgz#ffd9dba8fb9b3413aa19ed0db889c2d37dc24de3"
-  integrity sha512-u13KbPUXW7uhcybbRzYdRroBgqVUSgG0SJM15c7Etld2yjRQC2c4O/ga9eQZdLh/kaDlQfH/ZITFdjHe77RnGw==
+"@langchain/deepseek@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.npmmirror.com/@langchain/deepseek/-/deepseek-1.0.4.tgz#31ac7aa9ce991886f0a6b5a296941d754a7fc3eb"
+  integrity sha512-+uHdfPQoIjb3MQtYxF1nFqeCC9cgLlscD/1ZNJ0KSACyV66fVX3L3lbscu7Ll2fvJuiRtdQDUpLLgq+0GHfU0g==
   dependencies:
-    "@langchain/openai" "^0.5.5"
+    "@langchain/openai" "1.2.1"
 
-"@langchain/google-genai@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.npmmirror.com/@langchain/google-genai/-/google-genai-1.0.3.tgz#ea0bc15fd46a01e9b68dabdc5aba042b9f1026ae"
-  integrity sha512-ZN3f6SPFZI3FMjJ1C0y5A/lWlZ/x+A9RoIKg1PNYdX6bEu7/BR7oz0dYYI2+YGl3TRp1u75e3SzzL0MxmfWfDA==
+"@langchain/google-genai@^2.1.7":
+  version "2.1.7"
+  resolved "https://registry.npmmirror.com/@langchain/google-genai/-/google-genai-2.1.7.tgz#94419008d7891fafad179ec676572c9f27172611"
+  integrity sha512-K63TGK0XlhUkhy+Vt1SRBfVIa+sq5bTfZF56zL+Wey/mR9VZx60gBCtIBofTa3wlQuPZzLtMZaawKRN3cWXlqw==
   dependencies:
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
 
-"@langchain/ollama@^0.1.1":
-  version "0.1.6"
-  resolved "https://registry.npmmirror.com/@langchain/ollama/-/ollama-0.1.6.tgz#54efddc514ef0e88ea138a61a085d7b7e8c1681b"
-  integrity sha512-hS+xHiRqKpq37eGyZQ0JoTghfNA7hWXK54XbILQ0KVm3v2MMWLKqBAep4LwMLrAr4NE7SIp+SJnQRdsjabR0jw==
+"@langchain/langgraph-checkpoint@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmmirror.com/@langchain/langgraph-checkpoint/-/langgraph-checkpoint-1.0.0.tgz#ece2ede439d0d0b0b532c4be7817fd5029afe4f8"
+  integrity sha512-xrclBGvNCXDmi0Nz28t3vjpxSH6UYx6w5XAXSiiB1WEdc2xD2iY/a913I3x3a31XpInUW/GGfXXfePfaghV54A==
   dependencies:
-    ollama "^0.5.12"
     uuid "^10.0.0"
-    zod "^3.24.1"
-    zod-to-json-schema "^3.24.1"
 
-"@langchain/openai@^0.5.5":
-  version "0.5.16"
-  resolved "https://registry.npmjs.org/@langchain/openai/-/openai-0.5.16.tgz#83d0463c167b9c9dfa877fbc4073fa148c76de9b"
-  integrity sha512-TqzPE3PM0bMkQi53qs8vCFkwaEp3VgwGw+s1e8Nas5ICCZZtc2XqcDPz4hf2gpo1k7/AZd6HuPlAsDy6wye9Qw==
+"@langchain/langgraph-sdk@~1.5.0":
+  version "1.5.3"
+  resolved "https://registry.npmmirror.com/@langchain/langgraph-sdk/-/langgraph-sdk-1.5.3.tgz#aaf667f9088fa82891e66860306b9c5aa8f514db"
+  integrity sha512-8ycRjOGsBafxvCpHyCGaWhd3s7UEXEYIEPO/vipebEzQuYaeF+E9MxS9uFSVaX1ZcNuqQNTosnBJG4ZUtirzuw==
+  dependencies:
+    p-queue "^9.0.1"
+    p-retry "^7.1.1"
+    uuid "^13.0.0"
+
+"@langchain/langgraph@^1.0.0":
+  version "1.0.15"
+  resolved "https://registry.npmmirror.com/@langchain/langgraph/-/langgraph-1.0.15.tgz#e597fd0430f211d536220ef6ac0cd9c5ac7693b2"
+  integrity sha512-l7/f255sPilanhyY+lbX+VDXQSnytFwJ4FVoEl4OBpjDoCHuDyHUL5yrb568apBSHgQA7aKsYac0mBEqIR5Bjg==
+  dependencies:
+    "@langchain/langgraph-checkpoint" "^1.0.0"
+    "@langchain/langgraph-sdk" "~1.5.0"
+    uuid "^10.0.0"
+
+"@langchain/ollama@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.npmmirror.com/@langchain/ollama/-/ollama-1.1.0.tgz#2d0a4f19fe1f462057736b1cfef9a6eabf231465"
+  integrity sha512-kEP0zvj+xtJ84QcK1ALKkz71ynpWMgzXbASzabMhkRAMSN/wTVm28HUNPRDHxbS9+BZnq1zcZeuzOf29XCal5g==
+  dependencies:
+    ollama "^0.6.3"
+    uuid "^10.0.0"
+
+"@langchain/openai@1.2.1", "@langchain/openai@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.npmmirror.com/@langchain/openai/-/openai-1.2.1.tgz#6b005036557f449feab693e2817705f27c018bb5"
+  integrity sha512-eZYPhvXIwz0/8iCjj2LWqeaznQ7DZ6tBdvF+Ebv4sQW2UqJWZqRC8QIdKZgTbs8ffMWPHkSSOidYqu4XfWCNYg==
   dependencies:
     js-tiktoken "^1.0.12"
-    openai "^5.3.0"
-    zod "^3.25.32"
+    openai "^6.10.0"
+    zod "^3.25.76 || ^4"
 
-"@langchain/openai@^0.6.13":
-  version "0.6.13"
-  resolved "https://registry.npmjs.org/@langchain/openai/-/openai-0.6.13.tgz#87662cc27ee22ef075e2c7bbc9050c8a25fb0007"
-  integrity sha512-+QCVag3J2MeFxLMPjjYYpDCBKbmrK7D/xQGq+iWBGpNSg/08vnx7pEkkhiL2NTFIHiYu7w/7EG3UHQ8gOK/cag==
+"@langchain/openai@>=0.1.0 <0.7.0", "@langchain/openai@>=0.2.0 <0.7.0":
+  version "0.6.16"
+  resolved "https://registry.npmmirror.com/@langchain/openai/-/openai-0.6.16.tgz#fed8bc90127d15255e0e4ee527c7eadb75b21e9c"
+  integrity sha512-v9INBOjE0w6ZrUE7kP9UkRyNsV7daH7aPeSOsPEJ35044UI3udPHwNduQ8VmaOUsD26OvSdg1b1GDhrqWLMaRw==
   dependencies:
     js-tiktoken "^1.0.12"
     openai "5.12.2"
@@ -8081,6 +8125,18 @@
   version "1.3.7"
   resolved "https://registry.npmmirror.com/@types/accepts/-/accepts-1.3.7.tgz#3b98b1889d2b2386604c2bbbe62e4fb51e95b265"
   integrity sha512-Pay9fq2lM2wXPWbteBsRAGiWH2hig4ZE2asK+mm7kUzlxRTfL961rj89I6zV/E3PcIkDqyuBEcMxFT7rccugeQ==
+  dependencies:
+    "@types/node" "*"
+
+"@types/ali-oss@^6.16.11":
+  version "6.23.0"
+  resolved "https://registry.npmmirror.com/@types/ali-oss/-/ali-oss-6.23.0.tgz#c7668d1b8a3a648144866b1b331c4e3b0f437001"
+  integrity sha512-1qUcJuD8CunaTVyBS1hx/CNZQntj5ghM4+lSoDZ/fnNYUKc53PBzBu1z/tCmMV/VE4vLCjf7rTaXd2d93nCUbA==
+
+"@types/amqplib@^0.10.7":
+  version "0.10.8"
+  resolved "https://registry.npmmirror.com/@types/amqplib/-/amqplib-0.10.8.tgz#23f2945d055e9fd583da672aa5ec0c7350b9e4e6"
+  integrity sha512-vtDp8Pk1wsE/AuQ8/Rgtm6KUZYqcnTgNvEHwzCkX8rL7AGsC6zqAfKAAJhUZXFhM/Pp++tbnUHiam/8vVpPztA==
   dependencies:
     "@types/node" "*"
 
@@ -13256,6 +13312,11 @@ core-js-pure@^3.23.3:
   resolved "https://registry.npmmirror.com/core-js-pure/-/core-js-pure-3.34.0.tgz#981e462500708664c91b827a75b011f04a8134a0"
   integrity sha512-pmhivkYXkymswFfbXsANmBAewXx86UBfmagP+w0wkK06kLsLlTK5oQmsURPivzMkIBQiYq2cjamcZExIwlFQIg==
 
+core-js-pure@^3.43.0:
+  version "3.47.0"
+  resolved "https://registry.npmmirror.com/core-js-pure/-/core-js-pure-3.47.0.tgz#1104df8a3b6eb9189fcc559b5a65b90f66e7e887"
+  integrity sha512-BcxeDbzUrRnXGYIVAGFtcGQVNpFcUhVjr6W7F8XktvQW2iJP9e66GP6xdKotCRFlrxBvNIBrhwKteRXqMV86Nw==
+
 core-js@3.28.0:
   version "3.28.0"
   resolved "https://registry.npmmirror.com/core-js/-/core-js-3.28.0.tgz#ed8b9e99c273879fdfff0edfc77ee709a5800e4a"
@@ -16674,13 +16735,6 @@ fast-xml-parser@4.4.1:
   dependencies:
     strnum "^1.0.5"
 
-fast-xml-parser@^4.4.1:
-  version "4.5.3"
-  resolved "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-4.5.3.tgz#c54d6b35aa0f23dc1ea60b6c884340c006dc6efb"
-  integrity sha512-RKihhV+SHsIUGXObeVy9AXiBbFwkVk7Syp8XgwN5U3JV416+Gwp/GO9i0JYKmikykgz/UHRrrV4ROuZEo/T0ig==
-  dependencies:
-    strnum "^1.1.1"
-
 fastq@^1.6.0:
   version "1.15.0"
   resolved "https://registry.npmmirror.com/fastq/-/fastq-1.15.0.tgz#d04d07c6a2a68fe4599fea8d2e103a937fae6b3a"
@@ -19762,6 +19816,11 @@ is-negative-zero@^2.0.3:
   resolved "https://registry.npmmirror.com/is-negative-zero/-/is-negative-zero-2.0.3.tgz#ced903a027aca6381b777a5743069d7376a49747"
   integrity sha512-5KoIu2Ngpyek75jXodFvnafB6DJgr3u8uuK0LEZJjrU19DrMD3EVERaR8sjz8CCGgpZvxPl9SuE1GMVPFHx1mw==
 
+is-network-error@^1.1.0:
+  version "1.3.0"
+  resolved "https://registry.npmmirror.com/is-network-error/-/is-network-error-1.3.0.tgz#2ce62cbca444abd506f8a900f39d20b898d37512"
+  integrity sha512-6oIwpsgRfnDiyEDLMay/GqCl3HoAtH5+RUKW29gYkL0QA+ipzpDLA16yQs7/RHCSu+BwgbJaOUqa4A99qNVQVw==
+
 is-npm@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmmirror.com/is-npm/-/is-npm-1.0.0.tgz#f2fb63a65e4905b406c86072765a1a4dc793b9f4"
@@ -20921,10 +20980,61 @@ kuler@^2.0.0:
   resolved "https://registry.npmmirror.com/kuler/-/kuler-2.0.0.tgz#e2c570a3800388fb44407e851531c1d670b061b3"
   integrity sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==
 
-langsmith@^0.3.33:
+langchain-gigachat@^0.0.14:
+  version "0.0.14"
+  resolved "https://registry.npmmirror.com/langchain-gigachat/-/langchain-gigachat-0.0.14.tgz#73290a3a3fa6fc8345b35ae997509edfa5aa3598"
+  integrity sha512-8jnHMZI1QqAs98iTdldouT1chiFRTtEnxXHFiQl8th7u/B6Eot0OJfMT5iviCFO6/pMNxYgq0Fzzr29ndaJyEQ==
+  dependencies:
+    gigachat "^0.0.15"
+    uuid "^11.0.5"
+    zod "^3.23.8"
+    zod-to-json-schema "^3.23.5"
+
+"langchain@>=0.2.3 <0.3.0 || >=0.3.4 <0.4.0":
   version "0.3.36"
-  resolved "https://registry.npmjs.org/langsmith/-/langsmith-0.3.36.tgz#2f32197791f7434219ae0033f870ca51c5a0006e"
-  integrity sha512-/NnQSrHqnNxEnjsTB91bHaA1VOzAeRirv/73Go3W8YySMl6QKJXbVNlrN7YWmPwzjFgffbEbFvCBD7F9eiNkuA==
+  resolved "https://registry.npmmirror.com/langchain/-/langchain-0.3.36.tgz#6ab7f4028adae16bf74538aa2127df9fe2fddf02"
+  integrity sha512-PqC19KChFF0QlTtYDFgfEbIg+SCnCXox29G8tY62QWfj9bOW7ew2kgWmPw5qoHLOTKOdQPvXET20/1Pdq8vAtQ==
+  dependencies:
+    "@langchain/openai" ">=0.1.0 <0.7.0"
+    "@langchain/textsplitters" ">=0.0.0 <0.2.0"
+    js-tiktoken "^1.0.12"
+    js-yaml "^4.1.0"
+    jsonpointer "^5.0.1"
+    langsmith "^0.3.67"
+    openapi-types "^12.1.3"
+    p-retry "4"
+    uuid "^10.0.0"
+    yaml "^2.2.1"
+    zod "^3.25.32"
+
+langchain@^1.2.7:
+  version "1.2.7"
+  resolved "https://registry.npmmirror.com/langchain/-/langchain-1.2.7.tgz#dd21a7c1875063b0b98ad77f6e615789876e1f23"
+  integrity sha512-G+3Ftz/08CurJaE7LukQGBf3mCSz7XM8LZeAaFPg391Ru4lT8eLYfG6Fv4ZI0u6EBsPVcOQfaS9ig8nCRmJeqA==
+  dependencies:
+    "@langchain/langgraph" "^1.0.0"
+    "@langchain/langgraph-checkpoint" "^1.0.0"
+    langsmith ">=0.4.0 <1.0.0"
+    uuid "^10.0.0"
+    zod "^3.25.76 || ^4"
+
+"langsmith@>=0.4.0 <1.0.0":
+  version "0.4.5"
+  resolved "https://registry.npmmirror.com/langsmith/-/langsmith-0.4.5.tgz#4a2b23fe3c64bfaaab11269de47c572152bd89a6"
+  integrity sha512-9N4JSQLz6fWiZwVXaiy0erlvNHlC68EtGJZG2OX+1y9mqj7KvKSL+xJnbCFc+ky3JN8s1d6sCfyyDdi4uDdLnQ==
+  dependencies:
+    "@types/uuid" "^10.0.0"
+    chalk "^4.1.2"
+    console-table-printer "^2.12.1"
+    p-queue "^6.6.2"
+    p-retry "4"
+    semver "^7.6.3"
+    uuid "^10.0.0"
+
+langsmith@^0.3.67:
+  version "0.3.74"
+  resolved "https://registry.npmmirror.com/langsmith/-/langsmith-0.3.74.tgz#014d31a9ff7530b54f0d797502abd512ce8fb6fb"
+  integrity sha512-ZuW3Qawz8w88XcuCRH91yTp6lsdGuwzRqZ5J0Hf5q/AjMz7DwcSv0MkE6V5W+8hFMI850QZN2Wlxwm3R9lHlZg==
   dependencies:
     "@types/uuid" "^10.0.0"
     chalk "^4.1.2"
@@ -24301,10 +24411,27 @@ obuf@^1.0.0, obuf@^1.1.2:
   resolved "https://registry.npmmirror.com/obuf/-/obuf-1.1.2.tgz#09bea3343d41859ebd446292d11c9d4db619084e"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
 
-ollama@^0.5.12:
-  version "0.5.18"
-  resolved "https://registry.npmjs.org/ollama/-/ollama-0.5.18.tgz#10b8ee9e5cd840f2003b7bbea1802dd772e6a564"
-  integrity sha512-lTFqTf9bo7Cd3hpF6CviBe/DEhewjoZYd9N/uCe7O20qYTvGqrNOFOBDj3lbZgFWHUgDv5EeyusYxsZSLS8nvg==
+officeparser@^5.2.0:
+  version "5.2.1"
+  resolved "https://registry.npmmirror.com/officeparser/-/officeparser-5.2.1.tgz#b085ba03d166b89993d36ca57c08f871959f1c2c"
+  integrity sha512-APK7/nlaeW3Q/HmzphazVlyktLoi2VfnBd8rrV1JptJuNpD6HtJIWw4h+c2pnlu1wp+ZyBjPxDFcHbC+3NUOpA==
+  dependencies:
+    "@xmldom/xmldom" "^0.8.10"
+    concat-stream "^2.0.0"
+    file-type "^16.5.4"
+    node-ensure "^0.0.0"
+    pdfjs-dist "^5.3.31"
+    yauzl "^3.1.3"
+
+oidc-token-hash@^5.0.3:
+  version "5.2.0"
+  resolved "https://registry.npmmirror.com/oidc-token-hash/-/oidc-token-hash-5.2.0.tgz#be8a8885c7e2478d21a674e15afa31f1bcc4a61f"
+  integrity sha512-6gj2m8cJZ+iSW8bm0FXdGF0YhIQbKrfP4yWTNzxc31U6MOjfEmB1rHvlYvxI1B7t7BCi1F2vYTT6YhtQRG4hxw==
+
+ollama@^0.6.3:
+  version "0.6.3"
+  resolved "https://registry.npmmirror.com/ollama/-/ollama-0.6.3.tgz#b188573dd0ccb3b4759c1f8fa85067cb17f6673c"
+  integrity sha512-KEWEhIqE5wtfzEIZbDCLH51VFZ6Z3ZSa6sIOg/E/tBV8S51flyqBOXi+bRxlOYKDf8i327zG9eSTb8IJxvm3Zg==
   dependencies:
     whatwg-fetch "^3.6.20"
 
@@ -24428,6 +24555,11 @@ openai@^5.3.0:
   version "5.8.2"
   resolved "https://registry.npmjs.org/openai/-/openai-5.8.2.tgz#b12f968618deb87f6231b35a21b590d0b529d70b"
   integrity sha512-8C+nzoHYgyYOXhHGN6r0fcb4SznuEn1R7YZMvlqDbnCuE0FM2mm3T1HiYW6WIcMS/F1Of2up/cSPjLPaWt0X9Q==
+
+openapi-types@^12.1.3:
+  version "12.1.3"
+  resolved "https://registry.npmmirror.com/openapi-types/-/openapi-types-12.1.3.tgz#471995eb26c4b97b7bd356aacf7b91b73e777dd3"
+  integrity sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==
 
 opencollective-postinstall@2.0.3:
   version "2.0.3"
@@ -24671,6 +24803,14 @@ p-queue@^6.6.2:
     eventemitter3 "^4.0.4"
     p-timeout "^3.2.0"
 
+p-queue@^9.0.1:
+  version "9.1.0"
+  resolved "https://registry.npmmirror.com/p-queue/-/p-queue-9.1.0.tgz#846e517c461fb6e3cf8fc09904e57d342ac448b2"
+  integrity sha512-O/ZPaXuQV29uSLbxWBGGZO1mCQXV2BLIwUr59JUU9SoH76mnYvtms7aafH/isNSNGwuEfP6W/4xD0/TJXxrizw==
+  dependencies:
+    eventemitter3 "^5.0.1"
+    p-timeout "^7.0.0"
+
 p-reduce@^2.0.0, p-reduce@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmmirror.com/p-reduce/-/p-reduce-2.1.0.tgz#09408da49507c6c274faa31f28df334bc712b64a"
@@ -24684,12 +24824,24 @@ p-retry@4:
     "@types/retry" "0.12.0"
     retry "^0.13.1"
 
+p-retry@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.npmmirror.com/p-retry/-/p-retry-7.1.1.tgz#7470fdecb1152ba50f1334e48378c9e401330e24"
+  integrity sha512-J5ApzjyRkkf601HpEeykoiCvzHQjWxPAHhyjFcEUP2SWq0+35NKh8TLhpLw+Dkq5TZBFvUM6UigdE9hIVYTl5w==
+  dependencies:
+    is-network-error "^1.1.0"
+
 p-timeout@^3.2.0:
   version "3.2.0"
   resolved "https://registry.npmmirror.com/p-timeout/-/p-timeout-3.2.0.tgz#c7e17abc971d2a7962ef83626b35d635acf23dfe"
   integrity sha512-rhIwUycgwwKcP9yTOOFK/AKsAopjjCakVqLHePO3CC6Mir1Z99xT+R63jZxAT5lFZLa2inS5h+ZS2GvR99/FBg==
   dependencies:
     p-finally "^1.0.0"
+
+p-timeout@^7.0.0:
+  version "7.0.1"
+  resolved "https://registry.npmmirror.com/p-timeout/-/p-timeout-7.0.1.tgz#95680a6aa693c530f14ac337b8bd32d4ec6ae4f0"
+  integrity sha512-AxTM2wDGORHGEkPCt8yqxOTMgpfbEHqF51f/5fJCmwFC3C/zNcGT63SymH2ttOAaiIws2zVg4+izQCjrakcwHg==
 
 p-try@^1.0.0:
   version "1.0.0"
@@ -30206,11 +30358,6 @@ strnum@^1.0.5:
   resolved "https://registry.npmmirror.com/strnum/-/strnum-1.0.5.tgz#5c4e829fe15ad4ff0d20c3db5ac97b73c9b072db"
   integrity sha512-J8bbNyKKXl5qYcR36TIO8W3mVGVHrmmxsd5PAItGkmyzwJvybiw2IVq5nqd0i4LSNSkB/sx9VHllbfFdr9k1JA==
 
-strnum@^1.1.1:
-  version "1.1.2"
-  resolved "https://registry.npmjs.org/strnum/-/strnum-1.1.2.tgz#57bca4fbaa6f271081715dbc9ed7cee5493e28e4"
-  integrity sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==
-
 strong-log-transformer@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmmirror.com/strong-log-transformer/-/strong-log-transformer-2.1.0.tgz#0f5ed78d325e0421ac6f90f7f10e691d6ae3ae10"
@@ -32269,6 +32416,11 @@ uuid@^11.1.0:
   resolved "https://registry.npmjs.org/uuid/-/uuid-11.1.0.tgz#9549028be1753bb934fc96e2bca09bb4105ae912"
   integrity sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==
 
+uuid@^13.0.0:
+  version "13.0.0"
+  resolved "https://registry.npmmirror.com/uuid/-/uuid-13.0.0.tgz#263dc341b19b4d755eb8fe36b78d95a6b65707e8"
+  integrity sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w==
+
 uuid@^3.3.2:
   version "3.4.0"
   resolved "https://registry.npmmirror.com/uuid/-/uuid-3.4.0.tgz#b23e4358afa8a202fe7a100af1f5f883f02007ee"
@@ -33340,17 +33492,21 @@ zip-stream@^4.1.0:
     compress-commons "^4.1.2"
     readable-stream "^3.6.0"
 
-zod-to-json-schema@^3.22.3:
-  version "3.24.3"
-  resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.24.3.tgz#5958ba111d681f8d01c5b6b647425c9b8a6059e7"
-  integrity sha512-HIAfWdYIt1sssHfYZFCXp4rU1w2r8hVVXYIlmoa0r0gABLs5di3RCqPU5DDROogVz1pAdYBaz7HK5n9pSUNs3A==
+zip-stream@^5.0.1:
+  version "5.0.2"
+  resolved "https://registry.npmmirror.com/zip-stream/-/zip-stream-5.0.2.tgz#77b1dce7af291482d368a9203c9029f4eb52e12e"
+  integrity sha512-LfOdrUvPB8ZoXtvOBz6DlNClfvi//b5d56mSWyJi7XbH/HfhOHfUhOqxhT/rUiR7yiktlunqRo+jY6y/cWC/5g==
+  dependencies:
+    archiver-utils "^4.0.1"
+    compress-commons "^5.0.1"
+    readable-stream "^3.6.0"
 
-zod-to-json-schema@^3.24.1:
+zod-to-json-schema@^3.23.5:
   version "3.25.1"
   resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.25.1.tgz#7f24962101a439ddade2bf1aeab3c3bfec7d84ba"
   integrity sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==
 
-zod@^3.24.1:
+zod@^3.23.8:
   version "3.25.76"
   resolved "https://registry.npmmirror.com/zod/-/zod-3.25.76.tgz#26841c3f6fd22a6a2760e7ccb719179768471e34"
   integrity sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==
@@ -33359,6 +33515,16 @@ zod@^3.25.32:
   version "3.25.67"
   resolved "https://registry.npmjs.org/zod/-/zod-3.25.67.tgz#62987e4078e2ab0f63b491ef0c4f33df24236da8"
   integrity sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==
+
+"zod@^3.25.76 || ^4":
+  version "4.3.5"
+  resolved "https://registry.npmmirror.com/zod/-/zod-4.3.5.tgz#aeb269a6f9fc259b1212c348c7c5432aaa474d2a"
+  integrity sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==
+
+zod@^4.0.14:
+  version "4.1.12"
+  resolved "https://registry.npmmirror.com/zod/-/zod-4.1.12.tgz#64f1ea53d00eab91853195653b5af9eee68970f0"
+  integrity sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==
 
 zrender@5.6.1:
   version "5.6.1"
