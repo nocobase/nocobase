@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 export function extractIndex(str) {
   const numbers = [];
   str?.split('.').forEach(function (element) {
@@ -78,3 +78,48 @@ export function getRowKey(record: any, key: string | string[]) {
   }
   return record?.[key] ?? '';
 }
+
+type UseBlockHeightOptions = {
+  heightMode?: string;
+  tableAreaRef: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+};
+
+export const useBlockHeight = ({ heightMode, tableAreaRef, deps = [] }: UseBlockHeightOptions) => {
+  const [scrollY, setScrollY] = useState<number>();
+
+  const calcScrollY = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setScrollY((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const tableArea = tableAreaRef.current;
+    if (!tableArea) return;
+    const areaHeight = tableArea.getBoundingClientRect().height;
+    if (!areaHeight) return;
+    const headerEl = tableArea.querySelector('.ant-table-header') || tableArea.querySelector('.ant-table-thead');
+    const paginationEl = tableArea.querySelector('.ant-table-pagination');
+    const headerHeight = headerEl?.getBoundingClientRect().height ?? 0;
+    const paginationHeight = paginationEl?.getBoundingClientRect().height ?? 0;
+    const nextScrollY = Math.max(0, Math.floor(areaHeight - headerHeight - paginationHeight));
+    setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY));
+  }, [heightMode, tableAreaRef]);
+
+  useLayoutEffect(() => {
+    calcScrollY();
+  }, [calcScrollY, ...deps]);
+
+  useEffect(() => {
+    if (!tableAreaRef.current || typeof ResizeObserver === 'undefined') return;
+    const tableArea = tableAreaRef.current;
+    const headerEl = tableArea.querySelector('.ant-table-header') || tableArea.querySelector('.ant-table-thead');
+    const paginationEl = tableArea.querySelector('.ant-table-pagination');
+    const observer = new ResizeObserver(() => calcScrollY());
+    observer.observe(tableArea);
+    if (headerEl) observer.observe(headerEl);
+    if (paginationEl) observer.observe(paginationEl);
+    return () => observer.disconnect();
+  }, [calcScrollY, tableAreaRef, ...deps]);
+
+  return scrollY;
+};
