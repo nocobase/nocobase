@@ -9,6 +9,7 @@
 
 import { setRunJSLibOverride } from '../runjsLibs';
 import { resolveModuleUrl } from './resolveModuleUrl';
+import { registerRunJSSafeDocumentGlobals, registerRunJSSafeWindowGlobals } from './safeGlobals';
 
 /**
  * RunJS 外部模块加载辅助（浏览器侧）。
@@ -36,6 +37,26 @@ type ParsedPackageSpecifier = {
   version?: string;
   subpath?: string;
 };
+
+function snapshotOwnKeys(obj: any): string[] {
+  try {
+    if (!obj || (typeof obj !== 'object' && typeof obj !== 'function')) return [];
+    return Object.getOwnPropertyNames(obj);
+  } catch (_) {
+    return [];
+  }
+}
+
+function diffAddedKeys(afterKeys: string[], beforeKeys: string[]): string[] {
+  if (!afterKeys.length) return [];
+  if (!beforeKeys.length) return [...afterKeys];
+  const beforeSet = new Set(beforeKeys);
+  const added: string[] = [];
+  for (const k of afterKeys) {
+    if (!beforeSet.has(k)) added.push(k);
+  }
+  return added;
+}
 
 /**
  * 使用全局 Promise 链实现“互斥锁”：
@@ -276,9 +297,14 @@ async function prefetchEsmModule(url: string, options?: { timeoutMs?: number }):
  * - 返回 requirejs 回调的第一个模块值（与现有 `ctx.requireAsync` 行为保持一致）。
  */
 export async function runjsRequireAsync(requirejs: RequireJsLike, url: string): Promise<any> {
-  return await withRunjsModuleLoadLock(
-    () =>
-      new Promise((resolve, reject) => {
+  return await withRunjsModuleLoadLock(async () => {
+    const beforeWinKeys = typeof window !== 'undefined' ? snapshotOwnKeys(window) : [];
+    const beforeDocKeys = typeof document !== 'undefined' ? snapshotOwnKeys(document) : [];
+
+    let result: any;
+    let error: any;
+    try {
+      result = await new Promise((resolve, reject) => {
         if (!requirejs) {
           reject(new Error('requirejs is not available'));
           return;
@@ -290,8 +316,22 @@ export async function runjsRequireAsync(requirejs: RequireJsLike, url: string): 
           },
           reject,
         );
-      }),
-  );
+      });
+    } catch (e) {
+      error = e;
+    } finally {
+      const afterWinKeys = typeof window !== 'undefined' ? snapshotOwnKeys(window) : [];
+      const afterDocKeys = typeof document !== 'undefined' ? snapshotOwnKeys(document) : [];
+      const addedWinKeys = diffAddedKeys(afterWinKeys, beforeWinKeys);
+      const addedDocKeys = diffAddedKeys(afterDocKeys, beforeDocKeys);
+      // Best-effort: allow RunJS safe window/document to access globals introduced by this module load.
+      registerRunJSSafeWindowGlobals(addedWinKeys);
+      registerRunJSSafeDocumentGlobals(addedDocKeys);
+    }
+
+    if (error) throw error;
+    return result;
+  });
 }
 
 /**
