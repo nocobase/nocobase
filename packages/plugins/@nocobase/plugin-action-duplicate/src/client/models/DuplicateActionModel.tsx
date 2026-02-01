@@ -275,6 +275,7 @@ DuplicateActionModel.registerFlow({
                     f.componentProps.defaultCheckedKeys = selectFields;
                     f.setInitialValue(selectFields);
                     f?.onCheck(selectFields);
+                    ctx.message.success(t('Sync successfully'));
                   });
                 },
               );
@@ -282,6 +283,7 @@ DuplicateActionModel.registerFlow({
                 <a
                   onClick={async () => {
                     const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
+                    console.log(model);
                     if (!model) {
                       return;
                     }
