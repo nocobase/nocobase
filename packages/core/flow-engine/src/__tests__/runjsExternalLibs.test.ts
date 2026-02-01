@@ -21,6 +21,7 @@ vi.mock('../utils/runjsModuleLoader', async (importOriginal) => {
 
 import { runjsImportAsync } from '../utils/runjsModuleLoader';
 import { FlowEngine, FlowRunJSContext } from '..';
+import { externalReactRender } from '../runjsLibs';
 
 function newEngine(): FlowEngine {
   const engine = new FlowEngine();
@@ -191,5 +192,51 @@ describe('RunJS external libs', () => {
 
     // cleanup (dispose autorun + unmount root)
     ctx.render('', container);
+  });
+
+  it('should enhance hooks dispatcher-null TypeError with a helpful hint', () => {
+    const original = new TypeError(`Cannot read properties of null (reading 'useMemo')`);
+    // Mimic a real browser stack from ESM CDN where a dependency brings its own React.
+    (original as any).stack = [
+      `TypeError: Cannot read properties of null (reading 'useMemo')`,
+      `    at u.useMemo (https://esm.sh/react@19.2.4/es2022/react.mjs:2:7636)`,
+      `    at to (https://esm.sh/@dnd-kit/core@6.1.0/es2022/core.mjs:6:1574)`,
+    ].join('\n');
+
+    const root = {
+      render: vi.fn(() => {
+        throw original;
+      }),
+      unmount: vi.fn(),
+    };
+
+    const internalReact = {};
+    const internalAntd = {};
+    const ctx: any = {
+      React: internalReact,
+      ReactDOM: { __nbRunjsInternalShim: true },
+      antd: internalAntd,
+    };
+
+    const entry: any = { root };
+    const containerEl = document.createElement('div');
+
+    try {
+      externalReactRender({
+        ctx,
+        entry,
+        vnode: { v: 1 },
+        containerEl,
+        rootMap: new WeakMap(),
+        unmountContainerRoot: vi.fn(),
+        internalReact,
+        internalAntd,
+      });
+      expect.fail('expected externalReactRender to throw');
+    } catch (e: any) {
+      expect(String(e?.message || '')).toContain('[RunJS Hint]');
+      expect(String(e?.message || '')).toContain('await ctx.importAsync("react@19.2.4")');
+      expect(e?.cause).toBe(original);
+    }
   });
 });
