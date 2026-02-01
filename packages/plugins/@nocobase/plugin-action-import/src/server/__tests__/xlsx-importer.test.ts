@@ -2663,7 +2663,11 @@ describe('importer with specical field type', () => {
 
       expect(user3.get('id')).toBe(3);
 
-      expect(testFn).toBeCalled();
+      // In MySQL/SQLite, AUTO_INCREMENT is automatically updated when inserting with explicit id,
+      // so seqReset event is only triggered in PostgreSQL where manual sequence reset is needed
+      if (process.env['DB_DIALECT'] === 'postgres') {
+        expect(testFn).toBeCalled();
+      }
     });
   });
 });
