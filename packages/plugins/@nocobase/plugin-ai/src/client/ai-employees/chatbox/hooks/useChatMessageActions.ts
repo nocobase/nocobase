@@ -27,6 +27,7 @@ export const useChatMessageActions = () => {
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
+  const modelOverride = useChatBoxStore.use.modelOverride();
 
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
@@ -281,6 +282,7 @@ export const useChatMessageActions = () => {
           messages: msgs,
           systemMessage,
           editingMessageId,
+          modelOverride,
         },
         responseType: 'stream',
         adapter: 'fetch',

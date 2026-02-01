@@ -34,6 +34,7 @@ export const useChatBoxActions = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
   const senderRef = useChatBoxStore.use.senderRef();
+  const setModelOverride = useChatBoxStore.use.setModelOverride();
 
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -104,6 +105,7 @@ export const useChatBoxActions = () => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
       clear();
+      setModelOverride(null);
       if (aiEmployee) {
         const greetingMsg = {
           key: uid(),
@@ -125,6 +127,7 @@ export const useChatBoxActions = () => {
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
       clear();
+      setModelOverride(null);
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
       if (!open) {

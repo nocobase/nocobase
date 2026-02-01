@@ -10,6 +10,7 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
 import _ from 'lodash';
+import { getRecommendedModels } from '../../shared/recommended-models';
 
 const aiResource: ResourceOptions = {
   name: 'ai',
@@ -77,7 +78,7 @@ const aiResource: ResourceOptions = {
 
       return next();
     },
-    testFlightModels: async (ctx, next) => {
+    listProviderModels: async (ctx, next) => {
       const { provider, options, model } = ctx.action.params.values ?? {};
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 
@@ -126,6 +127,60 @@ const aiResource: ResourceOptions = {
         },
       });
       ctx.body = await providerClient.testFlight();
+      return next();
+    },
+    checkLLMConfigured: async (ctx, next) => {
+      const count = await ctx.db.getRepository('llmServices').count();
+      ctx.body = { configured: count > 0 };
+      await next();
+    },
+    listAllEnabledModels: async (ctx, next) => {
+      const services = await ctx.db.getRepository('llmServices').find();
+      const llmServices = services
+        .map((service) => {
+          let models: string[] = service.enabledModels || [];
+
+          // If enabledModels is empty and useRecommended is true, use recommended models
+          if (models.length === 0 && service.useRecommended !== false) {
+            models = getRecommendedModels(service.provider);
+          }
+
+          // Skip services with no available models
+          if (models.length === 0) {
+            return null;
+          }
+
+          return {
+            llmService: service.name,
+            llmServiceTitle: service.title,
+            provider: service.provider,
+            enabledModels: models.map((id: string) => ({
+              id,
+              label: id,
+            })),
+            isAutoMode: (service.enabledModels || []).length === 0,
+          };
+        })
+        .filter(Boolean);
+
+      ctx.body = llmServices;
+      await next();
+    },
+    setRuntimeContext: async (ctx, next) => {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const { apis, envs } = ctx.action.params.values ?? {};
+
+      if (!apis && !envs) {
+        ctx.throw(400, 'Missing runtime context data (apis or envs)');
+      }
+
+      plugin.skillManager.setContextData({ apis, envs });
+
+      ctx.body = {
+        success: true,
+        message: 'Runtime context data set successfully',
+      };
+
       return next();
     },
   },

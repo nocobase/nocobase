@@ -95,14 +95,14 @@ export class PluginAIServer extends Plugin {
   }
 
   registerLLMProviders() {
-    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
-    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
-    this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
+    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
-    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
   }
 
   registerTools() {
@@ -272,6 +272,7 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
+    this.app.acl.allow('ai', 'listAllEnabledModels', 'loggedIn');
 
     this.app.acl.allow('aiEmployees', 'listByUser', 'loggedIn');
     this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');

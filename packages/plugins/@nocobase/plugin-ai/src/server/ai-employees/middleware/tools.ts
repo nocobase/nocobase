@@ -17,6 +17,7 @@ export const toolInteractionMiddleware = (_aiEmployee: AIEmployee, tools: ToolOp
   const interruptOn = {};
   for (const tool of tools) {
     interruptOn[tool.name] = tool.execution === 'frontend' || tool.autoCall !== true;
+    // interruptOn[tool.name] = tool.autoCall !== true;
   }
   return humanInTheLoopMiddleware({
     interruptOn,

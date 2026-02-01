@@ -138,11 +138,11 @@ export class PluginAIClient extends Plugin {
   setupAIFeatures() {
     this.app.flowEngine.context.defineProperty(...aiEmployeesData);
 
+    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
+    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
-    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
-    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);

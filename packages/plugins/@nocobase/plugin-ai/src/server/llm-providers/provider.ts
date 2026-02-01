@@ -217,7 +217,6 @@ export abstract class LLMProvider {
   async testFlight(): Promise<{ status: 'success' | 'error'; code: number; message?: string }> {
     try {
       const result = await this.chatModel.invoke('hello');
-      console.log(result);
     } catch (error) {
       return {
         status: 'error',

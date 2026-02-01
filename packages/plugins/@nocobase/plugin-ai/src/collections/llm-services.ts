@@ -37,5 +37,26 @@ export default {
       name: 'options',
       type: 'jsonb',
     },
+    {
+      name: 'enabledModels',
+      type: 'json',
+      defaultValue: [],
+    },
+    {
+      name: 'useRecommended',
+      type: 'boolean',
+      defaultValue: true,
+    },
+    {
+      name: 'modelOptions',
+      type: 'jsonb',
+      defaultValue: {
+        temperature: 1,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        webSearch: false,
+      },
+    },
   ],
 };

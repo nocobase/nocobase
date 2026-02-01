@@ -7,8 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-
-export const ProviderSettingsForm: React.FC = () => {
-  return null;
-};
+// Re-export from shared location
+export { recommendedModels, isRecommendedModel, getRecommendedModels } from '../../shared/recommended-models';

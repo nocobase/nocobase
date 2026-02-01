@@ -17,19 +17,29 @@ export const aiSettings: ResourceOptions = {
   actions: {
     get: async (ctx, next) => {
       const settings = await ctx.db.getRepository('aiSettings').findOne();
-      ctx.body = settings?.options;
+      ctx.body = {
+        ...settings?.options,
+        defaultLLMService: settings?.defaultLLMService,
+        defaultModel: settings?.defaultModel,
+      };
       await next();
     },
     update: async (ctx, next) => {
       const settings = await ctx.db.getRepository('aiSettings').findOne();
+      const { defaultLLMService, defaultModel, ...restValues } = ctx.action.params.values || {};
       const options = settings.get('options');
       const newOptions = {
         ...options,
-        ...ctx.action.params.values,
+        ...restValues,
       };
-      await settings.update({
-        options: newOptions,
-      });
+      const updateData: Record<string, any> = { options: newOptions };
+      if (defaultLLMService !== undefined) {
+        updateData.defaultLLMService = defaultLLMService;
+      }
+      if (defaultModel !== undefined) {
+        updateData.defaultModel = defaultModel;
+      }
+      await settings.update(updateData);
       await next();
     },
     publicGet: async (ctx, next) => {
