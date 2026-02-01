@@ -10,6 +10,7 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import { Spin } from 'antd';
 import { Plugin, lazy, attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
 import { useT } from './locale';
 import { useFilePreviewerConfig } from './hooks';
 import { PreviewerModal } from './components/PreviewerModal';
@@ -156,6 +157,18 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
   );
 }
 
+const getOfficePreviewUrl = (file: any) => {
+  const fileUrl = getAbsoluteFileUrl(file);
+  if (!fileUrl) return '';
+  const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+  u.searchParams.set('src', fileUrl);
+  try {
+    return u.href;
+  } catch (e) {
+    return '';
+  }
+};
+
 function OfficeInlinePreviewer({ file }) {
   const url = useMemo(() => getOfficePreviewUrl(file), [typeof file === 'string' ? file : file?.url]);
   if (!url) {
@@ -225,6 +238,11 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
         return isOfficeFile(file);
       },
       Previewer: FilePreviewer,
+    });
+
+    filePreviewTypes.add({
+      match: isOfficeFile,
+      Previewer: wrapWithModalPreviewer(OfficeInlinePreviewer),
     });
   }
 }
