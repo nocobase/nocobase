@@ -250,8 +250,11 @@ export class XlsxImporter extends EventEmitter {
           });
         }
 
+        // Check if filterKey is a valid field in target collection
+        // Use both getField (for NocoBase fields) and getAttributes (for auto-generated fields like 'id')
         const targetField = targetCollection.getField(filterKey);
-        if (!targetField) {
+        const isValidAttribute = (targetCollection as DBCollection).model?.getAttributes()?.[filterKey];
+        if (!targetField && !isValidAttribute) {
           throw new ImportValidationError('Field not found: {{field}}', {
             field: `${fieldName}.${filterKey}`,
           });
