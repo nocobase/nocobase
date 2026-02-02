@@ -75,7 +75,8 @@ export const updateWorkflowCcTaskAssociationFields = ({
   workflow,
   nodes,
   tempAssociationSources,
-}: CCTaskAssociationContext & { tempAssociationSources?: TempAssociationSource[] }) => {
+  prune = true,
+}: CCTaskAssociationContext & { tempAssociationSources?: TempAssociationSource[]; prune?: boolean }) => {
   if (!flowEngine) return;
   const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
   if (!collection) return;
@@ -84,11 +85,13 @@ export const updateWorkflowCcTaskAssociationFields = ({
     sources.map((source) => buildTempAssociationFieldName(source.nodeType, source.nodeKey)),
   );
 
-  collection.getFields().forEach((field) => {
-    if (!field.name.startsWith(TEMP_ASSOCIATION_PREFIX)) return;
-    if (desiredFieldNames.has(field.name)) return;
-    collection.removeField(field.name);
-  });
+  if (prune) {
+    collection.getFields().forEach((field) => {
+      if (!field.name.startsWith(TEMP_ASSOCIATION_PREFIX)) return;
+      if (desiredFieldNames.has(field.name)) return;
+      collection.removeField(field.name);
+    });
+  }
 
   const associations = getEligibleTempAssociationSources(sources, collection);
 
@@ -181,6 +184,7 @@ export class CCTaskCardDetailsItemModel extends DetailsItemModel {
             workflow: this.context.workflow,
             nodes: this.context.nodes,
             tempAssociationSources: this.context.tempAssociationSources,
+            prune: false,
           });
           const refreshedField = this.context.dataSourceManager.getCollectionField(
             `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
