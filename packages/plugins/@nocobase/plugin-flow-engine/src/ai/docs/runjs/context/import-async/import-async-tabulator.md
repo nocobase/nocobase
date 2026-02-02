@@ -7,7 +7,7 @@ description: "Dynamically import Tabulator ESM modules via ctx.importAsync and r
 
 ```ts
 // 1. Load Tabulator CSS styles
-await ctx.loadCSS('tabulator-tables@6.2.5/dist/css/tabulator.min.css');
+await ctx.importAsync('tabulator-tables@6.2.5/dist/css/tabulator.min.css');
 
 // 2. Dynamically import the Tabulator module
 const { TabulatorFull } = await ctx.importAsync('tabulator-tables@6.2.5');

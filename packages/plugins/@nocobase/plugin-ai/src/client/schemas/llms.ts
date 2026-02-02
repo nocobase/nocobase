@@ -21,30 +21,93 @@ export const createLLMSchema = {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("Provider") }}',
-          'x-component': 'Select',
-          enum: '{{ providers }}',
-          'x-pattern': 'readPretty',
+          'x-component': 'ProviderSelect',
+          required: true,
         },
-        name: {
-          type: 'string',
+        options: {
+          type: 'object',
+          'x-component': 'Settings',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
+        enabledModels: {
+          type: 'array',
           'x-decorator': 'FormItem',
-          title: '{{ t("UID") }}',
-          'x-component': 'Input',
-          'x-pattern': 'readPretty',
+          title: '{{ t("Enabled models") }}',
+          'x-component': 'EnabledModelsSelect',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
         title: {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("Title") }}',
           'x-component': 'Input',
+          'x-reactions': {
+            dependencies: ['provider'],
+            when: '{{!$self.modified}}',
+            fulfill: {
+              state: {
+                value: '{{$getProviderLabel($deps[0])}}',
+              },
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
-        options: {
+        'options.baseURL': {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Base URL") }}',
+          'x-component': 'Input',
+          'x-component-props': {
+            placeholder: '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
+          },
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
+        modelOptions: {
           type: 'object',
-          'x-component': 'Settings',
+          'x-component': 'ModelOptionsSettings',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
         testFlight: {
           type: 'void',
           'x-component': 'LLMTestFlight',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
         footer: {
           type: 'void',
@@ -210,15 +273,41 @@ export const llmsSchema = {
                           'x-decorator': 'FormV2',
                           'x-use-decorator-props': 'useEditFormProps',
                           properties: {
+                            provider: {
+                              type: 'string',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Provider") }}',
+                              'x-component': 'ProviderDisplay',
+                            },
+                            options: {
+                              type: 'object',
+                              'x-component': 'Settings',
+                            },
+                            enabledModels: {
+                              type: 'array',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Enabled models") }}',
+                              'x-component': 'EnabledModelsSelect',
+                            },
                             title: {
                               type: 'string',
                               'x-decorator': 'FormItem',
                               title: '{{ t("Title") }}',
                               'x-component': 'Input',
                             },
-                            options: {
+                            'options.baseURL': {
+                              type: 'string',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Base URL") }}',
+                              'x-component': 'Input',
+                              'x-component-props': {
+                                placeholder:
+                                  '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
+                              },
+                            },
+                            modelOptions: {
                               type: 'object',
-                              'x-component': 'Settings',
+                              'x-component': 'ModelOptionsSettings',
                             },
                             testFlight: {
                               type: 'void',

@@ -13,7 +13,6 @@
 
 ##### 示例
 ```
-// 示例环境：API 选项 { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // 输出 2
 2000:formatI('seconds')      // 输出 2
 2000:formatI('s')            // 输出 2
@@ -21,12 +20,7 @@
 3600000:formatI('hour')      // 输出 1
 2419200000:formatI('days')   // 输出 28
 
-// 法语示例：
-2000:formatI('human')        // 输出 "quelques secondes"
-2000:formatI('human+')       // 输出 "dans quelques secondes"
--2000:formatI('human+')      // 输出 "il y a quelques secondes"
-
-// 英语示例：
+// 人性化显示：
 2000:formatI('human')        // 输出 "a few seconds"
 2000:formatI('human+')       // 输出 "in a few seconds"
 -2000:formatI('human+')      // 输出 "a few seconds ago"

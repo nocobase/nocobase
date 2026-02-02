@@ -16,6 +16,8 @@ import { useChatBoxEffect } from './hooks/useChatBoxEffect';
 import { useChatBoxStore } from './stores/chat-box';
 import { ToolModal } from './generative-ui/ToolModal';
 import { useChatToolsStore } from './stores/chat-tools';
+// [AI_DEBUG]
+import { DebugPanel } from './DebugPanel';
 
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
@@ -23,6 +25,8 @@ export const ChatBoxLayout: React.FC<{
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
   const activeTool = useChatToolsStore.use.activeTool();
+  // [AI_DEBUG]
+  const showDebugPanel = useChatBoxStore.use.showDebugPanel();
   const { isMobileLayout } = useMobileLayout();
 
   useChatBoxEffect();
@@ -61,6 +65,8 @@ html body {
       ) : null}
       {open ? <ChatBoxWrapper /> : null}
       {activeTool && <ToolModal />}
+      {/* [AI_DEBUG] Debug Panel */}
+      {showDebugPanel && <DebugPanel />}
     </>
   );
 };

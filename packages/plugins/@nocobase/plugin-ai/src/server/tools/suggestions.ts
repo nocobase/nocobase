@@ -36,7 +36,7 @@ export const suggestions: ToolsOptions = {
       const message = await messageRepo.findOne({
         filterByTk: messageId,
       });
-      const toolCalls = message.toolCalls || [];
+      const toolCalls = message?.toolCalls || [];
       const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === id);
       if (index !== -1) {
         toolCalls[index] = {

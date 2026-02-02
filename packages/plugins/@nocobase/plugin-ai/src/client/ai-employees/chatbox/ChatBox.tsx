@@ -18,6 +18,7 @@ import {
   ShrinkOutlined,
   CodeOutlined,
   CompressOutlined,
+  BugOutlined, // [AI_DEBUG]
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
@@ -48,6 +49,8 @@ export const ChatBox: React.FC = () => {
   const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
   const setShowCodeHistory = useChatBoxStore.use.setShowCodeHistory();
+  // [AI_DEBUG]
+  const setShowDebugPanel = useChatBoxStore.use.setShowDebugPanel();
 
   const { startNewConversation } = useChatBoxActions();
 
@@ -139,6 +142,12 @@ export const ChatBox: React.FC = () => {
                         setShowCodeHistory(true);
                       }}
                     />
+                  </Tooltip>
+                )}
+                {/* [AI_DEBUG] Debug panel button */}
+                {localStorage.getItem('AI_DEBUG') === 'true' && (
+                  <Tooltip arrow={false} title={t('Debug Panel')}>
+                    <Button icon={<BugOutlined />} type="text" onClick={() => setShowDebugPanel(true)} />
                   </Tooltip>
                 )}
                 <Divider type="vertical" />

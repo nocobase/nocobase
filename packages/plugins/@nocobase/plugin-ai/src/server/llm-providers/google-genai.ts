@@ -65,7 +65,7 @@ export class GoogleGenAIProvider extends LLMProvider {
         })),
       };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      return { code: e.response?.status || 500, errMsg: e.message };
     }
   }
 
@@ -190,15 +190,7 @@ export const googleGenAIProviderOptions: LLMProviderMeta = {
   title: 'Google generative AI',
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
   models: {
-    [SupportedModel.LLM]: [
-      'models/gemini-2.5-pro',
-      'models/gemini-2.5-flash',
-      'models/gemini-2.5-flash-lite',
-      'models/gemini-2.0-flash',
-      'models/gemini-2.0-flash-lite',
-      'models/gemini-1.5-pro',
-      'models/gemini-1.5-flash',
-    ],
+    [SupportedModel.LLM]: ['models/gemini-3.0-pro-preview'],
     [SupportedModel.EMBEDDING]: ['gemini-embedding-001'],
   },
   provider: GoogleGenAIProvider,

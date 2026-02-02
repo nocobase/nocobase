@@ -7,8 +7,9 @@ description: "Dynamically import frappe-gantt via ctx.importAsync and render an 
 
 ```ts
 // 1. Dynamically import the Gantt constructor
-// This depends on NPM_MODULE_BASE_URL being set to https://esm.sh or your private esm.sh,
+// This depends on ESM_CDN_BASE_URL being set to https://esm.sh or your private esm.sh,
 // so you can use a short path like /frappe-gantt@1.0.4
+await ctx.importAsync('frappe-gantt@1.0.4/dist/frappe-gantt.css');
 const Gantt = await ctx.importAsync('frappe-gantt@1.0.4');
 
 // 2. Prepare task data

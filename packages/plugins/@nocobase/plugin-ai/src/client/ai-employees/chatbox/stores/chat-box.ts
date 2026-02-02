@@ -15,6 +15,11 @@ import { createSelectors } from './create-selectors';
 
 type RolesType = GetProp<typeof Bubble.List, 'roles'>;
 
+export interface ModelOverride {
+  llmService: string;
+  model: string;
+}
+
 interface ChatBoxState {
   open: boolean;
   expanded: boolean;
@@ -36,6 +41,11 @@ interface ChatBoxState {
   chatBoxRef: React.MutableRefObject<HTMLDivElement> | null;
   senderRef: React.MutableRefObject<GetRef<typeof Sender>> | null;
   showCodeHistory: boolean;
+
+  modelOverride?: ModelOverride | null;
+
+  // [AI_DEBUG]
+  showDebugPanel: boolean;
 }
 
 interface ChatBoxActions {
@@ -57,6 +67,11 @@ interface ChatBoxActions {
   setChatBoxRef: (ref: React.MutableRefObject<HTMLDivElement> | null) => void;
   setSenderRef: (ref: React.MutableRefObject<GetRef<typeof Sender>> | null) => void;
   setShowCodeHistory: (show: boolean) => void;
+
+  setModelOverride: (override: ModelOverride | null) => void;
+
+  // [AI_DEBUG]
+  setShowDebugPanel: (show: boolean) => void;
 }
 
 const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
@@ -81,6 +96,9 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
     current: null,
   },
   showCodeHistory: false,
+  modelOverride: null,
+  // [AI_DEBUG]
+  showDebugPanel: false,
 
   setOpen: (open) => set({ open }),
   setExpanded: (expanded) => set({ expanded }),
@@ -107,6 +125,9 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   setChatBoxRef: (ref) => set({ chatBoxRef: ref }),
   setSenderRef: (ref) => set({ senderRef: ref }),
   setShowCodeHistory: (show) => set({ showCodeHistory: show }),
+  setModelOverride: (override) => set({ modelOverride: override }),
+  // [AI_DEBUG]
+  setShowDebugPanel: (show) => set({ showDebugPanel: show }),
 }));
 
 export const useChatBoxStore = createSelectors(store);

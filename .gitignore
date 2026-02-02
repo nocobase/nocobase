@@ -37,6 +37,7 @@ vitest.config.mts.timestamp-*
 .github/copilot-instructions.md
 .github/skills
 .claude/
+.claudeignore
 python/
 git-repos.json
 CLAUDE.md

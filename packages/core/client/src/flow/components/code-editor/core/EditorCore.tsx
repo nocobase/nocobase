@@ -33,6 +33,7 @@ export const EditorCore: React.FC<{
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
   viewRef: React.MutableRefObject<EditorView | null>;
@@ -45,6 +46,7 @@ export const EditorCore: React.FC<{
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  knownCtxMemberRoots,
   extraCompletions,
   completionSource,
   viewRef,
@@ -100,7 +102,7 @@ export const EditorCore: React.FC<{
         closeOnBlur: false,
         activateOnTyping: true,
       }),
-      ...(enableLinter ? [lintGutter(), createJavaScriptLinter()] : []),
+      ...(enableLinter ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })] : []),
       // Force CM tooltips to render under the app container that doesn't clip (closer to Edit event flows behavior)
       tooltips({
         parent:
@@ -187,7 +189,7 @@ export const EditorCore: React.FC<{
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly]);
+  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly, knownCtxMemberRoots]);
 
   // Update editor content when value changes
   useEffect(() => {

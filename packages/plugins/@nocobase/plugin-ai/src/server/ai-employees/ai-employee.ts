@@ -45,6 +45,11 @@ type ToolMessage = {
   execution: 'backend' | 'frontend';
 };
 
+export interface ModelOverride {
+  llmService: string;
+  model: string;
+}
+
 export class AIEmployee {
   employee: Model;
   aiChatConversation: AIChatConversation;
@@ -55,6 +60,7 @@ export class AIEmployee {
   private ctx: Context;
   private systemMessage: string;
   private webSearch?: boolean;
+  private modelOverride?: ModelOverride;
 
   constructor(
     ctx: Context,
@@ -63,6 +69,7 @@ export class AIEmployee {
     systemMessage?: string,
     skillSettings?: Record<string, any>,
     webSearch?: boolean,
+    modelOverride?: ModelOverride,
   ) {
     this.employee = employee;
     this.ctx = ctx;
@@ -72,6 +79,7 @@ export class AIEmployee {
     this.systemMessage = systemMessage;
     this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
     this.skillSettings = skillSettings;
+    this.modelOverride = modelOverride;
 
     const locale = this.ctx.getCurrentLocale();
     const builtInManager = this.plugin.builtInManager;
@@ -80,23 +88,33 @@ export class AIEmployee {
   }
 
   async getLLMService() {
-    const modelSettings = this.employee.modelSettings;
-
-    if (!modelSettings?.llmService) {
+    // modelOverride is required - it's set by the frontend ModelSwitcher
+    if (!this.modelOverride?.llmService || !this.modelOverride?.model) {
       throw new Error('LLM service not configured');
     }
 
-    if (modelSettings?.builtIn?.webSearch === true) {
+    const llmServiceName = this.modelOverride.llmService;
+    const model = this.modelOverride.model;
+
+    // Build model options from modelOverride
+    const modelOptions: Record<string, any> = {
+      llmService: llmServiceName,
+      model,
+    };
+
+    // Preserve webSearch setting from employee's modelSettings if it exists
+    const employeeModelSettings = this.employee.modelSettings || {};
+    if (employeeModelSettings?.builtIn?.webSearch === true) {
       if (this.webSearch !== false) {
-        modelSettings.builtIn.webSearch = true;
+        modelOptions.builtIn = { webSearch: true };
       } else {
-        modelSettings.builtIn.webSearch = false;
+        modelOptions.builtIn = { webSearch: false };
       }
     }
 
     const service = await this.db.getRepository('llmServices').findOne({
       filter: {
-        name: modelSettings.llmService,
+        name: llmServiceName,
       },
     });
 
@@ -113,12 +131,10 @@ export class AIEmployee {
     const provider = new Provider({
       app: this.ctx.app,
       serviceOptions: service.options,
-      modelOptions: {
-        ...modelSettings,
-      },
+      modelOptions,
     });
 
-    return { provider, model: modelSettings.model, service };
+    return { provider, model, service };
   }
 
   async prepareChatStream({

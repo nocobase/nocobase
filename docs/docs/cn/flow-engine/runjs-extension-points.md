@@ -177,7 +177,8 @@ FlowRunJSContext.define({
 - `description` / `detail` / `examples`
 - `ref: string | { url: string; title?: string }`
 - `params` / `returns`（JSDoc-like）
-- `hidden` / `disabled` / `disabledReason`（支持函数/async 函数，基于运行时 `ctx` 计算）
+
+> 注意：`getApiInfos()` 输出为静态 API 文档，不会包含 `deprecated` / `disabled` / `disabledReason` 等字段。
 
 示例：为 `ctx.refreshTargets()` 提供文档链接
 

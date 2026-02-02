@@ -18,6 +18,7 @@ import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxStore } from '../stores/chat-box';
 import { parseWorkContext } from '../utils';
+import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 
 export const useChatMessageActions = () => {
   const app = useApp();
@@ -27,6 +28,7 @@ export const useChatMessageActions = () => {
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
+  const modelOverride = useChatBoxStore.use.modelOverride();
 
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
@@ -62,6 +64,29 @@ export const useChatMessageActions = () => {
             return;
           }
           const newMessages = [...data.data].reverse();
+
+          // [AI_DEBUG] backend tool results
+          for (const msg of newMessages) {
+            const toolCalls = msg.content?.tool_calls;
+            if (toolCalls?.length) {
+              for (const tc of toolCalls) {
+                if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
+                  const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
+                  aiDebugLogger.log(sessionId, 'tool_result', {
+                    toolCallId: tc.id,
+                    toolName: tc.name,
+                    args: tc.args,
+                    status: tc.status,
+                    invokeStatus: tc.invokeStatus,
+                    auto: tc.auto,
+                    execution: 'backend',
+                    contentPreview: contentStr?.slice(0, 500),
+                  });
+                }
+              }
+            }
+          }
+
           setMessages((prev) => {
             const last = prev[prev.length - 1];
             const result = cursor ? [...newMessages, ...prev] : newMessages;
@@ -101,7 +126,12 @@ export const useChatMessageActions = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
+
             if (data.type === 'content' && data.body && typeof data.body === 'string') {
+              // [AI_DEBUG] stream_text
+              aiDebugLogger.log(sessionId, 'stream_text', {
+                preview: data.body?.slice?.(0, 100) || '',
+              });
               updateLastMessage((last) => ({
                 ...last,
                 content: {
@@ -112,6 +142,10 @@ export const useChatMessageActions = () => {
               }));
             }
             if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
+              // [AI_DEBUG] stream_delta
+              aiDebugLogger.log(sessionId, 'stream_delta', {
+                chunk: data.body[0],
+              });
               updateLastMessage((last) => {
                 const toolCalls = last.content.tool_calls || [];
                 const toolCallChunk = data.body[0];
@@ -149,11 +183,17 @@ export const useChatMessageActions = () => {
               });
             }
             if (data.type === 'web_search' && data.body?.length) {
+              // [AI_DEBUG] stream_search
+              aiDebugLogger.log(sessionId, 'stream_search', {
+                actions: data.body,
+              });
               for (const item of data.body) {
                 setWebSearching(item);
               }
             }
             if (data.type === 'new_message') {
+              // [AI_DEBUG] stream_start
+              aiDebugLogger.log(sessionId, 'stream_start', {});
               addMessage({
                 key: uid(),
                 role: aiEmployee.username,
@@ -162,8 +202,18 @@ export const useChatMessageActions = () => {
               });
             }
             if (data.type === 'error') {
+              // [AI_DEBUG] stream_error
+              aiDebugLogger.log(sessionId, 'stream_error', {
+                message: data.body,
+              });
               error = true;
               result = data.body;
+            }
+            if (data.type === 'tool_calls') {
+              // [AI_DEBUG] stream_tools
+              aiDebugLogger.log(sessionId, 'stream_tools', {
+                tools: data.body,
+              });
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -175,6 +225,13 @@ export const useChatMessageActions = () => {
       if (err.name !== 'AbortError') {
         error = true;
         result = err.message;
+
+        // [AI_DEBUG] error
+        aiDebugLogger.log(sessionId, 'error', {
+          message: err.message,
+          stack: err.stack?.slice(0, 500),
+          context: { phase: 'stream_processing' },
+        });
       }
     }
 
@@ -208,6 +265,22 @@ export const useChatMessageActions = () => {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;
+
+    // [AI_DEBUG] request
+    aiDebugLogger.log(
+      sessionId || 'pending',
+      'request',
+      {
+        action: 'sendMessages',
+        employeeId: aiEmployee?.username,
+        model: modelOverride?.model,
+        messagesCount: sendMsgs.length,
+        hasAttachments: attachments?.length > 0,
+        hasContext: workContext?.length > 0,
+        editingMessageId,
+      },
+      { employeeId: aiEmployee?.username, employeeName: aiEmployee?.nickname },
+    );
 
     const last = messages[messages.length - 1];
     if (last?.role === 'error') {
@@ -265,6 +338,7 @@ export const useChatMessageActions = () => {
           messages: msgs,
           systemMessage,
           editingMessageId,
+          modelOverride,
         },
         responseType: 'stream',
         adapter: 'fetch',
@@ -370,6 +444,7 @@ export const useChatMessageActions = () => {
       toolCallIds?: string[];
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
+      const startTime = Date.now();
       setResponseLoading(true);
       try {
         const sendRes = await api.request({
@@ -387,7 +462,22 @@ export const useChatMessageActions = () => {
         }
 
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+
+        // [AI_DEBUG] tool result success
+        aiDebugLogger.log(sessionId, 'tool_result', {
+          success: true,
+          duration: Date.now() - startTime,
+          toolCallIds,
+        });
       } catch (err) {
+        // [AI_DEBUG] tool result error
+        aiDebugLogger.log(sessionId, 'tool_result', {
+          success: false,
+          duration: Date.now() - startTime,
+          error: err.message,
+          toolCallIds,
+        });
+
         setResponseLoading(false);
         throw err;
       }

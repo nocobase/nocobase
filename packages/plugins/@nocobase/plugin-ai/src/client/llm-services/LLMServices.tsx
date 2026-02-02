@@ -20,30 +20,37 @@ import {
   usePlugin,
   useRequest,
 } from '@nocobase/client';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, createContext, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useT } from '../locale';
-import { Button, Divider, Dropdown, App, Tag, theme } from 'antd';
-import { PlusOutlined, DownOutlined } from '@ant-design/icons';
+
+// Context for auto-open drawer functionality
+const AutoOpenContext = createContext<{ autoOpen: boolean; setAutoOpen: (v: boolean) => void }>({
+  autoOpen: false,
+  setAutoOpen: () => {},
+});
+import { Button, App, Tag, theme, Select, Space } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
-import { LLMProviderContext, LLMProvidersContext, useLLMProviders, useLLMProvider } from './llm-providers';
-import { Schema, useForm, observer } from '@formily/react';
-import { createForm } from '@formily/core';
+import { LLMProvidersContext, useLLMProviders } from './llm-providers';
+import { Schema, useForm, observer, useField } from '@formily/react';
+import { createForm, Field } from '@formily/core';
 import { uid } from '@formily/shared';
 import PluginAIClient from '..';
 import { LLMTestFlight } from './component/LLMTestFlight';
+import { EnabledModelsSelect } from './component/EnabledModelsSelect';
+import { ModelOptionsSettings } from './component/ModelOptionsSettings';
 
 const useCreateFormProps = () => {
-  const provider = useLLMProvider();
   const form = useMemo(
     () =>
       createForm({
         initialValues: {
           name: `v_${uid()}`,
-          provider,
         },
       }),
-    [provider],
+    [],
   );
   return {
     form,
@@ -126,86 +133,113 @@ const useEditActionProps = () => {
     },
   };
 };
-const AddNew = () => {
-  const t = useT();
+const providerHints: Record<string, string> = {
+  anthropic: 'Claude',
+  'google-genai': 'Gemini',
+  openai: 'GPT',
+  'openai-completions': 'GPT (Completions, Legacy)',
+  dashscope: 'Qwen',
+  deepseek: 'DeepSeek',
+  ollama: 'Local models',
+};
+
+const ProviderDisplay: React.FC = () => {
+  const field = useField<Field>();
+  const providers = useLLMProviders();
+  const provider = providers.find((p) => p.value === field.value);
+  return <span>{provider?.label || field.value}</span>;
+};
+
+const ProviderSelect: React.FC = () => {
   const { token } = theme.useToken();
-  const [visible, setVisible] = useState(false);
-  const [provider, setProvider] = useState('');
+  const field = useField<Field>();
   const providers = useLLMProviders();
 
-  const providerHints: Record<string, string> = {
-    anthropic: 'Claude',
-    'google-genai': 'Gemini',
-    openai: 'GPT',
-    'openai-completions': 'GPT (Completions, Legacy)',
-    dashscope: 'Qwen',
-    deepseek: 'DeepSeek',
-    ollama: 'Local models',
-  };
-
-  const items = providers.flatMap((item, index) => {
+  const options = providers.map((item) => {
     const hint = providerHints[item.value];
-    const menuItem = {
-      ...item,
+    return {
+      value: item.value,
       label: (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+        <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{item.label}</span>
+            <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{hint}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{hint}</div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              {item.supportedModel.map((item) => (
-                <Tag
-                  key={item}
-                  style={{
-                    color: token.colorTextTertiary,
-                    backgroundColor: token.colorFillTertiary,
-                    borderColor: token.colorBorderSecondary,
-                  }}
-                >
-                  {item}
-                </Tag>
-              ))}
-            </div>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {item.supportedModel.map((model: string) => (
+              <Tag
+                key={model}
+                style={{
+                  color: token.colorTextTertiary,
+                  backgroundColor: token.colorFillTertiary,
+                  borderColor: token.colorBorderSecondary,
+                  fontSize: token.fontSizeSM,
+                }}
+              >
+                {model}
+              </Tag>
+            ))}
           </div>
-        </div>
+        </Space>
       ),
-      onClick: () => {
-        setVisible(true);
-        setProvider(item.value);
-      },
+      selectedLabel: item.label,
     };
-    if (index > 0) {
-      return [{ type: 'divider' as const }, menuItem];
-    }
-    return [menuItem];
   });
 
   return (
+    <Select
+      value={field.value}
+      onChange={(val) => (field.value = val)}
+      options={options}
+      optionLabelProp="selectedLabel"
+      style={{ width: '100%' }}
+      listHeight={400}
+    />
+  );
+};
+
+const AddNew = () => {
+  const t = useT();
+  const [visible, setVisible] = useState(false);
+  const providers = useLLMProviders();
+  const { autoOpen, setAutoOpen } = useContext(AutoOpenContext);
+
+  useEffect(() => {
+    if (autoOpen) {
+      setVisible(true);
+      setAutoOpen(false);
+      // Clear navigation state
+      window.history.replaceState({}, document.title);
+    }
+  }, [autoOpen, setAutoOpen]);
+
+  const $getProviderLabel = (providerValue: string) => {
+    const provider = providers.find((p) => p.value === providerValue);
+    return provider?.label || providerValue;
+  };
+
+  return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <LLMProviderContext.Provider value={{ provider }}>
-        <Dropdown menu={{ items }}>
-          <Button icon={<PlusOutlined />} type={'primary'}>
-            {t('Add new')} <DownOutlined />
-          </Button>
-        </Dropdown>
-        <SchemaComponent
-          components={{ LLMTestFlight }}
-          scope={{ setProvider, useCreateFormProps, providers }}
-          schema={createLLMSchema}
-        />
-      </LLMProviderContext.Provider>
+      <Button icon={<PlusOutlined />} type="primary" onClick={() => setVisible(true)}>
+        {t('Add new')}
+      </Button>
+      <SchemaComponent
+        components={{ LLMTestFlight, EnabledModelsSelect, ProviderSelect, ModelOptionsSettings }}
+        scope={{ useCreateFormProps, providers, $getProviderLabel }}
+        schema={createLLMSchema}
+      />
     </ActionContextProvider>
   );
 };
 
+// Get the ProviderSettingsForm component for the current provider
 export const useProviderSettingsForm = (provider: string) => {
   const plugin = usePlugin('ai') as PluginAIClient;
   const p = plugin.aiManager.llmProviders.get(provider);
   return p?.components?.ProviderSettingsForm;
 };
 
+// Render the ProviderSettings component for the current provider
 export const Settings = observer(
   () => {
     const form = useForm();
@@ -220,6 +254,16 @@ export const LLMServices: React.FC = () => {
   const t = useT();
   const [providers, setProviders] = useState([]);
   const api = useAPIClient();
+  const location = useLocation();
+  const [autoOpen, setAutoOpen] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as { autoOpenAddNew?: boolean } | null;
+    if (state?.autoOpenAddNew) {
+      setAutoOpen(true);
+    }
+  }, [location.state]);
+
   useRequest(
     () =>
       api
@@ -242,14 +286,16 @@ export const LLMServices: React.FC = () => {
   );
 
   return (
-    <LLMProvidersContext.Provider value={{ providers }}>
-      <ExtendCollectionsProvider collections={[llmServices]}>
-        <SchemaComponent
-          schema={llmsSchema}
-          components={{ AddNew, Settings, LLMTestFlight }}
-          scope={{ t, providers, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
-        />
-      </ExtendCollectionsProvider>
-    </LLMProvidersContext.Provider>
+    <AutoOpenContext.Provider value={{ autoOpen, setAutoOpen }}>
+      <LLMProvidersContext.Provider value={{ providers }}>
+        <ExtendCollectionsProvider collections={[llmServices]}>
+          <SchemaComponent
+            schema={llmsSchema}
+            components={{ AddNew, Settings, LLMTestFlight, EnabledModelsSelect, ProviderDisplay, ModelOptionsSettings }}
+            scope={{ t, providers, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
+          />
+        </ExtendCollectionsProvider>
+      </LLMProvidersContext.Provider>
+    </AutoOpenContext.Provider>
   );
 };

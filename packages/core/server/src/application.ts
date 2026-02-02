@@ -1292,6 +1292,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.aiManager = new AIManager(this);
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.eventQueue = new EventQueue(this, options.eventQueue);

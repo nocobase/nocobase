@@ -23,9 +23,35 @@ const App = () => (
 );
 
 // Automatically transformed to
+const React = ctx.libs.React;
+
 const App = () => (
-  ctx.libs.React.createElement('div', null,
-    ctx.libs.React.createElement('h1', null, 'Hello')
+  React.createElement('div', null,
+    React.createElement('h1', null, 'Hello')
+  )
+);
+```
+
+## Using a specific React instance
+
+When you load React via `ctx.importAsync('react@18.2.0')`, JSX is transformed to use that React’s `createElement` (instead of `ctx.libs.React`):
+
+```tsx
+const React = await ctx.importAsync('react@18.2.0');
+
+// Original JSX code
+const App = () => (
+  <div>
+    <h1>Hello</h1>
+  </div>
+);
+
+// Automatically transformed to
+const React = await ctx.importAsync('react@18.2.0');
+
+const App = () => (
+  React.createElement('div', null,
+    React.createElement('h1', null, 'Hello')
   )
 );
 ```

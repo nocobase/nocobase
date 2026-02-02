@@ -7,213 +7,96 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useForm } from '@formily/react';
-import { SchemaComponent, useActionContext, useAPIClient, useRequest } from '@nocobase/client';
-import React, { useEffect, useState } from 'react';
-import { Alert, AutoComplete, Collapse, Spin } from 'antd';
-import { namespace, useT } from '../../locale';
-import { tval } from '@nocobase/utils/client';
-import { Field, LifeCycleTypes } from '@formily/core';
+import { useForm, observer } from '@formily/react';
+import { useAPIClient } from '@nocobase/client';
+import React, { useState } from 'react';
+import { Alert, Button, Divider, App, Tooltip } from 'antd';
+import { RocketOutlined } from '@ant-design/icons';
+import { getRecommendedModels } from '../recommended-models';
+import { useT } from '../../locale';
 
-export const LLMTestFlight: React.FC = () => {
+export const LLMTestFlight: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
   const api = useAPIClient();
+  const { message } = App.useApp();
   const [failureMessage, setFailureMessage] = useState('');
   const [successful, setSuccessful] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const useTestActionProps = () => {
-    return {
-      type: 'primary',
-      loading,
-      async onClick() {
-        await form.validate();
-        const values = { ...form.values };
-        setSuccessful(false);
-        setFailureMessage(null);
-        setLoading(true);
+  const handleTest = async () => {
+    const { provider, options, enabledModels } = form.values;
 
-        api
-          .resource('ai')
-          .testFlight({
-            values,
-          })
-          .then((res) => {
-            if (res.data.data.code !== 0) {
-              setFailureMessage(res.data.data.message);
-            } else {
-              setSuccessful(true);
-            }
-          })
-          .finally(() => setLoading(false))
-          .catch(console.error);
-      },
-    };
-  };
-
-  const NotifyMessage: React.FC = () => {
-    return successful ? (
-      <div style={{ marginBottom: 16 }}>
-        <Alert message={t('Successful')} type="success" closable />
-      </div>
-    ) : (
-      failureMessage && (
-        <div style={{ marginBottom: 16 }}>
-          <Alert message={t('Failure')} description={failureMessage} type="warning" closable />
-        </div>
-      )
-    );
-  };
-
-  return (
-    <div
-      style={{
-        marginBottom: 24,
-      }}
-    >
-      <Collapse
-        bordered={false}
-        size="small"
-        items={[
-          {
-            key: 'testFlight',
-            label: t('Test flight'),
-            forceRender: true,
-            children: (
-              <SchemaComponent
-                components={{ ModelSelect, NotifyMessage }}
-                scope={{ useTestActionProps }}
-                schema={{
-                  type: 'void',
-                  properties: {
-                    testFlightGroup: {
-                      type: 'void',
-                      'x-component': 'div',
-                      'x-component-props': {
-                        style: {
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                        },
-                      },
-                      properties: {
-                        model: {
-                          title: tval('Model', { ns: namespace }),
-                          type: 'string',
-                          required: true,
-                          'x-decorator': 'FormItem',
-                          'x-decorator-props': {
-                            layout: 'horizontal',
-                            style: {
-                              marginBottom: 0,
-                            },
-                          },
-                          'x-component': 'ModelSelect',
-                          'x-component-props': {
-                            style: {
-                              width: 240,
-                            },
-                          },
-                        },
-                        runTest: {
-                          title: '{{ t("Run") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                          },
-                          'x-use-component-props': 'useTestActionProps',
-                        },
-                      },
-                    },
-                    notifyMessage: {
-                      type: 'void',
-                      'x-component': 'NotifyMessage',
-                    },
-                  },
-                }}
-              />
-            ),
-          },
-        ]}
-      ></Collapse>
-    </div>
-  );
-};
-
-const ModelSelect: React.FC = (props) => {
-  const api = useAPIClient();
-  const [options, setOptions] = useState([]);
-  const [models, setModels] = useState<{ label: string; value: string }[]>([]);
-  const [loading, setLoading] = useState(false);
-  const field = useField<Field>();
-  const form = useForm();
-
-  const requestModels = async (values: any) => {
-    try {
-      await form.validate();
-    } catch (e) {
+    // Check if API Key is filled
+    if (!options?.apiKey) {
+      message.warning(t('Please fill in the API Key first'));
       return;
-    } finally {
-      form.clearErrors();
     }
 
+    // Determine which model to use
+    let model: string;
+    if (!enabledModels || enabledModels.length === 0) {
+      // Auto Mode: use first recommended model
+      const recommended = getRecommendedModels(provider);
+      if (recommended.length === 0) {
+        message.warning(t('No recommended models available for this provider'));
+        return;
+      }
+      model = recommended[0];
+    } else {
+      // Custom Mode: use first enabled model
+      model = enabledModels[0];
+    }
+
+    setSuccessful(false);
+    setFailureMessage('');
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const res = await api.resource('ai').testFlightModels(
-        {
-          values,
+      const res = await api.resource('ai').testFlight({
+        values: {
+          provider,
+          options,
+          model,
         },
-        { skipNotify: true },
-      );
-      const items = res?.data?.data?.map(({ id }) => ({
-        label: id,
-        value: id,
-      }));
-      setModels(items);
-      setOptions(items);
+      });
+      if (res.data.data.code !== 0) {
+        setFailureMessage(res.data.data.message);
+      } else {
+        setSuccessful(true);
+      }
+    } catch (error: any) {
+      setFailureMessage(error.message || 'Test failed');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    requestModels(form.values);
-    const unsubscribe = form.subscribe((event) => {
-      if (event.type === LifeCycleTypes.ON_FORM_VALUES_CHANGE) {
-        setModels([]);
-        setOptions([]);
-        requestModels(event.payload.values);
-      }
-    });
-    return () => {
-      form.unsubscribe(unsubscribe);
-    };
-  }, [api, form]);
-
-  const handleSearch = (value: string) => {
-    if (!models) {
-      setOptions([]);
-      return;
-    }
-    if (!value) {
-      setOptions(models);
-      return;
-    }
-    const searchOptions = models.filter((option) => {
-      return option.label.toLowerCase().includes(value.toLowerCase());
-    });
-    setOptions(searchOptions);
-  };
-
   return (
-    <AutoComplete
-      {...props}
-      onSearch={handleSearch}
-      options={options}
-      notFoundContent={loading ? <Spin size="small" /> : null}
-      value={field.value}
-      onChange={(val) => (field.value = val)}
-    />
+    <div style={{ marginBottom: 24 }}>
+      <Divider style={{ borderColor: '#f0f0f0', marginTop: 30, marginBottom: 30 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span>{t('Test flight')}</span>
+        <Tooltip title={t('Test connection with the configured API Key')}>
+          <Button type="primary" shape="circle" icon={<RocketOutlined />} loading={loading} onClick={handleTest} />
+        </Tooltip>
+      </div>
+      {successful && (
+        <div style={{ marginTop: 16 }}>
+          <Alert message={t('Successful')} type="success" closable onClose={() => setSuccessful(false)} />
+        </div>
+      )}
+      {failureMessage && (
+        <div style={{ marginTop: 16 }}>
+          <Alert
+            message={t('Failure')}
+            description={failureMessage}
+            type="warning"
+            closable
+            onClose={() => setFailureMessage('')}
+          />
+        </div>
+      )}
+    </div>
   );
-};
+});

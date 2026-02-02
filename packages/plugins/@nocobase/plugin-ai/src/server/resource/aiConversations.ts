@@ -232,6 +232,7 @@ export default {
               toolCall.invokeStatus = toolMessage?.invokeStatus;
               toolCall.auto = toolMessage?.auto;
               toolCall.status = toolMessage?.status;
+              toolCall.content = toolMessage?.content; // [AI_DEBUG] tool execution result
             }
           }
 
@@ -305,7 +306,13 @@ export default {
     async sendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, aiEmployee: employeeName, messages, editingMessageId } = ctx.action.params.values || {};
+      const {
+        sessionId,
+        aiEmployee: employeeName,
+        messages,
+        editingMessageId,
+        modelOverride,
+      } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -352,6 +359,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
+          modelOverride,
         );
         await aiEmployee.cancelToolCall();
         await aiEmployee.processMessages({ userMessages: messages, messageId: editingMessageId });

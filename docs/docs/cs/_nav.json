@@ -18,5 +18,9 @@
   {
     "text": "API",
     "link": "/api"
+  },
+  {
+    "text": "Domů",
+    "link": "https://www.nocobase.com/"
   }
 ]

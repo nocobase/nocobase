@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { parseErrorLineColumn } from '../errorHelpers';
+import { parseErrorLineColumn, WRAPPER_PRELUDE_LINES } from '../errorHelpers';
 import {
   FlowModelContext,
   JSRunner,
@@ -51,7 +51,16 @@ function createConsoleCapture(push: (level: RunLog['level'], args: any[]) => voi
     error: (...args: any[]) => push('error', args),
   };
 }
-
+function parseInlineLineColumn(msg: string): { line: number; column: number } | null {
+  const text = String(msg || '');
+  const m = text.match(/[（(]line\s*(\d+)(?::(\d+))?[）)]/i);
+  if (!m) return null;
+  const line = Number(m[1]);
+  const column = Number(m[2] || 1);
+  if (!Number.isFinite(line) || line <= 0) return null;
+  if (!Number.isFinite(column) || column <= 0) return { line, column: 1 };
+  return { line, column };
+}
 function createLoggerWrapperFactory(append: (level: RunLog['level'], args: any[]) => void) {
   const originalToWrapped = new WeakMap<object, any>();
   const wrappedToOriginal = new WeakMap<object, any>();
@@ -131,7 +140,15 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         };
         const append = (level: RunLog['level'], args: any[]) => {
           const msg = args.map((x: any) => safeToString(x)).join(' ');
-          setLogs((prev) => [...prev, { level, msg }]);
+          // For RunJS deprecation warnings we embed "(line x:y)" in the message (user line numbers).
+          // Convert it to raw line numbers (+ wrapper prelude) so the editor jump uses the same contract as errors.
+          const pos = level === 'warn' ? parseInlineLineColumn(msg) : null;
+          if (pos) {
+            setLogs((prev) => [...prev, { level, msg, line: pos.line + WRAPPER_PRELUDE_LINES, column: pos.column }]);
+          } else {
+            setLogs((prev) => [...prev, { level, msg }]);
+          }
+          // nativeConsole[level]?.(...args);
         };
         const push = (level: RunLog['level'], args: any[]) => {
           append(level, args);
