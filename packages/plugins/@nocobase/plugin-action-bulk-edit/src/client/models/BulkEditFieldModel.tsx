@@ -37,7 +37,18 @@ const BulkEditField = (props) => {
   const typeChangeHandler = (val) => {
     setType(val);
     const required = val === BulkEditFormItemValueType.ChangedTo;
-    formItemModel?.setStepParams('editItemSettings', 'required', { required });
+    // 设置必填状态
+    if (required) {
+      const rules = [
+        {
+          required: true,
+          message: lang('The field value is required'),
+        },
+      ];
+      formItemModel?.setProps({ required: true, rules });
+    } else {
+      formItemModel?.setProps({ required: false, rules: [] });
+    }
     const fieldVlaue = toFormFieldValue({ [val]: value });
     // onChange?.(fieldVlaue);
     form.setFieldValue(formItemModel.props.name, fieldVlaue);
