@@ -34,7 +34,7 @@ export const blockHeight = defineAction({
         enum: [
           { label: t('Default'), value: HeightMode.DEFAULT },
           { label: t('Specify height'), value: HeightMode.SPECIFY_VALUE },
-          // { label: t('Full height'), value: HeightMode.FULL_HEIGHT },
+          { label: t('Full height'), value: HeightMode.FULL_HEIGHT },
         ],
         required: true,
         'x-decorator': 'FormItem',
