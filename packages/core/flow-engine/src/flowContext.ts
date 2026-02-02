@@ -52,7 +52,8 @@ import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
-import { setupRunJSLibs } from './runjsLibs';
+import { externalReactRender, setupRunJSLibs } from './runjsLibs';
+import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1346,68 +1347,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('requireAsync', async (url: string) => {
-      return new Promise((resolve, reject) => {
-        if (!this.requirejs) {
-          reject(new Error('requirejs is not available'));
-          return;
-        }
-        const u = resolveModuleUrl(url);
-        this.requirejs(
-          [u],
-          (...args: any[]) => {
-            resolve(args[0]);
-          },
-          reject,
-        );
-      });
+      const u = resolveModuleUrl(url, { raw: true });
+      return await runjsRequireAsync(this.requirejs, u);
     });
     // 动态按 URL 加载 ESM 模块
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
     // - 返回模块命名空间对象（包含 default 与命名导出）
-    this.defineMethod('importAsync', async (url: string) => {
+    this.defineMethod('importAsync', async function (this: any, url: string) {
       // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
       if (isCssFile(url)) {
         return this.loadCSS(url);
       }
-      const u = resolveModuleUrl(url, { addSuffix: true });
-      const g = globalThis as any;
-      g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
-      const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
-      if (cache.has(u)) return cache.get(u) as Promise<any>;
-      const normalizeModule = (mod: any) => {
-        // 许多经由 esm.sh / esbuild 转换的模块会将主导出挂在 default 上
-        // 如果只有 default 一个导出，则直接返回 default，提升易用性
-        if (mod && typeof mod === 'object' && 'default' in mod) {
-          const keys = Object.keys(mod);
-          if (keys.length === 1 && keys[0] === 'default') {
-            return (mod as any).default;
-          }
-        }
-        return mod;
-      };
-      // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
-      const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
-      // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
-      const evalImport = () => {
-        const importer = (0, eval)('u => import(u)');
-        return importer(u);
-      };
-      const p = (async () => {
-        try {
-          const mod = await nativeImport();
-          return normalizeModule(mod);
-        } catch (err: any) {
-          // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
-          try {
-            const mod = await evalImport();
-            return normalizeModule(mod);
-          } catch (err2) {
-            throw err2 || err;
-          }
-        }
-      })();
-      cache.set(u, p);
-      return p;
+
+      return await runjsImportModule(this, url, { importer: runjsImportAsync });
     });
     this.defineMethod('createJSRunner', async function (options?: JSRunnerOptions) {
       try {
@@ -1871,6 +1823,7 @@ export class FlowRunJSContext extends FlowContext {
         return this.engine.reactView.createRoot(realContainer as HTMLElement, options);
       },
     };
+    ReactDOMShim.__nbRunjsInternalShim = true;
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
@@ -1893,16 +1846,37 @@ export class FlowRunJSContext extends FlowContext {
         globalRef.__nbRunjsRoots = globalRef.__nbRunjsRoots || new WeakMap<any, any>();
         const rootMap: WeakMap<any, any> = globalRef.__nbRunjsRoots;
 
-        // If vnode is string (HTML), unmount react root and set sanitized HTML
-        if (typeof vnode === 'string') {
-          const existingRoot = rootMap.get(containerEl);
-          if (existingRoot && typeof existingRoot.unmount === 'function') {
+        const disposeEntry = (entry: any) => {
+          if (!entry) return;
+          if (entry.disposeTheme && typeof entry.disposeTheme === 'function') {
             try {
-              existingRoot.unmount();
-            } finally {
-              rootMap.delete(containerEl);
+              entry.disposeTheme();
+            } catch (_) {
+              // ignore
+            }
+            entry.disposeTheme = undefined;
+          }
+          const root = entry.root || entry;
+          if (root && typeof root.unmount === 'function') {
+            try {
+              root.unmount();
+            } catch (_) {
+              // ignore
             }
           }
+        };
+
+        const unmountContainerRoot = () => {
+          const existing = rootMap.get(containerEl);
+          if (existing) {
+            disposeEntry(existing);
+            rootMap.delete(containerEl);
+          }
+        };
+
+        // If vnode is string (HTML), unmount react root and set sanitized HTML
+        if (typeof vnode === 'string') {
+          unmountContainerRoot();
           const proxy: any = new ElementProxy(containerEl);
           proxy.innerHTML = String(vnode ?? '');
           return null;
@@ -1914,26 +1888,42 @@ export class FlowRunJSContext extends FlowContext {
           (vnode as any).nodeType &&
           ((vnode as any).nodeType === 1 || (vnode as any).nodeType === 3 || (vnode as any).nodeType === 11)
         ) {
-          const existingRoot = rootMap.get(containerEl);
-          if (existingRoot && typeof existingRoot.unmount === 'function') {
-            try {
-              existingRoot.unmount();
-            } finally {
-              rootMap.delete(containerEl);
-            }
-          }
+          unmountContainerRoot();
           while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
           containerEl.appendChild(vnode as any);
           return null;
         }
 
-        let root = rootMap.get(containerEl);
-        if (!root) {
-          root = this.ReactDOM.createRoot(containerEl);
-          rootMap.set(containerEl, root);
+        // 注意：rootMap 是“全局按容器复用”的（key=containerEl）。
+        // 若不同 RunJS ctx 复用同一个 containerEl，且 ReactDOM 实例引用也相同，
+        // 则会复用到旧 entry，进而复用旧 ctx 创建的 autorun（闭包捕获旧 ctx），造成：
+        // 1) 旧 ctx 的 reaction 继续驱动新渲染（跨 ctx 复用风险）
+        // 2) 新 ctx 的主题变化不再触发 rerender
+        // 3) 旧 ctx 被 entry/autorun 间接持有，无法被 GC（内存泄漏）
+        // 因此这里把 ownerKey（当前 ctx）也纳入复用判断；owner 变化时必须重建 entry。
+        const rendererKey = this.ReactDOM;
+        const ownerKey = this;
+        let entry = rootMap.get(containerEl);
+        if (!entry || entry.rendererKey !== rendererKey || entry.ownerKey !== ownerKey) {
+          if (entry) {
+            disposeEntry(entry);
+            rootMap.delete(containerEl);
+          }
+          const root = this.ReactDOM.createRoot(containerEl);
+          entry = { rendererKey, ownerKey, root, disposeTheme: undefined, lastVnode: undefined };
+          rootMap.set(containerEl, entry);
         }
-        root.render(vnode as any);
-        return root;
+
+        return externalReactRender({
+          ctx: this,
+          entry,
+          vnode,
+          containerEl,
+          rootMap,
+          unmountContainerRoot,
+          internalReact: React,
+          internalAntd: antd,
+        });
       },
     );
   }
