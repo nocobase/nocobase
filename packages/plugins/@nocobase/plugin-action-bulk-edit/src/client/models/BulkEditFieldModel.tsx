@@ -42,7 +42,7 @@ const BulkEditField = (props) => {
       const rules = [
         {
           required: true,
-          message: lang('The field value is required'),
+          message: formItemModel.context.t('The field value is required'),
         },
       ];
       formItemModel?.setProps({ required: true, rules });

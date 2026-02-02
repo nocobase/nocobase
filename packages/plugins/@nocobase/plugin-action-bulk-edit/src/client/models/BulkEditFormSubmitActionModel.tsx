@@ -37,6 +37,24 @@ BulkEditFormSubmitActionModel.registerFlow({
   title: tExpr('Send settings'),
   on: 'click',
   steps: {
+    verifySelectedRecords: {
+      async handler(ctx) {
+        const viewUid = ctx.view.inputArgs?.viewUid;
+        const bulkEditActionModel = ctx.engine.getModel(viewUid, true);
+        const collectionModel = bulkEditActionModel?.parent as any;
+        const editModeParams = bulkEditActionModel?.getStepParams('bulkEditSettings', 'editMode') || {};
+        const updateMode = editModeParams?.value || 'selected';
+
+        if (updateMode === 'selected') {
+          const rows = collectionModel?.resource?.getSelectedRows?.() || [];
+          if (!rows?.length) {
+            ctx.message.error(ctx.t('Please select the records to be updated'));
+            ctx.exit();
+            return;
+          }
+        }
+      },
+    },
     confirm: {
       use: 'confirm',
       defaultParams: {
