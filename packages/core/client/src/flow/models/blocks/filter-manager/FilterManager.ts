@@ -463,13 +463,18 @@ export class FilterManager {
         if (loadingMode === 'manual' && !blockModel.hasActiveFilters()) {
           // manual 模式且无活跃筛选时，清空数据
           resource.setData([]);
-          resource.setMeta({ count: 0, hasNext: false, page: 1 });
+          resource.setMeta({ count: 0, hasNext: false });
+          if (typeof resource.setPage === 'function') {
+            resource.setPage(1);
+          }
           resource.loading = false;
           return;
         }
 
         // 4.5 调用 refresh 方法
-        resource.setPage?.(1); // 重置到第一页
+        if (typeof resource.setPage === 'function') {
+          resource.setPage(1); // 重置到第一页
+        }
         await resource.refresh();
       } catch (error) {
         console.error(`Failed to refresh target model "${targetId}": ${error.message}`);

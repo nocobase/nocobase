@@ -230,8 +230,10 @@ FilterActionModel.registerFlow({
         if (loadingMode === 'manual' && !hasFilter && !blockModel.hasActiveFilters()) {
           // manual 模式且筛选为空，清空数据
           resource.setData([]);
-          resource.setMeta({ count: 0, hasNext: false, page: 1 });
-          resource.setPage?.(1);
+          resource.setMeta({ count: 0, hasNext: false });
+          if (typeof resource.setPage === 'function') {
+            resource.setPage(1);
+          }
           resource.loading = false;
         } else {
           resource.refresh();
@@ -268,8 +270,10 @@ FilterActionModel.registerFlow({
         if (loadingMode === 'manual' && !hasDefaultFilter && !blockModel.hasActiveFilters()) {
           // manual 模式且无默认筛选值，清空数据
           resource.setData([]);
-          resource.setMeta({ count: 0, hasNext: false, page: 1 });
-          resource.setPage?.(1);
+          resource.setMeta({ count: 0, hasNext: false });
+          if (typeof resource.setPage === 'function') {
+            resource.setPage(1);
+          }
           resource.loading = false;
         } else if (hasDefaultFilter) {
           // 有默认筛选值时，应用默认筛选并刷新
