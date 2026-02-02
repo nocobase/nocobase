@@ -381,7 +381,8 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId } = ctx.action.params.values || {};
+      const { sessionId, modelOverride } = ctx.action.params.values || {};
+      let { messageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -410,6 +411,14 @@ export default {
             sendErrorResponse(ctx, 'message not found');
             return next();
           }
+        } else {
+          const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            filter: {
+              sessionId,
+            },
+            sort: ['-messageId'],
+          });
+          messageId = message.messageId;
         }
 
         const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
@@ -425,6 +434,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
+          modelOverride,
         );
         await aiEmployee.processMessages({ messageId });
       } catch (err) {
@@ -432,122 +442,6 @@ export default {
         sendErrorResponse(ctx, err.message || 'Chat error warning');
       }
 
-      await next();
-    },
-
-    async getTools(ctx: Context, next: Next) {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const { sessionId, messageId } = ctx.action.params.values || {};
-      if (!sessionId || !messageId) {
-        ctx.throw(400);
-      }
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filter: {
-          sessionId,
-          userId: ctx.auth?.user.id,
-        },
-      });
-      if (!conversation) {
-        ctx.throw(400);
-      }
-      const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-        filter: {
-          messageId,
-        },
-      });
-      const tools = message?.toolCalls || [];
-      const toolNames = tools.map((tool: any) => tool.name);
-      const result = {};
-      for (const toolName of toolNames) {
-        const tool = await plugin.aiManager.toolManager.getTool(toolName);
-        if (tool) {
-          result[toolName] = {
-            name: tool.name,
-            title: tool.title,
-            description: tool.description,
-          };
-        }
-      }
-      ctx.body = result;
-      await next();
-    },
-
-    async callTool(ctx: Context, next: Next) {
-      setupSSEHeaders(ctx);
-
-      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
-      if (!sessionId) {
-        sendErrorResponse(ctx, 'sessionId is required');
-        return next();
-      }
-      try {
-        const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId: ctx.auth?.user.id,
-          },
-        });
-        if (!conversation) {
-          sendErrorResponse(ctx, 'conversation not found');
-          return next();
-        }
-
-        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
-        if (!employee) {
-          sendErrorResponse(ctx, 'AI employee not found');
-          return next();
-        }
-
-        let message: Model;
-        if (messageId) {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-            filter: {
-              messageId,
-            },
-          });
-        } else {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-            sort: ['-messageId'],
-          });
-        }
-
-        if (!message) {
-          sendErrorResponse(ctx, 'message not found');
-          return next();
-        }
-
-        const tools = message.toolCalls;
-        if (!tools?.length) {
-          sendErrorResponse(ctx, 'No tool calls found');
-          return next();
-        }
-
-        const aiEmployee = new AIEmployee(
-          ctx,
-          employee,
-          sessionId,
-          conversation.options?.systemMessage,
-          conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
-        );
-
-        const userDecisions = toolCallIds?.length
-          ? toolCallIds.map(() => ({
-              type: 'approve',
-            }))
-          : [
-              {
-                type: 'approve',
-              },
-            ];
-
-        await aiEmployee.processMessages({
-          userDecisions,
-        });
-      } catch (err) {
-        ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Tool call error');
-      }
       await next();
     },
 
@@ -632,7 +526,7 @@ export default {
     async resumeToolCall(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId } = ctx.action.params.values || {};
+      const { sessionId, messageId, modelOverride } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -686,6 +580,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
+          modelOverride,
         );
 
         const userDecisions = await aiEmployee.getUserDecisions(messageId);
