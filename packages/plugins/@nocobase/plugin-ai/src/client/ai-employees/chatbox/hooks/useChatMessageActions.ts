@@ -141,18 +141,18 @@ export const useChatMessageActions = () => {
                 loading: false,
               }));
             }
-            if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
+            if (data.type === 'tool_call_chunks' && data.body?.toolCalls?.length > 0) {
               // [AI_DEBUG] stream_delta
               aiDebugLogger.log(sessionId, 'stream_delta', {
-                chunk: data.body[0],
+                chunk: data.body.toolCalls[0],
               });
               updateLastMessage((last) => {
                 const toolCalls = last.content.tool_calls || [];
-                const toolCallChunk = data.body[0];
+                const toolCallChunk = data.body.toolCalls[0];
                 if (toolCallChunk.name) {
                   toolCalls.push(toolCallChunk);
                 } else {
-                  toolCalls[toolCalls.length - 1].args += data.body[0].args;
+                  toolCalls[toolCalls.length - 1].args += data.body.toolCalls[0].args;
                 }
                 return {
                   ...last,
@@ -208,12 +208,6 @@ export const useChatMessageActions = () => {
               });
               error = true;
               result = data.body;
-            }
-            if (data.type === 'tool_calls') {
-              // [AI_DEBUG] stream_tools
-              aiDebugLogger.log(sessionId, 'stream_tools', {
-                tools: data.body,
-              });
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -386,7 +380,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId },
+        data: { sessionId, messageId, modelOverride },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -428,63 +422,6 @@ export const useChatMessageActions = () => {
     setResponseLoading(false);
   }, [currentConversation]);
 
-  const callTool = useCallback(
-    async ({
-      sessionId,
-      messageId,
-      aiEmployee,
-      args,
-      toolCallIds,
-      toolCallResults,
-    }: {
-      sessionId: string;
-      messageId?: string;
-      aiEmployee: AIEmployee;
-      args?: Record<string, any>;
-      toolCallIds?: string[];
-      toolCallResults?: { id: string; [key: string]: any }[];
-    }) => {
-      const startTime = Date.now();
-      setResponseLoading(true);
-      try {
-        const sendRes = await api.request({
-          url: 'aiConversations:callTool',
-          method: 'POST',
-          headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, args, toolCallIds, toolCallResults },
-          responseType: 'stream',
-          adapter: 'fetch',
-        });
-
-        if (!sendRes?.data) {
-          setResponseLoading(false);
-          return;
-        }
-
-        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-
-        // [AI_DEBUG] tool result success
-        aiDebugLogger.log(sessionId, 'tool_result', {
-          success: true,
-          duration: Date.now() - startTime,
-          toolCallIds,
-        });
-      } catch (err) {
-        // [AI_DEBUG] tool result error
-        aiDebugLogger.log(sessionId, 'tool_result', {
-          success: false,
-          duration: Date.now() - startTime,
-          error: err.message,
-          toolCallIds,
-        });
-
-        setResponseLoading(false);
-        throw err;
-      }
-    },
-    [],
-  );
-
   const resumeToolCall = useCallback(
     async ({
       sessionId,
@@ -505,7 +442,7 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:resumeToolCall',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults },
+          data: { sessionId, messageId, toolCallIds, toolCallResults, modelOverride },
           responseType: 'stream',
           adapter: 'fetch',
         });
@@ -570,7 +507,6 @@ export const useChatMessageActions = () => {
     sendMessages,
     resendMessages,
     cancelRequest,
-    callTool,
     resumeToolCall,
     updateToolArgs,
     lastMessageRef,
