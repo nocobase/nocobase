@@ -9,6 +9,7 @@
 
 import { FilterGroup, FilterItem, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { getDefaultOperator, isFilterValueEmpty } from './utils';
 
 type FilterConfig = {
@@ -261,6 +262,9 @@ export class FilterManager {
     }
 
     // 6. 将筛选配置应用到目标模型
+    const blockModel = targetModel as CollectionBlockModel;
+    let hasAnyActiveFilter = false;
+
     relatedConfigs.forEach((config) => {
       const filterModel: any = this.gridModel.flowEngine.getModel(config.filterId);
 
@@ -282,12 +286,18 @@ export class FilterManager {
         // 移除现有的筛选组
         try {
           (targetModel as any).resource.removeFilterGroup(config.filterId);
+          // 更新筛选来源活跃状态
+          blockModel.setFilterActive(config.filterId, false);
         } catch (error) {
           console.error(`[NocoBase]: Failed to remove filter configuration from target model: ${error.message}`);
           return;
         }
         return; // 跳过当前配置的处理
       }
+
+      // 有有效筛选值，标记为活跃
+      hasAnyActiveFilter = true;
+      blockModel.setFilterActive(config.filterId, true);
 
       // 构建筛选条件
       const filterConditions = config.filterPaths.map((fieldPath) => ({
@@ -441,9 +451,23 @@ export class FilterManager {
           return;
         }
 
-        // 4.4 调用 refresh 方法
-        (targetModel as any).resource.setPage?.(1); // 重置到第一页
-        await (targetModel as any).resource.refresh();
+        const blockModel = targetModel as CollectionBlockModel;
+        const resource = (targetModel as any).resource;
+
+        // 4.4 检查数据加载模式
+        const loadingMode = blockModel.getDataLoadingMode();
+
+        if (loadingMode === 'manual' && !blockModel.hasActiveFilters()) {
+          // manual 模式且无活跃筛选时，清空数据
+          resource.setData([]);
+          resource.setMeta({ count: 0, hasNext: false, page: 1 });
+          resource.loading = false;
+          return;
+        }
+
+        // 4.5 调用 refresh 方法
+        resource.setPage?.(1); // 重置到第一页
+        await resource.refresh();
       } catch (error) {
         console.error(`Failed to refresh target model "${targetId}": ${error.message}`);
         return;

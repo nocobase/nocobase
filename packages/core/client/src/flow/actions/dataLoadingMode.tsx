@@ -8,26 +8,51 @@
  */
 
 import { defineAction, tExpr } from '@nocobase/flow-engine';
+import { CollectionBlockModel } from '../models/base/CollectionBlockModel';
 
 export const dataLoadingMode = defineAction({
   name: 'dataLoadingMode',
   title: tExpr('Data loading mode'),
-  uiSchema: {
-    dataLoadingMode: {
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: [
+  uiMode: {
+    type: 'select',
+    key: 'mode',
+    props: {
+      options: [
         { value: 'auto', label: tExpr('Load all data when filter is empty') },
         { value: 'manual', label: tExpr('Do not load data when filter is empty') },
       ],
     },
   },
-  defaultParams(ctx) {
-    return {
-      dataLoadingMode: 'auto',
-    };
+  defaultParams: {
+    mode: 'auto',
   },
-  async handler(ctx, params) {
-    ctx.model.setProps('dataLoadingMode', params.dataLoadingMode);
+  hideInSettings: (ctx) => {
+    // 只有支持筛选的区块才显示此配置
+    const blockModel = ctx.blockModel as CollectionBlockModel;
+    if (!blockModel?.resource) {
+      return true;
+    }
+    return !blockModel.resource.supportsFilter;
+  },
+  handler(ctx, params) {
+    const blockModel = ctx.blockModel as CollectionBlockModel;
+    if (!blockModel) {
+      return;
+    }
+
+    // 保存配置到 stepParams
+    blockModel.setStepParams('dataLoadingModeSettings', { mode: params.mode });
+
+    // 如果切换到 manual 模式且当前没有活跃的筛选条件，清空数据
+    if (params.mode === 'manual' && !blockModel.hasActiveFilters()) {
+      const resource = blockModel.resource;
+      if (resource) {
+        resource.setData([]);
+        resource.setMeta({ count: 0, hasNext: false });
+      }
+    } else if (params.mode === 'auto') {
+      // 切换到 auto 模式时立即刷新数据
+      blockModel.resource?.refresh();
+    }
   },
 });
