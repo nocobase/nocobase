@@ -13,6 +13,8 @@ import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocob
 import React from 'react';
 
 export class BulkEditFormGridModel extends FormGridModel {
+  itemSettingsMenuLevel = 3;
+
   renderAddSubModelButton() {
     return (
       <AddSubModelButton

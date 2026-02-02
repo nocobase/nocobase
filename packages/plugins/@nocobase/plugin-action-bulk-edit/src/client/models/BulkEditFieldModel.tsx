@@ -92,6 +92,15 @@ const BulkEditField = (props) => {
 };
 
 export class BulkEditFieldModel extends FieldModel {
+  async openFlowSettings(options?: any) {
+    const flowKey = options?.flowKey;
+    const innerField = this.subModels?.field as any;
+    if (flowKey && !this.getFlow(flowKey) && innerField?.openFlowSettings) {
+      return innerField.openFlowSettings(options);
+    }
+    return super.openFlowSettings(options);
+  }
+
   public render() {
     const fieldModel = this.subModels.field as FieldModel;
     const t = (s) => s;

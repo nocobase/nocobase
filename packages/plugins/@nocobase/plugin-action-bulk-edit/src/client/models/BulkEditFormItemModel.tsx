@@ -28,7 +28,7 @@ export class BulkEditFormItemModel extends FormItemModel {
       })
       .map((child: any) => ({
         ...child,
-        useModel: 'BulkEditFormItemModel',
+        // useModel: 'BulkEditFormItemModel',
         createModelOptions: () => {
           const options = child.createModelOptions();
           const field = options?.subModels?.field;
@@ -54,6 +54,26 @@ BulkEditFormItemModel.define({
   label: tExpr('Bulk edit form item'),
 });
 
+const baseEditItemSettingsFlow = (FormItemModel as any).globalFlowRegistry?.getFlow?.('editItemSettings');
+if (baseEditItemSettingsFlow) {
+  const data = baseEditItemSettingsFlow.serialize();
+  const { key, steps, ...rest } = data as any;
+  // 过滤掉不需要的配置项
+  const { initialValue, required, validation, pattern, model, ...filteredSteps } = (steps || {}) as Record<string, any>;
+  if (filteredSteps?.titleField) {
+    filteredSteps.titleField = {
+      ...filteredSteps.titleField,
+      use: 'bulkEditTitleField',
+    };
+  }
+  BulkEditFormItemModel.registerFlow({
+    key: 'editItemSettings',
+    ...rest,
+    steps: filteredSteps,
+  });
+}
+
+/**
 BulkEditFormItemModel.registerFlow({
   key: 'editItemSettings',
   sort: 300,
@@ -185,3 +205,4 @@ BulkEditFormItemModel.registerFlow({
     },
   },
 });
+ */
