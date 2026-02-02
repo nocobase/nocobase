@@ -20,6 +20,7 @@ export interface PreviewerModalProps {
   title?: string;
   warnings?: Array<{ message: string; description?: string; type: 'warning' | 'error' }>;
   iframeError?: boolean;
+  t?: (key: string) => string;
 }
 
 export const PreviewerModal: React.FC<PreviewerModalProps> = ({
@@ -30,8 +31,10 @@ export const PreviewerModal: React.FC<PreviewerModalProps> = ({
   title,
   warnings = [],
   iframeError = false,
+  t: customT,
 }) => {
-  const t = useT();
+  const defaultT = useT();
+  const t = customT || defaultT;
   const [loadError, setLoadError] = useState(false);
 
   const onOpen = useCallback(
@@ -47,9 +50,10 @@ export const PreviewerModal: React.FC<PreviewerModalProps> = ({
     (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!file) return;
       saveAs(file.url, `${file.title}${file.extname}`);
     },
-    [file.extname, file.title, file.url],
+    [file],
   );
 
   const onClose = useCallback(() => {

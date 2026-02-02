@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useMemo, useEffect } from 'react';
-import { Spin } from 'antd';
+import { Spin, Alert } from 'antd';
 import { Plugin, lazy, attachmentFileTypes } from '@nocobase/client';
 import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
 import { useT } from './locale';
@@ -25,13 +25,51 @@ import {
 } from './utils';
 
 // Global variable to track current preview mode (cache for synchronous match)
-let globalPreviewConfig: any = { previewType: 'microsoft' };
+let globalPreviewConfig: any = null;
 
 export function updatePreviewConfig(config: any) {
   globalPreviewConfig = config;
 }
 
 const { Configuration } = lazy(() => import('./settings/Configuration'), 'Configuration');
+
+// Logic extracted for matching
+const shouldPreviewFile = (file) => {
+  const config = globalPreviewConfig;
+
+  if (!config) return false;
+
+  const extensions = config?.customExtensions || config?.kkFileViewExtensions;
+
+  // Priority 1: Custom Extensions (Explicit User Override)
+  if ((config?.previewType === 'kkfileview' || config?.previewType === 'basemetas') && extensions) {
+    const ext = file.extname?.replace(/^\./, '').toLowerCase();
+    const allowed = extensions
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (allowed.includes(ext)) return true;
+  }
+
+  // Priority 2: Exclude standard Images and PDFs
+  if (isImageOrPdf(file)) {
+    return false;
+  }
+
+  // Priority 3: Default logic based on preview mode
+  if (config?.previewType === 'kkfileview' || config?.previewType === 'basemetas') {
+    if (!extensions) {
+      const ext = file.extname?.replace(/^\./, '').toLowerCase();
+      if (KKFILEVIEW_DEFAULT_EXTENSIONS.includes(ext)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Priority 4: Microsoft Mode default
+  return isOfficeFile(file);
+};
 
 function FilePreviewer({ index, list, onSwitchIndex }) {
   const t = useT();
@@ -169,16 +207,45 @@ const getOfficePreviewUrl = (file: any) => {
   }
 };
 
-function OfficeInlinePreviewer({ file }) {
-  const url = useMemo(() => getOfficePreviewUrl(file), [typeof file === 'string' ? file : file?.url]);
+function SmartOfficePreviewer({ file }) {
+  const { config } = useFilePreviewerConfig();
+  const t = useT();
+
+  const { url, warnings, iframeError } = useMemo(() => {
+    return getPreviewState(file, config || globalPreviewConfig, t);
+  }, [file, config, t]);
+
+  if (warnings.length > 0 || iframeError) {
+    return (
+      <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
+        {warnings.map((w, i) => (
+          <div key={i} style={{ marginBottom: 10 }}>
+            <Alert message={w.message} description={w.description} type={w.type} showIcon />
+          </div>
+        ))}
+        {iframeError && !warnings.some((w) => w.type === 'error') && (
+          <Alert message={t('Preview failed')} type="error" showIcon />
+        )}
+      </div>
+    );
+  }
+
   if (!url) {
     return null;
   }
+
   return <iframe src={url} width="100%" height="100%" style={{ border: 'none' }} />;
 }
 
 export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
+    // Check if we are running in Client V2 environment
+    // @ts-ignore
+    if (this.app?.flowEngine) {
+      // @ts-ignore
+      this.app.addProvider(V2FilePreviewProvider, { app: this.app });
+    }
+
     // Initial fetch to populate cache
     try {
       const response = await this.app.apiClient.request({
@@ -199,52 +266,234 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
       aclSnippet: 'pm.file-previewer-office.configuration',
     });
 
-    attachmentFileTypes.add({
-      match: (file) => {
-        const config = globalPreviewConfig;
-        const extensions = config?.customExtensions || config?.kkFileViewExtensions;
+    // @ts-ignore
+    if (!this.app?.flowEngine) {
+      attachmentFileTypes.add({
+        match: shouldPreviewFile,
+        Previewer: FilePreviewer,
+      });
+    }
 
-        // Priority 1: Custom Extensions (Explicit User Override)
-        // If the user explicitly configured an extension (e.g. 'dwg'), we must honor it immediately,
-        // even if it looks like an image or other format.
-        if ((config?.previewType === 'kkfileview' || config?.previewType === 'basemetas') && extensions) {
-          const ext = file.extname?.replace(/^\./, '').toLowerCase();
-          const allowed = extensions
-            .split(',')
-            .map((s) => s.trim().toLowerCase())
-            .filter(Boolean);
-          if (allowed.includes(ext)) return true;
-        }
-
-        // Priority 2: Exclude standard Images and PDFs
-        // These are handled by native browser previewers or NocoBase default previewers.
-        if (isImageOrPdf(file)) {
-          return false;
-        }
-
-        // Priority 3: Default logic based on preview mode
-        if (config?.previewType === 'kkfileview' || config?.previewType === 'basemetas') {
-          // Fallback to Safe List if no extensions configured
-          if (!extensions) {
-            const ext = file.extname?.replace(/^\./, '').toLowerCase();
-            if (KKFILEVIEW_DEFAULT_EXTENSIONS.includes(ext)) {
-              return true;
-            }
-          }
-          return false;
-        }
-
-        // Priority 4: Microsoft Mode default
-        return isOfficeFile(file);
-      },
-      Previewer: FilePreviewer,
-    });
-
+    // Register for V2 (and V1 file-manager)
     filePreviewTypes.add({
-      match: isOfficeFile,
-      Previewer: wrapWithModalPreviewer(OfficeInlinePreviewer),
+      match: shouldPreviewFile,
+      Previewer: wrapWithModalPreviewer(SmartOfficePreviewer),
     });
   }
+}
+
+// Logic extracted for reuse in V2
+const getPreviewState = (file, config, t) => {
+  if (!file || !config) return { url: '', warnings: [], iframeError: false };
+
+  const warnings = [];
+  let previewUrl = '';
+  let hasIframeError = false;
+
+  // Check file size limit (30MB)
+  const MAX_SIZE = 30 * 1024 * 1024;
+  if (file.size && file.size > MAX_SIZE) {
+    warnings.push({
+      message: t('File too large'),
+      description: t('The file size exceeds 30MB. Please download it for viewing.'),
+      type: 'warning',
+    });
+    return { url: '', warnings, iframeError: false };
+  }
+
+  const mode = config.previewType;
+
+  if (mode === 'microsoft') {
+    if (!isOfficeFile(file)) {
+      hasIframeError = true;
+      warnings.push({
+        message: t('File type not supported by Microsoft Preview'),
+        type: 'error',
+      });
+    } else {
+      const fileUrl = getAbsoluteFileUrl(file);
+      const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
+      u.searchParams.set('src', fileUrl);
+      previewUrl = u.href;
+
+      if (isPrivateNetwork(window.location.hostname)) {
+        warnings.push({
+          message: t('Public access required'),
+          description: t('Microsoft Online Preview requires public network access'),
+          type: 'warning',
+        });
+      }
+    }
+  } else if (mode === 'kkfileview') {
+    const kkUrl = config.kkFileViewUrl || 'http://localhost:8012';
+    if (isMixedContent(kkUrl)) {
+      warnings.push({
+        message: t('Mixed Content Warning'),
+        description: t('Your site is HTTPS but KKFileView is HTTP. Preview will fail.'),
+        type: 'error',
+      });
+      hasIframeError = true;
+    }
+
+    const fileUrl = getAbsoluteFileUrl(file);
+    const encodedFileUrl = encodeUrlForKKFileView(fileUrl);
+    const filename = file.title ? `${file.title}${file.extname || ''}` : file.filename || '';
+    const encodedFilename = encodeURIComponent(filename);
+    previewUrl = `${kkUrl}/onlinePreview?url=${encodedFileUrl}&fullfilename=${encodedFilename}`;
+  } else if (mode === 'basemetas') {
+    const basemetasUrl = config.basemetasUrl || 'http://localhost:9000';
+    if (isMixedContent(basemetasUrl)) {
+      warnings.push({
+        message: t('Mixed Content Warning'),
+        description: t('Your site is HTTPS but BaseMetas is HTTP. Preview will fail.'),
+        type: 'error',
+      });
+      hasIframeError = true;
+    }
+
+    const fileUrl = getAbsoluteFileUrl(file);
+    const encodedFileUrl = encodeURIComponent(fileUrl);
+    const fileName = file.filename || `${file.title}${file.extname || ''}`;
+    const encodedFileName = encodeURIComponent(fileName);
+    const displayName = file.title || fileName;
+    const encodedDisplayName = encodeURIComponent(displayName);
+    previewUrl = `${basemetasUrl}/preview/view?url=${encodedFileUrl}&fileName=${encodedFileName}&displayName=${encodedDisplayName}`;
+  }
+
+  return { url: previewUrl, warnings, iframeError: hasIframeError };
+};
+
+// V2 Compatible Provider
+function V2FilePreviewProvider({ app, children }) {
+  // @ts-ignore
+  const pkgName = '@nocobase/plugin-file-previewer-office';
+  const t = (str) => app.i18n.t(str, { ns: pkgName });
+  const [config, setConfig] = React.useState<any>(null);
+  const [previewFile, setPreviewFile] = React.useState<any>(null);
+
+  // Load config
+  useEffect(() => {
+    // console.log('[V2FilePreviewer-Init] Loading config...');
+    app.apiClient
+      .request({
+        resource: 'filePreviewer',
+        action: 'list',
+      })
+      .then((res) => {
+        // console.log('[V2FilePreviewer-Init] Config loaded:', res?.data?.data?.[0]);
+        if (res?.data?.data?.[0]) {
+          setConfig(res.data.data[0]);
+          updatePreviewConfig(res.data.data[0]);
+        }
+      })
+      .catch((err) => {
+        console.error('[V2FilePreviewer-Init] Failed:', err);
+      });
+  }, [app]);
+
+  // Global click listener for V2
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Look for closest anchor tag, OR closest element with data-file-url (generic)
+      const link = target.closest('a');
+
+      // If clicked on an image or something inside a container that represents a file,
+      // sometimes the link might be further up or controlled by JS.
+      // But for now let's assume standard <a href="..."> structure which V2 seems to use for downloads.
+
+      if (!link || !link.href) return;
+
+      const href = link.href;
+
+      try {
+        const urlObj = new URL(href);
+        const pathname = urlObj.pathname;
+        // Improve extension extraction: handle multiple dots, ensure lowercase
+        const parts = pathname.split('.');
+        if (parts.length < 2) return;
+
+        const rawExt = parts.pop();
+        if (!rawExt) return;
+
+        // Sanitize characters just in case
+        const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+        // We need to check if we SHOULD handle this.
+        if (!ext) return;
+
+        const fileMock = {
+          name: pathname.split('/').pop(),
+          title: decodeURIComponent(pathname.split('/').pop() || ''),
+          extname: '.' + ext,
+          url: href,
+        };
+
+        console.log('[V2FilePreviewer] Detected File:', fileMock);
+
+        // Check if we support it
+        // Re-use logic:
+        const currentConfig = globalPreviewConfig || config; // Fallback to global if provider config not ready
+        console.log('[V2FilePreviewer-Click] Using Config:', currentConfig);
+
+        if (!currentConfig) {
+          // If config hasn't loaded yet, we might fallback to Microsoft,
+          // but maybe we should just let default browser behavior happen?
+          // Or we wait?
+          // Current logic: generic default is Microsoft.
+        }
+
+        let matched = false;
+
+        // 1. Configured extensions
+        if (currentConfig?.customExtensions || currentConfig?.kkFileViewExtensions) {
+          const extensions = (currentConfig.customExtensions || currentConfig.kkFileViewExtensions).split(',');
+          if (extensions.some((e) => e.trim().toLowerCase() === ext.toLowerCase())) {
+            matched = true;
+          }
+        }
+
+        // 2. Default Office
+        // If it's an XLSX, isOfficeFile should be true.
+        // If it falls through to here, it means it wasn't caught by custom extensions.
+        if (!matched && isOfficeFile(fileMock)) {
+          matched = true;
+        }
+
+        if (matched) {
+          e.preventDefault();
+          e.stopPropagation();
+          setPreviewFile(fileMock);
+        }
+      } catch (err) {
+        console.warn('[V2] Click Error:', err);
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick, true); // Capture phase to beat other handlers
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+    };
+  }, [config]);
+
+  const { url, warnings, iframeError } = React.useMemo(() => {
+    return getPreviewState(previewFile, config || globalPreviewConfig, t);
+  }, [previewFile, config]);
+
+  return (
+    <>
+      <PreviewerModal
+        index={previewFile ? 0 : null}
+        file={previewFile}
+        url={url}
+        onSwitchIndex={(idx) => !idx && setPreviewFile(null)}
+        warnings={warnings}
+        iframeError={iframeError}
+        t={t}
+      />
+      {children}
+    </>
+  );
 }
 
 export default PluginFilePreviewerOfficeClient;

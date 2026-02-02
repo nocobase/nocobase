@@ -4,7 +4,7 @@
   "displayName.zh-CN": "认证：邮箱",
   "description": "Email authentication with verification code.",
   "description.zh-CN": "通过邮箱验证码认证身份。",
-  "version": "2.0.0-beta.13",
+  "version": "2.0.0-beta.18",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
