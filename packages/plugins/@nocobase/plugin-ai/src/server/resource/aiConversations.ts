@@ -232,6 +232,7 @@ export default {
               toolCall.invokeStatus = toolMessage?.invokeStatus;
               toolCall.auto = toolMessage?.auto;
               toolCall.status = toolMessage?.status;
+              toolCall.content = toolMessage?.content; // [AI_DEBUG] tool execution result
             }
           }
 

@@ -43,6 +43,9 @@ interface ChatBoxState {
   showCodeHistory: boolean;
 
   modelOverride?: ModelOverride | null;
+
+  // [AI_DEBUG]
+  showDebugPanel: boolean;
 }
 
 interface ChatBoxActions {
@@ -66,6 +69,9 @@ interface ChatBoxActions {
   setShowCodeHistory: (show: boolean) => void;
 
   setModelOverride: (override: ModelOverride | null) => void;
+
+  // [AI_DEBUG]
+  setShowDebugPanel: (show: boolean) => void;
 }
 
 const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
@@ -91,6 +97,8 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   },
   showCodeHistory: false,
   modelOverride: null,
+  // [AI_DEBUG]
+  showDebugPanel: false,
 
   setOpen: (open) => set({ open }),
   setExpanded: (expanded) => set({ expanded }),
@@ -118,6 +126,8 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   setSenderRef: (ref) => set({ senderRef: ref }),
   setShowCodeHistory: (show) => set({ showCodeHistory: show }),
   setModelOverride: (override) => set({ modelOverride: override }),
+  // [AI_DEBUG]
+  setShowDebugPanel: (show) => set({ showDebugPanel: show }),
 }));
 
 export const useChatBoxStore = createSelectors(store);
