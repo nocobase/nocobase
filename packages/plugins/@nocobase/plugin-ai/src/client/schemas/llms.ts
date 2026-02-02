@@ -41,24 +41,14 @@ export const createLLMSchema = {
           'x-decorator': 'FormItem',
           title: '{{ t("Enabled models") }}',
           'x-component': 'EnabledModelsSelect',
-          'x-reactions': [
-            {
-              dependencies: ['provider'],
-              fulfill: {
-                schema: {
-                  'x-visible': '{{!!$deps[0]}}',
-                },
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
               },
             },
-            {
-              dependencies: ['useRecommended'],
-              fulfill: {
-                state: {
-                  required: '{{!$deps[0]}}',
-                },
-              },
-            },
-          ],
+          },
         },
         title: {
           type: 'string',
@@ -298,14 +288,6 @@ export const llmsSchema = {
                               'x-decorator': 'FormItem',
                               title: '{{ t("Enabled models") }}',
                               'x-component': 'EnabledModelsSelect',
-                              'x-reactions': {
-                                dependencies: ['useRecommended'],
-                                fulfill: {
-                                  state: {
-                                    required: '{{!$deps[0]}}',
-                                  },
-                                },
-                              },
                             },
                             title: {
                               type: 'string',

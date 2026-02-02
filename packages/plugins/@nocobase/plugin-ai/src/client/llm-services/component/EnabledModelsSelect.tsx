@@ -37,9 +37,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   useEffect(() => {
     const enabledModels = form.values.enabledModels;
     const isEmpty = !enabledModels || (Array.isArray(enabledModels) && enabledModels.length === 0);
-    const initialMode = isEmpty ? 'auto' : 'custom';
-    setMode(initialMode);
-    form.setValuesIn('useRecommended', initialMode === 'auto');
+    setMode(isEmpty ? 'auto' : 'custom');
   }, []);
 
   // Fetch models when provider, options, or mode change
@@ -82,9 +80,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   }, [provider, optionsKey, mode]);
 
   const handleAutoModeChange = (checked: boolean) => {
-    const newMode = checked ? 'auto' : 'custom';
-    setMode(newMode);
-    form.setValuesIn('useRecommended', checked);
+    setMode(checked ? 'auto' : 'custom');
     if (checked) {
       field.value = [];
     }

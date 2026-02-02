@@ -25,7 +25,7 @@ export const LLMTestFlight: React.FC = observer(() => {
   const [loading, setLoading] = useState(false);
 
   const handleTest = async () => {
-    const { provider, options, enabledModels, useRecommended } = form.values;
+    const { provider, options, enabledModels } = form.values;
 
     // Check if API Key is filled
     if (!options?.apiKey) {
@@ -35,7 +35,7 @@ export const LLMTestFlight: React.FC = observer(() => {
 
     // Determine which model to use
     let model: string;
-    if (useRecommended || !enabledModels || enabledModels.length === 0) {
+    if (!enabledModels || enabledModels.length === 0) {
       // Auto Mode: use first recommended model
       const recommended = getRecommendedModels(provider);
       if (recommended.length === 0) {

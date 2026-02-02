@@ -83,18 +83,18 @@ describe('EnabledModelsSelect Logic', () => {
     it('should clear enabledModels when switching to Auto Mode', () => {
       // Simulate the behavior
       let enabledModels = ['gpt-4o', 'gpt-4o-mini'];
-      let useRecommended = false;
+      let mode: 'auto' | 'custom' = 'custom';
 
       // Switch to auto mode
       const switchToAuto = () => {
+        mode = 'auto';
         enabledModels = [];
-        useRecommended = true;
       };
 
       switchToAuto();
 
       expect(enabledModels).toEqual([]);
-      expect(useRecommended).toBe(true);
+      expect(mode).toBe('auto');
     });
   });
 
@@ -127,30 +127,27 @@ describe('EnabledModelsSelect Logic', () => {
   describe('P1: Mode switch behavior', () => {
     it('should toggle between auto and custom modes', () => {
       let mode: 'auto' | 'custom' = 'auto';
-      let useRecommended = true;
+      let enabledModels: string[] = [];
 
       // Switch to custom
       const switchToCustom = () => {
         mode = 'custom';
-        useRecommended = false;
       };
 
       // Switch to auto
       const switchToAuto = () => {
         mode = 'auto';
-        useRecommended = true;
+        enabledModels = [];
       };
 
       expect(mode).toBe('auto');
-      expect(useRecommended).toBe(true);
 
       switchToCustom();
       expect(mode).toBe('custom');
-      expect(useRecommended).toBe(false);
 
       switchToAuto();
       expect(mode).toBe('auto');
-      expect(useRecommended).toBe(true);
+      expect(enabledModels).toEqual([]);
     });
   });
 

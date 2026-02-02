@@ -140,8 +140,8 @@ const aiResource: ResourceOptions = {
         .map((service) => {
           let models: string[] = service.enabledModels || [];
 
-          // If enabledModels is empty and useRecommended is true, use recommended models
-          if (models.length === 0 && service.useRecommended !== false) {
+          // If enabledModels is empty, use recommended models
+          if (models.length === 0) {
             models = getRecommendedModels(service.provider);
           }
 

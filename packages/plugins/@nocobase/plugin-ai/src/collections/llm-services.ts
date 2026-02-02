@@ -43,11 +43,6 @@ export default {
       defaultValue: [],
     },
     {
-      name: 'useRecommended',
-      type: 'boolean',
-      defaultValue: true,
-    },
-    {
       name: 'modelOptions',
       type: 'jsonb',
       defaultValue: {

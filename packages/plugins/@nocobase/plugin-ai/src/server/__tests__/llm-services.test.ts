@@ -127,12 +127,10 @@ describe('LLM Services API Logic', () => {
         title: 'Test Service',
         provider: 'openai',
         options: { apiKey: 'test-key' },
-        enabledModels: [], // Auto Mode
-        useRecommended: true,
+        enabledModels: [], // Auto Mode - empty means use recommended models
       };
 
       expect(autoModeService.enabledModels).toEqual([]);
-      expect(autoModeService.useRecommended).toBe(true);
     });
 
     it('should store Custom Mode as enabledModels array with values', () => {
@@ -142,11 +140,9 @@ describe('LLM Services API Logic', () => {
         provider: 'openai',
         options: { apiKey: 'test-key' },
         enabledModels: ['gpt-4o', 'gpt-4o-mini'],
-        useRecommended: false,
       };
 
       expect(customModeService.enabledModels).toEqual(['gpt-4o', 'gpt-4o-mini']);
-      expect(customModeService.useRecommended).toBe(false);
     });
 
     it('should store baseURL in options object', () => {
@@ -262,7 +258,6 @@ describe('LLM Services API Logic', () => {
         provider: 'openai',
         options: { apiKey: 'test-key', baseURL: 'https://api.example.com' },
         enabledModels: ['gpt-4o'],
-        useRecommended: false,
         modelOptions: {
           temperature: 0.7,
           topP: 0.9,
