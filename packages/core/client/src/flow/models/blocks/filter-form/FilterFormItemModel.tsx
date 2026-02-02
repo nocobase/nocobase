@@ -23,59 +23,190 @@ import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { FilterManager } from '../filter-manager';
 
-const getModelFields = async (model: CollectionBlockModel) => {
+const getAssociationTargetCollection = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
+  if (field?.targetCollection) {
+    return field.targetCollection;
+  }
+  const targetName = field?.target;
+  if (!targetName) {
+    return;
+  }
+  if (collection?.dataSource?.getCollection) {
+    return collection.dataSource.getCollection(targetName);
+  }
+  const dataSourceKey = collection?.dataSourceKey;
+  if (dataSourceKey && model?.context?.dataSourceManager?.getCollection) {
+    return model.context.dataSourceManager.getCollection(dataSourceKey, targetName);
+  }
+};
+
+const getTargetFilterableFields = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
+  const targetCollection = getAssociationTargetCollection(field, collection, model);
+  if (!targetCollection?.getFields) {
+    return [];
+  }
+  return (targetCollection.getFields() || []).filter((childField: any) => childField?.filterable);
+};
+
+const MAX_ASSOCIATION_DEPTH = 5;
+
+const buildFilterFormFieldItem = ({
+  model,
+  collection,
+  ctxWithFlags,
+  field,
+  fieldPath,
+  labelPrefix,
+}: {
+  model: CollectionBlockModel;
+  collection: Collection | undefined;
+  ctxWithFlags: FlowModelContext;
+  field: any;
+  fieldPath: string;
+  labelPrefix?: string;
+}) => {
+  const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
+  if (!binding) {
+    return;
+  }
+  const fieldModel = binding.modelName;
+  const label = field.title || field.name;
+  const displayLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
+  return {
+    key: fieldPath,
+    label: displayLabel,
+    useModel: 'FilterFormItemModel',
+    refreshTargets: ['FilterFormCustomItemModel'],
+    createModelOptions: () => ({
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: collection?.dataSourceKey,
+            collectionName: collection?.name,
+            fieldPath,
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
+            defaultTargetUid: model.uid,
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: fieldModel,
+          props:
+            typeof binding.defaultProps === 'function'
+              ? binding.defaultProps(model.context, field)
+              : binding.defaultProps,
+        },
+      },
+    }),
+  };
+};
+
+const buildAssociationFieldItems = ({
+  model,
+  collection,
+  ctxWithFlags,
+  field,
+  fieldPath,
+  labelPrefix,
+  depth,
+  relationItems,
+}: {
+  model: CollectionBlockModel;
+  collection: Collection | undefined;
+  ctxWithFlags: FlowModelContext;
+  field: any;
+  fieldPath: string;
+  labelPrefix?: string;
+  depth: number;
+  relationItems: any[];
+}) => {
+  const targetCollection = getAssociationTargetCollection(field, collection, model);
+  if (!targetCollection) {
+    return;
+  }
+  if (depth > MAX_ASSOCIATION_DEPTH) {
+    return;
+  }
+
+  const currentLabel = field.title || field.name;
+  const nextLabelPrefix = labelPrefix ? `${labelPrefix} / ${currentLabel}` : currentLabel;
+  const targetFields = getTargetFilterableFields(field, collection, model);
+  targetFields.forEach((targetField: any) => {
+    const targetFieldPath = `${fieldPath}.${targetField.name}`;
+    const targetItem = buildFilterFormFieldItem({
+      model,
+      collection,
+      ctxWithFlags,
+      field: targetField,
+      fieldPath: targetFieldPath,
+      labelPrefix: nextLabelPrefix,
+    });
+    if (targetItem) {
+      relationItems.push(targetItem);
+    }
+    if (targetField?.targetCollection) {
+      buildAssociationFieldItems({
+        model,
+        collection,
+        ctxWithFlags,
+        field: targetField,
+        fieldPath: targetFieldPath,
+        labelPrefix: nextLabelPrefix,
+        depth: depth + 1,
+        relationItems,
+      });
+    }
+  });
+};
+
+const getModelFieldGroups = async (model: CollectionBlockModel) => {
   // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
   const collection = (model as any).collection || (model.context.collection as Collection);
   const fields = (await model?.getFilterFields?.()) || [];
-  return fields
-    .map((field: any) => {
-      // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
-      const ctxWithFlags = new FlowModelContext(model);
-      ctxWithFlags.addDelegate(model.context);
-      ctxWithFlags.defineProperty('flags', {
-        value: { ...model.context?.flags, isInFilterFormBlock: true },
-      });
-      const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
-      if (!binding) {
-        return;
-      }
-      const fieldModel = binding.modelName;
-      const fieldPath = field.name;
-      return {
-        key: field.name,
-        label: field.title,
-        useModel: 'FilterFormItemModel',
-        refreshTargets: ['FilterFormCustomItemModel'],
-        createModelOptions: () => ({
-          use: 'FilterFormItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection?.dataSourceKey,
-                collectionName: collection?.name,
-                fieldPath,
-              },
-            },
-            filterFormItemSettings: {
-              init: {
-                filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
-                defaultTargetUid: model.uid,
-              },
-            },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
-              props:
-                typeof binding.defaultProps === 'function'
-                  ? binding.defaultProps(model.context, field)
-                  : binding.defaultProps,
-            },
-          },
-        }),
-      };
-    })
-    .filter(Boolean);
+  // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
+  const ctxWithFlags = new FlowModelContext(model);
+  ctxWithFlags.addDelegate(model.context);
+  ctxWithFlags.defineProperty('flags', {
+    value: { ...model.context?.flags, isInFilterFormBlock: true },
+  });
+
+  const baseItems: any[] = [];
+  const relationItems: any[] = [];
+
+  fields.forEach((field: any) => {
+    const baseFieldPath = field.name;
+    const baseItem = buildFilterFormFieldItem({
+      model,
+      collection,
+      ctxWithFlags,
+      field,
+      fieldPath: baseFieldPath,
+    });
+    if (baseItem) {
+      baseItems.push(baseItem);
+    }
+
+    buildAssociationFieldItems({
+      model,
+      collection,
+      ctxWithFlags,
+      field,
+      fieldPath: baseFieldPath,
+      depth: 1,
+      relationItems,
+    });
+  });
+
+  return {
+    baseItems: baseItems.filter(Boolean),
+    relationItems: relationItems.filter(Boolean),
+  };
 };
 
 export class FilterFormItemModel extends FilterableItemModel<{
@@ -130,16 +261,30 @@ export class FilterFormItemModel extends FilterableItemModel<{
           >{`${model.title} #${model.uid.substring(0, 4)}`}</span>
         ),
         children: async () => {
-          return [
+          const { baseItems, relationItems } = await getModelFieldGroups(model);
+          const groups: any[] = [
             {
               key: 'fields',
-              label: 'Fields',
+              label: ctx.t('Fields'),
               type: 'group' as const,
               searchable: true,
-              searchPlaceholder: 'Search fields',
-              children: await getModelFields(model),
+              searchPlaceholder: ctx.t('Search fields'),
+              children: baseItems,
             },
           ];
+
+          if (relationItems.length) {
+            groups.push({
+              key: 'relation-fields',
+              label: ctx.t('Association fields'),
+              type: 'group' as const,
+              searchable: true,
+              searchPlaceholder: ctx.t('Search association fields'),
+              children: relationItems,
+            });
+          }
+
+          return [...groups];
         },
       };
     });
