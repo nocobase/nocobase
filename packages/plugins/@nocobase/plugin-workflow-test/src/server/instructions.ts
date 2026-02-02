@@ -94,12 +94,18 @@ export default {
         upstreamId: input?.id ?? null,
       });
 
+      const plugin = processor.options.plugin;
       setTimeout(() => {
+        // Check if app is still running before resuming to avoid "Database handle is closed" error
+        if (!plugin.app || plugin.app.stopped) {
+          return;
+        }
+
         job.set({
           status: 1,
         });
 
-        processor.options.plugin.resume(job);
+        plugin.resume(job);
       }, node.config.duration ?? 100);
 
       return null;
