@@ -161,6 +161,11 @@ ctx.render(\`
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
+            info: {
+              deprecated: {
+                replacedBy: 'ctx.render',
+              },
+            },
           });
           const navigator = createSafeNavigator();
           await ctx.runjs(

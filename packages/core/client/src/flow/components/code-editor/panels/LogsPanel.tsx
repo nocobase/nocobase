@@ -32,9 +32,11 @@ export const LogsPanel: React.FC<{
       ) : (
         logs.map((l, i) => {
           const color = l.level === 'error' ? '#ff4d4f' : l.level === 'warn' ? '#faad14' : '#333';
-          const clickable = l.level === 'error' && typeof l.line === 'number' && typeof l.column === 'number';
+          const clickable =
+            (l.level === 'error' || l.level === 'warn') && typeof l.line === 'number' && typeof l.column === 'number';
           const displayLine =
             typeof l.line === 'number' ? Math.max(1, l.line - WRAPPER_PRELUDE_LINES) : (l.line as any);
+          const msgHasInlinePos = typeof l.msg === 'string' && /[（(]line\s*\d+(:\d+)?[）)]/i.test(l.msg);
           return (
             <pre
               key={i}
@@ -56,7 +58,7 @@ export const LogsPanel: React.FC<{
               }}
             >
               [{l.level}] {l.msg}
-              {clickable ? ` (${tr('at')} ${displayLine}:${l.column})` : ''}
+              {clickable && !msgHasInlinePos ? ` (${tr('at')} ${displayLine}:${l.column})` : ''}
             </pre>
           );
         })

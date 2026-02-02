@@ -191,4 +191,61 @@ describe('createRunJSCompletionSource', () => {
     const inserted = mockView.dispatch.mock.calls[0][0]?.changes?.insert;
     expect(inserted).toBe('ctx.popup.record.createdAt');
   });
+
+  it('supports async hidden/disabled/disabledReason in meta nodes', async () => {
+    const hostCtx: any = {
+      t: (s: string) => s,
+      getPropertyMetaTree: (value: string) => {
+        if (value === '{{ ctx.record }}') {
+          return [
+            {
+              name: 'visible',
+              title: 'Visible',
+              type: 'string',
+              paths: ['record', 'visible'],
+              hidden: async () => false,
+            },
+            {
+              name: 'hidden',
+              title: 'Hidden',
+              type: 'string',
+              paths: ['record', 'hidden'],
+              hidden: async () => true,
+            },
+            {
+              name: 'disabled',
+              title: 'Disabled',
+              type: 'string',
+              paths: ['record', 'disabled'],
+              disabled: async () => true,
+              disabledReason: async () => 'not allowed',
+            },
+          ];
+        }
+        return [];
+      },
+    };
+
+    const source = createRunJSCompletionSource({ hostCtx, staticOptions: [] });
+
+    const text = 'ctx.record.'; // cursor after dot
+    const context: any = {
+      explicit: true,
+      pos: text.length,
+      state: { doc: makeDoc(text) },
+      matchBefore: () => ({ from: 0, to: text.length, text }),
+    };
+
+    const res = await source(context);
+    expect(res).toBeTruthy();
+    const options = (res as any).options as any[];
+
+    expect(options.some((o) => o.label === 'ctx.record.visible')).toBe(true);
+    expect(options.some((o) => o.label === 'ctx.record.hidden')).toBe(false);
+
+    const disabled = options.find((o) => o.label === 'ctx.record.disabled');
+    expect(disabled).toBeTruthy();
+    expect(String(disabled?.info || '')).toContain('Disabled:');
+    expect(String(disabled?.info || '')).toContain('not allowed');
+  });
 });

@@ -12,6 +12,7 @@ import { FlowContext, FlowRuntimeContext, FlowRunJSContext, type PropertyMetaFac
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
+import { setupRunJSContexts } from '../runjs-context/setup';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -912,6 +913,21 @@ describe('FlowContext.getApiInfos', () => {
     expect(infos['libs.ReactDOM']?.description).toContain('ctx.libs.ReactDOM');
     expect(infos['libs.antd']?.description).toContain('ctx.libs.antd');
     expect(infos['libs.antdIcons']?.description).toContain('antdIcons');
+  });
+
+  it('should include getApiInfos/getVarInfos/getEnvInfos in api infos output', async () => {
+    await setupRunJSContexts();
+    const ctx = new FlowContext();
+    const infos = await ctx.getApiInfos();
+
+    expect(infos.getApiInfos?.type).toBe('function');
+    expect(String(infos.getApiInfos?.description || '')).toMatch(/\S/);
+
+    expect(infos.getVarInfos?.type).toBe('function');
+    expect(String(infos.getVarInfos?.description || '')).toMatch(/\S/);
+
+    expect(infos.getEnvInfos?.type).toBe('function');
+    expect(String(infos.getEnvInfos?.description || '')).toMatch(/\S/);
   });
 });
 
