@@ -67,6 +67,30 @@ export class DetailsGridModel extends GridModel<{
       </AddSubModelButton>
     );
   }
+
+  render() {
+    const height = this.props?.height;
+    const heightMode = this.props?.heightMode;
+    const token = this.context.themeToken;
+    const content = super.render();
+    if (heightMode === 'defaultHeight') {
+      return content;
+    }
+    return (
+      <div
+        style={{
+          height,
+          overflowY: 'auto',
+          marginLeft: `-${token.marginLG}px`,
+          marginRight: `-${token.marginLG}px`,
+          paddingLeft: `${token.marginLG}px`,
+          paddingRight: `${token.marginLG}px`,
+        }}
+      >
+        {content}
+      </div>
+    );
+  }
 }
 
 DetailsGridModel.registerFlow({
