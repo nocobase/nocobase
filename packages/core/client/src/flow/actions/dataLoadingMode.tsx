@@ -48,8 +48,10 @@ export const dataLoadingMode = defineAction({
       const resource = blockModel.resource as MultiRecordResource;
       if (resource) {
         resource.setData([]);
-        resource.setMeta({ count: 0, hasNext: false, page: 1 });
-        resource.setPage?.(1);
+        resource.setMeta({ count: 0, hasNext: false });
+        if (typeof resource.setPage === 'function') {
+          resource.setPage(1);
+        }
         resource.loading = false;
       }
     } else if (params.mode === 'auto') {
