@@ -55,7 +55,6 @@ const getPageHeader = (root: HTMLElement) => {
 
 const getAddBlockContainer = (root: HTMLElement) => {
   const button = root.querySelector('[data-flow-add-block]') as HTMLElement | null;
-  console.log('add block button:', button);
   if (!button) return null;
   return (button.parentElement as HTMLElement | null) || button;
 };
@@ -203,7 +202,6 @@ export const BlockItemCard = React.forwardRef(
         )}
       </div>
     );
-    console.log('BlockItemCard height:', height, props);
     return (
       <Card
         ref={setCardRef as any}
