@@ -15,8 +15,15 @@ import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
 
 import Plugin from '..';
-import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MIN, LIMIT_FILES } from '../../constants';
+import {
+  FILE_FIELD_NAME,
+  FILE_SIZE_LIMIT_DEFAULT,
+  FILE_SIZE_LIMIT_MIN,
+  LIMIT_FILES,
+  STORAGE_TYPE_LOCAL,
+} from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
+import { getDocumentRoot, resolveSafePath } from '../storages/local';
 
 function makeMulterStorage(storage: StorageType) {
   const innerStorage = storage.make();
@@ -190,7 +197,7 @@ export async function createMiddleware(ctx: Context, next: Next) {
   const { attachmentField } = ctx.action.params;
   const collection = ctx.db.getCollection(resourceName);
 
-  if (collection?.options?.template !== 'file' || !['upload', 'create'].includes(actionName)) {
+  if (collection?.options?.template !== 'file' || !['upload', 'create', 'update'].includes(actionName)) {
     return next();
   }
 
@@ -198,8 +205,6 @@ export async function createMiddleware(ctx: Context, next: Next) {
     resourceName === 'attachments'
       ? ctx.db.getFieldByPath(attachmentField)?.options?.storage
       : collection.options.storage;
-  // const StorageRepo = ctx.db.getRepository('storages');
-  // const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
   const plugin = ctx.app.pm.get(Plugin) as Plugin;
   const storage = Array.from(plugin.storagesCache.values()).find((storage) =>
     storageName ? storage.name === storageName : storage.default,
@@ -213,6 +218,26 @@ export async function createMiddleware(ctx: Context, next: Next) {
   if (ctx?.request.is('multipart/*')) {
     await multipart(ctx, next);
   } else {
+    const { values } = ctx.action.params;
+    if (storage.type === STORAGE_TYPE_LOCAL) {
+      if (values?.path != null && typeof values.path !== 'string') {
+        return ctx.throw(400, 'Invalid path');
+      }
+      if (values?.filename != null && typeof values.filename !== 'string') {
+        return ctx.throw(400, 'Invalid filename');
+      }
+      const filePath = values?.path ?? '';
+      const filename = values?.filename ?? '';
+      try {
+        resolveSafePath(getDocumentRoot(storage), filePath, filename);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'PATH_TRAVERSAL') {
+          return ctx.throw(400, error);
+        }
+        throw error;
+      }
+    }
+
     ctx.action.mergeParams({
       values: {
         storage: { id: storage.id },
