@@ -107,24 +107,20 @@ const buildFilterFormFieldItem = ({
   };
 };
 
-const buildAssociationFieldItems = ({
+const buildAssociationFieldMenuItem = ({
   model,
   collection,
   ctxWithFlags,
   field,
   fieldPath,
-  labelPrefix,
   depth,
-  relationItems,
 }: {
   model: CollectionBlockModel;
   collection: Collection | undefined;
   ctxWithFlags: FlowModelContext;
   field: any;
   fieldPath: string;
-  labelPrefix?: string;
   depth: number;
-  relationItems: any[];
 }) => {
   const targetCollection = getAssociationTargetCollection(field, collection, model);
   if (!targetCollection) {
@@ -134,35 +130,83 @@ const buildAssociationFieldItems = ({
     return;
   }
 
-  const currentLabel = field.title || field.name;
-  const nextLabelPrefix = labelPrefix ? `${labelPrefix} / ${currentLabel}` : currentLabel;
-  const targetFields = getTargetFilterableFields(field, collection, model);
-  targetFields.forEach((targetField: any) => {
-    const targetFieldPath = `${fieldPath}.${targetField.name}`;
-    const targetItem = buildFilterFormFieldItem({
-      model,
-      collection,
-      ctxWithFlags,
-      field: targetField,
-      fieldPath: targetFieldPath,
-      labelPrefix: nextLabelPrefix,
-    });
-    if (targetItem) {
-      relationItems.push(targetItem);
-    }
-    if (targetField?.targetCollection) {
-      buildAssociationFieldItems({
-        model,
-        collection,
-        ctxWithFlags,
-        field: targetField,
-        fieldPath: targetFieldPath,
-        labelPrefix: nextLabelPrefix,
-        depth: depth + 1,
-        relationItems,
+  const label = field.title || field.name;
+  const t = model.context?.t || ctxWithFlags?.t || ((value: string) => value);
+
+  return {
+    key: `${fieldPath}-associationField`,
+    label,
+    children: async () => {
+      const targetFields = getTargetFilterableFields(field, collection, model);
+      const fieldItems: any[] = [];
+      const associationItems: any[] = [];
+
+      targetFields.forEach((targetField: any) => {
+        const targetFieldPath = `${fieldPath}.${targetField.name}`;
+        if (targetField?.targetCollection) {
+          const associationItem = buildAssociationFieldMenuItem({
+            model,
+            collection,
+            ctxWithFlags,
+            field: targetField,
+            fieldPath: targetFieldPath,
+            depth: depth + 1,
+          });
+          if (associationItem) {
+            associationItems.push(associationItem);
+          }
+          return;
+        }
+
+        const targetItem = buildFilterFormFieldItem({
+          model,
+          collection,
+          ctxWithFlags,
+          field: targetField,
+          fieldPath: targetFieldPath,
+        });
+        if (targetItem) {
+          fieldItems.push(targetItem);
+        }
       });
-    }
-  });
+
+      const groups: any[] = [];
+
+      if (fieldItems.length) {
+        groups.push({
+          key: `${fieldPath}-fields`,
+          label: t('Fields'),
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: t('Search fields'),
+          children: fieldItems,
+        });
+      }
+
+      if (associationItems.length) {
+        groups.push({
+          key: `${fieldPath}-relation-fields`,
+          label: t('Association fields'),
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: t('Search association fields'),
+          children: associationItems,
+        });
+      }
+
+      if (groups.length) {
+        return groups;
+      }
+
+      return [
+        {
+          key: `${fieldPath}-empty`,
+          label: <Empty style={{ width: 140 }} description={t('No data')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+          disabled: true,
+        },
+      ];
+    },
+  };
 };
 
 const getModelFieldGroups = async (model: CollectionBlockModel) => {
@@ -192,15 +236,19 @@ const getModelFieldGroups = async (model: CollectionBlockModel) => {
       baseItems.push(baseItem);
     }
 
-    buildAssociationFieldItems({
-      model,
-      collection,
-      ctxWithFlags,
-      field,
-      fieldPath: baseFieldPath,
-      depth: 1,
-      relationItems,
-    });
+    if (field?.targetCollection) {
+      const associationItem = buildAssociationFieldMenuItem({
+        model,
+        collection,
+        ctxWithFlags,
+        field,
+        fieldPath: baseFieldPath,
+        depth: 1,
+      });
+      if (associationItem) {
+        relationItems.push(associationItem);
+      }
+    }
   });
 
   return {

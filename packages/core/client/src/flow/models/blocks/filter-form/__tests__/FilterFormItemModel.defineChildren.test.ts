@@ -114,12 +114,33 @@ describe('FilterFormItemModel defineChildren association fields', () => {
 
     const associationItems = associationGroup?.children || [];
     const associationKeys = associationItems.map((item: any) => item.key);
-    expect(associationKeys).toContain('department.name');
-    expect(associationKeys).toContain('department.manager');
-    expect(associationKeys).toContain('department.manager.name');
+    expect(associationKeys).toContain('department-associationField');
     expect(associationKeys).not.toContain('department');
 
-    const targetItem = associationItems.find((item: any) => item.key === 'department.manager.name');
+    const departmentAssociation = associationItems.find((item: any) => item.key === 'department-associationField');
+    const departmentGroups = await departmentAssociation.children();
+    const departmentFieldsGroup = departmentGroups.find((group: any) => group.key === 'department-fields');
+    const departmentAssociationGroup = departmentGroups.find(
+      (group: any) => group.key === 'department-relation-fields',
+    );
+
+    const departmentFieldKeys = (departmentFieldsGroup?.children || []).map((item: any) => item.key);
+    expect(departmentFieldKeys).toContain('department.name');
+
+    const departmentAssociationItems = departmentAssociationGroup?.children || [];
+    const departmentAssociationKeys = departmentAssociationItems.map((item: any) => item.key);
+    expect(departmentAssociationKeys).toContain('department.manager-associationField');
+
+    const managerAssociation = departmentAssociationItems.find(
+      (item: any) => item.key === 'department.manager-associationField',
+    );
+    const managerGroups = await managerAssociation.children();
+    const managerFieldsGroup = managerGroups.find((group: any) => group.key === 'department.manager-fields');
+
+    const managerFieldKeys = (managerFieldsGroup?.children || []).map((item: any) => item.key);
+    expect(managerFieldKeys).toContain('department.manager.name');
+
+    const targetItem = managerFieldsGroup?.children?.find((item: any) => item.key === 'department.manager.name');
     const createOptions = await targetItem.createModelOptions();
     const filterItem = engine.createModel<FilterFormItemModel>({
       uid: 'filter-item',
