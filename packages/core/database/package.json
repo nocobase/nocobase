@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/database",
-  "version": "1.9.40",
+  "version": "1.9.41",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@nocobase/logger": "1.9.40",
-    "@nocobase/utils": "1.9.40",
+    "@nocobase/logger": "1.9.41",
+    "@nocobase/utils": "1.9.41",
     "async-mutex": "^0.3.2",
     "chalk": "^4.1.1",
     "cron-parser": "4.4.0",
