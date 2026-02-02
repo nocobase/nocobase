@@ -43,7 +43,6 @@ const AssociationItem = (props) => {
   const prefix = props.underSubForm ? 'ctx.currentObject' : 'ctx.formValues';
   const path = `{{${prefix}.${props.fieldPath}}}`;
   const { data, loading, error } = useJsonTemplateResolver(path, [props.refreshId]);
-  console.log(path, data);
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   return <FieldModelRenderer {...props.mergedProps} model={props.modelForRender} value={data || props.value} />;
