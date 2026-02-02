@@ -133,7 +133,7 @@ export const conversationMiddleware = (
         }
       });
     },
-    beforeModel: async (state, _runtime) => {
+    beforeModel: async (state, runtime) => {
       const lastToolMessageIndex = state.lastToolMessageIndex;
       const toolMessages = state.messages
         .filter((x) => x.type === 'tool')
@@ -142,6 +142,7 @@ export const conversationMiddleware = (
         .map(convertToolMessage);
       if (toolMessages.length) {
         await aiEmployee.aiChatConversation.addMessages(toolMessages);
+        runtime.writer?.({ action: 'beforeSendToolMessage', body: toolMessages });
       }
     },
     afterModel: async (state, runtime) => {
@@ -170,12 +171,35 @@ export const conversationMiddleware = (
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIConversationMessage = await conversation.addMessages(values);
             if (toolCalls?.length) {
-              await aiEmployee.initToolCall(transaction, result.messageId, toolCalls as any);
+              const initializedToolCalls = await aiEmployee.initToolCall(
+                transaction,
+                result.messageId,
+                toolCalls as any,
+              );
+              const initializedToolCallMap = new Map(
+                initializedToolCalls.map((x) => x.toJSON()).map((x) => [x.toolCallId, x]),
+              );
+              for (const toolCall of toolCalls) {
+                const { status, content, invokeStatus, invokeStartTime, invokeEndTime, auto, execution } =
+                  (initializedToolCallMap.get(toolCall.id) as any) ?? {};
+                (toolCall as any).sessionId = result.sessionId;
+                (toolCall as any).messageId = result.messageId;
+                (toolCall as any).status = status;
+                (toolCall as any).content = content;
+                (toolCall as any).invokeStatus = invokeStatus;
+                (toolCall as any).invokeStartTime = invokeStartTime;
+                (toolCall as any).invokeEndTime = invokeEndTime;
+                (toolCall as any).auto = auto;
+                (toolCall as any).execution = execution;
+              }
             }
           });
         }
         if (toolCalls?.length) {
-          runtime.writer?.({ action: 'showToolCalls', body: toolCalls });
+          runtime.writer?.({
+            action: 'initToolCalls',
+            body: { toolCalls },
+          });
         }
 
         return newState;

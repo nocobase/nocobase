@@ -181,8 +181,11 @@ export class AIEmployee {
     const { signal, provider, allowEmpty = false } = options;
     let isMessageEmpty = true;
     try {
-      const toolMap = await this.getToolsMap();
-      let toolCallStarted = false;
+      this.ctx.res.write(
+        `data: ${JSON.stringify({
+          type: 'stream_start',
+        })}\n\n`,
+      );
       let toolCalls: AIToolCall[];
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
@@ -238,45 +241,32 @@ export class AIEmployee {
                 );
               }
             }
-
-            if (
-              toolCalls
-                .map((toolCall) => toolMap.get(toolCall.name))
-                .some((tools) => this.shouldInterruptToolCall(tools))
-            ) {
-              toolCallStarted = true;
-              this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
-              this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_calls', body: toolCalls })}\n\n`);
-            }
           }
         } else if (mode === 'custom') {
           if (isMessageEmpty) {
             isMessageEmpty = false;
           }
-          if (chunks.action === 'showToolCalls') {
-            toolCalls = chunks.body;
+          if (chunks.action === 'initToolCalls') {
+            toolCalls = chunks.body?.toolCalls ?? [];
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
+          } else if (chunks.action === 'beforeSendToolMessage') {
+            this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message', body: chunks.body })}\n\n`);
           } else if (chunks.action === 'beforeToolCall') {
             this.ctx.res.write(
               `data: ${JSON.stringify({
                 type: 'tool_call_status',
                 body: {
-                  toolCall: chunks.body,
+                  toolCall: chunks.body?.toolCall,
                   status: 'pending',
                 },
               })}\n\n`,
             );
-
-            if (!toolCallStarted) {
-              toolCallStarted = true;
-              this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
-            }
           } else if (chunks.action === 'afterToolCall') {
             this.ctx.res.write(
               `data: ${JSON.stringify({
                 type: 'tool_call_status',
                 body: {
-                  toolCall: chunks.body,
+                  toolCall: chunks.body?.toolCall,
                   status: 'done',
                 },
               })}\n\n`,
@@ -289,6 +279,12 @@ export class AIEmployee {
         this.sendErrorResponse('Empty message');
         return;
       }
+
+      this.ctx.res.write(
+        `data: ${JSON.stringify({
+          type: 'stream_end',
+        })}\n\n`,
+      );
     } catch (err) {
       this.ctx.log.error(err);
       this.sendErrorResponse(err.message);
@@ -532,7 +528,7 @@ export class AIEmployee {
   ) {
     const nowTime = new Date();
     const toolMap = await this.getToolsMap();
-    await this.aiToolMessagesRepo.create({
+    return await this.aiToolMessagesRepo.create({
       values: toolCalls.map((toolCall) => ({
         id: this.plugin.snowflake.generate(),
         sessionId: this.sessionId,
