@@ -86,9 +86,8 @@ const useBlockHeight = ({
     const topOffset = Math.max(0, cardRect.top - pageTop);
     let bottomOffset = padding.bottom + ctx.themeToken.marginBlock;
     if (addBlockContainer) {
-      const addRect = addBlockContainer.getBoundingClientRect();
-      const gapBetween = Math.max(0, addRect.top - cardRect.bottom);
-      bottomOffset += gapBetween + getOuterHeight(addBlockContainer);
+      const gapBetween = ctx.themeToken.marginBlock;
+      bottomOffset = gapBetween + getOuterHeight(addBlockContainer) + padding.bottom;
     }
     const nextHeight = Math.max(0, Math.floor(window.innerHeight - pageTop - topOffset - bottomOffset));
     setFullHeight((prev) => (prev === nextHeight ? prev : nextHeight));
@@ -154,37 +153,6 @@ export const BlockItemCard = React.forwardRef(
       [ref],
     );
     const height = useBlockHeight({ ...(props as any), cardRef });
-    const overflowRestoreRef = useRef<{ element: HTMLElement; overflowX: string; overflowY: string } | null>(null);
-    const isFullHeight = heightMode === 'fullHeight';
-    useEffect(() => {
-      if (!isFullHeight) {
-        if (overflowRestoreRef.current) {
-          const { element, overflowX, overflowY } = overflowRestoreRef.current;
-          element.style.overflowX = overflowX;
-          element.style.overflowY = overflowY;
-          overflowRestoreRef.current = null;
-        }
-        return;
-      }
-      const element = cardRef.current?.closest('.nb-page') as HTMLElement | null;
-      if (!element) return;
-      if (!overflowRestoreRef.current) {
-        overflowRestoreRef.current = {
-          element,
-          overflowX: element.style.overflowX,
-          overflowY: element.style.overflowY,
-        };
-        element.style.overflowX = 'hidden';
-        element.style.overflowY = 'hidden';
-      }
-      return () => {
-        if (!overflowRestoreRef.current) return;
-        const { element: cachedElement, overflowX, overflowY } = overflowRestoreRef.current;
-        cachedElement.style.overflowX = overflowX;
-        cachedElement.style.overflowY = overflowY;
-        overflowRestoreRef.current = null;
-      };
-    }, [isFullHeight, height]);
     const title = (blockTitle || description) && (
       <div>
         <span> {t(blockTitle as any, { ns: NAMESPACE_UI_SCHEMA })}</span>
@@ -202,6 +170,7 @@ export const BlockItemCard = React.forwardRef(
         )}
       </div>
     );
+    console.log(height);
     return (
       <Card
         ref={setCardRef as any}
