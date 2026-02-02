@@ -21,6 +21,7 @@ export const suggestions: ToolsOptions = {
     name: 'suggestions',
     description: 'Provide a list of suggested prompts for the user to choose from.',
     schema: z.object({
+      option: z.string().describe('user selected option, ignore this param').optional(),
       options: z
         .array(z.string())
         .describe(
@@ -29,8 +30,8 @@ export const suggestions: ToolsOptions = {
         ),
     }),
   },
-  invoke: async (ctx: Context, _args, id) => {
-    const { messageId, args } = ctx.action?.params?.values || {};
+  invoke: async (ctx: Context, args, id) => {
+    const { messageId } = ctx.action?.params?.values || {};
     if (messageId) {
       const messageRepo = ctx.app.db.getRepository('aiMessages');
       const message = await messageRepo.findOne({

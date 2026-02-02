@@ -62,7 +62,7 @@ export const SuggestionsOptions: React.FC<
             }
             setDisabled(true);
             setSelected(option);
-            decisions.approve();
+            decisions.edit({ ...(toolCall.args ?? {}), option });
           }}
         >
           <div>{option}</div>
