@@ -20,7 +20,7 @@ import {
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel, dispatchEventDeep } from '@nocobase/client';
-import React from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { List, Space } from 'antd';
 import { css } from '@emotion/css';
 import { ListItemModel } from './ListItemModel';
@@ -184,21 +184,142 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   }
 
   renderComponent() {
-    return (
-      <>
-        {this.renderActions()}
+    const { heightMode, height } = this.decoratorProps;
+    return <ListBlockContent model={this} heightMode={heightMode} height={height} />;
+  }
+}
+
+const getOuterHeight = (element?: HTMLElement | null) => {
+  if (!element) return 0;
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = parseFloat(style.marginTop) || 0;
+  const marginBottom = parseFloat(style.marginBottom) || 0;
+  return rect.height + marginTop + marginBottom;
+};
+
+const useListHeight = ({
+  heightMode,
+  containerRef,
+  actionsRef,
+  listRef,
+  deps = [],
+}: {
+  heightMode?: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  actionsRef: React.RefObject<HTMLDivElement>;
+  listRef: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+}) => {
+  const [listHeight, setListHeight] = useState<number>();
+  const calcListHeight = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setListHeight((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const containerHeight = container.getBoundingClientRect().height;
+    if (!containerHeight) return;
+    const actionsHeight = getOuterHeight(actionsRef.current);
+    const paginationEl = listRef.current?.querySelector('.ant-list-pagination') as HTMLElement | null;
+    const paginationHeight = getOuterHeight(paginationEl);
+    const nextHeight = Math.max(0, Math.floor(containerHeight - actionsHeight - paginationHeight));
+    setListHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [heightMode, containerRef, actionsRef, listRef]);
+
+  useLayoutEffect(() => {
+    calcListHeight();
+  }, [calcListHeight, ...deps]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
+    const container = containerRef.current;
+    const actions = actionsRef.current;
+    const paginationEl = listRef.current?.querySelector('.ant-list-pagination') as HTMLElement | null;
+    const observer = new ResizeObserver(() => calcListHeight());
+    observer.observe(container);
+    if (actions) observer.observe(actions);
+    if (paginationEl) observer.observe(paginationEl);
+    return () => observer.disconnect();
+  }, [calcListHeight, containerRef, actionsRef, listRef, ...deps]);
+
+  return listHeight;
+};
+
+const ListBlockContent = ({
+  model,
+  heightMode,
+  height,
+}: {
+  model: ListBlockModel;
+  heightMode?: string;
+  height?: number;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const ctx = model.context;
+  const token = ctx.themeToken;
+
+  const listHeight = useListHeight({
+    heightMode,
+    containerRef,
+    actionsRef,
+    listRef,
+    deps: [height],
+  });
+  const listClassName = useMemo(
+    () => css`
+      .ant-spin-nested-loading {
+        height: var(--nb-list-height);
+        overflow: auto;
+        margin-left: -${token.marginLG}px;
+        margin-right: -${token.marginLG}px;
+        padding-left: ${token.marginLG}px;
+        padding-right: ${token.marginLG}px;
+      }
+      .ant-spin-nested-loading > .ant-spin-container {
+        min-height: 100%;
+      }
+    `,
+    [],
+  );
+  const listStyle = useMemo(() => {
+    if (listHeight == null) return model.props?.style;
+    return {
+      ...(model.props?.style || {}),
+      ['--nb-list-height' as any]: `${listHeight}px`,
+    };
+  }, [listHeight, model.props?.style]);
+  const containerStyle: any = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }
+    : undefined;
+
+  return (
+    <div ref={containerRef} style={containerStyle}>
+      <div ref={actionsRef}>{model.renderActions()}</div>
+      <div ref={listRef} style={{ flex: 1, minHeight: 0 }}>
         <List
-          {...this.props}
-          pagination={this.pagination()}
-          loading={this.resource?.loading}
-          dataSource={this.resource.getData()}
+          {...model.props}
+          className={model.props?.className ? `${model.props.className} ${listClassName}` : listClassName}
+          style={listStyle}
+          pagination={model.pagination()}
+          loading={model.resource?.loading}
+          dataSource={model.resource.getData()}
           renderItem={(item, index) => {
-            const model = this.subModels.item.createFork({}, `${index}`);
-            model.context.defineProperty('record', {
+            const itemModel = model.subModels.item.createFork({}, `${index}`);
+            itemModel.context.defineProperty('record', {
               get: () => item,
               cache: false,
             });
-            model.context.defineProperty('index', {
+            itemModel.context.defineProperty('index', {
               get: () => index,
               cache: false,
             });
@@ -211,15 +332,15 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
                   }
                 `}
               >
-                <FlowModelRenderer model={model} />
+                <FlowModelRenderer model={itemModel} />
               </List.Item>
             );
           }}
         />
-      </>
-    );
-  }
-}
+      </div>
+    </div>
+  );
+};
 
 ListBlockModel.registerFlow({
   key: 'resourceSettings2',
