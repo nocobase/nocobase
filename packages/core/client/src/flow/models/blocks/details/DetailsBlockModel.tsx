@@ -23,8 +23,7 @@ import {
   tExpr,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
-import _ from 'lodash';
-import React from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
@@ -141,18 +140,142 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const { heightMode, height } = this.decoratorProps;
     return (
-      <>
+      <DetailsBlockContent
+        model={this}
+        gridModel={this.subModels.grid}
+        isConfigMode={isConfigMode}
+        heightMode={heightMode}
+        height={height}
+        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
+      />
+    );
+  }
+}
+
+const getOuterHeight = (element?: HTMLElement | null) => {
+  if (!element) return 0;
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = parseFloat(style.marginTop) || 0;
+  const marginBottom = parseFloat(style.marginBottom) || 0;
+  return rect.height + marginTop + marginBottom;
+};
+
+const useDetailsGridHeight = ({
+  heightMode,
+  containerRef,
+  actionsRef,
+  paginationRef,
+  deps = [],
+}: {
+  heightMode?: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  actionsRef: React.RefObject<HTMLDivElement>;
+  paginationRef: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+}) => {
+  const [gridHeight, setGridHeight] = useState<number>();
+  const calcGridHeight = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setGridHeight((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const containerHeight = container.getBoundingClientRect().height;
+    if (!containerHeight) return;
+    const actionsHeight = getOuterHeight(actionsRef.current);
+    const paginationHeight = getOuterHeight(paginationRef.current);
+    const nextHeight = Math.max(0, Math.floor(containerHeight - actionsHeight - paginationHeight));
+    setGridHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [heightMode, containerRef, actionsRef, paginationRef]);
+
+  useLayoutEffect(() => {
+    calcGridHeight();
+  }, [calcGridHeight, ...deps]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
+    const container = containerRef.current;
+    const actions = actionsRef.current;
+    const pagination = paginationRef.current;
+    const observer = new ResizeObserver(() => calcGridHeight());
+    observer.observe(container);
+    if (actions) observer.observe(actions);
+    if (pagination) observer.observe(pagination);
+    return () => observer.disconnect();
+  }, [calcGridHeight, containerRef, actionsRef, paginationRef, ...deps]);
+
+  return gridHeight;
+};
+
+const DetailsBlockContent = ({
+  model,
+  gridModel,
+  isConfigMode,
+  heightMode,
+  height,
+  layoutProps,
+}: {
+  model: DetailsBlockModel;
+  gridModel: DetailsGridModel;
+  isConfigMode: boolean;
+  heightMode?: string;
+  height?: number;
+  layoutProps?: any;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const paginationRef = useRef<HTMLDivElement>(null);
+  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const gridHeight = useDetailsGridHeight({
+    heightMode,
+    containerRef,
+    actionsRef,
+    paginationRef,
+    deps: [height],
+  });
+
+  useEffect(() => {
+    if (!gridModel) return;
+    const nextHeight = isFixedHeight ? gridHeight : undefined;
+    if (gridModel.props?.height === nextHeight && gridModel.props?.heightMode === heightMode) return;
+    gridModel.setProps({ height: nextHeight, heightMode });
+  }, [gridModel, gridHeight, isFixedHeight, heightMode]);
+
+  const formStyle = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }
+    : undefined;
+  const containerStyle: any = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        flex: 1,
+      }
+    : undefined;
+
+  return (
+    <FormComponent model={model} layoutProps={layoutProps} style={formStyle}>
+      <div ref={containerRef} style={containerStyle}>
         <DndProvider>
           <div
+            ref={actionsRef}
             style={{
               textAlign: 'right',
               lineHeight: '0px',
-              padding: isConfigMode && this.context.themeToken.padding,
+              padding: isConfigMode && model.context.themeToken.padding,
             }}
           >
             <Space wrap>
-              {this.mapSubModels('actions', (action) => {
+              {model.mapSubModels('actions', (action) => {
                 if (action.hidden && !isConfigMode) {
                   return;
                 }
@@ -172,18 +295,16 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                   </Droppable>
                 );
               })}
-              {this.renderConfigureActions()}
+              {model.renderConfigureActions()}
             </Space>
           </div>
         </DndProvider>
-        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormComponent>
-        {this.renderPagination()}
-      </>
-    );
-  }
-}
+        <FlowModelRenderer model={gridModel} showFlowSettings={false} />
+        <div ref={paginationRef}>{model.renderPagination()}</div>
+      </div>
+    </FormComponent>
+  );
+};
 
 DetailsBlockModel.registerFlow({
   key: 'detailsSettings',
