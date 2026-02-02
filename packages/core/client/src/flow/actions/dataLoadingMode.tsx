@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr } from '@nocobase/flow-engine';
+import { defineAction, MultiRecordResource, tExpr } from '@nocobase/flow-engine';
 import { CollectionBlockModel } from '../models/base/CollectionBlockModel';
 
 export const dataLoadingMode = defineAction({
@@ -45,10 +45,12 @@ export const dataLoadingMode = defineAction({
 
     // 如果切换到 manual 模式且当前没有活跃的筛选条件，清空数据
     if (params.mode === 'manual' && !blockModel.hasActiveFilters()) {
-      const resource = blockModel.resource;
+      const resource = blockModel.resource as MultiRecordResource;
       if (resource) {
         resource.setData([]);
-        resource.setMeta({ count: 0, hasNext: false });
+        resource.setMeta({ count: 0, hasNext: false, page: 1 });
+        resource.setPage?.(1);
+        resource.loading = false;
       }
     } else if (params.mode === 'auto') {
       // 切换到 auto 模式时立即刷新数据

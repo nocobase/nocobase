@@ -263,7 +263,6 @@ export class FilterManager {
 
     // 6. 将筛选配置应用到目标模型
     const blockModel = targetModel as CollectionBlockModel;
-    let hasAnyActiveFilter = false;
 
     relatedConfigs.forEach((config) => {
       const filterModel: any = this.gridModel.flowEngine.getModel(config.filterId);
@@ -296,7 +295,6 @@ export class FilterManager {
       }
 
       // 有有效筛选值，标记为活跃
-      hasAnyActiveFilter = true;
       blockModel.setFilterActive(config.filterId, true);
 
       // 构建筛选条件
@@ -376,10 +374,15 @@ export class FilterManager {
     }
 
     // 6. 从目标模型中移除筛选配置
+    const blockModel = targetModel as CollectionBlockModel;
+
     relatedConfigs.forEach((config) => {
       try {
         // 通过筛选器模型 UID 移除对应的筛选组
         (targetModel as any).resource.removeFilterGroup(config.filterId);
+        if (typeof blockModel?.removeFilterSource === 'function') {
+          blockModel.removeFilterSource(config.filterId);
+        }
       } catch (error) {
         console.error(`Failed to unbind filter configuration from target model: ${error.message}`);
         return;
