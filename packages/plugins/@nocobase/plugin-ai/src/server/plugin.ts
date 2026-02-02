@@ -106,126 +106,32 @@ export class PluginAIServer extends Plugin {
   }
 
   registerTools() {
-    const toolManager = this.aiManager.toolManager;
-    const frontendGroupName = 'frontend';
-    const dataModelingGroupName = 'dataModeling';
-    const workflowGroupName = 'workflowCaller';
-    const codeEditorGroupName = 'codeEditor';
-    const dataSourceGroupName = 'dataSource';
-    const docsGroupName = 'docs';
-    toolManager.registerToolGroup({
-      groupName: frontendGroupName,
-      title: '{{t("Frontend")}}',
-      description: '{{t("Frontend actions")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: dataModelingGroupName,
-      title: '{{t("Data modeling")}}',
-      description: '{{t("Data modeling tools")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: workflowGroupName,
-      title: '{{t("Workflow caller")}}',
-      description: '{{t("Use workflow as a tool")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: codeEditorGroupName,
-      title: '{{t("CodeEditor")}}',
-      description: '{{t("CodeEditor actions")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: dataSourceGroupName,
-      title: '{{t("DataSource")}}',
-      description: '{{t("Data source query")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: docsGroupName,
-      title: '{{t("Docs")}}',
-      description: '{{t("Search and read generated documentation indexes")}}',
-    });
+    const toolsManager = this.ai.toolsManager;
 
     const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
 
-    this.aiManager.toolManager.registerTools([
-      {
-        groupName: frontendGroupName,
-        tool: formFiller,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: dataModelingIntentRouter,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: searchFieldMetadata,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: getDataSources,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: getCollectionNames,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: getCollectionMetadata,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: defineCollections,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: suggestions,
-      },
-      {
-        tool: chartGenerator,
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: listCodeSnippet,
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: getCodeSnippet,
-      },
-      {
-        groupName: dataSourceGroupName,
-        tool: dataSourceCounting,
-      },
-      {
-        groupName: dataSourceGroupName,
-        tool: dataSourceQuery,
-      },
-      {
-        groupName: docsGroupName,
-        tool: createDocsSearchTool({ description: docsModulesDescription }),
-      },
-      {
-        groupName: docsGroupName,
-        tool: createReadDocEntryTool({ description: docsModulesDescription }),
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: getContextApis,
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: getContextEnvs,
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: getContextVars,
-      },
+    toolsManager.registerTools([
+      formFiller,
+      dataModelingIntentRouter,
+      searchFieldMetadata,
+      getDataSources,
+      getCollectionNames,
+      getCollectionMetadata,
+      defineCollections,
+      suggestions,
+      chartGenerator,
+      listCodeSnippet,
+      getCodeSnippet,
+      dataSourceCounting,
+      dataSourceQuery,
+      createDocsSearchTool({ description: docsModulesDescription }),
+      createReadDocEntryTool({ description: docsModulesDescription }),
+      getContextApis,
+      getContextEnvs,
+      getContextVars,
     ]);
 
-    toolManager.registerDynamicTool({
-      groupName: workflowGroupName,
-      getTools: async () => {
-        return await getWorkflowCallers(this);
-      },
-    });
+    toolsManager.registerDynamicTools(getWorkflowCallers(this));
   }
 
   defineResources() {

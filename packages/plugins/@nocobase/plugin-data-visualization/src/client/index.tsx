@@ -87,10 +87,7 @@ class PluginDataVisualiztionClient extends Plugin {
 
     this.app.flowEngine.registerModels({ ChartBlockModel });
 
-    const ai = this.app.pm.get('ai') as PluginAIClient;
-    if (ai) {
-      // ai.aiManager.registerTool(...buildChartBlockTool);
-    }
+    // this.ai.toolsManager.registerTools(...buildChartBlockTool);
 
     // 1.x
     this.app.addComponents({

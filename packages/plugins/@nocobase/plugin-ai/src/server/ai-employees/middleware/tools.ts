@@ -10,13 +10,13 @@
 import { createMiddleware, humanInTheLoopMiddleware, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import z from 'zod';
-import { ToolOptions } from '../../manager/tool-manager';
 import _ from 'lodash';
+import { ToolsEntry } from '@nocobase/ai';
 
-export const toolInteractionMiddleware = (_aiEmployee: AIEmployee, tools: ToolOptions[]) => {
+export const toolInteractionMiddleware = (aiEmployee: AIEmployee, tools: ToolsEntry[]) => {
   const interruptOn = {};
   for (const tool of tools) {
-    interruptOn[tool.name] = tool.execution === 'frontend' || tool.autoCall !== true;
+    interruptOn[tool.definition.name] = aiEmployee.shouldInterruptToolCall(tool);
   }
   return humanInTheLoopMiddleware({
     interruptOn,
@@ -29,15 +29,10 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
     wrapToolCall: async (request, handler) => {
       const { runtime, toolCall } = request;
       await aiEmployee.updateToolCallPending(request.toolCall.id);
+      runtime.writer?.({ action: 'beforeToolCall', body: { toolCall } });
       let result;
       try {
-        runtime.writer?.({ action: 'beforeToolCall', body: { toolCall } });
         const toolMessage = await handler(request);
-        runtime.writer?.({
-          action: 'afterToolCall',
-          body: { toolCall, toolMessage },
-        });
-
         if (toolMessage instanceof ToolMessage) {
           result = _.isObject(toolMessage.content) ? toolMessage.content : JSON.parse(toolMessage.content);
         } else {
@@ -55,6 +50,10 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
         throw e;
       } finally {
         await aiEmployee.updateToolCallDone(request.toolCall.id, result);
+        runtime.writer?.({
+          action: 'afterToolCall',
+          body: { toolCall },
+        });
       }
     },
   });

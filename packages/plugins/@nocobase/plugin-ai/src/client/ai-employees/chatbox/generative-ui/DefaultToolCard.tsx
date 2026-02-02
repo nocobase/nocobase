@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button, Card, Collapse, Tooltip, Tag, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
@@ -22,73 +22,27 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { useAPIClient, useApp, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
+import { ToolCall, ToolsEntry, toToolsMap, useGlobalTheme, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
-import PluginAIClient from '../../..';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import _ from 'lodash';
-import { ToolCall } from '../../types';
-
-const useDefaultAction = (messageId: string) => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-
-  const { callTool } = useChatMessageActions();
-
-  return {
-    invoke: async (toolCallIds?: string[], toolCallResults?: { id: string; [key: string]: any }[]) => {
-      await callTool({
-        sessionId: currentConversation,
-        messageId,
-        aiEmployee: currentEmployee,
-        toolCallIds,
-        toolCallResults,
-      });
-    },
-  };
-};
+import { useToolCallActions } from '../hooks/useToolCallActions';
 
 const CallButton: React.FC<{
   messageId: string;
-  tools: ToolCall<unknown>[];
-}> = ({ messageId, tools }) => {
+  tools: ToolsEntry[];
+  toolCalls: ToolCall[];
+}> = ({ messageId, tools, toolCalls }) => {
   const t = useT();
-  const { invoke: invokeDefault } = useDefaultAction(messageId);
-  const plugin = usePlugin('ai') as PluginAIClient;
-  const employeeTools = plugin.aiManager.useTools();
-  const app = useApp();
-
-  const invoke = async () => {
-    if (tools?.length) {
-      const toolCallIds: string[] = [];
-      const toolCallResults = [];
-      for (const tool of tools) {
-        toolCallIds.push(tool.id);
-        const t = employeeTools.get(tool.name);
-        if (t && t.invoke) {
-          const result = await t.invoke(app, tool.args);
-          if (result) {
-            toolCallResults.push({
-              id: tool.id,
-              result,
-            });
-          }
-        }
-      }
-      await invokeDefault(toolCallIds, toolCallResults);
-    } else {
-      await invokeDefault();
-    }
-  };
+  const { getDecisionActions } = useToolCallActions({ messageId, tools });
 
   return (
     <Button
-      onClick={(e) => {
+      onClick={async (e) => {
         e.stopPropagation();
-        invoke();
+        for (const toolCall of toolCalls) {
+          const decision = getDecisionActions(toolCall);
+          await decision.approve();
+        }
       }}
       variant="link"
       color="primary"
@@ -100,10 +54,27 @@ const CallButton: React.FC<{
   );
 };
 
-const InvokeStatus: React.FC<{ tool: ToolCall<unknown> }> = ({ tool }) => {
+const InvokeStatus: React.FC<{ messageId: string; tools: ToolsEntry[]; toolCall: ToolCall<unknown> }> = ({
+  messageId,
+  tools,
+  toolCall,
+}) => {
   const t = useT();
-  switch (tool.invokeStatus) {
+  const toolsMap = toToolsMap(tools);
+  const { getDecisionActions } = useToolCallActions({ messageId, tools });
+  const decision = getDecisionActions(toolCall);
+  const tool = toolsMap.get(toolCall.name);
+  const { invokeStatus } = toolCall;
+  useEffect(() => {
+    if (invokeStatus === 'interrupted' && tool.operation === 'READ_ONLY') {
+      decision.approve();
+    }
+  }, [invokeStatus]);
+
+  switch (invokeStatus) {
     case 'init':
+    case 'interrupted':
+    case 'waiting':
       return (
         <Tooltip title={t('invoke-status-init')}>
           <PlayCircleTwoTone />
@@ -117,7 +88,7 @@ const InvokeStatus: React.FC<{ tool: ToolCall<unknown> }> = ({ tool }) => {
       );
     case 'done':
     case 'confirmed':
-      return tool.status === 'error' ? (
+      return toolCall.status === 'error' ? (
         <Tooltip title={t('invoke-status-error')}>
           <CloseCircleTwoTone twoToneColor="#eb2f96" />
         </Tooltip>
@@ -131,45 +102,31 @@ const InvokeStatus: React.FC<{ tool: ToolCall<unknown> }> = ({ tool }) => {
 
 export const DefaultToolCard: React.FC<{
   messageId: string;
-  tools: ToolCall<unknown>[];
-}> = ({ tools, messageId }) => {
+  tools: ToolsEntry[];
+  toolCalls: ToolCall[];
+}> = ({ messageId, tools, toolCalls }) => {
+  const toolsMap = toToolsMap(tools);
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
-  const api = useAPIClient();
 
-  const currentConversation = useChatConversationsStore((s) => s.currentConversation);
-
-  const { data } = useRequest<{
-    [name: string]: {
-      title: string;
-      description: string;
-    };
-  }>(
-    () =>
-      api
-        .resource('aiConversations')
-        .getTools({
-          values: {
-            sessionId: currentConversation,
-            messageId,
-          },
-        })
-        .then((res) => res?.data?.data),
-    {
-      ready: !!messageId,
-    },
-  );
-
-  const items = tools.map((tool) => {
-    let args = tool.args;
+  const items = toolCalls.map((toolCall) => {
+    let args = toolCall.args;
     try {
       args = JSON.stringify(args, null, 2);
     } catch (err) {
       // ignore
     }
+    const toolsEntry = toolsMap.get(toolCall.name);
+    const title = toolsEntry?.introduction?.title
+      ? Schema.compile(toolsEntry?.introduction?.title, { t })
+      : toolCall.name;
+    const description = toolsEntry?.introduction?.about
+      ? Schema.compile(toolsEntry?.introduction?.about, { t })
+      : toolCall.name;
+
     return {
-      key: tool.id,
+      key: toolCall.id,
       label: (
         <div
           style={{
@@ -182,14 +139,14 @@ export const DefaultToolCard: React.FC<{
                 marginLeft: 8,
               }}
             >
-              {data?.[tool.name]?.title ? Schema.compile(data[tool.name].title, { t }) : tool.name}{' '}
-              {data?.[tool.name]?.description && (
-                <Tooltip title={Schema.compile(data[tool.name].description, { t })}>
+              {title}{' '}
+              {toolsEntry?.introduction?.about && (
+                <Tooltip title={description}>
                   <QuestionCircleOutlined />
                 </Tooltip>
               )}
             </Tag>
-            <InvokeStatus tool={tool} />
+            <InvokeStatus messageId={messageId} tools={tools} toolCall={toolCall} />
           </Flex>
         </div>
       ),
@@ -222,8 +179,8 @@ export const DefaultToolCard: React.FC<{
 
   const showCallButton =
     messageId &&
-    !tools.every((tool) => tool.auto) &&
-    !tools.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
+    !toolCalls.every((tool) => tool.auto) &&
+    !toolCalls.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
 
   return (
     <Card
@@ -234,7 +191,7 @@ export const DefaultToolCard: React.FC<{
           <ToolOutlined /> {t('Use skills')}
         </span>
       }
-      extra={showCallButton && <CallButton messageId={messageId} tools={tools} />}
+      extra={showCallButton && <CallButton messageId={messageId} tools={tools} toolCalls={toolCalls} />}
     >
       <Collapse items={items} size="small" bordered={false} />
     </Card>

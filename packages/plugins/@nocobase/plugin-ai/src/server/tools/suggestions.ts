@@ -9,20 +9,26 @@
 
 import { Context } from '@nocobase/actions';
 import { z } from 'zod';
-import { ToolOptions } from '../manager/tool-manager';
+import { ToolsOptions } from '@nocobase/ai';
 
-export const suggestions: ToolOptions = {
-  name: 'suggestions',
-  title: '{{t("Suggestions")}}',
-  description: '{{t("Provide a list of suggested prompts for the user to choose from.")}}',
-  schema: z.object({
-    options: z
-      .array(z.string())
-      .describe(
-        'A list of suggested prompts that can be presented to the user as selectable options.' +
-          'Each option represents a possible next user message.',
-      ),
-  }),
+export const suggestions: ToolsOptions = {
+  scope: 'GENERAL',
+  introduction: {
+    title: '{{t("Suggestions")}}',
+    about: '{{t("Provide a list of suggested prompts for the user to choose from.")}}',
+  },
+  definition: {
+    name: 'suggestions',
+    description: 'Provide a list of suggested prompts for the user to choose from.',
+    schema: z.object({
+      options: z
+        .array(z.string())
+        .describe(
+          'A list of suggested prompts that can be presented to the user as selectable options.' +
+            'Each option represents a possible next user message.',
+        ),
+    }),
+  },
   invoke: async (ctx: Context, _args, id) => {
     const { messageId, args } = ctx.action?.params?.values || {};
     if (messageId) {

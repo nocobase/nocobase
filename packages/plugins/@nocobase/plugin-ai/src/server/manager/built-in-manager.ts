@@ -119,17 +119,10 @@ export class BuiltInManager {
     const updates = this.builtInEmployees.filter((x) => existedUsername.includes(x.username));
     if (updates.length) {
       this.plugin.log.info('update built-in employees');
-      for (const { username, description, profile, skillSettings } of updates) {
-        let p = profile[language];
-        if (!p) {
-          p = profile[DEFAULT_LANGUAGE];
-        }
-        if (!p) {
-          continue;
-        }
-        const { nickname, avatar, position, bio, greeting, about } = p;
+      for (const { username, description, skillSettings } of updates) {
         await aiEmployeesRepo.update({
           values: {
+            skillSettings,
             builtIn: true,
           },
           filter: {

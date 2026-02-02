@@ -16,43 +16,35 @@ export default {
   skillSettings: {
     skills: [
       {
-        name: 'dataModeling-getDataSources',
+        name: 'getDataSources',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionNames',
+        name: 'getCollectionNames',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionMetadata',
+        name: 'getCollectionMetadata',
         autoCall: true,
       },
       {
-        name: 'codeEditor-listCodeSnippet',
+        name: 'listCodeSnippet',
         autoCall: true,
       },
       {
-        name: 'codeEditor-getCodeSnippet',
+        name: 'getCodeSnippet',
         autoCall: true,
       },
       {
-        name: 'codeEditor-getContextApis',
+        name: 'getContextApis',
         autoCall: true,
       },
       {
-        name: 'codeEditor-getContextEnvs',
+        name: 'getContextEnvs',
         autoCall: true,
       },
       {
-        name: 'codeEditor-getContextVars',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceCounting',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceQuery',
+        name: 'getContextVars',
         autoCall: true,
       },
     ],

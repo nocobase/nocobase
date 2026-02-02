@@ -16,27 +16,15 @@ export default {
   skillSettings: {
     skills: [
       {
-        name: 'frontend-formFiller',
+        name: 'getDataSources',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getDataSources',
+        name: 'getCollectionNames',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionNames',
-        autoCall: true,
-      },
-      {
-        name: 'dataModeling-getCollectionMetadata',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceCounting',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceQuery',
+        name: 'getCollectionMetadata',
         autoCall: true,
       },
     ],

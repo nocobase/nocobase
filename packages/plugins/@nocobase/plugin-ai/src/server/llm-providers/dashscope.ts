@@ -50,7 +50,7 @@ export class DashscopeProvider extends LLMProvider {
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
-      verbose: false,
+      verbose: true,
     });
   }
 }

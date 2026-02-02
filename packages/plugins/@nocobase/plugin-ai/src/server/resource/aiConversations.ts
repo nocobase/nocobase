@@ -9,7 +9,7 @@
 
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
-import { Model } from '@nocobase/database';
+import { Model, Op } from '@nocobase/database';
 import { parseResponseMessage, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 
@@ -532,6 +532,155 @@ export default {
                 type: 'approve',
               },
             ];
+
+        await aiEmployee.processMessages({
+          userDecisions,
+        });
+      } catch (err) {
+        ctx.log.error(err);
+        sendErrorResponse(ctx, err.message || 'Tool call error');
+      }
+      await next();
+    },
+
+    async updateUserDecision(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const { sessionId, messageId, toolCallId, userDecision } = ctx.action.params.values || {};
+      if (!sessionId) {
+        ctx.throw(400);
+      }
+
+      const conversation = await ctx.db.getRepository('aiConversations').findOne({
+        filter: {
+          sessionId,
+          userId,
+        },
+      });
+
+      if (!conversation) {
+        ctx.throw(400);
+      }
+
+      const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+        filter: {
+          messageId,
+        },
+      });
+      if (!message) {
+        ctx.throw(400);
+      }
+
+      const toolCalls = message.toolCalls;
+      if (!toolCalls?.length) {
+        ctx.throw(400);
+      }
+
+      const aiToolMessagesModel = ctx.db.getModel('aiToolMessages');
+      const toolCall = await aiToolMessagesModel.findOne({
+        where: { sessionId, messageId, toolCallId },
+      });
+      if (!toolCall) {
+        ctx.throw(400);
+      }
+
+      ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
+        await aiToolMessagesModel.update(
+          {
+            userDecision,
+            invokeStatus: 'waiting',
+          },
+          {
+            where: {
+              sessionId,
+              messageId,
+              toolCallId,
+              invokeStatus: 'interrupted',
+            },
+            transaction,
+          },
+        );
+        const allInterruptedToolCall = await aiToolMessagesModel.findAll({
+          where: {
+            sessionId,
+            messageId,
+            interruptActionOrder: { [Op.not]: null },
+          },
+          transaction,
+        });
+        const allWaiting = allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting');
+        return {
+          toolCalls,
+          allWaiting,
+        };
+      });
+
+      await next();
+    },
+
+    async resumeToolCall(ctx: Context, next: Next) {
+      setupSSEHeaders(ctx);
+
+      const { sessionId, messageId } = ctx.action.params.values || {};
+      if (!sessionId) {
+        sendErrorResponse(ctx, 'sessionId is required');
+        return next();
+      }
+      try {
+        const conversation = await ctx.db.getRepository('aiConversations').findOne({
+          filter: {
+            sessionId,
+            userId: ctx.auth?.user.id,
+          },
+        });
+        if (!conversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return next();
+        }
+
+        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
+        if (!employee) {
+          sendErrorResponse(ctx, 'AI employee not found');
+          return next();
+        }
+
+        let message: Model;
+        if (messageId) {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            filter: {
+              messageId,
+            },
+          });
+        } else {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            sort: ['-messageId'],
+          });
+        }
+
+        if (!message) {
+          sendErrorResponse(ctx, 'message not found');
+          return next();
+        }
+
+        const tools = message.toolCalls;
+        if (!tools?.length) {
+          sendErrorResponse(ctx, 'No tool calls found');
+          return next();
+        }
+
+        const aiEmployee = new AIEmployee(
+          ctx,
+          employee,
+          sessionId,
+          conversation.options?.systemMessage,
+          conversation.options?.skillSettings,
+          conversation.options?.conversationSettings?.webSearch,
+        );
+
+        const userDecisions = await aiEmployee.getUserDecisions(messageId);
 
         await aiEmployee.processMessages({
           userDecisions,

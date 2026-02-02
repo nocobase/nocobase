@@ -7,14 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions } from '@nocobase/client';
-import { SuggestionsOptions } from '../ui/SuggestionsOptions';
+import { ToolsEntry } from './tools-manager';
 
-export const suggestionsTool: [string, ToolsOptions] = [
-  'suggestions',
-  {
-    ui: {
-      card: SuggestionsOptions,
-    },
-  },
-];
+export const toToolsMap = (tools: ToolsEntry[]) => new Map(tools.map((t) => [t.definition.name, t]));

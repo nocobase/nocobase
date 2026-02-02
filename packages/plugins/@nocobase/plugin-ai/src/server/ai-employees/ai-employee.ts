@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction } from '@nocobase/database';
+import { Model, Op, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
 import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
@@ -15,14 +15,7 @@ import PluginAIServer from '../plugin';
 import { sendSSEError, parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import {
-  AIChatContext,
-  AIChatConversation,
-  AIMessage,
-  AIMessageInput,
-  UserDecision,
-  WorkContextHandler,
-} from '../types';
+import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, AIToolCall, UserDecision } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { DocumentSegmentedWithScore } from '../features';
 import { KnowledgeBaseGroup } from '../types';
@@ -35,7 +28,7 @@ import {
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
 } from './middleware';
-import { ToolOptions } from '../manager/tool-manager';
+import { ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 
 type ToolMessage = {
   id: string;
@@ -172,10 +165,9 @@ export class AIEmployee {
     const { signal, provider, allowEmpty = false } = options;
     let isMessageEmpty = true;
     try {
-      const tools = await this.getTools();
-      const toolMap = Object.fromEntries(tools.map((x) => [x.name, x]));
+      const toolMap = await this.getToolsMap();
       let toolCallStarted = false;
-      let toolCalls;
+      let toolCalls: AIToolCall[];
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk] = chunks;
@@ -201,7 +193,41 @@ export class AIEmployee {
             if (isMessageEmpty) {
               isMessageEmpty = false;
             }
-            if (toolCalls.map((x) => toolMap[x.name]).every((x) => x.execution === 'frontend' && x.autoCall)) {
+            const { actionRequests = [], reviewConfigs = [] } = chunks.__interrupt__[0].value;
+            if (actionRequests.length) {
+              const actionRequestsNames = actionRequests.map((x) => x.name) as string[];
+              const actionRequestsMap = new Map(actionRequests.map((x) => [x.name, x]));
+              const reviewConfigsMap = new Map(reviewConfigs.map((x) => [x.actionName, x]));
+              for (const toolCall of toolCalls) {
+                const actionRequest = actionRequestsMap.get(toolCall.name) as any;
+                const reviewConfig = reviewConfigsMap.get(toolCall.name) as any;
+                if (!actionRequest) {
+                  continue;
+                }
+                const interruptAction = {
+                  order: actionRequestsNames.indexOf(toolCall.name),
+                  description: actionRequest.description,
+                  allowedDecisions: reviewConfig?.allowedDecisions,
+                };
+                await this.updateToolCallInterrupted(toolCall.id, interruptAction);
+                this.ctx.res.write(
+                  `data: ${JSON.stringify({
+                    type: 'tool_call_status',
+                    body: {
+                      toolCall,
+                      status: 'interrupted',
+                      interruptAction,
+                    },
+                  })}\n\n`,
+                );
+              }
+            }
+
+            if (
+              toolCalls
+                .map((toolCall) => toolMap.get(toolCall.name))
+                .some((tools) => this.shouldInterruptToolCall(tools))
+            ) {
               toolCallStarted = true;
               this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
               this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_calls', body: toolCalls })}\n\n`);
@@ -214,9 +240,31 @@ export class AIEmployee {
           if (chunks.action === 'showToolCalls') {
             toolCalls = chunks.body;
             this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
-          } else if (chunks.action === 'beforeToolCall' && !toolCallStarted) {
-            toolCallStarted = true;
-            this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
+          } else if (chunks.action === 'beforeToolCall') {
+            this.ctx.res.write(
+              `data: ${JSON.stringify({
+                type: 'tool_call_status',
+                body: {
+                  toolCall: chunks.body,
+                  status: 'pending',
+                },
+              })}\n\n`,
+            );
+
+            if (!toolCallStarted) {
+              toolCallStarted = true;
+              this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
+            }
+          } else if (chunks.action === 'afterToolCall') {
+            this.ctx.res.write(
+              `data: ${JSON.stringify({
+                type: 'tool_call_status',
+                body: {
+                  toolCall: chunks.body,
+                  status: 'done',
+                },
+              })}\n\n`,
+            );
           }
         }
       }
@@ -467,24 +515,49 @@ export class AIEmployee {
     }[],
   ) {
     const nowTime = new Date();
-    const tools = await this.withTool(toolCalls);
+    const toolMap = await this.getToolsMap();
     await this.aiToolMessagesRepo.create({
-      values: tools.map((toolCall) => ({
+      values: toolCalls.map((toolCall) => ({
         id: this.plugin.snowflake.generate(),
         sessionId: this.sessionId,
         messageId: messageId,
         toolCallId: toolCall.id,
         toolName: toolCall.name,
-        status: toolCall.toolExist ? null : 'error',
-        content: toolCall.toolExist ? null : `Tool ${toolCall.name} not found`,
-        invokeStatus: toolCall.toolExist ? 'init' : 'done',
-        invokeStartTime: toolCall.toolExist ? null : nowTime,
-        invokeEndTime: toolCall.toolExist ? null : nowTime,
-        auto: toolCall.auto,
-        execution: toolCall?.tool?.execution ?? 'backend',
+        status: toolMap.has(toolCall.name) ? null : 'error',
+        content: toolMap.has(toolCall.name) ? null : `Tool ${toolCall.name} not found`,
+        invokeStatus: toolMap.has(toolCall.name) ? 'init' : 'done',
+        invokeStartTime: toolMap.has(toolCall.name) ? null : nowTime,
+        invokeEndTime: toolMap.has(toolCall.name) ? null : nowTime,
+        auto: toolMap.has(toolCall.name) ? toolMap.get(toolCall.name)?.operation === 'READ_ONLY' : null,
+        execution: toolMap.get(toolCall.name)?.execution ?? 'backend',
       })),
       transaction,
     });
+  }
+
+  async updateToolCallInterrupted(
+    toolCallId: string,
+    interruptAction: {
+      order: number;
+      description?: string;
+      allowed_decisions?: string[];
+    },
+  ) {
+    const [updated] = await this.aiToolMessagesModel.update(
+      {
+        invokeStatus: 'interrupted',
+        interruptActionOrder: interruptAction.order,
+        interruptAction,
+      },
+      {
+        where: {
+          sessionId: this.sessionId,
+          toolCallId,
+          invokeStatus: 'init',
+        },
+      },
+    );
+    return updated;
   }
 
   async updateToolCallPending(toolCallId: string) {
@@ -497,7 +570,9 @@ export class AIEmployee {
         where: {
           sessionId: this.sessionId,
           toolCallId,
-          invokeStatus: 'init',
+          invokeStatus: {
+            [Op.in]: ['init', 'waiting'],
+          },
         },
       },
     );
@@ -521,6 +596,20 @@ export class AIEmployee {
       },
     );
     return updated;
+  }
+
+  async getUserDecisions(messageId: string): Promise<UserDecision[]> {
+    const allInterruptedToolCall = await this.aiToolMessagesModel.findAll({
+      where: {
+        messageId,
+        interruptActionOrder: { [Op.not]: null },
+      },
+      order: [['interruptActionOrder', 'ASC']],
+    });
+    if (!allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting')) {
+      return [];
+    }
+    return allInterruptedToolCall.map((item) => item.userDecision as UserDecision);
   }
 
   async cancelToolCall() {
@@ -630,7 +719,7 @@ export class AIEmployee {
                 thread_id,
               },
             };
-            const tools = await this.getTools();
+            const tools = await this.getAIEmployeeTools();
             const middleware = this.getMiddleware({ tools, model, service, messageId, agentThread });
             const historyMessages = await this.aiChatConversation.listMessages({ messageId });
             const state = {
@@ -645,7 +734,7 @@ export class AIEmployee {
             const historyMessages = [];
             let options;
             let state;
-            const tools = await this.getTools();
+            const tools = await this.getAIEmployeeTools();
             const middleware = this.getMiddleware({ tools, model, service });
             return { historyMessages, tools, middleware, options, state };
           };
@@ -689,6 +778,10 @@ export class AIEmployee {
 
   removeAbortController() {
     this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
+  }
+
+  shouldInterruptToolCall(tools: ToolsEntry): boolean {
+    return tools.execution === 'frontend' || tools.operation === 'READ_WRITE';
   }
 
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
@@ -764,15 +857,6 @@ export class AIEmployee {
     return formattedMessages;
   }
 
-  private getAutoSkillNames(): string[] {
-    const skills = this.getSkills();
-    return skills.filter(({ autoCall }) => autoCall ?? false).map(({ name }) => name);
-  }
-
-  private getSkills(): { name: string; autoCall?: boolean }[] {
-    return this.employee.skillSettings?.skills ?? [];
-  }
-
   private async getToolCallMap(messageId: string): Promise<
     Map<
       string,
@@ -795,43 +879,27 @@ export class AIEmployee {
     return result;
   }
 
-  private async withTool(toolCalls: { id: string; args: unknown; name: string }[]) {
-    const autoSkillNames = this.getAutoSkillNames();
-    const toolMap = await this.getToolMap();
-    return toolCalls.map((toolCall) => ({
-      ...toolCall,
-      toolExist: toolMap.has(toolCall.name),
-      tool: toolMap.get(toolCall.name),
-      auto: autoSkillNames.includes(toolCall.name),
-    }));
-  }
-
-  private async getTools() {
-    const toolMap = await this.getToolMap();
-    const tools: ToolOptions[] = [];
-    let skills = this.getSkills();
-    const skillFilter = this.skillSettings?.skills;
-    if (skillFilter) {
-      if (skillFilter.length) {
-        skills = skills.filter((skill) => skillFilter.includes(skill.name));
-      } else {
-        skills = [];
+  private async getAIEmployeeTools() {
+    const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
+    const toolMap = await this.getToolsMap();
+    const skills = this.employee.skillSettings?.skills ?? [];
+    for (const skill of skills) {
+      if (generalToolsNameSet.has(skill.name)) {
+        continue;
       }
-    }
-    if (skills?.length) {
-      for (const skill of skills) {
-        const tool = toolMap.get(skill.name);
-        if (tool) {
-          tool.autoCall = skill.autoCall;
-          tools.push(tool);
-        }
+      const tool = toolMap.get(skill.name);
+      if (!tool) {
+        continue;
       }
+      tools.push(tool);
     }
-    return tools;
+    const skillFilter = this.skillSettings?.skills ?? [];
+    return tools.filter((t) => skillFilter.length === 0 || skillFilter.includes(t.definition.name));
   }
 
   private getMiddleware(options: {
-    tools: ToolOptions[];
+    tools: ToolsEntry[];
     model: any;
     service: any;
     messageId?: string;
@@ -868,10 +936,17 @@ export class AIEmployee {
     throw new Error('Fail to create new agent thread');
   }
 
-  private async getToolMap() {
-    const toolGroupList = await this.plugin.aiManager.toolManager.listTools(false);
-    const toolList = toolGroupList.flatMap(({ tools }) => tools);
-    return new Map(toolList.map((tool) => [tool.name, tool]));
+  private async getToolsMap() {
+    const tools = await this.listTools();
+    return new Map(tools.map((tool) => [tool.definition.name, tool]));
+  }
+
+  private listTools(filter?: ToolsFilter) {
+    return this.toolsManager.listTools(filter);
+  }
+
+  private get toolsManager(): ToolsManager {
+    return this.ctx.app.aiManager.toolsManager;
   }
 
   private get aiConversationsRepo() {

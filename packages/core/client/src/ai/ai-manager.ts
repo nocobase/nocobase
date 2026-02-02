@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions } from '@nocobase/client';
-import { SuggestionsOptions } from '../ui/SuggestionsOptions';
+import { Application } from '../application';
+import { DefaultToolsManager, ToolsManager } from './tools-manager';
 
-export const suggestionsTool: [string, ToolsOptions] = [
-  'suggestions',
-  {
-    ui: {
-      card: SuggestionsOptions,
-    },
-  },
-];
+export class AIManager {
+  toolsManager: ToolsManager;
+
+  constructor(protected readonly app: Application) {
+    this.toolsManager = new DefaultToolsManager(this.app);
+  }
+}

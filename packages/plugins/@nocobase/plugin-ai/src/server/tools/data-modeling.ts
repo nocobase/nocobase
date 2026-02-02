@@ -6,9 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { ToolOptions } from '../manager/tool-manager';
 import { Context } from '@nocobase/actions';
-import { AIManager } from '@nocobase/ai';
+import { AIManager, ToolsOptions } from '@nocobase/ai';
 import { DataSource } from '@nocobase/data-source-manager';
 import { Field } from '@nocobase/database';
 import _ from 'lodash';
@@ -102,19 +101,26 @@ class IntentError extends Error {
   }
 }
 
-export const dataModelingIntentRouter: ToolOptions = {
-  name: 'intentRouter',
-  title: '{{t("Intent Router")}}',
-  description: '{{t("Route intents to appropriate workflow")}}',
-  schema: {
-    type: 'object',
-    properties: {
-      workflow: {
-        type: 'string',
-        enum: ['create', 'edit'],
+export const dataModelingIntentRouter: ToolsOptions = {
+  scope: 'SPECIFIED',
+  operation: 'READ_ONLY',
+  introduction: {
+    title: '{{t("Intent Router")}}',
+    about: '{{t("Route intents to appropriate workflow")}}',
+  },
+  definition: {
+    name: 'intentRouter',
+    description: 'Route intents to appropriate workflow',
+    schema: {
+      type: 'object',
+      properties: {
+        workflow: {
+          type: 'string',
+          enum: ['create', 'edit'],
+        },
       },
+      required: ['workflow'],
     },
-    required: ['workflow'],
   },
   invoke: async (ctx: Context, args: { workflow: 'create' | 'edit' }) => {
     const { workflow } = args || {};
@@ -137,19 +143,25 @@ export const dataModelingIntentRouter: ToolOptions = {
   },
 };
 
-export const getCollectionNames: ToolOptions = {
-  name: 'getCollectionNames',
-  title: '{{t("Get collection names")}}',
-  description: '{{t("Retrieve names and titles map of all collections")}}',
-  schema: {
-    type: 'object',
-    properties: {
-      dataSource: {
-        type: 'string',
-        description: 'The data source name to retrieve collections from. Defaults to "main".',
+export const getCollectionNames: ToolsOptions = {
+  scope: 'SPECIFIED',
+  introduction: {
+    title: '{{t("Get collection names")}}',
+    about: '{{t("Retrieve names and titles map of all collections")}}',
+  },
+  definition: {
+    name: 'getCollectionNames',
+    description: 'Retrieve names and titles map of all collections',
+    schema: {
+      type: 'object',
+      properties: {
+        dataSource: {
+          type: 'string',
+          description: 'The data source name to retrieve collections from. Defaults to "main".',
+        },
       },
+      additionalProperties: false,
     },
-    additionalProperties: false,
   },
   invoke: async (ctx: Context, args: { dataSource?: string }) => {
     const { dataSource = 'main' } = args || {};
@@ -184,27 +196,33 @@ export const getCollectionNames: ToolOptions = {
   },
 };
 
-export const getCollectionMetadata: ToolOptions = {
-  name: 'getCollectionMetadata',
-  title: '{{t("Get collection metadata")}}',
-  description: '{{t("Retrieve metadata for specified collections and their fields")}}',
-  schema: {
-    type: 'object',
-    properties: {
-      dataSource: {
-        type: 'string',
-        description: 'The data source name. Defaults to "main".',
-      },
-      collectionNames: {
-        type: 'array',
-        items: {
+export const getCollectionMetadata: ToolsOptions = {
+  scope: 'SPECIFIED',
+  introduction: {
+    title: '{{t("Get collection metadata")}}',
+    about: '{{t("Retrieve metadata for specified collections and their fields")}}',
+  },
+  definition: {
+    name: 'getCollectionMetadata',
+    description: 'Retrieve metadata for specified collections and their fields',
+    schema: {
+      type: 'object',
+      properties: {
+        dataSource: {
           type: 'string',
+          description: 'The data source name. Defaults to "main".',
         },
-        description: 'An array of collection names to retrieve metadata for.',
+        collectionNames: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description: 'An array of collection names to retrieve metadata for.',
+        },
       },
+      required: ['collectionNames'],
+      additionalProperties: false,
     },
-    required: ['collectionNames'],
-    additionalProperties: false,
   },
   invoke: async (
     ctx: Context,
@@ -262,14 +280,20 @@ export const getCollectionMetadata: ToolOptions = {
   },
 };
 
-export const getDataSources: ToolOptions = {
-  name: 'getDataSources',
-  title: '{{t("Get data sources")}}',
-  description: '{{t("Retrieve list of all available data sources")}}',
-  schema: {
-    type: 'object',
-    properties: {},
-    additionalProperties: false,
+export const getDataSources: ToolsOptions = {
+  scope: 'SPECIFIED',
+  introduction: {
+    title: '{{t("Get data sources")}}',
+    about: '{{t("Retrieve list of all available data sources")}}',
+  },
+  definition: {
+    name: 'getDataSources',
+    description: 'Retrieve list of all available data sources',
+    schema: {
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    },
   },
   invoke: async (ctx: Context) => {
     try {
@@ -298,22 +322,31 @@ export const getDataSources: ToolOptions = {
   },
 };
 
-export const defineCollections: ToolOptions = {
-  name: 'defineCollections',
-  title: '{{t("Define collections")}}',
-  description: '{{t("Create or edit collections")}}',
-  schema: z.object({
-    intent: z.enum(['create', 'edit']).describe(
-      `Pass the intent of the current tool invocation as an enum value. The value must be either 'create' or 'edit':
+export const defineCollections: ToolsOptions = {
+  scope: 'SPECIFIED',
+  introduction: {
+    title: '{{t("Define collections")}}',
+    about: '{{t("Create or edit collections")}}',
+  },
+  definition: {
+    name: 'defineCollections',
+    description: 'Create or edit collections',
+    schema: z.object({
+      intent: z.enum(['create', 'edit']).describe(
+        `Pass the intent of the current tool invocation as an enum value. The value must be either 'create' or 'edit':
 - create: create a brand-new data table definition
 - edit: modify an existing data table definition`,
-    ),
-    collections: z
-      .array(
-        z.object({}).catchall(z.any()).describe('Valid collection object which defined in collection_type_definition'),
-      )
-      .describe('An array of collections to be defined or edited.'),
-  }),
+      ),
+      collections: z
+        .array(
+          z
+            .object({})
+            .catchall(z.any())
+            .describe('Valid collection object which defined in collection_type_definition'),
+        )
+        .describe('An array of collections to be defined or edited.'),
+    }),
+  },
   invoke: async (ctx: Context, args: any) => {
     const { intent, collections: originalCollections } = ctx.action?.params?.values?.args ?? args ?? {};
     if (!intent || !['create', 'edit'].includes(intent)) {
@@ -486,42 +519,47 @@ export const defineCollections: ToolOptions = {
   },
 };
 
-export const searchFieldMetadata: ToolOptions = {
-  name: 'searchFieldMetadata',
-  title: '{{t("Search field metadata")}}',
-  description:
-    '{{t("Search fields in data models by keyword (english first). Returns either search results or a suggested query.")}}',
-
-  schema: {
-    type: 'object',
-    properties: {
-      query: {
-        type: 'string',
-        description: 'Search keywords, e.g. "order amount", "user email".',
-      },
-      dataSource: {
-        type: 'string',
-        description: 'Limit search to a specific data source.',
-      },
-      collection: {
-        type: 'string',
-        description: 'Limit search to a specific collection.',
-      },
-      fieldType: {
-        type: 'string',
-        description: 'Limit search to a specific field type, e.g. "string", "number".',
-      },
-      limit: {
-        type: 'number',
-        minimum: 1,
-        maximum: 20,
-        description: 'Maximum number of results to return. Default is 5.',
-      },
-    },
-    required: ['query'],
-    additionalProperties: false,
+export const searchFieldMetadata: ToolsOptions = {
+  scope: 'SPECIFIED',
+  introduction: {
+    title: '{{t("Search field metadata")}}',
+    about:
+      '{{t("Search fields in data models by keyword (english first). Returns either search results or a suggested query.")}}',
   },
-
+  definition: {
+    name: 'searchFieldMetadata',
+    description:
+      'Search fields in data models by keyword (english first). Returns either search results or a suggested query.',
+    schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search keywords, e.g. "order amount", "user email".',
+        },
+        dataSource: {
+          type: 'string',
+          description: 'Limit search to a specific data source.',
+        },
+        collection: {
+          type: 'string',
+          description: 'Limit search to a specific collection.',
+        },
+        fieldType: {
+          type: 'string',
+          description: 'Limit search to a specific field type, e.g. "string", "number".',
+        },
+        limit: {
+          type: 'number',
+          minimum: 1,
+          maximum: 20,
+          description: 'Maximum number of results to return. Default is 5.',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
   invoke: async (
     ctx,
     args: {

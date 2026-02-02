@@ -34,24 +34,6 @@ export const list = async (ctx: Context, next: Next) => {
   await next();
 };
 
-export const create = async (ctx: Context, next: Next) => {
-  const { skillSettings } = ctx.action.params.values ?? {};
-  const skills = skillSettings.skills ?? [];
-  skills.push(
-    {
-      name: 'dataSource-dataSourceCounting',
-      autoCall: true,
-    },
-    {
-      name: 'dataSource-dataSourceQuery',
-      autoCall: true,
-    },
-  );
-  skillSettings.skills = _.uniqBy(skills, 'name');
-
-  await actions.create(ctx as Context, next);
-};
-
 export const listByUser = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const user = ctx.auth.user;

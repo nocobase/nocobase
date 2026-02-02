@@ -62,12 +62,12 @@ export type ContextItem = {
   content?: unknown;
 };
 
-export type ToolCall<T> = {
+export type ToolCall<T = unknown> = {
   id: string;
   type: string;
   name: string;
   status?: 'success' | 'error';
-  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
+  invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
   auto: boolean;
   args: T;
   [key: string]: any;
@@ -211,4 +211,13 @@ export type WorkContextOptions = {
 export type WebSearching = {
   type: string;
   query: string;
+};
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: any;
+  };
 };

@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolOptions } from '../../../manager/ai-manager';
+import { ToolsOptions } from '@nocobase/client';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 
-export const getContextApisTool: [string, string, ToolOptions] = [
-  'codeEditor',
+export const getContextApisTool: [string, ToolsOptions] = [
   'getContextApis',
   {
     async invoke(_app, _args) {
@@ -25,8 +24,7 @@ export const getContextApisTool: [string, string, ToolOptions] = [
   },
 ];
 
-export const getContextEnvsTool: [string, string, ToolOptions] = [
-  'codeEditor',
+export const getContextEnvsTool: [string, ToolsOptions] = [
   'getContextEnvs',
   {
     async invoke(_app, _args) {
@@ -40,8 +38,7 @@ export const getContextEnvsTool: [string, string, ToolOptions] = [
   },
 ];
 
-export const getContextVarsTool: [string, string, ToolOptions] = [
-  'codeEditor',
+export const getContextVarsTool: [string, ToolsOptions] = [
   'getContextVars',
   {
     async invoke(_app, args) {

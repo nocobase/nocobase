@@ -163,18 +163,18 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
 
     // 使用可视化员工的工具参数
-    this.aiManager.registerTool(...vizSwitchModesTool);
-    this.aiManager.registerTool(...vizRunQueryTool);
+    this.ai.toolsManager.registerTools(...vizSwitchModesTool);
+    this.ai.toolsManager.registerTools(...vizRunQueryTool);
 
-    this.aiManager.registerTool(...defineCollectionsTool);
-    this.aiManager.registerTool(...formFillerTool);
-    this.aiManager.registerTool(...chartGeneratorTool);
-    this.aiManager.registerTool(...listCodeSnippetTool);
-    this.aiManager.registerTool(...getCodeSnippetTool);
-    this.aiManager.registerTool(...suggestionsTool);
-    this.aiManager.registerTool(...getContextApisTool);
-    this.aiManager.registerTool(...getContextEnvsTool);
-    this.aiManager.registerTool(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...defineCollectionsTool);
+    this.ai.toolsManager.registerTools(...formFillerTool);
+    this.ai.toolsManager.registerTools(...chartGeneratorTool);
+    this.ai.toolsManager.registerTools(...listCodeSnippetTool);
+    this.ai.toolsManager.registerTools(...getCodeSnippetTool);
+    this.ai.toolsManager.registerTools(...suggestionsTool);
+    this.ai.toolsManager.registerTools(...getContextApisTool);
+    this.ai.toolsManager.registerTools(...getContextEnvsTool);
+    this.ai.toolsManager.registerTools(...getContextVarsTool);
   }
 
   setupWorkflow() {

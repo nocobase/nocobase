@@ -36,7 +36,7 @@ export const MessageRenderer: React.FC<{
           }}
         />
       )}
-      {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
+      {msg.tool_calls?.length && <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} />}
     </div>
   );
 };

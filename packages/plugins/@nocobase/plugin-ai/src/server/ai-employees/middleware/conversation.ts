@@ -161,10 +161,6 @@ export const conversationMiddleware = (
 
         const aiMessage = lastMessage as AIMessage;
         const toolCalls = aiMessage.tool_calls;
-        if (toolCalls?.length) {
-          runtime.writer?.({ action: 'showToolCalls', body: toolCalls });
-        }
-
         const values = convertAIMessage(aiMessage);
         if (values) {
           if (runtime.signal?.aborted) {
@@ -177,6 +173,9 @@ export const conversationMiddleware = (
               await aiEmployee.initToolCall(transaction, result.messageId, toolCalls as any);
             }
           });
+        }
+        if (toolCalls?.length) {
+          runtime.writer?.({ action: 'showToolCalls', body: toolCalls });
         }
 
         return newState;

@@ -7,14 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions } from '@nocobase/client';
-import { SuggestionsOptions } from '../ui/SuggestionsOptions';
-
-export const suggestionsTool: [string, ToolsOptions] = [
-  'suggestions',
-  {
-    ui: {
-      card: SuggestionsOptions,
-    },
-  },
-];
+export * from './ai-manager';
+export * from './tools-manager';
+export * from './utils';

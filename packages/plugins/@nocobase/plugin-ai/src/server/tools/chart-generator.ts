@@ -7,19 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ToolsOptions } from '@nocobase/ai';
 import { z } from 'zod';
-import { ToolOptions } from '../manager/tool-manager';
 
-export const chartGenerator: ToolOptions = {
-  name: 'chartGenerator',
-  title: '{{t("Chart generator")}}',
-  description: '{{t("Generates ECharts options (JSON) based on user input or data context.")}}',
-  schema: z.object({
-    options: z
-      .object({})
-      .catchall(z.any())
-      .describe(
-        `Valid ECharts options object.
+export const chartGenerator: ToolsOptions = {
+  scope: 'SPECIFIED',
+  introduction: {
+    title: '{{t("Chart generator")}}',
+    about: '{{t("Generates ECharts options (JSON) based on user input or data context.")}}',
+  },
+  definition: {
+    name: 'chartGenerator',
+    description: 'Generates ECharts options (JSON) based on user input or data context.',
+    schema: z.object({
+      options: z
+        .object({})
+        .catchall(z.any())
+        .describe(
+          `Valid ECharts options object.
         Example: {
           "title": { "text": "Sales Trend" },
           "tooltip": {},
@@ -27,8 +32,9 @@ export const chartGenerator: ToolOptions = {
           "yAxis": { "type": "value" },
           "series": [{ "type": "line", "data": [120, 200, 150] }]
         }`,
-      ),
-  }),
+        ),
+    }),
+  },
   invoke: async () => {
     return {
       status: 'success',

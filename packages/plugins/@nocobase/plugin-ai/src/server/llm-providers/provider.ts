@@ -18,11 +18,11 @@ import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Command } from '@langchain/langgraph';
 import { Context } from '@nocobase/actions';
-import { ToolOptions } from '../manager/tool-manager';
 import { tool } from 'langchain';
 import { createAgent } from 'langchain';
 import { SequelizeCollectionSaver } from '../ai-employees/checkpoints';
 import '@langchain/core/utils/stream';
+import { ToolsEntry } from '@nocobase/ai';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -54,7 +54,7 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    const toolDefinitions = context.tools.map(ToolDefinition.from('ToolOptions'));
+    const toolDefinitions = context.tools.map(ToolDefinition.from('ToolsEntry'));
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
@@ -76,7 +76,7 @@ export abstract class LLMProvider {
   }
 
   prepareAgent(context?: AIChatContext) {
-    const toolDefinitions = context?.tools?.map(ToolDefinition.from('ToolOptions')) ?? [];
+    const toolDefinitions = context?.tools?.map(ToolDefinition.from('ToolsEntry')) ?? [];
     let tools = [...this.builtInTools()];
     if (tools.length) {
       if (!this.isToolConflict() && toolDefinitions?.length) {
@@ -288,12 +288,12 @@ export abstract class EmbeddingProvider {
   }
 }
 
-type FromType = 'ToolOptions';
+type FromType = 'ToolsEntry';
 
-class ToolDefinition {
+class ToolDefinition<T> {
   constructor(
     private from: FromType,
-    private _tool: any,
+    private _tool: T,
   ) {}
 
   static from(from: FromType) {
@@ -301,7 +301,7 @@ class ToolDefinition {
   }
 
   get tool() {
-    if (this.from === 'ToolOptions') {
+    if (this.from === 'ToolsEntry') {
       return this.convertToolOptions();
     } else {
       throw new Error('not supported tool definitions');
@@ -309,12 +309,15 @@ class ToolDefinition {
   }
 
   private convertToolOptions() {
-    const { invoke, name, description, schema, returnDirect = false } = this._tool as ToolOptions;
+    const {
+      invoke,
+      definition: { name, description, schema },
+    } = this._tool as ToolsEntry;
     return tool((input, { toolCall, context }) => invoke(context.ctx, input, toolCall.id), {
       name,
       description,
       schema,
-      returnDirect: returnDirect as boolean,
+      returnDirect: false,
     });
   }
 }

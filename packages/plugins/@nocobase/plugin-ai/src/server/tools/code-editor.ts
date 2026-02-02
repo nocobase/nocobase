@@ -7,15 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ToolsOptions } from '@nocobase/ai';
 import { z } from 'zod';
-import { ToolOptions } from '../manager/tool-manager';
 
-export const listCodeSnippet: ToolOptions = {
-  name: 'listCodeSnippet',
-  title: '{{t("Get code snippet list")}}',
-  description: '{{t("Get code snippet list")}}',
+export const listCodeSnippet: ToolsOptions = {
+  scope: 'SPECIFIED',
   execution: 'frontend',
-  schema: z.object({}),
+  introduction: {
+    title: '{{t("Get code snippet list")}}',
+    about: '{{t("Get code snippet list")}}',
+  },
+  definition: {
+    name: 'listCodeSnippet',
+    description: '{{t("Get code snippet list")}}',
+
+    schema: z.object({}),
+  },
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item) => item.id === id) ?? {};
@@ -33,12 +40,18 @@ export const listCodeSnippet: ToolOptions = {
   },
 };
 
-export const getContextApis: ToolOptions = {
-  name: 'getContextApis',
-  title: '{{t("Get context APIs")}}',
-  description: '{{t("Get available API methods from context")}}',
+export const getContextApis: ToolsOptions = {
+  scope: 'SPECIFIED',
   execution: 'frontend',
-  schema: z.object({}),
+  introduction: {
+    title: '{{t("Get context APIs")}}',
+    about: '{{t("Get available API methods from context")}}',
+  },
+  definition: {
+    name: 'getContextApis',
+    description: 'Get available API methods from context',
+    schema: z.object({}),
+  },
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item) => item.id === id) ?? {};
@@ -56,12 +69,18 @@ export const getContextApis: ToolOptions = {
   },
 };
 
-export const getContextEnvs: ToolOptions = {
-  name: 'getContextEnvs',
-  title: '{{t("Get context environment")}}',
-  description: '{{t("Get current page/block/flow model metadata from context")}}',
+export const getContextEnvs: ToolsOptions = {
+  scope: 'SPECIFIED',
   execution: 'frontend',
-  schema: z.object({}),
+  introduction: {
+    title: '{{t("Get context environment")}}',
+    about: '{{t("Get current page/block/flow model metadata from context")}}',
+  },
+  definition: {
+    name: 'getContextEnvs',
+    description: 'Get current page/block/flow model metadata from context',
+    schema: z.object({}),
+  },
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item) => item.id === id) ?? {};
@@ -79,16 +98,23 @@ export const getContextEnvs: ToolOptions = {
   },
 };
 
-export const getContextVars: ToolOptions = {
-  name: 'getContextVars',
-  title: '{{t("Get context variables")}}',
-  description:
-    '{{t("Available variables from context, the actual value should be got via `await ctx.getVar()`, e.g. `await ctx.getVar(\'ctx.popup.record\')`")}}',
+export const getContextVars: ToolsOptions = {
+  scope: 'SPECIFIED',
   execution: 'frontend',
-  schema: z.object({
-    path: z.string().optional().describe('Variable path for progressive disclosure'),
-    depth: z.number().optional().describe('Max depth for variable traversal, default 3'),
-  }),
+  introduction: {
+    title: '{{t("Get context variables")}}',
+    about:
+      '{{t("Available variables from context, the actual value should be got via `await ctx.getVar()`, e.g. `await ctx.getVar(\'ctx.popup.record\')`")}}',
+  },
+  definition: {
+    name: 'getContextVars',
+    description:
+      "Available variables from context, the actual value should be got via `await ctx.getVar()`, e.g. `await ctx.getVar('ctx.popup.record')`",
+    schema: z.object({
+      path: z.string().optional().describe('Variable path for progressive disclosure'),
+      depth: z.number().optional().describe('Max depth for variable traversal, default 3'),
+    }),
+  },
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item) => item.id === id) ?? {};
@@ -106,14 +132,20 @@ export const getContextVars: ToolOptions = {
   },
 };
 
-export const getCodeSnippet: ToolOptions = {
-  name: 'getCodeSnippet',
-  title: '{{t("Get code snippet content")}}',
-  description: '{{t("Get code snippet content")}}',
+export const getCodeSnippet: ToolsOptions = {
+  scope: 'SPECIFIED',
   execution: 'frontend',
-  schema: z.object({
-    ref: z.string().describe('ref from tools "listCodeSnippet" for get code snippet content.'),
-  }),
+  introduction: {
+    title: '{{t("Get code snippet content")}}',
+    about: '{{t("Get code snippet content")}}',
+  },
+  definition: {
+    name: 'getCodeSnippet',
+    description: 'Get code snippet content',
+    schema: z.object({
+      ref: z.string().describe('ref from tools "listCodeSnippet" for get code snippet content.'),
+    }),
+  },
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item) => item.id === id) ?? {};

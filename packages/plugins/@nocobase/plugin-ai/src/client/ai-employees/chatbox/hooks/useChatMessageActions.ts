@@ -78,18 +78,11 @@ export const useChatMessageActions = () => {
   const messagesServiceRef = useRef<any>();
   messagesServiceRef.current = messagesService;
 
-  const employeeTools = plugin.aiManager.useTools();
-
   const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
     let result = '';
     let error = false;
-    let tools: {
-      id: string;
-      name: string;
-      args: unknown;
-    }[];
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -137,6 +130,24 @@ export const useChatMessageActions = () => {
                 };
               });
             }
+            if (data.type === 'tool_call_status') {
+              updateLastMessage((last) => {
+                const toolCalls = last.content.tool_calls || [];
+                const toolCallId = data.body?.toolCall?.id;
+                const target = toolCalls.find((t) => t.id == toolCallId);
+                if (target) {
+                  target.invokeStatus = data.body?.status;
+                }
+                return {
+                  ...last,
+                  content: {
+                    ...last.content,
+                    tool_calls: toolCalls,
+                  },
+                  loading: false,
+                };
+              });
+            }
             if (data.type === 'web_search' && data.body?.length) {
               for (const item of data.body) {
                 setWebSearching(item);
@@ -153,9 +164,6 @@ export const useChatMessageActions = () => {
             if (data.type === 'error') {
               error = true;
               result = data.body;
-            }
-            if (data.type === 'tool_calls') {
-              tools = data.body;
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -183,30 +191,6 @@ export const useChatMessageActions = () => {
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
-
-    if (!error && tools && tools.length > 0) {
-      const toolCallIds: string[] = [];
-      const toolCallResults = [];
-      for (const tool of tools) {
-        toolCallIds.push(tool.id);
-        const t = employeeTools.get(tool.name);
-        if (t && t.invoke) {
-          const result = await t.invoke(app, tool.args);
-          if (result) {
-            toolCallResults.push({
-              id: tool.id,
-              result,
-            });
-          }
-        }
-      }
-      await callTool({
-        sessionId,
-        aiEmployee,
-        toolCallIds,
-        toolCallResults,
-      });
-    }
   };
 
   const sendMessages = async ({
@@ -411,6 +395,45 @@ export const useChatMessageActions = () => {
     [],
   );
 
+  const resumeToolCall = useCallback(
+    async ({
+      sessionId,
+      messageId,
+      aiEmployee,
+      toolCallIds,
+      toolCallResults,
+    }: {
+      sessionId: string;
+      messageId: string;
+      aiEmployee: AIEmployee;
+      toolCallIds?: string[];
+      toolCallResults?: { id: string; [key: string]: any }[];
+    }) => {
+      setResponseLoading(true);
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:resumeToolCall',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: { sessionId, messageId, toolCallIds, toolCallResults },
+          responseType: 'stream',
+          adapter: 'fetch',
+        });
+
+        if (!sendRes?.data) {
+          setResponseLoading(false);
+          return;
+        }
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      } catch (err) {
+        setResponseLoading(false);
+        throw err;
+      }
+    },
+    [],
+  );
+
   const loadMoreMessages = useCallback(async () => {
     const messagesService = messagesServiceRef.current;
     if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
@@ -458,6 +481,7 @@ export const useChatMessageActions = () => {
     resendMessages,
     cancelRequest,
     callTool,
+    resumeToolCall,
     updateToolArgs,
     lastMessageRef,
     startEditingMessage,

@@ -14,19 +14,6 @@ export default {
   description: 'Email expert',
   profile,
   skillSettings: {
-    skills: [
-      {
-        name: 'frontend-formFiller',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceCounting',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceQuery',
-        autoCall: true,
-      },
-    ],
+    skills: [],
   },
 };

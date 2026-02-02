@@ -8,10 +8,10 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { ToolOptions } from '../manager/tool-manager';
 import { z } from 'zod';
 import PluginAIServer from '../plugin';
 import { truncateLongStrings, MAX_QUERY_LIMIT, normalizeLimitOffset, buildPagedToolResult } from './utils';
+import { ToolsOptions } from '@nocobase/ai';
 
 const ArgSchema = z.object({
   datasource: z.string().describe('{{t("Data source key")}}'),
@@ -83,11 +83,17 @@ const example3: QueryObject = { age: { $lt: 50 } };
 
 type ArgType = z.infer<typeof ArgSchema>;
 
-export const dataSourceQuery: ToolOptions = {
-  name: 'dataSourceQuery',
-  title: '{{t("Data source query")}}',
-  description: '{{t("Use dataSource, collectionName, and collection fields to query data from the database")}}',
-  schema: ArgSchema,
+export const dataSourceQuery: ToolsOptions = {
+  scope: 'GENERAL',
+  introduction: {
+    title: '{{t("Data source query")}}',
+    about: '{{t("Use dataSource, collectionName, and collection fields to query data from the database")}}',
+  },
+  definition: {
+    name: 'dataSourceQuery',
+    description: 'Use dataSource, collectionName, and collection fields to query data from the database',
+    schema: ArgSchema,
+  },
   invoke: async (ctx: Context, args: ArgType) => {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 
@@ -118,12 +124,19 @@ export const dataSourceQuery: ToolOptions = {
   },
 };
 
-export const dataSourceCounting: ToolOptions = {
-  name: 'dataSourceCounting',
-  title: '{{t("Data source records counting")}}',
-  description:
-    '{{t("Use dataSource, collectionName, and collection fields to query data from the database, get total count of records")}}',
-  schema: ArgSchema,
+export const dataSourceCounting: ToolsOptions = {
+  scope: 'GENERAL',
+  introduction: {
+    title: '{{t("Data source records counting")}}',
+    about:
+      '{{t("Use dataSource, collectionName, and collection fields to query data from the database, get total count of records")}}',
+  },
+  definition: {
+    name: 'dataSourceCounting',
+    description:
+      'Use dataSource, collectionName, and collection fields to query data from the database, get total count of records',
+    schema: ArgSchema,
+  },
   invoke: async (ctx: Context, args: ArgType) => {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
     const content = await plugin.aiContextDatasourceManager.query(ctx, { ...args, offset: 0, limit: 1 } as any);
