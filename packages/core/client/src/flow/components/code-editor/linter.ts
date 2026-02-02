@@ -419,7 +419,7 @@ export const computeDiagnosticsFromText = (
 
     const isKeywordLiteral = (word: string) => word === 'true' || word === 'false' || word === 'null';
 
-    let state: 'code' | 'single' | 'double' | 'template' | 'lineComment' | 'blockComment' = 'code';
+    let state: 'code' | 'lineComment' | 'blockComment' = 'code';
     for (let i = 0; i < len; i++) {
       const ch = src[i];
       const next = i + 1 < len ? src[i + 1] : '';
@@ -433,31 +433,6 @@ export const computeDiagnosticsFromText = (
           state = 'code';
           i += 1;
         }
-        continue;
-      }
-
-      if (state === 'single') {
-        if (ch === '\\') {
-          i += 1;
-          continue;
-        }
-        if (ch === "'") state = 'code';
-        continue;
-      }
-      if (state === 'double') {
-        if (ch === '\\') {
-          i += 1;
-          continue;
-        }
-        if (ch === '"') state = 'code';
-        continue;
-      }
-      if (state === 'template') {
-        if (ch === '\\') {
-          i += 1;
-          continue;
-        }
-        if (ch === '`') state = 'code';
         continue;
       }
 
