@@ -17,7 +17,6 @@ import {
 } from '@nocobase/flow-engine';
 import { get, castArray } from 'lodash';
 import React from 'react';
-import { uid } from '@formily/shared';
 import { FieldModel } from '../../base';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { useJsonTemplateResolver } from '../../../utils/useJsonTemplateResolver';
@@ -32,17 +31,50 @@ function mergeArrays(a, b) {
     const [prefix, index] = item.split(':');
     if (result.includes(prefix)) {
       const prefixIndex = result.indexOf(prefix);
-      result.splice(prefixIndex + 1, 0, index);
+      const asNumber = Number(index);
+      result.splice(prefixIndex + 1, 0, Number.isFinite(asNumber) ? asNumber : index);
     }
   });
 
   return result;
 }
 
+function buildAssociationRefreshKey(
+  value: any,
+  filterTargetKey?: string | string[],
+): string | number | boolean | undefined | null {
+  if (value == null) return value;
+  const t = typeof value;
+  if (t === 'string' || t === 'number' || t === 'boolean') return value;
+  if (t === 'bigint') return String(value);
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => {
+        const k = buildAssociationRefreshKey(v, filterTargetKey);
+        return k == null ? '' : String(k);
+      })
+      .join(',');
+  }
+  if (t === 'object') {
+    const keys = castArray(filterTargetKey).filter(Boolean) as string[];
+    if (keys.length === 1) {
+      const k = buildAssociationRefreshKey(get(value, keys[0]));
+      if (k !== undefined) return k;
+    }
+    if (keys.length > 1) {
+      return JSON.stringify(keys.map((key) => buildAssociationRefreshKey(get(value, key)) ?? null));
+    }
+    const id = (value as any).id ?? (value as any).value ?? (value as any).key;
+    if (typeof id === 'string' || typeof id === 'number') return id;
+    if (typeof id === 'bigint') return String(id);
+  }
+  return undefined;
+}
+
 const AssociationItem = (props) => {
   const prefix = props.underSubForm ? 'ctx.currentObject' : 'ctx.formValues';
   const path = `{{${prefix}.${props.fieldPath}}}`;
-  const { data, loading, error } = useJsonTemplateResolver(path, [props.refreshId]);
+  const { data, loading, error } = useJsonTemplateResolver(path, [path, props.refreshKey]);
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   return <FieldModelRenderer {...props.mergedProps} model={props.modelForRender} value={data || props.value} />;
@@ -139,26 +171,23 @@ export class FormAssociationItemModel extends DisplayItemModel {
       <FormItem
         {...this.props}
         shouldUpdate={(prevValues, curValues) => {
-          if (dependenciesPath.length > 1 && !get(prevValues, [...dependenciesPath])) {
-            dependenciesPath.pop();
-            return (
-              JSON.stringify(get(prevValues, [...dependenciesPath])) !==
-              JSON.stringify(get(curValues, [...dependenciesPath]))
-            );
-          }
-          return (
-            JSON.stringify(get(prevValues, [...dependenciesPath])) !==
-            JSON.stringify(get(curValues, [...dependenciesPath]))
-          );
+          const p =
+            dependenciesPath.length > 1 && !get(prevValues, [...dependenciesPath])
+              ? dependenciesPath.slice(0, -1)
+              : dependenciesPath;
+          return JSON.stringify(get(prevValues, [...p])) !== JSON.stringify(get(curValues, [...p]));
         }}
       >
         {() => {
-          const refreshId = uid();
+          const refreshKey = buildAssociationRefreshKey(
+            this.context.form?.getFieldValue?.(dependenciesPath),
+            this.collectionField?.collection?.filterTargetKey,
+          );
           return (
             <AssociationItem
               modelForRender={modelForRender}
               fieldPath={this.fieldPath.replace(new RegExp(`^${prefix}\\.`), '')}
-              refreshId={refreshId}
+              refreshKey={refreshKey}
               mergedProps={this.props}
               underSubForm={!!prefix}
             />
