@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItemModel, FieldModelRenderer, FormItem, FieldModel } from '@nocobase/client';
+import {
+  FormItemModel,
+  FieldModelRenderer,
+  FormItem,
+  FieldModel,
+  RecordSelectFieldModel,
+  titleField,
+} from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
 import { Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -104,7 +111,77 @@ export class BulkEditFieldModel extends FieldModel {
   public render() {
     const fieldModel = this.subModels.field as FieldModel;
     const t = (s) => s;
-
     return <BulkEditField formItemModel={this.parent} fieldModel={fieldModel} {...this.props} />;
   }
 }
+
+const isBulkEditContext = (ctx: any) => {
+  const parent = ctx?.model?.parent as any;
+  if (!parent) {
+    return false;
+  }
+  if (parent instanceof BulkEditFieldModel) {
+    return true;
+  }
+  const grandParent = parent?.parent as any;
+  return grandParent?.constructor?.name === 'BulkEditFormItemModel';
+};
+
+const getBulkEditFieldNames = (ctx: any) => {
+  const own = ctx?.model?.props?.fieldNames;
+  if (own?.label && own?.value) {
+    return own;
+  }
+  const parent = ctx?.model?.parent as any;
+  const parentFieldNames = parent?.props?.fieldNames;
+  if (parentFieldNames?.label && parentFieldNames?.value) {
+    return parentFieldNames;
+  }
+  return null;
+};
+
+RecordSelectFieldModel.registerAction({
+  ...titleField,
+  name: 'titleField',
+  // 避免 packages/core/flow-engine/src/models/flowModel.tsx applyFlowSettings 时覆盖 Bulk Edit 场景下的配置
+  defaultParams: (ctx: any) => {
+    if (isBulkEditContext(ctx)) {
+      const existing = getBulkEditFieldNames(ctx);
+      if (existing?.label) {
+        return { label: existing.label };
+      }
+    }
+    const original = (titleField as any).defaultParams;
+    return typeof original === 'function' ? original(ctx) : original;
+  },
+  // Hide RecordSelectFieldModel's built-in titleField step when in bulk edit context
+  async hideInSettings(ctx: any) {
+    if (isBulkEditContext(ctx)) {
+      return true;
+    }
+    const original = (titleField as any).hideInSettings;
+    return typeof original === 'function' ? await original(ctx) : !!original;
+  },
+  // async beforeParamsSave(ctx: any, params: any, previousParams: any) {
+  //   if (isBulkEditContext(ctx)) {
+  //     return;
+  //   }
+  //   const original = (titleField as any).beforeParamsSave;
+  //   if (typeof original === 'function') {
+  //     return original(ctx, params, previousParams);
+  //   }
+  // },
+  // async handler(ctx: any, params: any) {
+  //   if (isBulkEditContext(ctx)) {
+  //     const existing = getBulkEditFieldNames(ctx);
+  //     if (existing?.label && existing?.value) {
+  //       ctx.model.setProps({ fieldNames: existing });
+  //       return;
+  //     }
+  //   }
+  //   const original = (titleField as any).handler;
+  //   if (typeof original === 'function') {
+  //     return original(ctx, params);
+  //   }
+  // },
+});

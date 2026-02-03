@@ -10,6 +10,7 @@
 import { FormItemModel, FieldModelRenderer, FormItem, FieldModel } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { bulkEditTitleField } from './bulkEditTitleField';
 
 export class BulkEditFormItemModel extends FormItemModel {
   static defineChildren(ctx: any) {
@@ -58,14 +59,17 @@ const baseEditItemSettingsFlow = (FormItemModel as any).globalFlowRegistry?.getF
 if (baseEditItemSettingsFlow) {
   const data = baseEditItemSettingsFlow.serialize();
   const { key, steps, ...rest } = data as any;
-  // 过滤掉不需要的配置项
+  // 过滤掉不需要的配置项，但保留 titleField 以便我们可以替换它
   const { initialValue, required, validation, pattern, model, ...filteredSteps } = (steps || {}) as Record<string, any>;
+  // 替换 titleField 为我们的 bulkEditTitleField
   if (filteredSteps?.titleField) {
     filteredSteps.titleField = {
-      ...filteredSteps.titleField,
+      // ...filteredSteps.titleField,
+      // ...bulkEditTitleField,
       use: 'bulkEditTitleField',
     };
   }
+
   BulkEditFormItemModel.registerFlow({
     key: 'editItemSettings',
     ...rest,

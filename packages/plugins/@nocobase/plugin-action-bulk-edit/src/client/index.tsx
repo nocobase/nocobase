@@ -29,10 +29,13 @@ import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 import { bulkEditFormBlockSettings } from './BulkEditFormBlockSettings';
 import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
+import { bulkEditTitleField } from './models/bulkEditTitleField';
 import * as models from './models';
 
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
+    // 先注册 bulkEditTitleField action，再导入 models
+    this.app.flowEngine.registerActions({ bulkEditTitleField });
     this.app.flowEngine.registerModels(models);
 
     this.app.addComponents({ BulkEditField, BulkEditActionDecorator });
