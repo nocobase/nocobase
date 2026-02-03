@@ -543,8 +543,8 @@ const RenderButton = ({
             await form?.submit?.();
           }
           modal.confirm({
-            title: t(resultTitle, { title: confirmTitle || title || field?.title }),
-            content: t(resultContent, { title: confirmTitle || title || field?.title }),
+            title: t(resultTitle, { title: confirmTitle || title || field?.title, ns: NAMESPACE_UI_SCHEMA }),
+            content: t(resultContent, { title: confirmTitle || title || field?.title, ns: NAMESPACE_UI_SCHEMA }),
             onOk,
           });
         } else {
