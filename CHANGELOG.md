@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.42](https://github.com/nocobase/nocobase/compare/v1.9.41...v1.9.42) - 2026-02-02
+
+### 🚀 Improvements
+
+- **[Auth: DingTalk]** Use `userid` as the default key for user association, while preserving compatibility with existing authenticators that rely on mobile by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Approval]** Fix performance issue caused by JSON field in list loading (MySQL) by @mytharcher
+
+- **[WeCom]** Fix an issue where users cannot be auto-registered when mobile is missing by @2013xile
+
+## [v1.9.41](https://github.com/nocobase/nocobase/compare/v1.9.40...v1.9.41) - 2026-02-02
+
+### 🚀 Improvements
+
+- **[client]** Support disabling redundant default appends params for `ResourceActionProvider` ([#8527](https://github.com/nocobase/nocobase/pull/8527)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Add fault-tolerant for collection record select component, to avoid error thrown when collection deleted ([#8528](https://github.com/nocobase/nocobase/pull/8528)) by @mytharcher
+
+- **[File manager]** Secure file path for local storage, to avoid access path out of document root ([#8539](https://github.com/nocobase/nocobase/pull/8539)) by @mytharcher
+
+- **[Workflow: Subflow]** Fix route path of workflow link by @mytharcher
+
 ## [v1.9.40](https://github.com/nocobase/nocobase/compare/v1.9.39...v1.9.40) - 2026-01-25
 
 ### 🚀 Improvements
