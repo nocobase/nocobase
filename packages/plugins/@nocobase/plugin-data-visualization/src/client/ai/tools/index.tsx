@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { ToolOptions, ToolCall } from '@nocobase/plugin-ai/client';
+import type { ToolOptions, ToolCall } from '@nocobase/plugin-ai/client';
 
 const ChartBlock: React.FC<{
   messageId: string;

@@ -43,7 +43,7 @@ import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar }
 import { ChartCardItem } from './block/CardItem';
 import { Schema } from '@formily/react';
 import { ChartBlockModel } from './flow/models/ChartBlockModel';
-import PluginAIClient from '@nocobase/plugin-ai/client';
+import type PluginAIClient from '@nocobase/plugin-ai/client';
 // import { buildChartBlockTool } from './ai/tools';
 
 type fieldInterfaceConfig = {
