@@ -38,6 +38,8 @@ export class DashscopeProvider extends LLMProvider {
         responseFormatOptions['json_schema'] = schema;
       }
       modelKwargs['response_format'] = responseFormatOptions;
+    } else {
+      modelKwargs['response_format'] = { type: 'text' };
     }
 
     if (this.modelOptions?.builtIn?.webSearch === true) {

@@ -187,7 +187,7 @@ export class AIEmployee {
           if ('__interrupt__' in chunks) {
             const interruptActions = this.toInterruptActions(chunks.__interrupt__[0].value);
             if (interruptActions.size) {
-              for (const toolCall of toolCalls) {
+              for (const toolCall of toolCalls ?? []) {
                 const interruptAction = interruptActions.get(toolCall.name);
                 if (!interruptAction) {
                   continue;
