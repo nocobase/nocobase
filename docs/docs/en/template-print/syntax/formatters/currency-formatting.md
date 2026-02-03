@@ -14,16 +14,11 @@ Parameters:
 
 ##### Example
 ```
-// Example environment: API options { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
 '1000.456':formatC()      // Outputs "$2,000.91"
 '1000.456':formatC('M')    // Outputs "dollars"
 '1':formatC('M')           // Outputs "dollar"
 '1000':formatC('L')        // Outputs "$2,000.00"
 '1000':formatC('LL')       // Outputs "2,000.00 dollars"
-
-// French example (when environment settings differ):
-'1000.456':formatC()      // Outputs "2 000,91 ..."  
-'1000.456':formatC()      // When the source and target currencies are the same, outputs "1 000,46 €"
 ```
 
 ##### Result
@@ -41,7 +36,6 @@ Parameters:
 
 ##### Example
 ```
-// Example environment: API options { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
 10:convCurr()              // Outputs 20
 1000:convCurr()            // Outputs 2000
 1000:convCurr('EUR')        // Outputs 1000

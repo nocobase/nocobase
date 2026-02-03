@@ -84,3 +84,6 @@ export { createEphemeralContext } from './createEphemeralContext';
 // Filter helpers
 export { pruneFilter } from './pruneFilter';
 export { isBeforeRenderFlow } from './flows';
+
+// Module URL resolver
+export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';

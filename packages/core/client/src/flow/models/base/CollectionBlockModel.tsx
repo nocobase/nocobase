@@ -417,7 +417,19 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         // resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
+
+        const syncDirtyVersion = () => {
+          const engine = this.context.engine as FlowEngine | undefined;
+          if (!engine?.getDataSourceDirtyVersion) return;
+          const dataSourceKey = resource.getDataSourceKey?.() || params.dataSourceKey || 'main';
+          const resourceName = resource.getResourceName?.() || params.associationName || params.collectionName;
+          if (!resourceName) return;
+          this.lastSeenDirtyVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+        };
+
+        syncDirtyVersion();
         resource.on('refresh', () => {
+          syncDirtyVersion();
           this.invalidateFlowCache('beforeRender');
         });
         return resource;

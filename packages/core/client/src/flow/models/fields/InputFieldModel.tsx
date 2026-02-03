@@ -10,6 +10,7 @@
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React from 'react';
+import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base';
 
 export class InputFieldModel extends FieldModel {
@@ -17,6 +18,23 @@ export class InputFieldModel extends FieldModel {
     return <Input {...this.props} />;
   }
 }
+
+InputFieldModel.registerFlow({
+  key: 'defaultValueForNanoid',
+  steps: {
+    generateNanoid: {
+      handler(ctx, params) {
+        // 监听表单reset
+        ctx.blockModel?.emitter?.on('onFieldReset', () => {
+          if (ctx.collectionField.interface === 'nanoid' && ctx.collectionField.options.autoFill !== false) {
+            const { size, customAlphabet } = ctx.collectionField.options || { size: 21 };
+            ctx.model.props.onChange(Alphabet(customAlphabet, size)());
+          }
+        });
+      },
+    },
+  },
+});
 
 InputFieldModel.define({
   label: tExpr('Input'),

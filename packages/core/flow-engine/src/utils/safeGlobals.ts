@@ -15,6 +15,66 @@
  * - 不允许随意访问未声明的属性，最小权限原则
  */
 
+type RunJSSafeGlobalsRegistry = {
+  windowAllow: Set<string>;
+  documentAllow: Set<string>;
+};
+
+function getRunJSSafeGlobalsRegistry(): RunJSSafeGlobalsRegistry {
+  const g: any = globalThis as any;
+  if (g.__nocobaseRunJSSafeGlobalsRegistry?.windowAllow && g.__nocobaseRunJSSafeGlobalsRegistry?.documentAllow) {
+    return g.__nocobaseRunJSSafeGlobalsRegistry as RunJSSafeGlobalsRegistry;
+  }
+  const reg: RunJSSafeGlobalsRegistry = {
+    windowAllow: new Set<string>(),
+    documentAllow: new Set<string>(),
+  };
+  g.__nocobaseRunJSSafeGlobalsRegistry = reg;
+  return reg;
+}
+
+export function registerRunJSSafeWindowGlobals(keys: Iterable<string> | null | undefined): void {
+  if (!keys) return;
+  const reg = getRunJSSafeGlobalsRegistry();
+  for (const k of keys) {
+    if (typeof k !== 'string') continue;
+    const key = k.trim();
+    if (!key) continue;
+    reg.windowAllow.add(key);
+  }
+}
+
+export function registerRunJSSafeDocumentGlobals(keys: Iterable<string> | null | undefined): void {
+  if (!keys) return;
+  const reg = getRunJSSafeGlobalsRegistry();
+  for (const k of keys) {
+    if (typeof k !== 'string') continue;
+    const key = k.trim();
+    if (!key) continue;
+    reg.documentAllow.add(key);
+  }
+}
+
+export function __resetRunJSSafeGlobalsRegistryForTests(): void {
+  const g: any = globalThis as any;
+  if (g.__nocobaseRunJSSafeGlobalsRegistry) {
+    try {
+      g.__nocobaseRunJSSafeGlobalsRegistry.windowAllow?.clear?.();
+      g.__nocobaseRunJSSafeGlobalsRegistry.documentAllow?.clear?.();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function isAllowedDynamicWindowKey(key: string): boolean {
+  return getRunJSSafeGlobalsRegistry().windowAllow.has(key);
+}
+
+function isAllowedDynamicDocumentKey(key: string): boolean {
+  return getRunJSSafeGlobalsRegistry().documentAllow.has(key);
+}
+
 export function createSafeWindow(extra?: Record<string, any>) {
   // 解析相对 URL 使用脱敏 base（不含 query/hash），避免在解析时泄露敏感信息
   const getSafeBaseHref = () => `${window.location.origin}${window.location.pathname}`;
@@ -160,15 +220,44 @@ export function createSafeWindow(extra?: Record<string, any>) {
     ...(extra || {}),
   };
 
-  return new Proxy(
-    {},
-    {
-      get(_target, prop: string) {
-        if (prop in allowedGlobals) return allowedGlobals[prop];
-        throw new Error(`Access to global property "${prop}" is not allowed.`);
-      },
+  const target: Record<string, any> = Object.create(null);
+
+  return new Proxy(target, {
+    get(t, prop: string | symbol) {
+      if (typeof prop !== 'string') {
+        return Reflect.get(t, prop);
+      }
+
+      if (prop in allowedGlobals) return allowedGlobals[prop];
+      if (Object.prototype.hasOwnProperty.call(t, prop)) return (t as any)[prop];
+      if (isAllowedDynamicWindowKey(prop)) {
+        const v = (window as any)[prop];
+        // Bind functions to the real window to avoid Illegal invocation
+        if (typeof v === 'function') return v.bind(window);
+        return v;
+      }
+
+      throw new Error(`Access to global property "${prop}" is not allowed.`);
     },
-  );
+    set(t, prop: string | symbol, value: any) {
+      if (typeof prop !== 'string') {
+        Reflect.set(t, prop, value);
+        return true;
+      }
+      if (prop in allowedGlobals) {
+        throw new Error(`Mutation of global property "${prop}" is not allowed.`);
+      }
+      (t as any)[prop] = value;
+      return true;
+    },
+    has(t, prop: string | symbol) {
+      if (typeof prop !== 'string') return Reflect.has(t, prop);
+      if (prop in allowedGlobals) return true;
+      if (Object.prototype.hasOwnProperty.call(t, prop)) return true;
+      if (isAllowedDynamicWindowKey(prop)) return true;
+      return false;
+    },
+  });
 }
 
 export function createSafeDocument(extra?: Record<string, any>) {
@@ -178,15 +267,43 @@ export function createSafeDocument(extra?: Record<string, any>) {
     querySelectorAll: document.querySelectorAll.bind(document),
     ...(extra || {}),
   };
-  return new Proxy(
-    {},
-    {
-      get(_target, prop: string) {
-        if (prop in allowed) return allowed[prop];
-        throw new Error(`Access to document property "${prop}" is not allowed.`);
-      },
+  const target: Record<string, any> = Object.create(null);
+  return new Proxy(target, {
+    get(t, prop: string | symbol) {
+      if (typeof prop !== 'string') {
+        return Reflect.get(t, prop);
+      }
+
+      if (prop in allowed) return allowed[prop];
+      if (Object.prototype.hasOwnProperty.call(t, prop)) return (t as any)[prop];
+      if (isAllowedDynamicDocumentKey(prop)) {
+        const v = (document as any)[prop];
+        // Bind functions to the real document to avoid Illegal invocation
+        if (typeof v === 'function') return v.bind(document);
+        return v;
+      }
+
+      throw new Error(`Access to document property "${prop}" is not allowed.`);
     },
-  );
+    set(t, prop: string | symbol, value: any) {
+      if (typeof prop !== 'string') {
+        Reflect.set(t, prop, value);
+        return true;
+      }
+      if (prop in allowed) {
+        throw new Error(`Mutation of document property "${prop}" is not allowed.`);
+      }
+      (t as any)[prop] = value;
+      return true;
+    },
+    has(t, prop: string | symbol) {
+      if (typeof prop !== 'string') return Reflect.has(t, prop);
+      if (prop in allowed) return true;
+      if (Object.prototype.hasOwnProperty.call(t, prop)) return true;
+      if (isAllowedDynamicDocumentKey(prop)) return true;
+      return false;
+    },
+  });
 }
 
 export function createSafeNavigator(extra?: Record<string, any>) {
