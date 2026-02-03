@@ -1,6 +1,6 @@
 # Many-to-One
 
-In a library database, there are two entities: books and authors. An author can write multiple books, but each book usually has only one author. In this case, the relationship between authors and books is many-to-one. Multiple books can be associated with the same author, but each book can have only one author.
+In a library database, there are two entities: books and authors. An author can write multiple books, but each book usually has only one author. In this case, the relationship between books and authors is many-to-one. Multiple books can be associated with the same author, but each book can have only one author.
 
 ER Diagram:
 
