@@ -20,7 +20,7 @@ import {
 import { Space, InputNumber } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client';
-import React from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MapBlockComponent } from './MapBlockComponent';
 import { NAMESPACE } from '../locale';
 
@@ -109,14 +109,102 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   renderComponent() {
-    const isConfigMode = !!this.context.flowSettingsEnabled;
+    const { heightMode, height } = this.decoratorProps;
+    return <MapBlockContent model={this} heightMode={heightMode} height={height} />;
+  }
+}
 
-    return (
-      <div>
+const getOuterHeight = (element?: HTMLElement | null) => {
+  if (!element) return 0;
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = parseFloat(style.marginTop) || 0;
+  const marginBottom = parseFloat(style.marginBottom) || 0;
+  return rect.height + marginTop + marginBottom;
+};
+
+const useMapHeight = ({
+  heightMode,
+  containerRef,
+  actionsRef,
+  deps = [],
+}: {
+  heightMode?: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  actionsRef: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+}) => {
+  const [mapHeight, setMapHeight] = useState<number>();
+  const calcMapHeight = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setMapHeight((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const containerHeight = container.getBoundingClientRect().height;
+    if (!containerHeight) return;
+    const actionsHeight = getOuterHeight(actionsRef.current);
+    const nextHeight = Math.max(0, Math.floor(containerHeight - actionsHeight));
+    setMapHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [heightMode, containerRef, actionsRef]);
+
+  useLayoutEffect(() => {
+    calcMapHeight();
+  }, [calcMapHeight, ...deps]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
+    const container = containerRef.current;
+    const actions = actionsRef.current;
+    const observer = new ResizeObserver(() => calcMapHeight());
+    observer.observe(container);
+    if (actions) observer.observe(actions);
+    return () => observer.disconnect();
+  }, [calcMapHeight, containerRef, actionsRef, ...deps]);
+
+  return mapHeight;
+};
+
+const MapBlockContent = ({
+  model,
+  heightMode,
+  height,
+}: {
+  model: MapBlockModel;
+  heightMode?: string;
+  height?: number;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const mapHeight = useMapHeight({
+    heightMode,
+    containerRef,
+    actionsRef,
+    deps: [height],
+  });
+  const mapStyle = useMemo(() => {
+    if (mapHeight == null) return undefined;
+    return { height: mapHeight, overflow: 'auto' };
+  }, [mapHeight]);
+  const containerStyle = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }
+    : undefined;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
+
+  return (
+    <div ref={containerRef} style={containerStyle}>
+      <div ref={actionsRef}>
         <DndProvider>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <Space>
-              {this.mapSubModels('actions', (action) => {
+              {model.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position === 'left') {
                   return (
@@ -134,7 +222,7 @@ export class MapBlockModel extends CollectionBlockModel {
               <span></span>
             </Space>
             <Space wrap>
-              {this.mapSubModels('actions', (action) => {
+              {model.mapSubModels('actions', (action) => {
                 if (action.hidden && !isConfigMode) {
                   return;
                 }
@@ -159,22 +247,25 @@ export class MapBlockModel extends CollectionBlockModel {
 
                 return null;
               })}
-              {this.renderConfigureAction()}
+              {model.renderConfigureAction()}
             </Space>
           </div>
         </DndProvider>
+      </div>
+      <div className="nb-map-content" style={mapStyle}>
         <MapBlockComponent
-          {...this.props}
-          fields={this.collection.getFields()}
-          name={this.collection.name}
-          primaryKey={this.collection.filterTargetKey}
-          setSelectedRecordKeys={this.setSelectedRecordKeys.bind(this)}
-          dataSource={this.resource.getData()}
+          {...model.props}
+          fields={model.collection.getFields()}
+          name={model.collection.name}
+          primaryKey={model.collection.filterTargetKey}
+          setSelectedRecordKeys={model.setSelectedRecordKeys.bind(model)}
+          dataSource={model.resource.getData()}
+          height={mapHeight ? mapHeight - 5 : null}
         />
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 MapBlockModel.registerFlow({
   key: 'createMapBlock',
@@ -313,97 +404,6 @@ MapBlockModel.registerFlow({
 });
 
 MapBlockModel.registerFlow(openViewFlow);
-
-// MapBlockModel.registerFlow({
-//   key: 'popupSettings',
-//   title: tExpr('Selector setting'),
-//   on: {
-//     eventName: 'openView',
-//   },
-//   steps: {
-//     openView: {
-//       title: tExpr('Edit popup'),
-//       uiSchema: {
-//         mode: {
-//           type: 'string',
-//           title: tExpr('Open mode'),
-//           enum: [
-//             { label: tExpr('Drawer'), value: 'drawer' },
-//             { label: tExpr('Dialog'), value: 'dialog' },
-//           ],
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Radio.Group',
-//         },
-//         size: {
-//           type: 'string',
-//           title: tExpr('Popup size'),
-//           enum: [
-//             { label: tExpr('Small'), value: 'small' },
-//             { label: tExpr('Medium'), value: 'medium' },
-//             { label: tExpr('Large'), value: 'large' },
-//           ],
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Radio.Group',
-//         },
-//       },
-//       defaultParams: {
-//         mode: 'drawer',
-//         size: 'medium',
-//       },
-//       handler(ctx, params) {
-//         const { onChange } = ctx.inputArgs;
-//         const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
-//         const sizeToWidthMap: Record<string, any> = {
-//           drawer: {
-//             small: '30%',
-//             medium: '50%',
-//             large: '70%',
-//           },
-//           dialog: {
-//             small: '40%',
-//             medium: '50%',
-//             large: '80%',
-//           },
-//           embed: {},
-//         };
-//         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
-//         const size = ctx.inputArgs.size || params.size || 'medium';
-//         ctx.viewer.open({
-//           type: openMode,
-//           width: sizeToWidthMap[openMode][size],
-//           inheritContext: false,
-//           target: ctx.layoutContentElement,
-//           inputArgs: {
-//             parentId: ctx.model.uid,
-//             scene: 'view',
-//             dataSourceKey: ctx.collection.dataSourceKey,
-//             collectionName: ctx.collectionField?.target,
-//             collectionField: ctx.collectionField,
-//             rowSelectionProps: {
-//               type: toOne ? 'radio' : 'checkbox',
-//               defaultSelectedRows: () => {
-//                 return ctx.model.props.value;
-//               },
-//               renderCell: undefined,
-//               selectedRowKeys: undefined,
-//             },
-//           },
-//           content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
-//           styles: {
-//             content: {
-//               padding: 0,
-//               backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
-//               ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
-//             },
-//             body: {
-//               padding: 0,
-//             },
-//           },
-//         });
-//       },
-//     },
-//   },
-// });
 
 MapBlockModel.define({
   label: tExpr('Map', { ns: NAMESPACE }),
