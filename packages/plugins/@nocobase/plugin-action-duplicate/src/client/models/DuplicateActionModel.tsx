@@ -262,6 +262,7 @@ DuplicateActionModel.registerFlow({
             type: 'void',
             title: '{{ t("Sync from form fields") }}',
             'x-component': () => {
+              const popupTemplateUid = ctx.model.getStepParams?.('popupSettings', 'openView')?.popupTemplateUid;
               // eslint-disable-next-line react-hooks/rules-of-hooks
               const form = useForm();
               const { run } = getSyncFromForm(
@@ -280,19 +281,20 @@ DuplicateActionModel.registerFlow({
                 },
               );
               return (
-                <a
-                  onClick={async () => {
-                    const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
-                    console.log(model);
-                    if (!model) {
-                      return;
-                    }
-                    run(model.subModels.items[0].subModels.grid);
-                  }}
-                  style={{ float: 'right', position: 'relative', zIndex: 1200 }}
-                >
-                  {t('Sync from form fields')}
-                </a>
+                !popupTemplateUid && (
+                  <a
+                    onClick={async () => {
+                      const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
+                      if (!model) {
+                        return;
+                      }
+                      run(model.subModels.items[0].subModels.grid);
+                    }}
+                    style={{ float: 'right', position: 'relative', zIndex: 1200 }}
+                  >
+                    {t('Sync from form fields')}
+                  </a>
+                )
               );
             },
 
