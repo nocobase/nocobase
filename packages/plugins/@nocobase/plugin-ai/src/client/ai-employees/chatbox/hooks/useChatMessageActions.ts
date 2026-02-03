@@ -112,7 +112,6 @@ export const useChatMessageActions = () => {
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const content = '';
         const { done, value } = await reader.read();
         if (done || error) {
           setResponseLoading(false);
@@ -126,7 +125,12 @@ export const useChatMessageActions = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
-
+            if (data.type === 'stream_start') {
+              console.log('stream_start', sessionId);
+            }
+            if (data.type === 'stream_end') {
+              console.log('stream_end', sessionId);
+            }
             if (data.type === 'content' && data.body && typeof data.body === 'string') {
               // [AI_DEBUG] stream_text
               aiDebugLogger.log(sessionId, 'stream_text', {
@@ -170,7 +174,7 @@ export const useChatMessageActions = () => {
                 const toolCallId = data.body?.toolCall?.id;
                 const target = toolCalls.find((t) => t.id == toolCallId);
                 if (target) {
-                  target.invokeStatus = data.body?.status;
+                  target.invokeStatus = data.body?.invokeStatus;
                 }
                 return {
                   ...last,

@@ -29,21 +29,7 @@ import {
   toolInteractionMiddleware,
 } from './middleware';
 import { ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
-
-type ToolMessage = {
-  id: string;
-  sessionId: string;
-  messageId: string;
-  toolCallId: string;
-  status: 'success' | 'error';
-  content: string;
-  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
-  invokeStartTime: Date;
-  invokeEndTime: Date;
-  toolName: string;
-  auto: boolean;
-  execution: 'backend' | 'frontend';
-};
+import { AIToolMessage } from '../types/ai-message.type';
 
 export interface ModelOverride {
   llmService: string;
@@ -208,8 +194,8 @@ export class AIEmployee {
                 }
                 await this.updateToolCallInterrupted(toolCall.id, interruptAction);
                 this.protocol.toolCallStatus({
-                  toolCall,
-                  status: 'interrupted',
+                  toolCall: { id: toolCall.id, name: toolCall.name },
+                  invokeStatus: 'interrupted',
                   interruptAction,
                 });
               }
@@ -219,12 +205,23 @@ export class AIEmployee {
           if (chunks.action === 'initToolCalls') {
             toolCalls = chunks.body?.toolCalls ?? [];
             this.protocol.toolCallChunks(chunks.body);
-          } else if (chunks.action === 'beforeSendToolMessage') {
-            this.protocol.newMessage(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
-            this.protocol.toolCallStatus({ toolCall: chunks.body?.toolCall, status: 'pending' });
+            this.protocol.toolCallStatus({
+              toolCall: { id: chunks.body?.toolCall?.id, name: chunks.body?.toolCall?.name },
+              invokeStatus: 'pending',
+            });
           } else if (chunks.action === 'afterToolCall') {
-            this.protocol.toolCallStatus({ toolCall: chunks.body?.toolCall, status: 'done' });
+            this.protocol.toolCallStatus({
+              toolCall: { id: chunks.body?.toolCall?.id, name: chunks.body?.toolCall?.name },
+              invokeStatus: 'done',
+            });
+          } else if (chunks.action === 'beforeSendToolMessage') {
+            for (const toolCall of chunks.body?.messages
+              ?.map((x) => x.metadata)
+              .map((x) => ({ id: x.toolCallId, name: x.toolName })) ?? []) {
+              this.protocol.toolCallStatus({ toolCall, invokeStatus: 'confirmed' });
+            }
+            this.protocol.newMessage();
           }
         }
       }
@@ -475,7 +472,7 @@ export class AIEmployee {
       name: string;
       args: any;
     }[],
-  ) {
+  ): Promise<Model<AIToolMessage>[]> {
     const nowTime = new Date();
     const toolMap = await this.getToolsMap();
     return await this.aiToolMessagesRepo.create({
@@ -560,6 +557,24 @@ export class AIEmployee {
     return updated;
   }
 
+  async confirmToolCall(transaction: Transaction, toolCallIds: string[]) {
+    const [updated] = await this.aiToolMessagesModel.update(
+      {
+        invokeStatus: 'confirmed',
+      },
+      {
+        where: {
+          sessionId: this.sessionId,
+          toolCallId: {
+            [Op.in]: toolCallIds,
+          },
+        },
+        transaction,
+      },
+    );
+    return updated;
+  }
+
   async getUserDecisions(messageId: string): Promise<UserDecision[]> {
     const allInterruptedToolCall = await this.aiToolMessagesModel.findAll({
       where: {
@@ -585,7 +600,7 @@ export class AIEmployee {
     } else {
       return;
     }
-    const toolCalls: ToolMessage[] = await this.aiToolMessagesRepo.find({
+    const toolCalls: AIToolMessage[] = await this.aiToolMessagesRepo.find({
       filter: {
         messageId,
         invokeStatus: {
@@ -994,6 +1009,19 @@ class ChatStreamProtocol {
     return new ChatStreamProtocol(ctx);
   }
 
+  startStream() {
+    this._statistics.reset();
+    this.write({ type: 'stream_start' });
+  }
+
+  endStream() {
+    this.write({ type: 'stream_end' });
+  }
+
+  newMessage(content?: unknown) {
+    this.write({ type: 'new_message', body: content });
+  }
+
   content(content: string): void {
     this.write({ type: 'content', body: content });
   }
@@ -1008,11 +1036,11 @@ class ChatStreamProtocol {
 
   toolCallStatus({
     toolCall,
-    status,
+    invokeStatus,
     interruptAction,
   }: {
-    toolCall: AIToolCall;
-    status: string;
+    toolCall: { id: string; name: string };
+    invokeStatus: string;
     interruptAction?: {
       order: number;
       description: string;
@@ -1023,23 +1051,10 @@ class ChatStreamProtocol {
       type: 'tool_call_status',
       body: {
         toolCall,
-        status,
+        invokeStatus,
         interruptAction,
       },
     });
-  }
-
-  newMessage(content: unknown) {
-    this.write({ type: 'new_message', body: content });
-  }
-
-  endStream() {
-    this.write({ type: 'stream_end' });
-  }
-
-  startStream() {
-    this._statistics.reset();
-    this.write({ type: 'stream_start' });
   }
 
   get statistics() {

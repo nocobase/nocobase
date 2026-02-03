@@ -10,8 +10,14 @@
 import { AIMessage, createMiddleware, HumanMessage, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import { AIMessageInput } from '../../types';
-import { AIMessage as AIConversationMessage, AIMessageContent } from '../../types/ai-message.type';
+import {
+  AIMessage as AIConversationMessage,
+  AIMessageContent,
+  AIToolCall,
+  AIToolMessage,
+} from '../../types/ai-message.type';
 import z from 'zod';
+import { Model } from '@nocobase/database';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
@@ -97,10 +103,32 @@ export const conversationMiddleware = (
         model,
         provider: service.provider,
         toolCallId: message.tool_call_id,
+        toolName: message.name,
       },
     };
 
     return values;
+  };
+
+  const fillToolCall = (
+    message: AIConversationMessage,
+    initializedToolCalls: Model<AIToolMessage>[],
+    toolCalls: AIToolCall[],
+  ) => {
+    const initializedToolCallMap = new Map(initializedToolCalls.map((x) => x.toJSON()).map((x) => [x.toolCallId, x]));
+    for (const toolCall of toolCalls) {
+      const { status, content, invokeStatus, invokeStartTime, invokeEndTime, auto, execution } =
+        initializedToolCallMap.get(toolCall.id) ?? {};
+      toolCall.sessionId = message.sessionId;
+      toolCall.messageId = message.messageId;
+      toolCall.status = status;
+      toolCall.content = content;
+      toolCall.invokeStatus = invokeStatus;
+      toolCall.invokeStartTime = invokeStartTime;
+      toolCall.invokeEndTime = invokeEndTime;
+      toolCall.auto = auto;
+      toolCall.execution = execution;
+    }
   };
 
   return createMiddleware({
@@ -141,8 +169,14 @@ export const conversationMiddleware = (
         .map((x) => x as ToolMessage)
         .map(convertToolMessage);
       if (toolMessages.length) {
-        await aiEmployee.aiChatConversation.addMessages(toolMessages);
-        runtime.writer?.({ action: 'beforeSendToolMessage', body: toolMessages });
+        await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
+          await conversation.addMessages(toolMessages);
+          await aiEmployee.confirmToolCall(
+            transaction,
+            toolMessages.map((x) => x.metadata.toolCallId as string),
+          );
+        });
+        runtime.writer?.({ action: 'beforeSendToolMessage', body: { messages: toolMessages } });
       }
     },
     afterModel: async (state, runtime) => {
@@ -176,22 +210,7 @@ export const conversationMiddleware = (
                 result.messageId,
                 toolCalls as any,
               );
-              const initializedToolCallMap = new Map(
-                initializedToolCalls.map((x) => x.toJSON()).map((x) => [x.toolCallId, x]),
-              );
-              for (const toolCall of toolCalls) {
-                const { status, content, invokeStatus, invokeStartTime, invokeEndTime, auto, execution } =
-                  (initializedToolCallMap.get(toolCall.id) as any) ?? {};
-                (toolCall as any).sessionId = result.sessionId;
-                (toolCall as any).messageId = result.messageId;
-                (toolCall as any).status = status;
-                (toolCall as any).content = content;
-                (toolCall as any).invokeStatus = invokeStatus;
-                (toolCall as any).invokeStartTime = invokeStartTime;
-                (toolCall as any).invokeEndTime = invokeEndTime;
-                (toolCall as any).auto = auto;
-                (toolCall as any).execution = execution;
-              }
+              fillToolCall(result, initializedToolCalls, toolCalls as any);
             }
           });
         }
