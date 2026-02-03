@@ -449,8 +449,8 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
           <Button
             type="primary"
             onClick={() => {
-              navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map');
               ctx.view.close();
+              navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map');
             }}
           >
             {t('Go to the configuration page')}
