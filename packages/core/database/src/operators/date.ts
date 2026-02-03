@@ -29,7 +29,8 @@ const toDate = (date, options: any = {}) => {
   }
 
   if (field.constructor.name === 'DatetimeNoTzField') {
-    val = moment(val).utcOffset('+00:00').format('YYYY-MM-DD HH:mm:ss');
+    const rawTimezone = ctx.db.options.rawTimezone || '+00:00';
+    val = moment(val).utcOffset(rawTimezone).format('YYYY-MM-DD HH:mm:ss');
   }
 
   if (field.constructor.name === 'DateOnlyField') {
@@ -54,7 +55,7 @@ function parseDateTimezone(ctx) {
   }
 
   if (field.constructor.name === 'DatetimeNoTzField') {
-    return '+00:00';
+    return ctx.db.options.rawTimezone || '+00:00';
   }
 
   if (field.constructor.name === 'DateOnlyField') {

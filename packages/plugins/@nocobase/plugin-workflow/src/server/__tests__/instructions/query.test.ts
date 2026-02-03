@@ -390,6 +390,105 @@ describe('workflow > instructions > query', () => {
     });
   });
 
+  describe('datetimeNoTz field', () => {
+    it('query with $dateBefore using system now()', async () => {
+      const postsCollection = db.getCollection('posts');
+      postsCollection.addField('date1', {
+        type: 'datetimeNoTz',
+      });
+      await db.sync();
+
+      // Create a record with a datetime 1 hour ago (in local time format without timezone)
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const dateStr = `${oneHourAgo.getFullYear()}-${String(oneHourAgo.getMonth() + 1).padStart(2, '0')}-${String(
+        oneHourAgo.getDate(),
+      ).padStart(2, '0')} ${String(oneHourAgo.getHours()).padStart(2, '0')}:${String(oneHourAgo.getMinutes()).padStart(
+        2,
+        '0',
+      )}:${String(oneHourAgo.getSeconds()).padStart(2, '0')}`;
+
+      const record = await PostRepo.create({
+        values: {
+          title: 'test datetimeNoTz',
+          date1: dateStr,
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              'date1.$dateBefore': '{{$system.now}}',
+            },
+          },
+        },
+      });
+
+      // Trigger workflow
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      // The record with date1 = oneHourAgo should be found since it's before now
+      expect(job.result).not.toBeNull();
+      expect(job.result.title).toBe('test datetimeNoTz');
+    });
+
+    it('query with $dateAfter using system now()', async () => {
+      const postsCollection = db.getCollection('posts');
+      postsCollection.addField('date1', {
+        type: 'datetimeNoTz',
+      });
+      await db.sync();
+
+      // Create a record with a datetime 1 hour in the future (in local time format without timezone)
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const dateStr = `${oneHourLater.getFullYear()}-${String(oneHourLater.getMonth() + 1).padStart(2, '0')}-${String(
+        oneHourLater.getDate(),
+      ).padStart(2, '0')} ${String(oneHourLater.getHours()).padStart(2, '0')}:${String(
+        oneHourLater.getMinutes(),
+      ).padStart(2, '0')}:${String(oneHourLater.getSeconds()).padStart(2, '0')}`;
+
+      const record = await PostRepo.create({
+        values: {
+          title: 'test datetimeNoTz future',
+          date1: dateStr,
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              'date1.$dateAfter': '{{$system.now}}',
+            },
+          },
+        },
+      });
+
+      // Trigger workflow
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      // The record with date1 = oneHourLater should be found since it's after now
+      expect(job.result).not.toBeNull();
+      expect(job.result.title).toBe('test datetimeNoTz future');
+    });
+  });
+
   describe('multiple data source', () => {
     it('query on another data source', async () => {
       const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
