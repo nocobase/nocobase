@@ -12,7 +12,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { Plugin, useColumnSchema, useDesignable, useToken } from '@nocobase/client';
 import { Typography } from 'antd';
 import _ from 'lodash';
-import React, { FC, useEffect, useRef } from 'react';
+import React, { FC, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace for i18n
@@ -47,11 +47,22 @@ const TextCopyButton: FC = observer(
 
     const hidden = field.readPretty && (!field.value || !show);
 
+    const textValue = useMemo(() => {
+      if (typeof field.value === 'string') {
+        return field.value;
+      }
+      try {
+        return JSON.stringify(field.value);
+      } catch (e) {
+        return String(field.value);
+      }
+    }, [field.value]);
+
     return (
       <Typography.Text
         ref={buttonRef}
         copyable={{
-          text: field.value,
+          text: textValue,
         }}
         style={{ marginLeft: field.readPretty ? token.marginXXS : 0, opacity: hidden ? 0 : 1 }}
       />
@@ -70,42 +81,47 @@ class PluginTextCopy extends Plugin {
       TextCopyButton: copyButton,
     });
 
-    // Add the schema settings to enable/disable the copy functionality
-    this.app.schemaSettingsManager.addItem('fieldSettings:component:Input', 'enableCopier', {
-      type: 'switch',
-      useComponentProps() {
-        const { t } = useTranslation(NAMESPACE);
-        const { fieldSchema: tableFieldSchema } = useColumnSchema();
-        const fieldSchema = useFieldSchema();
-        const field = useField();
-        const { dn } = useDesignable();
+    const addCopyFeature = (component) => {
+      // Add the schema settings to enable/disable the copy functionality
+      this.app.schemaSettingsManager.addItem(`fieldSettings:component:${component}`, 'enableCopier', {
+        type: 'switch',
+        useComponentProps() {
+          const { t } = useTranslation(NAMESPACE);
+          const { fieldSchema: tableFieldSchema } = useColumnSchema();
+          const fieldSchema = useFieldSchema();
+          const field = useField();
+          const { dn } = useDesignable();
 
-        const schema = tableFieldSchema || fieldSchema;
+          const schema = tableFieldSchema || fieldSchema;
 
-        return {
-          title: t('Display copy button'),
-          checked: !!schema['x-component-props']?.addonAfter,
-          onChange: async (checked) => {
-            if (checked) {
-              field.componentProps.addonAfter = copyButton;
-              _.set(schema, 'x-component-props.addonAfter', '{{TextCopyButton}}');
-            } else {
-              field.componentProps.addonAfter = null;
-              _.unset(schema, 'x-component-props.addonAfter');
-            }
+          return {
+            title: t('Display copy button'),
+            checked: !!schema['x-component-props']?.addonAfter,
+            onChange: async (checked) => {
+              if (checked) {
+                field.componentProps.addonAfter = copyButton;
+                _.set(schema, 'x-component-props.addonAfter', '{{TextCopyButton}}');
+              } else {
+                field.componentProps.addonAfter = null;
+                _.unset(schema, 'x-component-props.addonAfter');
+              }
 
-            await dn.emit('patch', {
-              schema: {
-                'x-uid': schema['x-uid'],
-                'x-component-props': {
-                  ...schema['x-component-props'],
+              await dn.emit('patch', {
+                schema: {
+                  'x-uid': schema['x-uid'],
+                  'x-component-props': {
+                    ...schema['x-component-props'],
+                  },
                 },
-              },
-            });
-          },
-        };
-      },
-    });
+              });
+            },
+          };
+        },
+      });
+    };
+
+    addCopyFeature('Input');
+    addCopyFeature('Input.JSON');
   }
 }
 
