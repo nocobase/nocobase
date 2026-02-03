@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CaretRightOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { createForm, Field } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, observer, useField, useForm } from '@formily/react';
@@ -44,6 +44,7 @@ import useStyles from '../style';
 import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
 import { useRemoveNodeContext } from '../RemoveNodeContext';
 import { useNodeDragContext } from '../NodeDragContext';
+import { useNodeClipboardContext } from '../NodeClipboardContext';
 import { SubModelItem } from '@nocobase/flow-engine';
 
 export type NodeAvailableContext = {
@@ -213,6 +214,8 @@ export function RemoveButton() {
   const { modal } = App.useApp();
   const executed = useWorkflowExecuted();
   const removeNodeContext = useRemoveNodeContext();
+  const clipboard = useNodeClipboardContext();
+  const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === current.id);
 
   const onOk = useCallback(async () => {
     await api.resource('flow_nodes').destroy?.({
@@ -258,19 +261,56 @@ export function RemoveButton() {
     }
   }, [current, modal, nodes, onOk, removeNodeContext, t]);
 
+  const onCopy = useCallback(() => {
+    if (isCopiedSelf) {
+      clipboard?.clearClipboard?.();
+      return;
+    }
+    clipboard?.copyNode?.(current);
+  }, [clipboard, current, isCopiedSelf]);
+
   if (!workflow || executed) {
     return null;
   }
 
   return (
-    <Button
-      type="text"
-      shape="circle"
-      icon={<DeleteOutlined />}
-      onClick={onRemove}
-      className="workflow-node-remove-button"
-      size="small"
-    />
+    <Dropdown
+      trigger={['hover']}
+      menu={{
+        items: [
+          {
+            key: 'copy',
+            label: isCopiedSelf ? lang('Cancel copy') : lang('Copy'),
+            icon: isCopiedSelf ? undefined : <CopyOutlined />,
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: t('Delete'),
+            icon: <DeleteOutlined />,
+            danger: true,
+          },
+        ],
+        onClick: ({ key }) => {
+          if (key === 'copy') {
+            onCopy();
+          }
+          if (key === 'delete') {
+            onRemove();
+          }
+        },
+      }}
+    >
+      <Button
+        type="text"
+        shape="circle"
+        icon={<EllipsisOutlined />}
+        className="workflow-node-action-button"
+        size="small"
+      />
+    </Dropdown>
   );
 }
 
@@ -601,8 +641,11 @@ export function NodeDefaultView(props) {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const executed = useWorkflowExecuted();
   const dragContext = useNodeDragContext();
+  const clipboard = useNodeClipboardContext();
   const instruction = workflowPlugin.instructions.get(data.type);
   const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
+  const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
+  const isActive = Boolean(editingConfig || isCopiedSelf || isDraggingSelf);
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title);
   const [editingConfig, setEditingConfig] = useState(false);
@@ -684,7 +727,10 @@ export function NodeDefaultView(props) {
           <div
             role="button"
             aria-label={`_untyped-${editingTitle}`}
-            className={cx(styles.nodeCardClass, 'invalid', { dragging: isDraggingSelf })}
+            className={cx(styles.nodeCardClass, 'invalid', {
+              dragging: isDraggingSelf,
+              active: isActive,
+            })}
             onMouseDown={onCardMouseDown}
           >
             <div className={styles.nodeHeaderClass}>
@@ -711,7 +757,11 @@ export function NodeDefaultView(props) {
       <div
         role="button"
         aria-label={`${typeTitle}-${editingTitle}`}
-        className={cx(styles.nodeCardClass, { configuring: editingConfig, dragging: isDraggingSelf })}
+        className={cx(styles.nodeCardClass, {
+          configuring: editingConfig,
+          dragging: isDraggingSelf,
+          active: isActive,
+        })}
         onMouseDown={onCardMouseDown}
         onClick={onOpenDrawer}
       >

@@ -269,9 +269,17 @@
   "Failed to move node": "节点移动失败",
   "Confirm move": "确认移动",
   "Moving this node may remove variable references.": "移动该节点可能会移除变量引用。",
-  "Impacted current node variables": "受影响的当前节点变量",
-  "Impacted dependent node variables": "受影响的依赖节点变量",
-  "Keep variable references": "保留变量引用",
+  "Impacted current node variables": "当前节点引用的变量",
+  "Impacted dependent node variables": "引用当前节点变量的节点",
+  "Keep variable references": "保留变量引用，我将手动修复",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "已保留变量引用，请手动调整，否则工作流执行可能出错。",
-  "Failed to update node variables": "更新节点变量失败"
+  "Failed to update node variables": "更新节点变量失败",
+  "Copy": "复制",
+  "Cancel copy": "取消复制",
+  "Paste": "粘贴",
+  "Copied node": "已复制节点",
+  "Click a paste button to place": "点击粘贴按钮放置",
+  "Confirm paste": "确认粘贴",
+  "This action will remove invalid variable references, otherwise the workflow cannot run correctly.": "该操作将移除无效的变量引用，否则工作流将无法正确执行。",
+  "Failed to paste node": "粘贴节点失败"
 }

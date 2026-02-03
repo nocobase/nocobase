@@ -257,8 +257,8 @@
   "Failed to move node": "Не вдалося перемістити вузол",
   "Confirm move": "Підтвердити переміщення",
   "Moving this node may remove variable references.": "Переміщення цього вузла може видалити посилання на змінні.",
-  "Impacted current node variables": "Змінні поточного вузла, що зазнали впливу",
-  "Impacted dependent node variables": "Змінні залежних вузлів, що зазнали впливу",
+  "Impacted current node variables": "Змінні, на які посилається поточний вузол",
+  "Impacted dependent node variables": "Вузли, які посилаються на змінні поточного вузла",
   "Keep variable references": "Зберегти посилання на змінні",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Збереження посилань на змінні потребує ручного налаштування, інакше робочий процес може завершитися помилкою.",
   "Failed to update node variables": "Не вдалося оновити змінні вузла"

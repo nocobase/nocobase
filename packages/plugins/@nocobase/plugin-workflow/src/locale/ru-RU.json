@@ -257,8 +257,8 @@
   "Failed to move node": "Не удалось переместить узел",
   "Confirm move": "Подтвердить перемещение",
   "Moving this node may remove variable references.": "Перемещение этого узла может удалить ссылки на переменные.",
-  "Impacted current node variables": "Затронутые переменные текущего узла",
-  "Impacted dependent node variables": "Затронутые переменные зависимых узлов",
+  "Impacted current node variables": "Переменные, на которые ссылается текущий узел",
+  "Impacted dependent node variables": "Узлы, которые ссылаются на переменные текущего узла",
   "Keep variable references": "Сохранить ссылки на переменные",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Сохранение ссылок на переменные требует ручной настройки, иначе рабочий процесс может завершиться ошибкой.",
   "Failed to update node variables": "Не удалось обновить переменные узла"

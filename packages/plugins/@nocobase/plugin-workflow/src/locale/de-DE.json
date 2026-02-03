@@ -257,8 +257,8 @@
   "Failed to move node": "Knoten konnte nicht verschoben werden",
   "Confirm move": "Verschiebung bestätigen",
   "Moving this node may remove variable references.": "Das Verschieben dieses Knotens kann Variablenreferenzen entfernen.",
-  "Impacted current node variables": "Betroffene Variablen im aktuellen Knoten",
-  "Impacted dependent node variables": "Betroffene Variablen in abhängigen Knoten",
+  "Impacted current node variables": "Vom aktuellen Knoten referenzierte Variablen",
+  "Impacted dependent node variables": "Knoten, die Variablen des aktuellen Knotens referenzieren",
   "Keep variable references": "Variablenreferenzen beibehalten",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Das Beibehalten von Variablenreferenzen erfordert eine manuelle Anpassung, andernfalls kann der Workflow fehlschlagen.",
   "Failed to update node variables": "Aktualisierung der Knotenvariablen fehlgeschlagen"

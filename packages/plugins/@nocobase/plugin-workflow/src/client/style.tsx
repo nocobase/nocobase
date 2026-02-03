@@ -265,6 +265,7 @@ const useStyles = createStyles(({ css, token }) => {
       &:hover {
         box-shadow: ${token.boxShadow};
 
+        .workflow-node-action-button,
         .workflow-node-remove-button {
           opacity: 1;
         }
@@ -276,9 +277,13 @@ const useStyles = createStyles(({ css, token }) => {
 
       &.dragging {
         opacity: 0.75;
+      }
+
+      &.active {
         outline: 2px dashed ${token.colorPrimaryBorder};
       }
 
+      .workflow-node-action-button,
       .workflow-node-remove-button {
         opacity: 0;
         color: ${token.colorText};
@@ -321,6 +326,7 @@ const useStyles = createStyles(({ css, token }) => {
       &:hover {
         box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.25);
 
+        .workflow-node-action-button,
         .workflow-node-remove-button {
           display: block;
         }
@@ -476,6 +482,20 @@ const useStyles = createStyles(({ css, token }) => {
       }
     `,
 
+    pasteButtonClass: css`
+      &.ant-btn-variant-outlined:not(:disabled):not(.ant-btn-disabled):hover {
+        &.paste-safe {
+          color: ${token.colorSuccess};
+          border-color: ${token.colorSuccessBorder};
+        }
+
+        &.paste-warning {
+          color: ${token.colorWarning};
+          border-color: ${token.colorWarningBorder};
+        }
+      }
+    `,
+
     dragPreviewClass: css`
       position: fixed;
       z-index: 1000;
@@ -496,6 +516,50 @@ const useStyles = createStyles(({ css, token }) => {
       }
 
       .workflow-drag-preview-title {
+        font-weight: 600;
+        color: ${token.colorText};
+      }
+    `,
+
+    clipboardPreviewClass: css`
+      position: absolute;
+      top: 2em;
+      left: 2em;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+
+      .workflow-clipboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85em;
+        color: ${token.colorTextTertiary};
+      }
+
+      .workflow-clipboard-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25em;
+        padding: 0.5em;
+        width: 14em;
+        border-radius: ${token.borderRadiusSM}px;
+        background: ${token.colorBgContainer};
+        box-shadow: ${token.boxShadowTertiary};
+        opacity: 0.75;
+
+        &.dragging {
+          opacity: 0.75;
+          outline: 2px dashed ${token.colorPrimaryBorder};
+        }
+      }
+
+      .workflow-clipboard-type {
+        font-size: 0.8em;
+        color: ${token.colorTextSecondary};
+      }
+
+      .workflow-clipboard-title {
         font-weight: 600;
         color: ${token.colorText};
       }

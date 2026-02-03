@@ -258,8 +258,8 @@
   "Failed to move node": "A csomópont áthelyezése sikertelen",
   "Confirm move": "Áthelyezés megerősítése",
   "Moving this node may remove variable references.": "A csomópont áthelyezése eltávolíthatja a változóhivatkozásokat.",
-  "Impacted current node variables": "Az aktuális csomópont érintett változói",
-  "Impacted dependent node variables": "A függő csomópontok érintett változói",
+  "Impacted current node variables": "A jelenlegi csomópont által hivatkozott változók",
+  "Impacted dependent node variables": "A jelenlegi csomópont változóira hivatkozó csomópontok",
   "Keep variable references": "Változóhivatkozások megtartása",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "A változóhivatkozások megtartása kézi beállítást igényel, különben a munkafolyamat sikertelen lehet.",
   "Failed to update node variables": "A csomópont változóinak frissítése sikertelen"

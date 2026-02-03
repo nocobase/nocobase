@@ -257,8 +257,8 @@
   "Failed to move node": "Impossibile spostare il nodo",
   "Confirm move": "Conferma spostamento",
   "Moving this node may remove variable references.": "Spostare questo nodo può rimuovere i riferimenti alle variabili.",
-  "Impacted current node variables": "Variabili interessate del nodo corrente",
-  "Impacted dependent node variables": "Variabili interessate dei nodi dipendenti",
+  "Impacted current node variables": "Variabili referenziate dal nodo corrente",
+  "Impacted dependent node variables": "Nodi che referenziano le variabili del nodo corrente",
   "Keep variable references": "Mantieni i riferimenti alle variabili",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Mantenere i riferimenti alle variabili richiede una regolazione manuale, altrimenti il workflow potrebbe fallire.",
   "Failed to update node variables": "Impossibile aggiornare le variabili del nodo"

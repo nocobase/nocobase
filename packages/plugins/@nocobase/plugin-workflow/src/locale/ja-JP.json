@@ -260,8 +260,8 @@
   "Failed to move node": "ノードの移動に失敗しました",
   "Confirm move": "移動の確認",
   "Moving this node may remove variable references.": "このノードを移動すると変数参照が削除される可能性があります。",
-  "Impacted current node variables": "現在のノードで影響を受ける変数",
-  "Impacted dependent node variables": "依存ノードで影響を受ける変数",
+  "Impacted current node variables": "現在のノードが参照する変数",
+  "Impacted dependent node variables": "現在のノード変数を参照するノード",
   "Keep variable references": "変数参照を保持する",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "変数参照を保持する場合は手動調整が必要です。調整しないとワークフローが失敗する可能性があります。",
   "Failed to update node variables": "ノード変数の更新に失敗しました"

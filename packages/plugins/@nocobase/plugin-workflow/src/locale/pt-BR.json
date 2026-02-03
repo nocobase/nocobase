@@ -257,8 +257,8 @@
   "Failed to move node": "Falha ao mover o nó",
   "Confirm move": "Confirmar movimentação",
   "Moving this node may remove variable references.": "Mover este nó pode remover referências de variáveis.",
-  "Impacted current node variables": "Variáveis afetadas do nó atual",
-  "Impacted dependent node variables": "Variáveis afetadas dos nós dependentes",
+  "Impacted current node variables": "Variáveis referenciadas pelo nó atual",
+  "Impacted dependent node variables": "Nós que referenciam as variáveis do nó atual",
   "Keep variable references": "Manter referências de variáveis",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Manter referências de variáveis exige ajuste manual, caso contrário o workflow pode falhar.",
   "Failed to update node variables": "Falha ao atualizar as variáveis do nó"

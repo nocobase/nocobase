@@ -257,8 +257,8 @@
   "Failed to move node": "Échec du déplacement du nœud",
   "Confirm move": "Confirmer le déplacement",
   "Moving this node may remove variable references.": "Déplacer ce nœud peut supprimer des références de variables.",
-  "Impacted current node variables": "Variables affectées du nœud actuel",
-  "Impacted dependent node variables": "Variables affectées des nœuds dépendants",
+  "Impacted current node variables": "Variables référencées par le nœud actuel",
+  "Impacted dependent node variables": "Nœuds qui référencent les variables du nœud actuel",
   "Keep variable references": "Conserver les références de variables",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Conserver les références de variables nécessite un ajustement manuel, sinon le workflow peut échouer.",
   "Failed to update node variables": "Échec de la mise à jour des variables du nœud"

@@ -29,9 +29,10 @@ import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
 import { Button, Dropdown, Menu } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { SnippetsOutlined, PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
 import { useNodeDragContext } from './NodeDragContext';
+import { useNodeClipboardContext } from './NodeClipboardContext';
 
 interface AddButtonProps {
   upstream;
@@ -115,10 +116,48 @@ function AddNodeDropZone(props: AddButtonProps) {
   );
 }
 
+function AddNodePasteZone(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
+  const { styles } = useStyles();
+  const clipboard = useNodeClipboardContext();
+  const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
+  const impact = clipboard?.getPasteImpact?.(target);
+  const status = impact?.status ?? 'disabled';
+  const disabled = status === 'disabled';
+
+  const onClick = useCallback(() => {
+    if (!disabled) {
+      clipboard?.pasteNode?.(target);
+    }
+  }, [clipboard, disabled, target]);
+
+  return (
+    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+      <Button
+        aria-label={props['aria-label'] || 'paste-zone'}
+        shape="circle"
+        icon={<SnippetsOutlined />}
+        size="small"
+        disabled={disabled}
+        onClick={onClick}
+        className={cx(styles.pasteButtonClass, {
+          'paste-safe': status === 'safe',
+          'paste-warning': status === 'warning',
+        })}
+      />
+    </div>
+  );
+}
+
 export function AddNodeSlot(props: AddButtonProps) {
   const dragContext = useNodeDragContext();
+  const clipboard = useNodeClipboardContext();
+  const executed = useWorkflowExecuted();
   if (dragContext?.dragging) {
     return <AddNodeDropZone {...props} />;
+  }
+  if (clipboard?.clipboard && !executed) {
+    return <AddNodePasteZone {...props} />;
   }
   return <AddButton {...props} />;
 }

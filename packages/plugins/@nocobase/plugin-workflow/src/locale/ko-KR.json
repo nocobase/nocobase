@@ -278,8 +278,8 @@
   "Failed to move node": "노드를 이동하지 못했습니다",
   "Confirm move": "이동 확인",
   "Moving this node may remove variable references.": "이 노드를 이동하면 변수 참조가 제거될 수 있습니다.",
-  "Impacted current node variables": "현재 노드에 영향받는 변수",
-  "Impacted dependent node variables": "종속 노드에 영향받는 변수",
+  "Impacted current node variables": "현재 노드가 참조하는 변수",
+  "Impacted dependent node variables": "현재 노드 변수를 참조하는 노드",
   "Keep variable references": "변수 참조 유지",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "변수 참조를 유지하려면 수동으로 조정해야 하며, 그렇지 않으면 워크플로가 실패할 수 있습니다.",
   "Failed to update node variables": "노드 변수 업데이트에 실패했습니다"

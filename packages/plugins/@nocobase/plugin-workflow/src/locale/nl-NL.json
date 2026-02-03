@@ -257,8 +257,8 @@
   "Failed to move node": "Verplaatsen van knooppunt mislukt",
   "Confirm move": "Verplaatsing bevestigen",
   "Moving this node may remove variable references.": "Het verplaatsen van dit knooppunt kan variabele verwijzingen verwijderen.",
-  "Impacted current node variables": "Variabelen in het huidige knooppunt die worden beïnvloed",
-  "Impacted dependent node variables": "Variabelen in afhankelijke knooppunten die worden beïnvloed",
+  "Impacted current node variables": "Variabelen waarnaar de huidige node verwijst",
+  "Impacted dependent node variables": "Nodes die naar variabelen van de huidige node verwijzen",
   "Keep variable references": "Variabelverwijzingen behouden",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Het behouden van variabelverwijzingen vereist handmatige aanpassing, anders kan de workflow falen.",
   "Failed to update node variables": "Bijwerken van knooppuntvariabelen mislukt"
