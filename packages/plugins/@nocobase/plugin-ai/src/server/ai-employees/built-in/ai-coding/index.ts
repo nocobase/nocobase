@@ -51,6 +51,18 @@ export default {
         name: 'lintAndTestJS',
         autoCall: true,
       },
+      {
+        name: 'searchFieldMetadata',
+        autoCall: true,
+      },
+      {
+        name: 'searchDocs',
+        autoCall: true,
+      },
+      {
+        name: 'readDocEntry',
+        autoCall: true,
+      },
     ],
   },
 };
