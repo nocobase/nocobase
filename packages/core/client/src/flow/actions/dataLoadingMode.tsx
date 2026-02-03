@@ -27,16 +27,21 @@ export const dataLoadingMode = defineAction({
     mode: 'auto',
   },
   hideInSettings: (ctx) => {
-    // 只有支持筛选的区块才显示此配置
+    // 仅列表（MultiRecordResource）允许配置
     const blockModel = ctx.blockModel as CollectionBlockModel;
-    if (!blockModel?.resource) {
+    const resource = blockModel?.resource;
+    if (!resource) {
       return true;
     }
-    return !blockModel.resource.supportsFilter;
+    return !(resource instanceof MultiRecordResource);
   },
   handler(ctx, params) {
     const blockModel = ctx.blockModel as CollectionBlockModel;
     if (!blockModel) {
+      return;
+    }
+    const resource = blockModel.resource;
+    if (!(resource instanceof MultiRecordResource)) {
       return;
     }
 
@@ -45,18 +50,15 @@ export const dataLoadingMode = defineAction({
 
     // 如果切换到 manual 模式且当前没有活跃的筛选条件，清空数据
     if (params.mode === 'manual' && !blockModel.hasActiveFilters()) {
-      const resource = blockModel.resource as MultiRecordResource;
-      if (resource) {
-        resource.setData([]);
-        resource.setMeta({ count: 0, hasNext: false });
-        if (typeof resource.setPage === 'function') {
-          resource.setPage(1);
-        }
-        resource.loading = false;
+      resource.setData([]);
+      resource.setMeta({ count: 0, hasNext: false });
+      if (typeof resource.setPage === 'function') {
+        resource.setPage(1);
       }
+      resource.loading = false;
     } else if (params.mode === 'auto') {
       // 切换到 auto 模式时立即刷新数据
-      blockModel.resource?.refresh();
+      resource.refresh();
     }
   },
 });

@@ -634,15 +634,14 @@ CollectionBlockModel.registerFlow({
 
         // 检查数据加载模式
         const loadingMode = blockModel.getDataLoadingMode();
-        const resource = blockModel.resource as MultiRecordResource;
+        const resource = blockModel.resource;
+        const isMultiResource = resource instanceof MultiRecordResource;
 
-        if (loadingMode === 'manual' && !blockModel.hasActiveFilters()) {
+        if (isMultiResource && loadingMode === 'manual' && !blockModel.hasActiveFilters()) {
           // manual 模式且无活跃筛选时，清空数据且不加载
-          if (resource) {
-            resource.setData([]);
-            resource.setMeta({ count: 0, hasNext: false, page: 1 });
-            resource.loading = false;
-          }
+          resource.setData([]);
+          resource.setMeta({ count: 0, hasNext: false, page: 1 });
+          resource.loading = false;
           return;
         }
 
