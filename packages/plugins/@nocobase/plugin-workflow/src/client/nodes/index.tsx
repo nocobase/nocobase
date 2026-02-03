@@ -33,7 +33,7 @@ import {
 import { parse, str2moment } from '@nocobase/utils/client';
 
 import WorkflowPlugin from '..';
-import { AddButton } from '../AddNodeContext';
+import { AddNodeSlot } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
@@ -43,6 +43,7 @@ import { lang } from '../locale';
 import useStyles from '../style';
 import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
 import { useRemoveNodeContext } from '../RemoveNodeContext';
+import { useNodeDragContext } from '../NodeDragContext';
 import { SubModelItem } from '@nocobase/flow-engine';
 
 export type NodeAvailableContext = {
@@ -193,7 +194,7 @@ export function Node({ data }) {
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
         {!end || (typeof end === 'function' && !end(data)) ? (
-          <AddButton aria-label={getAriaLabel()} upstream={data} />
+          <AddNodeSlot aria-label={getAriaLabel()} upstream={data} />
         ) : (
           <div className="end-sign">
             <CloseOutlined />
@@ -599,7 +600,9 @@ export function NodeDefaultView(props) {
   const { styles } = useStyles();
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const executed = useWorkflowExecuted();
+  const dragContext = useNodeDragContext();
   const instruction = workflowPlugin.instructions.get(data.type);
+  const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title);
   const [editingConfig, setEditingConfig] = useState(false);
@@ -641,20 +644,34 @@ export function NodeDefaultView(props) {
     [data, instruction],
   );
 
-  const onOpenDrawer = useCallback(function (ev) {
-    if (ev.target === ev.currentTarget) {
-      setEditingConfig(true);
-      return;
-    }
-    const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
-    for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
-      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
-        setEditingConfig(true);
-        ev.stopPropagation();
+  const onOpenDrawer = useCallback(
+    function (ev) {
+      if (dragContext?.consumeClick?.()) {
+        ev.preventDefault();
         return;
       }
-    }
-  }, []);
+      if (ev.target === ev.currentTarget) {
+        setEditingConfig(true);
+        return;
+      }
+      const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
+      for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
+        if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+          setEditingConfig(true);
+          ev.stopPropagation();
+          return;
+        }
+      }
+    },
+    [dragContext],
+  );
+
+  const onCardMouseDown = useCallback(
+    (event) => {
+      dragContext?.onNodeMouseDown?.(data, event);
+    },
+    [data, dragContext],
+  );
 
   if (!instruction) {
     return (
@@ -664,7 +681,12 @@ export function NodeDefaultView(props) {
             'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
           )}
         >
-          <div role="button" aria-label={`_untyped-${editingTitle}`} className={cx(styles.nodeCardClass, 'invalid')}>
+          <div
+            role="button"
+            aria-label={`_untyped-${editingTitle}`}
+            className={cx(styles.nodeCardClass, 'invalid', { dragging: isDraggingSelf })}
+            onMouseDown={onCardMouseDown}
+          >
             <div className={styles.nodeHeaderClass}>
               <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
                 <Tag color="error">{lang('Unknown node')}</Tag>
@@ -689,7 +711,8 @@ export function NodeDefaultView(props) {
       <div
         role="button"
         aria-label={`${typeTitle}-${editingTitle}`}
-        className={cx(styles.nodeCardClass, { configuring: editingConfig })}
+        className={cx(styles.nodeCardClass, { configuring: editingConfig, dragging: isDraggingSelf })}
+        onMouseDown={onCardMouseDown}
         onClick={onOpenDrawer}
       >
         <div className={styles.nodeHeaderClass}>

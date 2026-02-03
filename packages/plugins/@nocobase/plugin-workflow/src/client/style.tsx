@@ -274,6 +274,11 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: ${token.boxShadow};
       }
 
+      &.dragging {
+        opacity: 0.75;
+        outline: 2px dashed ${token.colorPrimaryBorder};
+      }
+
       .workflow-node-remove-button {
         opacity: 0;
         color: ${token.colorText};
@@ -415,6 +420,84 @@ const useStyles = createStyles(({ css, token }) => {
 
       &:first-child:last-child:after {
         display: none;
+      }
+    `,
+
+    dropZoneClass: css`
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      height: calc(2em + 1px);
+      width: 12em;
+      margin: -0.25em 0;
+      border-radius: 0.5em;
+      border: 1px dashed ${token.colorBorder};
+      background: ${token.colorBgContainer};
+      color: ${token.colorTextSecondary};
+      opacity: 0.5;
+      cursor: pointer;
+      transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        color 0.2s ease,
+        opacity 0.2s ease;
+
+      &:before {
+        content: '';
+        position: absolute;
+        top: -1em;
+        bottom: -1em;
+        left: -1em;
+        right: -1em;
+      }
+
+      &:hover {
+        border-style: solid;
+        opacity: 0.75;
+      }
+
+      &.drop-safe {
+        border-color: ${token.colorSuccess};
+        background: ${token.colorSuccessBg};
+        color: ${token.colorSuccessText};
+      }
+
+      &.drop-warning {
+        border-color: ${token.colorWarning};
+        background: ${token.colorWarningBg};
+        color: ${token.colorWarningText};
+      }
+
+      &.drop-disabled {
+        visibility: hidden;
+        width: 1.5em;
+      }
+    `,
+
+    dragPreviewClass: css`
+      position: fixed;
+      z-index: 1000;
+      pointer-events: none;
+      width: 12em;
+      padding: 0.5em 0.75em;
+      border-radius: ${token.borderRadiusLG}px;
+      background: ${token.colorBgContainer};
+      box-shadow: ${token.boxShadow};
+      opacity: 0.9;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25em;
+
+      .workflow-drag-preview-type {
+        font-size: 0.8em;
+        color: ${token.colorTextSecondary};
+      }
+
+      .workflow-drag-preview-title {
+        font-weight: 600;
+        color: ${token.colorText};
       }
     `,
 

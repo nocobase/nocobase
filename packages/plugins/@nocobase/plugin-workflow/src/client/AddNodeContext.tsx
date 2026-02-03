@@ -31,6 +31,7 @@ import { uid } from '@nocobase/utils/client';
 import { Button, Dropdown, Menu } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
+import { useNodeDragContext } from './NodeDragContext';
 
 interface AddButtonProps {
   upstream;
@@ -44,13 +45,18 @@ export function AddButton(props: AddButtonProps) {
   const { styles } = useStyles();
   const addNodeContext = useAddNodeContext();
   const executed = useWorkflowExecuted();
+
   const onOpen = useCallback(
-    () => addNodeContext.onMenuOpen({ upstream, branchIndex }),
+    () => addNodeContext?.onMenuOpen?.({ upstream, branchIndex }),
     [addNodeContext, upstream, branchIndex],
   );
 
-  if (!workflow) {
-    return null;
+  if (!workflow || !addNodeContext) {
+    return (
+      <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+        <span className="ant-btn-placeholder" />
+      </div>
+    );
   }
 
   return (
@@ -75,6 +81,46 @@ export function AddButton(props: AddButtonProps) {
       )}
     </div>
   );
+}
+
+function AddNodeDropZone(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
+  const { styles } = useStyles();
+  const dragContext = useNodeDragContext();
+  const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
+  const impact = dragContext?.getDropImpact?.(target);
+  const status = impact?.status ?? 'disabled';
+  const disabled = status === 'disabled';
+
+  return (
+    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+      <div
+        role="button"
+        aria-label={props['aria-label'] || 'drop-zone'}
+        className={cx(styles.dropZoneClass, {
+          'drop-safe': status === 'safe',
+          'drop-warning': status === 'warning',
+          'drop-disabled': disabled,
+        })}
+        onMouseEnter={() => {
+          if (!disabled) {
+            dragContext?.setActiveDrop?.(target);
+          }
+        }}
+        onMouseLeave={() => {
+          dragContext?.clearActiveDrop?.(target);
+        }}
+      />
+    </div>
+  );
+}
+
+export function AddNodeSlot(props: AddButtonProps) {
+  const dragContext = useNodeDragContext();
+  if (dragContext?.dragging) {
+    return <AddNodeDropZone {...props} />;
+  }
+  return <AddButton {...props} />;
 }
 
 function useAddNodeSubmitAction() {

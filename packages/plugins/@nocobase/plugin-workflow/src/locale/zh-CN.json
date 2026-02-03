@@ -265,5 +265,13 @@
   "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "删除成功之前触发工作流（支持操作前事件）。",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "按钮点击后直接触发工作流，但不会保存数据。仅支持绑定“自定义操作事件”。",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的工作流会导致错误，请删除或检查提供该类型的插件。",
-  "Yes": "是"
+  "Yes": "是",
+  "Failed to move node": "节点移动失败",
+  "Confirm move": "确认移动",
+  "Moving this node may remove variable references.": "移动该节点可能会移除变量引用。",
+  "Impacted current node variables": "受影响的当前节点变量",
+  "Impacted dependent node variables": "受影响的依赖节点变量",
+  "Keep variable references": "保留变量引用",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "已保留变量引用，请手动调整，否则工作流执行可能出错。",
+  "Failed to update node variables": "更新节点变量失败"
 }

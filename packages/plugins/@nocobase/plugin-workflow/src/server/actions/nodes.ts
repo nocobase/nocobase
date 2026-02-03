@@ -368,7 +368,7 @@ export async function move(context: Context, next) {
     branchIndex = null;
   }
 
-  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex', 'workflowId'];
+  const fields = ['id', 'key', 'upstreamId', 'downstreamId', 'branchIndex', 'workflowId'];
 
   context.body = await db.sequelize.transaction(async (transaction) => {
     const instance = await repository.findOne({
