@@ -444,14 +444,14 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(ctx.inputArgs.filterByTk).toBe('role-1');
 
     // shadow ctx should clear filterByTk (avoid leaking record context into "add" template)
-    // 模板不需要 sourceId 时，也应该清除 sourceId，避免传递到不需要它的弹窗
+    // 关系资源弹窗需要保留 sourceId，否则无法生成正确的关联资源 URL
     expect(capturedCtx).not.toBe(ctx);
     expect(capturedCtx?.inputArgs?.collectionName).toBe('roles');
     expect(capturedCtx?.inputArgs?.associationName).toBe('users.roles');
     expect(capturedCtx?.inputArgs?.filterByTk).toBe(null);
-    expect(capturedCtx?.inputArgs?.sourceId).toBe(null);
+    expect(capturedCtx?.inputArgs?.sourceId).toBe('user-1');
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('filterByTk');
-    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('sourceId');
   });
 
   it('injects placeholder filterByTk when template expects record context but record is unavailable', async () => {
