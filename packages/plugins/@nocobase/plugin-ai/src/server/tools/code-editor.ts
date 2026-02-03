@@ -13,6 +13,7 @@ import { z } from 'zod';
 export const listCodeSnippet: ToolsOptions = {
   scope: 'SPECIFIED',
   execution: 'frontend',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get code snippet list")}}',
     about: '{{t("Get code snippet list")}}',
@@ -43,6 +44,7 @@ export const listCodeSnippet: ToolsOptions = {
 export const getContextApis: ToolsOptions = {
   scope: 'SPECIFIED',
   execution: 'frontend',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get context APIs")}}',
     about: '{{t("Get available API methods from context")}}',
@@ -72,6 +74,7 @@ export const getContextApis: ToolsOptions = {
 export const getContextEnvs: ToolsOptions = {
   scope: 'SPECIFIED',
   execution: 'frontend',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get context environment")}}',
     about: '{{t("Get current page/block/flow model metadata from context")}}',
@@ -101,6 +104,7 @@ export const getContextEnvs: ToolsOptions = {
 export const getContextVars: ToolsOptions = {
   scope: 'SPECIFIED',
   execution: 'frontend',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get context variables")}}',
     about:
@@ -135,6 +139,7 @@ export const getContextVars: ToolsOptions = {
 export const getCodeSnippet: ToolsOptions = {
   scope: 'SPECIFIED',
   execution: 'frontend',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get code snippet content")}}',
     about: '{{t("Get code snippet content")}}',

@@ -22,7 +22,7 @@ export interface ToolsRegistration {
 export type ToolsOptions = {
   scope: Scope;
   execution?: 'frontend' | 'backend';
-  operation?: 'READ_ONLY' | 'READ_WRITE';
+  defaultPermission?: Permission;
   silence?: boolean;
   introduction?: {
     title: string;
@@ -39,11 +39,12 @@ export type ToolsOptions = {
 export type ToolsEntry = ToolsOptions;
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
+export type Permission = 'ASK' | 'ALLOW';
 
 export type DynamicToolsProvider = (register: ToolsRegistration) => Promise<void>;
 
 export type ToolsFilter = {
   scope?: Scope;
-  operation?: 'READ_ONLY' | 'READ_WRITE';
+  defaultPermission?: Permission;
   silence?: boolean;
 };

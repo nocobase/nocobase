@@ -58,7 +58,7 @@ export type FrontendTools = ToolsOptions;
 
 export type BackendTools = {
   scope: Scope;
-  operation?: 'READ_ONLY' | 'READ_WRITE';
+  defaultPermission?: Permission;
   silence?: boolean;
   introduction?: {
     title: string;
@@ -88,8 +88,9 @@ export type DecisionActions = {
 
 export type ToolsFilter = {
   scope?: Scope;
-  operation?: 'READ_ONLY' | 'READ_WRITE';
+  defaultPermission?: Permission;
   silence?: boolean;
 };
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
+export type Permission = 'ASK' | 'ALLOW';

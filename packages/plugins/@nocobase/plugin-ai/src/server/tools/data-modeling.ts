@@ -103,7 +103,7 @@ class IntentError extends Error {
 
 export const dataModelingIntentRouter: ToolsOptions = {
   scope: 'SPECIFIED',
-  operation: 'READ_ONLY',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Intent Router")}}',
     about: '{{t("Route intents to appropriate workflow")}}',
@@ -145,6 +145,7 @@ export const dataModelingIntentRouter: ToolsOptions = {
 
 export const getCollectionNames: ToolsOptions = {
   scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get collection names")}}',
     about: '{{t("Retrieve names and titles map of all collections")}}',
@@ -198,6 +199,7 @@ export const getCollectionNames: ToolsOptions = {
 
 export const getCollectionMetadata: ToolsOptions = {
   scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get collection metadata")}}',
     about: '{{t("Retrieve metadata for specified collections and their fields")}}',
@@ -282,6 +284,7 @@ export const getCollectionMetadata: ToolsOptions = {
 
 export const getDataSources: ToolsOptions = {
   scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get data sources")}}',
     about: '{{t("Retrieve list of all available data sources")}}',
@@ -522,6 +525,7 @@ export const defineCollections: ToolsOptions = {
 
 export const searchFieldMetadata: ToolsOptions = {
   scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Search field metadata")}}',
     about:

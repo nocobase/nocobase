@@ -85,6 +85,7 @@ type ArgType = z.infer<typeof ArgSchema>;
 
 export const dataSourceQuery: ToolsOptions = {
   scope: 'GENERAL',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Data source query")}}',
     about: '{{t("Use dataSource, collectionName, and collection fields to query data from the database")}}',
@@ -126,6 +127,7 @@ export const dataSourceQuery: ToolsOptions = {
 
 export const dataSourceCounting: ToolsOptions = {
   scope: 'GENERAL',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Data source records counting")}}',
     about:

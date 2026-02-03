@@ -38,8 +38,8 @@ export class DefaultToolsManager implements ToolsManager {
         result &&= filter.scope === x.scope;
       }
 
-      if (filter.operation) {
-        result &&= filter.operation === x.operation;
+      if (filter.defaultPermission) {
+        result &&= filter.defaultPermission === x.defaultPermission;
       }
 
       if (filter.silence != null && filter.silence !== undefined) {
@@ -57,8 +57,8 @@ export class DefaultToolsManager implements ToolsManager {
       if (!toolsEntry.execution) {
         toolsEntry.execution = 'backend';
       }
-      if (!toolsEntry.operation) {
-        toolsEntry.operation = 'READ_WRITE';
+      if (!toolsEntry.defaultPermission) {
+        toolsEntry.defaultPermission = 'ASK';
       }
       toolsEntry.silence = toolsEntry.silence === true;
       if (!toolsEntry.introduction) {

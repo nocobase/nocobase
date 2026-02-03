@@ -487,7 +487,7 @@ export class AIEmployee {
         invokeStatus: toolMap.has(toolCall.name) ? 'init' : 'done',
         invokeStartTime: toolMap.has(toolCall.name) ? null : nowTime,
         invokeEndTime: toolMap.has(toolCall.name) ? null : nowTime,
-        auto: toolMap.has(toolCall.name) ? toolMap.get(toolCall.name)?.operation === 'READ_ONLY' : null,
+        auto: toolMap.has(toolCall.name) ? toolMap.get(toolCall.name)?.defaultPermission === 'ALLOW' : null,
         execution: toolMap.get(toolCall.name)?.execution ?? 'backend',
       })),
       transaction,
@@ -758,7 +758,7 @@ export class AIEmployee {
   }
 
   shouldInterruptToolCall(tools: ToolsEntry): boolean {
-    return tools.execution === 'frontend' || tools.operation === 'READ_WRITE';
+    return tools.execution === 'frontend' || tools.defaultPermission === 'ASK';
   }
 
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
