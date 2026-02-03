@@ -23,7 +23,7 @@ export const toolInteractionMiddleware = (aiEmployee: AIEmployee, tools: ToolsEn
   });
 };
 
-export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
+export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typeof createMiddleware> => {
   return createMiddleware({
     name: 'ToolCallStatusMiddleware',
     wrapToolCall: async (request, handler) => {
@@ -34,7 +34,14 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
       try {
         const toolMessage = await handler(request);
         if (toolMessage instanceof ToolMessage) {
-          result = _.isObject(toolMessage.content) ? toolMessage.content : JSON.parse(toolMessage.content);
+          if (_.isObject(toolMessage.content)) {
+            result = toolMessage.content;
+          } else if (typeof toolMessage.content === 'string') {
+            result = JSON.parse(toolMessage.content);
+          } else {
+            // 当 content 是数组或其他非字符串类型时，直接返回原值
+            result = toolMessage.content;
+          }
         } else {
           result = toolMessage.toJSON();
         }

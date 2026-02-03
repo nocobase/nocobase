@@ -248,5 +248,7 @@
   "No recommended models available for this provider": "No recommended models available for this provider",
   "Test connection with the configured API Key": "Test connection with the configured API Key",
   "Successful": "Successful",
-  "Failure": "Failure"
+  "Failure": "Failure",
+  "Preview run JavaScript code": "Preview run JavaScript code",
+  "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.": "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works."
 }

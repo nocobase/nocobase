@@ -21,22 +21,24 @@ export const AIEmployeeListItem: React.FC<{
   const { token } = useToken();
 
   return (
-    <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
-      <Flex align="center" onClick={onClick}>
-        <Avatar
-          style={{
-            marginRight: '8px',
-          }}
-          shape="circle"
-          size="large"
-          src={avatars(aiEmployee.avatar)}
-        />
+    <Popover content={<ProfileCard aiEmployee={aiEmployee} variant="simple" />} placement="leftTop">
+      <Flex align="center" onClick={onClick} style={{ padding: '4px 2px' }} gap={10}>
+        <Avatar shape="circle" size={40} src={avatars(aiEmployee.avatar)} />
         <Flex vertical={true}>
-          <div>{aiEmployee.nickname}</div>
           <div
             style={{
-              fontSize: token.fontSizeSM,
-              color: token.colorTextSecondary,
+              fontSize: token.fontSize,
+              color: token.colorText,
+              lineHeight: 1.4,
+            }}
+          >
+            {aiEmployee.nickname}
+          </div>
+          <div
+            style={{
+              fontSize: token.fontSize,
+              color: '#999',
+              lineHeight: 1.4,
             }}
           >
             {aiEmployee.position}

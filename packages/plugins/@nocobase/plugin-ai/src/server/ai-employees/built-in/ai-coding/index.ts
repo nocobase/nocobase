@@ -47,6 +47,10 @@ export default {
         name: 'getContextVars',
         autoCall: true,
       },
+      {
+        name: 'lintAndTestJS',
+        autoCall: true,
+      },
     ],
   },
 };

@@ -352,6 +352,16 @@ export default {
           return next();
         }
 
+        // Save modelOverride to conversation.options for later use in resendMessages/callTool
+        if (modelOverride) {
+          const options = conversation.options ?? {};
+          options['modelOverride'] = modelOverride;
+          await ctx.db.getRepository('aiConversations').update({
+            filter: { sessionId },
+            values: { options },
+          });
+        }
+
         const aiEmployee = new AIEmployee(
           ctx,
           employee,
@@ -434,7 +444,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
-          modelOverride,
+          conversation.options?.modelOverride,
         );
         await aiEmployee.processMessages({ messageId });
       } catch (err) {
@@ -589,7 +599,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           conversation.options?.conversationSettings?.webSearch,
-          modelOverride,
+          conversation.options?.modelOverride,
         );
 
         const userDecisions = await aiEmployee.getUserDecisions(messageId);

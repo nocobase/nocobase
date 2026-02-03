@@ -32,6 +32,6 @@ module.exports = (cli) => {
     .command('pm2-stop')
     .allowUnknownOption()
     .action(() => {
-      run('pm2', ['stop', 'all']);
+      run('pm2', ['kill']);
     });
 };

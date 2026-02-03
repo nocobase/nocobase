@@ -65,7 +65,7 @@ export const ChatButton: React.FC = observer(() => {
         menu={{ items }}
         placement="topRight"
         trigger={['hover']}
-        align={{ offset: [-36, -12] }}
+        align={{ offset: [-16, -6] }}
         open={dropdownOpen}
         onOpenChange={(nextOpen) => setDropdownOpen(nextOpen)}
       >
