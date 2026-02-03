@@ -284,18 +284,16 @@ DuplicateActionModel.registerFlow({
                 <a
                   onClick={async () => {
                     if (popupUid) {
-                      const childPageModel = await ctx.engine.loadModel({ parentId: popupUid });
-                      const model = await ctx.engine.loadModel({ parentId: childPageModel.subModels.tabs[0].uid });
+                      const childPageModel = await ctx.engine.loadModel({ parentId: popupUid, refresh: true });
+                      const model = await ctx.engine.loadModel({
+                        parentId: childPageModel.subModels.tabs[0].uid,
+                      });
                       if (!model) {
                         return;
                       }
                       run(model.subModels.items[0].subModels.grid);
                     } else {
-                      await ctx.model.rerender();
-                      let model: any = ctx.model.subModels[EditDuplicateSubKey];
-                      if (!model) {
-                        model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
-                      }
+                      const model: any = await ctx.engine.loadModel({ parentId: ctx.model.uid, refresh: true });
                       if (!model) {
                         return;
                       }
