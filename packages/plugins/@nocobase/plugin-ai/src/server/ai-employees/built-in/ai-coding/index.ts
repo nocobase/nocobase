@@ -16,6 +16,10 @@ export default {
   skillSettings: {
     skills: [
       {
+        name: 'dataModeling-searchFieldMetadata',
+        autoCall: true,
+      },
+      {
         name: 'dataModeling-getDataSources',
         autoCall: true,
       },
@@ -28,11 +32,11 @@ export default {
         autoCall: true,
       },
       {
-        name: 'codeEditor-listCodeSnippet',
+        name: 'docs-searchDocs',
         autoCall: true,
       },
       {
-        name: 'codeEditor-getCodeSnippet',
+        name: 'docs-readDocEntry',
         autoCall: true,
       },
       {
@@ -52,12 +56,8 @@ export default {
         autoCall: true,
       },
       {
-        name: 'dataSource-dataSourceCounting',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceQuery',
-        autoCall: true,
+        name: 'dataModeling-suggestions',
+        autoCall: false,
       },
     ],
   },
