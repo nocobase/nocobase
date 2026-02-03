@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { ComponentType } from 'react';
+import React, { ComponentType, useEffect } from 'react';
 import { DefaultToolCard } from './DefaultToolCard';
 import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
 import { ToolCall } from '../../types';
@@ -53,6 +53,28 @@ export const ToolCard: React.FC<{
       toolsWithoutUI.push(toolCall);
     }
   }
+
+  useEffect(() => {
+    if (!messageId) {
+      return;
+    }
+    if (!toolsMap?.size) {
+      return;
+    }
+    if (!toolCalls?.length) {
+      return;
+    }
+    const task = async () => {
+      for (const toolCall of toolCalls) {
+        const tool = toolsMap.get(toolCall.name);
+        if (toolCall.invokeStatus === 'interrupted' && tool.defaultPermission === 'ALLOW') {
+          const decision = getDecisionActions(toolCall);
+          await decision.approve();
+        }
+      }
+    };
+    task();
+  }, [messageId, toolsMap, toolCalls, getDecisionActions]);
 
   return (
     <>

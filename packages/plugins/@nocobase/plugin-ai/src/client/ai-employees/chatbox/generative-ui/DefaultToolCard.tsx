@@ -56,22 +56,9 @@ const CallButton: React.FC<{
   );
 };
 
-const InvokeStatus: React.FC<{ messageId: string; tools: ToolsEntry[]; toolCall: ToolCall<unknown> }> = ({
-  messageId,
-  tools,
-  toolCall,
-}) => {
+const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) => {
   const t = useT();
-  const toolsMap = toToolsMap(tools);
-  const { getDecisionActions } = useToolCallActions({ messageId, tools });
-  const decision = getDecisionActions(toolCall);
-  const tool = toolsMap.get(toolCall.name);
   const { invokeStatus } = toolCall;
-  useEffect(() => {
-    if (invokeStatus === 'interrupted' && tool.operation === 'READ_ONLY') {
-      decision.approve();
-    }
-  }, [invokeStatus]);
 
   switch (invokeStatus) {
     case 'init':
@@ -148,7 +135,7 @@ export const DefaultToolCard: React.FC<{
                 </Tooltip>
               )}
             </Tag>
-            <InvokeStatus messageId={messageId} tools={tools} toolCall={toolCall} />
+            <InvokeStatus toolCall={toolCall} />
           </Flex>
         </div>
       ),

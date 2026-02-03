@@ -12,12 +12,15 @@ import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from './useChatMessageActions';
 import { UserDecision } from '../../types';
+import { useChatToolCallStore } from '../stores/chat-tool-call';
 
 export const useToolCallActions = ({ messageId, tools }: { messageId: string; tools: ToolsEntry[] }) => {
   const app = useApp();
   const api = useAPIClient();
   const sessionId = useChatConversationsStore.use.currentConversation();
   const aiEmployee = useChatBoxStore.use.currentEmployee();
+  const updateToolCallWaiting = useChatToolCallStore.use.updateToolCallWaiting();
+  const isAllWaiting = useChatToolCallStore.use.isAllWaiting();
   const { resumeToolCall } = useChatMessageActions();
   const toolsMap = toToolsMap(tools);
 
@@ -25,7 +28,12 @@ export const useToolCallActions = ({ messageId, tools }: { messageId: string; to
     const { data: res } = await api
       .resource('aiConversations')
       .updateUserDecision({ values: { sessionId, messageId, toolCallId, userDecision } });
-    if (res.data?.allWaiting !== true) {
+    if (res.data.updated === 0) {
+      return;
+    }
+
+    updateToolCallWaiting(messageId, toolCallId);
+    if (!isAllWaiting(messageId)) {
       return;
     }
 

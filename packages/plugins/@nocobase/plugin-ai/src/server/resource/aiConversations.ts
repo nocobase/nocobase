@@ -489,36 +489,45 @@ export default {
         ctx.throw(400);
       }
 
-      ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
-        await aiToolMessagesModel.update(
-          {
-            userDecision,
-            invokeStatus: 'waiting',
-          },
-          {
-            where: {
-              sessionId,
-              messageId,
-              toolCallId,
-              invokeStatus: 'interrupted',
-            },
-            transaction,
-          },
-        );
-        const allInterruptedToolCall = await aiToolMessagesModel.findAll({
+      const [updated] = await aiToolMessagesModel.update(
+        {
+          userDecision,
+          invokeStatus: 'waiting',
+        },
+        {
           where: {
             sessionId,
             messageId,
-            interruptActionOrder: { [Op.not]: null },
+            toolCallId,
+            invokeStatus: 'interrupted',
           },
-          transaction,
-        });
-        const allWaiting = allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting');
-        return {
-          toolCalls,
-          allWaiting,
-        };
+        },
+      );
+
+      const toolCallIds = toolCalls.map((x) => x.id);
+      const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
+        filter: {
+          sessionId,
+          toolCallId: {
+            $in: toolCallIds,
+          },
+        },
       });
+      const toolMessageMap = new Map<string, any>(
+        toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
+      );
+      for (const toolCall of toolCalls) {
+        const toolMessage = toolMessageMap.get(toolCall.id);
+        toolCall.invokeStatus = toolMessage?.invokeStatus;
+        toolCall.auto = toolMessage?.auto;
+        toolCall.status = toolMessage?.status;
+        toolCall.content = toolMessage?.content;
+      }
+
+      ctx.body = {
+        updated,
+        toolCalls,
+      };
 
       await next();
     },

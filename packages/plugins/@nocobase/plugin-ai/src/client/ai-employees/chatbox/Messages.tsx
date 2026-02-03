@@ -16,6 +16,7 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
+import { useChatToolCallStore } from './stores/chat-tool-call';
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -26,12 +27,17 @@ export const Messages: React.FC = () => {
   const messages = useChatMessagesStore.use.messages();
 
   const updateTools = useChatToolsStore.use.updateTools();
+  const updateByMessages = useChatToolCallStore.use.updateByMessages();
 
   const { messagesService, lastMessageRef } = useChatMessageActions();
 
   useEffect(() => {
     updateTools(messages);
   }, [messages, updateTools]);
+
+  useEffect(() => {
+    updateByMessages(messages);
+  }, [messages, updateByMessages]);
 
   const containerRef = useRef(null);
   useEffect(() => {
