@@ -8,13 +8,13 @@
  */
 
 import React from 'react';
-import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
-import { tExpr, FieldModelRenderer, FormItem } from '@nocobase/flow-engine';
-import { FieldComponentProps } from './FieldComponentProps';
 import { debounce } from 'lodash';
-import { SourceCascader } from '../SourceCascader';
-import { FieldModelSelect } from '../FieldModelSelect';
+import { CollectionField, FieldModelRenderer, FlowModelContext, FormItem, tExpr } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
+import { FieldComponentProps } from './FieldComponentProps';
+import { FieldModelSelect } from '../FieldModelSelect';
+import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
+import { SourceCascader } from '../SourceCascader';
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   customFieldModelInstance = null;
@@ -23,6 +23,49 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   operator: string;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
+
+  /**
+   * Resolve or build collection field context for RecordSelect custom fields.
+   *
+   * When user creates a custom RecordSelect field, there is no real collection field.
+   * We build a lightweight CollectionField with target metadata so downstream
+   * flows can render select settings and load remote options.
+   *
+   * @param ctx - Flow context for current model
+   * @param props - Field model props from settings
+   * @returns CollectionField instance or undefined when not applicable
+   */
+  private buildRecordSelectCollectionField(ctx: FlowModelContext, props: Record<string, any>) {
+    const dataSourceKey = props?.recordSelectDataSourceKey || 'main';
+    const targetCollectionName = props?.recordSelectTargetCollection;
+    if (!targetCollectionName) return;
+
+    const dataSource = ctx.dataSourceManager?.getDataSource?.(dataSourceKey);
+    const targetCollection = dataSource?.getCollection?.(targetCollectionName);
+    if (!dataSource || !targetCollection) return;
+
+    const titleFieldName =
+      props?.recordSelectTitleField ||
+      targetCollection.titleCollectionField?.name ||
+      targetCollection.titleCollectionField?.options?.name;
+
+    const collectionField = new CollectionField({
+      name: props?.name || 'recordSelect',
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: targetCollectionName,
+      dataSourceKey,
+      uiSchema: {
+        'x-component': 'RecordSelect',
+      },
+      fieldNames: {
+        label: titleFieldName,
+        value: targetCollection.filterTargetKey,
+      },
+    });
+    collectionField.setCollection(targetCollection);
+    return collectionField;
+  }
 
   get defaultTargetUid(): string {
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
@@ -192,13 +235,36 @@ FilterFormCustomFieldModel.registerFlow({
           name: name,
         });
 
+        let resolvedFieldModelProps = fieldModelProps;
+        if (fieldModel === 'RecordSelectFieldModel') {
+          const collectionField = ctx.model.buildRecordSelectCollectionField(ctx, {
+            ...fieldModelProps,
+            name,
+          });
+          if (collectionField) {
+            ctx.model.context.defineProperty('collectionField', { value: collectionField });
+            const labelField =
+              fieldModelProps?.recordSelectTitleField || collectionField.targetCollectionTitleFieldName;
+            const valueField = collectionField.targetCollection?.filterTargetKey;
+            if (labelField && valueField) {
+              resolvedFieldModelProps = {
+                ...fieldModelProps,
+                fieldNames: {
+                  label: labelField,
+                  value: valueField,
+                },
+              };
+            }
+          }
+        }
+
         if (!ctx.model.customFieldModelInstance) {
           ctx.model.customFieldModelInstance = ctx.model.flowEngine.createModel({
             use: fieldModel,
-            props: { allowClear: true, ...fieldModelProps },
+            props: { allowClear: true, ...resolvedFieldModelProps },
           });
         } else {
-          ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...fieldModelProps });
+          ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...resolvedFieldModelProps });
         }
 
         if (fieldModel === 'DateTimeFilterFieldModel' && fieldModelProps.isRange) {
