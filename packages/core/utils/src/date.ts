@@ -29,14 +29,14 @@ export interface GetDefaultFormatProps {
 }
 
 export const getDefaultFormat = (props: GetDefaultFormatProps) => {
-  if (props.format) {
-    return props.format;
-  }
   if (props.dateFormat) {
     if (props['showTime']) {
       return `${props.dateFormat} ${props.timeFormat || 'HH:mm:ss'}`;
     }
     return props.dateFormat;
+  }
+  if (props.format) {
+    return props.format;
   }
   if (props['picker'] === 'month') {
     return 'YYYY-MM';
