@@ -13,6 +13,7 @@ import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocob
 import React from 'react';
 
 export class BulkEditFormGridModel extends FormGridModel {
+  // 显示字段的设置项
   itemSettingsMenuLevel = 3;
 
   renderAddSubModelButton() {

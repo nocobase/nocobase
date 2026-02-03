@@ -52,7 +52,7 @@ export class BulkEditFormItemModel extends FormItemModel {
 }
 
 BulkEditFormItemModel.define({
-  label: tExpr('Bulk edit form item'),
+  label: tExpr('Display fields'),
 });
 
 const baseEditItemSettingsFlow = (FormItemModel as any).globalFlowRegistry?.getFlow?.('editItemSettings');

@@ -7,22 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  FormItemModel,
-  FieldModelRenderer,
-  FormItem,
-  FieldModel,
-  RecordSelectFieldModel,
-  titleField,
-} from '@nocobase/client';
-import { tExpr } from '@nocobase/flow-engine';
+import { FieldModelRenderer, FieldModel, RecordSelectFieldModel, titleField } from '@nocobase/client';
 import { Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { css } from '@emotion/css';
 import _ from 'lodash';
-import { useField } from '@formily/react';
 import { BulkEditFormItemValueType } from './types';
 import { lang } from '../locale';
+import { ParamObject, StepParams } from '@nocobase/flow-engine';
 
 function toFormFieldValue(value: any) {
   if (BulkEditFormItemValueType.Clear in value) {
@@ -35,8 +27,7 @@ function toFormFieldValue(value: any) {
 }
 
 const BulkEditField = (props) => {
-  const { fieldModel, formItemModel, onChange, ...rest } = props;
-  const field = useField();
+  const { fieldModel, formItemModel, bulkEditFieldModel, onChange, ...rest } = props;
   const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
   const form = formItemModel.context.blockModel.form;
@@ -68,6 +59,11 @@ const BulkEditField = (props) => {
     onChange?.(v);
   };
 
+  useEffect(() => {
+    // 同步 stepParams 到 inner fieldModel
+    fieldModel?.setStepParams(bulkEditFieldModel.getStepParams());
+  }, []);
+
   return (
     <Space
       className={css`
@@ -83,14 +79,12 @@ const BulkEditField = (props) => {
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{lang('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{lang('Clear')}</Select.Option>
       </Select>
-
       {/* {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField?.interface !== 'checkbox' && (
           <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
         )}
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField?.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />} */}
-
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) && (
         <FieldModelRenderer model={fieldModel} {...rest} onChange={valueChangeHandler} />
       )}
@@ -99,6 +93,28 @@ const BulkEditField = (props) => {
 };
 
 export class BulkEditFieldModel extends FieldModel {
+  // Override setProps to sync props to inner field model
+  setProps(props: Record<string, any>): void;
+  setProps(key: string, value: any): void;
+  setProps(props: Record<string, any> | string, value?: any): void {
+    super.setProps(props as any, value);
+    const innerField = this.subModels?.field as FieldModel | undefined;
+    innerField?.setProps(props as any, value);
+  }
+  // Override setStepParams to sync stepParams to inner field model
+  setStepParams(flowKey: string, stepKey: string, params: ParamObject): void;
+  setStepParams(flowKey: string, stepParams: Record<string, ParamObject>): void;
+  setStepParams(allParams: StepParams): void;
+  setStepParams(
+    flowKeyOrAllParams: string | StepParams,
+    stepKeyOrStepsParams?: string | Record<string, ParamObject>,
+    params?: ParamObject,
+  ): void {
+    super.setStepParams(flowKeyOrAllParams as any, stepKeyOrStepsParams as any, params as any);
+    const innerField = this.subModels?.field as FieldModel | undefined;
+    innerField?.setStepParams(flowKeyOrAllParams as any, stepKeyOrStepsParams as any, params as any);
+  }
+
   async openFlowSettings(options?: any) {
     const flowKey = options?.flowKey;
     const innerField = this.subModels?.field as any;
@@ -111,7 +127,9 @@ export class BulkEditFieldModel extends FieldModel {
   public render() {
     const fieldModel = this.subModels.field as FieldModel;
     const t = (s) => s;
-    return <BulkEditField formItemModel={this.parent} fieldModel={fieldModel} {...this.props} />;
+    return (
+      <BulkEditField formItemModel={this.parent} bulkEditFieldModel={this} fieldModel={fieldModel} {...this.props} />
+    );
   }
 }
 
