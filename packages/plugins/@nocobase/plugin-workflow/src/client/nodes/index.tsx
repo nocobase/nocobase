@@ -642,14 +642,14 @@ export function NodeDefaultView(props) {
   const executed = useWorkflowExecuted();
   const dragContext = useNodeDragContext();
   const clipboard = useNodeClipboardContext();
+  const [editingTitle, setEditingTitle] = useState<string>(data.title);
+  const [editingConfig, setEditingConfig] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
+
   const instruction = workflowPlugin.instructions.get(data.type);
   const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
   const isActive = Boolean(editingConfig || isCopiedSelf || isDraggingSelf);
-
-  const [editingTitle, setEditingTitle] = useState<string>(data.title);
-  const [editingConfig, setEditingConfig] = useState(false);
-  const [formValueChanged, setFormValueChanged] = useState(false);
 
   const form = useMemo(() => {
     const values = cloneDeep(data.config);

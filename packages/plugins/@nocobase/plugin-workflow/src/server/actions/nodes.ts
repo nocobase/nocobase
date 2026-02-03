@@ -115,6 +115,120 @@ export async function create(context: Context, next) {
   await next();
 }
 
+export async function duplicate(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
+  const { whitelist, blacklist, updateAssociationValues, values } = context.action.params;
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+
+  context.body = await db.sequelize.transaction(async (transaction) => {
+    const workflow =
+      workflowPlugin.enabledCache.get(Number.parseInt(context.action.sourceId, 10)) ||
+      ((await repository.getSourceModel(transaction)) as WorkflowModel);
+    if (!workflow.versionStats) {
+      workflow.versionStats = await workflow.getVersionStats({ transaction });
+    }
+    if (workflow.versionStats.executed > 0) {
+      context.throw(400, 'Node could not be created in executed workflow');
+    }
+
+    const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
+    if (NODES_LIMIT) {
+      const nodesCount = await workflow.countNodes({ transaction });
+      if (nodesCount >= NODES_LIMIT) {
+        context.throw(400, `The number of nodes in a workflow cannot exceed ${NODES_LIMIT}`);
+      }
+    }
+
+    const { sourceId, key, ...nodeValues } = values ?? {};
+
+    const instance = await repository.create({
+      values: nodeValues,
+      whitelist,
+      blacklist,
+      updateAssociationValues,
+      context,
+      transaction,
+    });
+
+    const instruction = workflowPlugin.instructions.get(instance.type);
+    if (instruction && typeof instruction.duplicateConfig === 'function') {
+      const origin = sourceId ? await repository.findOne({ filterByTk: sourceId, transaction }) : null;
+      const newConfig = await instruction.duplicateConfig(instance, { origin: origin ?? undefined, transaction });
+      if (newConfig) {
+        await instance.update({ config: newConfig }, { transaction });
+      }
+    }
+
+    if (!instance.upstreamId) {
+      const previousHead = await repository.findOne({
+        filter: {
+          id: {
+            $ne: instance.id,
+          },
+          upstreamId: null,
+        },
+        transaction,
+      });
+      if (previousHead) {
+        await previousHead.setUpstream(instance, { transaction });
+        await instance.setDownstream(previousHead, { transaction });
+        instance.set('downstream', previousHead);
+      }
+      return instance;
+    }
+
+    const upstream = await instance.getUpstream({ transaction });
+
+    if (instance.branchIndex == null) {
+      const downstream = await upstream.getDownstream({ transaction });
+
+      if (downstream) {
+        await downstream.setUpstream(instance, { transaction });
+        await instance.setDownstream(downstream, { transaction });
+        instance.set('downstream', downstream);
+      }
+
+      await upstream.update(
+        {
+          downstreamId: instance.id,
+        },
+        { transaction },
+      );
+
+      upstream.set('downstream', instance);
+    } else {
+      const [downstream] = await upstream.getBranches({
+        where: {
+          id: {
+            [Op.ne]: instance.id,
+          },
+          branchIndex: instance.branchIndex,
+        },
+        transaction,
+      });
+
+      if (downstream) {
+        await downstream.update(
+          {
+            upstreamId: instance.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+        await instance.setDownstream(downstream, { transaction });
+        instance.set('downstream', downstream);
+      }
+    }
+
+    instance.set('upstream', upstream);
+
+    return instance;
+  });
+
+  await next();
+}
+
 function searchBranchNodes(nodes, from): any[] {
   const branchHeads = nodes.filter((item: any) => item.upstreamId === from.id && item.branchIndex != null);
   return branchHeads.reduce(

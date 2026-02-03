@@ -233,6 +233,44 @@ describe('workflow > actions > nodes', () => {
     });
   });
 
+  describe('duplicate', () => {
+    it('duplicate with duplicateConfig', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const origin = await workflow.createNode({
+        type: 'echo',
+        config: {
+          duplicateFlag: true,
+          foo: 'bar',
+        },
+      });
+
+      const res = await agent.resource('workflows.nodes', workflow.id).duplicate({
+        values: {
+          type: 'echo',
+          title: 'echo copy',
+          config: origin.config,
+          upstreamId: origin.id,
+          sourceId: origin.id,
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.config).toMatchObject({
+        duplicateFlag: true,
+        foo: 'bar',
+        duplicated: true,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[1].upstreamId).toBe(origin.id);
+    });
+  });
+
   describe('destroy', () => {
     it('node in executed workflow could not be destroyed', async () => {
       const workflow = await WorkflowModel.create({

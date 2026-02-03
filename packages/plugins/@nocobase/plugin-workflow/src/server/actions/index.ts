@@ -28,6 +28,7 @@ export default function ({ app }) {
     ...make('workflows', workflows),
     ...make('workflows.nodes', {
       create: nodes.create,
+      duplicate: nodes.duplicate,
     }),
     ...make('flow_nodes', {
       update: nodes.update,
