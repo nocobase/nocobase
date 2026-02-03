@@ -272,9 +272,21 @@ DuplicateActionModel.registerFlow({
               return (
                 <a
                   onClick={async () => {
-                    const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
-                    if (!model) {
-                      return;
+                    if (popupUid) {
+                      const childPageModel = await ctx.engine.loadModel({ parentId: popupUid, refresh: true });
+                      const model = await ctx.engine.loadModel({
+                        parentId: childPageModel.subModels.tabs[0].uid,
+                      });
+                      if (!model) {
+                        return;
+                      }
+                      run(model.subModels.items[0].subModels.grid);
+                    } else {
+                      const model: any = await ctx.engine.loadModel({ parentId: ctx.model.uid, refresh: true });
+                      if (!model) {
+                        return;
+                      }
+                      run(model.subModels.items[0].subModels.grid);
                     }
                     run(model.subModels.items[0].subModels.grid);
                   }}
