@@ -89,7 +89,7 @@ function RemoteModelRenderer({ options }) {
   }
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
-
+const EditDuplicateSubKey = 'deplicate.edit-form-grid-block';
 function EditFormContent({ model }) {
   const ctx = useFlowContext();
   const { Header, type } = ctx.view;
@@ -117,7 +117,7 @@ function EditFormContent({ model }) {
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
-          subKey: `deplicate.edit-form-grid-block`,
+          subKey: EditDuplicateSubKey,
           async: true,
           delegateToParent: false,
           subType: 'object',
@@ -262,7 +262,7 @@ DuplicateActionModel.registerFlow({
             type: 'void',
             title: '{{ t("Sync from form fields") }}',
             'x-component': () => {
-              const popupTemplateUid = ctx.model.getStepParams?.('popupSettings', 'openView')?.popupTemplateUid;
+              const popupUid = ctx.model.getStepParams?.('popupSettings', 'openView')?.uid;
               // eslint-disable-next-line react-hooks/rules-of-hooks
               const form = useForm();
               const { run } = getSyncFromForm(
@@ -281,20 +281,31 @@ DuplicateActionModel.registerFlow({
                 },
               );
               return (
-                !popupTemplateUid && (
-                  <a
-                    onClick={async () => {
-                      const model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
+                <a
+                  onClick={async () => {
+                    if (popupUid) {
+                      const childPageModel = await ctx.engine.loadModel({ parentId: popupUid });
+                      const model = await ctx.engine.loadModel({ parentId: childPageModel.subModels.tabs[0].uid });
                       if (!model) {
                         return;
                       }
                       run(model.subModels.items[0].subModels.grid);
-                    }}
-                    style={{ float: 'right', position: 'relative', zIndex: 1200 }}
-                  >
-                    {t('Sync from form fields')}
-                  </a>
-                )
+                    } else {
+                      await ctx.model.rerender();
+                      let model: any = ctx.model.subModels[EditDuplicateSubKey];
+                      if (!model) {
+                        model = await ctx.engine.loadModel({ parentId: ctx.model.uid });
+                      }
+                      if (!model) {
+                        return;
+                      }
+                      run(model.subModels.items[0].subModels.grid);
+                    }
+                  }}
+                  style={{ float: 'right', position: 'relative', zIndex: 1200 }}
+                >
+                  {t('Sync from form fields')}
+                </a>
               );
             },
 
