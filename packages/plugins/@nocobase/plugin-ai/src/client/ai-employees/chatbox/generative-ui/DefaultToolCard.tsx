@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Card, Collapse, Tooltip, Tag, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
@@ -34,11 +34,13 @@ const CallButton: React.FC<{
 }> = ({ messageId, tools, toolCalls }) => {
   const t = useT();
   const { getDecisionActions } = useToolCallActions({ messageId, tools });
-
+  const [loading, setLoading] = useState(false);
   return (
     <Button
+      loading={loading}
       onClick={async (e) => {
         e.stopPropagation();
+        setLoading(true);
         for (const toolCall of toolCalls) {
           const decision = getDecisionActions(toolCall);
           await decision.approve();
