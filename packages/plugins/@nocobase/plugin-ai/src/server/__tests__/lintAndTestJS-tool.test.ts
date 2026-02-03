@@ -12,9 +12,9 @@ import { lintAndTestJS } from '../tools/code-editor';
 
 describe('lintAndTestJS Tool', () => {
   it('should have correct tool metadata', () => {
-    expect(lintAndTestJS.name).toBe('lintAndTestJS');
+    expect(lintAndTestJS.definition.name).toBe('lintAndTestJS');
     expect(lintAndTestJS.execution).toBe('frontend');
-    expect(lintAndTestJS.schema).toBeDefined();
+    expect(lintAndTestJS.definition.schema).toBeDefined();
   });
 
   it('should return error when toolCallResults is missing', async () => {
@@ -102,7 +102,7 @@ describe('lintAndTestJS Tool', () => {
   });
 
   it('schema should require code parameter', () => {
-    const schema = lintAndTestJS.schema;
+    const schema = lintAndTestJS.definition.schema;
     expect(schema).toBeDefined();
     // Check that schema has 'code' field
     const jsonSchema = schema.toJSONSchema ? schema.toJSONSchema() : schema;

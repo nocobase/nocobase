@@ -136,6 +136,7 @@ export class PluginAIServer extends Plugin {
       getContextApis,
       getContextEnvs,
       getContextVars,
+      lintAndTestJS,
     ]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this));

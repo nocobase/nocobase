@@ -176,6 +176,7 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 
   setupWorkflow() {

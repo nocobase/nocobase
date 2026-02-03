@@ -168,15 +168,24 @@ export const getCodeSnippet: ToolsOptions = {
   },
 };
 
-export const lintAndTestJS: ToolOptions = {
-  name: 'lintAndTestJS',
-  title: '{{t("Lint and test JavaScript code")}}',
-  description:
-    '{{t("Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.")}}',
+export const lintAndTestJS: ToolsOptions = {
+  scope: 'SPECIFIED',
   execution: 'frontend',
-  schema: z.object({
-    code: z.string().describe('The JavaScript/JSX code to preview and validate'),
-  }),
+  defaultPermission: 'ALLOW',
+  introduction: {
+    title: '{{t("Lint and test JavaScript code")}}',
+    about:
+      '{{t("Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.")}}',
+  },
+  definition: {
+    name: 'lintAndTestJS',
+    description:
+      'Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.',
+    schema: z.object({
+      code: z.string().describe('The JavaScript/JSX code to preview and validate'),
+    }),
+  },
+
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item: { id: string }) => item.id === id) ?? {};

@@ -55,8 +55,7 @@ export const getContextVarsTool: [string, ToolsOptions] = [
   },
 ];
 
-export const lintAndTestJSTool: [string, string, ToolOptions] = [
-  'codeEditor',
+export const lintAndTestJSTool: [string, ToolsOptions] = [
   'lintAndTestJS',
   {
     async invoke(_app, { code }) {
