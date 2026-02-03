@@ -11,9 +11,12 @@ import { createMiddleware, humanInTheLoopMiddleware, ToolMessage } from 'langcha
 import { AIEmployee } from '../ai-employee';
 import z from 'zod';
 import { ToolOptions } from '../../manager/tool-manager';
-import _ from 'lodash';
+import * as _ from 'lodash';
 
-export const toolInteractionMiddleware = (_aiEmployee: AIEmployee, tools: ToolOptions[]) => {
+export const toolInteractionMiddleware = (
+  _aiEmployee: AIEmployee,
+  tools: ToolOptions[],
+): ReturnType<typeof humanInTheLoopMiddleware> => {
   const interruptOn = {};
   for (const tool of tools) {
     interruptOn[tool.name] = tool.execution === 'frontend' || tool.autoCall !== true;
@@ -24,7 +27,7 @@ export const toolInteractionMiddleware = (_aiEmployee: AIEmployee, tools: ToolOp
   });
 };
 
-export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
+export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typeof createMiddleware> => {
   return createMiddleware({
     name: 'ToolCallStatusMiddleware',
     wrapToolCall: async (request, handler) => {
@@ -40,7 +43,14 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee) => {
         });
 
         if (toolMessage instanceof ToolMessage) {
-          result = _.isObject(toolMessage.content) ? toolMessage.content : JSON.parse(toolMessage.content);
+          if (_.isObject(toolMessage.content)) {
+            result = toolMessage.content;
+          } else if (typeof toolMessage.content === 'string') {
+            result = JSON.parse(toolMessage.content);
+          } else {
+            // 当 content 是数组或其他非字符串类型时，直接返回原值
+            result = toolMessage.content;
+          }
         } else {
           result = toolMessage.toJSON();
         }
