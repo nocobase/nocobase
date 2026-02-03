@@ -11,7 +11,7 @@ import React from 'react';
 import { List, Button, Dropdown, Tooltip, Card, Popover, Space, Switch, Flex } from 'antd';
 import { InfoCircleOutlined, PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { SchemaComponent, useAPIClient, useRequest, useToken } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useApp, useRequest, useToken, useTools } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { Field } from '@formily/core';
 import { Tool } from '../types';
@@ -161,15 +161,11 @@ export const SkillsListItem: React.FC<{
 
 export const Skills: React.FC = () => {
   const t = useT();
+  const app = useApp();
   const { token } = useToken();
   const field = useField<Field>();
   const api = useAPIClient();
-  const { data, loading } = useRequest<Tool[]>(() =>
-    api
-      .resource('aiTools')
-      .list()
-      .then((res) => res?.data?.data),
-  );
+  const { tools, loading } = useTools();
 
   const handleAdd = (name: string) => {
     const skills = [...(field.value || [])];
@@ -180,31 +176,22 @@ export const Skills: React.FC = () => {
   };
 
   const items =
-    data?.map((item) => {
-      const result: any = {
-        key: item.group.groupName,
-      };
-      const itemProps = {
-        title: item.group.title ?? '',
-        description: item.group.description ?? '',
-        name: item.group.groupName,
-        isRoot: true,
-      };
-      if (item.tools) {
-        result.label = <SkillsListItem {...itemProps} />;
-        result.children = item.tools.map((child) => {
-          return {
-            key: child.name,
-            label: <SkillsListItem {...child} />,
-            onClick: () => handleAdd(child.name),
-          };
-        });
-      } else {
+    tools
+      ?.filter((item) => item.scope === 'CUSTOM')
+      .map((item) => {
+        const result: any = {
+          key: item.definition.name,
+        };
+        const itemProps = {
+          title: item.introduction.title ?? '',
+          description: item.introduction.about ?? '',
+          name: item.definition.name,
+          isRoot: true,
+        };
         result.label = <SkillsListItem {...itemProps} />;
         result.onClick = () => {};
-      }
-      return result;
-    }) || [];
+        return result;
+      }) || [];
   return (
     <>
       <div
@@ -240,14 +227,13 @@ export const Skills: React.FC = () => {
           bordered
           dataSource={field.value || []}
           renderItem={(item: { name: string; autoCall?: boolean }) => {
-            const tools = data?.flatMap((x) => x.tools) ?? [];
-            const tool = tools.find((tool) => tool.name === item.name);
+            const tool = tools.find((tool) => tool.definition.name === item.name);
             if (!tool) {
               return null;
             }
             return (
               <List.Item
-                key={tool.name}
+                key={tool.definition.name}
                 extra={
                   <Flex vertical={true} justify="end">
                     <Space>
@@ -264,6 +250,7 @@ export const Skills: React.FC = () => {
                           }}
                           size="small"
                           checked={item.autoCall}
+                          disabled={tool.scope !== 'CUSTOM'}
                           onChange={(checked) => {
                             const updated = (field.value || []).map((s: { name: string; autoCall?: boolean }) =>
                               s.name === item.name ? { ...s, autoCall: checked } : s,
@@ -272,8 +259,8 @@ export const Skills: React.FC = () => {
                           }}
                         />
                       </div>
-                      <Popover
-                        content={<ToolInfo {...tool} />}
+                      {/* <Popover
+                        content={<ToolInfo title={tool.introduction.title} description={tool.introduction.about} />}
                         placement="bottom"
                         arrow={false}
                         styles={{
@@ -284,14 +271,15 @@ export const Skills: React.FC = () => {
                         }}
                       >
                         <InfoCircleOutlined />
-                      </Popover>
+                      </Popover> */}
                       <Button
                         icon={<DeleteOutlined />}
                         variant="link"
                         color="default"
+                        disabled={tool.scope !== 'CUSTOM'}
                         onClick={() => {
                           const skills = [...(field.value || [])];
-                          const index = skills.findIndex((s) => s.name === tool.name);
+                          const index = skills.findIndex((s) => s.name === tool.definition.name);
                           if (index !== -1) {
                             skills.splice(index, 1);
                             field.value = skills;
@@ -302,14 +290,14 @@ export const Skills: React.FC = () => {
                   </Flex>
                 }
               >
-                <div>{Schema.compile(tool.title, { t })}</div>
+                <div>{Schema.compile(tool.introduction.title, { t })}</div>
                 <div
                   style={{
                     color: token.colorTextSecondary,
                     fontSize: token.fontSizeSM,
                   }}
                 >
-                  {Schema.compile(tool.description, { t })}
+                  {Schema.compile(tool.introduction.about, { t })}
                 </div>
               </List.Item>
             );
