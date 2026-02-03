@@ -188,7 +188,7 @@ const MapBlockContent = ({
     if (mapHeight == null) return undefined;
     return { height: mapHeight, overflow: 'auto' };
   }, [mapHeight]);
-  const containerStyle = isFixedHeight
+  const containerStyle: any = isFixedHeight
     ? {
         display: 'flex',
         flexDirection: 'column',
