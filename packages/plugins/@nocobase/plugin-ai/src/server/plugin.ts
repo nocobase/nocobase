@@ -44,7 +44,14 @@ import { AIContextDatasourceManager } from './manager/ai-context-datasource-mana
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
-import { getCodeSnippet, listCodeSnippet, getContextApis, getContextEnvs, getContextVars } from './tools/code-editor';
+import {
+  getCodeSnippet,
+  listCodeSnippet,
+  getContextApis,
+  getContextEnvs,
+  getContextVars,
+  lintAndTestJS,
+} from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
 import { suggestions } from './tools/suggestions';
 import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocModules } from './tools/docs';
@@ -217,6 +224,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: codeEditorGroupName,
         tool: getContextVars,
+      },
+      {
+        groupName: codeEditorGroupName,
+        tool: lintAndTestJS,
       },
     ]);
 

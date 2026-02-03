@@ -250,5 +250,7 @@
   "Successful": "成功",
   "Failure": "失败",
   "Model options": "模型选项",
-  "Leave empty for no limit": "留空表示不限制"
+  "Leave empty for no limit": "留空表示不限制",
+  "Preview run JavaScript code": "预览运行 JavaScript 代码",
+  "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.": "对 JavaScript 代码进行语法检查、沙箱限制检查和试运行。返回成功/失败及诊断信息。在输出最终代码前调用此工具进行验证。"
 }

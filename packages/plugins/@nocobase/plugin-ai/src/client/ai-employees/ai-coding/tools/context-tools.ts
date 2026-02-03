@@ -57,3 +57,31 @@ export const getContextVarsTool: [string, string, ToolOptions] = [
     },
   },
 ];
+
+export const lintAndTestJSTool: [string, string, ToolOptions] = [
+  'codeEditor',
+  'lintAndTestJS',
+  {
+    async invoke(_app, { code }) {
+      if (!this.flowContext?.previewRunJS) {
+        return {
+          success: false,
+          message: 'Preview context not available. Cannot run code validation.',
+        };
+      }
+      try {
+        const result = await this.flowContext.previewRunJS(code);
+        return result;
+      } catch (error: any) {
+        return {
+          success: false,
+          message: `Preview execution error: ${error?.message || error}`,
+        };
+      }
+    },
+    useHooks() {
+      this.flowContext = useChatMessagesStore.use.flowContext();
+      return this;
+    },
+  },
+];

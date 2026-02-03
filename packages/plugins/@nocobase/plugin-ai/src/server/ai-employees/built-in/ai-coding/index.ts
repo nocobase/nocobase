@@ -48,6 +48,10 @@ export default {
         autoCall: true,
       },
       {
+        name: 'codeEditor-lintAndTestJS',
+        autoCall: true,
+      },
+      {
         name: 'dataSource-dataSourceCounting',
         autoCall: true,
       },

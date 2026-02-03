@@ -57,6 +57,7 @@ import {
   getContextApisTool,
   getContextEnvsTool,
   getContextVarsTool,
+  lintAndTestJSTool,
 } from './ai-employees/ai-coding/tools/context-tools';
 import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
@@ -175,6 +176,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool(...getContextApisTool);
     this.aiManager.registerTool(...getContextEnvsTool);
     this.aiManager.registerTool(...getContextVarsTool);
+    this.aiManager.registerTool(...lintAndTestJSTool);
   }
 
   setupWorkflow() {

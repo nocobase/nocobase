@@ -18,12 +18,70 @@ import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 export const ProfileCard: React.FC<{
   aiEmployee: AIEmployee;
   tasks?: Task[];
-}> = ({ aiEmployee, tasks }) => {
+  variant?: 'full' | 'simple';
+}> = ({ aiEmployee, tasks, variant = 'full' }) => {
   const { token } = useToken();
   const t = useT();
   tasks = tasks?.filter((task) => task.title) || [];
 
   const { triggerTask } = useChatBoxActions();
+
+  if (variant === 'simple') {
+    if (!aiEmployee) {
+      return null;
+    }
+    return (
+      <div
+        style={{
+          width: '240px',
+          padding: '4px 8px',
+        }}
+      >
+        <Flex align="center" justify="space-between">
+          <Flex align="center" gap={10}>
+            <Avatar
+              src={avatars(aiEmployee.avatar)}
+              size={40}
+              style={{
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontSize: token.fontSize,
+                color: token.colorText,
+              }}
+            >
+              {aiEmployee.nickname}
+            </span>
+          </Flex>
+          <span
+            style={{
+              fontSize: token.fontSize,
+              color: '#999',
+            }}
+          >
+            {aiEmployee.position}
+          </span>
+        </Flex>
+        {aiEmployee.bio ? (
+          <>
+            <Divider style={{ margin: '4px 0' }} />
+            <Typography.Paragraph
+              style={{
+                marginBottom: 0,
+                fontSize: token.fontSizeSM,
+                color: token.colorTextSecondary,
+                lineHeight: 1.6,
+              }}
+            >
+              {aiEmployee.bio}
+            </Typography.Paragraph>
+          </>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div
