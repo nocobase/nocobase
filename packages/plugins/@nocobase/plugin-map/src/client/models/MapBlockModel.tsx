@@ -20,8 +20,8 @@ import {
 import { Space, InputNumber, Cascader } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client';
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useField, observer } from '@formily/react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MapBlockComponent } from './MapBlockComponent';
 import { NAMESPACE } from '../locale';
 
