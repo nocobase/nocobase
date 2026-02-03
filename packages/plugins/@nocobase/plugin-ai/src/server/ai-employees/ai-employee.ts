@@ -61,6 +61,7 @@ export class AIEmployee {
   private systemMessage: string;
   private webSearch?: boolean;
   private modelOverride?: ModelOverride;
+  private protocol: ChatStreamProtocol;
 
   constructor(
     ctx: Context,
@@ -85,6 +86,7 @@ export class AIEmployee {
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(locale, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
+    this.protocol = ChatStreamProtocol.create(ctx);
   }
 
   async getLLMService() {
@@ -178,113 +180,61 @@ export class AIEmployee {
       allowEmpty?: boolean;
     },
   ) {
+    let toolCalls: AIToolCall[];
     const { signal, provider, allowEmpty = false } = options;
-    let isMessageEmpty = true;
     try {
-      this.ctx.res.write(
-        `data: ${JSON.stringify({
-          type: 'stream_start',
-        })}\n\n`,
-      );
-      let toolCalls: AIToolCall[];
+      this.protocol.startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk] = chunks;
-          if (chunk.type !== 'ai') {
-            continue;
-          }
-          if (isMessageEmpty && chunk.content?.length) {
-            isMessageEmpty = false;
-          }
+          if (chunk.type === 'ai') {
+            if (chunk.content) {
+              this.protocol.content(provider.parseResponseChunk(chunk.content));
+            }
 
-          if (chunk.content) {
-            this.ctx.res.write(
-              `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
-            );
-          }
-
-          const webSearch = provider.parseWebSearchAction(chunk);
-          if (webSearch?.length) {
-            this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
+            const webSearch = provider.parseWebSearchAction(chunk);
+            if (webSearch?.length) {
+              this.protocol.webSearch(webSearch);
+            }
           }
         } else if (mode === 'updates') {
           if ('__interrupt__' in chunks) {
-            if (isMessageEmpty) {
-              isMessageEmpty = false;
-            }
-            const { actionRequests = [], reviewConfigs = [] } = chunks.__interrupt__[0].value;
-            if (actionRequests.length) {
-              const actionRequestsNames = actionRequests.map((x) => x.name) as string[];
-              const actionRequestsMap = new Map(actionRequests.map((x) => [x.name, x]));
-              const reviewConfigsMap = new Map(reviewConfigs.map((x) => [x.actionName, x]));
+            const interruptActions = this.toInterruptActions(chunks.__interrupt__[0].value);
+            if (interruptActions.size) {
               for (const toolCall of toolCalls) {
-                const actionRequest = actionRequestsMap.get(toolCall.name) as any;
-                const reviewConfig = reviewConfigsMap.get(toolCall.name) as any;
-                if (!actionRequest) {
+                const interruptAction = interruptActions.get(toolCall.name);
+                if (!interruptAction) {
                   continue;
                 }
-                const interruptAction = {
-                  order: actionRequestsNames.indexOf(toolCall.name),
-                  description: actionRequest.description,
-                  allowedDecisions: reviewConfig?.allowedDecisions,
-                };
                 await this.updateToolCallInterrupted(toolCall.id, interruptAction);
-                this.ctx.res.write(
-                  `data: ${JSON.stringify({
-                    type: 'tool_call_status',
-                    body: {
-                      toolCall,
-                      status: 'interrupted',
-                      interruptAction,
-                    },
-                  })}\n\n`,
-                );
+                this.protocol.toolCallStatus({
+                  toolCall,
+                  status: 'interrupted',
+                  interruptAction,
+                });
               }
             }
           }
         } else if (mode === 'custom') {
-          if (isMessageEmpty) {
-            isMessageEmpty = false;
-          }
           if (chunks.action === 'initToolCalls') {
             toolCalls = chunks.body?.toolCalls ?? [];
-            this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunks.body })}\n\n`);
+            this.protocol.toolCallChunks(chunks.body);
           } else if (chunks.action === 'beforeSendToolMessage') {
-            this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message', body: chunks.body })}\n\n`);
+            this.protocol.newMessage(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
-            this.ctx.res.write(
-              `data: ${JSON.stringify({
-                type: 'tool_call_status',
-                body: {
-                  toolCall: chunks.body?.toolCall,
-                  status: 'pending',
-                },
-              })}\n\n`,
-            );
+            this.protocol.toolCallStatus({ toolCall: chunks.body?.toolCall, status: 'pending' });
           } else if (chunks.action === 'afterToolCall') {
-            this.ctx.res.write(
-              `data: ${JSON.stringify({
-                type: 'tool_call_status',
-                body: {
-                  toolCall: chunks.body?.toolCall,
-                  status: 'done',
-                },
-              })}\n\n`,
-            );
+            this.protocol.toolCallStatus({ toolCall: chunks.body?.toolCall, status: 'done' });
           }
         }
       }
 
-      if (isMessageEmpty && !signal.aborted && !allowEmpty) {
+      if (this.protocol.statistics.sent === 0 && !signal.aborted && !allowEmpty) {
         this.sendErrorResponse('Empty message');
         return;
       }
 
-      this.ctx.res.write(
-        `data: ${JSON.stringify({
-          type: 'stream_end',
-        })}\n\n`,
-      );
+      this.protocol.endStream();
     } catch (err) {
       this.ctx.log.error(err);
       this.sendErrorResponse(err.message);
@@ -891,6 +841,28 @@ export class AIEmployee {
     return result;
   }
 
+  private toInterruptActions(interrupt: {
+    actionRequests: { name: string; args: unknown; description: string }[];
+    reviewConfigs: { actionName: string; allowedDecisions: string[] }[];
+  }): Map<string, { order: number; description: string; allowedDecisions: string[] }> {
+    const result = new Map();
+    const { actionRequests = [], reviewConfigs = [] } = interrupt;
+    if (!actionRequests.length) {
+      return result;
+    }
+    let order = 0;
+    const actionRequestsMap = new Map(actionRequests.map((x) => [x.name, x]));
+    const reviewConfigsMap = new Map(reviewConfigs.map((x) => [x.actionName, x]));
+    for (const [name, actionRequest] of actionRequestsMap.entries()) {
+      result.set(name, {
+        order: order++,
+        description: actionRequest.description,
+        allowedDecisions: reviewConfigsMap.get(name)?.allowedDecisions,
+      });
+    }
+    return result;
+  }
+
   private async getAIEmployeeTools() {
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
@@ -1002,5 +974,83 @@ class AgentThread {
 
   fork(): AgentThread {
     return new AgentThread(this._sessionId, this._thread + 1);
+  }
+}
+
+class ChatStreamProtocol {
+  private _statistics = {
+    sent: 0,
+    addSent: (s: number) => {
+      this._statistics.sent += s;
+    },
+    reset: () => {
+      this._statistics.sent = 0;
+    },
+  };
+
+  constructor(private readonly ctx: Context) {}
+
+  static create(ctx: Context) {
+    return new ChatStreamProtocol(ctx);
+  }
+
+  content(content: string): void {
+    this.write({ type: 'content', body: content });
+  }
+
+  webSearch(content: { type: string; query: string }[]) {
+    this.write({ type: 'web_search', body: content });
+  }
+
+  toolCallChunks(content: unknown) {
+    this.write({ type: 'tool_call_chunks', body: content });
+  }
+
+  toolCallStatus({
+    toolCall,
+    status,
+    interruptAction,
+  }: {
+    toolCall: AIToolCall;
+    status: string;
+    interruptAction?: {
+      order: number;
+      description: string;
+      allowedDecisions: string[];
+    };
+  }) {
+    this.write({
+      type: 'tool_call_status',
+      body: {
+        toolCall,
+        status,
+        interruptAction,
+      },
+    });
+  }
+
+  newMessage(content: unknown) {
+    this.write({ type: 'new_message', body: content });
+  }
+
+  endStream() {
+    this.write({ type: 'stream_end' });
+  }
+
+  startStream() {
+    this._statistics.reset();
+    this.write({ type: 'stream_start' });
+  }
+
+  get statistics() {
+    return {
+      sent: this._statistics.sent,
+    };
+  }
+
+  private write({ type, body }: { type: string; body?: any }) {
+    const data = `data: ${JSON.stringify({ type, body })}\n\n`;
+    this.ctx.res.write(data);
+    this._statistics.addSent(data.length);
   }
 }
