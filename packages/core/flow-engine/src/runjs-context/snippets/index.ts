@@ -69,6 +69,34 @@ const snippets: Record<string, () => Promise<any>> = {
 
 export default snippets;
 
+export type RunJSSnippetLoader = () => Promise<any>;
+
+/**
+ * Register a RunJS snippet loader for editors/AI coding.
+ *
+ * - By default, an existing ref will NOT be overwritten (returns false).
+ * - Use { override: true } to overwrite an existing ref (returns true).
+ */
+export function registerRunJSSnippet(
+  ref: string,
+  loader: RunJSSnippetLoader,
+  options?: {
+    override?: boolean;
+  },
+): boolean {
+  if (typeof ref !== 'string' || !ref.trim()) {
+    throw new Error('[flow-engine] registerRunJSSnippet: ref must be a non-empty string');
+  }
+  if (typeof loader !== 'function') {
+    throw new Error('[flow-engine] registerRunJSSnippet: loader must be a function returning a Promise');
+  }
+  const key = ref.trim();
+  const existed = Boolean((snippets as any)[key]);
+  if (existed && !options?.override) return false;
+  (snippets as any)[key] = loader;
+  return true;
+}
+
 // Cohesive snippet helpers for clients (editor, etc.)
 type EngineSnippetEntry = {
   name: string;
@@ -152,46 +180,51 @@ export async function listSnippetsForContext(
   }
   await Promise.all(
     Object.entries(snippets).map(async ([key, loader]) => {
-      const mod = await (loader as any)();
-      const def = mod?.default || {};
-      const body: any = def?.content ?? mod?.content;
-      if (typeof body !== 'string') return;
-      let ok = true;
-      if (Array.isArray(def?.contexts) && def.contexts.length) {
-        const ctxNames = def.contexts.map((item: any) => {
-          if (item === '*') return '*';
-          if (typeof item === 'string') return item;
-          if (typeof item === 'function') return item.name || '*';
-          if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
-          return String(item ?? '');
-        });
-        if (ctxClassName === '*') {
-          // '*' means return all snippets without filtering by context
-          ok = true;
-        } else {
-          ok = ctxNames.includes('*') || ctxNames.some((name: string) => allowedContextNames.has(name));
+      try {
+        const mod = await (loader as any)();
+        const def = mod?.default || {};
+        const body: any = def?.content ?? mod?.content;
+        if (typeof body !== 'string') return;
+        let ok = true;
+        if (Array.isArray(def?.contexts) && def.contexts.length) {
+          const ctxNames = def.contexts.map((item: any) => {
+            if (item === '*') return '*';
+            if (typeof item === 'string') return item;
+            if (typeof item === 'function') return item.name || '*';
+            if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
+            return String(item ?? '');
+          });
+          if (ctxClassName === '*') {
+            // '*' means return all snippets without filtering by context
+            ok = true;
+          } else {
+            ok = ctxNames.includes('*') || ctxNames.some((name: string) => allowedContextNames.has(name));
+          }
         }
+        if (ok && Array.isArray(def?.versions) && def.versions.length) {
+          ok = def.versions.includes('*') || def.versions.includes(version);
+        }
+        if (!ok) return;
+        const localeMeta = resolveLocaleMeta(def, locale);
+        const name = localeMeta.label || def?.label || deriveNameFromKey(key);
+        const description = localeMeta.description ?? def?.description;
+        const prefix = def?.prefix || name;
+        const groups = computeGroups(def, key);
+        const scenes = normalizeScenes(def, key);
+        entries.push({
+          name,
+          prefix,
+          description,
+          body,
+          ref: key,
+          group: groups[0],
+          groups,
+          scenes,
+        });
+      } catch (_) {
+        // fail-open: ignore broken snippet loader
+        return;
       }
-      if (ok && Array.isArray(def?.versions) && def.versions.length) {
-        ok = def.versions.includes('*') || def.versions.includes(version);
-      }
-      if (!ok) return;
-      const localeMeta = resolveLocaleMeta(def, locale);
-      const name = localeMeta.label || def?.label || deriveNameFromKey(key);
-      const description = localeMeta.description ?? def?.description;
-      const prefix = def?.prefix || name;
-      const groups = computeGroups(def, key);
-      const scenes = normalizeScenes(def, key);
-      entries.push({
-        name,
-        prefix,
-        description,
-        body,
-        ref: key,
-        group: groups[0],
-        groups,
-        scenes,
-      });
     }),
   );
   return entries;

@@ -966,6 +966,87 @@ export class FlowContext {
     }
     return this._findPropertyInDelegates(this._delegates, key);
   }
+
+  /**
+   * 获取当前上下文可用的顶层 API 信息（主要用于编辑器补全/工具）。
+   *
+   * 注意：
+   * - 目前返回值以“尽量可用”为目标，允许不完整。
+   * - 该方法不会展开变量 meta（变量结构应由 `getPropertyMetaTree()`/VariableInput 等机制负责）。
+   */
+  async getApiInfos(options: { version?: string } = {}): Promise<Record<string, any>> {
+    const version = (options as any)?.version || ('v1' as any);
+    const modelClass = getModelClassName(this as any);
+    const Ctor =
+      RunJSContextRegistry.resolve(version as any, modelClass) || RunJSContextRegistry.resolve(version as any, '*');
+    const locale = (this as any)?.api?.auth?.locale || (this as any)?.i18n?.language || (this as any)?.locale;
+
+    let doc: any = {};
+    try {
+      if ((Ctor as any)?.getDoc?.length) doc = (Ctor as any).getDoc(locale) || {};
+      else doc = (Ctor as any)?.getDoc?.() || {};
+    } catch (_) {
+      doc = {};
+    }
+
+    const isPrivateKey = (key: string) => typeof key === 'string' && key.startsWith('_');
+    const out: Record<string, any> = {};
+    const visited = new WeakSet<any>();
+
+    const walk = (ctx: any) => {
+      if (!ctx || visited.has(ctx)) return;
+      visited.add(ctx);
+
+      try {
+        for (const key of Object.keys(ctx._props || {})) {
+          if (isPrivateKey(key)) continue;
+          if (typeof out[key] === 'undefined') out[key] = { type: 'property' };
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      try {
+        for (const key of Object.keys(ctx._methods || {})) {
+          if (isPrivateKey(key)) continue;
+          if (typeof out[key] === 'undefined') out[key] = { type: 'function' };
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      try {
+        const delegates = Array.isArray(ctx._delegates) ? ctx._delegates : [];
+        for (const d of delegates) walk(d);
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    walk(this);
+
+    return {
+      ...out,
+      ...(doc?.properties || {}),
+      ...(doc?.methods || {}),
+    };
+  }
+
+  /**
+   * 变量结构信息（保留给编辑器/工具使用）。
+   * 当前实现为保底空对象，避免 RunJS doc 中补全到该方法时调用报错。
+   */
+  async getVarInfos(_options: { path?: string | string[]; maxDepth?: number } = {}): Promise<Record<string, any>> {
+    return {};
+  }
+
+  /**
+   * 运行时环境信息（保留给编辑器/工具使用）。
+   * 当前实现为保底空对象，避免 RunJS doc 中补全到该方法时调用报错。
+   */
+  async getEnvInfos(): Promise<Record<string, any>> {
+    return {};
+  }
 }
 
 class BaseFlowEngineContext extends FlowContext {
@@ -1778,9 +1859,44 @@ export class FlowRuntimeContext<
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
 
+export type FlowContextDocRef = string | { url: string; title?: string };
+
+export type FlowDeprecationDoc =
+  | boolean
+  | {
+      message?: string;
+      replacedBy?: string | string[];
+      since?: string;
+      removedIn?: string;
+      ref?: FlowContextDocRef;
+    };
+
+export type FlowContextDocParam = {
+  name: string;
+  description?: string;
+  type?: string;
+  optional?: boolean;
+  default?: JSONValue;
+};
+
+export type FlowContextDocReturn = {
+  description?: string;
+  type?: string;
+};
+
 export type RunJSDocCompletionDoc = {
   insertText?: string;
 };
+
+export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);
+
+// `hidden` is the single visibility entrypoint for RunJSDoc property docs:
+// - boolean: hide the whole node and its subtree
+// - string[]: hide specific subpaths under the node (relative dot-paths)
+export type RunJSDocHiddenOrPathsDoc =
+  | boolean
+  | string[]
+  | ((ctx: any) => boolean | string[] | Promise<boolean | string[]>);
 
 export type RunJSDocPropertyDoc =
   | string
@@ -1790,7 +1906,14 @@ export type RunJSDocPropertyDoc =
       type?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      deprecated?: FlowDeprecationDoc;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
       properties?: Record<string, RunJSDocPropertyDoc>;
+      hidden?: RunJSDocHiddenOrPathsDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMethodDoc =
@@ -1800,6 +1923,13 @@ export type RunJSDocMethodDoc =
       detail?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      deprecated?: FlowDeprecationDoc;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
+      hidden?: RunJSDocHiddenDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMeta = {
