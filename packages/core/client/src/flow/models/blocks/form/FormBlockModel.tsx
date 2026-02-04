@@ -43,6 +43,8 @@ function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
+  private userModifiedTopLevelFields = new Set<string>();
+
   get form() {
     return this.context.form as FormInstance;
   }
@@ -71,8 +73,36 @@ export class FormBlockModel<
     this.form.setFieldsValue(values);
   }
 
-  setFieldValue(fieldName: string, value: any) {
+  setFieldValue(fieldName, value) {
     this.form.setFieldValue(fieldName, value);
+  }
+
+  /**
+   * @internal
+   *
+   * 仅用于编辑表单刷新保护：只记录「用户交互」触发的改动（来自 antd Form.onValuesChange）。
+   * 程序化 setFieldValue/setFieldsValue 不会触发 onValuesChange（见 linkageRules 的手动 emit），因此不会污染该集合。
+   */
+  markUserModifiedFields(changedValues): void {
+    if (!changedValues || typeof changedValues !== 'object') return;
+    if (Array.isArray(changedValues)) return;
+    for (const k of Object.keys(changedValues)) {
+      if (k) this.userModifiedTopLevelFields.add(k);
+    }
+  }
+
+  /**
+   * @internal
+   */
+  getUserModifiedFields(): Set<string> {
+    return this.userModifiedTopLevelFields;
+  }
+
+  /**
+   * @internal
+   */
+  resetUserModifiedFields(): void {
+    this.userModifiedTopLevelFields.clear();
   }
 
   public async onDispatchEventStart(eventName: string, options?: any, inputArgs?: Record<string, any>): Promise<void> {
@@ -310,6 +340,7 @@ export function FormComponent({
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
+        model.markUserModifiedFields?.(changedValues);
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}

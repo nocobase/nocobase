@@ -25,7 +25,7 @@ InputFieldModel.registerFlow({
     generateNanoid: {
       handler(ctx, params) {
         // 监听表单reset
-        ctx.blockModel.emitter.on('onFieldReset', () => {
+        ctx.blockModel?.emitter?.on('onFieldReset', () => {
           if (ctx.collectionField.interface === 'nanoid' && ctx.collectionField.options.autoFill !== false) {
             const { size, customAlphabet } = ctx.collectionField.options || { size: 21 };
             ctx.model.props.onChange(Alphabet(customAlphabet, size)());
