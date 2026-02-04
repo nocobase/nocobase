@@ -15,6 +15,8 @@ export function FieldModelSelect(props) {
   const { source = [], onChange } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowContext();
+  const valueMap = props.valueMap || {};
+  const normalizeValue = (value) => (valueMap && valueMap[value] ? valueMap[value] : value);
 
   const defaultValue = useMemo(() => {
     if (!source.length) return undefined;
@@ -23,8 +25,8 @@ export function FieldModelSelect(props) {
     if (!binding) {
       return;
     }
-    return binding.modelName;
-  }, [source.join('.')]);
+    return normalizeValue(binding.modelName);
+  }, [source.join('.'), valueMap]);
 
   useEffect(() => {
     if (!props.value && defaultValue) {
@@ -32,5 +34,5 @@ export function FieldModelSelect(props) {
     }
   }, [defaultValue, onChange, props.value]);
 
-  return <Select allowClear {...props} value={props.value ?? defaultValue} />;
+  return <Select allowClear {...props} value={normalizeValue(props.value ?? defaultValue)} />;
 }

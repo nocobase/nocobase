@@ -192,6 +192,9 @@ FilterFormCustomFieldModel.registerFlow({
           ],
           'x-component-props': {
             placeholder: tExpr('Please select'),
+            valueMap: {
+              RecordSelectFieldModel: 'FilterFormCustomRecordSelectFieldModel',
+            },
           },
           'x-reactions': [
             {
@@ -200,6 +203,9 @@ FilterFormCustomFieldModel.registerFlow({
                 state: {
                   componentProps: {
                     source: '{{$deps[0]}}',
+                    valueMap: {
+                      RecordSelectFieldModel: 'FilterFormCustomRecordSelectFieldModel',
+                    },
                   },
                 },
               },
