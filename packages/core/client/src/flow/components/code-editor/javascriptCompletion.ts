@@ -75,7 +75,7 @@ function buildBaseCompletions(): Completion[] {
       }
       const insertText = completionSpec?.insertText ?? `ctx.${key}()`;
       options.push({
-        label: `ctx.${key}()` as any,
+        label: `ctx.${key}()`,
         type: 'function',
         detail,
         info: formatDocInfo(methodDoc, { mode: 'simple' }),

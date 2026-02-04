@@ -9,8 +9,10 @@
 
 import { RunJSContextRegistry } from '../registry';
 
+export type RunJSSnippetLoader = () => Promise<any>;
+
 // Simple manual exports - no build-time magic needed
-const snippets: Record<string, () => Promise<any>> = {
+const snippets: Record<string, RunJSSnippetLoader | undefined> = {
   // global
   'global/message-success': () => import('./global/message-success.snippet'),
   'global/message-error': () => import('./global/message-error.snippet'),
@@ -69,8 +71,6 @@ const snippets: Record<string, () => Promise<any>> = {
 
 export default snippets;
 
-export type RunJSSnippetLoader = () => Promise<any>;
-
 /**
  * Register a RunJS snippet loader for editors/AI coding.
  *
@@ -91,9 +91,9 @@ export function registerRunJSSnippet(
     throw new Error('[flow-engine] registerRunJSSnippet: loader must be a function returning a Promise');
   }
   const key = ref.trim();
-  const existed = Boolean((snippets as any)[key]);
+  const existed = typeof snippets[key] === 'function';
   if (existed && !options?.override) return false;
-  (snippets as any)[key] = loader;
+  snippets[key] = loader;
   return true;
 }
 
@@ -155,8 +155,8 @@ function resolveLocaleMeta(def: any, locale?: string) {
 }
 
 export async function getSnippetBody(ref: string): Promise<string> {
-  const loader = (snippets as any)[ref];
-  if (!loader) throw new Error(`[flow-engine] snippet not found: ${ref}`);
+  const loader = snippets[ref];
+  if (typeof loader !== 'function') throw new Error(`[flow-engine] snippet not found: ${ref}`);
   const mod = await loader();
   const def = mod?.default;
   // engine snippet modules export a SnippetModule as default
@@ -180,8 +180,9 @@ export async function listSnippetsForContext(
   }
   await Promise.all(
     Object.entries(snippets).map(async ([key, loader]) => {
+      if (typeof loader !== 'function') return;
       try {
-        const mod = await (loader as any)();
+        const mod = await loader();
         const def = mod?.default || {};
         const body: any = def?.content ?? mod?.content;
         if (typeof body !== 'string') return;
