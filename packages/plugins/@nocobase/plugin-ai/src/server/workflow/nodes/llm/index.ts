@@ -57,7 +57,7 @@ export class LLMInstruction extends Instruction {
 
     // eslint-disable-next-line promise/catch-or-return
     provider
-      .invokeChat({
+      .invoke({
         messages: parsedMessages,
         structuredOutput,
       })

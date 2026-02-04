@@ -262,6 +262,7 @@ export function createDocsSearchTool(options?: { description?: string }): ToolsO
 export function createReadDocEntryTool(options?: { description?: string }): ToolsOptions {
   return {
     scope: 'SPECIFIED',
+    defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Read documentation file")}}',
       about:

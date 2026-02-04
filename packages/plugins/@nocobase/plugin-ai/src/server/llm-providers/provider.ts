@@ -16,11 +16,8 @@ import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
-import { Command } from '@langchain/langgraph';
 import { Context } from '@nocobase/actions';
 import { tool } from 'langchain';
-import { createAgent } from 'langchain';
-import { SequelizeCollectionSaver } from '../ai-employees/checkpoints';
 import '@langchain/core/utils/stream';
 import { ToolsEntry } from '@nocobase/ai';
 
@@ -75,23 +72,7 @@ export abstract class LLMProvider {
     return chain;
   }
 
-  prepareAgent(context?: AIChatContext) {
-    const toolDefinitions = context?.tools?.map(ToolDefinition.from('ToolsEntry')) ?? [];
-    let tools = [...this.builtInTools()];
-    if (tools.length) {
-      if (!this.isToolConflict() && toolDefinitions?.length) {
-        tools.push(...toolDefinitions);
-      }
-    } else if (toolDefinitions?.length) {
-      tools = toolDefinitions;
-    }
-    const middleware = context?.middleware;
-    const systemPrompt = context?.systemPrompt;
-    const checkpointer = new SequelizeCollectionSaver(() => this.app.mainDataSource);
-    return createAgent({ model: this.chatModel, tools, middleware, systemPrompt, checkpointer });
-  }
-
-  async invokeChat(context: AIChatContext, options?: any) {
+  async invoke(context: AIChatContext, options?: any) {
     const chain = this.prepareChain(context);
     return chain.invoke(context.messages, options);
   }
@@ -99,26 +80,6 @@ export abstract class LLMProvider {
   async stream(context: AIChatContext, options?: any) {
     const chain = this.prepareChain(context);
     return chain.streamEvents(context.messages, options);
-  }
-
-  async getAgentStream(context: AIChatContext, options?: any, state?: any) {
-    const agent = this.prepareAgent(context);
-    options = { ...options, recursionLimit: 200 };
-    if (context.decisions?.length) {
-      return agent.stream(
-        // @ts-ignore
-        new Command({
-          resume: {
-            decisions: context.decisions,
-          },
-        }),
-        options,
-      );
-    } else if (context.messages) {
-      return agent.stream({ messages: context.messages, ...state }, options);
-    } else {
-      return agent.stream(null, options);
-    }
   }
 
   async listModels(): Promise<{
@@ -238,6 +199,13 @@ export abstract class LLMProvider {
     return true;
   }
 
+  getBuiltInTools(checkConflict: boolean) {
+    if (this.isToolConflict() && checkConflict) {
+      return [];
+    }
+    return this.builtInTools();
+  }
+
   parseWebSearchAction(chunk: AIMessageChunk): { type: string; query: string }[] {
     return [];
   }
@@ -289,7 +257,7 @@ export abstract class EmbeddingProvider {
 
 type FromType = 'ToolsEntry';
 
-class ToolDefinition<T> {
+export class ToolDefinition<T> {
   constructor(
     private from: FromType,
     private _tool: T,
