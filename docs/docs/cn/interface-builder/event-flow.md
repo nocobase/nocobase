@@ -17,6 +17,7 @@
 2. 点击“添加事件流（Add event flow）”，“触发事件”选择“行点击”，表示当点击表格行时触发。
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
 3. 配置“执行时机”，用于控制这条事件流相对于系统内置流程的先后顺序。一般保持默认即可；如果希望在内置逻辑执行完后再提示/跳转，可选择“所有流之后”。更多说明见下文 [执行时机](#执行时机)。
+![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
 4. “触发条件（Trigger condition）”是用来配置条件的，当满足条件时才会触发事件流。这里我们不需要配置，只要点击行都会触发事件流。
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
 5. 鼠标悬浮到“添加步骤（Add step）”，可以添加一些操作步骤。我们选“设置数据范围（Set data scope）”，来设置右侧表格的数据范围。

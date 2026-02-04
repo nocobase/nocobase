@@ -24,6 +24,8 @@ Configuration steps:
 
 3. Configure "Execution timing" to decide where this custom flow runs relative to built-in flows. In most cases, keep the default. If you want to show feedback or navigate after built-in logic finishes, choose "After built-in flows". See [Execution timing](#execution-timing) below.
 
+![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
+
 4. "Trigger condition" is used to configure conditions. The event flow will only trigger when these conditions are met. In this case, we don't need to configure any conditions, so the flow will trigger on any row click.
 
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
