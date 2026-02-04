@@ -40,7 +40,18 @@ describe('linkage assign actions - legacy params', () => {
   });
 
   it('subFormLinkageAssignField should apply legacy object params at runtime', () => {
-    const formItemModel: any = { uid: 'f1', fieldPath: 'a.b', getFork: vi.fn(() => undefined) };
+    const forkModel: any = {
+      uid: 'f1',
+      fieldPath: 'a.b',
+      isFork: true,
+      context: { defineProperty: vi.fn() },
+    };
+    const formItemModel: any = {
+      uid: 'f1',
+      fieldPath: 'a.b',
+      getFork: vi.fn(() => undefined),
+      createFork: vi.fn(() => forkModel),
+    };
     const ctx: any = {
       model: { subModels: { grid: { subModels: { items: [formItemModel] } } }, context: { fieldKey: 'k' } },
       engine: {
@@ -52,6 +63,6 @@ describe('linkage assign actions - legacy params', () => {
 
     subFormLinkageAssignField.handler(ctx, { value: { field: 'legacyUid', assignValue: 'y' }, setProps });
 
-    expect(setProps).toHaveBeenCalledWith(formItemModel, { value: 'y' });
+    expect(setProps).toHaveBeenCalledWith(forkModel, { value: 'y' });
   });
 });
