@@ -170,7 +170,6 @@ export const BlockItemCard = React.forwardRef(
         )}
       </div>
     );
-    console.log(height);
     return (
       <Card
         ref={setCardRef as any}
