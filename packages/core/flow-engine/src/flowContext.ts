@@ -980,6 +980,7 @@ class BaseFlowEngineContext extends FlowContext {
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare getVar: (path: string) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -1247,6 +1248,27 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
       return resolveExpressions(serverResolved, this);
     });
+
+    // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
+    // Example: await ctx.getVar('ctx.record.id')
+    this.defineMethod(
+      'getVar',
+      async function (this: BaseFlowEngineContext, varPath: string) {
+        const raw = typeof varPath === 'string' ? varPath : String(varPath ?? '');
+        const s = raw.trim();
+        if (!s) return undefined;
+        // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
+        // We also accept a full template string '{{ ... }}' for convenience.
+        if (/^\\s*\\{\\{/.test(s)) {
+          return this.resolveJsonTemplate(s as any);
+        }
+        if (s !== 'ctx' && !s.startsWith('ctx.')) {
+          throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
+        }
+        return this.resolveJsonTemplate(`{{ ${s} }}` as any);
+      },
+      'Resolve a ctx expression value by path (expression starts with "ctx.").',
+    );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
     });
