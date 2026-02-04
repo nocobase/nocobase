@@ -82,7 +82,7 @@ export class LLMInstruction extends Instruction {
       .catch((e) => {
         processor.logger.error(`llm invoke failed, ${e.message}`, {
           node: node.id,
-          error: e,
+          stack: e.stack,
           chatOptions: _.omit(chatOptions, 'messages'),
         });
         job.set({

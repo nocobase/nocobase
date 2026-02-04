@@ -51,7 +51,7 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    const toolDefinitions = context.tools.map(ToolDefinition.from('ToolsEntry'));
+    const toolDefinitions = context.tools?.map(ToolDefinition.from('ToolsEntry'));
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
