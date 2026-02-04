@@ -19,7 +19,7 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
-import { omitBy, isUndefined } from 'lodash';
+import { isEqual } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
 import { FormBlockContent, FormBlockModel } from './FormBlockModel';
@@ -155,6 +155,8 @@ EditFormModel.registerFlow({
           //   await ctx.form.resetFields();
           // }
 
+          const prevFilterByTk = ctx.resource.getMeta('currentFilterByTk');
+
           const currentRecord = {
             ...ctx.model.getCurrentRecord(),
           };
@@ -172,7 +174,50 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.form && ctx.form.setFieldsValue(currentRecord);
+
+          if (!ctx.form) {
+            return;
+          }
+
+          const nextFilterByTk = ctx.resource.getMeta('currentFilterByTk');
+          const recordChanged = !isEqual(prevFilterByTk, nextFilterByTk);
+          const userModified = ctx.model.getUserModifiedFields?.() as Set<string> | undefined;
+          const hasUserModified = !!userModified?.size;
+          const pruneUserModified = () => {
+            if (!userModified?.size) return;
+            const isObject = (val) => val !== null && typeof val === 'object';
+            // 只要当前表单值与服务端记录一致，就认为不再是“未保存修改”
+            for (const fieldName of Array.from(userModified)) {
+              const formValue = ctx.form.getFieldValue(fieldName);
+              const recordValue = currentRecord?.[fieldName];
+              if (
+                Object.is(formValue, recordValue) ||
+                (isObject(formValue) && isObject(recordValue) && isEqual(formValue, recordValue))
+              ) {
+                userModified.delete(fieldName);
+              }
+            }
+          };
+
+          // 当编辑表单存在未保存修改时，避免刷新覆盖用户输入（如：关系字段 Quick Create 导致的脏刷新）
+          if (!recordChanged && hasUserModified) {
+            const mergedRecord = { ...currentRecord };
+            for (const fieldName of userModified) {
+              mergedRecord[fieldName] = ctx.form.getFieldValue(fieldName);
+            }
+
+            ctx.form.setFieldsValue(mergedRecord);
+            pruneUserModified();
+            return;
+          }
+
+          // 切换记录（翻页等）时，清理“用户改动标记”，避免把上一条记录的编辑状态带到下一条
+          if (recordChanged) {
+            ctx.model.resetUserModifiedFields?.();
+          }
+
+          ctx.form.setFieldsValue(currentRecord);
+          pruneUserModified();
         });
       },
     },
