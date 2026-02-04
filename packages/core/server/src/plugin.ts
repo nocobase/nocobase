@@ -18,6 +18,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
+import { ToolsLoader } from '@nocobase/ai';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -205,6 +206,24 @@ export abstract class Plugin<O = any> implements PluginInterface {
         from: this.options.packageName,
       });
     }
+  }
+
+  /**
+   * @internal
+   */
+  async loadAI() {
+    const pluginRoot = await this.getPluginBasePath();
+    if (!pluginRoot) {
+      return;
+    }
+    const basePath = resolve(pluginRoot, 'server/ai');
+    if (!(await fsExists(basePath))) {
+      return;
+    }
+    const toolsLoader = new ToolsLoader(this.ai, {
+      scan: { basePath, pattern: ['**/tools/*.ts', '**/tools/*/index.ts', '**/tools/*/description.md'] },
+    });
+    await toolsLoader.load();
   }
 
   /**

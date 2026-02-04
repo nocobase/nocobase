@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ai-manager';
-export * from './document-manager';
-export * from './tools-manager';
-export * from './loader';
+export * from './types';
+export * from './scanner';
+export * from './tools';

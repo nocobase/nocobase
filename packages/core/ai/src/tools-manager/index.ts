@@ -90,4 +90,8 @@ export class DefaultToolsManager implements ToolsManager {
   }
 }
 
+export function definedTools(options: ToolsOptions) {
+  return options;
+}
+
 export * from './types';
