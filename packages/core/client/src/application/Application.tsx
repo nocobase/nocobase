@@ -309,17 +309,9 @@ export class Application {
     this.use(OpenModeProvider);
     this.flowEngine.context.defineProperty('app', {
       value: this,
-      info: {
-        description: 'NocoBase Application instance.',
-        detail: 'Application',
-      },
     });
     this.flowEngine.context.defineProperty('routeRepository', {
       value: new RouteRepository(this.flowEngine.context),
-      info: {
-        description: 'RouteRepository instance for resolving route-related resources.',
-        detail: 'RouteRepository',
-      },
     });
     this.flowEngine.context.defineProperty('appInfo', {
       get: async () => {
@@ -327,10 +319,6 @@ export class Application {
           url: 'app:getInfo',
         });
         return rest.data?.data || {};
-      },
-      info: {
-        description: 'Application info object loaded from server (app:getInfo).',
-        detail: 'Record<string, any>',
       },
     });
     this.flowEngine.context.defineProperty('api', {
@@ -353,10 +341,6 @@ export class Application {
     this.flowEngine.context.defineProperty('location', {
       get: () => location,
       observable: true,
-      info: {
-        description: 'Reactive location object (observable).',
-        detail: 'Location',
-      },
     });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);

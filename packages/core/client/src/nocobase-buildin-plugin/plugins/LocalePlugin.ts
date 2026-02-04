@@ -29,9 +29,7 @@ export class LocalePlugin extends Plugin {
         },
       });
       const data = res?.data;
-      this.engine.context.defineProperty('locales', {
-        value: data?.data || {},
-      });
+      this.engine.context.defineProperty('locales', { value: data?.data || {} });
       this.app.use(App, { component: false });
       if (data?.data?.lang) {
         api.auth.setLocale(data?.data?.lang);
