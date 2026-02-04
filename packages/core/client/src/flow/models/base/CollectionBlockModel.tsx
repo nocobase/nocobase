@@ -109,7 +109,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     const genKey = (key) => {
       return this.name + key;
     };
-    const { dataSourceKey, collectionName, associationName } = ctx.view.inputArgs;
+    const { dataSourceKey, collectionName, associationName, filterByTk } = ctx.view.inputArgs;
     const dataSources = ctx.dataSourceManager
       .getDataSources()
       .map((dataSource) => {
@@ -199,7 +199,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         initOptions['associationName'] = associationName;
         initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
       }
-      return [
+      const items: any[] = [
         {
           key: genKey('current-collection'),
           label: 'Current collection',
@@ -212,7 +212,12 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
             },
           }),
         },
-        {
+      ];
+
+      // 新建记录的弹窗（如 Add new）没有 record 锚点（filterByTk），此时不应允许添加「关联记录」区块。
+      // 仅当弹窗携带 filterByTk（例如 View/Details 等记录态弹窗）时，才开放关联记录入口。
+      if (typeof filterByTk !== 'undefined' && filterByTk !== null) {
+        items.push({
           key: genKey('associated'),
           label: 'Associated records',
           children: () => {
@@ -251,13 +256,16 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               })
               .filter(Boolean);
           },
-        },
-        {
-          key: genKey('others-collections'),
-          label: 'Other collections',
-          children: children(ctx),
-        },
-      ];
+        });
+      }
+
+      items.push({
+        key: genKey('others-collections'),
+        label: 'Other collections',
+        children: children(ctx),
+      });
+
+      return items;
     }
     const items = [
       {
@@ -417,7 +425,19 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         // resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
+
+        const syncDirtyVersion = () => {
+          const engine = this.context.engine as FlowEngine | undefined;
+          if (!engine?.getDataSourceDirtyVersion) return;
+          const dataSourceKey = resource.getDataSourceKey?.() || params.dataSourceKey || 'main';
+          const resourceName = resource.getResourceName?.() || params.associationName || params.collectionName;
+          if (!resourceName) return;
+          this.lastSeenDirtyVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+        };
+
+        syncDirtyVersion();
         resource.on('refresh', () => {
+          syncDirtyVersion();
           this.invalidateFlowCache('beforeRender');
         });
         return resource;

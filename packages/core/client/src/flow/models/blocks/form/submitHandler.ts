@@ -29,9 +29,12 @@ export async function submitHandler(ctx, params) {
     const data: any = await resource.save(values, params.requestConfig);
     if (blockModel instanceof EditFormModel) {
       resource.isNewRecord = false;
+      // 编辑表单保存成功后，表单应回到“已同步”状态：下一次刷新应允许覆盖为服务端值
+      blockModel.resetUserModifiedFields?.();
       await resource.refresh();
     } else {
       blockModel.form.resetFields();
+      blockModel.resetUserModifiedFields?.();
       blockModel.emitter.emit('onFieldReset');
       if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
         ctx.view.inputArgs.onChange(data?.data);

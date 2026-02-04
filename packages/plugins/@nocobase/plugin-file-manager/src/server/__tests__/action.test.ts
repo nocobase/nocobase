@@ -646,6 +646,43 @@ describe('action', () => {
       const attachmentExists = await AttachmentRepo.findById(attachment.id);
       expect(attachmentExists).toBeNull();
     });
+
+    it('should block path traversal update before delete', async () => {
+      const { body } = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+      });
+
+      const { data: attachment } = body;
+
+      const storage = await StorageRepo.findById(attachment.storageId);
+      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
+      const destPath = path.resolve(
+        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
+        storage.path || '',
+      );
+
+      const outsideDir = path.resolve(destPath, '..');
+      await fs.mkdir(outsideDir, { recursive: true });
+      const outsideFilePath = path.join(outsideDir, `blocked-delete-${Date.now()}.txt`);
+      await fs.writeFile(outsideFilePath, 'blocked');
+
+      try {
+        const relative = path.relative(destPath, outsideFilePath);
+        const res = await agent.resource('attachments').update({
+          filterByTk: attachment.id,
+          values: {
+            path: path.dirname(relative),
+            filename: path.basename(relative),
+          },
+        });
+        expect(res.status).toBe(400);
+
+        const outsideExists = await fs.stat(outsideFilePath).catch(() => false);
+        expect(outsideExists).toBeTruthy();
+      } finally {
+        await fs.unlink(outsideFilePath).catch(() => null);
+      }
+    });
   });
 
   describe('association', () => {

@@ -285,6 +285,17 @@ describe('file manager > server', () => {
         await expect(plugin.getFileStream(body.data)).rejects.toThrow();
       });
 
+      it('should reject path traversal', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        body.data.path = '..';
+        body.data.filename = 'package.json';
+
+        await expect(plugin.getFileStream(body.data)).rejects.toThrow('Access denied');
+      });
+
       it('should throw error when storage not found', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
