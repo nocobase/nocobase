@@ -35,5 +35,9 @@
   "Vditor": "Markdown(Vditor)",
   "upload failed": "upload failed",
   "uploading": "Uploading...",
-  "vditor.uploadError.message": "Unable to upload files to the current storage. You are trying to upload files to the Markdown editor, but the current storage configuration does not support this operation. To enable upload functionality, please complete the following settings: 1. Go to \"File Manager\". 2. Select the storage currently in use ({{storageTitle}}). 3. Set \"Base URL\" and enable the \"Public access\" option."
+  "vditor.uploadError.message": "Unable to upload files to the current storage. You are trying to upload files to the Markdown editor, but the current storage configuration does not support this operation. To enable upload functionality, please complete the following settings: 1. Go to \"File Manager\". 2. Select the storage currently in use ({{storageTitle}}). 3. Set \"Base URL\" and enable the \"Public access\" option.",
+  "Default Edit Mode": "Default Edit Mode",
+  "What You See Is What You Get": "What You See Is What You Get",
+  "Instant Rendering": "Instant Rendering",
+  "Split View": "Split View"
 }
