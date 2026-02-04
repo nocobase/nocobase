@@ -44,7 +44,7 @@ export class BasePageTabModel extends FlowModel<{
       value: observable.ref(true), // TODO: 默认值应该是 false，且需要在 onMount 中设置为 true。但现在 onMount 有 BUG，会在每次切换 tab 时触发
       info: {
         description: 'Whether current tab is active (observable.ref).',
-        detail: 'boolean',
+        detail: 'observable.ref<boolean>',
       },
     });
   }
