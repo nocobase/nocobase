@@ -52,6 +52,8 @@ export class FormBlockModel<
 > extends CollectionBlockModel<T> {
   formValueRuntime?: FormValueRuntime;
 
+  private userModifiedTopLevelFields = new Set<string>();
+
   get form() {
     return this.context.form as FormInstance;
   }
@@ -87,7 +89,7 @@ export class FormBlockModel<
     this.form.setFieldsValue(values);
   }
 
-  setFieldValue(fieldName: string, value: any) {
+  setFieldValue(fieldName: any, value: any) {
     const ctx = this.context as any;
     if (typeof ctx.setFormValue === 'function') {
       void ctx.setFormValue(fieldName, value, { source: 'system' }).catch((error: any) => {
@@ -96,6 +98,34 @@ export class FormBlockModel<
       return;
     }
     this.form.setFieldValue(fieldName, value);
+  }
+
+  /**
+   * @internal
+   *
+   * 仅用于编辑表单刷新保护：只记录「用户交互」触发的改动（来自 antd Form.onValuesChange）。
+   * 程序化 setFieldValue/setFieldsValue 不会触发 onValuesChange（见 linkageRules 的手动 emit），因此不会污染该集合。
+   */
+  markUserModifiedFields(changedValues): void {
+    if (!changedValues || typeof changedValues !== 'object') return;
+    if (Array.isArray(changedValues)) return;
+    for (const k of Object.keys(changedValues)) {
+      if (k) this.userModifiedTopLevelFields.add(k);
+    }
+  }
+
+  /**
+   * @internal
+   */
+  getUserModifiedFields(): Set<string> {
+    return this.userModifiedTopLevelFields;
+  }
+
+  /**
+   * @internal
+   */
+  resetUserModifiedFields(): void {
+    this.userModifiedTopLevelFields.clear();
   }
 
   public async onDispatchEventStart(eventName: string, options?: any, inputArgs?: Record<string, any>): Promise<void> {
@@ -380,6 +410,8 @@ export function FormComponent({
         }
       }}
       onValuesChange={(changedValues, allValues) => {
+        model.markUserModifiedFields?.(changedValues);
+
         const runtime = model.formValueRuntime;
         if (runtime) {
           runtime.handleFormValuesChange(changedValues, allValues);

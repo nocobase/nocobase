@@ -132,7 +132,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           ? JSON.stringify(defaultValue, null, 2)
           : defaultValue ?? '';
 
-      return <Input value={inputValue} disabled={disabled} />;
+      return <Input value={inputValue} disabled={disabled} style={{ width: '100%' }} />;
     } else {
       return (
         <Space>
@@ -146,7 +146,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       ref={ref}
       onClick={handleClick}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         whiteSpace: 'nowrap',
         minHeight: 25,
@@ -157,7 +157,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       }}
     >
       <span
-        style={{ pointerEvents: 'none' }} // 不拦截点击
+        style={{ pointerEvents: 'none', display: 'block', width: '100%' }} // 不拦截点击
       >
         {content}
       </span>
@@ -215,15 +215,16 @@ interface CellProps {
   parentItem?: any;
   rowFork?: any;
   memoKey?: string;
+  width?: number;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork }) => {
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width }) => {
     const isNew = record?.__is_new__;
     return (
       <div
         style={{
-          width: parent.props.width,
+          width,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -323,7 +324,9 @@ const MemoCell: React.FC<CellProps> = React.memo(
     );
   },
   (prev, next) => {
-    return prev.value === next.value && prev.id === next.id && prev.memoKey === next.memoKey;
+    return (
+      prev.value === next.value && prev.id === next.id && prev.memoKey === next.memoKey && prev.width === next.width
+    );
   },
 );
 
@@ -508,7 +511,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record, parentFieldIndex, parentItem } = props;
+      const { value, id, rowIdx, record, parentFieldIndex, parentItem } = props || {};
       // 子表格列模型本身没有行级 fieldIndex，上下文中无法把 `roles.name` 解析成 `roles[0].name`，
       // 导致“默认值/赋值规则”在对多关系字段下无法生效。
       // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
@@ -562,6 +565,7 @@ export class SubTableColumnModel<
           parentItem={parentItem}
           rowFork={rowFork}
           memoKey={rowForkKey}
+          width={this.props.width}
         />
       );
     };

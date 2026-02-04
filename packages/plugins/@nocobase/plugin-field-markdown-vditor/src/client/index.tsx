@@ -12,7 +12,7 @@ import 'vditor/dist/index.css';
 import { DisplayVditorFieldModel } from './models/DisplayVditorFieldModel';
 import { VditorFieldModel } from './models/VditorFieldModel';
 const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
-
+import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
 export class PluginFieldMarkdownVditorClient extends Plugin {
   dependencyLoaded = false;
@@ -28,6 +28,7 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
       VditorFieldModel,
       DisplayVditorFieldModel,
     });
+    this.app.schemaSettingsManager.addItem('fieldSettings:component:MarkdownVditor', 'editMode', editModeSettingsItem);
   }
 
   getCDN() {
