@@ -35,7 +35,7 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
    * @param props - Field model props from settings
    * @returns CollectionField instance or undefined when not applicable
    */
-  private buildRecordSelectCollectionField(ctx: FlowModelContext, props: Record<string, any>) {
+  buildRecordSelectCollectionField(ctx: FlowModelContext, props: Record<string, any>) {
     const dataSourceKey = props?.recordSelectDataSourceKey || 'main';
     const targetCollectionName = props?.recordSelectTargetCollection;
     if (!targetCollectionName) return;
@@ -48,6 +48,8 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
       props?.recordSelectTitleField ||
       targetCollection.titleCollectionField?.name ||
       targetCollection.titleCollectionField?.options?.name;
+    const valueFieldName =
+      props?.recordSelectValueField || targetCollection.filterTargetKey || targetCollection.primaryKey?.name;
 
     const collectionField = new CollectionField({
       name: props?.name || 'recordSelect',
@@ -56,11 +58,11 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
       target: targetCollectionName,
       dataSourceKey,
       uiSchema: {
-        'x-component': 'RecordSelect',
+        'x-component': 'Select',
       },
       fieldNames: {
         label: titleFieldName,
-        value: targetCollection.filterTargetKey,
+        value: valueFieldName,
       },
     });
     collectionField.setCollection(targetCollection);
@@ -186,7 +188,7 @@ FilterFormCustomFieldModel.registerFlow({
             { label: 'Select', value: 'SelectFieldModel' },
             { label: 'Radio group', value: 'RadioGroupFieldModel' },
             { label: 'Checkbox group', value: 'CheckboxGroupFieldModel' },
-            { label: 'Record select', value: 'RecordSelectFieldModel' },
+            { label: 'Record select', value: 'FilterFormCustomRecordSelectFieldModel' },
           ],
           'x-component-props': {
             placeholder: tExpr('Please select'),
@@ -236,19 +238,31 @@ FilterFormCustomFieldModel.registerFlow({
         });
 
         let resolvedFieldModelProps = fieldModelProps;
-        if (fieldModel === 'RecordSelectFieldModel') {
-          const collectionField = ctx.model.buildRecordSelectCollectionField(ctx, {
+        let recordSelectCollectionField;
+        if (fieldModel === 'FilterFormCustomRecordSelectFieldModel') {
+          const allowMultiple =
+            fieldModelProps?.allowMultiple === undefined ? true : Boolean(fieldModelProps?.allowMultiple);
+          const multiple = fieldModelProps?.multiple === undefined ? allowMultiple : Boolean(fieldModelProps?.multiple);
+          resolvedFieldModelProps = {
             ...fieldModelProps,
+            allowMultiple,
+            multiple,
+            valueMode: fieldModelProps?.valueMode || 'value',
+          };
+          recordSelectCollectionField = ctx.model.buildRecordSelectCollectionField(ctx, {
+            ...resolvedFieldModelProps,
             name,
           });
-          if (collectionField) {
-            ctx.model.context.defineProperty('collectionField', { value: collectionField });
+          if (recordSelectCollectionField) {
             const labelField =
-              fieldModelProps?.recordSelectTitleField || collectionField.targetCollectionTitleFieldName;
-            const valueField = collectionField.targetCollection?.filterTargetKey;
+              fieldModelProps?.recordSelectTitleField || recordSelectCollectionField.targetCollectionTitleFieldName;
+            const valueField =
+              fieldModelProps?.recordSelectValueField ||
+              recordSelectCollectionField.targetCollection?.filterTargetKey ||
+              recordSelectCollectionField.targetCollection?.primaryKey?.name;
             if (labelField && valueField) {
               resolvedFieldModelProps = {
-                ...fieldModelProps,
+                ...resolvedFieldModelProps,
                 fieldNames: {
                   label: labelField,
                   value: valueField,
@@ -265,6 +279,11 @@ FilterFormCustomFieldModel.registerFlow({
           });
         } else {
           ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...resolvedFieldModelProps });
+        }
+        if (recordSelectCollectionField) {
+          ctx.model.customFieldModelInstance.context.defineProperty('collectionField', {
+            value: recordSelectCollectionField,
+          });
         }
 
         if (fieldModel === 'DateTimeFilterFieldModel' && fieldModelProps.isRange) {

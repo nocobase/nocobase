@@ -15,9 +15,9 @@ import { Field, FormProvider } from '@formily/react';
 import { render, waitFor } from '@nocobase/test/client';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 
-import { RecordSelectFieldModel } from '../../../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { FieldComponentProps } from '../FieldComponentProps';
 import { FilterFormCustomFieldModel } from '../FilterFormCustomFieldModel';
+import { FilterFormCustomRecordSelectFieldModel } from '../FilterFormCustomRecordSelectFieldModel';
 
 let form: ReturnType<typeof createForm>;
 
@@ -32,7 +32,7 @@ class HostModel extends FlowModel {
             component={[
               FieldComponentProps,
               {
-                fieldModel: 'RecordSelectFieldModel',
+                fieldModel: 'FilterFormCustomRecordSelectFieldModel',
                 source,
               },
             ]}
@@ -50,7 +50,7 @@ describe('FilterForm custom field record select', () => {
 
   it('fills record select config from field source', async () => {
     const engine = new FlowEngine();
-    engine.registerModels({ HostModel, RecordSelectFieldModel });
+    engine.registerModels({ HostModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
     ds.addCollection({
@@ -106,7 +106,7 @@ describe('FilterForm custom field record select', () => {
 
   it('builds collection field context for custom record select', async () => {
     const engine = new FlowEngine();
-    engine.registerModels({ FilterFormCustomFieldModel, RecordSelectFieldModel });
+    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
     ds.addCollection({
@@ -125,7 +125,7 @@ describe('FilterForm custom field record select', () => {
     });
 
     model.setStepParams('formItemSettings', 'fieldSettings', {
-      fieldModel: 'RecordSelectFieldModel',
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
       title: 'User',
       name: 'user',
       fieldModelProps: {

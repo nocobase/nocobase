@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useField } from '@formily/react';
 import { FormItem } from '@formily/antd-v5';
 import { Input, Radio, Checkbox, Space, Button, Select } from 'antd';
@@ -20,6 +20,10 @@ import { isTitleField } from '../../../../../data-source';
 const RECORD_SELECT_DATA_SOURCE_KEY = 'recordSelectDataSourceKey';
 const RECORD_SELECT_COLLECTION_KEY = 'recordSelectTargetCollection';
 const RECORD_SELECT_TITLE_FIELD_KEY = 'recordSelectTitleField';
+const RECORD_SELECT_VALUE_FIELD_KEY = 'recordSelectValueField';
+const RECORD_SELECT_ALLOW_MULTIPLE_KEY = 'allowMultiple';
+const RECORD_SELECT_MULTIPLE_KEY = 'multiple';
+const RECORD_SELECT_VALUE_MODE_KEY = 'valueMode';
 
 // 字段组件属性配置组件
 export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[] }> = ({
@@ -54,13 +58,27 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
 
     const nextValue = { ...props, ...fieldProps, ...propsValue };
 
-    if (fieldModel === 'RecordSelectFieldModel' && collectionField?.targetCollection) {
+    if (fieldModel === 'FilterFormCustomRecordSelectFieldModel' && collectionField?.targetCollection) {
       nextValue[RECORD_SELECT_DATA_SOURCE_KEY] = collectionField.dataSourceKey;
       nextValue[RECORD_SELECT_COLLECTION_KEY] = collectionField.target;
       nextValue[RECORD_SELECT_TITLE_FIELD_KEY] =
         collectionField.targetCollectionTitleFieldName ||
         collectionField.targetCollection?.titleCollectionField?.name ||
         nextValue[RECORD_SELECT_TITLE_FIELD_KEY];
+      nextValue[RECORD_SELECT_VALUE_FIELD_KEY] =
+        nextValue[RECORD_SELECT_VALUE_FIELD_KEY] ||
+        collectionField.targetCollection?.filterTargetKey ||
+        collectionField.targetCollection?.primaryKey?.name;
+      if (
+        nextValue[RECORD_SELECT_ALLOW_MULTIPLE_KEY] === undefined &&
+        nextValue[RECORD_SELECT_MULTIPLE_KEY] === undefined
+      ) {
+        nextValue[RECORD_SELECT_ALLOW_MULTIPLE_KEY] = true;
+        nextValue[RECORD_SELECT_MULTIPLE_KEY] = true;
+      }
+      if (!nextValue[RECORD_SELECT_VALUE_MODE_KEY]) {
+        nextValue[RECORD_SELECT_VALUE_MODE_KEY] = 'value';
+      }
     }
 
     field.setValue(nextValue);
@@ -81,16 +99,24 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     : undefined;
   const activeCollectionName = propsValue?.[RECORD_SELECT_COLLECTION_KEY];
   const activeCollection = activeCollectionName ? activeDataSource?.getCollection?.(activeCollectionName) : undefined;
+  const translateLabel = useCallback(
+    (rawLabel: any) => {
+      if (!rawLabel) return rawLabel;
+      if (ctx?.t) return ctx.t(rawLabel);
+      return t(rawLabel);
+    },
+    [ctx, t],
+  );
   const collectionOptions = useMemo(() => {
     if (!activeDataSource?.getCollections) return [];
     return activeDataSource
       .getCollections()
       .filter((item) => !item.options?.hidden)
       .map((item) => ({
-        label: item.title || item.name,
+        label: translateLabel(item.title) || item.name,
         value: item.name,
       }));
-  }, [activeDataSource]);
+  }, [activeDataSource, translateLabel]);
   const titleFieldOptions = useMemo(() => {
     if (!activeCollection?.getFields) return [];
     const shouldKeep = (fieldItem: any) =>
@@ -98,13 +124,20 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     return (activeCollection.getFields() || [])
       .filter((fieldItem: any) => shouldKeep(fieldItem))
       .map((fieldItem: any) => ({
-        label: fieldItem.options?.uiSchema?.title || fieldItem.title || fieldItem.name,
+        label: translateLabel(fieldItem.options?.uiSchema?.title) || translateLabel(fieldItem.title) || fieldItem.name,
         value: fieldItem.name,
       }));
-  }, [activeCollection, appDataSourceManager]);
+  }, [activeCollection, appDataSourceManager, translateLabel]);
+  const valueFieldOptions = useMemo(() => {
+    if (!activeCollection?.getFields) return [];
+    return (activeCollection.getFields() || []).map((fieldItem: any) => ({
+      label: translateLabel(fieldItem.options?.uiSchema?.title) || translateLabel(fieldItem.title) || fieldItem.name,
+      value: fieldItem.name,
+    }));
+  }, [activeCollection, translateLabel]);
 
   useEffect(() => {
-    if (fieldModel !== 'RecordSelectFieldModel') return;
+    if (fieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
     if (!activeCollectionName || propsValue?.[RECORD_SELECT_TITLE_FIELD_KEY]) return;
     const defaultTitleField = activeCollection?.titleCollectionField?.name;
     if (!defaultTitleField) return;
@@ -113,6 +146,31 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
       [RECORD_SELECT_TITLE_FIELD_KEY]: defaultTitleField,
     });
   }, [fieldModel, activeCollectionName, activeCollection, propsValue]);
+  useEffect(() => {
+    if (fieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
+    if (!activeCollectionName || propsValue?.[RECORD_SELECT_VALUE_FIELD_KEY]) return;
+    const defaultValueField = activeCollection?.filterTargetKey || activeCollection?.primaryKey?.name;
+    if (!defaultValueField) return;
+    field.setValue({
+      ...propsValue,
+      [RECORD_SELECT_VALUE_FIELD_KEY]: defaultValueField,
+    });
+  }, [fieldModel, activeCollectionName, activeCollection, propsValue]);
+
+  useEffect(() => {
+    if (fieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
+    if (
+      propsValue?.[RECORD_SELECT_ALLOW_MULTIPLE_KEY] !== undefined ||
+      propsValue?.[RECORD_SELECT_MULTIPLE_KEY] !== undefined
+    ) {
+      return;
+    }
+    field.setValue({
+      ...propsValue,
+      [RECORD_SELECT_ALLOW_MULTIPLE_KEY]: true,
+      [RECORD_SELECT_MULTIPLE_KEY]: true,
+    });
+  }, [fieldModel, propsValue]);
 
   // DateTimeFilterFieldModel 的配置
   if (fieldModel === 'DateTimeFilterFieldModel') {
@@ -256,7 +314,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     );
   }
 
-  if (fieldModel === 'RecordSelectFieldModel') {
+  if (fieldModel === 'FilterFormCustomRecordSelectFieldModel') {
     return (
       <>
         {dataSourceOptions.length > 1 && (
@@ -306,6 +364,38 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
             options={titleFieldOptions}
             onChange={(value) => updateProps(RECORD_SELECT_TITLE_FIELD_KEY, value)}
           />
+        </FormItem>
+        <div style={{ color: 'var(--colorTextDescription)', marginTop: -8, marginBottom: 8 }}>
+          {t('Used for display in the dropdown and selected tags.')}
+        </div>
+        <FormItem label={t('Value field')}>
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('Please select')}
+            value={propsValue?.[RECORD_SELECT_VALUE_FIELD_KEY]}
+            options={valueFieldOptions}
+            onChange={(value) => updateProps(RECORD_SELECT_VALUE_FIELD_KEY, value)}
+          />
+        </FormItem>
+        <div style={{ color: 'var(--colorTextDescription)', marginTop: -8, marginBottom: 8 }}>
+          {t('Stored as the field value for filtering (usually the primary key).')}
+        </div>
+        <FormItem label={t('Multiple')}>
+          <Checkbox
+            checked={propsValue?.[RECORD_SELECT_ALLOW_MULTIPLE_KEY] !== false}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              field.setValue({
+                ...propsValue,
+                [RECORD_SELECT_ALLOW_MULTIPLE_KEY]: checked,
+                [RECORD_SELECT_MULTIPLE_KEY]: checked,
+              });
+            }}
+          >
+            {t('Allow multiple')}
+          </Checkbox>
         </FormItem>
       </>
     );

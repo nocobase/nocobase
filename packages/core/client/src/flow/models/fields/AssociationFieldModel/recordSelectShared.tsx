@@ -51,11 +51,12 @@ export function buildOpenerUids(ctx: FlowRuntimeContext, inputArgs: Record<strin
 
 export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'options' | 'value' | 'onChange'> {
   fieldNames: AssociationFieldNames;
-  value?: AssociationOption | AssociationOption[];
+  value?: AssociationOption | AssociationOption[] | string | string[];
   multiple?: boolean;
   allowMultiple?: boolean;
   options?: AssociationOption[];
-  onChange: (option: AssociationOption | AssociationOption[]) => void;
+  valueMode?: 'record' | 'value';
+  onChange: (option: AssociationOption | AssociationOption[] | string | string[]) => void;
   onDropdownVisibleChange?: (open: boolean) => void;
   onPopupScroll?: SelectProps<any>['onPopupScroll'];
   onSearch?: SelectProps<any>['onSearch'];
@@ -100,13 +101,15 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
 }
 
 export function toSelectValue(
-  record: AssociationOption | AssociationOption[] | undefined,
+  record: AssociationOption | AssociationOption[] | string | string[] | undefined,
   fieldNames: AssociationFieldNames,
   multiple = false,
+  valueMode: 'record' | 'value' = 'record',
+  options: AssociationOption[] = [],
 ) {
   if (!record) return multiple ? [] : undefined;
 
-  const { value: valueKey } = fieldNames || {};
+  const { value: valueKey, label: labelKey } = fieldNames || {};
 
   const convert = (item: AssociationOption) => {
     if (typeof item !== 'object' || item === null || item === undefined) return undefined;
@@ -115,6 +118,30 @@ export function toSelectValue(
       value: item[valueKey],
     };
   };
+
+  if (valueMode === 'value') {
+    const toValue = (item: AssociationOption | string) => {
+      if (typeof item === 'object' && item !== null) {
+        return convert(item);
+      }
+      const matchedOption = options.find((option) => option?.[valueKey] === item);
+      if (matchedOption) {
+        return convert(matchedOption);
+      }
+      return {
+        label: item,
+        value: item,
+      };
+    };
+    if (multiple) {
+      if (!Array.isArray(record)) return [];
+      return record.map((item) => toValue(item)).filter(Boolean);
+    }
+    if (Array.isArray(record) && !multiple) {
+      return toValue(record[0]);
+    }
+    return toValue(record as AssociationOption);
+  }
 
   if (multiple) {
     if (!Array.isArray(record)) return [];

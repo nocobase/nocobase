@@ -43,15 +43,28 @@ function getValueKey(fieldNames: LazySelectProps['fieldNames']) {
 }
 
 const deriveRecordsFromValue = _.memoize(
-  (value: LazySelectProps['value'], valueKey: string, optionMap: Map<any, AssociationOption>, isMultiple: boolean) => {
+  (
+    value: LazySelectProps['value'],
+    valueKey: string,
+    optionMap: Map<any, AssociationOption>,
+    isMultiple: boolean,
+    valueMode: LazySelectProps['valueMode'] = 'record',
+  ) => {
     if (isMultiple) {
       if (Array.isArray(value)) {
-        return (value.filter(Boolean) as AssociationOption[]).map((item) => {
+        return (value.filter(Boolean) as any[]).map((item) => {
+          if (valueMode === 'value') {
+            return optionMap.get(item) ?? { [valueKey]: item };
+          }
           const key = item?.[valueKey];
           return optionMap.get(key) ?? item;
         });
       }
       return [];
+    }
+
+    if (valueMode === 'value' && (typeof value === 'string' || typeof value === 'number')) {
+      return [optionMap.get(value) ?? { [valueKey]: value }].filter(Boolean);
     }
 
     if (value && typeof value === 'object') {
@@ -78,6 +91,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
     disabled,
     dropdownStyle,
     loading = false,
+    valueMode = 'record',
     ...restProps
   } = props;
   const ctx = useFlowModelContext();
@@ -95,14 +109,14 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() =>
-    deriveRecordsFromValue(value, valueKey, optionMap, isMultiple),
+    deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode),
   );
 
   useEffect(() => {
     if (visible) {
-      setSelectedRecords(deriveRecordsFromValue(value, valueKey, optionMap, isMultiple));
+      setSelectedRecords(deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode));
     }
-  }, [isMultiple, optionMap, value, valueKey, visible]);
+  }, [isMultiple, optionMap, value, valueKey, valueMode, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -138,9 +152,21 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   }, [onDropdownVisibleChange]);
 
   const handleConfirm = useCallback(() => {
+    if (valueMode === 'value') {
+      if (isMultiple) {
+        const values = selectedRecords
+          .map((item) => item?.[valueKey])
+          .filter((item) => item !== undefined && item !== null);
+        onChange(values as any);
+      } else {
+        onChange(selectedRecords?.[0]?.[valueKey]);
+      }
+      handleClose();
+      return;
+    }
     onChange(selectedRecords);
     handleClose();
-  }, [handleClose, onChange, selectedRecords]);
+  }, [handleClose, isMultiple, onChange, selectedRecords, valueKey, valueMode]);
 
   const handleListChange = useCallback(
     (vals: (string | number)[]) => {
@@ -164,11 +190,15 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
       const selectedId = vals[0];
       const record = optionMap.get(selectedId);
       if (record) {
-        onChange(record);
+        if (valueMode === 'value') {
+          onChange(record?.[valueKey]);
+        } else {
+          onChange(record);
+        }
       }
       handleClose();
     },
-    [handleClose, isMultiple, onChange, optionMap, valueKey],
+    [handleClose, isMultiple, onChange, optionMap, valueKey, valueMode],
   );
 
   const handleScroll = useCallback(
@@ -213,12 +243,22 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
         dropdownStyle={buildDropdownStyle(dropdownStyle)}
         fieldNames={fieldNames}
         options={realOptions}
-        value={toSelectValue(value, fieldNames, isMultiple)}
+        value={toSelectValue(value, fieldNames, isMultiple, valueMode, realOptions)}
         mode={isMultiple ? 'multiple' : undefined}
         open={false}
         onClick={handleOpen}
         onKeyDown={handleKeyDown}
         onChange={(nextValue, option) => {
+          if (valueMode === 'value') {
+            if (Array.isArray(option)) {
+              onChange(
+                option.map((item) => item?.[valueKey] ?? item?.value).filter((item) => item !== undefined) as any,
+              );
+              return;
+            }
+            onChange((option as AssociationOption)?.[valueKey] ?? (option as any)?.value);
+            return;
+          }
           onChange(option);
         }}
         loading={loading}
