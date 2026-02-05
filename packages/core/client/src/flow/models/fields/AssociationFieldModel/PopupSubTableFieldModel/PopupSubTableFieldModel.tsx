@@ -610,6 +610,10 @@ PopupSubTableFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const parentItem = ctx?.item ?? {
+          value: (typeof ctx?.getFormValues === 'function' ? ctx.getFormValues() : ctx.formValues) ?? ctx.record,
+        };
+        const itemIndex = Array.isArray(ctx.model?.props?.value) ? ctx.model.props.value.length : 0;
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -621,6 +625,8 @@ PopupSubTableFieldModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
+            parentItem,
+            itemIndex,
           },
           content: () => <EditFormContent model={ctx.model} scene="create" />,
           styles: {
