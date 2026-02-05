@@ -27,13 +27,13 @@ import {
   FlowModelProvider,
   FlowErrorFallback,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Input, Space } from 'antd';
+import { TableColumnProps, Tooltip, Input, Space, Divider } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
-import { FieldDeletePlaceholder } from '../../../blocks/table/TableColumnModel';
+import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
 
 export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   const t = targetModel.context.t;
@@ -119,7 +119,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           ? JSON.stringify(defaultValue, null, 2)
           : defaultValue ?? '';
 
-      return <Input value={inputValue} disabled={disabled} />;
+      return <Input value={inputValue} disabled={disabled} style={{ width: '100%' }} />;
     } else {
       return (
         <Space>
@@ -133,7 +133,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       ref={ref}
       onClick={handleClick}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         whiteSpace: 'nowrap',
         minHeight: 25,
@@ -144,7 +144,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       }}
     >
       <span
-        style={{ pointerEvents: 'none' }} // 不拦截点击
+        style={{ pointerEvents: 'none', display: 'block', width: '100%' }} // 不拦截点击
       >
         {content}
       </span>
@@ -198,14 +198,15 @@ interface CellProps {
   rowIdx: number;
   id: string | number;
   parent: any;
+  width?: number;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent }) => {
+  ({ value, record, rowIdx, id, parent, width }) => {
     return (
       <div
         style={{
-          width: parent.props.width,
+          width,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -285,7 +286,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
     );
   },
   (prev, next) => {
-    return prev.value === next.value && prev.id === next.id;
+    return prev.value === next.value && prev.id === next.id && prev.width === next.width;
   },
 );
 
@@ -471,7 +472,7 @@ export class SubTableColumnModel<
   renderItem(): any {
     return (props) => {
       const { value, id, rowIdx, record } = props || {};
-      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} />;
+      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} width={this.props.width} />;
     };
   }
 }
@@ -550,11 +551,42 @@ SubTableColumnModel.registerFlow({
     },
     width: {
       title: tExpr('Column width'),
-      uiSchema: {
-        width: {
-          'x-component': 'NumberPicker',
-          'x-decorator': 'FormItem',
-        },
+      uiMode(ctx) {
+        const columnWidth = ctx.model.props.width;
+        return {
+          type: 'select',
+          key: 'width',
+          props: {
+            options: [
+              { label: 50, value: 50 },
+              { label: 100, value: 100 },
+              { label: 150, value: 150 },
+              { label: 200, value: 200 },
+              { label: 250, value: 250 },
+              { label: 300, value: 300 },
+              { label: 350, value: 350 },
+              { label: 400, value: 400 },
+              { label: 450, value: 450 },
+              { label: 500, value: 500 },
+            ],
+            dropdownRender: (menu, setOpen, handleChange) => {
+              return (
+                <>
+                  {menu}
+                  <Divider style={{ margin: '4px 0' }} />
+                  <CustomWidth
+                    setOpen={setOpen}
+                    handleChange={handleChange}
+                    t={ctx.t}
+                    defaultValue={
+                      [50, 100, 150, 200, 250, 300, 350, 400, 450, 500].includes(columnWidth) ? null : columnWidth
+                    }
+                  />
+                </>
+              );
+            },
+          },
+        };
       },
       defaultParams: {
         width: 200,

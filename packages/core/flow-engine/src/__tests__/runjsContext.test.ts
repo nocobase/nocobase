@@ -80,7 +80,10 @@ describe('flowRunJSContext registry and doc', () => {
       (ctx as any).defineProperty('model', { value: { constructor: { name: 'JSFieldModel' } } });
       (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.message).toMatch(/Ant Design 全局消息/);
+      const message = doc?.properties?.message;
+      const messageText =
+        typeof message === 'string' ? message : (message as any)?.description ?? (message as any)?.detail ?? '';
+      expect(String(messageText)).toMatch(/Ant Design 全局消息/);
     });
 
     it('should fallback to English when locale is not found', () => {

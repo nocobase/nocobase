@@ -58,18 +58,19 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       cache: false,
       get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
     });
-    // 将 themeToken 定义为 observable, 使组件能够响应主题的变更
-    engine.context.defineProperty('themeToken', {
-      get: () => token,
-      observable: true,
-      cache: true,
-    });
     for (const item of Object.entries(context)) {
       const [key, value] = item;
       if (value) {
         engine.context.defineProperty(key, { value });
       }
     }
+    // 将 themeToken 定义为 observable, 使组件能够响应主题的变更
+    // NOTE: 必须在 antdConfig 写入后再更新 themeToken；否则会读取到旧 antdConfig 的值。
+    engine.context.defineProperty('themeToken', {
+      get: () => token,
+      observable: true,
+      cache: true,
+    });
     engine.reactView.refresh();
   }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed]);
 

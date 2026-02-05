@@ -92,17 +92,7 @@ export class XlsxImporter extends EventEmitter {
   }
 
   async validate(ctx?: Context) {
-    const columns = this.getColumnsByPermission(ctx);
-    if (columns.length == 0) {
-      throw new ImportValidationError('Columns configuration is empty');
-    }
-
-    for (const column of this.options.columns) {
-      const field = this.options.collection.getField(column.dataIndex[0]);
-      if (!field) {
-        throw new ImportValidationError('Field not found: {{field}}', { field: column.dataIndex[0] });
-      }
-    }
+    this.validateColumns(ctx);
 
     const data = await this.getData(ctx);
 
@@ -197,6 +187,14 @@ export class XlsxImporter extends EventEmitter {
 
     const maxVal = (await collection.model.max(autoIncrementAttribute, { transaction })) as number;
 
+    if (maxVal == null) {
+      return;
+    }
+
+    if (typeof autoIncrInfo.currentVal === 'number' && maxVal <= autoIncrInfo.currentVal) {
+      return;
+    }
+
     const queryInterface = db.queryInterface;
 
     await queryInterface.setAutoIncrementVal({
@@ -217,6 +215,67 @@ export class XlsxImporter extends EventEmitter {
         ? true
         : _.includes(ctx?.permission?.can?.params?.fields || [], x.dataIndex[0]),
     );
+  }
+
+  private validateColumns(ctx?: Context) {
+    const columns = this.getColumnsByPermission(ctx as Context);
+    if (columns.length === 0) {
+      throw new ImportValidationError('Columns configuration is empty');
+    }
+
+    for (const column of columns) {
+      if (!Array.isArray(column?.dataIndex) || column.dataIndex.length === 0) {
+        throw new ImportValidationError('Columns configuration is empty');
+      }
+
+      if (column.dataIndex.length > 2) {
+        throw new ImportValidationError('Invalid field: {{field}}', {
+          field: column.dataIndex.join('.'),
+        });
+      }
+
+      const [fieldName, filterKey] = column.dataIndex;
+
+      if (typeof fieldName !== 'string' || fieldName.trim() === '') {
+        throw new ImportValidationError('Invalid field: {{field}}', { field: String(fieldName) });
+      }
+
+      const field = this.options.collection.getField(fieldName);
+      if (!field) {
+        throw new ImportValidationError('Field not found: {{field}}', { field: fieldName });
+      }
+
+      if (column.dataIndex.length > 1) {
+        if (typeof field.isRelationField !== 'function' || !field.isRelationField()) {
+          throw new ImportValidationError('Invalid field: {{field}}', {
+            field: column.dataIndex.join('.'),
+          });
+        }
+
+        if (typeof filterKey !== 'string' || filterKey.trim() === '') {
+          throw new ImportValidationError('Invalid field: {{field}}', {
+            field: column.dataIndex.join('.'),
+          });
+        }
+
+        const targetCollection = (field as IRelationField).targetCollection?.();
+        if (!targetCollection) {
+          throw new ImportValidationError('Field not found: {{field}}', {
+            field: column.dataIndex.join('.'),
+          });
+        }
+
+        // Check if filterKey is a valid field in target collection
+        // Use both getField (for NocoBase fields) and getAttributes (for auto-generated fields like 'id')
+        const targetField = targetCollection.getField(filterKey);
+        const isValidAttribute = (targetCollection as DBCollection).model?.getAttributes()?.[filterKey];
+        if (!targetField && !isValidAttribute) {
+          throw new ImportValidationError('Field not found: {{field}}', {
+            field: `${fieldName}.${filterKey}`,
+          });
+        }
+      }
+    }
   }
 
   async performImport(data: string[][], options?: RunOptions): Promise<any> {

@@ -14,24 +14,26 @@
 
 1. 点击左侧表格区块右上角的“闪电”图标，打开事件流配置界面。
 ![20251031092425](https://static-docs.nocobase.com/20251031092425.png)
-2. 点击“添加事件流（Add event flow）”，“触发事件（Trigger event）”选择“行点击（Row click）”，表示当点击表格行时触发。
+2. 点击“添加事件流（Add event flow）”，“触发事件”选择“行点击”，表示当点击表格行时触发。
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
-3. “触发条件（Trigger condition）”是用来配置条件的，当满足条件时才会触发事件流。这里我们不需要配置，只要点击行都会触发事件流。
+3. 配置“执行时机”，用于控制这条事件流相对于系统内置流程的先后顺序。一般保持默认即可；如果希望在内置逻辑执行完后再提示/跳转，可选择“所有流之后”。更多说明见下文 [执行时机](#执行时机)。
+![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
+4. “触发条件（Trigger condition）”是用来配置条件的，当满足条件时才会触发事件流。这里我们不需要配置，只要点击行都会触发事件流。
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
-4. 鼠标悬浮到“添加步骤（Add step）”，可以添加一些操作步骤。我们选“设置数据范围（Set data scope）”，来设置右侧表格的数据范围。
+5. 鼠标悬浮到“添加步骤（Add step）”，可以添加一些操作步骤。我们选“设置数据范围（Set data scope）”，来设置右侧表格的数据范围。
 ![20251031092755](https://static-docs.nocobase.com/20251031092755.png)
-5. 复制右侧表格的 UID，填入 “目标区块 UID（Target block UID）”输入框。下面会立即显示一个条件配置界面，这里可以配置右侧表格的数据范围。
+6. 复制右侧表格的 UID，填入 “目标区块 UID（Target block UID）”输入框。下面会立即显示一个条件配置界面，这里可以配置右侧表格的数据范围。
 ![20251031092915](https://static-docs.nocobase.com/20251031092915.png)
-6. 让我们来配置一个条件，如下图所示：
+7. 让我们来配置一个条件，如下图所示：
 ![20251031093233](https://static-docs.nocobase.com/20251031093233.png)
-7. 配置完数据范围，还需要刷新区块才会显示筛选的结果。接下来让我们来配置刷新右侧表格区块。添加一个“刷新目标区块（Refresh target blocks）”步骤，然后填入右侧表格的 UID。
+8. 配置完数据范围，还需要刷新区块才会显示筛选的结果。接下来让我们来配置刷新右侧表格区块。添加一个“刷新目标区块（Refresh target blocks）”步骤，然后填入右侧表格的 UID。
 ![20251031093150](https://static-docs.nocobase.com/20251031093150.png)
 ![20251031093341](https://static-docs.nocobase.com/20251031093341.png)
-8. 最后点击右下角的保存按钮，配置就完成了。
+9. 最后点击右下角的保存按钮，配置就完成了。
 
 ## 事件详解
 
-### 渲染前（Before render）
+### 渲染前
 
 通用事件，在页面、区块、按钮或者字段中都可以使用。在这个事件中，可以做一些初始化的工作。比如在不同的条件下，配置不同的数据范围。
 
@@ -46,6 +48,29 @@
 ### 点击（Click）
 
 按钮的专属事件。当点击按钮时触发。
+
+## 执行时机
+
+在事件流配置里，有两个容易混淆的概念：
+
+- **触发事件：** 什么时候开始执行（例如：渲染前、行点击、点击、表单值变更等）。
+- **执行时机：** 同一个触发事件发生后，你这条**自定义事件流**要插入到**内置流程**的哪个位置执行。
+
+### 什么是“内置流程/内置步骤”？
+
+很多页面、区块或操作本身就带有一套系统内置的处理流程（例如：提交、打开弹窗、请求数据等）。当你为同一个事件（例如“点击”）新增自定义事件流时，“执行时机”用来决定：
+
+- 先执行你的事件流，还是先执行内置逻辑；
+- 或者把你的事件流插入到内置流程的某一步前后执行。
+
+### UI 里的执行时机选项怎么理解？
+
+- **所有流之前（默认）：** 最先执行。适合做“拦截/准备”（例如校验、二次确认、初始化变量等）。
+- **所有流之后：** 内置逻辑完成后再执行。适合做“收尾/反馈”（例如提示消息、刷新其他区块、跳转页面等）。
+- **指定流之前 / 指定流之后：** 更精细的插入点。选择后需要再选具体的“内置流程”。
+- **指定流步骤之前 / 指定流步骤之后：** 最精细的插入点。选择后需要同时选择“内置流程”和“内置流程步骤”。
+
+> 提示：如果你不确定该选哪个内置流程/步骤，优先使用前两项（“之前 / 之后”）即可。
 
 ## 步骤详解
 
@@ -141,3 +166,34 @@
 ![20251031094046](https://static-docs.nocobase.com/20251031094046.png)
 
 执行 JavaScript 代码。
+
+## 示例
+
+### 表单：调用第三方 API 回填字段
+
+场景：在表单中触发事件流，请求第三方 API，拿到数据后自动回填到表单字段。
+
+配置步骤：
+
+1. 在表单区块中打开事件流配置，新增一条事件流；
+2. 触发事件选择“渲染前”；
+3. 执行时机选择“所有流之后”；
+4. 添加步骤“执行 JavaScript（Execute JavaScript）”，粘贴并按需修改下面代码：
+
+```js
+const res = await ctx.api.request({
+  method: 'get',
+  url: 'https://jsonplaceholder.typicode.com/users/2',
+  skipNotify: true,
+  // Note: ctx.api will include the current NocoBase authentication/custom headers by default
+  // Here we override it with an "empty Authorization" to avoid sending the token to a third party
+  headers: {
+    Authorization: 'Bearer ',
+  },
+});
+
+const username = res?.data?.username;
+
+// replace it with actual field name
+ctx.form.setFieldsValue({ username });
+```

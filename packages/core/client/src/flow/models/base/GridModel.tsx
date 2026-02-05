@@ -635,6 +635,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       const keptSizes: number[] = [];
 
       rowCells.forEach((cell, idx) => {
+        cell = cell.filter((uid) => modelByUid.get(uid).hidden !== true);
         // 只要当前单元格中存在“未显式 hidden 的模型”，就认为该列可见
         const hasVisibleItem = cell.some((uid) => {
           if (uid === EMPTY_COLUMN_UID) return false;
