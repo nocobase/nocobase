@@ -464,6 +464,11 @@ const useStyles = createStyles(({ css, token }) => {
         opacity: 0.75;
       }
 
+      &.drop-active {
+        border-style: solid;
+        opacity: 0.75;
+      }
+
       &.drop-safe {
         border-color: ${token.colorSuccess};
         background: ${token.colorSuccessBg};
@@ -498,7 +503,6 @@ const useStyles = createStyles(({ css, token }) => {
 
     dragPreviewClass: css`
       position: fixed;
-      z-index: 1000;
       pointer-events: none;
       width: 12em;
       padding: 0.5em 0.75em;
@@ -509,15 +513,40 @@ const useStyles = createStyles(({ css, token }) => {
       display: flex;
       flex-direction: column;
       gap: 0.25em;
+      overflow: visible;
 
       .workflow-drag-preview-type {
         font-size: 0.8em;
         color: ${token.colorTextSecondary};
+        position: relative;
       }
 
       .workflow-drag-preview-title {
         font-weight: 600;
         color: ${token.colorText};
+        position: relative;
+      }
+
+      &.drag-preview-group {
+        position: fixed;
+
+        .workflow-drag-preview-stack {
+          position: absolute;
+          inset: 0;
+          border-radius: ${token.borderRadiusLG}px;
+          background: ${token.colorBgContainer};
+          box-shadow: ${token.boxShadowTertiary};
+        }
+
+        .workflow-drag-preview-stack.stack-1 {
+          transform: translate(6px, 6px) rotate(2deg);
+          opacity: 0.8;
+        }
+
+        .workflow-drag-preview-stack.stack-2 {
+          transform: translate(12px, 12px) rotate(4deg);
+          opacity: 0.6;
+        }
       }
     `,
 

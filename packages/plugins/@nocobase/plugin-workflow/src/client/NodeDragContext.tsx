@@ -94,10 +94,12 @@ export function NodeDragContextProvider(props) {
 
   const [dragging, setDragging] = useState(false);
   const [dragNode, setDragNode] = useState(null);
+  const [activeDropKey, setActiveDropKey] = useState<string | null>(null);
 
   const dragNodeRef = useRef<any>(null);
   const dragSubtreeRef = useRef<Set<number>>(new Set());
   const activeDropRef = useRef<any>(null);
+  const activeDropKeyRef = useRef<string | null>(null);
   const pendingRef = useRef<any>(null);
   const draggingRef = useRef(false);
   const pointerRef = useRef({ x: 0, y: 0 });
@@ -108,6 +110,9 @@ export function NodeDragContextProvider(props) {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const previewRafRef = useRef<number | null>(null);
   const previewOffsetRef = useRef({ x: 0, y: 0 });
+  const previewSizeRef = useRef({ width: 0, height: 0 });
+  const dropZonesRef = useRef<Map<string, { target: any; element: HTMLElement }>>(new Map());
+  const updateActiveDropRef = useRef<() => void>(() => {});
   const autoScrollRef = useRef<{
     raf: number | null;
     vx: number;
@@ -212,6 +217,7 @@ export function NodeDragContextProvider(props) {
       return;
     }
     container.scrollBy({ left: vx, top: vy });
+    updateActiveDropRef.current();
     autoScrollRef.current.raf = window.requestAnimationFrame(stepAutoScroll);
   }, [getScrollContainer]);
 
@@ -277,11 +283,74 @@ export function NodeDragContextProvider(props) {
     dragSubtreeRef.current = new Set();
     setDragging(false);
     setDragNode(null);
+    activeDropKeyRef.current = null;
+    setActiveDropKey(null);
     stopAutoScroll();
     clearSuppressTimer.current = window.setTimeout(() => {
       resetSuppressClick();
     }, 0);
   }, [handleMouseMove, handleMouseUp, resetSuppressClick, stopAutoScroll]);
+
+  const getDropKey = useCallback((target) => {
+    const upstreamId = target?.upstream?.id ?? 'root';
+    const branchIndex = target?.upstream ? target?.branchIndex ?? 'null' : 'root';
+    return `${upstreamId}:${branchIndex}`;
+  }, []);
+
+  const updateActiveDropByPreview = useCallback(() => {
+    if (!draggingRef.current || !previewRef.current) {
+      return;
+    }
+    const { width, height } = previewSizeRef.current;
+    if (!width || !height) {
+      return;
+    }
+    const centerX = pointerRef.current.x;
+    const centerY = pointerRef.current.y;
+    const previewRect = {
+      left: centerX - width / 2,
+      right: centerX + width / 2,
+      top: centerY - height / 2,
+      bottom: centerY + height / 2,
+      width,
+      height,
+    };
+    const isLeaving = Boolean(activeDropKeyRef.current);
+    const widthThreshold = width * (isLeaving ? 0.18 : 0.25);
+    const heightThreshold = height * (isLeaving ? 0.18 : 0.25);
+    let best: { target: any; area: number; key: string } | null = null;
+
+    for (const [key, item] of dropZonesRef.current.entries()) {
+      if (!document.contains(item.element)) {
+        dropZonesRef.current.delete(key);
+        continue;
+      }
+      const zoneRect = item.element.getBoundingClientRect();
+      const overlapWidth = Math.min(previewRect.right, zoneRect.right) - Math.max(previewRect.left, zoneRect.left);
+      const overlapHeight = Math.min(previewRect.bottom, zoneRect.bottom) - Math.max(previewRect.top, zoneRect.top);
+      if (overlapWidth <= 0 || overlapHeight <= 0) {
+        continue;
+      }
+      if (overlapWidth < widthThreshold && overlapHeight < heightThreshold) {
+        continue;
+      }
+      const area = overlapWidth * overlapHeight;
+      if (!best || area > best.area) {
+        best = { target: item.target, area, key };
+      }
+    }
+
+    activeDropRef.current = best ? best.target : null;
+    const nextKey = best?.key ?? null;
+    if (nextKey !== activeDropKeyRef.current) {
+      activeDropKeyRef.current = nextKey;
+      setActiveDropKey(nextKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateActiveDropRef.current = updateActiveDropByPreview;
+  }, [updateActiveDropByPreview]);
 
   const getTargetDownstream = useCallback(
     (upstream, branchIndex, currentNode) => {
@@ -506,16 +575,23 @@ export function NodeDragContextProvider(props) {
         dragNodeRef.current = node;
         dragSubtreeRef.current = collectBranchSubtree(node, branchChildrenMap);
         setDragging(true);
-        setDragNode({ id: node.id, key: node.key, title: node.title, type: node.type });
+        setDragNode({
+          id: node.id,
+          key: node.key,
+          title: node.title,
+          type: node.type,
+          hasBranches: (branchChildrenMap.get(node.id)?.length ?? 0) > 0,
+        });
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'grabbing';
       }
       pointerRef.current = { x: event.clientX, y: event.clientY };
       if (draggingRef.current) {
         updateAutoScroll(event.clientX, event.clientY);
+        updateActiveDropByPreview();
       }
     };
-  }, [branchChildrenMap, updateAutoScroll]);
+  }, [branchChildrenMap, updateActiveDropByPreview, updateAutoScroll]);
 
   useEffect(() => {
     onMouseUpRef.current = () => {
@@ -544,6 +620,9 @@ export function NodeDragContextProvider(props) {
 
     const preview = document.createElement('div');
     preview.className = styles.dragPreviewClass;
+    if (dragNode.hasBranches) {
+      preview.classList.add('drag-preview-group');
+    }
     preview.style.position = 'fixed';
     preview.style.top = '0';
     preview.style.left = '0';
@@ -555,11 +634,20 @@ export function NodeDragContextProvider(props) {
     const previewTitle = document.createElement('div');
     previewTitle.className = 'workflow-drag-preview-title';
     previewTitle.textContent = dragNode.title ?? '';
-    preview.append(previewType, previewTitle);
+    if (dragNode.hasBranches) {
+      const stack2 = document.createElement('div');
+      stack2.className = 'workflow-drag-preview-stack stack-2';
+      const stack1 = document.createElement('div');
+      stack1.className = 'workflow-drag-preview-stack stack-1';
+      preview.append(stack2, stack1, previewType, previewTitle);
+    } else {
+      preview.append(previewType, previewTitle);
+    }
 
     document.body.appendChild(preview);
     previewRef.current = preview;
     previewOffsetRef.current = { x: 0, y: 0 };
+    previewSizeRef.current = { width: preview.offsetWidth, height: preview.offsetHeight };
 
     const tick = () => {
       const { x, y } = pointerRef.current || { x: 0, y: 0 };
@@ -608,15 +696,41 @@ export function NodeDragContextProvider(props) {
     [executed, handleMouseMove, handleMouseUp, workflow],
   );
 
-  const setActiveDrop = useCallback((target) => {
-    activeDropRef.current = target;
-  }, []);
+  const setActiveDrop = useCallback(
+    (target) => {
+      activeDropRef.current = target;
+      const nextKey = target ? getDropKey(target) : null;
+      if (nextKey !== activeDropKeyRef.current) {
+        activeDropKeyRef.current = nextKey;
+        setActiveDropKey(nextKey);
+      }
+    },
+    [getDropKey],
+  );
 
   const clearActiveDrop = useCallback((target) => {
     if (activeDropRef.current === target) {
       activeDropRef.current = null;
+      if (activeDropKeyRef.current) {
+        activeDropKeyRef.current = null;
+        setActiveDropKey(null);
+      }
     }
   }, []);
+
+  const registerDropZone = useCallback(
+    (target, element: HTMLElement) => {
+      if (!element || !target) {
+        return () => {};
+      }
+      const key = getDropKey(target);
+      dropZonesRef.current.set(key, { target, element });
+      return () => {
+        dropZonesRef.current.delete(key);
+      };
+    },
+    [getDropKey],
+  );
 
   useEffect(() => {
     return () => {
@@ -633,9 +747,23 @@ export function NodeDragContextProvider(props) {
       getDropImpact,
       setActiveDrop,
       clearActiveDrop,
+      registerDropZone,
+      getDropKey,
+      activeDropKey,
       consumeClick,
     }),
-    [consumeClick, dragging, dragNode, getDropImpact, onNodeMouseDown, setActiveDrop, clearActiveDrop],
+    [
+      activeDropKey,
+      consumeClick,
+      dragging,
+      dragNode,
+      getDropImpact,
+      getDropKey,
+      onNodeMouseDown,
+      setActiveDrop,
+      clearActiveDrop,
+      registerDropZone,
+    ],
   );
 
   return <NodeDragContext.Provider value={value}>{props.children}</NodeDragContext.Provider>;

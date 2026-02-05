@@ -92,25 +92,31 @@ function AddNodeDropZone(props: AddButtonProps) {
   const impact = dragContext?.getDropImpact?.(target);
   const status = impact?.status ?? 'disabled';
   const disabled = status === 'disabled';
+  const registerDropZone = dragContext?.registerDropZone;
+  const getDropKey = dragContext?.getDropKey;
+  const dropKey = getDropKey?.(target);
+  const isActive = Boolean(dropKey && dragContext?.activeDropKey === dropKey);
+  const zoneRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!registerDropZone || !zoneRef.current || disabled) {
+      return;
+    }
+    return registerDropZone(target, zoneRef.current);
+  }, [registerDropZone, disabled, target]);
 
   return (
     <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
       <div
         role="button"
         aria-label={props['aria-label'] || 'drop-zone'}
+        ref={zoneRef}
         className={cx(styles.dropZoneClass, {
           'drop-safe': status === 'safe',
           'drop-warning': status === 'warning',
+          'drop-active': isActive,
           'drop-disabled': disabled,
         })}
-        onMouseEnter={() => {
-          if (!disabled) {
-            dragContext?.setActiveDrop?.(target);
-          }
-        }}
-        onMouseLeave={() => {
-          dragContext?.clearActiveDrop?.(target);
-        }}
       />
     </div>
   );
