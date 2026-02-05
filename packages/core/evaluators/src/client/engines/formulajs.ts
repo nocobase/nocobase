@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BASE_BLOCKED_IDENTIFIERS } from '@nocobase/utils/client';
 import { createFormulaEvaluator } from '../../utils/formulajs';
 
 const blockedIdentifiers = [
+  ...BASE_BLOCKED_IDENTIFIERS,
   'window',
   'document',
   'parent',
@@ -22,13 +24,6 @@ const blockedIdentifiers = [
 ];
 
 const formulajs = createFormulaEvaluator({
-  lockdown: false,
-  lockdownOptions: {
-    consoleTaming: 'unsafe',
-    errorTaming: 'unsafe',
-    overrideTaming: 'moderate',
-    stackFiltering: 'concise',
-  },
   blockedIdentifiers,
 });
 

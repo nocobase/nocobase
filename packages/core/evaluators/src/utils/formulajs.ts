@@ -9,58 +9,13 @@
 
 import * as functions from '@formulajs/formulajs';
 import { round } from 'mathjs';
-import type { LockdownOptions } from 'ses';
-import 'ses';
 
 import { evaluate, Scope } from '.';
 
 const FUNCTION_NAMES = Object.keys(functions).filter((key) => key !== 'default');
-const SES_LOCK_FLAG = Symbol.for('nocobase.evaluators.sesLockdown');
-
-export const BASE_BLOCKED_IDENTIFIERS = [
-  'globalThis',
-  'global',
-  'self',
-  'Function',
-  'AsyncFunction',
-  'GeneratorFunction',
-  'eval',
-  'Compartment',
-  'lockdown',
-  'harden',
-  'assert',
-];
 
 export interface FormulaEvaluatorOptions {
-  lockdown?: boolean;
-  lockdownOptions?: LockdownOptions;
   blockedIdentifiers?: string[];
-}
-
-function isAlreadyLockedError(error: unknown) {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const message = (error as Error).message || '';
-  return message.includes('(SES_ALREADY_LOCKED_DOWN)');
-}
-
-function ensureLockdown(options?: LockdownOptions) {
-  const globalRef = globalThis as Record<string | symbol, any>;
-  if (globalRef[SES_LOCK_FLAG]) {
-    return;
-  }
-  if (typeof lockdown !== 'function') {
-    throw new Error('SES lockdown is unavailable in the current runtime environment.');
-  }
-  try {
-    lockdown(options);
-  } catch (error) {
-    if (!isAlreadyLockedError(error)) {
-      throw error;
-    }
-  }
-  globalRef[SES_LOCK_FLAG] = true;
 }
 
 function buildEndowments(scope: Scope, blockedIdentifiers: string[]) {
@@ -80,24 +35,17 @@ function buildEndowments(scope: Scope, blockedIdentifiers: string[]) {
 }
 
 function runInSandbox(expression: string, scope: Scope, options: InternalEvaluatorOptions) {
-  if (options.lockdown) {
-    ensureLockdown(options.lockdownOptions);
-  }
   const compartment = new Compartment(buildEndowments(scope, options.blockedIdentifiers));
   return compartment.evaluate(expression);
 }
 
 interface InternalEvaluatorOptions {
-  lockdown: boolean;
-  lockdownOptions?: LockdownOptions;
   blockedIdentifiers: string[];
 }
 
 export function createFormulaEvaluator(options: FormulaEvaluatorOptions = {}) {
   const mergedOptions: InternalEvaluatorOptions = {
-    lockdown: options.lockdown !== false,
-    lockdownOptions: options.lockdownOptions,
-    blockedIdentifiers: Array.from(new Set([...(options.blockedIdentifiers || []), ...BASE_BLOCKED_IDENTIFIERS])),
+    blockedIdentifiers: options.blockedIdentifiers,
   };
 
   return evaluate.bind(function (expression: string, scope: Scope = {}) {
