@@ -353,7 +353,15 @@ function ConnectFields(
   );
 }
 
-function CascaderWrapper(props) {
+function CascaderWrapper(
+  props: Readonly<
+    Omit<React.ComponentProps<typeof Cascader>, 'value' | 'onChange'> & {
+      value?: string[][];
+      onChange?: (value?: string[][]) => void;
+      options?: any[];
+    }
+  >,
+) {
   const ctx = useFlowSettingsContext();
   const [options, setOptions] = React.useState(props.options || []);
   const optionsKey = React.useMemo(() => {
@@ -376,7 +384,7 @@ function CascaderWrapper(props) {
   }, [optionsKey]);
 
   const selectedSet = React.useMemo(() => {
-    const values = Array.isArray(props.value) ? props.value : [];
+    const values: string[][] = Array.isArray(props.value) ? props.value : [];
     return new Set(values.map((value) => value.join('.')));
   }, [props.value]);
 
@@ -406,7 +414,7 @@ function CascaderWrapper(props) {
           <Switch
             size="small"
             checked={checked}
-            onClick={(event) => event.stopPropagation()}
+            onClick={(_, event) => event?.stopPropagation?.()}
             onChange={(nextChecked, event) => {
               event?.stopPropagation?.();
               handleToggleOption(option, nextChecked);

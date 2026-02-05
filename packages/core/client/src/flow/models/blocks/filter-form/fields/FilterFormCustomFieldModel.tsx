@@ -48,8 +48,7 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
       props?.recordSelectTitleField ||
       targetCollection.titleCollectionField?.name ||
       targetCollection.titleCollectionField?.options?.name;
-    const valueFieldName =
-      props?.recordSelectValueField || targetCollection.filterTargetKey || targetCollection.primaryKey?.name;
+    const valueFieldName = props?.recordSelectValueField || targetCollection.filterTargetKey || 'id';
 
     const collectionField = new CollectionField({
       name: props?.name || 'recordSelect',
@@ -265,7 +264,7 @@ FilterFormCustomFieldModel.registerFlow({
             const valueField =
               fieldModelProps?.recordSelectValueField ||
               recordSelectCollectionField.targetCollection?.filterTargetKey ||
-              recordSelectCollectionField.targetCollection?.primaryKey?.name;
+              'id';
             if (labelField && valueField) {
               resolvedFieldModelProps = {
                 ...resolvedFieldModelProps,

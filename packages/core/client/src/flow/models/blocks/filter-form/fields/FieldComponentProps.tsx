@@ -90,9 +90,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
         targetCollection?.titleCollectionField?.name ||
         nextValue[RECORD_SELECT_TITLE_FIELD_KEY];
       nextValue[RECORD_SELECT_VALUE_FIELD_KEY] =
-        nextValue[RECORD_SELECT_VALUE_FIELD_KEY] ||
-        targetCollection?.filterTargetKey ||
-        targetCollection?.primaryKey?.name;
+        nextValue[RECORD_SELECT_VALUE_FIELD_KEY] || targetCollection?.filterTargetKey || 'id';
       if (
         nextValue[RECORD_SELECT_ALLOW_MULTIPLE_KEY] === undefined &&
         nextValue[RECORD_SELECT_MULTIPLE_KEY] === undefined
@@ -173,7 +171,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   useEffect(() => {
     if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
     if (!activeCollectionName || propsValue?.[RECORD_SELECT_VALUE_FIELD_KEY]) return;
-    const defaultValueField = activeCollection?.filterTargetKey || activeCollection?.primaryKey?.name;
+    const defaultValueField = activeCollection?.filterTargetKey || 'id';
     if (!defaultValueField) return;
     field.setValue({
       ...getCurrentValue(),

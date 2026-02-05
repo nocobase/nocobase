@@ -109,10 +109,12 @@ export function toSelectValue(
 ) {
   if (!record) return multiple ? [] : undefined;
 
-  const { value: valueKey, label: labelKey } = fieldNames || {};
+  const { value: valueKey } = fieldNames || {};
+
+  const isAssociationOption = (item: unknown): item is AssociationOption => typeof item === 'object' && item !== null;
 
   const convert = (item: AssociationOption) => {
-    if (typeof item !== 'object' || item === null || item === undefined) return undefined;
+    if (!isAssociationOption(item)) return undefined;
     return {
       label: <LabelByField option={item} fieldNames={fieldNames} />,
       value: item[valueKey],
@@ -145,17 +147,18 @@ export function toSelectValue(
 
   if (multiple) {
     if (!Array.isArray(record)) return [];
-    return record.map(convert).filter(Boolean);
+    return record.filter(isAssociationOption).map(convert).filter(Boolean);
   }
   if (Array.isArray(record) && !multiple) {
-    return convert(record[0]);
+    const first = record[0];
+    return isAssociationOption(first) ? convert(first) : undefined;
   }
-  return convert(record as AssociationOption);
+  return isAssociationOption(record) ? convert(record) : undefined;
 }
 
 export function resolveOptions(
   options: AssociationOption[] | undefined,
-  value: AssociationOption | AssociationOption[] | undefined,
+  value: AssociationOption | AssociationOption[] | string | string[] | undefined,
   isMultiple: boolean,
 ) {
   if (options?.length) {
@@ -166,7 +169,7 @@ export function resolveOptions(
 
   if (isMultiple) {
     if (Array.isArray(value)) {
-      return value.filter(Boolean) as AssociationOption[];
+      return value.filter((item) => typeof item === 'object' && item !== null) as AssociationOption[];
     }
     return [];
   }
