@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { definedTools } from '@nocobase/ai';
+import { defineTools } from '@nocobase/ai';
 
-export default definedTools({
+export default defineTools({
   scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {

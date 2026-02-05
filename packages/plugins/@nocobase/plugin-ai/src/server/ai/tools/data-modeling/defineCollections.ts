@@ -8,7 +8,7 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { definedTools } from '@nocobase/ai';
+import { defineTools } from '@nocobase/ai';
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -64,7 +64,7 @@ class IntentError extends Error {
   }
 }
 
-export default definedTools({
+export default defineTools({
   scope: 'SPECIFIED',
   introduction: {
     title: '{{t("Define collections")}}',

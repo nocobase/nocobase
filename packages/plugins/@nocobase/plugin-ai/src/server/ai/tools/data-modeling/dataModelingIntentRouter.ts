@@ -8,7 +8,7 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { definedTools } from '@nocobase/ai';
+import { defineTools } from '@nocobase/ai';
 
 const createPrompt = `You are now entering the **New Schema Creation Flow**. Follow these rules:
 
@@ -46,7 +46,7 @@ const editPrompt = `## Existing Schema Editing Flow
    - Until the tool responds successfully, assume changes have not been saved — the user may continue editing.
    - **Do not say or imply the schema is being or has been updated until a tool response is received.**`;
 
-export default definedTools({
+export default defineTools({
   scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {

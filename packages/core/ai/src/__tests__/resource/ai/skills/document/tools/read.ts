@@ -8,9 +8,9 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { definedTools } from '@nocobase/ai';
+import { defineTools } from '@nocobase/ai';
 
-export default definedTools({
+export default defineTools({
   scope: 'SPECIFIED',
   definition: {
     name: 'read',

@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { definedTools } from '@nocobase/ai';
+import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../../../plugin';
 
-export default definedTools({
+export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {

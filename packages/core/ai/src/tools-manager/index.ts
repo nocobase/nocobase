@@ -90,7 +90,7 @@ export class DefaultToolsManager implements ToolsManager {
   }
 }
 
-export function definedTools(options: ToolsOptions) {
+export function defineTools(options: ToolsOptions) {
   return options;
 }
 
