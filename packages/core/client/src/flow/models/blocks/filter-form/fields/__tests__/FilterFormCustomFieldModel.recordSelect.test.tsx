@@ -23,7 +23,7 @@ let form: ReturnType<typeof createForm>;
 
 class HostModel extends FlowModel {
   render() {
-    const { source } = (this.props || {}) as any;
+    const source = ['main', 'posts', 'author'];
     return (
       <FormProvider form={form}>
         <FlowModelProvider model={this}>
@@ -81,9 +81,6 @@ describe('FilterForm custom field record select', () => {
     const host = engine.createModel<HostModel>({
       uid: 'host',
       use: 'HostModel',
-      props: {
-        source: ['main', 'posts', 'author'],
-      },
     });
 
     render(
@@ -137,7 +134,7 @@ describe('FilterForm custom field record select', () => {
 
     await model.applyFlow('formItemSettings');
 
-    const collectionField = model.context.collectionField as any;
+    const collectionField = model.customFieldModelInstance?.context?.collectionField as any;
     expect(collectionField?.target).toBe('users');
     expect(collectionField?.targetCollection?.name).toBe('users');
 

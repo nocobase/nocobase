@@ -33,42 +33,66 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   const field = useField<any>();
   const { t } = useTranslation();
   const propsValue = field.value || {};
+  const resolvedFieldModel = fieldModel || propsValue?.fieldModel;
   const flowEngine = useFlowEngine();
   const ctx = useFlowContext();
   const appDataSourceManager = ctx?.app?.dataSourceManager;
 
+  const getCurrentValue = () => field.value || {};
   const updateProps = (key: string, value: any) => {
-    field.setValue({ ...propsValue, [key]: value });
+    field.setValue({ ...getCurrentValue(), [key]: value });
+  };
+  const applyFieldValue = (value: any) => {
+    if (field?.form?.setValuesIn && field?.path) {
+      field.form.setValuesIn(field.path, value);
+      return;
+    }
+    field.setValue(value);
   };
 
   useEffect(() => {
-    if (!source.length) return undefined;
-    const collectionField = flowEngine.dataSourceManager.getCollectionField(source.join('.'));
+    const sourceValue = source.length ? source : propsValue?.source || [];
+    if (!sourceValue.length) return undefined;
+    const hasDataSourceKey = !!flowEngine?.dataSourceManager?.getDataSource?.(sourceValue[0]);
+    const dataSources = flowEngine?.dataSourceManager?.getDataSources?.() ?? [];
+    const resolvedDataSourceKey =
+      (hasDataSourceKey ? sourceValue[0] : undefined) ||
+      propsValue?.[RECORD_SELECT_DATA_SOURCE_KEY] ||
+      dataSources[0]?.key ||
+      'main';
+    const fieldPath = (hasDataSourceKey ? sourceValue.slice(1) : sourceValue).join('.');
+    const collectionField = flowEngine.dataSourceManager.getCollectionField(`${resolvedDataSourceKey}.${fieldPath}`);
     const binding = FilterableItemModel.getDefaultBindingByField(ctx.model.context, collectionField);
-    if (!binding) {
+    if (!binding && resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') {
       return;
     }
 
     const fieldProps = collectionField.getComponentProps();
 
     const props =
-      typeof binding.defaultProps === 'function'
+      binding && typeof binding.defaultProps === 'function'
         ? binding.defaultProps(ctx.model.context, field)
-        : binding.defaultProps;
+        : binding?.defaultProps;
 
-    const nextValue = { ...props, ...fieldProps, ...propsValue };
+    const nextValue = { ...(props || {}), ...fieldProps, ...getCurrentValue() };
 
-    if (fieldModel === 'FilterFormCustomRecordSelectFieldModel' && collectionField?.targetCollection) {
-      nextValue[RECORD_SELECT_DATA_SOURCE_KEY] = collectionField.dataSourceKey;
+    const shouldFillRecordSelect =
+      resolvedFieldModel === 'FilterFormCustomRecordSelectFieldModel' ||
+      (!resolvedFieldModel && collectionField?.target);
+    if (shouldFillRecordSelect && collectionField) {
+      const targetCollection =
+        collectionField.targetCollection ||
+        flowEngine.dataSourceManager.getCollection(collectionField.dataSourceKey, collectionField.target);
+      nextValue[RECORD_SELECT_DATA_SOURCE_KEY] = collectionField.dataSourceKey || resolvedDataSourceKey;
       nextValue[RECORD_SELECT_COLLECTION_KEY] = collectionField.target;
       nextValue[RECORD_SELECT_TITLE_FIELD_KEY] =
         collectionField.targetCollectionTitleFieldName ||
-        collectionField.targetCollection?.titleCollectionField?.name ||
+        targetCollection?.titleCollectionField?.name ||
         nextValue[RECORD_SELECT_TITLE_FIELD_KEY];
       nextValue[RECORD_SELECT_VALUE_FIELD_KEY] =
         nextValue[RECORD_SELECT_VALUE_FIELD_KEY] ||
-        collectionField.targetCollection?.filterTargetKey ||
-        collectionField.targetCollection?.primaryKey?.name;
+        targetCollection?.filterTargetKey ||
+        targetCollection?.primaryKey?.name;
       if (
         nextValue[RECORD_SELECT_ALLOW_MULTIPLE_KEY] === undefined &&
         nextValue[RECORD_SELECT_MULTIPLE_KEY] === undefined
@@ -81,8 +105,8 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
       }
     }
 
-    field.setValue(nextValue);
-  }, [fieldModel, source.join('.')]);
+    applyFieldValue(nextValue);
+  }, [fieldModel, resolvedFieldModel, source.join('.'), propsValue?.source, flowEngine]);
 
   const dataSources = useMemo(() => flowEngine?.dataSourceManager?.getDataSources?.() ?? [], [flowEngine]);
   const dataSourceOptions = useMemo(
@@ -137,28 +161,28 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   }, [activeCollection, translateLabel]);
 
   useEffect(() => {
-    if (fieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
+    if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
     if (!activeCollectionName || propsValue?.[RECORD_SELECT_TITLE_FIELD_KEY]) return;
     const defaultTitleField = activeCollection?.titleCollectionField?.name;
     if (!defaultTitleField) return;
     field.setValue({
-      ...propsValue,
+      ...getCurrentValue(),
       [RECORD_SELECT_TITLE_FIELD_KEY]: defaultTitleField,
     });
-  }, [fieldModel, activeCollectionName, activeCollection, propsValue]);
+  }, [fieldModel, resolvedFieldModel, activeCollectionName, activeCollection, propsValue]);
   useEffect(() => {
-    if (fieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
+    if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
     if (!activeCollectionName || propsValue?.[RECORD_SELECT_VALUE_FIELD_KEY]) return;
     const defaultValueField = activeCollection?.filterTargetKey || activeCollection?.primaryKey?.name;
     if (!defaultValueField) return;
     field.setValue({
-      ...propsValue,
+      ...getCurrentValue(),
       [RECORD_SELECT_VALUE_FIELD_KEY]: defaultValueField,
     });
-  }, [fieldModel, activeCollectionName, activeCollection, propsValue]);
+  }, [fieldModel, resolvedFieldModel, activeCollectionName, activeCollection, propsValue]);
 
   useEffect(() => {
-    if (fieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
+    if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
     if (
       propsValue?.[RECORD_SELECT_ALLOW_MULTIPLE_KEY] !== undefined ||
       propsValue?.[RECORD_SELECT_MULTIPLE_KEY] !== undefined
@@ -166,11 +190,11 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
       return;
     }
     field.setValue({
-      ...propsValue,
+      ...getCurrentValue(),
       [RECORD_SELECT_ALLOW_MULTIPLE_KEY]: true,
       [RECORD_SELECT_MULTIPLE_KEY]: true,
     });
-  }, [fieldModel, propsValue]);
+  }, [fieldModel, resolvedFieldModel, propsValue]);
 
   // DateTimeFilterFieldModel 的配置
   if (fieldModel === 'DateTimeFilterFieldModel') {
@@ -314,7 +338,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     );
   }
 
-  if (fieldModel === 'FilterFormCustomRecordSelectFieldModel') {
+  if (resolvedFieldModel === 'FilterFormCustomRecordSelectFieldModel') {
     return (
       <>
         {dataSourceOptions.length > 1 && (
