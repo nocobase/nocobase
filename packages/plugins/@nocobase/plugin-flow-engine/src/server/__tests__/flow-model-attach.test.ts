@@ -59,8 +59,11 @@ describe('flow-model attach', () => {
     expect(attached.subKey).toBe('items');
     expect(attached.subType).toBe('array');
     expect(attached.subModels?.page).toBeTruthy();
-    expect(attached.subModels.page.async).toBe(true);
     expect(attached.subModels.page.subModels?.content).toBeTruthy();
+
+    const nodes = await repository.findNodesById('childA', { includeAsyncNode: true });
+    const pageNode = nodes.find((n: any) => n?.uid === 'page');
+    expect(pageNode?.async).toBeTruthy();
 
     const parent = await repository.findModelById('parent', { includeAsyncNode: true });
     expect(parent.subModels?.items).toBeTruthy();
