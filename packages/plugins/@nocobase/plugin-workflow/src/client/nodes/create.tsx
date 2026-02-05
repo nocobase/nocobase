@@ -172,7 +172,7 @@ export default class extends Instruction {
         },
         subModels: {
           grid: {
-            use: 'DetailsGridModel',
+            use: 'NodeDetailsGridModel',
             subType: 'object',
           },
         },
