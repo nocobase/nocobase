@@ -15,6 +15,7 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
 import { get, castArray } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base';
@@ -179,10 +180,12 @@ export class FormAssociationItemModel extends DisplayItemModel {
         }}
       >
         {() => {
-          const refreshKey = buildAssociationRefreshKey(
-            this.context.form?.getFieldValue?.(dependenciesPath),
-            this.collectionField?.collection?.filterTargetKey,
-          );
+          const refreshKey =
+            buildAssociationRefreshKey(
+              this.context.form?.getFieldValue?.(dependenciesPath),
+              this.collectionField?.collection?.filterTargetKey,
+            ) || uid();
+
           return (
             <AssociationItem
               modelForRender={modelForRender}
