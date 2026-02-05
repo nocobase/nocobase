@@ -13,6 +13,29 @@ import { DatePicker as AntdDatePicker, Select, Space } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { inferPickerType } from '../../../../../../../schema-component';
 
+const stripTimeFromFormat = (format?: string) =>
+  format ? format.replace(/\s*HH?:mm(?::ss)?(?:\.SSS)?/g, '').trim() : format;
+
+const parseDateValue = (value: any, format: string) => {
+  if (!value) {
+    return null;
+  }
+  if (dayjs.isDayjs(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.endsWith('Z')) {
+    const localString = dayjs(value).format(format);
+    const localParsed = dayjs(localString, format);
+    return localParsed.isValid() ? localParsed : dayjs(value);
+  }
+  const parsed = dayjs(value, format);
+  if (parsed.isValid()) {
+    return parsed;
+  }
+  const fallback = dayjs(value);
+  return fallback.isValid() ? fallback : null;
+};
+
 export const FilterDatePicker = (props: any) => {
   const { picker = 'date', format, showTime, timeFormat, onChange } = props;
   const ctx = useFlowContext();
@@ -20,17 +43,25 @@ export const FilterDatePicker = (props: any) => {
   const initPicker = currentValue ? inferPickerType(currentValue, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
   const t = ctx.model.translate.bind(ctx.model);
-  const newProps = {
+  const getResolvedFormat = (value: string) => {
+    const baseFormat = value === picker && format ? format : getPickerFormat(value);
+    const dateFormat = value === 'date' ? stripTimeFromFormat(baseFormat) : baseFormat;
+    return getDateTimeFormat(value, dateFormat, showTime, timeFormat);
+  };
+  const resolvedFormat = useMemo(
+    () => getResolvedFormat(targetPicker),
+    [format, picker, showTime, targetPicker, timeFormat],
+  );
+  const dayjsValue = useMemo(() => parseDateValue(currentValue, resolvedFormat), [currentValue, resolvedFormat]);
+  const datePickerProps = {
     utc: true,
     inputReadOnly: ctx.isMobileLayout,
     ...props,
     underFilter: true,
-    showTime: false,
-    format: getPickerFormat(targetPicker),
+    showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+    format: resolvedFormat,
     picker: targetPicker,
   };
-  const [stateProps, setStateProps] = useState(newProps);
-  const dayjsValue = useMemo(() => (currentValue ? dayjs(currentValue) : null), [currentValue]);
 
   return (
     <Space.Compact style={{ width: '100%' }}>
@@ -58,23 +89,20 @@ export const FilterDatePicker = (props: any) => {
           },
         ]}
         onChange={(nextPicker) => {
+          const nextResolvedFormat = getResolvedFormat(nextPicker);
+          const previousResolvedFormat = resolvedFormat;
           setTargetPicker(nextPicker);
-          const nextDateFormat = format || getPickerFormat(nextPicker);
-          const dateTimeFormat = getDateTimeFormat(nextPicker, nextDateFormat, showTime, timeFormat);
-          newProps.picker = nextPicker;
-          newProps.format = dateTimeFormat;
-          setStateProps(newProps);
           if (!currentValue || !onChange) {
             return;
           }
-          const parsedValue = dayjs(currentValue);
-          if (!parsedValue.isValid()) {
+          const parsedValue = parseDateValue(currentValue, previousResolvedFormat);
+          if (!parsedValue || !parsedValue.isValid()) {
             return;
           }
-          onChange(parsedValue.format(dateTimeFormat));
+          onChange(parsedValue, parsedValue.format(nextResolvedFormat));
         }}
       />
-      <AntdDatePicker {...stateProps} style={{ flex: 1, ...stateProps?.style }} value={dayjsValue} />
+      <AntdDatePicker {...datePickerProps} style={{ flex: 1, ...datePickerProps?.style }} value={dayjsValue} />
     </Space.Compact>
   );
 };

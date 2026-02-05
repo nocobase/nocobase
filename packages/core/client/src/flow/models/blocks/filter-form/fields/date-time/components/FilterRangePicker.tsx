@@ -9,10 +9,33 @@
 
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { getDateRanges, inferPickerType } from '../../../../../../../schema-component';
-import { dayjs, getDateTimeFormat, getPickerFormat, str2moment } from '@nocobase/utils/client';
+import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
 import React, { useMemo } from 'react';
 import _ from 'lodash';
+
+const stripTimeFromFormat = (format?: string) =>
+  format ? format.replace(/\s*HH?:mm(?::ss)?(?:\.SSS)?/g, '').trim() : format;
+
+const parseDateValue = (value: any, format: string) => {
+  if (!value) {
+    return null;
+  }
+  if (dayjs.isDayjs(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.endsWith('Z')) {
+    const localString = dayjs(value).format(format);
+    const localParsed = dayjs(localString, format);
+    return localParsed.isValid() ? localParsed : dayjs(value);
+  }
+  const parsed = dayjs(value, format);
+  if (parsed.isValid()) {
+    return parsed;
+  }
+  const fallback = dayjs(value);
+  return fallback.isValid() ? fallback : null;
+};
 
 export const FilterRangePicker = (props: any) => {
   const { value, picker = 'date', format, showTime, timeFormat } = props;
@@ -43,19 +66,19 @@ export const FilterRangePicker = (props: any) => {
 
   const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
   const baseDateFormat = targetPicker === picker && format ? format : getPickerFormat(targetPicker);
-  const stripTimeFromFormat = (fmt: string) => (fmt ? fmt.replace(/\s*HH?:mm(?::ss)?(?:\.SSS)?/g, '').trim() : fmt);
-  const targetDateFormat = showTime ? baseDateFormat : stripTimeFromFormat(baseDateFormat);
+  const targetDateFormat = targetPicker === 'date' ? stripTimeFromFormat(baseDateFormat) : baseDateFormat;
+  const resolvedFormat = getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat);
   const newProps: any = {
     utc: true,
     presets,
     ...props,
-    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
+    format: resolvedFormat,
     picker: targetPicker,
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
   const dayjsValue = useMemo(() => {
-    return _.castArray(props.value).map((item) => (item ? str2moment(item) : null));
-  }, [props.value]);
+    return _.castArray(props.value).map((item) => parseDateValue(item, resolvedFormat));
+  }, [props.value, resolvedFormat]);
 
   return <DatePicker.RangePicker {...newProps} style={{ flex: 1, ...newProps?.style }} value={dayjsValue} />;
 };
