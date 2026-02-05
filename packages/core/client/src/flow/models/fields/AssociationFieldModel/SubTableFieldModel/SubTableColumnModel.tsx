@@ -119,7 +119,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           ? JSON.stringify(defaultValue, null, 2)
           : defaultValue ?? '';
 
-      return <Input value={inputValue} disabled={disabled} />;
+      return <Input value={inputValue} disabled={disabled} style={{ width: '100%' }} />;
     } else {
       return (
         <Space>
@@ -133,7 +133,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       ref={ref}
       onClick={handleClick}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         whiteSpace: 'nowrap',
         minHeight: 25,
@@ -144,7 +144,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       }}
     >
       <span
-        style={{ pointerEvents: 'none' }} // 不拦截点击
+        style={{ pointerEvents: 'none', display: 'block', width: '100%' }} // 不拦截点击
       >
         {content}
       </span>
@@ -198,14 +198,15 @@ interface CellProps {
   rowIdx: number;
   id: string | number;
   parent: any;
+  width?: number;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent }) => {
+  ({ value, record, rowIdx, id, parent, width }) => {
     return (
       <div
         style={{
-          width: parent.props.width,
+          width,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -285,7 +286,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
     );
   },
   (prev, next) => {
-    return prev.value === next.value && prev.id === next.id;
+    return prev.value === next.value && prev.id === next.id && prev.width === next.width;
   },
 );
 
@@ -471,7 +472,7 @@ export class SubTableColumnModel<
   renderItem(): any {
     return (props) => {
       const { value, id, rowIdx, record } = props || {};
-      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} />;
+      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} width={this.props.width} />;
     };
   }
 }

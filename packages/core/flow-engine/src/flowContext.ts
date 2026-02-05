@@ -3279,28 +3279,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const s = raw.trim();
         if (!s) return undefined;
         // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
-        // We also accept a full template string '{{ ... }}' for convenience.
-        if (/^\s*\{\{/.test(s)) {
-          return this.resolveJsonTemplate(s as any);
-        }
         if (s !== 'ctx' && !s.startsWith('ctx.')) {
           throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
         }
         return this.resolveJsonTemplate(`{{ ${s} }}` as any);
       },
-      {
-        description: 'Resolve a ctx expression value by path (expression starts with "ctx.").',
-        params: [
-          {
-            name: 'path',
-            type: 'string',
-            description: 'Expression path starting with "ctx." (e.g. "ctx.record.id", "ctx.record.roles[0].id").',
-          },
-        ],
-        returns: { type: 'Promise<any>' },
-        completion: { insertText: "await ctx.getVar('ctx.record.id')" },
-        examples: ["const id = await ctx.getVar('ctx.record.id');"],
-      },
+      'Resolve a ctx expression value by path (expression starts with "ctx.").',
     );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -3848,6 +3832,31 @@ export class FlowRuntimeContext<
 
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
+
+export type FlowContextDocRef = string | { url: string; title?: string };
+
+export type FlowDeprecationDoc =
+  | boolean
+  | {
+      message?: string;
+      replacedBy?: string | string[];
+      since?: string;
+      removedIn?: string;
+      ref?: FlowContextDocRef;
+    };
+
+export type FlowContextDocParam = {
+  name: string;
+  description?: string;
+  type?: string;
+  optional?: boolean;
+  default?: JSONValue;
+};
+
+export type FlowContextDocReturn = {
+  description?: string;
+  type?: string;
+};
 
 export type RunJSDocCompletionDoc = {
   insertText?: string;

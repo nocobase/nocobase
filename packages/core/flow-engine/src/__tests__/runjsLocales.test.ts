@@ -30,8 +30,10 @@ describe('RunJS locales patch (engine doc)', () => {
     (ctx as any).defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
     (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
     const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-    const messageDoc: any = doc?.properties?.message;
-    expect(String(messageDoc?.description ?? messageDoc ?? '')).toMatch(/Ant Design 全局消息 API/);
+    const message = doc?.properties?.message;
+    const messageText =
+      typeof message === 'string' ? message : (message as any)?.description ?? (message as any)?.detail ?? '';
+    expect(String(messageText)).toMatch(/Ant Design 全局消息 API/);
     expect(String(doc?.methods?.t || '')).toMatch(/国际化函数/);
   });
 });
