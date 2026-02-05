@@ -98,7 +98,7 @@ const FormAssignRulesUI = observer(
 
 export const formAssignRules = defineAction({
   name: 'formAssignRules',
-  title: tExpr('Assign field values'),
+  title: tExpr('Field values'),
   useRawParams: true,
   uiMode: 'embed',
   uiSchema() {

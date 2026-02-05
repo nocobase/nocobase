@@ -410,7 +410,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
   const renderPanelHeader = (item: FieldAssignRuleItem, index: number) => {
     const mode = getEffectiveMode(item);
-    const modeText = mode === 'default' ? t('Default value') : t('Assign value');
+    const modeText = mode === 'default' ? t('Default value') : t('Fixed value');
     const fieldLabel = getFieldLabel(item.targetPath);
     const title = fieldLabel ? String(fieldLabel) : t('Please select field');
 
@@ -544,7 +544,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 style={{ width: '100%' }}
                 options={[
                   { label: t('Default value'), value: 'default' },
-                  { label: t('Assign value'), value: 'assign' },
+                  { label: t('Fixed value'), value: 'assign' },
                 ]}
                 onChange={(nextMode) => patchItem(index, { mode: nextMode })}
               />
