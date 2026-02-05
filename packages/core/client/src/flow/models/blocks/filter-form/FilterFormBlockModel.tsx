@@ -296,7 +296,7 @@ FilterFormBlockModel.registerFlow({
     },
     defaultValues: {
       use: 'filterFormDefaultValues',
-      title: tExpr('Default value'),
+      title: tExpr('Field values'),
       beforeParamsSave(ctx) {
         // 迁移：保存表单级默认值后，移除字段级默认值配置（filterFormItemSettings.initialValue）
         const cleared = clearLegacyDefaultValuesFromFilterFormModel(ctx.model);

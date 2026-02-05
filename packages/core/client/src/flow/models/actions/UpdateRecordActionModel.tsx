@@ -160,7 +160,7 @@ UpdateRecordActionModel.registerFlow({
       },
     },
     assignFieldValues: {
-      title: tExpr('Assign field values'),
+      title: tExpr('Field values'),
       uiSchema() {
         return {
           tip: {
