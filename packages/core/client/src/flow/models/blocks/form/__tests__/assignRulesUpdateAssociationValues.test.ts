@@ -59,4 +59,23 @@ describe('collectUpdateAssociationValuesFromAssignRules', () => {
     );
     expect(out).toEqual([]);
   });
+
+  it('ignores association targetKey-only paths (e.g. user.id)', () => {
+    const userCollection: any = {
+      getField: (name: string) => ({ name, isAssociationField: () => false }),
+      filterTargetKey: 'id',
+    };
+
+    const rootCollection: any = {
+      getField: (name: string) => {
+        if (name === 'user') {
+          return { name, isAssociationField: () => true, targetCollection: userCollection };
+        }
+        return { name, isAssociationField: () => false };
+      },
+    };
+
+    const out = collectUpdateAssociationValuesFromAssignRules([{ targetPath: 'user.id' }] as any, rootCollection);
+    expect(out).toEqual([]);
+  });
 });
