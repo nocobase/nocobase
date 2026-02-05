@@ -116,7 +116,8 @@ export function NodeClipboardContextProvider(props) {
         return false;
       }
       try {
-        await api.resource('workflows.nodes', workflow.id).duplicate({
+        await api.resource('flow_nodes').duplicate({
+          filterByTk: clipboard.sourceId,
           values,
         });
         setClipboard(null);
@@ -128,7 +129,7 @@ export function NodeClipboardContextProvider(props) {
         return false;
       }
     },
-    [api, message, refresh, workflow?.id],
+    [api, clipboard?.sourceId, message, refresh, workflow?.id],
   );
 
   const pasteNode = useCallback(
@@ -144,12 +145,8 @@ export function NodeClipboardContextProvider(props) {
       const branchIndex = upstream ? target?.branchIndex ?? null : null;
       const baseConfig = cloneDeep(clipboard.config ?? {});
       const baseValues = {
-        type: clipboard.type,
-        title: clipboard.title,
-        config: baseConfig,
         upstreamId: upstream?.id ?? null,
         branchIndex,
-        sourceId: clipboard.sourceId,
       };
 
       if (impact.status === 'warning') {

@@ -118,13 +118,24 @@ export async function create(context: Context, next) {
 export async function duplicate(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
-  const { whitelist, blacklist, updateAssociationValues, values } = context.action.params;
+  const { whitelist, blacklist, filterByTk, values = {} } = context.action.params;
   const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
 
   context.body = await db.sequelize.transaction(async (transaction) => {
+    const origin = filterByTk ? await repository.findOne({ filterByTk, transaction }) : null;
+    if (!origin) {
+      return context.throw(404, 'Node not found');
+    }
+
     const workflow =
-      workflowPlugin.enabledCache.get(Number.parseInt(context.action.sourceId, 10)) ||
-      ((await repository.getSourceModel(transaction)) as WorkflowModel);
+      workflowPlugin.enabledCache.get(origin.workflowId) ||
+      ((await db.getRepository('workflows').findOne({
+        filterByTk: origin.workflowId,
+        transaction,
+      })) as WorkflowModel);
+    if (!workflow) {
+      return context.throw(400, 'Workflow not found');
+    }
     if (!workflow.versionStats) {
       workflow.versionStats = await workflow.getVersionStats({ transaction });
     }
@@ -140,25 +151,28 @@ export async function duplicate(context: Context, next) {
       }
     }
 
-    const { sourceId, key, ...nodeValues } = values ?? {};
+    let nextConfig = values.config;
+    if (!nextConfig) {
+      const instruction = workflowPlugin.instructions.get(origin.type);
+      if (instruction && typeof instruction.duplicateConfig === 'function') {
+        nextConfig = await instruction.duplicateConfig(origin, { origin: origin ?? undefined, transaction });
+      }
+    }
 
     const instance = await repository.create({
-      values: nodeValues,
+      values: {
+        config: nextConfig ?? origin.config,
+        upstreamId: values.upstreamId,
+        branchIndex: values.branchIndex,
+        type: origin.type,
+        title: origin.title,
+        workflowId: origin.workflowId,
+      },
       whitelist,
       blacklist,
-      updateAssociationValues,
       context,
       transaction,
     });
-
-    const instruction = workflowPlugin.instructions.get(instance.type);
-    if (instruction && typeof instruction.duplicateConfig === 'function') {
-      const origin = sourceId ? await repository.findOne({ filterByTk: sourceId, transaction }) : null;
-      const newConfig = await instruction.duplicateConfig(instance, { origin: origin ?? undefined, transaction });
-      if (newConfig) {
-        await instance.update({ config: newConfig }, { transaction });
-      }
-    }
 
     if (!instance.upstreamId) {
       const previousHead = await repository.findOne({
@@ -166,6 +180,7 @@ export async function duplicate(context: Context, next) {
           id: {
             $ne: instance.id,
           },
+          workflowId: origin.workflowId,
           upstreamId: null,
         },
         transaction,

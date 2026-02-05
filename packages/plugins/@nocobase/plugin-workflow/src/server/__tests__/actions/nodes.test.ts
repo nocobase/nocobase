@@ -234,7 +234,7 @@ describe('workflow > actions > nodes', () => {
   });
 
   describe('duplicate', () => {
-    it('duplicate with duplicateConfig', async () => {
+    it('should duplicate config but not key', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
@@ -248,17 +248,16 @@ describe('workflow > actions > nodes', () => {
         },
       });
 
-      const res = await agent.resource('workflows.nodes', workflow.id).duplicate({
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: origin.id,
         values: {
-          type: 'echo',
-          title: 'echo copy',
-          config: origin.config,
+          key: origin.key,
           upstreamId: origin.id,
-          sourceId: origin.id,
         },
       });
 
       expect(res.status).toBe(200);
+      expect(res.body.data.key).not.toBe(origin.key);
       expect(res.body.data.config).toMatchObject({
         duplicateFlag: true,
         foo: 'bar',
@@ -268,6 +267,40 @@ describe('workflow > actions > nodes', () => {
       const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
       expect(nodes.length).toBe(2);
       expect(nodes[1].upstreamId).toBe(origin.id);
+    });
+
+    it('should duplicate config when required', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const origin = await workflow.createNode({
+        type: 'echo',
+        config: {
+          duplicateFlag: true,
+          foo: 'bar',
+        },
+      });
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: origin.id,
+        values: {
+          config: {
+            a: 1,
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.key).not.toBe(origin.key);
+      expect(res.body.data.config).toMatchObject({
+        a: 1,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].upstreamId).toBe(nodes[1].id);
     });
   });
 
@@ -1178,7 +1211,7 @@ describe('workflow > actions > nodes', () => {
       });
       expect(status).toBe(200);
 
-      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const nodes: FlowNodeModel[] = await workflow.getNodes({ order: [['id', 'asc']] });
       const nodeMap = new Map(nodes.map((node) => [node.id, node]));
       const n1After = nodeMap.get(n1.id);
       const n2After = nodeMap.get(n2.id);
