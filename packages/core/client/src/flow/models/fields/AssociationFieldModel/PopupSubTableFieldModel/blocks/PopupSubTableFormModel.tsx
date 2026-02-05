@@ -23,6 +23,7 @@ import { Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../../../base';
 import { FormBlockModel, FormComponent } from '../../../../blocks/form/FormBlockModel';
+import { createItemChainMetaFactory, createItemChainResolver, type ItemChain } from '../../itemChain';
 
 export class PopupSubTableFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.subForm;
@@ -46,6 +47,43 @@ export class PopupSubTableFormModel extends FormBlockModel {
         return recordData;
       },
       cache: false,
+    });
+
+    this.context.defineProperty('item', {
+      get: () => {
+        const recordData = this.context.view?.inputArgs?.record || {};
+        const parentItem = this.context.view?.inputArgs?.parentItem as ItemChain | undefined;
+        const itemIndex = this.context.view?.inputArgs?.itemIndex;
+        const filterTargetKey = this.context.collection?.filterTargetKey;
+        const hasPk = Array.isArray(filterTargetKey)
+          ? filterTargetKey.length > 0 && filterTargetKey.every((k) => recordData?.[k] != null)
+          : filterTargetKey
+            ? recordData?.[filterTargetKey] != null
+            : false;
+        const isNew = !!recordData?.__is_new__ || !hasPk;
+        return {
+          index: typeof itemIndex === 'number' ? itemIndex : undefined,
+          __is_new__: isNew,
+          __is_stored__: !!recordData?.__is_stored__ || (!isNew && hasPk),
+          value: this.context.formValues,
+          parentItem,
+        } satisfies ItemChain;
+      },
+      cache: false,
+      meta: createItemChainMetaFactory({
+        t: this.context.t,
+        title: this.context.t('Current object'),
+        collectionAccessor: () => this.context.collection,
+        valueAccessor: (ctx) => ctx?.item?.value,
+        parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,
+      }),
+      resolveOnServer: createItemChainResolver({
+        collectionAccessor: () => this.context.collection,
+        valueAccessor: () => this.context.formValues,
+        parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,
+        parentValueAccessor: () => (this.context.view?.inputArgs?.parentItem as any)?.value,
+      }),
+      serverOnlyWhenContextParams: true,
     });
   }
 
