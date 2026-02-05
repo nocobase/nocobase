@@ -41,6 +41,8 @@ import { appOptionsFactory } from './app-options-factory';
 import { PubSubManagerPublishOptions } from '../pub-sub-manager';
 import { Transaction, Transactionable } from '@nocobase/database';
 import { createSystemLogger, getLoggerFilePath, getLoggerLevel, SystemLogger } from '@nocobase/logger';
+import AesEncryptor from '../aes-encryptor';
+import _ from 'lodash';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -58,6 +60,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
   public logger: SystemLogger;
+  public aesEncryptor?: AesEncryptor;
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
@@ -107,6 +110,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.registerAppDbCreator(createDatabaseCondition, createDatabase);
     this.registerAppDbCreator(createConnectionCondition, createConnection);
     this.registerAppDbCreator(createSchemaCondition, createSchema);
+
+    if (process.env.APP_SUPERVISOR_AES_SECRET_KEY) {
+      try {
+        const key = Buffer.from(process.env.APP_SUPERVISOR_AES_SECRET_KEY, 'hex');
+        this.aesEncryptor = new AesEncryptor(key);
+      } catch (error) {
+        this.logger.warn('Failed to initialize APP_SUPERVISOR_AES_SECRET_KEY encryptor', {
+          error: error.message,
+        });
+      }
+    }
   }
 
   private resolveDiscoveryAdapterName() {
@@ -376,6 +390,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   registerApp({ appModel, mainApp, hook }: { appModel: AppModel; mainApp?: Application; hook?: boolean }) {
     const appName = appModel.name;
     const appOptions = appModel.options || {};
+    if (this.aesEncryptor && appOptions?.encryptedDbPassword) {
+      try {
+        _.set(appOptions, 'database.password', this.aesEncryptor.decryptSync(appOptions.database.password));
+      } catch (error) {
+        this.logger.warn('Failed to decrypt database password for app registration', {
+          appName,
+          error: error.message,
+        });
+      }
+    }
     let options = appOptions;
     if (mainApp) {
       const defaultAppOptions = this.appOptionsFactory(appName, mainApp, appOptions);

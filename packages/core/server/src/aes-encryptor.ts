@@ -40,18 +40,19 @@ export class AesEncryptor {
   async decrypt(encryptedText: string): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
-        const iv = Buffer.from(encryptedText.slice(0, 32), 'hex'); // 提取前 16 字节作为 IV
-        const encrypted = Buffer.from(encryptedText.slice(32), 'hex'); // 提取密文
-
-        const decipher = crypto.createDecipheriv('aes-256-cbc', this.key as any, iv as any);
-
-        const decrypted = Buffer.concat([decipher.update(encrypted as any), decipher.final()] as any);
-
-        resolve(decrypted.toString('utf8'));
+        resolve(this.decryptSync(encryptedText));
       } catch (error) {
         reject(error);
       }
     });
+  }
+
+  decryptSync(encryptedText: string): string {
+    const iv = Buffer.from(encryptedText.slice(0, 32), 'hex');
+    const encrypted = Buffer.from(encryptedText.slice(32), 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', this.key as any, iv as any);
+    const decrypted = Buffer.concat([decipher.update(encrypted as any), decipher.final()] as any);
+    return decrypted.toString('utf8');
   }
 
   static async getOrGenerateKey(keyFilePath: string): Promise<Buffer> {
