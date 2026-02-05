@@ -21,7 +21,7 @@ import { Space, InputNumber, Cascader } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client';
 import React from 'react';
-import { useField } from '@formily/react';
+import { useField, observer } from '@formily/react';
 import { MapBlockComponent } from './MapBlockComponent';
 import { NAMESPACE } from '../locale';
 
@@ -35,11 +35,11 @@ const findNestedOption = (value: string[] | string, options = []) => {
   }, options);
 };
 
-const MapFieldCascader = (props) => {
+const MapFieldCascader = observer((props: any) => {
   const field: any = useField();
   const options = props?.options ?? props?.dataSource ?? field?.dataSource ?? [];
   return <Cascader {...props} options={options} />;
-};
+});
 export class MapBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
   selectedRecordKeys = [];
@@ -413,11 +413,12 @@ MapBlockModel.registerFlow({
             },
             'x-decorator': 'FormItem',
             'x-reactions': (field) => {
+              const mapFieldValue = field.value;
               applyAsyncOptions(field);
               if (!optionsLoaded || !mapFieldOptionsCache.length) {
                 return;
               }
-              syncMarkerHidden(field.form, field.value);
+              syncMarkerHidden(field.form, mapFieldValue);
             },
           },
           marker: {
@@ -425,6 +426,19 @@ MapBlockModel.registerFlow({
             enum: [],
             'x-component': 'Select',
             'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const mapFieldValue = field.query('mapField').get('value');
+              if (!optionsLoaded || !mapFieldOptionsCache.length) {
+                return;
+              }
+              if (!mapFieldValue?.length) {
+                return;
+              }
+              const item = findNestedOption(mapFieldValue, mapFieldOptionsCache);
+              if (item) {
+                field.hidden = item.options?.type !== 'point';
+              }
+            },
           },
         };
       },
