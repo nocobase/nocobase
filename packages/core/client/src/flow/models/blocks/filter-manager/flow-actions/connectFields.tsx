@@ -474,6 +474,7 @@ function CascaderWrapper(
   };
 
   return (
+    // @ts-ignore
     <Cascader
       allowClear
       {...props}
