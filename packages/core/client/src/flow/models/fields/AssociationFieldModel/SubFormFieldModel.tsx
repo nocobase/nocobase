@@ -664,7 +664,10 @@ SubFormListFieldModel.registerFlow({
       use: 'subFormFieldLinkageRules',
       afterParamsSave(ctx) {
         // 保存后，自动运行一次
-        ctx.model.applyFlow('eventSettings');
+        ctx.model.applyFlow('eventSettings', {
+          changedValues: {},
+          allValues: ctx.form?.getFieldsValue(true),
+        });
       },
     },
   },
