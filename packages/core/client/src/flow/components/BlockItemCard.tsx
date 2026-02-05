@@ -63,7 +63,6 @@ function getValidPageTop(a, b) {
   const aValid = a > 0;
   const bValid = b > 0;
 
-  if (aValid && bValid) return Math.min(a, b);
   if (aValid) return a;
   if (bValid) return b;
   return 0; // 都不是正数
