@@ -17,10 +17,11 @@ import {
   FlowSettingsButton,
   Droppable,
 } from '@nocobase/flow-engine';
-import { Space, InputNumber } from 'antd';
+import { Space, InputNumber, Cascader } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client';
 import React from 'react';
+import { useField } from '@formily/react';
 import { MapBlockComponent } from './MapBlockComponent';
 import { NAMESPACE } from '../locale';
 
@@ -32,6 +33,12 @@ const findNestedOption = (value: string[] | string, options = []) => {
     const matched = cur?.find((item) => item.value === v);
     return index === value.length - 1 ? matched : matched?.children;
   }, options);
+};
+
+const MapFieldCascader = (props) => {
+  const field: any = useField();
+  const options = props?.options ?? props?.dataSource ?? field?.dataSource ?? [];
+  return <Cascader {...props} options={options} />;
 };
 export class MapBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
@@ -179,6 +186,147 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 }
 
+const getCollectionFieldsOptions = (
+  collectionName: string,
+  collectionManager: any,
+  type?: string | string[],
+  interfaces?: string | string[],
+  opts?: {
+    dataSource?: string;
+    cached?: Record<string, any>;
+    collectionNames?: string[];
+    /**
+     * 为 true 时允许查询所有关联字段
+     * 为 Array<string> 时仅允许查询指定的关联字段
+     */
+    association?: boolean | string[];
+    /**
+     * Max depth of recursion
+     */
+    maxDepth?: number;
+    allowAllTypes?: boolean;
+    /**
+     * 排除这些接口的字段
+     */
+    exceptInterfaces?: string[];
+    /**
+     * field value 的前缀，用 . 连接，比如 a.b.c
+     */
+    prefixFieldValue?: string;
+    /**
+     * 是否使用 prefixFieldValue 作为 field value
+     */
+    usePrefix?: boolean;
+  },
+) => {
+  const {
+    association = false,
+    cached = {},
+    collectionNames = [collectionName],
+    maxDepth = 1,
+    allowAllTypes = false,
+    exceptInterfaces = [],
+    prefixFieldValue = '',
+    usePrefix = false,
+    dataSource: customDataSourceNameValue,
+  } = opts || {};
+
+  const normalizeToArray = (value?: string | string[]) => {
+    if (!value) {
+      return undefined;
+    }
+    return Array.isArray(value) ? value : [value];
+  };
+
+  const cloneOptions = (options?: any[]) => {
+    if (!options?.length) {
+      return options;
+    }
+    return options.map((option) => ({
+      ...option,
+      options: option?.options ? { ...option.options } : option?.options,
+      children: cloneOptions(option?.children),
+    }));
+  };
+
+  if (collectionNames.length - 1 > maxDepth) {
+    return;
+  }
+
+  if (cached[collectionName]) {
+    // avoid infinite recursion
+    return cloneOptions(cached[collectionName]);
+  }
+
+  // Fetch the collection
+  const collection = collectionManager.getCollection(collectionName);
+  if (!collection) {
+    throw new Error(`Collection ${collectionName} not found`);
+  }
+
+  // Get the fields of the collection
+  const fields = collection.getFields(); // Assuming `getFields` returns an array of fields for the collection.
+
+  const typeList = normalizeToArray(type);
+  const interfaceList = normalizeToArray(interfaces);
+
+  const options = fields
+    ?.filter(
+      (field) =>
+        field.interface &&
+        !exceptInterfaces.includes(field.interface) &&
+        (allowAllTypes ||
+          (typeList && typeList.includes(field.type)) ||
+          (interfaceList && interfaceList.includes(field.interface)) ||
+          (association && field.target && field.target !== collectionName && Array.isArray(association)
+            ? association.includes(field.interface)
+            : false)),
+    )
+    ?.map((field) => {
+      const fieldName = field?.name;
+      const fieldType = field?.type ?? field?.options?.type;
+      const fieldInterface = field?.interface ?? field?.options?.interface;
+      const fieldTarget = field?.target ?? field?.options?.target;
+      const fieldLabel = field?.uiSchema?.title || field?.title || fieldName;
+      const result: any['options'][0] = {
+        value: usePrefix && prefixFieldValue ? `${prefixFieldValue}.${fieldName}` : fieldName,
+        label: fieldLabel || fieldName,
+        type: fieldType,
+        interface: fieldInterface,
+        target: fieldTarget,
+        options: {
+          type: fieldType,
+          interface: fieldInterface,
+          target: fieldTarget,
+        },
+      };
+
+      if (association && fieldTarget) {
+        result.children = collectionNames.includes(fieldTarget)
+          ? []
+          : getCollectionFieldsOptions(fieldTarget, collectionManager, type, interfaces, {
+              ...opts,
+              cached,
+              dataSource: customDataSourceNameValue,
+              collectionNames: [...collectionNames, fieldTarget],
+              prefixFieldValue: usePrefix ? (prefixFieldValue ? `${prefixFieldValue}.${fieldName}` : fieldName) : '',
+              usePrefix,
+            });
+
+        // If no children are found, don't return the field
+        if (!result.children?.length) {
+          return null;
+        }
+      }
+      return result;
+    })
+    // Filter out null values (i.e., fields with no valid options)
+    .filter(Boolean);
+
+  // Cache the result to avoid infinite recursion
+  cached[collectionName] = options;
+  return options;
+};
 MapBlockModel.registerFlow({
   key: 'createMapBlock',
   title: tExpr('Map block settings', { ns: NAMESPACE }),
@@ -190,51 +338,93 @@ MapBlockModel.registerFlow({
         const t = ctx.t;
         const dataSourceKey = ctx.dataSource.key;
         const collectionManager = ctx.dataSourceManager.getDataSource(dataSourceKey).collectionManager;
-        const mapFieldOptions = collectionManager.getCollectionFieldsOptions(
-          ctx.collection.name,
-          ['point', 'lineString', 'polygon'],
-          null,
-          {
+        let mapFieldOptionsCache = [];
+        let markerFieldOptionsCache = [];
+        let optionsLoaded = false;
+        let optionsLoading = false;
+        const getMapFieldOptions = () =>
+          getCollectionFieldsOptions(ctx.collection.name, collectionManager, ['point', 'lineString', 'polygon'], null, {
             association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
-          },
-        );
-        const markerFieldOptions = collectionManager.getCollectionFieldsOptions(ctx.collection.name, 'string', null, {
-          dataSource: dataSourceKey,
-        });
+          }) || [];
+        const getMarkerFieldOptions = () =>
+          getCollectionFieldsOptions(ctx.collection.name, collectionManager, 'string', null, {
+            dataSource: dataSourceKey,
+          }) || [];
+        const syncMarkerHidden = (form, mapFieldValue) => {
+          if (!mapFieldValue?.length || !mapFieldOptionsCache.length) {
+            return;
+          }
+          const item = findNestedOption(mapFieldValue, mapFieldOptionsCache);
+          if (!item) {
+            return;
+          }
+          form.setFieldState('marker', (state) => {
+            state.hidden = item.options?.type !== 'point';
+          });
+        };
+        const applyAsyncOptions = (field) => {
+          if (optionsLoaded || optionsLoading) {
+            return;
+          }
+          optionsLoading = true;
+          setTimeout(() => {
+            mapFieldOptionsCache = getMapFieldOptions();
+            markerFieldOptionsCache = getMarkerFieldOptions();
+            optionsLoaded = true;
+            optionsLoading = false;
+            const form = field?.form;
+            if (!form) {
+              return;
+            }
+            let resolvedMapFieldValue = form.values.mapField;
+            form.setFieldState('mapField', (state) => {
+              state.dataSource = mapFieldOptionsCache;
+              if (!state.value?.length && mapFieldOptionsCache.length) {
+                const defaultValue = [
+                  mapFieldOptionsCache[0].value,
+                  mapFieldOptionsCache[0].children?.[0]?.value,
+                ].filter((v) => v !== undefined && v !== null);
+                state.value = defaultValue;
+                if (!state.initialValue?.length) {
+                  state.initialValue = defaultValue;
+                }
+                resolvedMapFieldValue = defaultValue;
+                return;
+              }
+              resolvedMapFieldValue = state.value;
+            });
+            form.setFieldState('marker', (state) => {
+              state.dataSource = markerFieldOptionsCache.map((v) => ({
+                label: v.label,
+                value: v.value,
+              }));
+            });
+            syncMarkerHidden(form, resolvedMapFieldValue ?? form.values.mapField);
+          }, 0);
+        };
         return {
           mapField: {
             title: t('Map field', { ns: NAMESPACE }),
             required: true,
-            enum: mapFieldOptions,
-            'x-component': 'Cascader',
-            'x-component-props': {},
+            enum: [],
+            'x-component': MapFieldCascader,
+            'x-component-props': {
+              style: { width: '100%' },
+            },
             'x-decorator': 'FormItem',
-            default: mapFieldOptions.length
-              ? [mapFieldOptions[0].value, mapFieldOptions[0].children?.[0].value].filter(
-                  (v) => v !== undefined && v !== null,
-                )
-              : [],
+            'x-reactions': (field) => {
+              applyAsyncOptions(field);
+              if (!optionsLoaded || !mapFieldOptionsCache.length) {
+                return;
+              }
+              syncMarkerHidden(field.form, field.value);
+            },
           },
           marker: {
             title: t('Marker field', { ns: NAMESPACE }),
-            enum: markerFieldOptions.map((v) => {
-              return {
-                label: v.label,
-                value: v.value,
-              };
-            }),
+            enum: [],
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            'x-reactions': (field) => {
-              const value = field.form.values.mapField;
-              if (!value?.length) {
-                return;
-              }
-              const item = findNestedOption(value, mapFieldOptions);
-              if (item) {
-                field.hidden = item.options.type !== 'point';
-              }
-            },
           },
         };
       },
