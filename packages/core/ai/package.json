@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/ai",
-  "version": "2.0.0-alpha.68",
+  "version": "2.0.0-alpha.69",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
