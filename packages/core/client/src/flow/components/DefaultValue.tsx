@@ -405,6 +405,9 @@ export const DefaultValue = connect((props: Props) => {
         const pickPrimitive = (n: any) => {
           if (n && typeof n === 'object' && 'target' in n) {
             const target = (n as any)?.target;
+            if (isTextLike && typeof target?.value !== 'undefined') {
+              return target.value;
+            }
             if (typeof target?.checked !== 'undefined') {
               return target.checked;
             }

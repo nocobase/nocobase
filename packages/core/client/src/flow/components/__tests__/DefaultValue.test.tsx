@@ -646,6 +646,45 @@ describe('DefaultValue component', () => {
     expect(fieldModel.props.value).toBeUndefined();
   });
 
+  it('text input: prefers target.value over target.checked', async () => {
+    const onChange = vi.fn();
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') capturedTempRoot = created;
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'title', value: '', onChange, metaTree: simpleMetaTree },
+      subModels: { field: { use: 'InputFieldModel' } },
+    });
+    host.context.defineProperty('collectionField', { value: { interface: 'input', type: 'string' } });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+
+    await act(async () => {
+      fieldModel.props.onChange?.({ target: { checked: false, value: 'hello' } });
+    });
+    expect(onChange).toHaveBeenCalled();
+    const arg = (onChange as any).mock.calls[0][0];
+    expect(arg).toBe('hello');
+  });
+
   // 注：关联字段的“去包装”由 collectionField 决定，真实页面场景下已具备。
   // 这里不再重复校验，仅在前面的用例验证了常量编辑器与关系字段的基本行为。
 
