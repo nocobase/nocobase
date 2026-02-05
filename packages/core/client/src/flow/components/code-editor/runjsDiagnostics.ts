@@ -689,16 +689,6 @@ function createLogCollectors(out: RunJSLog[]) {
   return { consoleCapture, loggerCapture };
 }
 
-function wrapPreviewCtx(runtimeCtx: any, loggerCapture: any): any {
-  return new Proxy(runtimeCtx, {
-    get(target, prop: any, receiver) {
-      if (prop === 'then') return undefined; // avoid thenable/promise-like behavior
-      if (prop === 'logger') return loggerCapture;
-      return Reflect.get(target, prop, receiver);
-    },
-  });
-}
-
 function pickKeyRuntimeIssue(runtimeIssues: RunJSIssue[]): RunJSIssue | undefined {
   if (!runtimeIssues.length) return undefined;
   const priority: Record<string, number> = {
@@ -881,15 +871,14 @@ export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<Dia
     execution.started = true;
 
     const { consoleCapture, loggerCapture } = createLogCollectors(logs);
-    const previewCtx = wrapPreviewCtx(ctx, loggerCapture);
 
-    const extraGlobals: Record<string, any> = { console: consoleCapture, ctx: previewCtx };
+    const baseGlobals: Record<string, any> = { console: consoleCapture };
     try {
       if (typeof window !== 'undefined') {
         const navigator = createSafeNavigator();
-        extraGlobals.navigator = navigator;
-        extraGlobals.window = createSafeWindow({ navigator });
-        extraGlobals.document = createSafeDocument();
+        baseGlobals.navigator = navigator;
+        baseGlobals.window = createSafeWindow({ navigator });
+        baseGlobals.document = createSafeDocument();
       }
     } catch (_) {
       // ignore safe globals failures
@@ -914,7 +903,15 @@ export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<Dia
       return { issues: sortIssuesStable(issues), logs, execution };
     }
 
-    const runner = new JSRunner({ globals: extraGlobals, timeoutMs: PREVIEW_TIMEOUT_MS });
+    // Use ctx.createJSRunner() so preview execution matches the real RunJS environment:
+    // - FlowRunJSContext / specific RunJSContext
+    // - deprecation proxy behavior
+    // - libs injection (React/antd/etc)
+    const runner: JSRunner = await (ctx as any).createJSRunner({ globals: baseGlobals, timeoutMs: PREVIEW_TIMEOUT_MS });
+    // Capture ctx.logger.* into preview logs (and make deprecation warnings visible).
+    // NOTE: user code runs with the JSRunner global `ctx` (RunJSContext), not the runtime `ctx` passed in here.
+    const runjsCtx = (runner as any).globals.ctx;
+    runjsCtx.defineProperty('logger', { value: loggerCapture });
     const res = await runner.run(prepared);
     execution.finished = true;
     execution.timeout = !!res?.timeout;

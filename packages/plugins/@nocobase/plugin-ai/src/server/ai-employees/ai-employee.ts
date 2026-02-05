@@ -9,7 +9,7 @@
 
 import { Model, Op, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
-import { LLMProvider } from '../llm-providers/provider';
+import { LLMProvider, ToolDefinition } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { sendSSEError, parseVariables } from '../utils';
@@ -30,6 +30,9 @@ import {
 } from './middleware';
 import { ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
+import { SequelizeCollectionSaver } from './checkpoints';
+import { createAgent as createLangChainAgent } from 'langchain';
+import { Command } from '@langchain/langgraph';
 
 export interface ModelOverride {
   llmService: string;
@@ -75,6 +78,148 @@ export class AIEmployee {
     this.protocol = ChatStreamProtocol.create(ctx);
   }
 
+  // === Chat flow ===
+  private buildState(messages: AIMessage[]) {
+    return {
+      lastHumanMessageIndex: messages.filter((m) => m.role === 'user').length,
+      lastAIMessageIndex: messages.filter((m) => m.role === this.employee.username).length,
+      lastToolMessageIndex: messages.filter((m) => m.role === 'tool').length,
+      lastMessageIndex: messages.length,
+    };
+  }
+
+  private async initSession({ messageId, provider, model, providerName }) {
+    const tools = await this.getAIEmployeeTools();
+
+    if (!messageId) {
+      return {
+        historyMessages: [],
+        tools,
+        middleware: this.getMiddleware({ tools, model, providerName }),
+        config: undefined,
+        state: undefined,
+      };
+    }
+
+    const agentThread = await this.forkCurrentThread(provider);
+
+    const historyMessages = await this.aiChatConversation.listMessages({
+      messageId,
+    });
+
+    return {
+      historyMessages,
+      tools,
+      middleware: this.getMiddleware({
+        tools,
+        model,
+        providerName,
+        messageId,
+        agentThread,
+      }),
+      config: {
+        configurable: {
+          thread_id: agentThread.threadId,
+        },
+      },
+      state: this.buildState(historyMessages),
+    };
+  }
+
+  private async buildChatContext({
+    messageId,
+    userMessages,
+    userDecisions,
+  }: {
+    messageId?: string;
+    userMessages?: AIMessageInput[];
+    userDecisions?: UserDecision[];
+  }) {
+    const { provider, model, service } = await this.getLLMService();
+    const { historyMessages, tools, middleware, config, state } = await this.initSession({
+      messageId,
+      provider,
+      model,
+      providerName: service.provider,
+    });
+
+    const chatContext = await this.aiChatConversation.getChatContext({
+      userMessages: [...historyMessages, ...(userMessages ?? [])],
+      userDecisions,
+      tools,
+      middleware,
+      getSystemPrompt: () => this.getSystemPrompt(),
+      formatMessages: (messages) => this.formatMessages({ messages, provider }),
+    });
+
+    return { provider, chatContext, config, state };
+  }
+
+  async stream({
+    messageId,
+    userMessages = [],
+    userDecisions,
+  }: {
+    messageId?: string;
+    userMessages?: AIMessageInput[];
+    userDecisions?: UserDecision[];
+  }) {
+    try {
+      const { provider, chatContext, config, state } = await this.buildChatContext({
+        messageId,
+        userMessages,
+        userDecisions,
+      });
+
+      const { stream, signal } = await this.prepareChatStream({
+        chatContext,
+        provider,
+        config,
+        state,
+      });
+      await this.processChatStream(stream, {
+        signal,
+        provider,
+      });
+
+      return true;
+    } catch (err) {
+      this.ctx.log.error(err);
+      this.sendErrorResponse(err.message || 'Chat error warning');
+      return false;
+    }
+  }
+
+  async invoke({
+    messageId,
+    userMessages = [],
+    userDecisions,
+  }: {
+    messageId?: string;
+    userMessages?: AIMessageInput[];
+    userDecisions?: UserDecision[];
+  }) {
+    try {
+      const { provider, chatContext, config, state } = await this.buildChatContext({
+        messageId,
+        userMessages,
+        userDecisions,
+      });
+      const { threadId } = await this.getCurrentThread();
+      const invokeConfig = {
+        configurable: { thread_id: threadId },
+        context: { ctx: this.ctx },
+        recursionLimit: 100,
+        ...config,
+      };
+      return await this.agentInvoke(provider, chatContext, invokeConfig, state);
+    } catch (err) {
+      this.ctx.log.error(err);
+      throw err;
+    }
+  }
+
+  // === LLM/provider setup ===
   async getLLMService() {
     // modelOverride is required - it's set by the frontend ModelSwitcher
     if (!this.modelOverride?.llmService || !this.modelOverride?.model) {
@@ -125,15 +270,65 @@ export class AIEmployee {
     return { provider, model, service };
   }
 
+  // === Agent wiring & execution ===
+  async createAgent({
+    provider,
+    systemPrompt,
+    tools,
+    middleware,
+  }: {
+    provider: LLMProvider;
+    systemPrompt?: string;
+    tools?: any[];
+    middleware?: any[];
+  }) {
+    const model = provider.createModel();
+    const toolDefinitions = tools?.map(ToolDefinition.from('ToolsEntry')) ?? [];
+    const allTools = [
+      ...provider.getBuiltInTools(toolDefinitions?.length && toolDefinitions.length > 0),
+      ...toolDefinitions,
+    ];
+    const checkpointer = new SequelizeCollectionSaver(() => this.ctx.app.mainDataSource);
+    return createLangChainAgent({ model, tools: allTools, middleware, systemPrompt, checkpointer });
+  }
+
+  private getAgentInput(context: AIChatContext, state?: any) {
+    if (context.decisions?.length) {
+      return new Command({
+        resume: {
+          decisions: context.decisions,
+        },
+      });
+    }
+    if (context.messages) {
+      return { messages: context.messages, ...state };
+    }
+    return null;
+  }
+
+  async agentStream(provider: LLMProvider, context: AIChatContext, config?: any, state?: any) {
+    const { systemPrompt, tools, middleware } = context;
+    const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
+    const input = this.getAgentInput(context, state);
+    return agent.stream(input, config);
+  }
+
+  async agentInvoke(provider: LLMProvider, context: AIChatContext, config?: any, state?: any) {
+    const { systemPrompt, tools, middleware } = context;
+    const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
+    const input = this.getAgentInput(context, state);
+    return agent.invoke(input, config);
+  }
+
   async prepareChatStream({
     chatContext,
     provider,
-    options,
+    config,
     state,
   }: {
     chatContext: AIChatContext;
     provider: LLMProvider;
-    options?: { configurable?: any };
+    config?: { configurable?: any };
     state?: any;
   }) {
     const controller = new AbortController();
@@ -141,13 +336,16 @@ export class AIEmployee {
 
     try {
       const { threadId } = await this.getCurrentThread();
-      const stream = await provider.getAgentStream(
+      const stream = await this.agentStream(
+        provider,
         chatContext,
         {
           signal,
           streamMode: ['updates', 'messages', 'custom'],
-          configurable: options?.configurable ?? { thread_id: threadId },
+          configurable: { thread_id: threadId },
           context: { ctx: this.ctx },
+          recursionLimit: 100,
+          ...config,
         },
         state,
       );
@@ -240,29 +438,7 @@ export class AIEmployee {
     }
   }
 
-  async parseUISchema(content: string) {
-    const regex = /\{\{\$UISchema\.([^}]+)\}\}/g;
-    const uiSchemaRepo = this.db.getRepository('uiSchemas') as any;
-    const matches = [...content.matchAll(regex)];
-    let result = content;
-
-    for (const match of matches) {
-      const fullMatch = match[0];
-      const uid = match[1];
-      try {
-        const schema = await uiSchemaRepo.getJsonSchema(uid);
-        if (schema) {
-          const s = JSON.stringify(schema);
-          result = result.replace(fullMatch, `UI schema id: ${uid}, UI schema: ${s}`);
-        }
-      } catch (error) {
-        this.ctx.log.error(error, { module: 'aiConversations', method: 'parseUISchema', uid });
-      }
-    }
-
-    return result;
-  }
-
+  // === Prompts & knowledge base ===
   // Notice: employee.dataSourceSettings is not used in the current version.
   getEmployeeDataSourceContext() {
     const dataSourceSettings: {
@@ -464,6 +640,7 @@ export class AIEmployee {
     return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseIds);
   }
 
+  // === Tool calls ===
   async initToolCall(
     transaction: Transaction,
     messageId: string,
@@ -676,70 +853,7 @@ export class AIEmployee {
     sendSSEError(this.ctx, errorMessage);
   }
 
-  async processMessages({
-    messageId,
-    userMessages = [],
-    userDecisions,
-  }: {
-    messageId?: string;
-    userMessages?: AIMessageInput[];
-    userDecisions?: UserDecision[];
-  }) {
-    try {
-      const { provider, model, service } = await this.getLLMService();
-      const prepareOptions = messageId
-        ? async () => {
-            const agentThread = await this.forkCurrentThread(provider);
-            const thread_id = agentThread.threadId;
-            const options = {
-              configurable: {
-                thread_id,
-              },
-            };
-            const tools = await this.getAIEmployeeTools();
-            const middleware = this.getMiddleware({ tools, model, service, messageId, agentThread });
-            const historyMessages = await this.aiChatConversation.listMessages({ messageId });
-            const state = {
-              lastHumanMessageIndex: historyMessages.filter((x) => x.role === 'user').length,
-              lastAIMessageIndex: historyMessages.filter((x) => x.role === this.employee.username).length,
-              lastToolMessageIndex: historyMessages.filter((x) => x.role === 'tool').length,
-              lastMessageIndex: historyMessages.length,
-            };
-            return { historyMessages, tools, middleware, options, state };
-          }
-        : async () => {
-            const historyMessages = [];
-            let options;
-            let state;
-            const tools = await this.getAIEmployeeTools();
-            const middleware = this.getMiddleware({ tools, model, service });
-            return { historyMessages, tools, middleware, options, state };
-          };
-      const { historyMessages, tools, middleware, options, state } = await prepareOptions();
-
-      const chatContext = await this.aiChatConversation.getChatContext({
-        userMessages: [...historyMessages, ...userMessages],
-        userDecisions,
-        tools,
-        middleware,
-        getSystemPrompt: async () => this.getSystemPrompt(),
-        formatMessages: async (messages) => this.formatMessages({ messages, provider }),
-      });
-      const { stream, signal } = await this.prepareChatStream({ chatContext, provider, options, state });
-
-      await this.processChatStream(stream, {
-        signal,
-        provider,
-      });
-
-      return true;
-    } catch (err) {
-      this.ctx.log.error(err);
-      this.sendErrorResponse(err.message || 'Chat error warning');
-      return false;
-    }
-  }
-
+  // === Conversation/thread helpers ===
   async updateThread(transaction: Transaction, { sessionId, thread }: { sessionId: string; thread: number }) {
     await this.aiConversationsRepo.update({
       values: { thread },
@@ -898,17 +1012,17 @@ export class AIEmployee {
   }
 
   private getMiddleware(options: {
+    providerName: string;
+    model: string;
     tools: ToolsEntry[];
-    model: any;
-    service: any;
     messageId?: string;
     agentThread?: AgentThread;
   }) {
-    const { tools, model, service, messageId, agentThread } = options;
+    const { providerName, model, tools, messageId, agentThread } = options;
     return [
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
-      conversationMiddleware(this, { model, service, messageId, agentThread }),
+      conversationMiddleware(this, { providerName, model, messageId, agentThread }),
       debugMiddleware(this, this.ctx.logger),
     ];
   }
@@ -923,7 +1037,7 @@ export class AIEmployee {
 
   private async forkCurrentThread(provider: LLMProvider): Promise<AgentThread> {
     let retTry = 3;
-    const agent = provider.prepareAgent();
+    const agent = await this.createAgent({ provider });
     let currentThread = await this.getCurrentThread();
     do {
       currentThread = currentThread.fork();

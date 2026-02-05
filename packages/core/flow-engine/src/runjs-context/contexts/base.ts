@@ -334,7 +334,7 @@ export function defineBaseContextMeta() {
       },
     },
     methods: {
-      t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {name}", { name: "World" })`',
+      t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {{name}}", { name: "World" })`',
       useResource: {
         description:
           'Define ctx.resource as a FlowResource instance by class name. Common values: "MultiRecordResource", "SingleRecordResource", "SQLResource".',
@@ -768,7 +768,7 @@ export function defineBaseContextMeta() {
         },
       },
       methods: {
-        t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {name}", { name: "世界" })`',
+        t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {{name}}", { name: "世界" })`',
         useResource: {
           description:
             '通过资源类名创建 ctx.resource。常用值："MultiRecordResource"、"SingleRecordResource"、"SQLResource"。',

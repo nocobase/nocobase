@@ -189,7 +189,7 @@ export const EditorCore: React.FC<{
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly, knownCtxMemberRoots]);
+  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly]);
 
   // Update editor content when value changes
   useEffect(() => {

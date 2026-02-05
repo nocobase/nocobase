@@ -304,23 +304,36 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
-      setupSSEHeaders(ctx);
-
       const {
         sessionId,
         aiEmployee: employeeName,
         messages,
         editingMessageId,
         modelOverride,
+        stream = true,
       } = ctx.action.params.values || {};
+      const shouldStream = stream !== false;
+      if (shouldStream) {
+        setupSSEHeaders(ctx);
+      }
       if (!sessionId) {
-        sendErrorResponse(ctx, 'sessionId is required');
+        if (shouldStream) {
+          sendErrorResponse(ctx, 'sessionId is required');
+        } else {
+          ctx.status = 400;
+          ctx.body = { error: 'sessionId is required' };
+        }
         return next();
       }
 
       const userMessage = messages.find((message: any) => message.role === 'user');
       if (!userMessage) {
-        sendErrorResponse(ctx, 'user message is required');
+        if (shouldStream) {
+          sendErrorResponse(ctx, 'user message is required');
+        } else {
+          ctx.status = 400;
+          ctx.body = { error: 'user message is required' };
+        }
         return next();
       }
 
@@ -330,7 +343,12 @@ export default {
         });
 
         if (!conversation) {
-          sendErrorResponse(ctx, 'conversation not found');
+          if (shouldStream) {
+            sendErrorResponse(ctx, 'conversation not found');
+          } else {
+            ctx.status = 404;
+            ctx.body = { error: 'conversation not found' };
+          }
           return next();
         }
 
@@ -348,7 +366,12 @@ export default {
 
         const employee = await getAIEmployee(ctx, employeeName);
         if (!employee) {
-          sendErrorResponse(ctx, 'AI employee not found');
+          if (shouldStream) {
+            sendErrorResponse(ctx, 'AI employee not found');
+          } else {
+            ctx.status = 404;
+            ctx.body = { error: 'AI employee not found' };
+          }
           return next();
         }
 
@@ -372,10 +395,19 @@ export default {
           modelOverride,
         );
         await aiEmployee.cancelToolCall();
-        await aiEmployee.processMessages({ userMessages: messages, messageId: editingMessageId });
+        if (shouldStream) {
+          await aiEmployee.stream({ userMessages: messages, messageId: editingMessageId });
+        } else {
+          ctx.body = await aiEmployee.invoke({ userMessages: messages, messageId: editingMessageId });
+        }
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Tool call error');
+        if (shouldStream) {
+          sendErrorResponse(ctx, err.message || 'Tool call error');
+        } else {
+          ctx.status = 500;
+          ctx.body = { error: err.message || 'Tool call error' };
+        }
       }
 
       await next();
@@ -446,7 +478,7 @@ export default {
           conversation.options?.conversationSettings?.webSearch,
           conversation.options?.modelOverride,
         );
-        await aiEmployee.processMessages({ messageId });
+        await aiEmployee.stream({ messageId });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Chat error warning');
@@ -603,8 +635,7 @@ export default {
         );
 
         const userDecisions = await aiEmployee.getUserDecisions(messageId);
-
-        await aiEmployee.processMessages({
+        await aiEmployee.stream({
           userDecisions,
         });
       } catch (err) {

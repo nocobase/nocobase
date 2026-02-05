@@ -1352,10 +1352,9 @@ describe('FlowEngine context', () => {
     const v1 = await (engine.context as any).getVar('ctx.foo.bar');
     expect(v1).toBe(1);
 
-    const infos = await (engine.context as any).getApiInfos();
-    expect(infos.getVar).toBeTruthy();
-    expect(infos.getVar?.type).toBe('function');
-    expect((infos.getVar as any)?.completion).toBeUndefined();
+    await expect((engine.context as any).getVar('{{ ctx.foo.bar }}')).rejects.toThrow();
+
+    await expect((engine.context as any).getVar('foo.bar')).rejects.toThrow();
   });
 
   it('engine.context.runAction should resolve action from engine.getAction', async () => {

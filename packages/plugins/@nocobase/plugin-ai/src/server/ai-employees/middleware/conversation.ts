@@ -21,9 +21,14 @@ import { Model } from '@nocobase/database';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
-  options: { model: any; service: any; messageId?: string; agentThread?: { sessionId: string; thread: number } },
+  options: {
+    providerName: string;
+    model: string;
+    messageId?: string;
+    agentThread?: { sessionId: string; thread: number };
+  },
 ) => {
-  const { model, service, messageId, agentThread } = options;
+  const { providerName: provider, model, messageId, agentThread } = options;
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput => {
     const message = aiMessage.content;
     const toolCalls = aiMessage.tool_calls;
@@ -42,7 +47,7 @@ export const conversationMiddleware = (
       metadata: {
         id: aiMessage.id,
         model,
-        provider: service.provider,
+        provider,
         usage_metadata: {},
       },
       toolCalls: null,
@@ -81,7 +86,7 @@ export const conversationMiddleware = (
       metadata: {
         id: aiMessage.id,
         model,
-        provider: service.provider,
+        provider,
       },
     };
 
@@ -101,7 +106,7 @@ export const conversationMiddleware = (
       metadata: {
         id: message.id,
         model,
-        provider: service.provider,
+        provider,
         toolCallId: message.tool_call_id,
         toolName: message.name,
       },

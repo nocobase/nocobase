@@ -28,10 +28,15 @@ export function clearDiagnostics(view: EditorView | null | undefined) {
 export function parseErrorLineColumn(err: any): { line: number; column: number } | null {
   const stack = String(err?.stack || err?.message || err || '');
   const lines = stack.split('\n');
+  // Prefer RunJS user code frames (typically "<anonymous>:line:column") over external libs.
+  // Many third-party library stacks contain URL frames first (e.g. https://cdn...:175:30),
+  // which are not meaningful for mapping back to the editor.
   for (const ln of lines) {
-    let m = ln.match(/<anonymous>:(\d+):(\d+)/);
+    const m = ln.match(/<anonymous>:(\d+):(\d+)/);
     if (m) return { line: parseInt(m[1], 10), column: parseInt(m[2], 10) };
-    m = ln.match(/:(\d+):(\d+)/); // fallback: pick first line:column found
+  }
+  for (const ln of lines) {
+    const m = ln.match(/:(\d+):(\d+)/); // fallback: pick first line:column found
     if (m) {
       const l = parseInt(m[1], 10);
       const c = parseInt(m[2], 10);

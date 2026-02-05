@@ -22,30 +22,34 @@ Configuration steps:
 
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
 
-3. "Trigger condition" is used to configure conditions. The event flow will only trigger when these conditions are met. In this case, we don't need to configure any conditions, so the flow will trigger on any row click.
+3. Configure "Execution timing" to decide where this custom flow runs relative to built-in flows. In most cases, keep the default. If you want to show feedback or navigate after built-in logic finishes, choose "After built-in flows". See [Execution timing](#execution-timing) below.
+
+![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
+
+4. "Trigger condition" is used to configure conditions. The event flow will only trigger when these conditions are met. In this case, we don't need to configure any conditions, so the flow will trigger on any row click.
 
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
 
-4. Hover over "Add step" to add operation steps. Select "Set data scope" to configure the data scope for the right table.
+5. Hover over "Add step" to add operation steps. Select "Set data scope" to configure the data scope for the right table.
 
 ![20251031092755](https://static-docs.nocobase.com/20251031092755.png)
 
-5. Copy the UID of the right table and paste it into the "Target block UID" input field. A condition configuration panel will appear below, where you can configure the data scope for the right table.
+6. Copy the UID of the right table and paste it into the "Target block UID" input field. A condition configuration panel will appear below, where you can configure the data scope for the right table.
 
 ![20251031092915](https://static-docs.nocobase.com/20251031092915.png)
 
-6. Configure a condition as shown below:
+7. Configure a condition as shown below:
 
 ![20251031093233](https://static-docs.nocobase.com/20251031093233.png)
 
-7. After configuring the data scope, you need to refresh the block to display the filtered results. Add a "Refresh target blocks" step and enter the UID of the right table.
+8. After configuring the data scope, you need to refresh the block to display the filtered results. Add a "Refresh target blocks" step and enter the UID of the right table.
 
 ![20251031093150](https://static-docs.nocobase.com/20251031093150.png)
 
 
 ![20251031093341](https://static-docs.nocobase.com/20251031093341.png)
 
-8. Finally, click the save button in the bottom-right corner to complete the configuration.
+9. Finally, click the save button in the bottom-right corner to complete the configuration.
 
 ## Event types
 
@@ -64,6 +68,29 @@ A form block-specific event. Triggers when form field values change. You can acc
 ### Click
 
 A button-specific event. Triggers when the button is clicked.
+
+## Execution timing
+
+In event flow settings, two concepts are easy to mix up:
+
+- **Trigger event:** when the flow starts (e.g., Before render / Row click / Click / Form values change).
+- **Execution timing:** after the same trigger event happens, where your **custom flow** runs relative to the **built-in flows**.
+
+### What are “built-in flows / built-in steps”?
+
+Many pages, blocks, and actions have built-in behavior (for example: submit, open a dialog, request data). When you add a custom event flow on the same event (such as “Click”), “Execution timing” decides:
+
+- whether your flow runs before or after the built-in logic, or
+- whether it runs around a specific built-in flow/step.
+
+### How to choose an option in the UI
+
+- **Before all flows (default):** runs first. Good for preparation/guarding (validation, confirmation, initializing variables, etc.).
+- **After built-in flows:** runs after the built-in logic completes. Good for cleanup/feedback (messages, refreshing other blocks, navigation, etc.).
+- **Before/After built-in flow:** a more specific insertion point. You’ll need to pick a “Built-in flow”.
+- **Before/After built-in flow step:** the most specific insertion point. You’ll need to pick both a “Built-in flow” and a “Built-in flow step”.
+
+Tip: if you’re not sure which built-in flow/step to pick, the first two options are usually enough.
 
 ## Step types
 
@@ -173,3 +200,34 @@ Display notification alerts in the four corners of the system. Commonly used for
 
 
 Execute JavaScript code.
+
+## Examples
+
+### Form: call a third-party API and fill fields
+
+Scenario: trigger an event flow in a form, call a third-party API, and fill a form field with the response.
+
+Example setup:
+
+1. Open event flow settings on the form block and add an event flow;
+2. Choose “Before render” as the trigger event;
+3. Set “Execution timing” to “After built-in flows”;
+4. Add an “Execute JavaScript” step and paste/edit the code below:
+
+```js
+const res = await ctx.api.request({
+  method: 'get',
+  url: 'https://jsonplaceholder.typicode.com/users/2',
+  skipNotify: true,
+  // Note: ctx.api will include the current NocoBase authentication/custom headers by default
+  // Here we override it with an "empty Authorization" to avoid sending the token to a third party
+  headers: {
+    Authorization: 'Bearer ',
+  },
+});
+
+const username = res?.data?.username;
+
+// replace it with actual field name
+ctx.form.setFieldsValue({ username });
+```
