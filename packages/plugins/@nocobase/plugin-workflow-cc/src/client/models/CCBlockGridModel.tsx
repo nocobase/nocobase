@@ -25,7 +25,9 @@ const CCAddBlockButton = ({ model }: { model: CCBlockGridModel }) => {
     const dataBlocksChildren: SubModelItem[] = [];
 
     // Trigger Data
-    const triggerData = _.castArray(trigger.getCreateModelMenuItem?.({ config: workflow.config })).filter(Boolean);
+    const triggerData = _.castArray(
+      trigger.getCreateModelMenuItem?.({ config: workflow.config, nodeType: 'cc' }),
+    ).filter(Boolean);
     if (triggerData?.length) {
       dataBlocksChildren.push({
         key: 'triggers',
