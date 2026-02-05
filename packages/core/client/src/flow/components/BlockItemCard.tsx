@@ -59,6 +59,16 @@ const getAddBlockContainer = (root: HTMLElement) => {
   return (button.parentElement as HTMLElement | null) || button;
 };
 
+function getValidPageTop(a, b) {
+  const aValid = a > 0;
+  const bValid = b > 0;
+
+  if (aValid && bValid) return Math.min(a, b);
+  if (aValid) return a;
+  if (bValid) return b;
+  return 0; // 都不是正数
+}
+
 const useBlockHeight = ({
   height,
   heightMode,
@@ -83,13 +93,16 @@ const useBlockHeight = ({
     const padding = getPadding(root);
     const addBlockContainer = getAddBlockContainer(root);
     const pageTop = rootRect.top + padding.top;
-    const topOffset = Math.max(0, cardRect.top - pageTop);
+    const topOffset = Math.min(Math.max(0, cardRect.top - pageTop), 0);
     let bottomOffset = padding.bottom + ctx.themeToken.marginBlock;
     if (addBlockContainer) {
       const gapBetween = ctx.themeToken.marginBlock;
       bottomOffset = gapBetween + getOuterHeight(addBlockContainer) + padding.bottom;
     }
-    const nextHeight = Math.max(0, Math.floor(window.innerHeight - pageTop - topOffset - bottomOffset));
+    const nextHeight = Math.max(
+      0,
+      Math.floor(window.innerHeight - getValidPageTop(pageTop, 110) - topOffset - bottomOffset),
+    );
     setFullHeight((prev) => (prev === nextHeight ? prev : nextHeight));
   }, [heightMode, cardRef]);
 
