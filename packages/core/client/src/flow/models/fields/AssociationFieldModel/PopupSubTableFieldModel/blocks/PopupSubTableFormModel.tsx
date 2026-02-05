@@ -73,6 +73,7 @@ export class PopupSubTableFormModel extends FormBlockModel {
       meta: createItemChainMetaFactory({
         t: this.context.t,
         title: this.context.t('Current object'),
+        showParentIndex: typeof (this.context.view?.inputArgs?.parentItem as any)?.index === 'number',
         collectionAccessor: () => this.context.collection,
         valueAccessor: (ctx) => ctx?.item?.value,
         parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,

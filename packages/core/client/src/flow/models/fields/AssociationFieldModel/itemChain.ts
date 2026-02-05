@@ -17,14 +17,26 @@ export type ItemChain = {
   parentItem?: ItemChain;
 };
 
+export function createRootItemChain(formValues: any): ItemChain {
+  return {
+    index: undefined,
+    __is_new__: formValues?.__is_new__,
+    __is_stored__: formValues?.__is_stored__,
+    value: formValues,
+    parentItem: undefined,
+  };
+}
+
 export function createItemChainMetaFactory(options: {
   t: (key: string) => string;
   title: string;
+  showIndex?: boolean;
+  showParentIndex?: boolean;
   collectionAccessor: () => any;
   valueAccessor: (ctx: any) => any;
   parentCollectionAccessor?: () => any;
 }) {
-  const { t, title, collectionAccessor, valueAccessor, parentCollectionAccessor } = options;
+  const { t, title, showIndex, showParentIndex, collectionAccessor, valueAccessor, parentCollectionAccessor } = options;
   const valueMetaFactory = createAssociationAwareObjectMetaFactory(collectionAccessor, title, valueAccessor);
   const parentValueMetaFactory = parentCollectionAccessor
     ? createAssociationAwareObjectMetaFactory(parentCollectionAccessor, title, (ctx) => ctx?.item?.parentItem?.value)
@@ -38,23 +50,31 @@ export function createItemChainMetaFactory(options: {
     const buildVars = (valueMeta as any).buildVariablesParams;
     const parentBuildVars = parentValueMeta ? (parentValueMeta as any).buildVariablesParams : null;
 
+    const createIndexMeta = () => ({ type: 'number', title: t('Index (starts from 0)') });
+
+    const properties: Record<string, any> = {};
+    if (showIndex !== false) {
+      properties.index = createIndexMeta();
+    }
+    properties.value = { ...(valueMeta as any), title: t('Properties') };
+
+    const parentProperties: Record<string, any> = {};
+    if (showParentIndex !== false) {
+      parentProperties.index = createIndexMeta();
+    }
+    parentProperties.value = parentValueMeta
+      ? { ...(parentValueMeta as any), title: t('Properties') }
+      : { type: 'object', title: t('Properties') };
+    properties.parentItem = {
+      type: 'object',
+      title: t('Parent object'),
+      properties: parentProperties,
+    };
+
     const meta: any = {
       type: 'object',
       title,
-      properties: {
-        index: { type: 'number', title: t('Index (starts from 0)') },
-        value: { ...(valueMeta as any), title: t('Properties') },
-        parentItem: {
-          type: 'object',
-          title: t('Parent object'),
-          properties: {
-            index: { type: 'number', title: t('Index (starts from 0)') },
-            value: parentValueMeta
-              ? { ...(parentValueMeta as any), title: t('Properties') }
-              : { type: 'object', title: t('Properties') },
-          },
-        },
-      },
+      properties,
       buildVariablesParams: async (ctx: any) => {
         const out: Record<string, any> = {};
 
