@@ -17,23 +17,8 @@ export class DefaultToolsManager implements ToolsManager {
     private readonly tools = new Registry<FrontendTools>(),
   ) {}
 
-  async getTools(toolName: string): Promise<ToolsEntry> {
-    const frontendTools: FrontendTools = this.tools.get(toolName);
-    if (!frontendTools) {
-      return;
-    }
-
-    const { data: res } = await this.app.apiClient.resource('core-ai').getTools({ filterByTk: toolName });
-    const backendTools = res?.data as BackendTools;
-    if (!backendTools) {
-      return null;
-    }
-
-    return { ...backendTools, ...frontendTools };
-  }
-
   async listTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
-    const { data: res } = await this.app.apiClient.resource('core-ai').listTools({ filter });
+    const { data: res } = await this.app.apiClient.resource('aiTools').list({ filter });
     const backendTools = res?.data as BackendTools[];
     if (!backendTools) {
       return [];

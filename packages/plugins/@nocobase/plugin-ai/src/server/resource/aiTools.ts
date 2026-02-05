@@ -9,14 +9,15 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import PluginAIServer from '../plugin';
+import { AIManager } from '@nocobase/ai';
 
 export const aiTools: ResourceOptions = {
   name: 'aiTools',
   actions: {
     list: async (ctx, next) => {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = await plugin.aiManager.toolManager.listTools();
-      ctx.body = tools;
+      const { toolsManager } = ctx.app.aiManager as AIManager;
+      const { filter } = ctx.action.params;
+      ctx.body = await toolsManager.listTools(filter);
       await next();
     },
     listBinding: async (ctx, next) => {

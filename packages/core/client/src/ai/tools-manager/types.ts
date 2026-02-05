@@ -12,7 +12,6 @@ import type { Application } from '../../application';
 import { Registry } from '@nocobase/utils/client';
 
 export interface ToolsManager extends ToolsRegistration {
-  getTools(toolName: string): Promise<ToolsEntry>;
   listTools(filter?: ToolsFilter): Promise<ToolsEntry[]>;
   useTools(): Registry<FrontendTools>;
 }
