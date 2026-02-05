@@ -1339,10 +1339,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const s = raw.trim();
         if (!s) return undefined;
         // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
-        // We also accept a full template string '{{ ... }}' for convenience.
-        if (/^\\s*\\{\\{/.test(s)) {
-          return this.resolveJsonTemplate(s as any);
-        }
         if (s !== 'ctx' && !s.startsWith('ctx.')) {
           throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
         }

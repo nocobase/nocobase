@@ -766,8 +766,7 @@ describe('FlowEngine context', () => {
     const v1 = await (engine.context as any).getVar('ctx.foo.bar');
     expect(v1).toBe(1);
 
-    const v2 = await (engine.context as any).getVar('{{ ctx.foo.bar }}');
-    expect(v2).toBe(1);
+    await expect((engine.context as any).getVar('{{ ctx.foo.bar }}')).rejects.toThrow();
 
     await expect((engine.context as any).getVar('foo.bar')).rejects.toThrow();
   });
