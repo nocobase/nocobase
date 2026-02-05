@@ -123,4 +123,50 @@ describe('flow-model duplicate', () => {
     expect(newChild.uid).not.toBe('shared-child');
     expect(newChild.parentId).toBe(newInner.uid);
   });
+
+  it('should include async subtrees in duplicate result', async () => {
+    const tree = {
+      uid: 'dup-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'dup-root',
+            use: 'RootModel',
+            subModels: {
+              // 模拟弹窗/子页面等按需加载的异步子树
+              page: {
+                uid: 'dup-page',
+                async: true,
+                use: 'PageModel',
+                subModels: {
+                  content: {
+                    uid: 'dup-page-content',
+                    use: 'ContentModel',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    } as any;
+
+    await repository.insertModel(tree);
+
+    const duplicated = await repository.duplicate('dup-root');
+    expect(duplicated).toBeTruthy();
+    expect(duplicated.uid).not.toBe('dup-root');
+
+    const newPage = duplicated.subModels?.page;
+    expect(newPage).toBeTruthy();
+    expect(newPage.uid).not.toBe('dup-page');
+    expect(newPage.parentId).toBe(duplicated.uid);
+    expect(newPage.async).toBe(true);
+
+    const newContent = newPage.subModels?.content;
+    expect(newContent).toBeTruthy();
+    expect(newContent.uid).not.toBe('dup-page-content');
+    expect(newContent.parentId).toBe(newPage.uid);
+  });
 });

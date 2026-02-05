@@ -130,6 +130,18 @@ export class PluginUISchemaStorageServer extends Plugin {
           ctx.body = duplicated;
           await next();
         },
+        attach: async (ctx, next) => {
+          const { uid, parentId, subKey, subType, position } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const attached = await repository.attach(String(uid || '').trim(), {
+            parentId: String(parentId || '').trim(),
+            subKey: String(subKey || '').trim(),
+            subType,
+            position,
+          });
+          ctx.body = attached;
+          await next();
+        },
         move: async (ctx, next) => {
           const { sourceId, targetId, position } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
