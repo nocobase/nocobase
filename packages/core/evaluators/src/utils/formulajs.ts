@@ -32,6 +32,7 @@ export const BASE_BLOCKED_IDENTIFIERS = [
 ];
 
 export interface FormulaEvaluatorOptions {
+  lockdown?: boolean;
   lockdownOptions?: LockdownOptions;
   blockedIdentifiers?: string[];
 }
@@ -79,18 +80,22 @@ function buildEndowments(scope: Scope, blockedIdentifiers: string[]) {
 }
 
 function runInSandbox(expression: string, scope: Scope, options: InternalEvaluatorOptions) {
-  ensureLockdown(options.lockdownOptions);
+  if (options.lockdown) {
+    ensureLockdown(options.lockdownOptions);
+  }
   const compartment = new Compartment(buildEndowments(scope, options.blockedIdentifiers));
   return compartment.evaluate(expression);
 }
 
 interface InternalEvaluatorOptions {
+  lockdown: boolean;
   lockdownOptions?: LockdownOptions;
   blockedIdentifiers: string[];
 }
 
 export function createFormulaEvaluator(options: FormulaEvaluatorOptions = {}) {
   const mergedOptions: InternalEvaluatorOptions = {
+    lockdown: options.lockdown !== false,
     lockdownOptions: options.lockdownOptions,
     blockedIdentifiers: Array.from(new Set([...(options.blockedIdentifiers || []), ...BASE_BLOCKED_IDENTIFIERS])),
   };

@@ -22,6 +22,7 @@ const blockedIdentifiers = [
 ];
 
 const formulajs = createFormulaEvaluator({
+  lockdown: false,
   lockdownOptions: {
     consoleTaming: 'unsafe',
     errorTaming: 'unsafe',
