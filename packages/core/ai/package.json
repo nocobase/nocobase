@@ -8,7 +8,8 @@
   "dependencies": {
     "@nocobase/resourcer": "2.0.0-alpha.68",
     "@nocobase/utils": "2.0.0-alpha.68",
-    "flexsearch": "^0.8.2"
+    "flexsearch": "^0.8.2",
+    "gray-matter": "^4.0.3"
   },
   "repository": {
     "type": "git",

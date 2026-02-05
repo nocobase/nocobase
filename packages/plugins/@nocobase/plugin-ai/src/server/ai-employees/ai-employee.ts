@@ -28,11 +28,12 @@ import {
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
 } from './middleware';
-import { ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import { defineTools, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
 import { Command } from '@langchain/langgraph';
+import { z } from 'zod';
 
 export interface ModelOverride {
   llmService: string;
@@ -994,6 +995,7 @@ export class AIEmployee {
 
   private async getAIEmployeeTools() {
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    tools.push(await this.buildSkillsTool());
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
     const skills = this.employee.skillSettings?.skills ?? [];
@@ -1009,6 +1011,33 @@ export class AIEmployee {
     }
     const skillFilter = this.skillSettings?.skills ?? [];
     return tools.filter((t) => skillFilter.length === 0 || skillFilter.includes(t.definition.name));
+  }
+
+  private async buildSkillsTool() {
+    const { skillsManager } = this.plugin.ai;
+    const skillNames = this.employee.skillSettings?._skills ?? [];
+    const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
+    const specifiedSkills = await skillsManager.getSkills(skillNames);
+    const available = [...generalSkills, ...specifiedSkills].map((it) => `${it.name}: ${it.description}`).join('\n');
+    return defineTools({
+      scope: 'GENERAL',
+      silence: true,
+      definition: {
+        name: 'loadSkills',
+        description: `Load a specialized skill.\n\nAvailable skills: \n${available}\n\nReturns the skill's prompt and context.`,
+        schema: z.object({
+          skillName: z.string().describe('Name of skill to load'),
+        }),
+      },
+      invoke: async (ctx, args) => {
+        const skillName = args.skillName as string;
+        const skills = await skillsManager.getSkills(skillName);
+        return {
+          status: 'success',
+          content: skills.content,
+        };
+      },
+    });
   }
 
   private getMiddleware(options: {
