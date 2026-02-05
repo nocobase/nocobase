@@ -28,7 +28,7 @@ export const refreshTargetBlocks = defineAction({
   async handler(ctx, params) {
     const { targets = [] } = params;
     targets.forEach((target) => {
-      const modelInstance = ctx.engine.getModel(target);
+      const modelInstance = ctx.engine.getModel(target, true);
       if (!modelInstance) {
         console.warn(`Not found model: ${target}`);
         return;

@@ -399,8 +399,10 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
     typeof params.popupTemplateHasSourceId === 'boolean'
       ? params.popupTemplateHasSourceId
       : normalizeStr(params.sourceId) !== '';
-  // sourceId 是否需要保留完全由模板的 popupTemplateHasSourceId 或 sourceId 表达式决定
-  const shouldKeepSourceId = hasTemplateSourceId;
+  // sourceId 是否需要保留：
+  // - 关系资源弹窗（associationName 存在）必须保留 sourceId，否则资源 URL 无法拼成 `a/<sourceId>/b:*`；
+  // - 非关系模板则仍以模板标记/表达式为准，用于避免从 actionDefaults 误透传到模板弹窗。
+  const shouldKeepSourceId = hasTemplateSourceId || !!tplAssociationName;
   const assocField = resolveAssociationFieldFromCtx(ctx);
   const assocTargetCollectionName = normalizeStr(assocField?.targetCollection?.name);
   const tplCollectionName = normalizeStr(params?.collectionName);
@@ -963,11 +965,14 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         (typeof templateUid === 'string' && templateUid.trim()) || !!(runtimeParams as any)?.popupTemplateContext;
       const nextParams = stripTemplateParams(runtimeParams);
 
-      // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId
-      // 避免关系字段上下文的 sourceId 被传递到不需要它的弹窗
-      // sourceId 是否需要保留完全由模板的 popupTemplateHasSourceId 决定
+      // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId：
+      // - 非关系模板：避免关系字段上下文的 sourceId 被传递到不需要它的弹窗；
+      // - 关系资源弹窗：必须保留 sourceId 以生成正确的关联资源 URL。
       const templateNeedsSourceId =
-        hydratedMeta?.hasSourceId === true || !!(runtimeParams as any)?.popupTemplateHasSourceId;
+        // 关系资源弹窗需要 sourceId 以生成正确的关联资源 URL
+        normalizeStr((runtimeParams as any)?.associationName) !== '' ||
+        hydratedMeta?.hasSourceId === true ||
+        !!(runtimeParams as any)?.popupTemplateHasSourceId;
       if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
         delete (nextParams as any).sourceId;
       }

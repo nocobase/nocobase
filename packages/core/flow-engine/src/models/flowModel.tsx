@@ -424,7 +424,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       const meta = Cls.meta as any;
       const metaCreate = meta?.createModelOptions;
       if (metaCreate && typeof metaCreate === 'object' && metaCreate.subModels) {
-        mergedSubModels = _.merge({}, _.cloneDeep(metaCreate.subModels || {}), _.cloneDeep(subModels || {}));
+        const replaceArrays = (objValue: unknown, srcValue: unknown) => {
+          if (Array.isArray(objValue) && Array.isArray(srcValue)) {
+            // Arrays should be replaced, not merged by index.
+            return srcValue;
+          }
+          return undefined;
+        };
+        mergedSubModels = _.mergeWith(
+          {},
+          _.cloneDeep(metaCreate.subModels || {}),
+          _.cloneDeep(subModels || {}),
+          replaceArrays,
+        );
       }
     } catch (e) {
       // Fallback silently if meta defaults resolution fails

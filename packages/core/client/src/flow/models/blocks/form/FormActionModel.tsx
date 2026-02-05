@@ -80,6 +80,7 @@ FormSubmitActionModel.registerFlow({
         try {
           ctx.model.setProps('loading', true);
           await submitHandler(ctx, params);
+          ctx.message.success(ctx.t('Saved successfully'));
           ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
@@ -87,19 +88,14 @@ FormSubmitActionModel.registerFlow({
           ctx.message.error(ctx.t('Save failed'));
           console.error('Form submission error:', error);
           ctx.exit();
+        } finally {
+          ctx.model.setProps('loading', false);
         }
       },
     },
     refreshAndClose: {
       async handler(ctx) {
         if (ctx.view) {
-          const viewUid = ctx.view.inputArgs?.viewUid;
-          const actionModel = ctx.engine.getModel(viewUid, true);
-
-          if (actionModel) {
-            actionModel.context.blockModel?.resource?.refresh();
-          }
-
           ctx.view.close();
         }
       },
