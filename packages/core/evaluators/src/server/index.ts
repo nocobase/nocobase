@@ -32,9 +32,8 @@ function enableBufferPrototypeOverrides() {
   }
 
   const bufferPrototype = bufferCtor.prototype;
-  const descriptors = Object.getOwnPropertyDescriptors(bufferPrototype);
-  for (const key of Reflect.ownKeys(descriptors)) {
-    const descriptor = descriptors[key as keyof typeof descriptors];
+  for (const key of Reflect.ownKeys(bufferPrototype)) {
+    const descriptor = Object.getOwnPropertyDescriptor(bufferPrototype, key);
     if (!descriptor || typeof descriptor.value !== 'function' || !descriptor.configurable) {
       continue;
     }
