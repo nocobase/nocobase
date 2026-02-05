@@ -11,7 +11,7 @@ import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
 
 export default defineTools({
-  scope: 'SPECIFIED',
+  scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Get collection names")}}',

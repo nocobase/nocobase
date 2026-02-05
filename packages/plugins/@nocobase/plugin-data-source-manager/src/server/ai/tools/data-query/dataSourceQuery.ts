@@ -10,8 +10,12 @@
 import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
-import PluginAIServer from '../../../plugin';
-import { buildPagedToolResult, normalizeLimitOffset, truncateLongStrings } from '../../../tools/utils';
+import PluginAIServer from '../../../../../../plugin-ai/src/server/plugin';
+import {
+  buildPagedToolResult,
+  normalizeLimitOffset,
+  truncateLongStrings,
+} from '../../../../../../plugin-ai/src/server/tools/utils';
 
 export default defineTools({
   scope: 'GENERAL',

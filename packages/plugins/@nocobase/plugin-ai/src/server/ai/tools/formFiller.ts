@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 export default defineTools({
   scope: 'GENERAL',
+  defaultPermission: 'ALLOW',
   execution: 'frontend',
   introduction: {
     title: '{{t("Form filler")}}',

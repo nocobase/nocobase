@@ -195,7 +195,7 @@ export async function readDocEntry(docPath: string): Promise<DocEntryResult> {
 
 export function createDocsSearchTool(options?: { description?: string }): ToolsOptions {
   return {
-    scope: 'SPECIFIED',
+    scope: 'GENERAL',
     defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Search documentation")}}',
@@ -261,7 +261,7 @@ export function createDocsSearchTool(options?: { description?: string }): ToolsO
 
 export function createReadDocEntryTool(options?: { description?: string }): ToolsOptions {
   return {
-    scope: 'SPECIFIED',
+    scope: 'GENERAL',
     defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Read documentation file")}}',

@@ -10,7 +10,7 @@
 import { defineTools } from '@nocobase/ai';
 
 export default defineTools({
-  scope: 'SPECIFIED',
+  scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
     title: '{{t("Search field metadata")}}',

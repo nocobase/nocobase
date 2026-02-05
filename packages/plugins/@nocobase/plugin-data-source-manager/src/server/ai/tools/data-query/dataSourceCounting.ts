@@ -10,7 +10,7 @@
 import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
-import PluginAIServer from '../../../plugin';
+import PluginAIServer from '../../../../../../plugin-ai/src/server/plugin';
 
 export default defineTools({
   scope: 'GENERAL',
