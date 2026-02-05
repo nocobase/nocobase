@@ -41,6 +41,9 @@ export class MapBlockModel extends CollectionBlockModel {
   }
   onInit(options: any): void {
     super.onInit(options);
+    this.setStepParams('popupSettings', 'openView', {
+      disablePopupTemplateMenu: true,
+    });
     this.resource.on('refresh', async () => {
       this.resource.setSelectedRows([]);
       this.selectedRecordKeys = [];
