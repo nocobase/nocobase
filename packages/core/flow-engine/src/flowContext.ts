@@ -3833,31 +3833,6 @@ export class FlowRuntimeContext<
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
 
-export type FlowContextDocRef = string | { url: string; title?: string };
-
-export type FlowDeprecationDoc =
-  | boolean
-  | {
-      message?: string;
-      replacedBy?: string | string[];
-      since?: string;
-      removedIn?: string;
-      ref?: FlowContextDocRef;
-    };
-
-export type FlowContextDocParam = {
-  name: string;
-  description?: string;
-  type?: string;
-  optional?: boolean;
-  default?: JSONValue;
-};
-
-export type FlowContextDocReturn = {
-  description?: string;
-  type?: string;
-};
-
 export type RunJSDocCompletionDoc = {
   insertText?: string;
 };
