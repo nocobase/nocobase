@@ -10,6 +10,7 @@
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionGroupModel, ActionModel } from '../../../../base';
+import { omitHiddenModelValuesFromSubmit } from '../../../../blocks/form/submitValues';
 
 function matchPath(paths: string[], key: string) {
   return paths.find((p) => p === key || p.endsWith(`.${key}`)) ?? key;
@@ -70,7 +71,8 @@ PopupSubTableFormSubmitActionModel.registerFlow({
         const prefixPath = matchPath(parentUpdateAssociations, associationName);
         try {
           await blockModel.form.validateFields();
-          const values = blockModel.form.getFieldsValue(true);
+          const rawValues = blockModel.form.getFieldsValue(true);
+          const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
           subTableModel.dispatchEvent('updateRow', {
             updatedRecord: values,
           });
