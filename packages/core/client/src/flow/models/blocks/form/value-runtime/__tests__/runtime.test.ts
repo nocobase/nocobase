@@ -1306,6 +1306,44 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['user', 'id'])).toBe(1);
   });
 
+  it('applies nested association targetKey write when association value is empty', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ user: null });
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-tk-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userCollection: any = { getField: () => null, filterTargetKey: 'id' };
+    const userField: any = { isAssociationField: () => true, type: 'belongsTo', targetCollection: userCollection };
+    const collection: any = { getField: (name: string) => (name === 'user' ? userField : null) };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'user.id',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: 123,
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['user', 'id'])).toBe(123));
+    expect(formStub.getFieldValue(['user'])).toEqual({ id: 123 });
+  });
+
   it('applies nested association write for updateAssociation field when association value is empty', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

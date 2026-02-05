@@ -31,6 +31,7 @@ export function collectUpdateAssociationValuesFromAssignRules(
     let cur = rootCollection;
     const assocSegs: string[] = [];
     let deepest: string | null = null;
+    let deepestField: any | null = null;
 
     // 只遍历到倒数第二段：最后一段视为“属性字段”
     for (let i = 0; i < segs.length - 1; i++) {
@@ -39,7 +40,23 @@ export function collectUpdateAssociationValuesFromAssignRules(
       if (!cf?.isAssociationField?.() || !cf?.targetCollection) break;
       assocSegs.push(seg);
       deepest = assocSegs.join('.');
+      deepestField = cf;
       cur = cf.targetCollection;
+    }
+
+    // 特殊：targetPath 仅写入关联对象的 targetKey/filterTargetKey（如 user.id），不属于“更新关联对象属性”，无需注入 updateAssociationValues。
+    // 这种场景通常代表“通过主键选中关联记录”。
+    if (deepest && deepestField) {
+      const lastSeg = segs[segs.length - 1];
+      const rawKey = deepestField?.targetKey ?? deepestField?.targetCollection?.filterTargetKey ?? 'id';
+      const keyFields = Array.isArray(rawKey)
+        ? rawKey.filter((v: any) => typeof v === 'string' && !!v)
+        : typeof rawKey === 'string' && rawKey
+          ? [rawKey]
+          : ['id'];
+      if (typeof lastSeg === 'string' && keyFields.includes(lastSeg)) {
+        return null;
+      }
     }
 
     return deepest;
