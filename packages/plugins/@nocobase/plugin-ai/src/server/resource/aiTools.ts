@@ -17,7 +17,16 @@ export const aiTools: ResourceOptions = {
     list: async (ctx, next) => {
       const { toolsManager } = ctx.app.aiManager as AIManager;
       const { filter } = ctx.action.params;
-      ctx.body = await toolsManager.listTools(filter);
+      const tools = await toolsManager.listTools(filter);
+      ctx.body = tools.map((t) => ({
+        ...t,
+        definition: {
+          name: t.definition.name,
+          description: t.definition.description,
+          schema: undefined,
+        },
+        invoke: undefined,
+      }));
       await next();
     },
     listBinding: async (ctx, next) => {
