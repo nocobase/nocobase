@@ -38,6 +38,11 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   private previousBeforeRenderHash; // qs 变化后为了防止区块依赖qs, 因此重跑beforeRender, task-1357
   private lastSeenDirtyVersion: number | null = null;
   private dirtyRefreshing = false;
+  /**
+   * 记录各筛选来源是否活跃（有有效筛选值）
+   * key: filterId (筛选器 uid), value: boolean (是否有有效筛选)
+   */
+  private activeFilterSources: Map<string, boolean> = new Map();
 
   protected onMount() {
     super.onMount();
@@ -454,6 +459,52 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     });
   }
 
+  /**
+   * 获取数据加载模式
+   * @returns 'auto' | 'manual'
+   */
+  getDataLoadingMode(): 'auto' | 'manual' {
+    return this.getStepParams('dataLoadingModeSettings')?.mode || 'auto';
+  }
+
+  /**
+   * 设置指定筛选来源的活跃状态
+   * @param filterId 筛选器 uid
+   * @param active 是否有有效筛选值
+   */
+  setFilterActive(filterId: string, active: boolean) {
+    this.activeFilterSources.set(filterId, active);
+  }
+
+  /**
+   * 检查是否有任何活跃的筛选来源
+   * @returns boolean
+   */
+  hasActiveFilters(): boolean {
+    // 检查 dataScope 是否有筛选
+    const resource = this.resource as MultiRecordResource;
+    if (resource && resource['filter'] && Object.keys(resource['filter']).length > 0) {
+      return true;
+    }
+
+    // 检查所有绑定的筛选器
+    for (const [, active] of this.activeFilterSources) {
+      if (active) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 移除指定筛选来源
+   * @param filterId 筛选器 uid
+   */
+  removeFilterSource(filterId: string) {
+    this.activeFilterSources.delete(filterId);
+  }
+
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {
     throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
   }
@@ -583,16 +634,42 @@ CollectionBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
+        const blockModel = ctx.model as CollectionBlockModel;
         const filterManager: FilterManager = ctx.model.context.filterManager;
         if (filterManager) {
           filterManager.bindToTarget(ctx.model.uid);
         }
+
+        // 检查数据加载模式
+        const loadingMode = blockModel.getDataLoadingMode();
+        const resource = blockModel.resource;
+        const isMultiResource = resource instanceof MultiRecordResource;
+
+        if (isMultiResource && loadingMode === 'manual' && !blockModel.hasActiveFilters()) {
+          // manual 模式且无活跃筛选时，清空数据且不加载
+          resource.setData([]);
+          resource.setMeta({ count: 0, hasNext: false, page: 1 });
+          resource.loading = false;
+          return;
+        }
+
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {
           await ctx.model.resource.refresh();
         }
       },
+    },
+  },
+});
+
+CollectionBlockModel.registerFlow({
+  key: 'dataLoadingModeSettings',
+  sort: 800,
+  title: tExpr('Set data loading mode'),
+  steps: {
+    dataLoadingMode: {
+      use: 'dataLoadingMode',
     },
   },
 });
