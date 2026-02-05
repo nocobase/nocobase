@@ -161,10 +161,8 @@ export const SkillsListItem: React.FC<{
 
 export const Skills: React.FC = () => {
   const t = useT();
-  const app = useApp();
   const { token } = useToken();
   const field = useField<Field>();
-  const api = useAPIClient();
   const { tools, loading } = useTools();
 
   const handleAdd = (name: string) => {
@@ -189,9 +187,21 @@ export const Skills: React.FC = () => {
           isRoot: true,
         };
         result.label = <SkillsListItem {...itemProps} />;
-        result.onClick = () => {};
+        result.onClick = () => handleAdd(item.definition.name);
         return result;
       }) || [];
+
+  const datasource = [...(field.value ?? [])];
+  for (const tool of tools) {
+    if (tool.scope !== 'GENERAL') {
+      continue;
+    }
+    datasource.push({
+      name: tool.definition.name,
+      autoCall: tool.defaultPermission === 'ALLOW',
+    });
+  }
+
   return (
     <>
       <div
@@ -225,7 +235,7 @@ export const Skills: React.FC = () => {
         <List
           itemLayout="vertical"
           bordered
-          dataSource={field.value || []}
+          dataSource={datasource}
           renderItem={(item: { name: string; autoCall?: boolean }) => {
             const tool = tools.find((tool) => tool.definition.name === item.name);
             if (!tool) {
