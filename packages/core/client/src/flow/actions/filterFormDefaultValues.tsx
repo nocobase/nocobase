@@ -110,7 +110,7 @@ const FilterFormDefaultValuesUI = observer(
 
 export const filterFormDefaultValues = defineAction({
   name: 'filterFormDefaultValues',
-  title: tExpr('Default value'),
+  title: tExpr('Field values'),
   useRawParams: true,
   uiMode: 'embed',
   uiSchema() {

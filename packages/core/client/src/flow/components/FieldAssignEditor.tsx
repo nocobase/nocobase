@@ -66,7 +66,7 @@ export const FieldAssignEditor: React.FC<FieldAssignEditorProps> = (props) => {
 
       {(showValueEditorWhenNoField || !!field) && (
         <div>
-          <div style={{ marginBottom: 4, fontSize: 14 }}>{valueLabel ?? t('Assign value')}</div>
+          <div style={{ marginBottom: 4, fontSize: 14 }}>{valueLabel ?? t('Fixed value')}</div>
           <FieldAssignValueInput
             key={field || 'no-field'}
             targetPath={field || ''}
