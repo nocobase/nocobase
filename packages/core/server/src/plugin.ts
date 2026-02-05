@@ -221,7 +221,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
       return;
     }
     const toolsLoader = new ToolsLoader(this.ai, {
-      scan: { basePath, pattern: ['**/tools/*.ts', '**/tools/*/index.ts', '**/tools/*/description.md'] },
+      scan: { basePath, pattern: ['**/tools/**/*.ts', '**/tools/**/*/description.md'] },
+      log: this.log,
     });
     await toolsLoader.load();
   }

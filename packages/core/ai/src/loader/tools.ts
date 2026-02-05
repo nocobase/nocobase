@@ -15,19 +15,22 @@ import _ from 'lodash';
 import { existsSync } from 'fs';
 import { AIManager } from '../ai-manager';
 import { LoadAndRegister } from './types';
+import { Logger } from '@nocobase/logger';
 
-export type ToolsLoaderOptions = { scan: DirectoryScannerOptions };
+export type ToolsLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
 export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
   protected readonly scanner: DirectoryScanner;
 
   protected files: FileDescriptor[] = [];
   protected toolsDescriptors: ToolsDescriptor[] = [];
+  protected log: Logger;
 
   constructor(
     protected readonly ai: AIManager,
     protected readonly options: ToolsLoaderOptions,
   ) {
     super(ai, options);
+    this.log = options.log;
     this.scanner = new DirectoryScanner(this.options.scan);
   }
 
@@ -41,7 +44,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     }
     const grouped = new Map<string, FileDescriptor[]>();
     for (const fd of this.files) {
-      const key = fd.extname === '.md' || fd.name === 'index' ? fd.directory : fd.name;
+      const key = fd.basename === 'description.md' || fd.basename === 'index.ts' ? fd.directory : fd.name;
       if (!grouped.has(key)) {
         grouped.set(key, []);
       }
@@ -49,22 +52,37 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     }
 
     this.toolsDescriptors = await Promise.all(
-      grouped.entries().map(async ([name, fds]) => {
-        const tsFile = fds.find((fd) => fd.extname === '.ts');
-        const mdFile = fds.find((fd) => fd.extname === '.md');
-        const entry: ToolsDescriptor = { name, tsFile, mdFile };
-        if (tsFile && existsSync(tsFile.path)) {
-          const module = await importModule(tsFile.path);
-          const definition = typeof module === 'function' ? module() : module;
-          if (_.isPlainObject(definition)) {
-            entry.toolsOptions = _.cloneDeep(definition);
+      grouped
+        .entries()
+        .map(async ([name, fds]) => {
+          const tsFile = fds.find((fd) => fd.extname === '.ts');
+          const descFile = fds.find((fd) => fd.basename === 'description.md');
+          const entry: ToolsDescriptor = { name, tsFile, descFile };
+          if (!tsFile || !existsSync(tsFile.path)) {
+            this.log?.error(`tools [${name}] ignored: can not find .ts file`);
+            return null;
           }
-        }
-        if (mdFile && existsSync(mdFile.path)) {
-          entry.description = await readFile(mdFile.path, 'utf-8');
-        }
-        return entry;
-      }),
+          try {
+            const module = await importModule(tsFile.path);
+            entry.toolsOptions = typeof module === 'function' ? module() : module;
+          } catch (e) {
+            this.log?.error(`tools [${name}] load fail: error occur when import ${tsFile.path}`, e);
+            return null;
+          }
+          if (descFile && existsSync(descFile.path)) {
+            try {
+              entry.description = await readFile(descFile.path, 'utf-8');
+            } catch (e) {
+              this.log?.error(
+                `tools [${name}] load fail: error occur when reading description.md at ${descFile.path}`,
+                e,
+              );
+              return null;
+            }
+          }
+          return entry;
+        })
+        .filter((t) => t != null),
     );
   }
 
@@ -74,20 +92,22 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     }
     const { toolsManager } = this.ai;
     for (const descriptor of this.toolsDescriptors) {
-      if (!descriptor.tsFile) {
-        throw new Error(`can not find .ts file for tools ${descriptor.name}`);
-      }
       if (!descriptor.toolsOptions) {
-        throw new Error(`fail to import definition file for tools ${descriptor.name}`);
+        this.log?.warn(
+          `tools [${descriptor.name}] register ignored: ToolsOptions not export as default at ${descriptor.tsFile.path}`,
+        );
+        continue;
       }
       const { name, toolsOptions, description } = descriptor;
+      if (await toolsManager.getTools(name)) {
+        this.log?.warn(`tools [${descriptor.name}] register ignored: duplicate register for tools`);
+        continue;
+      }
       toolsOptions.definition.name = name;
       if (!_.isEmpty(description)) {
         toolsOptions.definition.description = description;
       }
-      if (toolsManager.getTools(name)) {
-        continue;
-      }
+
       toolsManager.registerTools(toolsOptions);
     }
   }
@@ -96,7 +116,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
 export type ToolsDescriptor = {
   name: string;
   tsFile?: FileDescriptor;
-  mdFile?: FileDescriptor;
+  descFile?: FileDescriptor;
   toolsOptions?: ToolsOptions;
   description?: string;
 };

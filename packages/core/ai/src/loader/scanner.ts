@@ -48,4 +48,7 @@ export class FileDescriptor {
   get extname() {
     return path.extname(this.filePath);
   }
+  get basename() {
+    return path.basename(this.filePath);
+  }
 }

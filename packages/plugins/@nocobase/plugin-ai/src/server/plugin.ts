@@ -24,15 +24,11 @@ import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import {
-  dataModelingIntentRouter,
-  defineCollections,
-  formFiller,
-  getCollectionMetadata,
-  getCollectionNames,
-  getDataSources,
   getWorkflowCallers,
-  chartGenerator,
-  searchFieldMetadata,
+  createDocsSearchTool,
+  createReadDocEntryTool,
+  loadDocsIndexes,
+  describeDocModules,
 } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
@@ -44,17 +40,7 @@ import { AIContextDatasourceManager } from './manager/ai-context-datasource-mana
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
-import {
-  getCodeSnippet,
-  listCodeSnippet,
-  getContextApis,
-  getContextEnvs,
-  getContextVars,
-  lintAndTestJS,
-} from './tools/code-editor';
-import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
-import { suggestions } from './tools/suggestions';
-import { createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes, describeDocModules } from './tools/docs';
+import { suggestions } from './ai/tools/suggestions';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -118,25 +104,8 @@ export class PluginAIServer extends Plugin {
     const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
 
     toolsManager.registerTools([
-      formFiller,
-      dataModelingIntentRouter,
-      searchFieldMetadata,
-      getDataSources,
-      getCollectionNames,
-      getCollectionMetadata,
-      defineCollections,
-      suggestions,
-      chartGenerator,
-      listCodeSnippet,
-      getCodeSnippet,
-      dataSourceCounting,
-      dataSourceQuery,
       createDocsSearchTool({ description: docsModulesDescription }),
       createReadDocEntryTool({ description: docsModulesDescription }),
-      getContextApis,
-      getContextEnvs,
-      getContextVars,
-      lintAndTestJS,
     ]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this));
