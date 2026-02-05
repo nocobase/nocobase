@@ -42,15 +42,14 @@ export const FilterRangePicker = (props: any) => {
   ];
 
   const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
-  const targetDateFormat = targetPicker === picker && format ? format : getPickerFormat(targetPicker);
+  const baseDateFormat = targetPicker === picker && format ? format : getPickerFormat(targetPicker);
+  const stripTimeFromFormat = (fmt: string) => (fmt ? fmt.replace(/\s*HH?:mm(?::ss)?(?:\.SSS)?/g, '').trim() : fmt);
+  const targetDateFormat = showTime ? baseDateFormat : stripTimeFromFormat(baseDateFormat);
   const newProps: any = {
     utc: true,
     presets,
     ...props,
-    format:
-      targetPicker === picker && format
-        ? format
-        : getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
+    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
