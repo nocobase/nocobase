@@ -75,10 +75,17 @@ function createTempFieldClass(Base: any) {
           (relationInterface === 'm2m' || relationInterface === 'o2m' || relationInterface === 'mbm');
         return !!(byType || byInterface);
       };
+      const inferredMultiple = inferMultipleFromCollectionField();
       const multiple =
-        typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCollectionField();
-      if (typeof multiple !== 'undefined') {
-        this.setProps({ multiple });
+        typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferredMultiple;
+      const allowMultiple =
+        typeof originalProps.allowMultiple !== 'undefined'
+          ? originalProps.allowMultiple
+          : typeof originalProps.multiple !== 'undefined'
+            ? originalProps.multiple
+            : inferredMultiple;
+      if (typeof multiple !== 'undefined' || typeof allowMultiple !== 'undefined') {
+        this.setProps({ multiple, allowMultiple });
       }
 
       // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式

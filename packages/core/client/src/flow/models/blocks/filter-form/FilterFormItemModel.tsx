@@ -200,14 +200,23 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const fieldValue = this.subModels.field.getFilterValue
-      ? this.subModels.field.getFilterValue()
+    const fieldModel = this.subModels.field as FieldModel;
+    const fieldValue = fieldModel.getFilterValue
+      ? fieldModel.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
 
     let rawValue = fieldValue;
+    let usedDefault = false;
 
     if (!this.mounted) {
-      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+      if (_.isEmpty(fieldValue)) {
+        rawValue = this.getDefaultValue();
+        usedDefault = true;
+      }
+    }
+
+    if (usedDefault) {
+      rawValue = this.normalizeDefaultFilterValue(rawValue, fieldModel);
     }
 
     const operatorMeta = this.getCurrentOperatorMeta();
@@ -220,6 +229,25 @@ export class FilterFormItemModel extends FilterableItemModel<{
     }
 
     return rawValue;
+  }
+
+  normalizeDefaultFilterValue(value: any, fieldModel: FieldModel) {
+    if (value === null || typeof value === 'undefined') {
+      return value;
+    }
+    const fieldNames = (fieldModel as any)?.props?.fieldNames;
+    if (!fieldNames || typeof fieldNames.value !== 'string') {
+      return value;
+    }
+    const valueKey = fieldNames.value || 'value';
+    if (Array.isArray(value)) {
+      if (value.length === 0) return value;
+      return value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
+    }
+    if (typeof value === 'object') {
+      return (value as any)?.[valueKey];
+    }
+    return value;
   }
 
   getDefaultValue() {
