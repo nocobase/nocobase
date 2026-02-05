@@ -29,31 +29,44 @@ export const BulkEditFieldV2 = (props) => {
   const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
   const form = formItemModel.context.blockModel.form;
+  // 保存原始的校验规则
+  const [originalRules] = useState(() => formItemModel?.props?.rules || []);
 
   const typeChangeHandler = (val) => {
     setType(val);
-    const required = val === BulkEditFormItemValueType.ChangedTo;
+    const fieldVlaue = toFormFieldValue({ [val]: value });
+    form.setFieldValue(formItemModel.props.name, fieldVlaue);
+    if (val === BulkEditFormItemValueType.ChangedTo) {
+      const fieldUse = formItemModel?.subModels?.field?.use;
+      if (fieldUse === 'CheckboxFieldModel') {
+        // checkbox 默认值为 false
+        setTimeout(() => {
+          valueChangeHandler(false);
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    const required = type === BulkEditFormItemValueType.ChangedTo;
     // 设置必填状态
     if (required) {
+      // 移除原始规则中的必填规则
+      const otherRules = originalRules.filter((rule) => !rule.required);
+      // 添加新的必填规则，保留其他原始规则
       const rules = [
         {
           required: true,
           message: formItemModel.context.t('The field value is required'),
         },
+        ...otherRules,
       ];
       formItemModel?.setProps({ required: true, rules });
-      // checkbox 默认值为 false
-      if (formItemModel?.subModels?.field?.use === 'CheckboxFieldModel') {
-        setTimeout(() => {
-          valueChangeHandler(false);
-        });
-      }
     } else {
+      // 移除所有规则
       formItemModel?.setProps({ required: false, rules: [] });
     }
-    const fieldVlaue = toFormFieldValue({ [val]: value });
-    form.setFieldValue(formItemModel.props.name, fieldVlaue);
-  };
+  }, [type]);
 
   const valueChangeHandler = (val) => {
     const v = val?.target?.value ?? val?.target?.checked ?? val;
