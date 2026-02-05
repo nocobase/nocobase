@@ -301,12 +301,65 @@ export class RuleEngine {
         if (targetPath && this.getUpdateAssociationForTargetPath(targetPath)) {
           continue;
         }
+        // 特殊：当目标为“关联记录主键/targetKey”（如 user.id）时，允许在关联对象为空时写入，
+        // 以支持通过主键为关联字段设置默认值/赋值（常见于 RecordSelect/RecordPicker）。
+        if (this.isAssociationTargetKeyWrite(baseCtx, targetNamePath, p)) {
+          continue;
+        }
         return true;
       }
       if (typeof v !== 'object') return true;
     }
 
     return false;
+  }
+
+  private getAssociationTargetKeyFields(associationField: any): string[] {
+    const raw =
+      associationField?.targetKey ??
+      associationField?.targetCollection?.filterTargetKey ??
+      associationField?.targetCollection?.filterByTk ??
+      'id';
+    if (Array.isArray(raw)) {
+      return raw.filter((v): v is string => typeof v === 'string' && !!v);
+    }
+    if (typeof raw === 'string' && raw) return [raw];
+    return ['id'];
+  }
+
+  private resolveAssociationFieldByPrefixPath(baseCtx: any, prefixPath: NamePath): any | null {
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    if (!collection?.getField) return null;
+
+    let lastAssociationField: any | null = null;
+    for (const seg of prefixPath) {
+      if (typeof seg === 'number') {
+        // index segment for to-many association
+        continue;
+      }
+      if (typeof seg !== 'string' || !seg) break;
+      const field: any = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+      lastAssociationField = field;
+      collection = field?.targetCollection;
+      if (!collection?.getField) break;
+    }
+    return lastAssociationField;
+  }
+
+  private isAssociationTargetKeyWrite(baseCtx: any, targetNamePath: NamePath, prefixPath: NamePath): boolean {
+    // Only allow direct `assoc.<targetKey>` writes (e.g. `user.id`).
+    if (!Array.isArray(targetNamePath) || !Array.isArray(prefixPath)) return false;
+    if (targetNamePath.length !== prefixPath.length + 1) return false;
+    const keySeg = targetNamePath[prefixPath.length];
+    if (typeof keySeg !== 'string' || !keySeg) return false;
+
+    const assocField = this.resolveAssociationFieldByPrefixPath(baseCtx, prefixPath);
+    if (!assocField?.isAssociationField?.()) return false;
+    if (isToManyAssociationField(assocField)) return false;
+
+    const keys = this.getAssociationTargetKeyFields(assocField);
+    return keys.includes(keySeg);
   }
 
   private collectUpdateAssociationInitPatches(
@@ -323,12 +376,20 @@ export class RuleEngine {
       if (v == null) {
         const targetPath = p.filter((seg) => typeof seg === 'string').join('.');
         if (!targetPath) return null;
-        if (!this.getUpdateAssociationForTargetPath(targetPath)) {
-          return null;
+        if (this.getUpdateAssociationForTargetPath(targetPath)) {
+          // 标记为“新增记录”，与子表单的 add({ __is_new__: true }) 行为一致。
+          patches.push({ path: [...p, '__is_new__'], value: true });
+          continue;
         }
-        // 标记为“新增记录”，与子表单的 add({ __is_new__: true }) 行为一致。
-        patches.push({ path: [...p, '__is_new__'], value: true });
-        continue;
+
+        // 特殊：当目标为“关联记录主键/targetKey”（如 user.id）时，
+        // 允许在关联对象为空时写入，并初始化为空对象以确保后续 setFieldValue 能正确落值。
+        if (this.isAssociationTargetKeyWrite(baseCtx, targetNamePath, p)) {
+          patches.push({ path: [...p], value: {} });
+          continue;
+        }
+
+        return null;
       }
       if (typeof v !== 'object') return null;
     }
