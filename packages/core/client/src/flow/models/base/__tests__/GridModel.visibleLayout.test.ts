@@ -158,4 +158,33 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     const { rows } = (model as any).getVisibleLayout();
     expect(Object.keys(rows)).toEqual(['second', 'first']);
   });
+
+  it('removes hidden items inside a mixed cell and preserves column sizes', () => {
+    engine.flowSettings.disable();
+
+    const visible = engine.createModel({ use: 'FlowModel', uid: 'v' });
+    const hidden = engine.createModel({ use: 'FlowModel', uid: 'h' }) as any;
+    hidden.hidden = true;
+
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-6',
+      props: {
+        rows: {
+          row1: [['h', 'v'], ['v']],
+        },
+        sizes: {
+          row1: [8, 16],
+        },
+      },
+      structure: {} as any,
+    });
+
+    (model as any).subModels = { items: [hidden, visible] };
+
+    const { rows, sizes } = (model as any).getVisibleLayout();
+    // 第一个单元格中的 h 应被剔除，只剩 v；列宽保持不变
+    expect(rows.row1).toEqual([['v'], ['v']]);
+    expect(sizes.row1).toEqual([8, 16]);
+  });
 });

@@ -52,7 +52,8 @@ import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
-import { setupRunJSLibs } from './runjsLibs';
+import { externalReactRender, setupRunJSLibs } from './runjsLibs';
+import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -965,6 +966,87 @@ export class FlowContext {
     }
     return this._findPropertyInDelegates(this._delegates, key);
   }
+
+  /**
+   * 获取当前上下文可用的顶层 API 信息（主要用于编辑器补全/工具）。
+   *
+   * 注意：
+   * - 目前返回值以“尽量可用”为目标，允许不完整。
+   * - 该方法不会展开变量 meta（变量结构应由 `getPropertyMetaTree()`/VariableInput 等机制负责）。
+   */
+  async getApiInfos(options: { version?: string } = {}): Promise<Record<string, any>> {
+    const version = (options as any)?.version || ('v1' as any);
+    const modelClass = getModelClassName(this as any);
+    const Ctor =
+      RunJSContextRegistry.resolve(version as any, modelClass) || RunJSContextRegistry.resolve(version as any, '*');
+    const locale = (this as any)?.api?.auth?.locale || (this as any)?.i18n?.language || (this as any)?.locale;
+
+    let doc: any = {};
+    try {
+      if ((Ctor as any)?.getDoc?.length) doc = (Ctor as any).getDoc(locale) || {};
+      else doc = (Ctor as any)?.getDoc?.() || {};
+    } catch (_) {
+      doc = {};
+    }
+
+    const isPrivateKey = (key: string) => typeof key === 'string' && key.startsWith('_');
+    const out: Record<string, any> = {};
+    const visited = new WeakSet<any>();
+
+    const walk = (ctx: any) => {
+      if (!ctx || visited.has(ctx)) return;
+      visited.add(ctx);
+
+      try {
+        for (const key of Object.keys(ctx._props || {})) {
+          if (isPrivateKey(key)) continue;
+          if (typeof out[key] === 'undefined') out[key] = { type: 'property' };
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      try {
+        for (const key of Object.keys(ctx._methods || {})) {
+          if (isPrivateKey(key)) continue;
+          if (typeof out[key] === 'undefined') out[key] = { type: 'function' };
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      try {
+        const delegates = Array.isArray(ctx._delegates) ? ctx._delegates : [];
+        for (const d of delegates) walk(d);
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    walk(this);
+
+    return {
+      ...out,
+      ...(doc?.properties || {}),
+      ...(doc?.methods || {}),
+    };
+  }
+
+  /**
+   * 变量结构信息（保留给编辑器/工具使用）。
+   * 当前实现为保底空对象，避免 RunJS doc 中补全到该方法时调用报错。
+   */
+  async getVarInfos(_options: { path?: string | string[]; maxDepth?: number } = {}): Promise<Record<string, any>> {
+    return {};
+  }
+
+  /**
+   * 运行时环境信息（保留给编辑器/工具使用）。
+   * 当前实现为保底空对象，避免 RunJS doc 中补全到该方法时调用报错。
+   */
+  async getEnvInfos(): Promise<Record<string, any>> {
+    return {};
+  }
 }
 
 class BaseFlowEngineContext extends FlowContext {
@@ -979,6 +1061,7 @@ class BaseFlowEngineContext extends FlowContext {
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare getVar: (path: string) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -1246,6 +1329,23 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
       return resolveExpressions(serverResolved, this);
     });
+
+    // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
+    // Example: await ctx.getVar('ctx.record.id')
+    this.defineMethod(
+      'getVar',
+      async function (this: BaseFlowEngineContext, varPath: string) {
+        const raw = typeof varPath === 'string' ? varPath : String(varPath ?? '');
+        const s = raw.trim();
+        if (!s) return undefined;
+        // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
+        if (s !== 'ctx' && !s.startsWith('ctx.')) {
+          throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
+        }
+        return this.resolveJsonTemplate(`{{ ${s} }}` as any);
+      },
+      'Resolve a ctx expression value by path (expression starts with "ctx.").',
+    );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
     });
@@ -1346,68 +1446,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('requireAsync', async (url: string) => {
-      return new Promise((resolve, reject) => {
-        if (!this.requirejs) {
-          reject(new Error('requirejs is not available'));
-          return;
-        }
-        const u = resolveModuleUrl(url);
-        this.requirejs(
-          [u],
-          (...args: any[]) => {
-            resolve(args[0]);
-          },
-          reject,
-        );
-      });
+      const u = resolveModuleUrl(url, { raw: true });
+      return await runjsRequireAsync(this.requirejs, u);
     });
     // 动态按 URL 加载 ESM 模块
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
     // - 返回模块命名空间对象（包含 default 与命名导出）
-    this.defineMethod('importAsync', async (url: string) => {
+    this.defineMethod('importAsync', async function (this: any, url: string) {
       // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
       if (isCssFile(url)) {
         return this.loadCSS(url);
       }
-      const u = resolveModuleUrl(url, { addSuffix: true });
-      const g = globalThis as any;
-      g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
-      const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
-      if (cache.has(u)) return cache.get(u) as Promise<any>;
-      const normalizeModule = (mod: any) => {
-        // 许多经由 esm.sh / esbuild 转换的模块会将主导出挂在 default 上
-        // 如果只有 default 一个导出，则直接返回 default，提升易用性
-        if (mod && typeof mod === 'object' && 'default' in mod) {
-          const keys = Object.keys(mod);
-          if (keys.length === 1 && keys[0] === 'default') {
-            return (mod as any).default;
-          }
-        }
-        return mod;
-      };
-      // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
-      const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
-      // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
-      const evalImport = () => {
-        const importer = (0, eval)('u => import(u)');
-        return importer(u);
-      };
-      const p = (async () => {
-        try {
-          const mod = await nativeImport();
-          return normalizeModule(mod);
-        } catch (err: any) {
-          // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
-          try {
-            const mod = await evalImport();
-            return normalizeModule(mod);
-          } catch (err2) {
-            throw err2 || err;
-          }
-        }
-      })();
-      cache.set(u, p);
-      return p;
+
+      return await runjsImportModule(this, url, { importer: runjsImportAsync });
     });
     this.defineMethod('createJSRunner', async function (options?: JSRunnerOptions) {
       try {
@@ -1804,9 +1855,44 @@ export class FlowRuntimeContext<
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
 
+export type FlowContextDocRef = string | { url: string; title?: string };
+
+export type FlowDeprecationDoc =
+  | boolean
+  | {
+      message?: string;
+      replacedBy?: string | string[];
+      since?: string;
+      removedIn?: string;
+      ref?: FlowContextDocRef;
+    };
+
+export type FlowContextDocParam = {
+  name: string;
+  description?: string;
+  type?: string;
+  optional?: boolean;
+  default?: JSONValue;
+};
+
+export type FlowContextDocReturn = {
+  description?: string;
+  type?: string;
+};
+
 export type RunJSDocCompletionDoc = {
   insertText?: string;
 };
+
+export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);
+
+// `hidden` is the single visibility entrypoint for RunJSDoc property docs:
+// - boolean: hide the whole node and its subtree
+// - string[]: hide specific subpaths under the node (relative dot-paths)
+export type RunJSDocHiddenOrPathsDoc =
+  | boolean
+  | string[]
+  | ((ctx: any) => boolean | string[] | Promise<boolean | string[]>);
 
 export type RunJSDocPropertyDoc =
   | string
@@ -1816,7 +1902,14 @@ export type RunJSDocPropertyDoc =
       type?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      deprecated?: FlowDeprecationDoc;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
       properties?: Record<string, RunJSDocPropertyDoc>;
+      hidden?: RunJSDocHiddenOrPathsDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMethodDoc =
@@ -1826,6 +1919,13 @@ export type RunJSDocMethodDoc =
       detail?: string;
       examples?: string[];
       completion?: RunJSDocCompletionDoc;
+      ref?: FlowContextDocRef;
+      deprecated?: FlowDeprecationDoc;
+      params?: FlowContextDocParam[];
+      returns?: FlowContextDocReturn;
+      hidden?: RunJSDocHiddenDoc;
+      disabled?: boolean | ((ctx: any) => boolean | Promise<boolean>);
+      disabledReason?: string | ((ctx: any) => string | undefined | Promise<string | undefined>);
     };
 
 export type RunJSDocMeta = {
@@ -1871,6 +1971,7 @@ export class FlowRunJSContext extends FlowContext {
         return this.engine.reactView.createRoot(realContainer as HTMLElement, options);
       },
     };
+    ReactDOMShim.__nbRunjsInternalShim = true;
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
@@ -1893,16 +1994,37 @@ export class FlowRunJSContext extends FlowContext {
         globalRef.__nbRunjsRoots = globalRef.__nbRunjsRoots || new WeakMap<any, any>();
         const rootMap: WeakMap<any, any> = globalRef.__nbRunjsRoots;
 
-        // If vnode is string (HTML), unmount react root and set sanitized HTML
-        if (typeof vnode === 'string') {
-          const existingRoot = rootMap.get(containerEl);
-          if (existingRoot && typeof existingRoot.unmount === 'function') {
+        const disposeEntry = (entry: any) => {
+          if (!entry) return;
+          if (entry.disposeTheme && typeof entry.disposeTheme === 'function') {
             try {
-              existingRoot.unmount();
-            } finally {
-              rootMap.delete(containerEl);
+              entry.disposeTheme();
+            } catch (_) {
+              // ignore
+            }
+            entry.disposeTheme = undefined;
+          }
+          const root = entry.root || entry;
+          if (root && typeof root.unmount === 'function') {
+            try {
+              root.unmount();
+            } catch (_) {
+              // ignore
             }
           }
+        };
+
+        const unmountContainerRoot = () => {
+          const existing = rootMap.get(containerEl);
+          if (existing) {
+            disposeEntry(existing);
+            rootMap.delete(containerEl);
+          }
+        };
+
+        // If vnode is string (HTML), unmount react root and set sanitized HTML
+        if (typeof vnode === 'string') {
+          unmountContainerRoot();
           const proxy: any = new ElementProxy(containerEl);
           proxy.innerHTML = String(vnode ?? '');
           return null;
@@ -1914,26 +2036,42 @@ export class FlowRunJSContext extends FlowContext {
           (vnode as any).nodeType &&
           ((vnode as any).nodeType === 1 || (vnode as any).nodeType === 3 || (vnode as any).nodeType === 11)
         ) {
-          const existingRoot = rootMap.get(containerEl);
-          if (existingRoot && typeof existingRoot.unmount === 'function') {
-            try {
-              existingRoot.unmount();
-            } finally {
-              rootMap.delete(containerEl);
-            }
-          }
+          unmountContainerRoot();
           while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
           containerEl.appendChild(vnode as any);
           return null;
         }
 
-        let root = rootMap.get(containerEl);
-        if (!root) {
-          root = this.ReactDOM.createRoot(containerEl);
-          rootMap.set(containerEl, root);
+        // 注意：rootMap 是“全局按容器复用”的（key=containerEl）。
+        // 若不同 RunJS ctx 复用同一个 containerEl，且 ReactDOM 实例引用也相同，
+        // 则会复用到旧 entry，进而复用旧 ctx 创建的 autorun（闭包捕获旧 ctx），造成：
+        // 1) 旧 ctx 的 reaction 继续驱动新渲染（跨 ctx 复用风险）
+        // 2) 新 ctx 的主题变化不再触发 rerender
+        // 3) 旧 ctx 被 entry/autorun 间接持有，无法被 GC（内存泄漏）
+        // 因此这里把 ownerKey（当前 ctx）也纳入复用判断；owner 变化时必须重建 entry。
+        const rendererKey = this.ReactDOM;
+        const ownerKey = this;
+        let entry = rootMap.get(containerEl);
+        if (!entry || entry.rendererKey !== rendererKey || entry.ownerKey !== ownerKey) {
+          if (entry) {
+            disposeEntry(entry);
+            rootMap.delete(containerEl);
+          }
+          const root = this.ReactDOM.createRoot(containerEl);
+          entry = { rendererKey, ownerKey, root, disposeTheme: undefined, lastVnode: undefined };
+          rootMap.set(containerEl, entry);
         }
-        root.render(vnode as any);
-        return root;
+
+        return externalReactRender({
+          ctx: this,
+          entry,
+          vnode,
+          containerEl,
+          rootMap,
+          unmountContainerRoot,
+          internalReact: React,
+          internalAntd: antd,
+        });
       },
     );
   }

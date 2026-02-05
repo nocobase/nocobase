@@ -43,6 +43,7 @@ describe('FilterManager.bindToTarget', () => {
           addFilterGroup: vi.fn(),
           removeFilterGroup: vi.fn(),
         },
+        setFilterActive: vi.fn(),
       };
       mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
     });
@@ -65,6 +66,7 @@ describe('FilterManager.bindToTarget', () => {
           addFilterGroup: vi.fn(),
           removeFilterGroup: vi.fn(),
         },
+        setFilterActive: vi.fn(),
       };
 
       mockFilterModel = {
@@ -190,6 +192,7 @@ describe('FilterManager.bindToTarget', () => {
           addFilterGroup: vi.fn(),
           removeFilterGroup: vi.fn(),
         },
+        setFilterActive: vi.fn(),
       };
 
       mockFilterModel = {

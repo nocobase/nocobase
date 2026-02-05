@@ -46,6 +46,10 @@ function findNearestViewEngine(engine: FlowEngine | undefined): FlowEngine | und
 
 export function resolveOpenerEngine(parentEngine: FlowEngine, scopedEngine: FlowEngine): FlowEngine | undefined {
   if (!parentEngine) return undefined;
+  const parentViewEngine = findNearestViewEngine(parentEngine);
+  if (parentViewEngine) return parentViewEngine;
+
+  // Fallback: resolve from previous engine in the stack (historical behavior).
   const previousEngine = scopedEngine?.previousEngine;
   return findNearestViewEngine(previousEngine) || parentEngine;
 }
