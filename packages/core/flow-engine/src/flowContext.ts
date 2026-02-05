@@ -3279,28 +3279,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const s = raw.trim();
         if (!s) return undefined;
         // Preferred input: 'ctx.xxx.yyy' (expression), consistent with envs.getVar outputs.
-        // We also accept a full template string '{{ ... }}' for convenience.
-        if (/^\s*\{\{/.test(s)) {
-          return this.resolveJsonTemplate(s as any);
-        }
         if (s !== 'ctx' && !s.startsWith('ctx.')) {
           throw new Error(`ctx.getVar(path) expects an expression starting with "ctx.", got: "${s}"`);
         }
         return this.resolveJsonTemplate(`{{ ${s} }}` as any);
       },
-      {
-        description: 'Resolve a ctx expression value by path (expression starts with "ctx.").',
-        params: [
-          {
-            name: 'path',
-            type: 'string',
-            description: 'Expression path starting with "ctx." (e.g. "ctx.record.id", "ctx.record.roles[0].id").',
-          },
-        ],
-        returns: { type: 'Promise<any>' },
-        completion: { insertText: "await ctx.getVar('ctx.record.id')" },
-        examples: ["const id = await ctx.getVar('ctx.record.id');"],
-      },
+      'Resolve a ctx expression value by path (expression starts with "ctx.").',
     );
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -3417,7 +3401,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     // 动态按 URL 加载 ESM 模块
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
-    // - 返回模块命名空间对象（包含 default 与命名导出）
+    // - 通常返回模块命名空间对象（包含 default 与命名导出）；
+    //   若模块只有 default 一个导出，则会直接返回 default 值以提升易用性（无需再访问 .default）
     this.defineMethod('importAsync', async function (this: any, url: string) {
       // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
       if (isCssFile(url)) {

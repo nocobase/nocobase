@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowRunJSContext } from '@nocobase/flow-engine';
+import { FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '../application/Plugin';
 import { IconPicker } from '../schema-component/antd/icon-picker';
 import * as actions from './actions';
@@ -91,4 +91,3 @@ export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
 
 export { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
-// test

@@ -9,11 +9,20 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { diagnoseRunJS, previewRunJS, MAX_MESSAGE_CHARS } from '../runjsDiagnostics';
+import { FlowContext, JSRunner } from '@nocobase/flow-engine';
 
 describe('runjsDiagnostics', () => {
-  const ctx = {} as any;
+  const createTestCtx = () => {
+    const ctx = new FlowContext() as any;
+    ctx.defineMethod('createJSRunner', async (options?: any) => {
+      const globals = { ...(options?.globals || {}), ctx };
+      return new JSRunner({ globals, timeoutMs: options?.timeoutMs });
+    });
+    return ctx;
+  };
 
   it('returns multiple syntax issues in one pass (Lezer error recovery)', async () => {
+    const ctx = createTestCtx();
     const code = `const a = ;\nconst b = ;\n`;
     const res = await diagnoseRunJS(code, ctx);
     const parseIssues = res.issues.filter((i) => i.type === 'lint' && i.ruleId === 'parse-error');
@@ -22,6 +31,7 @@ describe('runjsDiagnostics', () => {
   });
 
   it('includes heuristic lint issues as issues (not warnings)', async () => {
+    const ctx = createTestCtx();
     const code = `foo + 1;\n(1+2)();\n`;
     const res = await diagnoseRunJS(code, ctx);
     expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'possible-undefined-variable')).toBe(true);
@@ -29,11 +39,13 @@ describe('runjsDiagnostics', () => {
   });
 
   it('reports suspicious short ctx member call as a lint issue', async () => {
+    const ctx = createTestCtx();
     const res = await diagnoseRunJS('ctx.fw();', ctx);
     expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'possible-undefined-ctx-member-call')).toBe(true);
   });
 
   it('attempts preview even when lint issues exist (collects runtime issue)', async () => {
+    const ctx = createTestCtx();
     // Some environments may not throw on unresolved globals inside SES Compartment.
     // Ensure we always produce a runtime error while also having lint issues.
     const code = `console.log("preview-start");\nfoo;\nthrow new Error("boom");\n`;
@@ -44,6 +56,7 @@ describe('runjsDiagnostics', () => {
   });
 
   it('reports preview-start-failed when syntax prevents execution', async () => {
+    const ctx = createTestCtx();
     const code = `const a = ;\n`;
     const res = await diagnoseRunJS(code, ctx);
     expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'parse-error')).toBe(true);
@@ -51,6 +64,7 @@ describe('runjsDiagnostics', () => {
   });
 
   it('reports non-callable call issues even when syntax errors exist', async () => {
+    const ctx = createTestCtx();
     const code = `const a = ;\n(1+2)();\n`;
     const res = await diagnoseRunJS(code, ctx);
     expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'parse-error')).toBe(true);
@@ -58,6 +72,7 @@ describe('runjsDiagnostics', () => {
   });
 
   it('reports timeout as runtime issue and sets execution.timeout', async () => {
+    const ctx = createTestCtx();
     vi.useFakeTimers();
     try {
       const p = diagnoseRunJS(`await new Promise(() => {});`, ctx);
@@ -71,6 +86,7 @@ describe('runjsDiagnostics', () => {
   });
 
   it('previewRunJS returns message with truncation note when exceeding length limit', async () => {
+    const ctx = createTestCtx();
     const spam = `for (let i=0;i<120;i++){ console.error("X".repeat(120)); }\nthrow new Error("boom");`;
     const res = await previewRunJS(spam, ctx);
     expect(res.success).toBe(false);
@@ -82,10 +98,12 @@ describe('runjsDiagnostics', () => {
 
   it('previewRunJS can reuse provided ctx.getVar to avoid false positives', async () => {
     const code = `const user = await ctx.getVar('ctx.user.roles.users.nickname');\nctx.render(String(user[0]));\n`;
-    const res = await previewRunJS(code, {
-      getVar: async (key: string) => (key === 'ctx.user.roles.users.nickname' ? ['alice'] : undefined),
-      render: () => undefined,
-    } as any);
+    const ctx = createTestCtx();
+    ctx.defineMethod('getVar', async (key: string) =>
+      key === 'ctx.user.roles.users.nickname' ? ['alice'] : undefined,
+    );
+    ctx.defineMethod('render', () => undefined);
+    const res = await previewRunJS(code, ctx as any);
     expect(res.success).toBe(true);
   });
 });

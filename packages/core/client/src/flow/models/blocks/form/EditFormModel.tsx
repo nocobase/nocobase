@@ -76,8 +76,12 @@ export class EditFormModel extends FormBlockModel {
     }
   };
 
-  async submit(params: any = {}) {
-    await submitHandler(this.context, params);
+  async submitHandler(ctx, params: any, cb?: (values?: any, filterByTk?: any) => void) {
+    await submitHandler(ctx, params, cb);
+  }
+
+  async submit(params: any = {}, cb?: (values?: any, filterByTk?: any) => void) {
+    await submitHandler(this.context, params, cb);
   }
 
   renderComponent() {

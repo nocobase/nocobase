@@ -10,22 +10,13 @@
 import { CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete';
 import { FlowRunJSContext } from '@nocobase/flow-engine';
 import { isHtmlTemplateContext } from './htmlCompletion';
+import { formatDocInfo } from './formatDocInfo';
 
 function buildBaseCompletions(): Completion[] {
   try {
     const doc = typeof (FlowRunJSContext as any)?.getDoc === 'function' ? (FlowRunJSContext as any).getDoc() : {};
     const options: Completion[] = [];
     const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
-    const toInfo = (value: any) => {
-      if (typeof value === 'string') return value;
-      if (!value || typeof value !== 'object') return String(value ?? '');
-      const description = value.description ?? value.detail ?? value.type ?? '';
-      const examples = Array.isArray(value.examples)
-        ? value.examples.filter((x) => typeof x === 'string' && x.trim())
-        : [];
-      if (!examples.length) return typeof description === 'string' ? description : String(description ?? '');
-      return [description, 'Examples:', ...examples].filter(Boolean).join('\n');
-    };
     if (doc?.label || doc?.properties || doc?.methods) {
       options.push({
         label: 'ctx',
@@ -64,7 +55,7 @@ function buildBaseCompletions(): Completion[] {
           label: ctxLabel,
           type: 'property',
           detail: detail || 'ctx property',
-          info: toInfo(value),
+          info: formatDocInfo(value, { mode: 'simple' }),
           boost: Math.max(90 - depth * 5, 10) + (priorityRoots.has(root) ? 10 : 0),
           apply,
         } as Completion);
@@ -84,10 +75,10 @@ function buildBaseCompletions(): Completion[] {
       }
       const insertText = completionSpec?.insertText ?? `ctx.${key}()`;
       options.push({
-        label: `ctx.${key}()` as any,
+        label: `ctx.${key}()`,
         type: 'function',
         detail,
-        info: toInfo(methodDoc),
+        info: formatDocInfo(methodDoc, { mode: 'simple' }),
         boost: 95,
         apply: (view: any, _completion: any, from: number, to: number) => {
           view.dispatch({
