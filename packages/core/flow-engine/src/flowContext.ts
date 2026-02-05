@@ -1579,8 +1579,17 @@ export class FlowModelContext extends BaseFlowModelContext {
         engineCtx: this.engine.context,
       };
       model.context.defineProperty('view', { value: pendingView });
+      // 默认按 click 打开，但兼容 popupSettings 绑定到其他事件（例如 DuplicateActionModel 监听 openDuplicatePopup）。
+      const popupFlow = model.getFlow?.('popupSettings');
+      const on = (popupFlow as any)?.on;
+      let openEventName = 'click';
+      if (typeof on === 'string' && on) {
+        openEventName = on;
+      } else if (on && typeof on === 'object' && typeof (on as any).eventName === 'string' && (on as any).eventName) {
+        openEventName = (on as any).eventName;
+      }
       await model.dispatchEvent(
-        'click',
+        openEventName,
         {
           // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
           // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
