@@ -17,7 +17,8 @@ import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
-import { createItemChainMetaFactory, createItemChainResolver, type ItemChain } from './itemChain';
+import { createItemChainMetaFactory, createItemChainResolver, createRootItemChain, type ItemChain } from './itemChain';
+import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -97,7 +98,9 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 
     this.context.defineProperty('item', {
       get: () => {
-        const parentItem = (this.parent as any)?.context?.item as ItemChain | undefined;
+        const parentItem =
+          ((this.parent as any)?.context?.item as ItemChain | undefined) ??
+          createRootItemChain(this.context.formValues);
         const value = this.context.form.getFieldValue(this.props.name);
         return {
           index: undefined,
@@ -111,6 +114,8 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
       meta: createItemChainMetaFactory({
         t: this.context.t,
         title: this.context.t('Current object'),
+        showIndex: isToManyAssociationField(this.context.collectionField),
+        showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
         collectionAccessor: () => this.context.collection,
         valueAccessor: (ctx) => ctx?.item?.value,
         parentCollectionAccessor: () => this.context.collectionField?.collection,
@@ -119,7 +124,7 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         collectionAccessor: () => this.context.collection,
         valueAccessor: () => this.context.form.getFieldValue(this.props.name),
         parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentValueAccessor: () => (this.parent as any)?.context?.item?.value,
+        parentValueAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
       }),
       serverOnlyWhenContextParams: true,
     });
@@ -226,9 +231,9 @@ const ArrayNester = ({
 
                 currentFork.context.defineProperty('item', {
                   get: () => {
-                    const parentItem = ((model?.parent as any)?.context?.item ?? model?.context?.item) as
-                      | ItemChain
-                      | undefined;
+                    const parentItem =
+                      ((model?.parent as any)?.context?.item as ItemChain | undefined) ??
+                      createRootItemChain(model?.context?.formValues);
                     const rowValue = currentFork.context.form.getFieldValue([name, fieldName]);
                     return {
                       index,
@@ -242,6 +247,8 @@ const ArrayNester = ({
                   meta: createItemChainMetaFactory({
                     t: currentFork.context.t,
                     title: currentFork.context.t('Current object'),
+                    showIndex: true,
+                    showParentIndex: Array.isArray(rowIndex) && rowIndex.length > 0,
                     collectionAccessor: () => currentFork.context.collection,
                     valueAccessor: (ctx) => ctx?.item?.value,
                     parentCollectionAccessor: () => model?.context?.collectionField?.collection,
@@ -251,7 +258,7 @@ const ArrayNester = ({
                     valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
                     parentCollectionAccessor: () => model?.context?.collectionField?.collection,
                     parentValueAccessor: () =>
-                      (model?.parent as any)?.context?.item?.value ?? (model?.context as any)?.item?.value,
+                      (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
                   }),
                   serverOnlyWhenContextParams: true,
                 });
@@ -340,6 +347,7 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       meta: createItemChainMetaFactory({
         t: this.context.t,
         title: this.context.t('Current object'),
+        showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
         collectionAccessor: () => this.context.collection,
         valueAccessor: (ctx) => ctx?.item?.value,
         parentCollectionAccessor: () => this.context.collectionField?.collection,
