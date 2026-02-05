@@ -208,7 +208,6 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   getColumns() {
-    const isConfigMode = !!this.context.flowSettingsEnabled;
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
@@ -216,7 +215,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       .concat({
         key: 'empty',
       });
-    if (isConfigMode) {
+    if (this.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
@@ -278,6 +277,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   filterByTk: this.collection.getFilterByTK(record),
                   record: record,
                   fieldProps: { ...model.props, ...model.subModels.field.props },
+                  sourceFieldModelUid: model.subModels.field.uid,
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
@@ -543,6 +543,24 @@ TableBlockModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps('editable', params.editable);
       },
+      async afterParamsSave(ctx, params, previousParams) {
+        if (params?.editable === previousParams?.editable) return;
+
+        const blockModel = ctx.model as TableBlockModel;
+        blockModel.mapSubModels('columns', (column: any) => {
+          const flow = column?.getFlow?.('tableColumnSettings');
+          if (!flow?.getStep?.('quickEdit')) return;
+
+          const quickEditParams = column.getStepParams?.('tableColumnSettings', 'quickEdit');
+          if (quickEditParams && Object.prototype.hasOwnProperty.call(quickEditParams, 'editable')) {
+            return;
+          }
+
+          const isReadonly = !!column?.collectionField?.readonly;
+          const hasAssociationPath = !!column?.associationPathName;
+          column.setProps('editable', isReadonly || hasAssociationPath ? false : !!params.editable);
+        });
+      },
     },
     showRowNumbers: {
       title: tExpr('Show row numbers'),
@@ -591,7 +609,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Enable tree table'),
       uiMode: { type: 'switch', key: 'treeTable' },
       hideInSettings(ctx) {
-        if (ctx.model.collection.template !== 'tree') {
+        if (ctx.model.collection.template !== 'tree' || ctx.view?.inputArgs?.scene === 'select') {
           return true;
         }
       },
@@ -609,7 +627,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Expand all rows by default'),
       uiMode: { type: 'switch', key: 'defaultExpandAllRows' },
       hideInSettings(ctx) {
-        if (ctx.model.collection.template !== 'tree') {
+        if (ctx.model.collection.template !== 'tree' || ctx.view?.inputArgs?.scene === 'select') {
           return true;
         }
       },

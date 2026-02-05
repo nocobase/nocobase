@@ -15,6 +15,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
+import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
@@ -25,6 +26,7 @@ export function useDialog() {
   const holderRef = React.useRef(null);
 
   const open = (config, flowContext) => {
+    const parentEngine = flowContext?.engine;
     uuid += 1;
     const dialogRef = React.createRef<{
       destroy: () => void;
@@ -77,6 +79,8 @@ export function useDialog() {
     const ctx = new FlowContext();
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
+    const openerEngine = resolveOpenerEngine(parentEngine, scopedEngine);
+
     ctx.defineProperty('engine', { value: scopedEngine });
     ctx.addDelegate(scopedEngine.context);
     if (config.inheritContext !== false) {
@@ -90,15 +94,31 @@ export function useDialog() {
       type: 'dialog' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => dialogRef.current?.destroy(),
+      destroy: (result?: any) => {
+        config.onClose?.();
+        dialogRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
+        // Notify opener view that it becomes active again.
+        const openerEmitter = openerEngine?.emitter;
+        bumpViewActivatedVersion(openerEmitter);
+        openerEmitter?.emit?.(VIEW_ACTIVATED_EVENT, { type: 'dialog', viewUid: currentDialog?.inputArgs?.viewUid });
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
+      },
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
           return;
         }
-        dialogRef.current?.destroy();
-        closeFunc?.();
-        resolvePromise?.(result);
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentDialog.destroy(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -118,7 +138,6 @@ export function useDialog() {
 
     ctx.defineProperty('view', {
       get: () => currentDialog,
-      // meta: createViewMeta(ctx),
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
@@ -150,18 +169,13 @@ export function useDialog() {
         return (
           <DialogComponent
             className="nb-dialog-overflow-hidden"
-            key={`dialog-${uuid}`}
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
-            {...config}
             footer={currentFooter}
             header={currentHeader}
-            afterClose={() => {
-              closeFunc?.();
-              config.onClose?.();
-              resolvePromise?.(config.result);
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
+            {...config}
+            onCancel={() => {
+              currentDialog.close(config.result);
             }}
           >
             {content}

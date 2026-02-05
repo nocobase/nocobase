@@ -36,7 +36,6 @@ export const fieldComponent = defineAction({
       };
     } else {
       const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
-
       if (!classes || classes.length === 1) {
         return null;
       }

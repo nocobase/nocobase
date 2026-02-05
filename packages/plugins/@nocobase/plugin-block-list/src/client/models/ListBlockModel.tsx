@@ -19,7 +19,7 @@ import {
   FlowModel,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, ActionModel, BlockModel } from '@nocobase/client';
+import { CollectionBlockModel, BlockSceneEnum, ActionModel, dispatchEventDeep } from '@nocobase/client';
 import React from 'react';
 import { List, Space } from 'antd';
 import { css } from '@emotion/css';
@@ -50,7 +50,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
   }
-  renderConfiguireActions() {
+  renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'table-column-add-actions'}
@@ -77,11 +77,13 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           return this.translate('Total {{count}} items', { count: total });
         },
         showSizeChanger: true,
-        onChange: (page, pageSize) => {
+        onChange: async (page, pageSize) => {
           this.resource.loading = true;
           this.resource.setPage(page);
           this.resource.setPageSize(pageSize);
-          this.resource.refresh();
+          await this.resource.refresh();
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          await dispatchEventDeep(this, 'paginationChange');
         },
       };
     } else {
@@ -174,7 +176,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
 
               return null;
             })}
-            {this.renderConfiguireActions()}
+            {this.renderConfigureActions()}
           </Space>
         </div>
       </DndProvider>
@@ -288,6 +290,21 @@ ListBlockModel.registerFlow({
         //   //   }
         //   // }),
         // );
+      },
+    },
+  },
+});
+
+ListBlockModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    linkageRulesRefresh: {
+      use: 'linkageRulesRefresh',
+      defaultParams: {
+        actionName: 'blockLinkageRules',
+        flowKey: 'cardSettings',
+        stepKey: 'linkageRules',
       },
     },
   },

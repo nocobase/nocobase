@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import type { PropertyMeta, PropertyMetaFactory } from '@nocobase/flow-engine';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   createAssociationAwareObjectMetaFactory,
@@ -43,6 +43,8 @@ function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
+  private userModifiedTopLevelFields = new Set<string>();
+
   get form() {
     return this.context.form as FormInstance;
   }
@@ -71,8 +73,36 @@ export class FormBlockModel<
     this.form.setFieldsValue(values);
   }
 
-  setFieldValue(fieldName: string, value: any) {
+  setFieldValue(fieldName, value) {
     this.form.setFieldValue(fieldName, value);
+  }
+
+  /**
+   * @internal
+   *
+   * 仅用于编辑表单刷新保护：只记录「用户交互」触发的改动（来自 antd Form.onValuesChange）。
+   * 程序化 setFieldValue/setFieldsValue 不会触发 onValuesChange（见 linkageRules 的手动 emit），因此不会污染该集合。
+   */
+  markUserModifiedFields(changedValues): void {
+    if (!changedValues || typeof changedValues !== 'object') return;
+    if (Array.isArray(changedValues)) return;
+    for (const k of Object.keys(changedValues)) {
+      if (k) this.userModifiedTopLevelFields.add(k);
+    }
+  }
+
+  /**
+   * @internal
+   */
+  getUserModifiedFields(): Set<string> {
+    return this.userModifiedTopLevelFields;
+  }
+
+  /**
+   * @internal
+   */
+  resetUserModifiedFields(): void {
+    this.userModifiedTopLevelFields.clear();
   }
 
   public async onDispatchEventStart(eventName: string, options?: any, inputArgs?: Record<string, any>): Promise<void> {
@@ -185,44 +215,11 @@ export class FormBlockModel<
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {
     // 基于通用函数创建 MetaFactory（含 buildVariablesParams）
-    const baseFactory: PropertyMetaFactory = createAssociationAwareObjectMetaFactory(
+    return createAssociationAwareObjectMetaFactory(
       () => this.collection,
       this.translate('Current form'),
       () => this.form?.getFieldsValue?.() || {},
     );
-
-    // UI 优化：仅显示当前表单网格中已启用的顶层字段
-    const factory: PropertyMetaFactory = async () => {
-      const base = (await baseFactory()) as PropertyMeta | null;
-      if (!base) return null;
-
-      const getActiveTopLevelFieldNames = (): Set<string> => {
-        const items = this.subModels.grid?.subModels?.items ?? [];
-        const names = new Set<string>();
-        for (const it of items) {
-          const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-          const top = fp?.toString().split('.')[0];
-          if (top) names.add(top);
-        }
-        return names;
-      };
-      const activeTopLevel = getActiveTopLevelFieldNames();
-
-      const propsResolved = typeof base.properties === 'function' ? await base.properties() : base.properties;
-      const filteredBase: PropertyMeta = { ...base };
-      if (propsResolved && activeTopLevel.size > 0) {
-        const filtered: Record<string, PropertyMeta> = {};
-        for (const k of Object.keys(propsResolved)) {
-          if (activeTopLevel.has(k)) filtered[k] = propsResolved[k];
-        }
-        filteredBase.properties = filtered;
-      } else {
-        filteredBase.properties = propsResolved;
-      }
-      return filteredBase;
-    };
-    factory.title = this.translate('Current form');
-    return factory;
   }
 
   useHooksBeforeRender() {
@@ -238,10 +235,59 @@ export class FormBlockModel<
       },
       cache: false,
       meta: formValuesMeta,
-      resolveOnServer: createAssociationSubpathResolver(
-        () => this.collection,
-        () => this.form.getFieldsValue(),
-      ),
+      resolveOnServer: (subPath: string) => {
+        // 约定：
+        // - 已配置到表单网格的字段：优先使用前端表单值（仅关联字段子路径按需服务端补全）
+        // - 未配置到表单网格但存在于 collection 的字段：编辑表单场景下可走服务端按 DB 值解析
+        if (!subPath) return false;
+
+        const getTopLevel = (p: string): string | undefined => {
+          const m = String(p || '').match(/^([^.[]+)/);
+          return m?.[1];
+        };
+        const top = getTopLevel(subPath);
+        if (!top) return false;
+
+        // 仅对存在于 collection 的字段生效（避免未知字段触发无意义的服务端解析）
+        const field = this.collection?.getField?.(top);
+        if (!field) return false;
+
+        const getActiveTopLevelFieldNames = (): Set<string> => {
+          const items = this.subModels.grid?.subModels?.items ?? [];
+          const names = new Set<string>();
+          for (const it of items) {
+            const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+            const active = fp?.toString().split('.')[0];
+            if (active) names.add(active);
+          }
+          return names;
+        };
+        const activeTopLevel = getActiveTopLevelFieldNames();
+        const isConfiguredField = activeTopLevel.has(top);
+
+        if (isConfiguredField) {
+          // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
+          const assocResolver = createAssociationSubpathResolver(
+            () => this.collection,
+            () => this.form.getFieldsValue(),
+          );
+          return assocResolver(subPath);
+        }
+
+        // 未配置字段：仅在可推断当前记录锚点（filterByTk）时才允许服务端解析；
+        // 新建表单无锚点时直接返回 false（最终取值为 undefined）。
+        try {
+          const tk =
+            this.context?.resource?.getMeta?.('currentFilterByTk') ??
+            this.context?.resource?.getFilterByTk?.() ??
+            this.collection?.getFilterByTK?.(this.context?.record);
+          if (typeof tk === 'undefined' || tk === null) return false;
+        } catch (_) {
+          return false;
+        }
+
+        return true;
+      },
       serverOnlyWhenContextParams: true,
     });
   }
@@ -257,7 +303,7 @@ export class FormBlockModel<
     });
   }
 
-  onMount() {
+  protected onMount() {
     super.onMount();
     // 首次渲染触发一次事件流
     setTimeout(() => {
@@ -294,6 +340,7 @@ export function FormComponent({
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
+        model.markUserModifiedFields?.(changedValues);
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}

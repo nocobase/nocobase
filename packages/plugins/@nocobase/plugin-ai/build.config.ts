@@ -119,18 +119,18 @@ async function writeIndexFiles(pkgPath: string) {
 }
 
 export default defineConfig({
-  beforeBuild: async (log) => {
-    await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
-    const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
-    await writeIndexFiles(pkgPath);
-  },
+  // beforeBuild: async (log) => {
+  //   await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
+  //   const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
+  //   await writeIndexFiles(pkgPath);
+  // },
 
   afterBuild: async (log) => {
     log('copying deps');
     const deps = [
       'decamelize',
       'zod',
-      'zod-to-json-schema',
+      // 'zod-to-json-schema',
       'langsmith',
       'p-retry',
       'p-queue',
@@ -142,6 +142,10 @@ export default defineConfig({
     ];
     for (const dep of deps) {
       const depPath = path.resolve(process.cwd(), 'node_modules', dep);
+      if (!fs.existsSync(depPath)) {
+        console.warn(`depPath not existed skip: ${depPath}`);
+        continue;
+      }
       await fs.promises.cp(depPath, path.resolve(__dirname, 'dist/node_modules/@langchain/core/node_modules', dep), {
         recursive: true,
         force: true,

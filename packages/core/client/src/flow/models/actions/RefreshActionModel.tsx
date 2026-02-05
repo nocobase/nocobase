@@ -22,6 +22,7 @@ export class RefreshActionModel extends ActionModel {
 
 RefreshActionModel.define({
   label: tExpr('Refresh'),
+  toggleable: true,
 });
 
 RefreshActionModel.registerFlow({

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Çoklu Uygulama",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Çoklu Alan",
+    "link": "/multi-app/multi-space"
+  }
+]

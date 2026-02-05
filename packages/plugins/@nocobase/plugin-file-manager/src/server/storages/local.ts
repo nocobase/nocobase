@@ -16,14 +16,27 @@ import type { Readable } from 'stream';
 import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
-import { getFilename } from '../utils';
+import { diskFilenameGetter } from '../utils';
 
 const DEFAULT_BASE_URL = '/storage/uploads';
 
-function getDocumentRoot(storage): string {
-  const { documentRoot = process.env.LOCAL_STORAGE_DEST || 'storage/uploads' } = storage.options || {};
+export function getDocumentRoot(storage): string {
+  const { documentRoot = process.env.LOCAL_STORAGE_DEST || path.join(process.cwd(), 'storage', 'uploads') } =
+    storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
+}
+
+export function resolveSafePath(documentRoot: string, filePath?: string, filename?: string) {
+  const root = path.resolve(documentRoot);
+  const target = path.resolve(root, filePath || '', filename || '');
+  const relative = path.relative(root, target);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    const error = new Error('Access denied');
+    (error as NodeJS.ErrnoException).code = 'PATH_TRAVERSAL';
+    throw error;
+  }
+  return target;
 }
 
 export default class extends StorageType {
@@ -50,7 +63,7 @@ export default class extends StorageType {
         const mkdirp = require('mkdirp');
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
-      filename: getFilename,
+      filename: diskFilenameGetter(this.storage),
     });
   }
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
@@ -61,10 +74,14 @@ export default class extends StorageType {
       (promise, record) =>
         promise.then(async () => {
           try {
-            await fs.unlink(path.join(documentRoot, record.path, record.filename));
+            const filePath = resolveSafePath(documentRoot, record.path, record.filename);
+            await fs.unlink(filePath);
             count += 1;
           } catch (ex) {
-            if (ex.code === 'ENOENT') {
+            if (ex.code === 'PATH_TRAVERSAL') {
+              console.warn(`[file-manager] blocked path traversal delete: ${record.path || ''}/${record.filename}`);
+              count += 1;
+            } else if (ex.code === 'ENOENT') {
               console.warn(ex.message);
               count += 1;
             } else {
@@ -88,7 +105,7 @@ export default class extends StorageType {
 
   async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
     // compatible with windows path
-    const filePath = path.join(process.cwd(), 'storage', 'uploads', file.path || '', file.filename);
+    const filePath = resolveSafePath(getDocumentRoot(this.storage), file.path, file.filename);
     if (await fs.stat(filePath)) {
       return {
         stream: fsSync.createReadStream(filePath),

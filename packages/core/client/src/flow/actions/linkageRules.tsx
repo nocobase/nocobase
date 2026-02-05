@@ -92,6 +92,76 @@ const getFormFieldsByForkModel = (ctx: any) => {
   }
 };
 
+type ParsedFieldIndexEntry = {
+  fieldName: string;
+  index: number;
+};
+
+function normalizeFieldKeyParts(fieldKey: string): string[] {
+  const s = fieldKey;
+  // tolerate array stringification like "a:0,b:1"
+  if (s.includes(',') && s.includes(':')) {
+    return s
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return s ? [s] : [];
+}
+
+function parseFieldIndexEntry(entry: string): ParsedFieldIndexEntry | null {
+  const [fieldName, indexStr] = String(entry || '').split(':');
+  if (!fieldName) return null;
+  const index = Number(indexStr);
+  if (!Number.isFinite(index)) return null;
+  return { fieldName, index };
+}
+
+function buildAbsoluteFieldPathArray(
+  fieldPath: string | undefined,
+  fieldKey: any,
+): {
+  fieldPathArray: Array<string | number>;
+  // path to the (innermost) Form.List root, e.g. ['user', 'comments'] (without index)
+  listRootPath?: Array<string | number>;
+  // row index for the innermost Form.List
+  listRowIndex?: number;
+  hasUnmatchedIndices: boolean;
+} | null {
+  if (!fieldPath) return null;
+
+  const pathParts = String(fieldPath)
+    .split('.')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  if (!pathParts.length) return null;
+
+  const indices = normalizeFieldKeyParts(fieldKey).map(parseFieldIndexEntry).filter(Boolean) as ParsedFieldIndexEntry[];
+
+  let idxPtr = 0;
+  const out: Array<string | number> = [];
+  let listRootPath: Array<string | number> | undefined;
+  let listRowIndex: number | undefined;
+
+  for (const part of pathParts) {
+    out.push(part);
+    const cur = indices[idxPtr];
+    if (cur && cur.fieldName === part) {
+      listRootPath = [...out];
+      listRowIndex = cur.index;
+      out.push(cur.index);
+      idxPtr += 1;
+    }
+  }
+
+  return {
+    fieldPathArray: out,
+    listRootPath,
+    listRowIndex,
+    hasUnmatchedIndices: idxPtr < indices.length,
+  };
+}
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: tExpr('Set block state'),
@@ -688,16 +758,33 @@ export const subFormLinkageAssignField = defineAction({
     if (!field) return;
     try {
       const formItemModel = ctx.engine.getModel(field);
-      const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${field}`);
+      if (!formItemModel) return;
 
-      let model = forkModel;
+      const fieldKey = ctx?.model?.context?.fieldKey;
+      const forkKey = fieldKey ? `${fieldKey}:${field}` : null;
 
-      // 适配对一子表单的场景
-      if (!forkModel) {
-        model = formItemModel;
+      let model = forkKey ? formItemModel.getFork(forkKey) : null;
+
+      // 对多子表单（Form.List）场景：
+      // - 确保用于写入的 fieldPathArray 为可落地的“绝对路径”
+      if (fieldKey) {
+        const fieldPath =
+          formItemModel?.fieldPath || formItemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+        const built = buildAbsoluteFieldPathArray(fieldPath, fieldKey);
+
+        // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
+        if (!model && forkKey) {
+          model = formItemModel.createFork({}, forkKey);
+        }
+        if (model.isFork) {
+          model?.context?.defineProperty?.('fieldPathArray', { value: built.fieldPathArray });
+        }
       }
 
-      if (!model) return;
+      // 适配对一子表单的场景（无行级 fieldKey）
+      if (!model) {
+        model = formItemModel as any;
+      }
 
       const collectionField = (formItemModel as any)?.collectionField;
       const finalValue = coerceForToOneField(collectionField, assignValue);
@@ -806,6 +893,7 @@ export const linkageRunjs = defineAction({
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
   sort: 300,
+  useRawParams: true,
   uiSchema: {
     value: {
       type: 'object',
@@ -846,7 +934,7 @@ export const linkageRunjs = defineAction({
       },
     },
   },
-  handler: (ctx, { value }) => {
+  handler: async (ctx, { value }) => {
     // 执行 JS 脚本处理逻辑
     const { script } = value || {};
 
@@ -856,16 +944,75 @@ export const linkageRunjs = defineAction({
 
     try {
       const navigator = createSafeNavigator();
-      ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+      await ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
     } catch (error) {
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户
       if (ctx.app?.message) {
-        ctx.app.message.error(`Script execution error: ${error.message}`);
+        const msg = error instanceof Error ? error.message : String(error);
+        ctx.app.message.error(`Script execution error: ${msg}`);
       }
     }
   },
 });
+
+function protectLinkageRunJsScripts(params: { value?: LinkageRule[] } & Record<string, any>) {
+  const masked = _.cloneDeep(params || {}) as typeof params;
+  const tokenToScript = new Map<string, string>();
+
+  const mask = (script: string) => {
+    const token = `__ncb_linkage_runjs_script_mask__${uid()}__`;
+    tokenToScript.set(token, script);
+    return token;
+  };
+
+  const rules = masked?.value;
+  if (Array.isArray(rules)) {
+    rules.forEach((rule) => {
+      rule.actions.forEach((action) => {
+        const actionName = action.name;
+        if (actionName !== 'linkageRunjs' && actionName !== 'runjs') return;
+        const script = _.get(action, ['params', 'value', 'script']);
+        if (typeof script === 'string' && script.length) {
+          _.set(action, ['params', 'value', 'script'], mask(script));
+        }
+        const code = _.get(action, ['params', 'code']);
+        if (typeof code === 'string' && code.length) {
+          _.set(action, ['params', 'code'], mask(code));
+        }
+      });
+    });
+  }
+
+  const restore = (resolved: any) => {
+    const rulesResolved = resolved?.value;
+    if (Array.isArray(rulesResolved)) {
+      rulesResolved.forEach((rule: LinkageRule) => {
+        rule.actions.forEach((action) => {
+          const actionName = action.name;
+          if (actionName !== 'linkageRunjs' && actionName !== 'runjs') return;
+          const script = _.get(action, ['params', 'value', 'script']);
+          if (typeof script === 'string' && tokenToScript.has(script)) {
+            _.set(action, ['params', 'value', 'script'], tokenToScript.get(script));
+          }
+          const code = _.get(action, ['params', 'code']);
+          if (typeof code === 'string' && tokenToScript.has(code)) {
+            _.set(action, ['params', 'code'], tokenToScript.get(code));
+          }
+        });
+      });
+    }
+    return resolved;
+  };
+
+  return { masked, restore };
+}
+
+async function resolveLinkageRulesParamsPreservingRunJsScripts(ctx: FlowContext, params: any) {
+  const { masked, restore } = protectLinkageRunJsScripts(params);
+  const resolved = await ctx.resolveJsonTemplate(masked);
+  return restore(resolved);
+}
 
 const LinkageRulesUI = observer(
   (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
@@ -1331,7 +1478,11 @@ export const blockLinkageRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler: commonLinkageRulesHandler,
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
 });
 
 export const actionLinkageRules = defineAction({
@@ -1353,7 +1504,11 @@ export const actionLinkageRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler: commonLinkageRulesHandler,
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
 });
 
 export const fieldLinkageRules = defineAction({
@@ -1375,11 +1530,13 @@ export const fieldLinkageRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler: (ctx, params) => {
+  useRawParams: true,
+  handler: async (ctx, params) => {
     if (ctx.model.hidden) {
       return;
     }
-    commonLinkageRulesHandler(ctx, params);
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
   },
 });
 
@@ -1408,6 +1565,9 @@ export const subFormFieldLinkageRules = defineAction({
       return;
     }
     const grid = ctx.model?.subModels?.grid;
+    if (!grid) {
+      throw new Error('[subFormFieldLinkageRules] Missing subModels.grid');
+    }
 
     // 适配对一子表单的场景
     if (ctx.model instanceof SubFormFieldModel) {
@@ -1415,15 +1575,19 @@ export const subFormFieldLinkageRules = defineAction({
         return;
       }
       const flowContext = new FlowRuntimeContext(grid, ctx.flowKey);
-      commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
+      const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
+      await commonLinkageRulesHandler(flowContext, resolved);
     } else {
-      grid.forks.forEach(async (forkModel: FlowModel) => {
-        if (forkModel.hidden) {
-          return;
-        }
-        const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
-        commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
-      });
+      await Promise.all(
+        (grid.forks || []).map(async (forkModel: FlowModel) => {
+          if (forkModel.hidden) {
+            return;
+          }
+          const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
+          const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
+          await commonLinkageRulesHandler(flowContext, resolved);
+        }),
+      );
     }
   },
 });
@@ -1447,11 +1611,13 @@ export const detailsFieldLinkageRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler: (ctx, params) => {
+  useRawParams: true,
+  handler: async (ctx, params) => {
     if (ctx.model.hidden) {
       return;
     }
-    commonLinkageRulesHandler(ctx, params);
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
   },
 });
 

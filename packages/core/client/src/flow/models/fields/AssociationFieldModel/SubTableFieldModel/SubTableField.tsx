@@ -8,11 +8,13 @@
  */
 
 import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { Table, Form, Space } from 'antd';
+import { Table, Form, Space, Button } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ActionWithoutPermission } from '../../../base/ActionModel';
+import { getRowKey } from '../../../blocks/table/utils';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -27,12 +29,19 @@ export function SubTableField(props) {
     onSelectExitRecordClick,
     allowDisassociation,
     pageSize,
+    allowCreate, //acl
+    isConfigMode,
+    resetPage,
+    filterTargetKey = 'id',
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   useEffect(() => {
     setCurrentPageSize(pageSize);
   }, [pageSize]);
+  useEffect(() => {
+    resetPage && setCurrentPage(1);
+  }, [resetPage]);
 
   // 前端分页
   const pagination = useMemo(() => {
@@ -58,12 +67,19 @@ export function SubTableField(props) {
 
   // 新增一行
   const handleAdd = () => {
-    const newRow = { isNew: true };
-    columns.forEach((col) => (newRow[col.dataIndex] = undefined));
+    if (allowCreate === false) return;
+
+    const newRow = {
+      __is_new__: true,
+    };
+
+    columns.forEach((col) => {
+      newRow[col.dataIndex] = undefined;
+    });
+
     const newValue = [...(value || []), newRow];
-    const lastPage = Math.ceil(newValue.length / currentPageSize);
-    setCurrentPage(lastPage);
-    onChange?.([...(value || []), newRow]);
+    setCurrentPage(Math.ceil(newValue.length / currentPageSize));
+    onChange?.(newValue);
   };
 
   // 删除行
@@ -111,7 +127,7 @@ export function SubTableField(props) {
         fixed: 'right',
         render: (v, record, index) => {
           const pageRowIdx = (currentPage - 1) * currentPageSize + index;
-          if (!allowDisassociation && !record.isNew) {
+          if (!allowDisassociation && !(record.__is_new__ || record.__is_stored__)) {
             return;
           }
           return (
@@ -127,12 +143,19 @@ export function SubTableField(props) {
       },
     ])
     .filter(Boolean);
+
+  const pagedDataSource = useMemo(() => {
+    if (!value?.length) return [];
+
+    const start = (currentPage - 1) * currentPageSize;
+    return value.slice(start, start + currentPageSize);
+  }, [value, currentPage, currentPageSize]);
   return (
     <Form.Item>
       <Table
-        dataSource={value}
+        dataSource={pagedDataSource}
         columns={editableColumns}
-        rowKey={(row, idx) => idx}
+        rowKey={(record) => getRowKey(record, filterTargetKey)}
         tableLayout="fixed"
         scroll={{ x: 'max-content' }}
         pagination={pagination}
@@ -154,18 +177,33 @@ export function SubTableField(props) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              minHeight: '20px',
             }}
           >
-            <Space size={'middle'}>
-              {!disabled && allowAddNew !== false && (
-                <a onClick={handleAdd} style={{ marginTop: 8 }}>
-                  <PlusOutlined /> {t('Add new')}
-                </a>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)} style={{ marginTop: 8 }}>
+            <Space>
+              {allowAddNew &&
+                (allowCreate || isConfigMode) &&
+                (allowCreate ? (
+                  <Button type="link" onClick={handleAdd} disabled={disabled}>
+                    <PlusOutlined />
+                    {t('Add new')}
+                  </Button>
+                ) : (
+                  <ActionWithoutPermission message={t('No permission to add new')} forbidden={{ actionName: 'create' }}>
+                    <Button type="link" disabled>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  </ActionWithoutPermission>
+                ))}
+              {allowSelectExistingRecord && (
+                <Button
+                  type="link"
+                  onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}
+                  disabled={disabled}
+                >
                   <ZoomInOutlined /> {t('Select record')}
-                </a>
+                </Button>
               )}
             </Space>
           </div>

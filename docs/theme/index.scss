@@ -60,6 +60,23 @@ html.rp-dark {
   overflow: auto;
 }
 
+/* Language dropdown hover effect - pure CSS */
+.language-dropdown {
+  /* Hover to show dropdown menu */
+  &:hover {
+    .rspress-nav-menu-group-content {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    /* Rotate arrow when dropdown is open */
+    .dropdown-arrow {
+      transform: rotate(180deg) !important;
+    }
+  }
+}
+
 /* Dropdown menu styling - matching Landrick/website design */
 .rspress-nav-menu-group-content {
   /* Reduce border radius for cleaner look */

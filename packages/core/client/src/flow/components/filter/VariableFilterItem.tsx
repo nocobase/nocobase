@@ -27,12 +27,12 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
-import { enumToOptions, translateOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
-  () => import('../../../schema-component'),
+  () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
   'DateFilterDynamicComponent',
 );
 
@@ -277,7 +277,16 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 处理左侧值变化（值由 converters 决定如何解析）
     const handleLeftChange = useCallback(
       (variableValue: string, meta?: MetaTreeNode) => {
-        value.path = variableValue || '';
+        const prevPath = value.path || '';
+        const nextPath = variableValue || '';
+        const changed = nextPath !== prevPath;
+        value.path = nextPath;
+        // 左侧字段切换时，清空操作符和值，避免跨字段复用旧输入
+        if (changed && prevPath) {
+          value.operator = '';
+          value.value = undefined;
+          value.noValue = false;
+        }
         if (meta) {
           setLeftMeta(meta);
         }
@@ -324,6 +333,30 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       [operatorMetaList, operator],
     );
 
+    const resolveFormulaDataType = useCallback((meta?: MetaTreeNode) => {
+      return (
+        (meta as any)?.options?.dataType || (meta as any)?.dataType || meta?.type || meta?.uiSchema?.type || 'double'
+      );
+    }, []);
+
+    const getFormulaFilterComponent = useCallback((dataType: string) => {
+      switch (dataType) {
+        case 'boolean':
+          return 'Switch';
+        case 'date':
+          return 'DateFilterDynamicComponent';
+        case 'integer':
+        case 'bigInt':
+        case 'double':
+        case 'decimal':
+        case 'number':
+          return 'InputNumber';
+        case 'string':
+        default:
+          return 'Input';
+      }
+    }, []);
+
     // 轻量动态输入渲染：使用 formily 动态 schema 渲染 mergedSchema
     const mergedSchema: ISchema = useMemo(() => {
       const fieldSchema = leftMeta?.uiSchema || {};
@@ -331,9 +364,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const merged = merge({}, fieldSchema, opSchema);
       // 公式字段：在筛选场景下改为可编辑输入组件，并标记筛选上下文
       if (leftMeta?.interface === 'formula') {
+        const dataType = resolveFormulaDataType(leftMeta);
         const override: ISchema = {
           'x-read-pretty': false,
-          'x-component': 'Input',
+          'x-component': getFormulaFilterComponent(dataType),
           'x-component-props': {
             ...(merged['x-component-props'] as Record<string, any>),
           },
@@ -342,7 +376,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         return next;
       }
       return merged;
-    }, [leftMeta, currentOpMeta]);
+    }, [leftMeta, currentOpMeta, getFormulaFilterComponent, resolveFormulaDataType]);
 
     // 仅在组件类型切换且新组件为日期/时间类时，检测不兼容旧值并清空；首渲染保留旧值
     const prevXComponentRef = React.useRef<string | undefined>(mergedSchema?.['x-component'] as string | undefined);
@@ -476,14 +510,15 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const supportKeyword = operator === '$in' || operator === '$notIn';
       if (resolved && supportKeyword) {
         const { Comp, props: xProps } = resolved;
-        if ((!xProps?.options || xProps?.options.length === 0) && enumOptions?.length) {
-          xProps.options = enumOptions;
+        const nextProps = { ...xProps };
+        if ((!nextProps?.options || nextProps?.options.length === 0) && enumOptions?.length) {
+          nextProps.options = enumOptions;
         }
         const style = {
           flex: '1 1 40%',
           minWidth: 160,
           maxWidth: '100%',
-          ...(xProps?.style || {}),
+          ...(nextProps?.style || {}),
         };
         const normalized =
           Array.isArray(rightValue) && rightValue.every((v) => typeof v === 'string' || typeof v === 'number')
@@ -497,8 +532,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         return (
           <div style={style}>
             <Comp
-              {...xProps}
-              style={{ width: '100%', ...(xProps?.style || {}) }}
+              {...nextProps}
+              style={{ width: '100%', ...(nextProps?.style || {}) }}
               value={normalized}
               onChange={(vals: any) => setRightValue(vals)}
             />
@@ -621,7 +656,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               ...node,
               children: async () => {
                 const base = await original();
-                return [...(Array.isArray(base) ? base : []), ...extraChildren];
+                const merged = [...(Array.isArray(base) ? base : []), ...extraChildren];
+                return _.uniqBy(merged, 'name');
               },
             } as MetaTreeNode;
           }

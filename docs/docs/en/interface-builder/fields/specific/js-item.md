@@ -20,7 +20,7 @@ JS Item is used for "custom items" (not bound to a field) in a form. You can use
 - `ctx.message` / `ctx.notification`: Global message and notification.
 - `ctx.t()` / `ctx.i18n.t()`: Internationalization.
 - `ctx.onRefReady(ctx.ref, cb)`: Render after the container is ready.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Built-in React, ReactDOM, Ant Design, Ant Design icons, and dayjs libraries for JSX rendering and date-time utilities. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Built-in React, ReactDOM, Ant Design, Ant Design icons, dayjs, lodash, math.js, and formula.js libraries for JSX rendering, date-time utilities, data manipulation, and mathematical operations. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
 - `ctx.render(vnode)`: Renders a React element/HTML/DOM to the default container `ctx.element`. Multiple renders will reuse the Root and overwrite the existing content of the container.
 
 ## Editor and Snippets
@@ -32,7 +32,7 @@ JS Item is used for "custom items" (not bound to a field) in a form. You can use
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
 
-- Can be used with AI Employee to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- Can be used with AI Employee to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
 
 ## Common Usage (Simplified Examples)
 

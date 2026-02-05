@@ -77,10 +77,10 @@ npm i --no-save --no-package-lock --prefix . exceljs
 WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 ```
 
-即可在脚本中使用 `exceljs` 包：
+即可在脚本中使用 `exceljs` 包（`require` 的名称需要与环境变量中定义的完全一致）：
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 

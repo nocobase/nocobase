@@ -15,12 +15,10 @@ import * as process from 'node:process';
 import moment from 'moment';
 import { PasswordField } from '@nocobase/database';
 
-describe('xlsx importer', () => {
+describe('basic importer', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = await createMockServer({
-      plugins: ['field-china-region', 'field-sequence'],
-    });
+    app = await createMockServer();
   });
 
   afterEach(async () => {
@@ -111,6 +109,169 @@ describe('xlsx importer', () => {
       }
 
       expect(error).toBeUndefined();
+    });
+  });
+
+  describe('validate columns', () => {
+    let User;
+    let Profile;
+
+    beforeEach(async () => {
+      User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      });
+
+      Profile = app.db.collection({
+        name: 'profiles',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            target: 'users',
+            interface: 'm2o',
+          },
+        ],
+      });
+
+      await app.db.sync();
+    });
+
+    it('should reject invalid association filter key', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: 'Name',
+        },
+        {
+          dataIndex: ['user', 'unknownField'],
+          defaultTitle: 'User',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Profile,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 'User1']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Profile,
+        columns,
+        workbook: template,
+      });
+
+      await expect(importer.validate()).rejects.toThrow('Field not found');
+    });
+
+    it('should block sql injection style filter key in association', async () => {
+      const injectionValue = `"' OR 1=1 --"`;
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: 'Name',
+        },
+        {
+          dataIndex: ['user', '$or'],
+          defaultTitle: 'User',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Profile,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', injectionValue]], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Profile,
+        columns,
+        workbook: template,
+      });
+
+      await expect(importer.run()).rejects.toThrow('Field not found');
+    });
+
+    it('should safely handle SQL injection attempts in cell values', async () => {
+      // Create a normal user first
+      await User.repository.create({ values: { name: 'User1' } });
+
+      const columns = [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['user', 'name'], defaultTitle: 'User' },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Profile,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      // Inject malicious SQL in cell values
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test1', `' OR '1'='1`], // Classic SQL injection
+          ['test2', `User1'; DROP TABLE users; --`], // DROP injection
+          ['test3', `' UNION SELECT * FROM users --`], // UNION injection
+        ],
+        { origin: 'A2' },
+      );
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Profile,
+        columns,
+        workbook: template,
+      });
+
+      // These malicious values should not be interpreted as SQL
+      // Since no user matches these strings, it should throw error (wrapped in "Failed to parse field")
+      let error: any;
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeDefined();
+      // The error should be an ImportError with cause containing "not found"
+      // This proves the SQL injection string was treated as a literal value to search for
+      const errorMessage = error.cause?.message || error.params?.message || error.message;
+      expect(errorMessage).toMatch(/not found/);
+
+      // Critical: Verify the users table was NOT dropped or modified
+      const userCount = await User.repository.count();
+      expect(userCount).toBe(1); // Only the original User1 should exist
+
+      // Verify no profiles were created due to transaction rollback
+      const profileCount = await Profile.repository.count();
+      expect(profileCount).toBe(0);
     });
   });
 
@@ -1035,71 +1196,6 @@ describe('xlsx importer', () => {
     expect(error).toBeTruthy();
   });
 
-  it('should import china region field', async () => {
-    const Post = app.db.collection({
-      name: 'posts',
-      fields: [
-        { type: 'string', name: 'title' },
-        {
-          type: 'belongsToMany',
-          target: 'chinaRegions',
-          through: 'userRegions',
-          targetKey: 'code',
-          interface: 'chinaRegion',
-          name: 'region',
-        },
-      ],
-    });
-
-    await app.db.sync();
-
-    const columns = [
-      { dataIndex: ['title'], defaultTitle: 'Title' },
-      {
-        dataIndex: ['region'],
-        defaultTitle: 'region',
-      },
-    ];
-
-    const templateCreator = new TemplateCreator({
-      collection: Post,
-      columns,
-    });
-
-    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
-
-    const worksheet = template.Sheets[template.SheetNames[0]];
-
-    XLSX.utils.sheet_add_aoa(
-      worksheet,
-      [
-        ['post0', '山西省/长治市/潞城区'],
-        ['post1', ''],
-        ['post2', null],
-      ],
-      {
-        origin: 'A2',
-      },
-    );
-
-    const importer = new XlsxImporter({
-      collectionManager: app.mainDataSource.collectionManager,
-      collection: Post,
-      columns,
-      workbook: template,
-    });
-
-    await importer.run();
-
-    expect(await Post.repository.count()).toBe(3);
-
-    const post = await Post.repository.findOne({
-      appends: ['region'],
-    });
-
-    expect(post.get('region').map((item: any) => item.code)).toEqual(['14', '1404', '140406']);
-  });
-
   it('should keep boolean field nullable when cell value is empty', async () => {
     const BooleanUser = app.db.collection({
       name: 'booleanUsers',
@@ -1361,112 +1457,6 @@ describe('xlsx importer', () => {
 
     expect(user3.get('id')).toBe(3);
     expect(testFn).not.toBeCalled();
-  });
-
-  it('should reset id seq after import id field', async () => {
-    const User = app.db.collection({
-      name: 'users',
-      autoGenId: false,
-      fields: [
-        {
-          type: 'bigInt',
-          name: 'id',
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'string',
-          name: 'email',
-        },
-        {
-          type: 'sequence',
-          name: 'name',
-          patterns: [
-            {
-              type: 'integer',
-              options: { key: 1 },
-            },
-          ],
-        },
-      ],
-    });
-
-    await app.db.sync();
-
-    const templateCreator = new TemplateCreator({
-      collection: User,
-      columns: [
-        {
-          dataIndex: ['id'],
-          defaultTitle: 'ID',
-        },
-        {
-          dataIndex: ['name'],
-          defaultTitle: '姓名',
-        },
-        {
-          dataIndex: ['email'],
-          defaultTitle: '邮箱',
-        },
-      ],
-    });
-
-    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
-
-    const worksheet = template.Sheets[template.SheetNames[0]];
-
-    XLSX.utils.sheet_add_aoa(
-      worksheet,
-      [
-        [1, 'User1', 'test@test.com'],
-        [2, 'User2', 'test2@test.com'],
-      ],
-      {
-        origin: 'A2',
-      },
-    );
-
-    const importer = new XlsxImporter({
-      collectionManager: app.mainDataSource.collectionManager,
-      collection: User,
-      columns: [
-        {
-          dataIndex: ['id'],
-          defaultTitle: 'ID',
-        },
-        {
-          dataIndex: ['name'],
-          defaultTitle: '姓名',
-        },
-        {
-          dataIndex: ['email'],
-          defaultTitle: '邮箱',
-        },
-      ],
-      workbook: template,
-    });
-
-    const testFn = vi.fn();
-    importer.on('seqReset', testFn);
-
-    await importer.run();
-
-    expect(await User.repository.count()).toBe(2);
-
-    const user3 = await User.repository.create({
-      values: {
-        name: 'User3',
-        email: 'test3@test.com',
-      },
-    });
-
-    expect(user3.get('id')).toBe(3);
-
-    expect(testFn).toBeCalled();
   });
 
   it('should validate workbook with error', async () => {
@@ -2480,5 +2470,204 @@ describe('xlsx importer', () => {
 
     const count = await User.repository.count();
     expect(count).toBe(2);
+  });
+});
+
+describe('importer with specical field type', () => {
+  let app: MockServer;
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  describe('china region field', () => {
+    beforeEach(async () => {
+      app = await createMockServer({
+        plugins: ['field-china-region'],
+      });
+    });
+
+    it('should import china region field', async () => {
+      const Post = app.db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          {
+            type: 'belongsToMany',
+            target: 'chinaRegions',
+            through: 'userRegions',
+            targetKey: 'code',
+            interface: 'chinaRegion',
+            name: 'region',
+          },
+        ],
+      });
+
+      await app.db.sync();
+
+      const columns = [
+        { dataIndex: ['title'], defaultTitle: 'Title' },
+        {
+          dataIndex: ['region'],
+          defaultTitle: 'region',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Post,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['post0', '山西省/长治市/潞城区'],
+          ['post1', ''],
+          ['post2', null],
+        ],
+        {
+          origin: 'A2',
+        },
+      );
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Post,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      expect(await Post.repository.count()).toBe(3);
+
+      const post = await Post.repository.findOne({
+        appends: ['region'],
+      });
+
+      expect(post.get('region').map((item: any) => item.code)).toEqual(['14', '1404', '140406']);
+    });
+  });
+
+  describe('sequence field', () => {
+    beforeEach(async () => {
+      app = await createMockServer({
+        plugins: ['field-sequence'],
+      });
+    });
+
+    it('should reset id seq after import id field', async () => {
+      const User = app.db.collection({
+        name: 'users',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'bigInt',
+            name: 'id',
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'string',
+            name: 'email',
+          },
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              {
+                type: 'integer',
+                options: { key: 1 },
+              },
+            ],
+          },
+        ],
+      });
+
+      await app.db.sync();
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['id'],
+            defaultTitle: 'ID',
+          },
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+          },
+          {
+            dataIndex: ['email'],
+            defaultTitle: '邮箱',
+          },
+        ],
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          [1, 'User1', 'test@test.com'],
+          [2, 'User2', 'test2@test.com'],
+        ],
+        {
+          origin: 'A2',
+        },
+      );
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['id'],
+            defaultTitle: 'ID',
+          },
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+          },
+          {
+            dataIndex: ['email'],
+            defaultTitle: '邮箱',
+          },
+        ],
+        workbook: template,
+      });
+
+      const testFn = vi.fn();
+      importer.on('seqReset', testFn);
+
+      await importer.run();
+
+      expect(await User.repository.count()).toBe(2);
+
+      const user3 = await User.repository.create({
+        values: {
+          name: 'User3',
+          email: 'test3@test.com',
+        },
+      });
+
+      expect(user3.get('id')).toBe(3);
+
+      // In MySQL/SQLite, AUTO_INCREMENT is automatically updated when inserting with explicit id,
+      // so seqReset event is only triggered in PostgreSQL where manual sequence reset is needed
+      if (process.env['DB_DIALECT'] === 'postgres') {
+        expect(testFn).toBeCalled();
+      }
+    });
   });
 });

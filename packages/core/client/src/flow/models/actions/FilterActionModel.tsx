@@ -9,10 +9,10 @@
 
 import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
-import { ButtonProps, Popover, Select } from 'antd';
+import { ButtonProps, Popover, Transfer } from 'antd';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
-import { ActionModel } from '../base';
+import { ActionModel, CollectionBlockModel } from '../base';
 import { FilterContainer } from '../../components/filter/FilterContainer';
 import _ from 'lodash';
 
@@ -42,11 +42,7 @@ export class FilterActionModel extends ActionModel {
       return this.map.get(this.props.filterableFieldNames);
     }
 
-    const fields =
-      this.context.blockModel.collection?.getFields().filter((field) => {
-        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
-        return field.target !== 'attachments';
-      }) || [];
+    const fields = this.context.blockModel.collection?.getFields() || [];
 
     const result = getIgnoreFieldNames(
       this.props.filterableFieldNames || [],
@@ -118,6 +114,7 @@ export class FilterActionModel extends ActionModel {
 FilterActionModel.define({
   label: tExpr('Filter'),
   toggleable: true,
+  sort: 5,
 });
 
 FilterActionModel.registerFlow({
@@ -141,12 +138,20 @@ FilterActionModel.registerFlow({
             const dm = model?.context?.app?.dataSourceManager;
             const fiMgr = dm?.collectionFieldInterfaceManager;
             const filterable = getFilterableFields(model.context.blockModel.collection, fiMgr);
-            const options = filterable.map((field: any) => ({ label: field.title, value: field.name }));
-            return <Select {...props} options={options} />;
+            const dataSource = filterable.map((field: any) => ({ key: field.name, title: field.title }));
+            return (
+              <Transfer
+                {...props}
+                dataSource={dataSource}
+                targetKeys={props.value || []}
+                onChange={(nextKeys) => props.onChange?.(nextKeys)}
+                render={(item) => item.title as string}
+              />
+            );
           },
           'x-component-props': {
-            mode: 'multiple',
-            placeholder: tExpr('Please select filterable fields'),
+            showSearch: true,
+            listStyle: { width: 280, height: 360 },
           },
         },
       },
@@ -201,21 +206,39 @@ FilterActionModel.registerFlow({
   steps: {
     submit: {
       handler(ctx, params) {
-        const resource = ctx.blockModel?.resource as MultiRecordResource;
-        if (!resource) {
+        const blockModel = ctx.blockModel as CollectionBlockModel;
+        const resource = blockModel?.resource as MultiRecordResource;
+        if (!blockModel || !resource) {
           return;
         }
 
         const filter = transformFilter(ctx.model.props.filterValue);
+        const hasFilter = !isEmptyFilter(filter);
 
-        if (!isEmptyFilter(filter)) {
+        // 更新筛选来源活跃状态
+        blockModel.setFilterActive(ctx.model.uid, hasFilter);
+
+        if (hasFilter) {
           resource.addFilterGroup(ctx.model.uid, filter);
           resource.setPage(1);
         } else {
           resource.removeFilterGroup(ctx.model.uid);
         }
 
-        resource.refresh();
+        // 检查数据加载模式
+        const loadingMode = blockModel.getDataLoadingMode();
+        if (loadingMode === 'manual' && !hasFilter && !blockModel.hasActiveFilters()) {
+          // manual 模式且筛选为空，清空数据
+          resource.setData([]);
+          resource.setMeta({ count: 0, hasNext: false });
+          if (typeof resource.setPage === 'function') {
+            resource.setPage(1);
+          }
+          resource.loading = false;
+        } else {
+          resource.refresh();
+        }
+
         ctx.model.setProps('open', false);
       },
     },
@@ -229,14 +252,41 @@ FilterActionModel.registerFlow({
   steps: {
     reset: {
       handler(ctx, params) {
-        const resource = ctx.blockModel?.resource as MultiRecordResource;
-        if (!resource) {
+        const blockModel = ctx.blockModel as CollectionBlockModel;
+        const resource = blockModel?.resource as MultiRecordResource;
+        if (!blockModel || !resource) {
           return;
         }
+
+        // 移除当前筛选来源
         resource.removeFilterGroup(ctx.model.uid);
-        resource.refresh();
+        blockModel.setFilterActive(ctx.model.uid, false);
+
+        // 检查数据加载模式
+        const loadingMode = blockModel.getDataLoadingMode();
+        const defaultFilter = ctx.model.props.defaultFilterValue;
+        const hasDefaultFilter = !isEmptyFilter(transformFilter(defaultFilter));
+
+        if (loadingMode === 'manual' && !hasDefaultFilter && !blockModel.hasActiveFilters()) {
+          // manual 模式且无默认筛选值，清空数据
+          resource.setData([]);
+          resource.setMeta({ count: 0, hasNext: false });
+          if (typeof resource.setPage === 'function') {
+            resource.setPage(1);
+          }
+          resource.loading = false;
+        } else if (hasDefaultFilter) {
+          // 有默认筛选值时，应用默认筛选并刷新
+          resource.addFilterGroup(ctx.model.uid, transformFilter(defaultFilter));
+          blockModel.setFilterActive(ctx.model.uid, true);
+          resource.setPage(1);
+          resource.refresh();
+        } else {
+          resource.refresh();
+        }
+
         ctx.model.setProps('open', false);
-        ctx.model.setProps('filterValue', _.cloneDeep(ctx.model.props.defaultFilterValue));
+        ctx.model.setProps('filterValue', _.cloneDeep(defaultFilter));
       },
     },
   },
@@ -258,7 +308,6 @@ function getFilterableFields(collection: any, fiMgr: any) {
   const fields = collection?.getFields?.() || [];
   if (!fiMgr) return [];
   return fields.filter((field: any) => {
-    if (field.target === 'attachments') return false;
     if (!field?.interface) return false;
     if (field?.filterable === false) return false;
     const fi = fiMgr.getFieldInterface(field.interface);

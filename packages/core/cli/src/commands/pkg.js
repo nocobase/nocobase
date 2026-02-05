@@ -208,7 +208,7 @@ class PackageManager {
         showLicenseInfo(LicenseKeyError.notValid);
       }
       logger.error(`Login failed: ${this.baseURL}`);
-      logger.error(error?.message || error);
+      logger.error(error?.message, { error });
     }
   }
 
@@ -283,7 +283,12 @@ module.exports = (cli) => {
         NOCOBASE_PKG_URL = 'https://pkg.nocobase.com/',
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
+        DISABLE_PKG_DOWNLOAD,
       } = process.env;
+      if (DISABLE_PKG_DOWNLOAD === 'true') {
+        logger.info('Package download is disabled.');
+        return;
+      }
       let accessKeyId;
       let accessKeySecret;
       try {

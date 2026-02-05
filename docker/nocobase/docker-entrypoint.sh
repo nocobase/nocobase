@@ -27,6 +27,8 @@ if [ ! -f "/app/nocobase/package.json" ]; then
   touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
 fi
 
+cd /app/nocobase && yarn nocobase postinstall
+cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase create-nginx-conf
 cd /app/nocobase && yarn nocobase generate-instance-id
 rm -rf /etc/nginx/sites-enabled/nocobase.conf
@@ -38,6 +40,7 @@ echo 'nginx started';
 # run scripts in storage/scripts
 if [ -d "/app/nocobase/storage/scripts" ]; then
   for f in /app/nocobase/storage/scripts/*.sh; do
+    [ -e "$f" ] || continue
     echo "Running $f"
     sh "$f"
   done

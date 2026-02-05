@@ -11,6 +11,7 @@ import { observer as originalObserver, IObserverOptions, ReactFC } from '@formil
 import React, { useMemo, useEffect, useRef } from 'react';
 import { useFlowContext } from '../FlowContextProvider';
 import { autorun } from '@formily/reactive';
+import { FlowEngineContext } from '..';
 
 type ObserverComponentProps<P, Options extends IObserverOptions> = Options extends {
   forwardRef: true;
@@ -46,7 +47,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
       () =>
         originalObserver(Component, {
           scheduler(updater) {
-            const pageActive = ctxRef.current?.pageActive?.value;
+            const pageActive = getPageActive(ctxRef.current);
             const tabActive = ctxRef.current?.tabActive?.value;
 
             if (pageActive === false || tabActive === false) {
@@ -64,7 +65,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
                     (ctxRef.current?.tabActive?.value === true || ctxRef.current?.tabActive?.value === undefined)
                   ) {
                     updater();
-                    disposer();
+                    disposer?.();
                     pendingDisposerRef.current = null;
                   }
                 });
@@ -92,3 +93,9 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
 
   return ComponentWithDefaultScheduler as React.MemoExoticComponent<ReactFC<ObserverComponentProps<P, Options>>>;
 };
+
+export function getPageActive(context: FlowEngineContext): boolean | undefined {
+  return typeof context?.pageActive?.value === 'boolean'
+    ? context?.pageActive?.value
+    : context?.view?.inputArgs.pageActive;
+}

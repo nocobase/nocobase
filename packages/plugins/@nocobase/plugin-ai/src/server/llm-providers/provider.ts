@@ -17,6 +17,8 @@ import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
+import { ToolOptions } from '../manager/tool-manager';
+import { tool } from 'langchain';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -48,15 +50,16 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
+    const toolDefinitions = context.tools?.map(ToolDefinition.from('ToolOptions'));
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
-      if (!this.isToolConflict() && context.tools?.length) {
-        tools.push(...context.tools);
+      if (!this.isToolConflict() && toolDefinitions?.length) {
+        tools.push(...toolDefinitions);
       }
       chain = chain.bindTools?.(tools);
-    } else if (context.tools?.length) {
-      chain = chain.bindTools?.(context.tools);
+    } else if (toolDefinitions?.length) {
+      chain = chain.bindTools?.(toolDefinitions);
     }
 
     if (context.structuredOutput) {
@@ -96,9 +99,6 @@ export abstract class LLMProvider {
       baseURL = baseURL.slice(0, -1);
     }
     try {
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
       const res = await axios.get(`${baseURL}/models`, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -106,7 +106,16 @@ export abstract class LLMProvider {
       });
       return { models: res?.data.data };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      const status = e.response?.status || 500;
+      const data = e.response?.data;
+      const errorMsg =
+        data?.error?.message ||
+        data?.message ||
+        (typeof data?.error === 'string' ? data.error : undefined) ||
+        (typeof data === 'string' ? data : undefined) ||
+        e.response?.statusText ||
+        e.message;
+      return { code: status, errMsg: errorMsg };
     }
   }
 
@@ -138,7 +147,7 @@ export abstract class LLMProvider {
     }
   }
 
-  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
+  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']): any {
     const { responseFormat } = this.modelOptions || {};
     const { schema, name, description, strict } = structuredOutput || {};
     if (!schema) {
@@ -236,5 +245,36 @@ export abstract class EmbeddingProvider {
       throw new Error('Embedding model is required');
     }
     return model;
+  }
+}
+
+type FromType = 'ToolOptions';
+
+class ToolDefinition {
+  constructor(
+    private from: FromType,
+    private _tool: any,
+  ) {}
+
+  static from(from: FromType) {
+    return (tool: any) => new ToolDefinition(from, tool).tool;
+  }
+
+  get tool() {
+    if (this.from === 'ToolOptions') {
+      return this.convertToolOptions();
+    } else {
+      throw new Error('not supported tool definitions');
+    }
+  }
+
+  private convertToolOptions() {
+    const { invoke, name, description, schema, returnDirect = false } = this._tool as ToolOptions;
+    return tool((input, { toolCall, context }) => invoke(context.ctx, input, toolCall.id), {
+      name,
+      description,
+      schema,
+      returnDirect: returnDirect as boolean,
+    });
   }
 }

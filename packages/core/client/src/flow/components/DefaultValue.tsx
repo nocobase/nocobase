@@ -39,6 +39,7 @@ interface Props {
   onChange: (value: any) => void;
   metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
   model: FieldModel;
+  flags?: Record<string, any>;
 }
 
 function createTempFieldClass(Base: any) {
@@ -121,7 +122,7 @@ function createTempFieldClass(Base: any) {
 }
 
 export const DefaultValue = connect((props: Props) => {
-  const { value, onChange, metaTree: propMetaTree, ...restProps } = props;
+  const { value, onChange, metaTree: propMetaTree, flags: componentFlags, ...restProps } = props;
   const flowContext = useFlowContext();
   const { model } = flowContext;
   // no side-effects to original form until confirmed
@@ -261,6 +262,14 @@ export const DefaultValue = connect((props: Props) => {
     };
   }, [model, getFormValue, isUserModified, resolveMaybeVariable, setFormValue, buildDynamicName]);
 
+  const mergedFlags = useMemo(() => {
+    const baseFlags = model?.context?.flags;
+    if (!baseFlags && !componentFlags) {
+      return undefined;
+    }
+    return { ...(baseFlags || {}), ...(componentFlags || {}) };
+  }, [model, componentFlags]);
+
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
     const host = model;
@@ -330,8 +339,11 @@ export const DefaultValue = connect((props: Props) => {
       if (dataSource) created.context?.defineProperty?.('dataSource', { get: () => dataSource });
       if (targetCollection) created.context?.defineProperty?.('collection', { get: () => targetCollection });
     }
+    if (mergedFlags) {
+      created.context?.defineProperty?.('flags', { value: mergedFlags });
+    }
     return created;
-  }, [model]);
+  }, [model, mergedFlags]);
 
   // Cleanup temporary models on unmount to avoid leaking into engine instance map
   React.useEffect(() => {
@@ -383,7 +395,21 @@ export const DefaultValue = connect((props: Props) => {
         const isTextLike =
           originalUseName === 'InputFieldModel' ||
           (iface ? textIfaceSet.has(iface) : fieldModel instanceof InputFieldModel);
-        const pickPrimitive = (n: any) => (n && typeof n === 'object' && 'target' in n ? n?.target?.value : n);
+        const pickPrimitive = (n: any) => {
+          if (n && typeof n === 'object' && 'target' in n) {
+            const target = (n as any)?.target;
+            if (isTextLike && typeof target?.value !== 'undefined') {
+              return target.value;
+            }
+            if (typeof target?.checked !== 'undefined') {
+              return target.checked;
+            }
+            if (typeof target?.value !== 'undefined') {
+              return target.value;
+            }
+          }
+          return n;
+        };
         // 将 VariableInput 提供的受控属性透传到临时字段模型上，确保受控生效
         // - value: 由 VariableInput 控制
         // - onChange: 回传给 VariableInput，从而驱动 Formily/外层表单值

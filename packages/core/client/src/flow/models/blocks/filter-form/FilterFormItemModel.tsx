@@ -353,10 +353,15 @@ FilterFormItemModel.registerFlow({
     initialValue: {
       title: tExpr('Default value'),
       uiSchema: (ctx) => {
+        const baseFlags = ctx?.model?.context?.flags || {};
+        const flags = { ...baseFlags, isInSetDefaultValueDialog: true };
         return {
           defaultValue: {
             'x-component': 'DefaultValue',
             'x-decorator': 'FormItem',
+            'x-component-props': {
+              flags,
+            },
           },
         };
       },

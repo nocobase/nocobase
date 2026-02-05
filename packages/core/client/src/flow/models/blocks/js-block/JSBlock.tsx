@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ElementProxy,
-  tExpr,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  compileRunJs,
-} from '@nocobase/flow-engine';
+import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
@@ -26,6 +19,9 @@ const NAMESPACE = 'client';
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
+  renderComponent(): React.ReactNode {
+    return <div ref={this.context.ref} />;
+  }
   render() {
     const decoratorProps = this.decoratorProps || {};
     const { className, id: _ignoredId, title, description, ...rest } = decoratorProps;
@@ -67,6 +63,7 @@ JSBlockModel.registerFlow({
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
+      useRawParams: true,
       uiSchema: {
         code: {
           type: 'string',
@@ -166,9 +163,8 @@ ctx.element.innerHTML = \`
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
-          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            compiled,
+            code,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

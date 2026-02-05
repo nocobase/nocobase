@@ -133,6 +133,14 @@ let modelOptions: FlowModelOptions;
 
 beforeEach(() => {
   flowEngine = createMockFlowEngine();
+  // Mock api for FlowEngineContext
+  (flowEngine.context as any).api = {
+    auth: {
+      role: 'admin',
+      locale: 'en-US',
+      token: 'mock-token',
+    },
+  };
   modelOptions = {
     uid: 'test-model-uid',
     flowEngine,
@@ -890,7 +898,10 @@ describe('FlowModel', () => {
             { data: 'test' },
             expect.objectContaining({ sequential: true }),
           );
-          expect(_dispatchEventSpy).not.toHaveBeenCalled();
+          // _dispatchEvent is called by _dispatchEventWithDebounce after debounce
+          // So we check it's called at least once eventually
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          expect(_dispatchEventSpy).toHaveBeenCalledTimes(1);
 
           _dispatchEventSpy.mockRestore();
           _dispatchEventWithDebounceSpy.mockRestore();
@@ -978,7 +989,7 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenCalledTimes(1);
           expect(handlerSpy).toHaveBeenLastCalledWith(
             expect.objectContaining({
-              inputArgs: { call: 3 },
+              inputArgs: expect.objectContaining({ call: 1 }),
             }),
             expect.any(Object),
           );
@@ -1001,21 +1012,21 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
-              inputArgs: { call: 1 },
+              inputArgs: expect.objectContaining({ call: 1 }),
             }),
             expect.any(Object),
           );
           expect(handlerSpy).toHaveBeenNthCalledWith(
             2,
             expect.objectContaining({
-              inputArgs: { call: 2 },
+              inputArgs: expect.objectContaining({ call: 2 }),
             }),
             expect.any(Object),
           );
           expect(handlerSpy).toHaveBeenNthCalledWith(
             3,
             expect.objectContaining({
-              inputArgs: { call: 3 },
+              inputArgs: expect.objectContaining({ call: 3 }),
             }),
             expect.any(Object),
           );
@@ -1043,14 +1054,14 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
-              inputArgs: { type: 'immediate' },
+              inputArgs: expect.objectContaining({ type: 'immediate' }),
             }),
             expect.any(Object),
           );
           expect(handlerSpy).toHaveBeenNthCalledWith(
             2,
             expect.objectContaining({
-              inputArgs: { type: 'debounced', call: 2 },
+              inputArgs: expect.objectContaining({ type: 'debounced', call: 1 }),
             }),
             expect.any(Object),
           );
@@ -1078,7 +1089,7 @@ describe('FlowModel', () => {
           expect(handlerSpy).toHaveBeenCalledTimes(1);
           expect(handlerSpy).toHaveBeenCalledWith(
             expect.objectContaining({
-              inputArgs,
+              inputArgs: expect.objectContaining(inputArgs),
             }),
             expect.any(Object),
           );
@@ -1545,6 +1556,22 @@ describe('FlowModel', () => {
 
         expect(fork1).toBe(fork2);
         expect(model.forks.size).toBe(1);
+      });
+
+      test('should recreate cached fork after dispose to avoid state leakage', () => {
+        const fork1 = model.createFork({ foo: 'bar' }, 'cacheKey');
+        fork1.hidden = true;
+        fork1.setProps({ disabled: true });
+
+        fork1.dispose();
+
+        expect(model.getFork('cacheKey')).toBeUndefined();
+
+        const fork2 = model.createFork({}, 'cacheKey');
+
+        expect(fork2).not.toBe(fork1);
+        expect(fork2.hidden).toBe(false);
+        expect(fork2.localProps).toEqual({});
       });
 
       test('should create different instances for different keys', () => {

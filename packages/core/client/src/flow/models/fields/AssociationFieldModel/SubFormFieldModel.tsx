@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
+import { ActionWithoutPermission } from '../../base/ActionModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -35,6 +36,11 @@ class FormAssociationFieldModel extends AssociationFieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
+    if (this.parent.context.actionName === 'update') {
+      this.context.defineProperty('actionName', {
+        get: () => 'view',
+      });
+    }
   }
 }
 export const ObjectNester = (props) => {
@@ -70,6 +76,13 @@ export const ObjectNester = (props) => {
       });
     }
   }, [props.disabled, grid]);
+  useEffect(() => {
+    grid.context.defineProperty('currentObject', {
+      get: () => {
+        return props.value;
+      },
+    });
+  }, [props.value]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -114,7 +127,7 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormFieldModel.define({
-  label: tExpr('Sub-form'),
+  label: tExpr('Subform'),
   createModelOptions: {
     use: 'SubFormFieldModel',
     subModels: {
@@ -148,9 +161,11 @@ const ArrayNester = ({
   allowSelectExistingRecord,
   onSelectExitRecordClick,
   allowDisassociation,
+  allowCreate,
 }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
+  const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
@@ -174,91 +189,110 @@ const ArrayNester = ({
       `}
     >
       <Form.List name={name}>
-        {(fields, { add, remove }) => (
-          <>
-            {fields.map((field, index) => {
-              const { key, name: fieldName } = field;
-              const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
-              // 每行只创建一次 fork
-              if (!forksRef.current[key]) {
-                const fork = gridModel.createFork({
-                  disabled: disabled,
-                });
-                fork.gridContainerRef = React.createRef<HTMLDivElement>();
-                fork.context.defineProperty('fieldKey', {
-                  get: () => key,
-                });
-                forksRef.current[key] = fork;
-              }
+        {(fields, { add, remove }) => {
+          const displayFields = fields.length === 0 ? [{ key: '0', name: 0, isDefault: true }] : fields;
 
-              const currentFork = forksRef.current[key];
-              currentFork.context.defineProperty('fieldIndex', {
-                get: () => fieldIndex,
-                cache: false,
-              });
-              currentFork.context.defineProperty('currentObject', {
-                get: () => {
-                  return currentFork.context.form.getFieldValue([name, fieldName]);
-                },
-                cache: false,
-                meta: createAssociationAwareObjectMetaFactory(
-                  () => currentFork.context.collection,
-                  currentFork.context.t('Current object'),
-                  () => currentFork.context.form.getFieldValue([name, fieldName]),
-                ),
-                resolveOnServer: createAssociationSubpathResolver(
-                  () => currentFork.context.collection,
-                  () => currentFork.context.form.getFieldValue([name, fieldName]),
-                ),
-                serverOnlyWhenContextParams: true,
-              });
+          return (
+            <>
+              {displayFields.map((field: any, index) => {
+                const { key, name: fieldName, isDefault } = field;
+                const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
 
-              return (
-                // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
-                <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value[index]?.isNew) && (
-                    <div style={{ textAlign: 'right' }}>
-                      <Tooltip title={t('Remove')}>
-                        <CloseOutlined
-                          style={{ zIndex: 1000, color: '#a8a3a3' }}
-                          onClick={() => {
-                            remove(index);
-                            const gridFork = forksRef.current[key];
-                            // 同时销毁子模型的 fork
-                            gridFork.mapSubModels('items', (item) => {
-                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
-                              // 同时销毁子模型的 fork
-                              item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
-                              item.getFork(cacheKey)?.dispose();
-                            });
-                            gridFork.dispose();
-                            // 删除 fork 缓存
-                            delete forksRef.current[key];
-                          }}
-                        />
-                      </Tooltip>
-                    </div>
-                  )}
-                  <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
-                  <Divider />
-                </div>
-              );
-            })}
-            <Space>
-              {allowAddNew && (
-                <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
-                  <PlusOutlined />
-                  {t('Add new')}
-                </Button>
-              )}
-              {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick()} style={{ marginTop: 8 }}>
-                  <ZoomInOutlined /> {t('Select record')}
-                </a>
-              )}
-            </Space>
-          </>
-        )}
+                // 每行只创建一次 fork
+                if (!forksRef.current[key]) {
+                  const fork = gridModel.createFork({ disabled });
+                  fork.gridContainerRef = React.createRef<HTMLDivElement>();
+                  fork.context.defineProperty('fieldKey', {
+                    get: () => fieldIndex,
+                  });
+                  forksRef.current[key] = fork;
+                }
+
+                const currentFork = forksRef.current[key];
+
+                currentFork.context.defineProperty('fieldIndex', {
+                  get: () => fieldIndex,
+                  cache: false,
+                });
+
+                currentFork.context.defineProperty('currentObject', {
+                  get: () => currentFork.context.form.getFieldValue([name, fieldName]) || {},
+                  cache: false,
+                  meta: createAssociationAwareObjectMetaFactory(
+                    () => currentFork.context.collection,
+                    currentFork.context.t('Current object'),
+                    () => currentFork.context.form.getFieldValue([name, fieldName]),
+                  ),
+                  resolveOnServer: createAssociationSubpathResolver(
+                    () => currentFork.context.collection,
+                    () => currentFork.context.form.getFieldValue([name, fieldName]),
+                  ),
+                  serverOnlyWhenContextParams: true,
+                });
+
+                return (
+                  // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
+                  <div key={key} style={{ marginBottom: 12 }}>
+                    {!disabled &&
+                      !isDefault &&
+                      (allowDisassociation || value?.[index]?.__is_new__ || value?.[index]?.__is_stored__) && (
+                        <div style={{ textAlign: 'right' }}>
+                          <Tooltip title={t('Remove')}>
+                            <CloseOutlined
+                              style={{ zIndex: 1000, color: '#a8a3a3' }}
+                              onClick={() => {
+                                remove(index);
+                                const gridFork = forksRef.current[key];
+                                // 同时销毁子模型的 fork
+                                gridFork.mapSubModels('items', (item) => {
+                                  const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                                  // 同时销毁子模型的 fork
+                                  item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                                  item.getFork(cacheKey)?.dispose();
+                                });
+                                gridFork.dispose();
+                                // 删除 fork 缓存
+                                delete forksRef.current[key];
+                              }}
+                            />
+                          </Tooltip>
+                        </div>
+                      )}
+
+                    <FlowModelRenderer model={currentFork} showFlowSettings={false} />
+                    <Divider />
+                  </div>
+                );
+              })}
+
+              <Space>
+                {allowAddNew &&
+                  (allowCreate || isConfigMode) &&
+                  (allowCreate ? (
+                    <Button type="link" onClick={() => add({ __is_new__: true })} disabled={disabled}>
+                      <PlusOutlined />
+                      {t('Add new')}
+                    </Button>
+                  ) : (
+                    <ActionWithoutPermission
+                      message={t('No permission to add new')}
+                      forbidden={{ actionName: 'create' }}
+                    >
+                      <Button type="link" disabled>
+                        <PlusOutlined />
+                        {t('Add new')}
+                      </Button>
+                    </ActionWithoutPermission>
+                  ))}
+                {allowSelectExistingRecord && (
+                  <Button type="link" onClick={() => onSelectExitRecordClick()} disabled={disabled}>
+                    <ZoomInOutlined /> {t('Select record')}
+                  </Button>
+                )}
+              </Space>
+            </>
+          );
+        }}
       </Form.List>
     </Card>
   );
@@ -311,7 +345,7 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormListFieldModel.define({
-  label: tExpr('Sub-form'),
+  label: tExpr('Subform'),
   createModelOptions: {
     use: 'SubFormListFieldModel',
     subModels: {
@@ -375,7 +409,7 @@ SubFormListFieldModel.registerFlow({
   sort: 300,
   steps: {
     openView: {
-      title: tExpr('Edit popup'),
+      title: tExpr('Edit popup (Select record)'),
       hideInSettings(ctx) {
         const allowSelectExistingRecord = ctx.model.getStepParams?.('subFormListSettings', 'allowSelectExistingRecord')
           ?.allowSelectExistingRecord;
@@ -452,7 +486,7 @@ SubFormListFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      __is_stored__: true,
                     };
                   }),
                 ];
@@ -461,7 +495,9 @@ SubFormListFieldModel.registerFlow({
                 const unique = merged.filter(
                   (row, index, self) =>
                     index ===
-                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                      self.findIndex(
+                        (r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey],
+                      ) || row.__is_new__,
                 );
                 ctx.model.selectedRows.value = unique;
               },
@@ -506,9 +542,11 @@ FormItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho', 'o
     }
     return true;
   },
+  order: 100,
 });
 
 FormItemModel.bindModelToInterface('SubFormListFieldModel', ['m2m', 'o2m', 'mbm'], {
+  order: 100,
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

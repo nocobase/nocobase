@@ -13,40 +13,17 @@ import {
   useCurrentRoleVariable,
   useCurrentUserVariable,
   useDatetimeVariable,
-  useRequest,
-  useAPIClient,
+  Variable,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useT } from '../../locale';
-import { Button, message, Alert } from 'antd';
+import { Radio, Alert, Space, Typography } from 'antd';
 import { useForm } from '@formily/react';
 import { css } from '@emotion/css';
 
-const ResetButton: React.FC<{ className?: string }> = ({ className }) => {
-  const record = useCollectionRecordData();
-  const isBuiltIn = record?.builtIn;
-  const t = useT();
-  const form = useForm();
-  const api = useAPIClient();
-  const { run } = useRequest(() => api.resource('aiEmployees').getBuiltInDefault({ filterByTk: record?.username }), {
-    manual: true,
-    onSuccess: (resp) => {
-      const about = resp?.data?.data?.about;
-      if (typeof about === 'string') {
-        form.setValuesIn('about', about);
-        message.success(t('Reset successfully'));
-      }
-    },
-  });
-  if (!isBuiltIn) return null;
-  return (
-    <div className={className}>
-      <Button type="link" size="small" onClick={() => run()}>
-        {t('Reset to default')}
-      </Button>
-    </div>
-  );
-};
+const { Paragraph } = Typography;
+
+type AboutMode = 'system' | 'custom';
 
 const useVariableOptions = () => {
   const t = useT();
@@ -84,14 +61,113 @@ const Description = () => {
   );
 };
 
+const BuiltInAboutField: React.FC = () => {
+  const t = useT();
+  const record = useCollectionRecordData();
+  const form = useForm();
+  const options = useVariableOptions();
+
+  // about 为空（null 或 undefined）表示使用系统默认
+  const initialMode: AboutMode = record?.about ? 'custom' : 'system';
+  const [mode, setMode] = useState<AboutMode>(initialMode);
+
+  // Sync mode to form for useEditActionProps to access
+  useEffect(() => {
+    form.setValuesIn('_aboutMode', mode);
+  }, [form, mode]);
+
+  // Get system default prompt from virtual field (set by setupBuiltInInfo)
+  const defaultPrompt = record?.defaultPrompt || '';
+
+  const handleModeChange = (newMode: AboutMode) => {
+    setMode(newMode);
+  };
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Radio.Group value={mode} onChange={(e) => handleModeChange(e.target.value)}>
+        <Radio value="system">{t('System default')}</Radio>
+        <Radio value="custom">{t('Custom')}</Radio>
+      </Radio.Group>
+      {mode === 'system' ? (
+        <div
+          className={css`
+            background-color: #fafafa;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            padding: 8px 12px;
+            min-height: 330px;
+            max-height: 500px;
+            overflow-y: auto;
+          `}
+        >
+          <Paragraph
+            copyable
+            className={css`
+              margin: 0 !important;
+              white-space: pre-wrap;
+              word-break: break-word;
+            `}
+          >
+            {defaultPrompt}
+          </Paragraph>
+        </div>
+      ) : (
+        <Variable.RawTextArea
+          value={form.values.about ?? ''}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+            form.setValuesIn('about', e.target.value);
+          }}
+          scope={options}
+          placeholder={t('Role setting placeholder')}
+          autoSize={{ minRows: 15 }}
+          className={css`
+            width: 100%;
+          `}
+        />
+      )}
+    </Space>
+  );
+};
+
+const StandardAboutField: React.FC = () => {
+  const t = useT();
+  const form = useForm();
+  const options = useVariableOptions();
+
+  return (
+    <Variable.RawTextArea
+      value={form.values.about ?? ''}
+      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        form.setValuesIn('about', e.target.value);
+      }}
+      scope={options}
+      placeholder={t('Role setting placeholder')}
+      autoSize={{ minRows: 15 }}
+      className={css`
+        width: 100%;
+      `}
+    />
+  );
+};
+
+const AboutField: React.FC = () => {
+  const record = useCollectionRecordData();
+  const isBuiltIn = record?.builtIn;
+
+  if (isBuiltIn) {
+    return <BuiltInAboutField />;
+  }
+  return <StandardAboutField />;
+};
+
 export const SystemPrompt: React.FC = () => {
   const t = useT();
-  const options = useVariableOptions();
 
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ ResetButton, Description }}
+      components={{ Description, AboutField }}
       schema={{
         type: 'void',
         properties: {
@@ -102,37 +178,12 @@ export const SystemPrompt: React.FC = () => {
           aboutWrap: {
             type: 'void',
             'x-component': 'div',
-            'x-component-props': {
-              className: css`
-                position: relative;
-              `,
-            },
             properties: {
               about: {
                 type: 'string',
                 title: '{{t("Role setting")}}',
-                required: true,
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.RawTextArea',
-                'x-component-props': {
-                  scope: options,
-                  placeholder: t('Role setting placeholder'),
-                  autoSize: {
-                    minRows: 15,
-                  },
-                },
-              },
-              resetAbout: {
-                type: 'void',
-                'x-component': 'ResetButton',
-                'x-component-props': {
-                  className: css`
-                    position: absolute;
-                    right: 0;
-                    top: 0;
-                    z-index: 1;
-                  `,
-                },
+                'x-component': 'AboutField',
               },
             },
           },

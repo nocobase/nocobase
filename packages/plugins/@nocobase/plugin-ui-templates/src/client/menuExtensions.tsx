@@ -22,6 +22,7 @@ import {
   resolveActionScene,
   type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
+import { patchGridOptionsFromTemplateRoot } from './utils/templateCopy';
 
 type MenuItem = {
   key: string;
@@ -389,18 +390,22 @@ async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?:
       }
 
       const duplicated = await model.flowEngine.duplicateModel(gridModel.uid);
+      const merged = patchGridOptionsFromTemplateRoot(root, duplicated);
 
       // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 save 重建整棵树
       await model.flowEngine.modelRepository.move(duplicated.uid, currentGrid.uid, 'after');
 
       const newGrid = model.flowEngine.createModel<FlowModel>({
-        ...(duplicated as any),
+        ...(merged.options as any),
         parentId: model.uid,
         subKey: 'grid',
         subType: 'object',
       });
       model.setSubModel('grid', newGrid);
       await newGrid.afterAddAsSubModel();
+      if (merged.patched) {
+        await newGrid.saveStepParams();
+      }
 
       // 引用已清理，回退临时标题（移除“字段模板”标记）
       const clearTemplateTitle = (m: FlowModel) => {
@@ -531,6 +536,49 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
     const s = String(val).trim();
     return s ? s : undefined;
   };
+  const resolveDefaultOpenViewResource = (): {
+    dataSourceKey?: string;
+    collectionName?: string;
+    associationName?: string;
+  } => {
+    const ctx = model.context;
+    const field = ctx.collectionField;
+    const associationPathName = model.parent?.['associationPathName'];
+    const blockModel = ctx.blockModel;
+    const fieldCollection = ctx.collection || blockModel?.collection;
+    const isAssociationField = (f): boolean => !!f?.isAssociationField?.();
+    const associationField =
+      !isAssociationField(field) && associationPathName && typeof fieldCollection?.getFieldByPath === 'function'
+        ? fieldCollection.getFieldByPath(associationPathName)
+        : undefined;
+    const assocField = isAssociationField(field) ? field : associationField;
+
+    if (isAssociationField(assocField)) {
+      const targetCollection = assocField?.targetCollection;
+      return {
+        dataSourceKey: toNonEmptyString(targetCollection?.dataSourceKey),
+        collectionName: toNonEmptyString(targetCollection?.name),
+        associationName: toNonEmptyString(assocField?.resourceName),
+      };
+    }
+
+    const collection = ctx.collection;
+    const association = ctx.association;
+    return {
+      dataSourceKey: toNonEmptyString(collection?.dataSourceKey),
+      collectionName: toNonEmptyString(collection?.name),
+      associationName: toNonEmptyString(field?.target || association?.resourceName),
+    };
+  };
+
+  // 兼容历史数据：openViewParams 里固化的 associationName 可能是错的。
+  // 当能从上下文推导出 associationName 时（关联字段/关联字段属性），优先使用推导值。
+  const defaultOpenViewResource = resolveDefaultOpenViewResource();
+  const templateDataSourceKey =
+    defaultOpenViewResource.dataSourceKey || toNonEmptyString(openViewParams?.dataSourceKey);
+  const templateCollectionName =
+    defaultOpenViewResource.collectionName || toNonEmptyString(openViewParams?.collectionName);
+  const templateAssociationName = defaultOpenViewResource.associationName;
   const getDefaultFilterByTkExpr = (): string | undefined => {
     // 与 openView 默认行为对齐：尽量落表达式而非具体值
     const recordKeyPath = model.context?.collection?.filterTargetKey || 'id';
@@ -538,7 +586,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
   };
   const getDefaultSourceIdExpr = (): string | undefined => {
     // 如果有 associationName，说明是关系资源弹窗，默认需要 sourceId
-    if (toNonEmptyString(openViewParams?.associationName)) {
+    if (templateAssociationName) {
       return `{{ ctx.resource.sourceId }}`;
     }
     try {
@@ -585,9 +633,9 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
       targetUid: values.targetUid,
       useModel: model.use,
       type: 'popup',
-      dataSourceKey: openViewParams?.dataSourceKey,
-      collectionName: openViewParams?.collectionName,
-      associationName: openViewParams?.associationName,
+      dataSourceKey: templateDataSourceKey,
+      collectionName: templateCollectionName,
+      associationName: templateAssociationName,
       filterByTk: templateFilterByTk,
       sourceId: templateSourceId,
     };
@@ -913,7 +961,13 @@ export function registerMenuExtensions() {
   BlockModel.registerExtraMenuItems({
     group: 'common-actions',
     sort: -10,
-    matcher: (model) => !isReferenceTarget(model),
+    matcher: (model) => {
+      return (
+        !isReferenceTarget(model) &&
+        model?.use !== 'ApplyTaskCardDetailsModel' &&
+        model?.use !== 'ApprovalTaskCardDetailsModel'
+      );
+    },
     items: async (model: FlowModel, t) => {
       const pluginT = getPluginT(model);
       const items: MenuItem[] = [];

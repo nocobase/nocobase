@@ -14,13 +14,17 @@ import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
   CreateModelOptions,
+  DATA_SOURCE_DIRTY_EVENT,
   DndProvider,
   DragHandler,
   Droppable,
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
+  getEmitterViewActivatedVersion,
+  getPageActive,
   tExpr,
+  VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
@@ -35,22 +39,103 @@ type PageModelStructure = {
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
+  private viewActivatedListener?: (_payload?: unknown) => void;
+  private dataSourceDirtyListener?: (_payload?: unknown) => void;
+  private lastSeenEmitterViewActivatedVersion = 0;
+  private dirtyRefreshScheduled = false;
+  private unmounted = false;
+
+  private getActiveTabKey(): string | undefined {
+    const viewParams = this.context.view?.navigation?.viewParams;
+    if (viewParams) {
+      return viewParams.tabUid || this.getFirstTab()?.uid;
+    }
+    return this.props.tabActiveKey || this.getFirstTab()?.uid;
+  }
+
+  private scheduleActiveLifecycleRefresh(): void {
+    if (this.dirtyRefreshScheduled) return;
+    this.dirtyRefreshScheduled = true;
+    Promise.resolve()
+      .then(() => {
+        this.dirtyRefreshScheduled = false;
+        if (this.unmounted) return;
+        // Only skip when explicitly inactive; treat "unknown" (undefined) as active for backward compatibility.
+        if (getPageActive(this.context) === false) return;
+        const activeKey = this.getActiveTabKey();
+        if (activeKey) {
+          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+  }
 
   onMount(): void {
     super.onMount();
+    this.unmounted = false;
     this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
+
+    // When a nested view (popup/page) is closed, the opener view becomes active again.
+    // We align this with the existing tab lifecycle by invoking `onActive` for the current tab blocks.
+    if (!this.viewActivatedListener) {
+      this.viewActivatedListener = (_payload?: unknown) => {
+        const activeKey = this.getActiveTabKey();
+        if (activeKey) {
+          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+        }
+      };
+      this.flowEngine?.emitter?.on?.(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
+    }
+
+    // Handle activation events that occurred before PageModel was mounted (e.g. hidden views opened by router replay).
+    // view:activated increments a version on the emitter, so we can catch up once on mount.
+    const emitterActivatedVersion = getEmitterViewActivatedVersion(this.flowEngine?.emitter);
+    const shouldCatchUp =
+      emitterActivatedVersion > 0 && emitterActivatedVersion !== this.lastSeenEmitterViewActivatedVersion;
+    this.lastSeenEmitterViewActivatedVersion = emitterActivatedVersion;
+    if (shouldCatchUp && getPageActive(this.context) !== false) {
+      const activeKey = this.getActiveTabKey();
+      if (activeKey) {
+        this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+      }
+    }
+
+    // When data is written within the same view, trigger an "active" lifecycle pass so blocks can refresh based on dirty.
+    if (!this.dataSourceDirtyListener) {
+      this.dataSourceDirtyListener = (_payload?: unknown) => {
+        this.scheduleActiveLifecycleRefresh();
+      };
+      this.flowEngine?.emitter?.on?.(DATA_SOURCE_DIRTY_EVENT, this.dataSourceDirtyListener);
+    }
+  }
+
+  protected onUnmount(): void {
+    this.unmounted = true;
+    if (this.viewActivatedListener) {
+      this.flowEngine?.emitter?.off?.(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
+      this.viewActivatedListener = undefined;
+    }
+    if (this.dataSourceDirtyListener) {
+      this.flowEngine?.emitter?.off?.(DATA_SOURCE_DIRTY_EVENT, this.dataSourceDirtyListener);
+      this.dataSourceDirtyListener = undefined;
+    }
+    super.onUnmount();
   }
 
   invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive') {
     if (method === 'onActive' && this.context?.pageInfo) {
       this.context.pageInfo.version = 'v2';
     }
-    const tabModel: BasePageTabModel = this.flowEngine.getModel(tabActiveKey);
+    const tabModel = this.flowEngine.getModel(tabActiveKey) as BasePageTabModel | undefined;
 
     if (tabModel) {
       if (tabModel.context.tabActive) {
-        tabModel.context.tabActive.value = tabModel.context.pageActive?.value ? method === 'onActive' : false;
+        const pageActive = getPageActive(tabModel.context);
+        const isPageActive = pageActive !== false;
+        tabModel.context.tabActive.value = isPageActive && method === 'onActive';
       }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
         item[method]?.();
@@ -108,8 +193,12 @@ export class PageModel extends FlowModel<PageModelStructure> {
     }).filter(Boolean);
   }
 
+  getFirstTab() {
+    return this.subModels.tabs?.[0];
+  }
+
   renderFirstTab() {
-    const firstTab = this.subModels.tabs?.[0];
+    const firstTab = this.getFirstTab();
     return firstTab?.renderChildren?.();
   }
 
@@ -121,7 +210,11 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          activeKey={this.props.tabActiveKey}
+          activeKey={
+            this.context.view?.navigation?.viewParams
+              ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
+              : this.props.tabActiveKey
+          }
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
@@ -132,9 +225,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
             this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
             this.setProps('tabActiveKey', activeKey);
-            if (this.context.view.inputArgs) {
-              this.context.view.inputArgs.tabUid = activeKey;
-            }
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{

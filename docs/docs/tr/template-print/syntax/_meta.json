@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Temel Kullanım",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Döngü İşlemleri",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Biçimlendirme Araçları"
+  }
+]

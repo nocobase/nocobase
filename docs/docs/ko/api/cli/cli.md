@@ -1,0 +1,18 @@
+:::tip
+이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::
+
+# NocoBase CLI
+
+## yarn install
+
+## yarn build
+## yarn dev
+## yarn start
+## yarn test
+
+## nocobase clean
+## nocobase install
+## nocobase upgrade
+## nocobase pm
+## nocobase create-migration

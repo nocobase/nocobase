@@ -28,16 +28,12 @@ export const refreshTargetBlocks = defineAction({
   async handler(ctx, params) {
     const { targets = [] } = params;
     targets.forEach((target) => {
-      const modelInstance = ctx.model.flowEngine.getModel(target);
+      const modelInstance = ctx.engine.getModel(target, true);
       if (!modelInstance) {
         console.warn(`Not found model: ${target}`);
         return;
       }
-      if (modelInstance.resource?.refresh) {
-        modelInstance.resource.refresh();
-      } else {
-        console.warn(`Model has no refresh method: ${target}`);
-      }
+      modelInstance.refresh();
     });
   },
 });

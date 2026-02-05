@@ -15,26 +15,33 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
+import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 
 let uuid = 0;
 
+/** Global embed container element ID */
+export const GLOBAL_EMBED_CONTAINER_ID = 'nocobase-embed-container';
+/** Dataset key used to signal embed replacement in progress (skip style reset on close) */
+export const EMBED_REPLACING_DATA_KEY = 'nocobaseEmbedReplacing';
+
 // 稳定的 Holder 组件，避免在父组件重渲染时更换组件类型导致卸载， 否则切换主题时会丢失所有页面内容
 const PageElementsHolder = React.memo(
   React.forwardRef((props: any, ref: any) => {
     const [elements, patchElement] = usePatchElement();
     React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
-    console.log('[NocoBase] Rendering PageElementsHolder with elements count:', elements.length);
     return <>{elements}</>;
   }),
 );
 
 export function usePage() {
   const holderRef = React.useRef(null);
+  const globalEmbedActiveRef = React.useRef<null | { destroy: () => void }>(null);
 
   const open = (config, flowContext) => {
+    const parentEngine = flowContext?.engine;
     uuid += 1;
     const pageRef = React.createRef<{
       destroy: () => void;
@@ -75,11 +82,33 @@ export function usePage() {
       return null; // Header 组件本身不渲染内容
     };
 
-    const { target, content, preventClose, inheritContext = true, inputArgs, ...restConfig } = config;
+    const {
+      target,
+      content,
+      preventClose,
+      inheritContext = true,
+      inputArgs: viewInputArgs = {},
+      ...restConfig
+    } = config;
+    const isGlobalEmbedContainer = target instanceof HTMLElement && target.id === GLOBAL_EMBED_CONTAINER_ID;
+
+    // Global embed container uses "replace" behavior: opening a new view destroys the previous one.
+    if (isGlobalEmbedContainer && globalEmbedActiveRef.current) {
+      try {
+        // Avoid style "reset flicker" when replacing: tell embed wrappers to skip resetting container styles.
+        target.dataset[EMBED_REPLACING_DATA_KEY] = '1';
+        globalEmbedActiveRef.current.destroy();
+      } finally {
+        delete target.dataset[EMBED_REPLACING_DATA_KEY];
+        globalEmbedActiveRef.current = null;
+      }
+    }
 
     const ctx = new FlowContext();
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
+    const openerEngine = resolveOpenerEngine(parentEngine, scopedEngine);
+
     ctx.defineProperty('engine', { value: scopedEngine });
     ctx.addDelegate(scopedEngine.context);
     if (inheritContext) {
@@ -91,17 +120,43 @@ export function usePage() {
     // 构造 currentPage 实例
     const currentPage = {
       type: 'embed' as const,
-      inputArgs: config.inputArgs || {},
+      inputArgs: viewInputArgs,
       preventClose: !!config.preventClose,
-      destroy: () => pageRef.current?.destroy(),
+      destroy: (result?: any) => {
+        config.onClose?.();
+        resolvePromise?.(result);
+        pageRef.current?.destroy();
+        closeFunc?.();
+
+        if (isGlobalEmbedContainer) {
+          globalEmbedActiveRef.current = null;
+        }
+
+        // Notify opener view that it becomes active again.
+        const isReplacing =
+          isGlobalEmbedContainer && target instanceof HTMLElement && target.dataset?.[EMBED_REPLACING_DATA_KEY] === '1';
+        if (!isReplacing) {
+          const openerEmitter = openerEngine?.emitter;
+          bumpViewActivatedVersion(openerEmitter);
+          openerEmitter?.emit?.(VIEW_ACTIVATED_EVENT, { type: 'embed', viewUid: currentPage?.inputArgs?.viewUid });
+        }
+
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
+      },
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any, force?: boolean) => {
         if (preventClose && !force) {
           return;
         }
-        resolvePromise?.(result);
-        pageRef.current?.destroy();
-        closeFunc?.();
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return;
+        }
+
+        currentPage.destroy(result);
       },
       Header: HeaderComponent,
       Footer: FooterComponent,
@@ -120,7 +175,6 @@ export function usePage() {
 
     ctx.defineProperty('view', {
       get: () => currentPage,
-      // meta: createViewMeta(ctx),
       // 仅当访问关联字段或前端无本地记录数据时，才交给服务端解析
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
@@ -132,7 +186,11 @@ export function usePage() {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         // 支持 content 为函数，传递 currentPage
-        const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const pageContent = React.useMemo(
+          () => (typeof content === 'function' ? content(currentPage, ctx) : content),
+          [],
+        );
         // 响应themeToken的响应式更新
         void ctx.themeToken;
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -148,16 +206,11 @@ export function usePage() {
 
         return (
           <PageComponent
-            key={`page-${uuid}`}
             ref={pageRef}
             hidden={config.inputArgs?.hidden?.value}
             {...restConfig}
-            afterClose={() => {
-              closeFunc?.();
-              config.onClose?.();
-              resolvePromise?.(config.result);
-              // 关闭时修正 previous/next 指针
-              scopedEngine.unlinkFromStack();
+            onClose={() => {
+              currentPage.close(config.result);
             }}
           >
             {pageContent}
@@ -169,7 +222,7 @@ export function usePage() {
       },
     );
 
-    const key = inputArgs?.viewUid || `page-${uuid}`;
+    const key = viewInputArgs?.viewUid || `page-${uuid}`;
     const page = (
       <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
@@ -182,6 +235,10 @@ export function usePage() {
       closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target, key));
     } else {
       closeFunc = holderRef.current?.patchElement(page);
+    }
+
+    if (isGlobalEmbedContainer) {
+      globalEmbedActiveRef.current = { destroy: currentPage.destroy };
     }
 
     return Object.assign(promise, currentPage);

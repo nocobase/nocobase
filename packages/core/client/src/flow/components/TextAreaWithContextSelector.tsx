@@ -27,6 +27,7 @@ export interface TextAreaWithContextSelectorProps {
   onChange?: (v: string) => void;
   placeholder?: string;
   rows?: number;
+  maxRows?: number;
   style?: React.CSSProperties;
 }
 
@@ -38,6 +39,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
   onChange,
   placeholder,
   rows = 3,
+  maxRows = 24,
   style,
 }) => {
   const flowCtx = useFlowContext();
@@ -101,7 +103,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
         ref={ref}
         value={innerValue}
         onChange={handleTextChange}
-        rows={rows}
+        autoSize={{ minRows: rows, maxRows }}
         placeholder={placeholder}
         style={{ width: '100%' }}
       />

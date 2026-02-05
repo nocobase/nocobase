@@ -75,8 +75,13 @@ export class ConditionInstruction extends Instruction {
       return job;
     }
 
-    // pass control to upper scope by ending current scope
-    return processor.exit(branchJob.status);
+    if (branchJob.status === JOB_STATUS.PENDING) {
+      // still waiting for manual resume (e.g. prompt node)
+      return processor.exit(branchJob.status);
+    }
+
+    // bubble rejected status to parent scope so that caller (loop, etc.) can decide how to handle it
+    return branchJob;
   }
 
   async test({ engine, calculation, expression = '' }) {

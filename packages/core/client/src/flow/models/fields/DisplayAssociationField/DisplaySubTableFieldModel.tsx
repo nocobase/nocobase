@@ -92,8 +92,6 @@ const DisplayTable = (props) => {
   }, [currentPage, currentPageSize, value]);
 
   const getColumns = () => {
-    const isConfigMode = !!model.context.flowSettingsEnabled;
-
     const cols = adjustColumnOrder(
       [
         enableIndexColumn && {
@@ -111,7 +109,7 @@ const DisplayTable = (props) => {
         }),
       ].filter(Boolean),
     ) as any;
-    if (isConfigMode) {
+    if (model.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
@@ -198,6 +196,12 @@ export class DisplaySubTableFieldModel extends FieldModel {
         return this.context.fieldPath;
       },
     });
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return 'view';
+      },
+      cache: false,
+    });
   }
 
   async afterAddAsSubModel() {
@@ -212,6 +216,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
     return baseColumns;
   }
+
   public render() {
     return (
       <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns()} model={this} />

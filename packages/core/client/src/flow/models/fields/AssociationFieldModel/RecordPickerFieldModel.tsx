@@ -22,13 +22,19 @@ import { Button, Select, Tooltip, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
-import { LabelByField } from './recordSelectShared';
+import { buildOpenerUids, LabelByField } from './recordSelectShared';
 
 function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
       const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      if (model && fieldModel) {
+        model.context.defineProperty('flowSettingsEnabled', {
+          get: () => fieldModel.context.flowSettingsEnabled,
+          cache: false,
+        });
+      }
       return model;
     },
     {
@@ -115,7 +121,7 @@ export function RecordPickerContent({ model, toOne = false }) {
 }
 
 function RecordPickerField(props) {
-  const { fieldNames } = props;
+  const { fieldNames, onClick, disabled } = props;
   const ctx = useFlowContext();
   const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
   useEffect(() => {
@@ -141,6 +147,11 @@ function RecordPickerField(props) {
     <Select
       {...props}
       open={false}
+      onClick={(e) => {
+        if (!disabled) {
+          onClick(e);
+        }
+      }}
       value={normalizeValue(props.value, fieldNames, toOne)}
       labelRender={(item) => {
         return <LabelByField option={item} fieldNames={fieldNames} />;
@@ -292,6 +303,11 @@ RecordPickerFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const sourceCollection = ctx.collectionField?.collection;
+        const sourceRecord = ctx.currentObject || ctx.record;
+        const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
+        const associationName = ctx.collectionField?.resourceName;
+        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -302,7 +318,9 @@ RecordPickerFieldModel.registerFlow({
             scene: 'select',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
+            openerUids,
             rowSelectionProps: {
               type: toOne ? 'radio' : 'checkbox',
               defaultSelectedRows: () => {
@@ -367,17 +385,11 @@ RecordPickerFieldModel.registerFlow({
 });
 
 RecordPickerFieldModel.define({
-  label: tExpr('Record picker'),
+  label: tExpr('Popup select'),
 });
 
-EditableItemModel.bindModelToInterface('RecordPickerFieldModel', [
-  'm2m',
-  'm2o',
-  'o2o',
-  'o2m',
-  'oho',
-  'obo',
-  'updatedBy',
-  'createdBy',
-  'mbm',
-]);
+EditableItemModel.bindModelToInterface(
+  'RecordPickerFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  { order: 20 },
+);

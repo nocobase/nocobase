@@ -1,0 +1,210 @@
+:::tip
+מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# ניהול גיבויים
+
+## מבוא
+
+תוסף מנהל הגיבויים של NocoBase מספק יכולות לגיבוי מלא של מסד הנתונים של NocoBase ושל הקבצים שהועלו על ידי משתמשים, כולל גיבויים מתוזמנים, הורדה, מחיקה ושחזור של גיבויים.
+
+:::warning
+תוסף מנהל הגיבויים כלול במהדורות Professional ו-Enterprise. למשתמשי מהדורות Community ו-Standard, ניתן לגבות את מסד הנתונים ישירות; לפרטים נוספים ראו: [`כיצד לגבות ולשחזר את NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## התקנת לקוח מסד נתונים
+
+מנהל הגיבויים תלוי בלקוח של מסד הנתונים המתאים. לפני השימוש, אנא בקרו באתר הרשמי כדי להוריד את הלקוח התואם לגרסת מסד הנתונים שבה אתם משתמשים:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+עבור גרסאות Docker, ניתן לכתוב סקריפט ישירות בספריית `./storage/scripts`:
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+התוכן של `install-database-client.sh` הוא כדלקמן:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+לאחר מכן הפעילו מחדש את קונטיינר ה-app
+
+```bash
+docker compose restart app
+# צפייה ביומנים
+docker compose logs app
+```
+
+בדקו את מספר גרסת לקוח מסד הנתונים, אשר חייב להתאים למספר גרסת שרת מסד הנתונים.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## הוראות שימוש
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### יצירת גיבוי חדש
+
+לחצו על כפתור 'גיבוי חדש' כדי ליצור גיבוי חדש בהתאם להגדרות הגיבוי, ולהציג את סטטוס הגיבוי ברשימת הגיבויים.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### שחזור גיבוי
+
+תומך בשחזור גיבויים מרשימת הגיבויים, או בהעלאת קבצי גיבוי מקומיים לשחזור גיבויים.
+פעולות שחזור אינן מותרות בתרחישים הבאים:
+
+- כאשר גרסת NocoBase הנוכחית נמוכה מגרסת NocoBase שבקובץ הגיבוי.
+- כאשר מסד הנתונים הנוכחי של NocoBase אינו תואם להגדרות הבאות שבקובץ הגיבוי:
+  - dialect
+  - underscored
+  - table prefix
+  - schema
+- כאשר 'מצב סובלני' (Tolerant mode) אינו מופעל, וגרסת מסד הנתונים בעת יצירת הגיבוי גבוהה מגרסת מסד הנתונים של היישום הנוכחי.
+
+> **שחזור גיבוי הוא פעולה מלאה על מסד הנתונים. מומלץ לגבות את מסד הנתונים הנוכחי לפני שחזור גיבוי.**
+
+#### שחזור מרשימת הגיבויים
+
+לחצו על כפתור `שחזור` של פריט הגיבוי ברשימת הגיבויים, הזינו את סיסמת ההצפנה של קובץ הגיבוי בחלון הקופץ, ולחצו על 'אישור' כדי לשחזר את הגיבוי.
+
+> עבור גיבויים לא מוצפנים אין צורך להזין סיסמה.
+
+> אם עליכם לשחזר את קובץ הגיבוי לגרסת מסד נתונים נמוכה יותר, עליכם להפעיל את 'מצב סובלני' (Tolerant mode).
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### שחזור מקובץ גיבוי מקומי
+
+לחצו על כפתור `שחזור מגיבוי מקומי`, בחרו את קובץ הגיבוי המקומי בחלון הקופץ, הזינו את סיסמת ההצפנה של קובץ הגיבוי, ולחצו על 'אישור' כדי לשחזר את הגיבוי.
+
+> עבור גיבויים לא מוצפנים אין צורך להזין סיסמה.
+
+> אם עליכם לשחזר את קובץ הגיבוי לגרסת מסד נתונים נמוכה יותר, עליכם להפעיל את 'מצב סובלני' (Tolerant mode).
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### הורדת קובץ גיבוי
+
+לחצו על כפתור `הורדה` של פריט הגיבוי ברשימת הגיבויים כדי להוריד את קובץ הגיבוי.
+
+#### מחיקת גיבוי
+
+לחצו על כפתור `מחיקה` של פריט הגיבוי ברשימת הגיבויים כדי למחוק את קובץ הגיבוי.
+
+## הגדרות גיבוי
+
+עברו ללשונית `הגדרות`, שנו את הגדרות הגיבוי, ולחצו על `שמירה` כדי שהשינויים ייכנסו לתוקף.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### תיאור הגדרות הגיבוי
+
+- `גיבוי אוטומטי`: לאחר הפעלת `הפעלת גיבוי אוטומטי לפי לוח זמנים של Cron`, ניתן להגדיר גיבויים אוטומטיים בזמנים מוגדרים.
+- `מספר גיבויים מקסימלי`: הגדירו את המספר המקסימלי של קבצי גיבוי שיישמרו באופן מקומי. לאחר חריגה ממספר זה, קבצי הגיבוי המוקדמים ביותר יימחקו אוטומטית.
+- `סנכרון גיבוי לאחסון ענן`: הגדירו את אחסון הענן שאליו יועלו קבצי הגיבוי אוטומטית לאחר גיבוי מוצלח.
+- `גיבוי קבצי אחסון מקומיים`: האם לכלול בגיבוי קבצים שהועלו על ידי משתמשים לאחסון המקומי של השרת (storage/uploads).
+- `סיסמת שחזור`: אם הוגדרה סיסמת שחזור, יש להזין אותה בעת שחזור הגיבוי.
+
+> **אנא שמרו את סיסמת השחזור במקום בטוח. שכחת הסיסמה תמנע מכם לשחזר את קובץ הגיבוי.**

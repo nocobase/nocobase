@@ -28,7 +28,7 @@ DisplayTextFieldModel.define({
 });
 DisplayItemModel.bindModelToInterface(
   'DisplayTextFieldModel',
-  ['input', 'email', 'phone', 'uuid', 'attachmentURL', 'textarea', 'nanoid'],
+  ['input', 'email', 'phone', 'uuid', 'textarea', 'nanoid'],
   {
     isDefault: true,
   },

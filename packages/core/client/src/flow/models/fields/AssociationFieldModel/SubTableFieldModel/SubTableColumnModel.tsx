@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { capitalize, debounce } from 'lodash';
 import {
   DisplayItemModel,
   DragHandler,
@@ -23,14 +24,46 @@ import {
   ModelRenderMode,
   useFlowEngine,
   observer,
+  FlowModelProvider,
+  FlowErrorFallback,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Input } from 'antd';
+import { TableColumnProps, Tooltip, Input, Space, Divider } from 'antd';
+import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
+import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
 
-const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
+export function FieldWithoutPermissionPlaceholder({ targetModel }) {
+  const t = targetModel.context.t;
+  const fieldModel = targetModel;
+  const collection = fieldModel.context.collectionField.collection;
+  const dataSource = collection.dataSource;
+  const name = fieldModel.context.collectionField.name;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const { actionName } = fieldModel.forbidden || {};
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return (
+    <Tooltip title={messageValue}>
+      <LockOutlined style={{ opacity: '0.3' }} />
+    </Tooltip>
+  );
+}
+
+const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, disabled, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
@@ -41,14 +74,22 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
   const FieldModelRendererCom = (props) => {
     const { model, onChange, ...rest } = props;
-    const handelChange = (val) => {
-      others.onChange(val);
-      onChange(val);
-    };
 
-    return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
+    const handleChange = useMemo(
+      () =>
+        debounce((val) => {
+          if (props.onChange) props.onChange(val);
+          if (onChange) onChange(val);
+        }, 200),
+      [props.onChange, onChange],
+    );
+
+    return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
   };
   const handleClick = async (e) => {
+    if (disabled) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     try {
@@ -70,6 +111,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     }
   };
   const collectionField = model.context.collectionField;
+
   const content = useMemo(() => {
     if (['textarea', 'richText', 'json', 'markdown', 'vditor'].includes(collectionField.interface)) {
       const inputValue =
@@ -77,9 +119,13 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           ? JSON.stringify(defaultValue, null, 2)
           : defaultValue ?? '';
 
-      return <Input value={inputValue} />;
+      return <Input value={inputValue} disabled={disabled} style={{ width: '100%' }} />;
     } else {
-      return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
+      return (
+        <Space>
+          <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} /> <EditOutlined className="edit-icon" />
+        </Space>
+      );
     }
   }, [collectionField.interface, defaultValue, fieldModel]);
   return (
@@ -87,7 +133,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       ref={ref}
       onClick={handleClick}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         whiteSpace: 'nowrap',
         minHeight: 25,
@@ -98,9 +144,8 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       }}
     >
       <span
-        style={{ pointerEvents: 'none' }} // 不拦截点击
+        style={{ pointerEvents: 'none', display: 'block', width: '100%' }} // 不拦截点击
       >
-        {/* {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />} */}
         {content}
       </span>
     </div>
@@ -113,6 +158,137 @@ const handleModelName = (modelName) => {
   }
   return modelName;
 };
+
+const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
+  return prev.value === next.value && prev.model === next.model;
+});
+
+const FieldModelRendererOptimize = React.memo((props: any) => {
+  const { model, onChange, value, ...rest } = props;
+  const pendingValueRef = React.useRef<any>(props?.value);
+
+  const handleChange = React.useCallback(
+    (value: any) => {
+      pendingValueRef.current = value;
+    },
+    [model],
+  );
+
+  const handleCommit = React.useCallback(() => {
+    onChange?.(pendingValueRef.current);
+  }, [onChange]);
+  return (
+    <div onBlur={handleCommit}>
+      <MemoFieldRenderer
+        {...rest}
+        value={value}
+        model={model}
+        onChange={handleChange}
+        onChangeComplete={() => {
+          onChange?.(pendingValueRef.current);
+        }}
+      />
+    </div>
+  );
+});
+
+interface CellProps {
+  value: any;
+  record: any;
+  rowIdx: number;
+  id: string | number;
+  parent: any;
+  width?: number;
+}
+
+const MemoCell: React.FC<CellProps> = React.memo(
+  ({ value, record, rowIdx, id, parent, width }) => {
+    return (
+      <div
+        style={{
+          width,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+        title={value}
+        className={css`
+          .ant-form-item-explain-error {
+            white-space: break-spaces;
+          }
+          .edit-icon {
+            position: absolute;
+            display: none;
+            color: #1890ff;
+            margin-left: 8px;
+            cursor: pointer;
+            z-index: 100;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+          }
+          &:hover {
+            background: rgba(24, 144, 255, 0.1) !important;
+          }
+          &:hover .edit-icon {
+            display: inline-flex;
+          }
+        `}
+      >
+        {parent.mapSubModels('field', (action: FieldModel) => {
+          const fieldPath = action.context.fieldPath.split('.');
+          const namePath = fieldPath.pop();
+
+          const fork: any = action.createFork({}, `${id}`);
+          fork.context.defineProperty('currentObject', { get: () => record });
+
+          if (parent.props.readPretty) {
+            fork.setProps({ value });
+            return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
+          }
+
+          if (parent.props.aclViewDisabled && !record.__is_new__) return null;
+
+          return (
+            <FormItem
+              {...parent.props}
+              key={id}
+              name={[...fieldPath, rowIdx, namePath]}
+              style={{ marginBottom: 0 }}
+              showLabel={false}
+              disabled={
+                parent.props.disabled ||
+                (!record?.__is_new__ && parent.props.aclDisabled) ||
+                (record?.__is_new__ && parent.props.aclCreateDisabled)
+              }
+            >
+              {fork.constructor.isLargeField ? (
+                <LargeFieldEdit
+                  model={fork}
+                  params={{
+                    fieldPath: [(parent as any).context.fieldPath, rowIdx, namePath],
+                    index: id,
+                  }}
+                  defaultValue={value}
+                  disabled={
+                    parent.props.disabled ||
+                    (!record?.__is_new__ && parent.props.aclDisabled) ||
+                    (record?.__is_new__ && parent.props.aclCreateDisabled)
+                  }
+                />
+              ) : (
+                <FieldModelRendererOptimize model={fork} id={[(parent as any).context.fieldPath, rowIdx]} />
+              )}
+            </FormItem>
+          );
+        })}
+      </div>
+    );
+  },
+  (prev, next) => {
+    return prev.value === next.value && prev.id === next.id && prev.width === next.width;
+  },
+);
 
 export interface SubTableColumnModelStructure {
   parent: SubTableFieldModel;
@@ -127,15 +303,7 @@ export class SubTableColumnModel<
   static renderMode = ModelRenderMode.RenderFunction;
 
   renderHiddenInConfig() {
-    return (
-      <Tooltip
-        title={this.context.t(
-          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
-        )}
-      >
-        <LockOutlined style={{ opacity: '0.45' }} />
-      </Tooltip>
-    );
+    return <FieldWithoutPermissionPlaceholder targetModel={this} />;
   }
 
   static defineChildren(ctx: FlowModelContext) {
@@ -193,6 +361,9 @@ export class SubTableColumnModel<
       },
       cache: false,
     });
+    this.context.defineProperty('actionName', {
+      get: () => 'view',
+    });
     this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
       if (this.collectionField) {
         subModel.setProps(this.collectionField.getComponentProps());
@@ -220,6 +391,7 @@ export class SubTableColumnModel<
               sort: 1,
             },
           ]}
+          enabled={this.context.flowSettingsEnabled}
         >
           <div
             className={css`
@@ -227,6 +399,7 @@ export class SubTableColumnModel<
               text-overflow: ellipsis;
               white-space: nowrap;
               width: calc(${this.props.width}px - 16px);
+              opacity: ${this.hidden ? '0.3' : '1'};
             `}
           >
             {this.props.required && (
@@ -239,6 +412,7 @@ export class SubTableColumnModel<
         </FlowsFloatContextMenu>
       </Droppable>
     );
+    const cellRenderer = this.render();
     return {
       ...this.props,
       ellipsis: true,
@@ -262,65 +436,43 @@ export class SubTableColumnModel<
         title: this.props.title,
         model: this,
       }),
-      render: this.renderItem(),
+      // render: this.renderItem(),
       hidden: this.hidden && !this.context.flowSettingsEnabled,
+      render: (value) => {
+        const { record, rowIndex: index } = value || {};
+        return (
+          <FlowModelProvider model={this}>
+            <ErrorBoundary FallbackComponent={FlowErrorFallback}>
+              {(() => {
+                const err = this['__autoFlowError'];
+                if (err) throw err;
+                if (this.hidden && this.context.flowSettingsEnabled) {
+                  if (this.forbidden) {
+                    return <FieldWithoutPermissionPlaceholder targetModel={this} />;
+                  }
+                  return (
+                    <Tooltip
+                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                    >
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record?.__index || index)}</div>
+                    </Tooltip>
+                  );
+                }
+                if (!this.collectionField) {
+                  return <FieldDeletePlaceholder collection={this.parent.context.collectionField.targetCollection} />;
+                }
+                return cellRenderer(value, record, record?.__index || index);
+              })()}
+            </ErrorBoundary>
+          </FlowModelProvider>
+        );
+      },
     };
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx } = props;
-      return (
-        <div
-          style={{
-            width: this.props.width,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-          title={value}
-          className={css`
-            .ant-form-item-explain-error {
-              white-space: break-spaces;
-            }
-          `}
-        >
-          {this.mapSubModels('field', (action: FieldModel) => {
-            const namePath = action.context.fieldPath.split('.').pop();
-
-            const fork: any = action.createFork({}, `${id}`);
-            if (this.props.readPretty) {
-              fork.setProps({
-                value: value,
-              });
-              return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
-            } else {
-              return (
-                <FormItem
-                  {...this.props}
-                  key={id}
-                  name={[(this.parent as FieldModel).context.fieldPath, rowIdx, namePath]}
-                  style={{ marginBottom: 0 }}
-                  showLabel={false}
-                  initialValue={value}
-                >
-                  {fork.constructor.isLargeField ? (
-                    <LargeFieldEdit
-                      model={fork}
-                      params={{
-                        fieldPath: [(this.parent as FieldModel).context.fieldPath, rowIdx, namePath],
-                        index: id,
-                      }}
-                      defaultValue={value}
-                    />
-                  ) : (
-                    <FieldModelRenderer model={fork} id={[(this.parent as FieldModel).context.fieldPath, rowIdx]} />
-                  )}
-                </FormItem>
-              );
-            }
-          })}
-        </div>
-      );
+      const { value, id, rowIdx, record } = props || {};
+      return <MemoCell value={value} record={record} rowIdx={rowIdx} id={id} parent={this} width={this.props.width} />;
     };
   }
 }
@@ -354,8 +506,139 @@ SubTableColumnModel.registerFlow({
         }
       },
     },
+    title: {
+      title: tExpr('Column title'),
+      uiSchema: (ctx) => {
+        return {
+          title: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              placeholder: tExpr('Column title'),
+            },
+            'x-reactions': (field) => {
+              const { model } = ctx;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.model.collectionField?.title,
+        };
+      },
+      handler(ctx, params) {
+        const title = ctx.t(params.title || ctx.model.collectionField?.title);
+        ctx.model.setProps('title', title || ctx.fieldPath.split('.').pop());
+      },
+    },
+    tooltip: {
+      title: tExpr('Tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('tooltip', params.tooltip);
+      },
+    },
+    width: {
+      title: tExpr('Column width'),
+      uiMode(ctx) {
+        const columnWidth = ctx.model.props.width;
+        return {
+          type: 'select',
+          key: 'width',
+          props: {
+            options: [
+              { label: 50, value: 50 },
+              { label: 100, value: 100 },
+              { label: 150, value: 150 },
+              { label: 200, value: 200 },
+              { label: 250, value: 250 },
+              { label: 300, value: 300 },
+              { label: 350, value: 350 },
+              { label: 400, value: 400 },
+              { label: 450, value: 450 },
+              { label: 500, value: 500 },
+            ],
+            dropdownRender: (menu, setOpen, handleChange) => {
+              return (
+                <>
+                  {menu}
+                  <Divider style={{ margin: '4px 0' }} />
+                  <CustomWidth
+                    setOpen={setOpen}
+                    handleChange={handleChange}
+                    t={ctx.t}
+                    defaultValue={
+                      [50, 100, 150, 200, 250, 300, 350, 400, 450, 500].includes(columnWidth) ? null : columnWidth
+                    }
+                  />
+                </>
+              );
+            },
+          },
+        };
+      },
+      defaultParams: {
+        width: 200,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('width', params.width);
+      },
+    },
     aclCheck: {
       use: 'aclCheck',
+      async handler(ctx, params) {
+        if (!ctx.collectionField) {
+          return;
+        }
+        const blockActionName = ctx.blockModel.context.actionName;
+
+        const updateResult = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField.name],
+          actionName: 'update',
+        });
+        const createResult = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField.name],
+          actionName: 'create',
+        });
+        if (blockActionName === 'update') {
+          const resultView = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'view',
+          });
+          if (!resultView) {
+            ctx.model.setProps({
+              aclViewDisabled: true,
+            });
+          }
+        }
+        if (!updateResult) {
+          ctx.model.setProps({
+            aclDisabled: true,
+          });
+        }
+        if (!createResult) {
+          ctx.model.setProps({
+            aclCreateDisabled: true,
+          });
+        }
+      },
     },
     subModel: {
       title: tExpr('Preview field component'),
@@ -408,64 +691,6 @@ SubTableColumnModel.registerFlow({
           },
         });
         await model.dispatchEvent('beforeRender');
-      },
-    },
-    title: {
-      title: tExpr('Column title'),
-      uiSchema: (ctx) => {
-        return {
-          title: {
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              placeholder: tExpr('Column title'),
-            },
-            'x-reactions': (field) => {
-              const { model } = ctx;
-              const originTitle = model.collectionField?.title;
-              field.decoratorProps = {
-                ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
-              };
-            },
-          },
-        };
-      },
-      defaultParams: (ctx) => {
-        return {
-          title: ctx.model.collectionField?.title,
-        };
-      },
-      handler(ctx, params) {
-        const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title);
-      },
-    },
-    tooltip: {
-      title: tExpr('Tooltip'),
-      uiSchema: {
-        tooltip: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
-      },
-    },
-    width: {
-      title: tExpr('Column width'),
-      uiSchema: {
-        width: {
-          'x-component': 'NumberPicker',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        width: 200,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('width', params.width);
       },
     },
     initialValue: {

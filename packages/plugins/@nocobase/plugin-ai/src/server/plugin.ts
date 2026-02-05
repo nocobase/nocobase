@@ -45,6 +45,7 @@ import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
 import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
+import { suggestions } from './tools/suggestions';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -158,6 +159,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: defineCollections,
+      },
+      {
+        groupName: dataModelingGroupName,
+        tool: suggestions,
       },
       {
         tool: chartGenerator,

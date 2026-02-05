@@ -11,7 +11,6 @@ import actions, { Context, Next } from '@nocobase/actions';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
-import { SkillSettings } from '../../client/ai-employees/admin/SkillSettings';
 import _ from 'lodash';
 
 export const list = async (ctx: Context, next: Next) => {
@@ -178,19 +177,5 @@ export const updateUserPrompt = async (ctx: Context, next: Next) => {
 export const getTemplates = async (ctx: Context, next: Next) => {
   const locale = ctx.getCurrentLocale() || 'en-US';
   ctx.body = Object.values(templates).map((template) => template[locale]);
-  await next();
-};
-
-export const getBuiltInDefault = async (ctx: Context, next: Next) => {
-  const { filterByTk } = ctx.action.params || {};
-  if (!filterByTk) {
-    ctx.throw(400);
-  }
-  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-  const builtInManager = plugin.builtInManager;
-  const locale = ctx.getCurrentLocale();
-  const temp = { username: filterByTk } as AIEmployee;
-  builtInManager.setupBuiltInInfo(locale, temp);
-  ctx.body = { about: temp.about };
   await next();
 };

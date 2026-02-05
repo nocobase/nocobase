@@ -23,7 +23,6 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
     () => ({
       destroy: () => {
         setOpen(false);
-        drawerProps.afterClose?.();
       },
       update: (newConfig) => {
         // 更新 drawer 配置
@@ -55,10 +54,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
         {...drawerProps}
         footer={footer}
         {...header}
-        onClose={() => {
-          setOpen(false);
-          drawerProps.afterClose?.();
-        }}
+        onClose={drawerProps.onClose}
       >
         {children}
       </MobilePopup>
@@ -78,10 +74,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
         footer: { display: 'flex', justifyContent: 'flex-end', ...drawerProps.styles?.footer },
       }}
       {...header} // 使用 extra 属性作为自定义 header
-      onClose={() => {
-        setOpen(false);
-        drawerProps.afterClose?.();
-      }}
+      onClose={drawerProps.onClose}
     >
       {children}
     </Drawer>

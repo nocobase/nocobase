@@ -13,7 +13,6 @@ import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
-import * as antdIcons from '@ant-design/icons';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
@@ -38,17 +37,23 @@ import {
   extractPropertyPath,
   extractUsedVariablePaths,
   FlowExitException,
+  isCssFile,
+  prepareRunJsCode,
   resolveDefaultParams,
   resolveExpressions,
+  resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { inferRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
+import { externalReactRender, setupRunJSLibs } from './runjsLibs';
+import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -71,6 +76,61 @@ function filterBuilderOutputByPaths(built: any, neededPaths: string[]): any {
   return undefined;
 }
 
+// Helper: extract top-level segment of a subpath (e.g. 'a.b' -> 'a', 'tags[0].name' -> 'tags')
+function topLevelOf(subPath: string): string | undefined {
+  if (!subPath) return undefined;
+  const m = String(subPath).match(/^([^.[]+)/);
+  return m?.[1];
+}
+
+// Helper: infer selects (fields/appends) from usage paths (mirrors server-side inferSelectsFromUsage)
+function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: string[]; generatedFields?: string[] } {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return { generatedAppends: undefined, generatedFields: undefined };
+  }
+
+  const appendSet = new Set<string>();
+  const fieldSet = new Set<string>();
+
+  const normalizePath = (raw: string): string => {
+    if (!raw) return '';
+    let s = String(raw);
+    // remove numeric indexes like [0]
+    s = s.replace(/\[(?:\d+)\]/g, '');
+    // normalize string indexes like ["name"] / ['name'] into .name
+    s = s.replace(/\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\]/g, (_m, g1, g2) => `.${(g1 || g2) as string}`);
+    s = s.replace(/\.\.+/g, '.');
+    s = s.replace(/^\./, '').replace(/\.$/, '');
+    return s;
+  };
+
+  for (let path of paths) {
+    if (!path) continue;
+    // drop leading numeric index like [0].name
+    while (/^\[(\d+)\](\.|$)/.test(path)) {
+      path = path.replace(/^\[(\d+)\]\.?/, '');
+    }
+    const norm = normalizePath(path);
+    if (!norm) continue;
+    const segments = norm.split('.').filter(Boolean);
+    if (segments.length === 0) continue;
+
+    if (segments.length === 1) {
+      fieldSet.add(segments[0]);
+      continue;
+    }
+
+    for (let i = 0; i < segments.length - 1; i++) {
+      appendSet.add(segments.slice(0, i + 1).join('.'));
+    }
+    fieldSet.add(segments.join('.'));
+  }
+
+  const generatedAppends = appendSet.size ? Array.from(appendSet) : undefined;
+  const generatedFields = fieldSet.size ? Array.from(fieldSet) : undefined;
+  return { generatedAppends, generatedFields };
+}
+
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
 export interface MetaTreeNode {
@@ -78,6 +138,7 @@ export interface MetaTreeNode {
   title: string;
   type: string;
   interface?: string;
+  options?: any;
   uiSchema?: ISchema;
   render?: (props: any) => JSX.Element;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
@@ -95,6 +156,7 @@ export interface PropertyMeta {
   type: string;
   title: string;
   interface?: string;
+  options?: any;
   uiSchema?: ISchema; // TODO: 这个是不是压根没必要啊？
   render?: (props: any) => JSX.Element; // 自定义渲染函数
   // 用于 VariableInput 的排序：数值越大，显示越靠前；相同值保持稳定顺序
@@ -679,6 +741,7 @@ export class FlowContext {
         title: metaOrFactory.title || initialTitle, // 初始使用 name 作为 title
         type: 'object', // 初始类型
         interface: undefined,
+        options: undefined,
         uiSchema: undefined,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
@@ -710,6 +773,7 @@ export class FlowContext {
                   node.title = finalTitle;
                   node.type = meta?.type;
                   node.interface = meta?.interface;
+                  node.options = meta?.options;
                   node.uiSchema = meta?.uiSchema;
                   // parentTitles 保持不变，因为它不包含自身 title
 
@@ -742,6 +806,7 @@ export class FlowContext {
         title: nodeTitle,
         type: metaOrFactory.type,
         interface: metaOrFactory.interface,
+        options: metaOrFactory.options,
         uiSchema: metaOrFactory.uiSchema,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
@@ -908,7 +973,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
-  declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;
   declare pageInfo: { version?: 'v1' | 'v2' };
   /**
    * @deprecated use `resolveJsonTemplate` instead
@@ -939,6 +1004,25 @@ class BaseFlowEngineContext extends FlowContext {
   declare location: Location;
   declare sql: FlowSQLRepository;
   declare logger: pino.Logger;
+
+  constructor() {
+    super();
+    this.defineMethod(
+      'runjs',
+      async function (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) {
+        const { preprocessTemplates, ...runnerOptions } = options || {};
+        const mergedGlobals = { ...(runnerOptions?.globals || {}), ...(variables || {}) };
+        const runner = await this.createJSRunner({
+          ...(runnerOptions || {}),
+          globals: mergedGlobals,
+        });
+        // Enable by default; use `preprocessTemplates: false` to explicitly disable.
+        const shouldPreprocessTemplates = preprocessTemplates !== false;
+        const jsCode = await prepareRunJsCode(String(code ?? ''), { preprocessTemplates: shouldPreprocessTemplates });
+        return runner.run(jsCode);
+      },
+    );
+  }
 }
 
 class BaseFlowModelContext extends BaseFlowEngineContext {
@@ -987,14 +1071,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
-    this.defineMethod('runjs', async (code, variables, options?: JSRunnerOptions) => {
-      const mergedGlobals = { ...(options?.globals || {}), ...(variables || {}) };
-      const runner = (await (this as any).createJSRunner({
-        ...(options || {}),
-        globals: mergedGlobals,
-      })) as JSRunner;
-      return runner.run(code);
-    });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
@@ -1030,6 +1106,22 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const needServer = Object.keys(serverVarPaths).length > 0;
       let serverResolved = template;
       if (needServer) {
+        const inferRecordRefWithMeta = (ctx: any): RecordRef | undefined => {
+          const ref = inferRecordRef(ctx as any);
+          if (ref) return ref as RecordRef;
+          try {
+            const tk = ctx?.resource?.getMeta?.('currentFilterByTk');
+            if (typeof tk === 'undefined' || tk === null) return undefined;
+            const collection =
+              ctx?.collection?.name || ctx?.resource?.getResourceName?.()?.split?.('.')?.slice?.(-1)?.[0];
+            if (!collection) return undefined;
+            const dataSourceKey = ctx?.collection?.dataSourceKey || ctx?.resource?.getDataSourceKey?.();
+            return { collection, dataSourceKey, filterByTk: tk } as RecordRef;
+          } catch (_) {
+            return undefined;
+          }
+        };
+
         const collectFromMeta = async (): Promise<Record<string, any>> => {
           const out: Record<string, any> = {};
           try {
@@ -1069,7 +1161,62 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         };
 
         const inputFromMeta = await collectFromMeta();
-        const autoInput = { ...inputFromMeta };
+        const autoInput = { ...inputFromMeta } as Record<string, any>;
+
+        // Special-case: formValues
+        // If server needs to resolve some formValues paths but meta params only cover association anchors
+        // (e.g. formValues.customer) and some top-level paths are missing (e.g. formValues.status),
+        // inject a top-level record anchor (formValues -> { collection, filterByTk, fields/appends }) so server can fetch DB values.
+        // This anchor MUST be selective (fields/appends derived from serverVarPaths['formValues']) to avoid server overriding
+        // client-only values for configured form fields in the same template.
+        try {
+          const varName = 'formValues';
+          const neededPaths = serverVarPaths[varName] || [];
+          if (neededPaths.length) {
+            const requiredTop = new Set<string>();
+            for (const p of neededPaths) {
+              const top = topLevelOf(p);
+              if (top) requiredTop.add(top);
+            }
+            const metaOut = inputFromMeta?.[varName];
+            const builtTop = new Set<string>();
+            if (metaOut && typeof metaOut === 'object' && !Array.isArray(metaOut) && !isRecordRefLike(metaOut)) {
+              Object.keys(metaOut).forEach((k) => builtTop.add(k));
+            }
+
+            const missing = [...requiredTop].filter((k) => !builtTop.has(k));
+            if (missing.length) {
+              const ref = inferRecordRefWithMeta(this);
+              if (ref) {
+                const { generatedFields, generatedAppends } = inferSelectsFromUsage(neededPaths);
+                const recordRef: RecordRef = {
+                  ...ref,
+                  fields: generatedFields,
+                  appends: generatedAppends,
+                };
+
+                // Preserve existing association anchors by lifting them to dotted keys before overwriting formValues
+                const existing = autoInput[varName];
+                if (
+                  existing &&
+                  typeof existing === 'object' &&
+                  !Array.isArray(existing) &&
+                  !isRecordRefLike(existing)
+                ) {
+                  for (const [k, v] of Object.entries(existing)) {
+                    autoInput[`${varName}.${k}`] = v;
+                  }
+                  delete autoInput[varName];
+                }
+
+                autoInput[varName] = recordRef;
+              }
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
+
         const autoContextParams = Object.keys(autoInput).length
           ? _buildServerContextParams(this, autoInput)
           : undefined;
@@ -1181,7 +1328,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
-    this.defineMethod('loadCSS', async (url: string) => {
+    this.defineMethod('loadCSS', async (href: string) => {
+      const url = resolveModuleUrl(href);
       return new Promise((resolve, reject) => {
         // Check if CSS is already loaded
         const existingLink = document.querySelector(`link[href="${url}"]`);
@@ -1199,53 +1347,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('requireAsync', async (url: string) => {
-      return new Promise((resolve, reject) => {
-        if (!this.requirejs) {
-          reject(new Error('requirejs is not available'));
-          return;
-        }
-        this.requirejs(
-          [url],
-          (...args: any[]) => {
-            resolve(args[0]);
-          },
-          reject,
-        );
-      });
+      const u = resolveModuleUrl(url, { raw: true });
+      return await runjsRequireAsync(this.requirejs, u);
     });
     // 动态按 URL 加载 ESM 模块
     // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
     // - 返回模块命名空间对象（包含 default 与命名导出）
-    this.defineMethod('importAsync', async (url: string) => {
-      if (!url || typeof url !== 'string') {
-        throw new Error('invalid url');
+    this.defineMethod('importAsync', async function (this: any, url: string) {
+      // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
+      if (isCssFile(url)) {
+        return this.loadCSS(url);
       }
-      const u = url.trim();
-      const g = globalThis as any;
-      g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
-      const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
-      if (cache.has(u)) return cache.get(u)!;
-      // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
-      const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
-      // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
-      const evalImport = () => {
-        const importer = (0, eval)('u => import(u)');
-        return importer(u);
-      };
-      const p = (async () => {
-        try {
-          return await nativeImport();
-        } catch (err: any) {
-          // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
-          try {
-            return await evalImport();
-          } catch (err2) {
-            throw err2 || err;
-          }
-        }
-      })();
-      cache.set(u, p);
-      return p;
+
+      return await runjsImportModule(this, url, { importer: runjsImportAsync });
     });
     this.defineMethod('createJSRunner', async function (options?: JSRunnerOptions) {
       try {
@@ -1254,16 +1368,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       } catch (_) {
         // ignore if setup is not available
       }
-      const version = (options?.version as any) || 'v1';
+      const version = options?.version || 'v1';
       const modelClass = getModelClassName(this);
-      const Ctor =
-        (RunJSContextRegistry.resolve(version, modelClass) as any) ||
-        (RunJSContextRegistry.resolve(version, '*') as any) ||
-        FlowRunJSContext;
-      let runCtx: any;
-      if (Ctor) {
-        runCtx = new Ctor(this);
-      }
+      const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
+      const runCtx = new Ctor(this);
       const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
@@ -1401,13 +1509,6 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
-    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await this.createJSRunner({
-        globals: variables,
-        version: options?.version,
-      });
-      return runner.run(code);
-    });
     this.defineProperty('model', {
       value: model,
     });
@@ -1478,11 +1579,17 @@ export class FlowModelContext extends BaseFlowModelContext {
         engineCtx: this.engine.context,
       };
       model.context.defineProperty('view', { value: pendingView });
-      await model.dispatchEvent('click', {
-        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
-        // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
-        ...opts,
-      });
+      await model.dispatchEvent(
+        'click',
+        {
+          // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+          // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
+          ...opts,
+        },
+        {
+          debounce: true,
+        },
+      );
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
@@ -1532,7 +1639,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate((this.master as any).context);
+    this.addDelegate(this.master.context);
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
@@ -1546,13 +1653,6 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         this.fork['_refCreated'] = true;
         return stableRef;
       },
-    });
-    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await this.createJSRunner({
-        globals: variables,
-        version: options?.version,
-      });
-      return runner.run(code);
     });
   }
 }
@@ -1607,13 +1707,6 @@ export class FlowRuntimeContext<
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
-    });
-    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await this.createJSRunner({
-        globals: variables,
-        version: options?.version,
-      });
-      return runner.run(code);
     });
   }
 
@@ -1711,6 +1804,7 @@ function __runjsDeepMerge(base: any, patch: any) {
   }
   return out;
 }
+
 export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
@@ -1729,19 +1823,10 @@ export class FlowRunJSContext extends FlowContext {
         return this.engine.reactView.createRoot(realContainer as HTMLElement, options);
       },
     };
+    ReactDOMShim.__nbRunjsInternalShim = true;
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
-    // 为第三方/通用库提供统一命名空间：ctx.libs
-    // - 新增库应优先挂载到 ctx.libs.xxx
-    // - 同时保留顶层别名（如 ctx.React / ctx.antd），以兼容历史代码
-    const libs = Object.freeze({
-      React,
-      ReactDOM: ReactDOMShim,
-      antd,
-      dayjs,
-      antdIcons,
-    });
-    this.defineProperty('libs', { value: libs });
+    setupRunJSLibs(this);
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available
@@ -1761,16 +1846,37 @@ export class FlowRunJSContext extends FlowContext {
         globalRef.__nbRunjsRoots = globalRef.__nbRunjsRoots || new WeakMap<any, any>();
         const rootMap: WeakMap<any, any> = globalRef.__nbRunjsRoots;
 
-        // If vnode is string (HTML), unmount react root and set sanitized HTML
-        if (typeof vnode === 'string') {
-          const existingRoot = rootMap.get(containerEl);
-          if (existingRoot && typeof existingRoot.unmount === 'function') {
+        const disposeEntry = (entry: any) => {
+          if (!entry) return;
+          if (entry.disposeTheme && typeof entry.disposeTheme === 'function') {
             try {
-              existingRoot.unmount();
-            } finally {
-              rootMap.delete(containerEl);
+              entry.disposeTheme();
+            } catch (_) {
+              // ignore
+            }
+            entry.disposeTheme = undefined;
+          }
+          const root = entry.root || entry;
+          if (root && typeof root.unmount === 'function') {
+            try {
+              root.unmount();
+            } catch (_) {
+              // ignore
             }
           }
+        };
+
+        const unmountContainerRoot = () => {
+          const existing = rootMap.get(containerEl);
+          if (existing) {
+            disposeEntry(existing);
+            rootMap.delete(containerEl);
+          }
+        };
+
+        // If vnode is string (HTML), unmount react root and set sanitized HTML
+        if (typeof vnode === 'string') {
+          unmountContainerRoot();
           const proxy: any = new ElementProxy(containerEl);
           proxy.innerHTML = String(vnode ?? '');
           return null;
@@ -1782,26 +1888,42 @@ export class FlowRunJSContext extends FlowContext {
           (vnode as any).nodeType &&
           ((vnode as any).nodeType === 1 || (vnode as any).nodeType === 3 || (vnode as any).nodeType === 11)
         ) {
-          const existingRoot = rootMap.get(containerEl);
-          if (existingRoot && typeof existingRoot.unmount === 'function') {
-            try {
-              existingRoot.unmount();
-            } finally {
-              rootMap.delete(containerEl);
-            }
-          }
+          unmountContainerRoot();
           while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
           containerEl.appendChild(vnode as any);
           return null;
         }
 
-        let root = rootMap.get(containerEl);
-        if (!root) {
-          root = this.ReactDOM.createRoot(containerEl);
-          rootMap.set(containerEl, root);
+        // 注意：rootMap 是“全局按容器复用”的（key=containerEl）。
+        // 若不同 RunJS ctx 复用同一个 containerEl，且 ReactDOM 实例引用也相同，
+        // 则会复用到旧 entry，进而复用旧 ctx 创建的 autorun（闭包捕获旧 ctx），造成：
+        // 1) 旧 ctx 的 reaction 继续驱动新渲染（跨 ctx 复用风险）
+        // 2) 新 ctx 的主题变化不再触发 rerender
+        // 3) 旧 ctx 被 entry/autorun 间接持有，无法被 GC（内存泄漏）
+        // 因此这里把 ownerKey（当前 ctx）也纳入复用判断；owner 变化时必须重建 entry。
+        const rendererKey = this.ReactDOM;
+        const ownerKey = this;
+        let entry = rootMap.get(containerEl);
+        if (!entry || entry.rendererKey !== rendererKey || entry.ownerKey !== ownerKey) {
+          if (entry) {
+            disposeEntry(entry);
+            rootMap.delete(containerEl);
+          }
+          const root = this.ReactDOM.createRoot(containerEl);
+          entry = { rendererKey, ownerKey, root, disposeTheme: undefined, lastVnode: undefined };
+          rootMap.set(containerEl, entry);
         }
-        root.render(vnode as any);
-        return root;
+
+        return externalReactRender({
+          ctx: this,
+          entry,
+          vnode,
+          containerEl,
+          rootMap,
+          unmountContainerRoot,
+          internalReact: React,
+          internalAntd: antd,
+        });
       },
     );
   }
@@ -1822,7 +1944,7 @@ export class FlowRunJSContext extends FlowContext {
     const self = this as any as Function;
     let cacheForClass = __runjsDocCache.get(self);
     const cacheKey = String(locale || 'default');
-    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey)!;
+    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey) as RunJSDocMeta;
     const chain: Function[] = [];
     let cur: any = self;
     while (cur && cur.prototype) {

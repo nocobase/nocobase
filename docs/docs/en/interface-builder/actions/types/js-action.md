@@ -22,6 +22,7 @@ JS Action is used to execute JavaScript when a button is clicked, allowing for c
 
 - `ctx.requireAsync(url)`: Asynchronously loads an AMD/UMD library from a URL.
 - `ctx.importAsync(url)`: Dynamically imports an ESM module from a URL.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Built-in React, ReactDOM, Ant Design, Ant Design icons, dayjs, lodash, math.js, and formula.js libraries for JSX rendering, date-time utilities, data manipulation, and mathematical operations.
 
 > The actual available variables may differ depending on the button's location. The list above is an overview of common capabilities.
 
@@ -34,7 +35,7 @@ JS Action is used to execute JavaScript when a button is clicked, allowing for c
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
 
-- You can use AI employees to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- You can use AI employees to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
 
 ## Common Usage (Simplified Examples)
 

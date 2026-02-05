@@ -53,6 +53,7 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
+import { RouteRepository } from './RouteRepository';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -200,7 +201,14 @@ export class Application {
     this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
-    this.apiClient = options.apiClient instanceof APIClient ? options.apiClient : new APIClient(options.apiClient);
+    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
+    this.apiClient =
+      options.apiClient instanceof APIClient
+        ? options.apiClient
+        : new APIClient({
+            ...options.apiClient,
+            appName: this.options.name || getSubAppName(options.publicPath),
+          });
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager(options.router, this);
@@ -223,7 +231,6 @@ export class Application {
     this.ws.app = this;
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
-    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
     });
@@ -302,6 +309,9 @@ export class Application {
     this.use(OpenModeProvider);
     this.flowEngine.context.defineProperty('app', {
       value: this,
+    });
+    this.flowEngine.context.defineProperty('routeRepository', {
+      value: new RouteRepository(this.flowEngine.context),
     });
     this.flowEngine.context.defineProperty('appInfo', {
       get: async () => {

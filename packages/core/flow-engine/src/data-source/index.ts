@@ -486,6 +486,9 @@ export class Collection {
     if (typeof this.filterTargetKey === 'string') {
       return record[this.filterTargetKey];
     }
+    if (Array.isArray(this.filterTargetKey) && this.filterTargetKey.length === 1) {
+      return record[this.filterTargetKey[0]];
+    }
     return _.pick(record, this.filterTargetKey);
   }
 
@@ -813,6 +816,9 @@ export class CollectionField {
     if (this.type === 'integer') {
       return options.map((v) => {
         if (typeof v !== 'object') {
+          return v;
+        }
+        if (v.value === null || v.value === undefined) {
           return v;
         }
         return {

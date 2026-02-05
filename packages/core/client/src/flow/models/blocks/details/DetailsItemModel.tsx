@@ -107,12 +107,20 @@ export class DetailsItemModel extends DisplayItemModel<{
 
   onInit(options: any) {
     super.onInit(options);
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return 'view';
+      },
+      cache: false,
+    });
   }
 
   renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
     const record = this.context.record;
+    const currentObject = this.context.currentObject;
+
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
       idx != null
@@ -125,6 +133,10 @@ export class DetailsItemModel extends DisplayItemModel<{
               get: () => record,
               cache: false,
             });
+            fork.context.defineProperty('currentObject', {
+              get: () => currentObject,
+              cache: false,
+            });
             if (this.context.pattern) {
               fork.context.defineProperty('pattern', {
                 get: () => this.context.pattern,
@@ -134,8 +146,13 @@ export class DetailsItemModel extends DisplayItemModel<{
           })()
         : fieldModel;
     const mergedProps = this.context.pattern
-      ? { ...this.props, pattern: this.context.pattern, disabled: this.context.pattern === 'readPretty' }
-      : this.props;
+      ? {
+          ...this.context.blockModel.props,
+          ...this.props,
+          pattern: this.context.pattern,
+          disabled: this.context.pattern === 'readPretty',
+        }
+      : { ...this.context.blockModel.props, ...this.props };
     const value = getValueWithIndex(record, this.fieldPath, idx);
     return (
       <FormItem {...mergedProps} value={value}>
@@ -146,7 +163,7 @@ export class DetailsItemModel extends DisplayItemModel<{
 }
 
 DetailsItemModel.define({
-  label: tExpr('Display collection fields'),
+  label: tExpr('Display fields'),
   sort: 100,
 });
 
@@ -236,7 +253,7 @@ DetailsItemModel.registerFlow({
       use: 'titleField',
       title: tExpr('Title field'),
       beforeParamsSave: async (ctx, params, previousParams) => {
-        if (!ctx.collectionField.isAssociationField()) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
         }
         if (params.label !== previousParams.label) {
@@ -261,7 +278,7 @@ DetailsItemModel.registerFlow({
         }
       },
       async handler(ctx: any, params) {
-        if (ctx.model.subModels.field.disableTitleField) {
+        if (!ctx.collectionField || ctx.model.subModels.field.disableTitleField) {
           return;
         }
         ctx.model.setProps({
@@ -286,6 +303,16 @@ DetailsItemModel.registerFlow({
           (ctx.model.subModels.field as any).disableTitleField
         );
       },
+    },
+  },
+});
+
+DetailsItemModel.registerFlow({
+  key: 'paginationChange',
+  on: 'paginationChange',
+  steps: {
+    aclCheckRefresh: {
+      use: 'aclCheckRefresh',
     },
   },
 });

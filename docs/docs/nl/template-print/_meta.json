@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overzicht",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Configuratie-uitleg",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Sjabloonsyntaxis"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Geavanceerde functies"
+  },
+  {
+    "type": "custom-link",
+    "label": "Veelgestelde vragen",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Toepassingsscenario's",
+    "link": "/template-print/scenes"
+  }
+]

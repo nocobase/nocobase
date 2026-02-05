@@ -8,7 +8,7 @@
  */
 
 import { DragEndEvent } from '@dnd-kit/core';
-import { autorun, reaction } from '@nocobase/flow-engine';
+import { reaction } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
@@ -89,24 +89,14 @@ RootPageModel.registerFlow({
         if (ctx.model.hasSubModel('tabs')) {
           return;
         }
-        const { data } = await ctx.api.request({
-          url: `desktopRoutes:getAccessible`,
-          params: {
-            sort: 'sort',
-            filter: {
-              schemaUid: ctx.model.parentId,
-            },
-            appends: ['children'],
-          },
-        });
-        ctx.model.setProps('routeId', data?.data?.id);
-        const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
+        const route = ctx.routeRepository.getRouteBySchemaUid(ctx.model.parentId);
+        ctx.model.setProps('routeId', route?.id);
+        const routes: NocoBaseDesktopRoute[] = _.castArray(route?.children);
         for (const route of routes.sort((a, b) => a.sort - b.sort)) {
           // 过滤掉隐藏的路由
           if (route.hideInMenu) {
             continue;
           }
-
           const model = ctx.engine.createModel({
             parentId: ctx.model.uid,
             uid: route.schemaUid,

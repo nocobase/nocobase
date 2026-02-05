@@ -12,20 +12,60 @@ import { Modal, Button } from 'antd';
 import { saveAs } from 'file-saver';
 
 import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
 import { useT } from './locale';
 
-function IframePreviewer({ index, list, onSwitchIndex }) {
+const OFFICE_MIME_TYPES = [
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/msword',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.oasis.opendocument.text',
+];
+
+const OFFICE_EXTS = ['docx', 'xlsx', 'pptx', 'odt', 'doc', 'xls', 'ppt'];
+
+const getOfficeFileExt = (file: any) => {
+  const value = typeof file === 'string' ? file : file?.extname || file?.name || file?.filename || file?.url || '';
+  const clean = value.split('?')[0].split('#')[0];
+  const index = clean.lastIndexOf('.');
+  return index !== -1 ? clean.slice(index + 1).toLowerCase() : '';
+};
+
+const resolveFileUrl = (file: any) => {
+  const url = typeof file === 'string' ? file : file?.url;
+  if (!url) {
+    return '';
+  }
+  return url.startsWith('https://') || url.startsWith('http://') ? url : `${location.origin}/${url.replace(/^\//, '')}`;
+};
+
+const getOfficePreviewUrl = (file: any) => {
+  const src = resolveFileUrl(file);
+  if (!src) {
+    return '';
+  }
+  const url = new URL('https://view.officeapps.live.com/op/embed.aspx');
+  url.searchParams.set('src', src);
+  return url.href;
+};
+
+const isOfficeFile = (file: any) => {
+  if (file?.mimetype && OFFICE_MIME_TYPES.includes(file.mimetype)) {
+    return true;
+  }
+  const ext = getOfficeFileExt(file);
+  return !!ext && OFFICE_EXTS.includes(ext);
+};
+
+function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
   const t = useT();
   const file = list[index];
   const url = useMemo(() => {
-    const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
-    const src =
-      file.url.startsWith('https://') || file.url.startsWith('http://')
-        ? file.url
-        : `${location.origin}/${file.url.replace(/^\//, '')}`;
-    u.searchParams.set('src', src);
-    return u.href;
-  }, [file.url]);
+    return getOfficePreviewUrl(file);
+  }, [file]);
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
@@ -68,7 +108,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
         style={{
           maxWidth: '100%',
           maxHeight: 'calc(100vh - 256px)',
-          height: '90vh',
+          height: '100%',
           width: '100%',
           background: 'white',
           display: 'flex',
@@ -82,7 +122,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
           src={url}
           style={{
             width: '100%',
-            maxHeight: '90vh',
+            maxHeight: '100%',
             flex: '1 1 auto',
             border: 'none',
           }}
@@ -92,36 +132,23 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
   );
 }
 
+function OfficeInlinePreviewer({ file }) {
+  const url = useMemo(() => getOfficePreviewUrl(file), [typeof file === 'string' ? file : file?.url]);
+  if (!url) {
+    return null;
+  }
+  return <iframe src={url} width="100%" height="100%" style={{ border: 'none' }} />;
+}
+
 export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
     attachmentFileTypes.add({
-      match(file) {
-        if (
-          file.mimetype &&
-          [
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          ].includes(file.mimetype)
-        ) {
-          return true;
-        }
-        if (file.url) {
-          const src =
-            file.url.startsWith('https://') || file.url.startsWith('http://')
-              ? file.url
-              : `${location.origin}/${file.url.replace(/^\//, '')}`;
-          const url = new URL(src);
-          const parts = url.pathname.split('.');
-          if (parts.length > 1) {
-            const ext = parts[parts.length - 1].toLowerCase();
-            return ['docx', 'xlsx', 'pptx', 'odt'].includes(ext);
-          }
-          return false;
-        }
-        return false;
-      },
-      Previewer: IframePreviewer,
+      match: isOfficeFile,
+      Previewer: OfficeModalPreviewer,
+    });
+    filePreviewTypes.add({
+      match: isOfficeFile,
+      Previewer: wrapWithModalPreviewer(OfficeInlinePreviewer),
     });
   }
 }

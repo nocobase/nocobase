@@ -9,7 +9,7 @@
 
 import { ArrayItems, FormItem } from '@formily/antd-v5';
 import { createForm, onFormValuesChange } from '@formily/core';
-import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema } from '@formily/react';
+import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
@@ -38,6 +38,7 @@ const CascadeSelect = connect((props) => {
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: undefined, children: [], value: null },
   ]);
+
   const [options, setOptions] = useState(data);
   const [loading, setLoading] = useState(false);
   const compile = useCompile();
@@ -58,6 +59,7 @@ const CascadeSelect = connect((props) => {
     return '$includes';
   }, [targetField]);
   const field: any = useField();
+
   useEffect(() => {
     if (value) {
       const values = Array.isArray(value)
@@ -73,6 +75,11 @@ const CascadeSelect = connect((props) => {
       setSelectedOptions(options);
     }
   }, []);
+  useEffect(() => {
+    if (!value) {
+      setSelectedOptions([{ key: undefined, children: [], value: null }]);
+    }
+  }, [value]);
   const mapOptionsToTags = useCallback(
     (options) => {
       try {
@@ -241,6 +248,7 @@ export const InternalCascadeSelect = observer(
     const selectForm = useMemo(() => createForm(), []);
     const { t } = useTranslation();
     const field: any = useField();
+    const form = useForm();
     const fieldSchema = useFieldSchema();
     const { loading, data: formData } = useDataBlockRequest() || {};
     const initialValue = useMemo(() => formData?.data?.[fieldSchema.name], [loading]);
@@ -255,7 +263,7 @@ export const InternalCascadeSelect = observer(
         });
       } else {
         // 对 select_array 类型字段，过滤掉空对象
-        const value = extractLastNonNullValueObjects(form.values?.select_array).filter(
+        const value = extractLastNonNullValueObjects(form.values?.select_array || []).filter(
           (v) => v && Object.keys(v).length > 0,
         );
         setTimeout(() => {
@@ -278,6 +286,19 @@ export const InternalCascadeSelect = observer(
         handleFormValuesChange.cancel();
       };
     }, []);
+
+    useEffect(() => {
+      if (!form.values?.[fieldSchema.name]) {
+        if (selectForm && selectForm.values.select_array && !form.values?.[fieldSchema.name]) {
+          selectForm.setValuesIn('select_array', undefined);
+          setTimeout(() => {
+            selectForm.setValuesIn('select_array', [{}]);
+          });
+        } else {
+          selectForm.setValuesIn(fieldSchema.name, null);
+        }
+      }
+    }, [form.values?.[fieldSchema.name]]);
 
     const toValue = () => {
       if (Array.isArray(initialValue) && initialValue.length > 0) {
@@ -347,7 +368,6 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
-
     return (
       !loading &&
       associationDataFlag && (
@@ -359,6 +379,9 @@ export const InternalCascadeSelect = observer(
                 ...fieldSchema,
                 default: initialValue,
                 title: '',
+                'x-decorator-props': {
+                  feedbackLayout: 'none',
+                },
                 'x-component': AssociationCascadeSelect,
                 'x-component-props': {
                   ...props,

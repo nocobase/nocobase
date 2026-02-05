@@ -63,9 +63,15 @@ export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToView
 // 安全全局对象（window/document）
 export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';
 
+// RunJS 代码兼容预处理（{{ }}）与 JSX 编译
+export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';
+
 // Ephemeral context helper（用于临时注入属性/方法，避免污染父级 ctx）
 export { createEphemeralContext } from './createEphemeralContext';
 
 // Filter helpers
 export { pruneFilter } from './pruneFilter';
 export { isBeforeRenderFlow } from './flows';
+
+// Module URL resolver
+export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';

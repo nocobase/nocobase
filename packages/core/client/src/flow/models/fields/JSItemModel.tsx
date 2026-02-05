@@ -14,7 +14,6 @@ import {
   createSafeWindow,
   createSafeNavigator,
   tExpr,
-  compileRunJs,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
@@ -28,7 +27,6 @@ import { resolveRunJsParams } from '../utils/resolveRunJsParams';
  */
 export class JSItemModel extends CommonItemModel {
   private _offResourceRefresh?: () => void;
-  private _lastPage?: number;
   private _mountedOnce = false; // prevent first-mount double-run
 
   getInputArgs() {
@@ -63,14 +61,9 @@ export class JSItemModel extends CommonItemModel {
   protected onMount() {
     const resource = this.context.resource;
     if (resource) {
-      // 订阅 refresh：仅在分页页码改变后触发 jsSettings
-      this._lastPage = resource.getPage?.();
+      // 订阅 refresh：详情记录被编辑后通常会触发 refresh，需要重跑 jsSettings
       const handler = () => {
-        const current = resource?.getPage?.();
-        if (current !== this._lastPage) {
-          this.applyFlow('jsSettings');
-        }
-        this._lastPage = current;
+        this.applyFlow('jsSettings');
       };
       resource.on('refresh', handler);
       this._offResourceRefresh = () => {
@@ -107,6 +100,7 @@ JSItemModel.registerFlow({
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
+      useRawParams: true,
       uiSchema: {
         code: {
           type: 'string',
@@ -157,9 +151,8 @@ ctx.render(<JsItem />);
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
-          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            compiled,
+            code,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

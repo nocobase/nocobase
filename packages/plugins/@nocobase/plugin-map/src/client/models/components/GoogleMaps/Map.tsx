@@ -108,7 +108,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
   const { modal } = App.useApp();
   useEffect(() => {
     if (map.current) {
-      map.current.setZoom(zoom);
+      map.current?.setZoom(zoom);
     }
   }, [zoom]);
 
@@ -392,8 +392,8 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
           <Button
             type="primary"
             onClick={() => {
-              navigate('/admin/settings/map' + '?tab=google');
               ctx.view.close();
+              navigate('/admin/settings/map' + '?tab=google');
             }}
           >
             {t('Go to the configuration page')}

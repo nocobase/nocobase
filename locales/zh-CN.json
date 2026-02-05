@@ -2205,7 +2205,7 @@
     "Completed": "已完成",
     "Confirm": "确定",
     "Confirm cancel": "确认取消",
-    "Confirm cancel description": "确定要取消这个任务吗？",
+    "Confirm to cancel this task?": "确定要取消这个任务吗？",
     "Created at": "创建时间",
     "Data": "数据",
     "Download": "下载",
@@ -4784,7 +4784,7 @@
     "Save theme": "保存主题",
     "Saved successfully": "保存成功",
     "The theme of the JSON format is incorrect": "主题 JSON 格式错误",
-    "Theme": "Theme",
+    "Theme": "主题",
     "Theme Editor": "主题编辑器",
     "Theme editor": "主题编辑器",
     "Themes": "主题",
@@ -5141,7 +5141,7 @@
     "Will be executed in the background as a queued task.": "将作为队列任务在后台执行。",
     "Workflow": "工作流",
     "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "工作流已执行，结果状态为 <1>{{statusText}}</1><2>查看执行详情</2>",
-    "Workflow is not exists": "工作流不存在",
+    "Workflow of execution is not existed": "执行计划所属的工作流不存在",
     "Workflow tasks": "流程待办",
     "Workflow todos": "流程待办",
     "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "删除成功之前触发工作流（支持操作前事件）。",
@@ -5976,6 +5976,7 @@
       "周六"
     ],
     "weekOption": "周",
-    "yearOption": "年"
+    "yearOption": "年",
+    "Display fields": "显示字段"
   }
 }

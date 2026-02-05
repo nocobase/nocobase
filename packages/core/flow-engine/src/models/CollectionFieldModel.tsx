@@ -73,9 +73,9 @@ function FieldWithoutPermissionPlaceholder() {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
-  const name = model.fieldPath;
+  const collection = model.context.collectionField?.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
+  const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
@@ -190,7 +190,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     }
 
     // Filter the mappings based on the `when` condition
-    const bindings = this.bindings.get(interfaceName);
+    const bindings = this.bindings.get(interfaceName).sort((a, b) => a.order - b.order);
     return bindings.filter(
       (binding) => ctx.engine.getModelClass(binding.modelName) && binding.when(ctx, collectionField),
     );
@@ -261,6 +261,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     interfaceName: string | string[],
     options: {
       isDefault?: boolean;
+      order?: number;
       defaultProps?: object | ((ctx: FlowEngineContext, fieldInstance: CollectionField) => object);
       when?: (ctx: FlowEngineContext, fieldInstance: CollectionField) => boolean;
     } = {},
@@ -281,6 +282,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
       isDefault: options.isDefault || false,
       defaultProps: options.defaultProps || null,
       when: options.when || defaultWhen,
+      order: options.order,
     });
 
     // Update the map

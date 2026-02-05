@@ -8,4 +8,4 @@
  */
 
 export * from '@formily/reactive';
-export { observer } from './observer';
+export { observer, getPageActive } from './observer';

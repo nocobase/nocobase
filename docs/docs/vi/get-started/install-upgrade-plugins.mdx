@@ -1,0 +1,111 @@
+:::tip
+Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::
+
+
+# Cài đặt và Nâng cấp Plugin
+
+## Plugin tích hợp sẵn
+
+Các plugin tích hợp sẵn của NocoBase sẽ tự động cập nhật theo phiên bản nhân (core), quý vị không cần thực hiện thao tác thủ công.
+
+## Plugin thương mại
+
+Vui lòng đăng nhập vào NocoBase Service và tham khảo tài liệu hướng dẫn để biết cách cài đặt và nâng cấp các plugin thương mại.
+
+## Plugin của bên thứ ba
+
+### Cài đặt plugin trực tuyến
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Lưu ý
+
+NocoBase hỗ trợ cài đặt plugin trực tuyến thông qua giao diện, nhưng trải nghiệm hiện tại chưa tối ưu. Các lý do bao gồm:
+
+- Do giới hạn về cơ chế hoạt động của tiến trình Node.js, sau khi cài đặt hoặc cập nhật plugin, quý vị cần dừng tiến trình và sau đó chạy lệnh `upgrade` để các thay đổi có hiệu lực;
+- Trong các kịch bản đa ứng dụng, việc cài đặt trực tuyến khó xử lý đồng bộ plugin trên nhiều ứng dụng con cùng lúc;
+- Không hỗ trợ cập nhật plugin theo lô (batch);
+- Cài đặt hoặc cập nhật plugin trực tuyến dễ gây ra lỗi chấm dứt tiến trình ứng dụng bất thường.
+
+Vì vậy, chúng tôi khuyến nghị sử dụng phương pháp dòng lệnh hoặc tải lên thủ công để cài đặt và nâng cấp plugin. Chúng tôi đề xuất tích hợp phương pháp này với quy trình CI/CD, sử dụng dòng lệnh để tải xuống, giải nén và nâng cấp plugin, đảm bảo tính nhất quán và độ tin cậy cho mỗi lần triển khai cập nhật.
+
+:::
+
+### Cài đặt plugin bằng dòng lệnh
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Nếu plugin đã được cài đặt và cần nâng cấp, quý vị hãy chạy lệnh sau:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Tải lên và giải nén thủ công
+
+Trước tiên, quý vị vui lòng tải gói plugin về máy cục bộ, sau đó tải lên và giải nén thủ công vào thư mục `./storage/plugins`. Nếu plugin này đã được kích hoạt, quý vị hãy thực hiện lệnh sau để hoàn tất việc nâng cấp plugin sau khi tải lên và giải nén.
+
+> ⚠️ **Lưu ý**: Để tránh các vấn đề về bộ nhớ đệm (cache), quý vị vui lòng đảm bảo ứng dụng NocoBase đã dừng hoạt động trước khi thực hiện.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Cách giải nén plugin đúng cách
+
+Ví dụ sau đây minh họa cách giải nén gói plugin vào thư mục được chỉ định một cách chính xác:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Lệnh này sẽ giải nén plugin vào thư mục được chỉ định mà không tạo thêm thư mục con `package` không cần thiết.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Ví dụ về cấu trúc thư mục chính xác
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

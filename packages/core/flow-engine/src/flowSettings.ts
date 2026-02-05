@@ -32,6 +32,7 @@ import {
   shouldHideStepInSettings,
 } from './utils';
 import { FlowStepContext } from './hooks/useFlowStep';
+import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
 
 const Panel = Collapse.Panel;
 
@@ -682,13 +683,9 @@ export class FlowSettings {
       typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
 
     if (modeType === 'embed') {
-      const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
+      const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
       const onOpen = modeProps.onOpen;
       const onClose = modeProps.onClose;
-
-      if (target) {
-        target.innerHTML = ''; // 清空容器内原有内容
-      }
 
       modeProps = {
         target,
@@ -699,15 +696,19 @@ export class FlowSettings {
         },
         ...modeProps,
         onOpen() {
-          target.style.width = modeProps.width || '33.3%';
-          target.style.maxWidth = modeProps.maxWidth || '800px';
-          target.style.minWidth = modeProps.minWidth || '0px';
+          if (target) {
+            target.style.width = modeProps.width || '33.3%';
+            target.style.maxWidth = modeProps.maxWidth || '800px';
+            target.style.minWidth = modeProps.minWidth || '0px';
+          }
           onOpen?.();
         },
         onClose() {
-          target.style.width = 'auto';
-          target.style.maxWidth = 'none';
-          target.style.minWidth = 'auto';
+          if (target && target.dataset[EMBED_REPLACING_DATA_KEY] !== '1') {
+            target.style.width = 'auto';
+            target.style.maxWidth = 'none';
+            target.style.minWidth = 'auto';
+          }
           onClose?.();
         },
       };

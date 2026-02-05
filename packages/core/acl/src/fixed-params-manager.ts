@@ -11,6 +11,7 @@ import { assign } from '@nocobase/utils';
 
 type Context = any;
 export type Merger = () => object;
+export type GeneralMerger = (resource: string, action: string) => object;
 
 export type ActionPath = string;
 
@@ -18,10 +19,15 @@ const SPLIT = ':';
 
 export default class FixedParamsManager {
   merger = new Map<ActionPath, Array<Merger>>();
+  generalMergers: Array<GeneralMerger> = [];
 
   addParams(resource: string, action: string, merger: Merger) {
     const path = this.getActionPath(resource, action);
     this.merger.set(path, [...this.getParamsMerger(resource, action), merger]);
+  }
+
+  addGeneralParams(merger: GeneralMerger) {
+    this.generalMergers.push(merger);
   }
 
   getParamsMerger(resource: string, action: string) {
@@ -35,6 +41,11 @@ export default class FixedParamsManager {
 
   getParams(resource: string, action: string, extraParams: any = {}) {
     const results = {};
+
+    for (const merger of this.generalMergers) {
+      FixedParamsManager.mergeParams(results, merger(resource, action));
+    }
+
     for (const merger of this.getParamsMerger(resource, action)) {
       FixedParamsManager.mergeParams(results, merger());
     }

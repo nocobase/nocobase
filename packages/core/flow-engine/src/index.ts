@@ -13,6 +13,8 @@ export * from './types';
 // 工具函数
 export * from './utils';
 export { compileRunJs } from './utils/jsxTransform';
+export { registerRunJSLib } from './runjsLibs';
+export type { RunJSLibCache, RunJSLibLoader } from './runjsLibs';
 
 // 资源类
 export * from './resources';
@@ -42,6 +44,14 @@ export { setupRunJSContexts } from './runjs-context/setup';
 export { getSnippetBody, listSnippetsForContext } from './runjs-context/snippets';
 
 export * from './views';
+export {
+  DATA_SOURCE_DIRTY_EVENT,
+  ENGINE_SCOPE_KEY,
+  getEmitterViewActivatedVersion,
+  VIEW_ACTIVATED_EVENT,
+  VIEW_ACTIVATED_VERSION,
+  VIEW_ENGINE_SCOPE,
+} from './views/viewEvents';
 
 export * from './FlowDefinition';
 export { createViewScopedEngine } from './ViewScopedFlowEngine';

@@ -98,7 +98,7 @@ class AIChatConversationImpl implements AIChatConversation {
     }
     const messages = await this.aiConversationMessagesRepo.find({
       sort: ['-messageId'], // 改为倒序，取最新的
-      limit: 50, // 新增：最多 50 条消息
+      limit: 50, // 限制最多 50 条消息
       filter,
     });
     return messages.reverse(); // 反转回正序
@@ -135,7 +135,7 @@ class AIChatConversationImpl implements AIChatConversation {
     const formattedMessages = [];
     const { provider, workContextHandler } = options;
 
-    // 新增：截断过长的内容
+    // 截断过长的内容
     const truncate = (text: string, maxLen = 50000) => {
       if (!text || text.length <= maxLen) return text;
       return text.slice(0, maxLen) + '\n...[truncated]';
@@ -146,7 +146,7 @@ class AIChatConversationImpl implements AIChatConversation {
       const workContext = msg.workContext;
       let content = msg.content?.content;
 
-      // 新增：截断消息内容
+      // 截断消息内容
       if (typeof content === 'string') {
         content = truncate(content);
       }
@@ -191,6 +191,7 @@ class AIChatConversationImpl implements AIChatConversation {
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
+        additional_kwargs: msg.metadata?.additional_kwargs,
       });
     }
 

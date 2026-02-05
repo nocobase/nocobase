@@ -104,6 +104,7 @@ export class UpdateRecordActionModel extends ActionModel<{
   defaultProps: ButtonProps = {
     title: tExpr('Update record'),
     type: 'link',
+    icon: 'EditOutlined',
   };
 
   getAclActionName() {
@@ -123,6 +124,7 @@ export class UpdateRecordActionModel extends ActionModel<{
 
 UpdateRecordActionModel.define({
   label: tExpr('Update record'),
+  sort: 50,
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
@@ -214,8 +216,6 @@ UpdateRecordActionModel.registerFlow({
         } else if (ctx.resource instanceof MultiRecordResource) {
           await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
         }
-        // 刷新与提示
-        ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));
       },
     },

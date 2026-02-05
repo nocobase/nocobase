@@ -29,6 +29,7 @@ import {
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 import React from 'react';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 const COLLECTION_TRIGGER_ACTION = {
   CREATE: 'create',
@@ -335,6 +336,40 @@ export default class extends Trigger {
       Component: CollectionBlockInitializer,
       collection: config.collection,
       dataPath: '$context.data',
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ config }): SubModelItem {
+    return {
+      key: 'triggerData',
+      label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: config.collection,
+              dataPath: '$context.data',
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'DetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
     };
   }
 }

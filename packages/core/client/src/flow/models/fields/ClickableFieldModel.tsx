@@ -11,9 +11,10 @@ import { CollectionField, tExpr } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray, get } from 'lodash';
 import React from 'react';
+import { EllipsisWithTooltip } from '../../components';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
-import { EllipsisWithTooltip } from '../../components';
+import { EditFormModel } from '../blocks/form/EditFormModel';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
@@ -59,13 +60,19 @@ export class ClickableFieldModel extends FieldModel {
         filterByTk = currentRecord[targetCollection.filterTargetKey];
       }
       const parentObj = associationPathName ? get(this.context.record, associationPathName) : this.context.record;
-      this.dispatchEvent('click', {
-        event,
-        filterByTk,
-        collectionName: this.collectionField.collection.name,
-        associationName: `${sourceCollection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
-        sourceId: parentObj[sourceKey],
-      });
+      this.dispatchEvent(
+        'click',
+        {
+          event,
+          filterByTk,
+          collectionName: this.collectionField.collection.name,
+          associationName: `${sourceCollection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
+          sourceId: parentObj[sourceKey],
+        },
+        {
+          debounce: true,
+        },
+      );
       return;
     }
 
@@ -92,23 +99,35 @@ export class ClickableFieldModel extends FieldModel {
           filterByTk = associationRecord?.[targetCollection.filterTargetKey];
         }
 
-        this.dispatchEvent('click', {
-          event,
-          filterByTk,
-          collectionName: this.collectionField.collection.name,
-          associationName: `${associationField.collection.name}.${this.collectionField.name}`,
-          // list api， 如果append了关系字段的某个属性，它并不会将关系字段对应的 filterByTk (sourceKey) 属性值返回， 但是会返回foriegnKey对应的值
-          sourceId: parentObj[sourceKey] || this.context.record[foreignKey],
-        });
+        this.dispatchEvent(
+          'click',
+          {
+            event,
+            filterByTk,
+            collectionName: this.collectionField.collection.name,
+            associationName: `${associationField.collection.name}.${this.collectionField.name}`,
+            // list api， 如果append了关系字段的某个属性，它并不会将关系字段对应的 filterByTk (sourceKey) 属性值返回， 但是会返回foriegnKey对应的值
+            sourceId: parentObj[sourceKey] || this.context.record[foreignKey],
+          },
+          {
+            debounce: true,
+          },
+        );
         return;
       }
     }
 
-    this.dispatchEvent('click', {
-      event,
-      sourceId: this.context.resource?.getSourceId(),
-      filterByTk: this.context.collection.getFilterByTK(this.context.record),
-    });
+    this.dispatchEvent(
+      'click',
+      {
+        event,
+        sourceId: this.context.resource?.getSourceId(),
+        filterByTk: this.context.collection.getFilterByTK(this.context.currentObject || this.context.record),
+      },
+      {
+        debounce: true,
+      },
+    );
   }
 
   renderComponent(value, wrap?) {
@@ -116,7 +135,7 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
-    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
+    const { clickToOpen = false, displayStyle, titleField, overflowMode, disabled, ...restProps } = this.props;
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }
@@ -243,9 +262,17 @@ ClickableFieldModel.registerFlow({
       title: tExpr('Enable click-to-open'),
       uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
+        if (ctx.disableFieldClickToOpen) {
+          return {
+            clickToOpen: false,
+          };
+        }
         return {
           clickToOpen: ctx.collectionField.isAssociationField(),
         };
+      },
+      hideInSettings(ctx) {
+        return ctx.disableFieldClickToOpen;
       },
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });

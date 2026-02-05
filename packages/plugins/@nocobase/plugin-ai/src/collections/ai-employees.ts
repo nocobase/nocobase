@@ -41,6 +41,10 @@ export default {
       interface: 'textarea',
     },
     {
+      name: 'defaultPrompt',
+      type: 'virtual',
+    },
+    {
       name: 'greeting',
       type: 'text',
       interface: 'textarea',
@@ -106,6 +110,7 @@ export type AIEmployee = {
   avatar?: string;
   bio?: string;
   about?: string;
+  defaultPrompt?: string;
   greeting?: string;
   chatSettings?: unknown;
   skillSettings?: unknown;
