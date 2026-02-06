@@ -342,5 +342,44 @@ describe('PageModel', () => {
 
       expect(document.title).toBe('Resolved popup doc title');
     });
+
+    it('should update title immediately with target tab key on tab switch', async () => {
+      pageModel.props = { enableTabs: true, tabActiveKey: 'tab-old' } as any;
+      const tabOld = {
+        uid: 'tab-old',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: '',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Old tab'),
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      const tabNew = {
+        uid: 'tab-new',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: '',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'New tab'),
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      (pageModel as any).subModels = { tabs: [tabOld, tabNew] };
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn((uid: string) => (uid === 'tab-new' ? tabNew : tabOld)),
+      };
+
+      pageModel.invokeTabModelLifecycleMethod('tab-new', 'onActive');
+      await Promise.resolve();
+
+      expect(document.title).toBe('New tab');
+    });
   });
 });

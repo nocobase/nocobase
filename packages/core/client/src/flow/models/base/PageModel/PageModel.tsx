@@ -146,7 +146,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     }
 
     if (method === 'onActive') {
-      void this.updateDocumentTitle();
+      void this.updateDocumentTitle(tabActiveKey);
     }
   }
 
@@ -156,7 +156,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 1) page without tabs: page.documentTitle > page title
    * 2) page with tabs: activeTab.documentTitle > active tab name
    */
-  async updateDocumentTitle() {
+  async updateDocumentTitle(preferredActiveTabKey?: string) {
     if (getPageActive(this.context) === false) {
       return;
     }
@@ -177,7 +177,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
     let nextTitle = '';
     if (this.props.enableTabs) {
-      const activeTabKey = this.getActiveTabKey();
+      const activeTabKey = preferredActiveTabKey || this.getActiveTabKey();
       const activeTabModel = activeTabKey
         ? (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
         : this.getFirstTab();
