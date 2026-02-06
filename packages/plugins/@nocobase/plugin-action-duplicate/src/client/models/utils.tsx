@@ -221,11 +221,6 @@ export const getCollectionState = (dm, t, dataSourceKey, displayType = true) => 
 export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) => {
   const traverseFields = ((cache) => {
     return (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '', disabled = false }, formData) => {
-      const cacheKey = `${collectionName}-${exclude.join(',')}-${depth}-${maxDepth}-${prefix}`;
-      const cachedResult = cache.get(cacheKey);
-      if (cachedResult) {
-        return cachedResult;
-      }
       if (depth > maxDepth) {
         return [];
       }
@@ -257,11 +252,10 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
             field,
             disabled,
           };
-          const tatgetFormField = formData.find((v) => v.name === option.key);
+          const targetFormField = formData.find((v) => v.name === option.key);
           if (
             ['belongsTo', 'belongsToMany'].includes(field.type) &&
-            (!tatgetFormField ||
-              ['RecordSelectFieldModel', 'RecordPickerFieldModel'].includes(tatgetFormField?.fieldMode))
+            (!targetFormField || !targetFormField?.updateAssociation)
           ) {
             node['type'] = 'reference';
             option['type'] = 'reference';
@@ -273,17 +267,9 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
               prefix: option.key,
               exclude: systemKeys,
             });
-          } else if (
-            ['hasOne', 'hasMany'].includes(field.type) ||
-            ['SubFormListFieldModel', 'SubTableFieldModel', 'PopupSubTableFieldModel'].includes(
-              tatgetFormField?.fieldMode,
-            )
-          ) {
+          } else if (['hasOne', 'hasMany'].includes(field.type) || targetFormField?.updateAssociation) {
             let childrenDisabled = false;
-            if (
-              ['hasOne', 'hasMany'].includes(field.type) &&
-              ['RecordSelectFieldModel', 'RecordPickerFieldModel'].includes(tatgetFormField?.fieldMode)
-            ) {
+            if (['hasOne', 'hasMany'].includes(field.type) && !targetFormField?.updateAssociation) {
               childrenDisabled = true;
             }
             option.disabled = true;
@@ -304,7 +290,6 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
         })
         .filter(Boolean);
 
-      cache.set(cacheKey, result);
       return result;
     };
   })(new LRUCache<string, any>({ max: 100 }));
@@ -387,7 +372,10 @@ export const getSyncFromForm = (dm, t, dataSourceKey, collectionName, callBack) 
           }
 
           if (item.collectionField && item.collectionField.isAssociationField()) {
-            formData.add({ name: item.fieldPath, fieldMode: item.subModels.field?.use });
+            formData.add({
+              name: item.fieldPath,
+              updateAssociation: item.subModels.field?.updateAssociation,
+            });
             if (item.subModels.field?.updateAssociation) {
               if (item.subModels.field.subModels.grid) {
                 //子表单
