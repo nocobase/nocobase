@@ -52,8 +52,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     }
 
     this.toolsDescriptors = await Promise.all(
-      grouped
-        .entries()
+      Array.from(grouped.entries())
         .map(async ([name, fds]) => {
           const tsFile = fds.find((fd) => fd.extname === '.ts');
           const descFile = fds.find((fd) => fd.basename === 'description.md');
