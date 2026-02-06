@@ -43,6 +43,7 @@ export function convertFieldsToOptions(fields: any[]) {
   return fields.map((field) => ({
     label: field?.uiSchema?.title || field?.name,
     value: field?.name,
+    disabled: field?.options?.scopeKey,
   }));
 }
 

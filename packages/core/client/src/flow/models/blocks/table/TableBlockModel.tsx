@@ -68,7 +68,7 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   padding-right: 8px;
   .nb-table-index {
     opacity: 0;
@@ -94,7 +94,8 @@ const rowSelectCheckboxContentClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const rowSelectCheckboxCheckedClassHover = css`
