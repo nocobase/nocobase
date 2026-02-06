@@ -135,6 +135,9 @@ export const llmsSchema = {
       'x-decorator-props': {
         collection: 'llmServices',
         action: 'list',
+        rowKey: 'name',
+        dragSort: true,
+        dragSortBy: 'sort',
       },
       properties: {
         actions: {
@@ -146,15 +149,6 @@ export const llmsSchema = {
             },
           },
           properties: {
-            filter: {
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'useFilterActionProps',
-              title: "{{t('Filter')}}",
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
-              'x-align': 'left',
-            },
             refresh: {
               title: "{{t('Refresh')}}",
               'x-component': 'Action',

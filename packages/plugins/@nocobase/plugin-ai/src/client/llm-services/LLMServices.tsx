@@ -73,12 +73,10 @@ const useEditFormProps = () => {
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
-  const form = useForm();
   return {
     type: 'default',
     onClick() {
       setVisible(false);
-      form.reset();
     },
   };
 };
@@ -102,7 +100,6 @@ const useCreateActionProps = () => {
       refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
-      form.reset();
     },
   };
 };
@@ -201,17 +198,24 @@ const ProviderSelect: React.FC = () => {
 const AddNew = () => {
   const t = useT();
   const [visible, setVisible] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const providers = useLLMProviders();
   const { autoOpen, setAutoOpen } = useContext(AutoOpenContext);
 
   useEffect(() => {
     if (autoOpen) {
+      setFormKey((k) => k + 1);
       setVisible(true);
       setAutoOpen(false);
       // Clear navigation state
       window.history.replaceState({}, document.title);
     }
   }, [autoOpen, setAutoOpen]);
+
+  const handleClick = () => {
+    setFormKey((k) => k + 1);
+    setVisible(true);
+  };
 
   const $getProviderLabel = (providerValue: string) => {
     const provider = providers.find((p) => p.value === providerValue);
@@ -220,10 +224,11 @@ const AddNew = () => {
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <Button icon={<PlusOutlined />} type="primary" onClick={() => setVisible(true)}>
+      <Button icon={<PlusOutlined />} type="primary" onClick={handleClick}>
         {t('Add new')}
       </Button>
       <SchemaComponent
+        key={formKey}
         components={{ LLMTestFlight, EnabledModelsSelect, ProviderSelect, ModelOptionsSettings }}
         scope={{ useCreateFormProps, providers, $getProviderLabel }}
         schema={createLLMSchema}

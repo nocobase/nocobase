@@ -14,4 +14,5 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   ...llmServices,
+  sortable: true,
 });
