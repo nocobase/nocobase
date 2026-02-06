@@ -112,10 +112,13 @@ const Columns = observer<any>(({ record, model, index }) => {
   );
 });
 
-const AddActionToolbarComponent = ({ model }) => {
+const AddActionToolbarComponent = observer(({ model }: any) => {
+  const blockModel = model?.context?.blockModel as any;
+  const propsTreeTable = blockModel?.props?.treeTable;
+
   return (
     <AddSubModelButton
-      key="table-row-actions-add"
+      key={`table-row-actions-add-${propsTreeTable ? 'tree' : 'flat'}`}
       model={model}
       subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
@@ -126,7 +129,7 @@ const AddActionToolbarComponent = ({ model }) => {
       <PlusOutlined />
     </AddSubModelButton>
   );
-};
+});
 
 export class TableActionsColumnModel extends TableCustomColumnModel {
   async afterAddAsSubModel() {

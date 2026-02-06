@@ -464,6 +464,8 @@ describe('FilterManager', () => {
           removeFilterGroup: vi.fn(),
           refresh: vi.fn().mockResolvedValue(undefined),
         },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
       };
 
       const mockTargetModel2 = {
@@ -472,6 +474,8 @@ describe('FilterManager', () => {
           removeFilterGroup: vi.fn(),
           refresh: vi.fn().mockResolvedValue(undefined),
         },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
       };
 
       const mockFilterModel = {
@@ -525,6 +529,8 @@ describe('FilterManager', () => {
           removeFilterGroup: vi.fn(),
           refresh: vi.fn().mockResolvedValue(undefined),
         },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
       };
 
       const mockTargetModel2 = {
@@ -533,6 +539,8 @@ describe('FilterManager', () => {
           removeFilterGroup: vi.fn(),
           refresh: vi.fn().mockResolvedValue(undefined),
         },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
       };
 
       const mockFilterModel = {
@@ -584,6 +592,8 @@ describe('FilterManager', () => {
           removeFilterGroup: vi.fn(),
           refresh: vi.fn().mockResolvedValue(undefined),
         },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
       };
 
       const mockTargetModel2 = {
@@ -592,6 +602,8 @@ describe('FilterManager', () => {
           removeFilterGroup: vi.fn(),
           refresh: vi.fn().mockResolvedValue(undefined),
         },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
       };
 
       const mockFilterModel = {

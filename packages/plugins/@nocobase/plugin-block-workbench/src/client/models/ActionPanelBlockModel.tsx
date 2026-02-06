@@ -233,10 +233,12 @@ export class ActionPanelBlockModel extends BlockModel {
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap',
+                                  minHeight: '21px',
                                 }
                               : {
                                   whiteSpace: 'normal',
                                   wordBreak: 'break-word',
+                                  minHeight: '21px',
                                 }
                           }
                         >

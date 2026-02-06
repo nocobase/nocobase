@@ -11,7 +11,7 @@ import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine
 import { EditFormModel } from './EditFormModel';
 import type { FormBlockModel } from './FormBlockModel';
 
-export async function submitHandler(ctx, params) {
+export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?: any) => void) {
   const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
 
@@ -26,12 +26,15 @@ export async function submitHandler(ctx, params) {
         resource.setFilterByTk(currentFilterByTk);
       }
     }
-    const data: any = await resource.save(values, params.requestConfig);
+    const data: any = cb ? await cb(values) : await resource.save(values, params.requestConfig);
     if (blockModel instanceof EditFormModel) {
       resource.isNewRecord = false;
+      // 编辑表单保存成功后，表单应回到“已同步”状态：下一次刷新应允许覆盖为服务端值
+      blockModel.resetUserModifiedFields?.();
       await resource.refresh();
     } else {
       blockModel.form.resetFields();
+      blockModel.resetUserModifiedFields?.();
       blockModel.emitter.emit('onFieldReset');
       if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
         ctx.view.inputArgs.onChange(data?.data);
@@ -43,8 +46,8 @@ export async function submitHandler(ctx, params) {
       ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
       return;
     }
-    await resource.update(currentFilterByTk, values, params.requestConfig);
+    (await cb)
+      ? await cb(values, currentFilterByTk)
+      : await resource.update(currentFilterByTk, values, params.requestConfig);
   }
-
-  ctx.message.success(ctx.t('Saved successfully'));
 }

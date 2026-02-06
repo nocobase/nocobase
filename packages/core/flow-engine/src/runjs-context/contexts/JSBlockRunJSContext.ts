@@ -34,7 +34,9 @@ JSBlockRunJSContext.define({
       Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
       Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = "Ready!" })`,
     requireAsync: 'Load external library: `const lib = await ctx.requireAsync(url)`',
-    importAsync: 'Dynamically import ESM module: `const mod = await ctx.importAsync(url)`',
+    importAsync:
+      'Dynamically import an ESM module by URL: `const mod = await ctx.importAsync(url)`.\n' +
+      'Note: if the module has only a default export, ctx.importAsync returns that default value directly (no `.default`).',
   },
 });
 
@@ -57,7 +59,9 @@ JSBlockRunJSContext.define(
     methods: {
       onRefReady: '容器 ref 就绪回调：\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
       requireAsync: '加载外部库：`const lib = await ctx.requireAsync(url)`',
-      importAsync: '按 URL 动态导入 ESM 模块：`const mod = await ctx.importAsync(url)`',
+      importAsync:
+        '按 URL 动态导入 ESM 模块：`const mod = await ctx.importAsync(url)`。\n' +
+        '注意：当模块只有 default 一个导出时，ctx.importAsync 会直接返回 default 值（无需再写 `.default`）。',
     },
   },
   { locale: 'zh-CN' },
