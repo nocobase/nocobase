@@ -24,6 +24,7 @@ export const ChatBoxLayout: React.FC<{
 }> = (props) => {
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
+  const collapsed = useChatBoxStore.use.collapsed();
   const activeTool = useChatToolsStore.use.activeTool();
   // [AI_DEBUG]
   const showDebugPanel = useChatBoxStore.use.showDebugPanel();
@@ -35,7 +36,7 @@ export const ChatBoxLayout: React.FC<{
     <>
       {props.children}
       <ChatButton />
-      {open && !expanded && !isMobileLayout ? (
+      {open && !expanded && !collapsed && !isMobileLayout ? (
         <Helmet>
           <style type="text/css">
             {`
