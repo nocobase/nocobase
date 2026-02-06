@@ -12,6 +12,7 @@ import PluginAIServer from '../plugin';
 import { Model, Op } from '@nocobase/database';
 import { parseResponseMessage, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
+import { AIMessageInput } from '../types';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -449,6 +450,7 @@ export default {
           return next();
         }
 
+        let resendMessage: AIMessageInput;
         if (messageId) {
           const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
             filter: {
@@ -468,6 +470,16 @@ export default {
             sort: ['-messageId'],
           });
           messageId = message.messageId;
+          if (['user', 'tool'].includes(message.role)) {
+            resendMessage = {
+              role: message.role,
+              content: message.content,
+              toolCalls: message.toolCalls,
+              attachments: message.attachments,
+              workContext: message.workContext,
+              metadata: message.metadata,
+            };
+          }
         }
 
         const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
@@ -485,7 +497,7 @@ export default {
           webSearch,
           conversation.options?.modelOverride,
         );
-        await aiEmployee.stream({ messageId });
+        await aiEmployee.stream({ messageId, userMessages: resendMessage ? [resendMessage] : undefined });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Chat error warning');
