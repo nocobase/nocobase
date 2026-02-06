@@ -10,12 +10,13 @@
 import { CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete';
 import { FlowRunJSContext } from '@nocobase/flow-engine';
 import { isHtmlTemplateContext } from './htmlCompletion';
+import { formatDocInfo } from './formatDocInfo';
 
 function buildBaseCompletions(): Completion[] {
   try {
     const doc = typeof (FlowRunJSContext as any)?.getDoc === 'function' ? (FlowRunJSContext as any).getDoc() : {};
     const options: Completion[] = [];
-    const toInfo = (value: any) => (typeof value === 'string' ? value : JSON.stringify(value));
+    const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
     if (doc?.label || doc?.properties || doc?.methods) {
       options.push({
         label: 'ctx',
@@ -31,21 +32,21 @@ function buildBaseCompletions(): Completion[] {
         const path = [...parentPath, key];
         const ctxLabel = `ctx.${path.join('.')}`;
         const depth = path.length;
-        let description: any = value;
+        const root = path[0];
         let detail: string | undefined;
         let completionSpec: any;
         let children: Record<string, any> | undefined;
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-          description = value.description ?? value.detail ?? value.type ?? value;
           detail = value.detail ?? value.type ?? 'ctx property';
           completionSpec = value.completion;
           children = value.properties as Record<string, any> | undefined;
         }
-        const apply = completionSpec?.insertText
+        const insertText = completionSpec?.insertText;
+        const apply = insertText
           ? (view: any, _completion: any, from: number, to: number) => {
               view.dispatch({
-                changes: { from, to, insert: completionSpec.insertText },
-                selection: { anchor: from + completionSpec.insertText.length },
+                changes: { from, to, insert: insertText },
+                selection: { anchor: from + insertText.length },
                 scrollIntoView: true,
               });
             }
@@ -54,8 +55,8 @@ function buildBaseCompletions(): Completion[] {
           label: ctxLabel,
           type: 'property',
           detail: detail || 'ctx property',
-          info: toInfo(description),
-          boost: Math.max(90 - depth * 5, 10),
+          info: formatDocInfo(value, { mode: 'simple' }),
+          boost: Math.max(90 - depth * 5, 10) + (priorityRoots.has(root) ? 10 : 0),
           apply,
         } as Completion);
         if (children) collectProperties(children, path);
@@ -66,20 +67,18 @@ function buildBaseCompletions(): Completion[] {
     const methods = doc?.methods || {};
     for (const key of Object.keys(methods)) {
       const methodDoc = methods[key];
-      let description: any = methodDoc;
       let detail = 'ctx method';
       let completionSpec: any;
       if (methodDoc && typeof methodDoc === 'object' && !Array.isArray(methodDoc)) {
-        description = methodDoc.description ?? methodDoc.detail ?? methodDoc;
         detail = methodDoc.detail ?? detail;
         completionSpec = methodDoc.completion;
       }
       const insertText = completionSpec?.insertText ?? `ctx.${key}()`;
       options.push({
-        label: `ctx.${key}()` as any,
+        label: `ctx.${key}()`,
         type: 'function',
         detail,
-        info: toInfo(description),
+        info: formatDocInfo(methodDoc, { mode: 'simple' }),
         boost: 95,
         apply: (view: any, _completion: any, from: number, to: number) => {
           view.dispatch({

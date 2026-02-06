@@ -18,6 +18,15 @@ export default {
         result: config.path == null ? result : lodash.get(result, config.path),
       };
     },
+    duplicateConfig(node, { origin }) {
+      if (origin?.config?.duplicateFlag) {
+        return {
+          ...origin.config,
+          duplicated: true,
+        };
+      }
+      return origin?.config ?? node.config;
+    },
     test(config = {}) {
       return {
         status: 1,
