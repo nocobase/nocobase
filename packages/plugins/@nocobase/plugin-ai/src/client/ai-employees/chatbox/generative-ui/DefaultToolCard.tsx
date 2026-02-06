@@ -11,12 +11,12 @@ import React, { useState } from 'react';
 import { Button, Tooltip, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
-  CheckCircleTwoTone,
-  ClockCircleTwoTone,
-  CloseCircleTwoTone,
-  PlayCircleTwoTone,
+  CheckCircleFilled,
+  ClockCircleFilled,
+  CloseCircleFilled,
+  MinusCircleFilled,
   QuestionCircleOutlined,
-  PlaySquareOutlined,
+  CheckOutlined,
   ToolOutlined,
   DownOutlined,
   UpOutlined,
@@ -34,31 +34,41 @@ const CallButton: React.FC<{
   toolCalls: ToolCall[];
 }> = ({ messageId, tools, toolCalls }) => {
   const t = useT();
+  const { token } = useToken();
   const { getDecisionActions } = useToolCallActions({ messageId, tools });
   const [loading, setLoading] = useState(false);
   return (
-    <Button
-      loading={loading}
-      onClick={async (e) => {
-        e.stopPropagation();
-        setLoading(true);
-        for (const toolCall of toolCalls) {
-          const decision = getDecisionActions(toolCall);
-          await decision.approve();
-        }
-      }}
-      variant="link"
-      color="primary"
-      size="small"
-      icon={<PlaySquareOutlined />}
-    >
-      {t('Call')}
-    </Button>
+    <Flex align="center" gap={8}>
+      <Button
+        loading={loading}
+        onClick={async (e) => {
+          e.stopPropagation();
+          setLoading(true);
+          for (const toolCall of toolCalls) {
+            const decision = getDecisionActions(toolCall);
+            await decision.approve();
+          }
+          setLoading(false);
+        }}
+        variant="text"
+        color="primary"
+        size="small"
+        icon={<CheckOutlined />}
+        style={{
+          height: token.controlHeightSM,
+          paddingInline: token.paddingSM,
+          fontSize: token.fontSizeSM + 1,
+        }}
+      >
+        {t('Allow use')}
+      </Button>
+    </Flex>
   );
 };
 
 const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) => {
   const t = useT();
+  const { token } = useToken();
   const { invokeStatus } = toolCall;
 
   switch (invokeStatus) {
@@ -67,24 +77,24 @@ const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) =
     case 'waiting':
       return (
         <Tooltip title={t('invoke-status-init')}>
-          <PlayCircleTwoTone />
+          <MinusCircleFilled style={{ color: token.colorTextQuaternary }} />
         </Tooltip>
       );
     case 'pending':
       return (
         <Tooltip title={t('invoke-status-pending')}>
-          <ClockCircleTwoTone />
+          <ClockCircleFilled style={{ color: token.colorTextSecondary }} />
         </Tooltip>
       );
     case 'done':
     case 'confirmed':
       return toolCall.status === 'error' ? (
         <Tooltip title={t('invoke-status-error')}>
-          <CloseCircleTwoTone twoToneColor="#eb2f96" />
+          <CloseCircleFilled style={{ color: token.colorError }} />
         </Tooltip>
       ) : (
         <Tooltip title={t('invoke-status-success')}>
-          <CheckCircleTwoTone twoToneColor="#52c41a" />
+          <CheckCircleFilled style={{ color: token.colorSuccess }} />
         </Tooltip>
       );
   }
@@ -130,8 +140,8 @@ const ToolCallRow: React.FC<{
       >
         <Flex align="center" gap={8}>
           <ToolOutlined style={{ color: token.colorTextSecondary }} />
-          <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{t('Use skills')}</span>
-          <span style={{ fontSize: token.fontSizeSM, color: token.colorText }}>
+          <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorTextSecondary }}>{t('Use skills')}</span>
+          <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorText }}>
             {title}
             {toolsEntry?.introduction?.about && (
               <>
