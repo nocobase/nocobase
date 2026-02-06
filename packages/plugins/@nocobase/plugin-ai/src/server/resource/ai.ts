@@ -24,6 +24,7 @@ const aiResource: ResourceOptions = {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const { model } = ctx.action.params;
       const filter = ctx.action.params.filter ?? {};
+      filter.enabled = { $ne: false };
       if (model) {
         const supportedProvider = plugin.aiManager.getSupportedProvider(model);
         if (!supportedProvider || _.isEmpty(supportedProvider)) {
@@ -133,6 +134,7 @@ const aiResource: ResourceOptions = {
     listAllEnabledModels: async (ctx, next) => {
       const services = await ctx.db.getRepository('llmServices').find({ sort: 'sort' });
       const llmServices = services
+        .filter((service) => service.enabled !== false)
         .map((service) => {
           const raw = service.enabledModels;
           let enabledModels: { label: string; value: string }[];

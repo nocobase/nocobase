@@ -29,7 +29,7 @@ const AutoOpenContext = createContext<{ autoOpen: boolean; setAutoOpen: (v: bool
   autoOpen: false,
   setAutoOpen: () => {},
 });
-import { Button, App, Tag, theme, Select, Space } from 'antd';
+import { Button, App, Tag, theme, Select, Space, Switch } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
@@ -195,6 +195,34 @@ const ProviderSelect: React.FC = () => {
   );
 };
 
+const EnabledSwitch: React.FC = observer(
+  () => {
+    const field = useField<Field>();
+    const record = useCollectionRecordData();
+    const resource = useDataBlockResource();
+    const { refresh } = useDataBlockRequest();
+    const collection = useCollection();
+    const filterTk = collection.getFilterTargetKey();
+    const checked = field.value !== false;
+
+    return (
+      <Switch
+        size="small"
+        checked={checked}
+        onChange={async (val) => {
+          field.value = val;
+          await resource.update({
+            values: { enabled: val },
+            filterByTk: record[filterTk],
+          });
+          refresh();
+        }}
+      />
+    );
+  },
+  { displayName: 'EnabledSwitch' },
+);
+
 const AddNew = () => {
   const t = useT();
   const [visible, setVisible] = useState(false);
@@ -296,7 +324,15 @@ export const LLMServices: React.FC = () => {
         <ExtendCollectionsProvider collections={[llmServices]}>
           <SchemaComponent
             schema={llmsSchema}
-            components={{ AddNew, Settings, LLMTestFlight, EnabledModelsSelect, ProviderDisplay, ModelOptionsSettings }}
+            components={{
+              AddNew,
+              Settings,
+              LLMTestFlight,
+              EnabledModelsSelect,
+              ProviderDisplay,
+              ModelOptionsSettings,
+              EnabledSwitch,
+            }}
             scope={{ t, providers, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
           />
         </ExtendCollectionsProvider>

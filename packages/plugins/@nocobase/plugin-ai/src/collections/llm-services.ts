@@ -43,6 +43,11 @@ export default {
       defaultValue: { mode: 'recommended', models: [] },
     },
     {
+      name: 'enabled',
+      type: 'boolean',
+      defaultValue: true,
+    },
+    {
       name: 'modelOptions',
       type: 'jsonb',
       defaultValue: {

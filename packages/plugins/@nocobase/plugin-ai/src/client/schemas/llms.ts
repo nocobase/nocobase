@@ -228,6 +228,17 @@ export const llmsSchema = {
             },
             column4: {
               type: 'void',
+              title: '{{ t("Enabled") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                enabled: {
+                  type: 'boolean',
+                  'x-component': 'EnabledSwitch',
+                },
+              },
+            },
+            column5: {
+              type: 'void',
               title: '{{ t("Actions") }}',
               'x-decorator': 'TableV2.Column.ActionBar',
               'x-component': 'TableV2.Column',
