@@ -357,6 +357,9 @@ PageModel.registerFlow({
         documentTitle: {
           type: 'string',
           title: tExpr('Document title'),
+          description: tExpr(
+            'Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.',
+          ),
           'x-decorator': 'FormItem',
           'x-component': TextAreaWithContextSelector,
           'x-component-props': {

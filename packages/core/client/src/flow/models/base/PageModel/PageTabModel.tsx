@@ -91,20 +91,23 @@ BasePageTabModel.registerFlow({
           'x-decorator': 'FormItem',
           required: true,
         },
-        icon: {
-          title: tExpr('Icon'),
-          'x-decorator': 'FormItem',
-          'x-component': 'IconPicker',
-        },
         documentTitle: {
           type: 'string',
           title: tExpr('Document title'),
+          description: tExpr(
+            'Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.',
+          ),
           'x-decorator': 'FormItem',
           'x-component': TextAreaWithContextSelector,
           'x-component-props': {
             rows: 1,
             maxRows: 6,
           },
+        },
+        icon: {
+          title: tExpr('Icon'),
+          'x-decorator': 'FormItem',
+          'x-component': 'IconPicker',
         },
       },
       async handler(ctx, params) {

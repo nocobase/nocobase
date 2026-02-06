@@ -75,6 +75,15 @@ describe('PageTabModel', () => {
       title: 'Document title',
       'x-decorator': 'FormItem',
     });
+    expect(flow.steps.tab.uiSchema.documentTitle.description).toContain('browser tab title');
+  });
+
+  it('should place documentTitle right below tab name in Edit tab settings', async () => {
+    await import('../PageTabModel');
+    const flow = registerFlowMock.mock.calls.find((call) => call[0]?.key === 'pageTabSettings')?.[0];
+    const keys = Object.keys(flow.steps.tab.uiSchema);
+
+    expect(keys.indexOf('documentTitle')).toBe(keys.indexOf('title') + 1);
   });
 
   it('should trigger parent page title update in tab settings handler', async () => {
