@@ -33,8 +33,8 @@ export default defineTools({
     const { result } = toolCallResults?.find((item: { id: string }) => item.id === id) ?? {};
     if (toolCallResults && result) {
       return {
-        status: result.success ? 'success' : 'error',
-        content: JSON.stringify(result),
+        status: result.status ?? 'error',
+        content: JSON.stringify(result.content ?? {}),
       };
     } else {
       return {

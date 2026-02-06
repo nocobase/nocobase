@@ -61,17 +61,26 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
     async invoke(_app, { code }) {
       if (!this.flowContext?.previewRunJS) {
         return {
-          success: false,
-          message: 'Preview context not available. Cannot run code validation.',
+          status: 'error',
+          content: {
+            success: false,
+            message: 'Preview context not available. Cannot run code validation.',
+          },
         };
       }
       try {
-        const result = await this.flowContext.previewRunJS(code);
-        return result;
+        const content = await this.flowContext.previewRunJS(code);
+        return {
+          status: 'success',
+          content,
+        };
       } catch (error: any) {
         return {
-          success: false,
-          message: `Preview execution error: ${error?.message || error}`,
+          status: 'error',
+          content: {
+            success: false,
+            message: `Preview execution error: ${error?.message || error}`,
+          },
         };
       }
     },
