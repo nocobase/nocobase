@@ -29,7 +29,6 @@ import {
 } from './hooks';
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
 import { CheckOutlined } from '@ant-design/icons';
-import { LLMConfigurationGuide } from '../../llm-services/component/LLMConfigurationGuide';
 import { EnableSwitch } from './EnableSwitch';
 
 const AIEmployeeForm: React.FC<{
@@ -108,7 +107,6 @@ export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
-      <LLMConfigurationGuide />
       <SchemaComponent
         components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch }}
         scope={{

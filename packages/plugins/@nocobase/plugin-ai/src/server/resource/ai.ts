@@ -129,11 +129,7 @@ const aiResource: ResourceOptions = {
       ctx.body = await providerClient.testFlight();
       return next();
     },
-    checkLLMConfigured: async (ctx, next) => {
-      const count = await ctx.db.getRepository('llmServices').count();
-      ctx.body = { configured: count > 0 };
-      await next();
-    },
+
     listAllEnabledModels: async (ctx, next) => {
       const services = await ctx.db.getRepository('llmServices').find();
       const llmServices = services
