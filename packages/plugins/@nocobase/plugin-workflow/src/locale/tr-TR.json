@@ -253,5 +253,13 @@
   "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.",
-  "Yes": "Yes"
+  "Yes": "Yes",
+  "Failed to move node": "Düğüm taşınamadı",
+  "Confirm move": "Taşımayı onayla",
+  "Moving this node may remove variable references.": "Bu düğümü taşımak değişken başvurularını kaldırabilir.",
+  "Impacted current node variables": "Mevcut düğümün başvurduğu değişkenler",
+  "Impacted dependent node variables": "Mevcut düğüm değişkenlerine başvuran düğümler",
+  "Keep variable references": "Değişken başvurularını koru",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Değişken başvurularını korumak manuel ayar gerektirir; aksi halde iş akışı başarısız olabilir.",
+  "Failed to update node variables": "Düğüm değişkenleri güncellenemedi"
 }
