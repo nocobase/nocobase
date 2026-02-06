@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineTools } from '@nocobase/ai';
+import { AIManager, defineTools } from '@nocobase/ai';
+import { DataSource } from '@nocobase/data-source-manager';
+import { Field } from '@nocobase/database';
 
 export default defineTools({
   scope: 'GENERAL',

@@ -10,7 +10,6 @@
 import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
-import PluginAIServer from '../../../../../../plugin-ai/src/server/plugin';
 
 export default defineTools({
   scope: 'GENERAL',
@@ -27,7 +26,7 @@ export default defineTools({
     schema: ArgSchema,
   },
   invoke: async (ctx: Context, args: ArgType) => {
-    const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+    const plugin = ctx.app.pm.get('ai');
     const content = await plugin.aiContextDatasourceManager.query(ctx, { ...args, offset: 0, limit: 1 } as any);
     return {
       status: 'success',

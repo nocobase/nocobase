@@ -10,12 +10,7 @@
 import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
-import PluginAIServer from '../../../../../../plugin-ai/src/server/plugin';
-import {
-  buildPagedToolResult,
-  normalizeLimitOffset,
-  truncateLongStrings,
-} from '../../../../../../plugin-ai/src/server/tools/utils';
+import { buildPagedToolResult, normalizeLimitOffset, truncateLongStrings, MAX_QUERY_LIMIT } from './utils';
 
 export default defineTools({
   scope: 'GENERAL',
@@ -30,7 +25,7 @@ export default defineTools({
     schema: ArgSchema,
   },
   invoke: async (ctx: Context, args: ArgType) => {
-    const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+    const plugin = ctx.app.pm.get('ai');
 
     // 限制单次查询数量
     const { limit, offset } = normalizeLimitOffset(args, { defaultLimit: 50, maxLimit: MAX_QUERY_LIMIT });
