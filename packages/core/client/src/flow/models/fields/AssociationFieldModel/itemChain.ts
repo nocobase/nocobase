@@ -11,6 +11,7 @@ import { createAssociationAwareObjectMetaFactory, createAssociationSubpathResolv
 
 export type ItemChain = {
   index?: number;
+  length?: number;
   __is_new__?: boolean;
   __is_stored__?: boolean;
   value: any;
@@ -51,16 +52,19 @@ export function createItemChainMetaFactory(options: {
     const parentBuildVars = parentValueMeta ? (parentValueMeta as any).buildVariablesParams : null;
 
     const createIndexMeta = () => ({ type: 'number', title: t('Index (starts from 0)') });
+    const createLengthMeta = () => ({ type: 'number', title: t('Total count') });
 
     const properties: Record<string, any> = {};
     if (showIndex !== false) {
       properties.index = createIndexMeta();
+      properties.length = createLengthMeta();
     }
     properties.value = { ...(valueMeta as any), title: t('Properties') };
 
     const parentProperties: Record<string, any> = {};
     if (showParentIndex !== false) {
       parentProperties.index = createIndexMeta();
+      parentProperties.length = createLengthMeta();
     }
     parentProperties.value = parentValueMeta
       ? { ...(parentValueMeta as any), title: t('Properties') }

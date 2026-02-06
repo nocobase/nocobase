@@ -265,12 +265,17 @@ const MemoCell: React.FC<CellProps> = React.memo(
             });
           } else {
             fork.context.defineProperty('item', {
-              get: () => ({
-                index: rowIdx,
-                __is_new__: isNew,
-                __is_stored__: record?.__is_stored__,
-                value: record,
-              }),
+              get: () => {
+                const list = (parent as any)?.parent?.props?.value;
+                const length = Array.isArray(list) ? list.length : undefined;
+                return {
+                  index: rowIdx,
+                  length,
+                  __is_new__: isNew,
+                  __is_stored__: record?.__is_stored__,
+                  value: record,
+                };
+              },
               cache: false,
             });
           }
@@ -534,8 +539,11 @@ export class SubTableColumnModel<
             const parentItemCtx = (parentItem ?? this.context?.item) as any;
             const isNew = record?.__is_new__;
             const isStored = record?.__is_stored__;
+            const list = (this.parent as any)?.props?.value;
+            const length = Array.isArray(list) ? list.length : undefined;
             return {
               index: Number.isFinite(rowIndex) ? rowIndex : undefined,
+              length,
               __is_new__: isNew,
               __is_stored__: isStored,
               value: record,
