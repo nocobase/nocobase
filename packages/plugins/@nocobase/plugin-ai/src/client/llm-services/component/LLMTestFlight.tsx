@@ -12,7 +12,7 @@ import { useAPIClient } from '@nocobase/client';
 import React, { useState } from 'react';
 import { Alert, Button, Divider, App, Tooltip } from 'antd';
 import { RocketOutlined } from '@ant-design/icons';
-import { getRecommendedModels } from '../recommended-models';
+import { getRecommendedModels } from '../../../common/recommended-models';
 import { useT } from '../../locale';
 
 export const LLMTestFlight: React.FC = observer(() => {

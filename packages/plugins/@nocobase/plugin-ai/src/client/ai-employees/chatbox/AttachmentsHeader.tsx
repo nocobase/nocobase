@@ -8,46 +8,51 @@
  */
 
 import React, { useMemo } from 'react';
-import { useUploadFiles } from './hooks/useUploadFiles';
-import { Upload } from 'antd';
+import { Attachments } from '@ant-design/x';
 import { css } from '@emotion/css';
-import { Attachment } from './Attachment';
 import { useChatMessagesStore } from './stores/chat-messages';
 
 export const AttachmentsHeader: React.FC = () => {
-  const uploadProps = useUploadFiles();
-
   const attachments = useChatMessagesStore.use.attachments();
+  const removeAttachment = useChatMessagesStore.use.removeAttachment();
 
   const items = useMemo(() => {
     return attachments?.map((item) => ({
-      uid: item.filename,
-      name: item.filename,
-      status: 'done' as const,
+      uid: item.uid || item.filename,
+      name: item.filename || item.name,
+      status: item.status ?? ('done' as const),
       url: item.url,
       size: item.size,
       thumbUrl: item.preview,
       ...item,
     }));
   }, [attachments]);
+
   if (!items?.length) {
     return null;
   }
+
+  const wrapperClassName = css`
+    .ant-attachment-list-card .ant-image img {
+      height: 60px;
+      width: 60px;
+      object-fit: cover;
+    }
+  `;
+
   return (
-    <Upload
-      {...uploadProps}
-      listType="picture"
-      fileList={items}
-      itemRender={(_, file) => <Attachment file={file} closable={true} />}
-      className={css`
-        .ant-upload-list {
-          display: flex;
-          justify-content: flex-start;
-          flex-wrap: wrap;
-          gap: 2px 0;
-          margin-top: 4px;
-        }
-      `}
-    ></Upload>
+    <div
+      className={wrapperClassName}
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 4,
+      }}
+    >
+      {items.map((item) => (
+        <Attachments.FileCard key={item.uid} item={item} onRemove={(item) => removeAttachment(item.name)} />
+      ))}
+    </div>
   );
 };

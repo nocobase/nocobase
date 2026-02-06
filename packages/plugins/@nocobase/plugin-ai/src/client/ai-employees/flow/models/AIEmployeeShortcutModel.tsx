@@ -24,7 +24,7 @@ import { dialogController } from '../../stores/dialog-controller';
 import { namespace } from '../../../locale';
 import { ContextItem as WorkContextItem } from '../../types';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
-import { useChatConversationOptions } from '../../chatbox/hooks/useChatConversationOptions';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 
 const { Meta } = Card;
 
@@ -61,7 +61,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
   const { triggerTask } = useChatBoxActions();
   const addContextItems = useChatMessagesStore.use.addContextItems();
 
-  const { resetDefaultWebSearch } = useChatConversationOptions();
+  const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
   const currentAvatar = useMemo(() => {
     const avatar = aiEmployee?.avatar;
@@ -100,7 +100,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
           }}
           onMouseLeave={() => setFocus(false)}
           onClick={() => {
-            resetDefaultWebSearch();
+            setWebSearch(true);
             triggerTask({ aiEmployee, tasks, auto });
             if (context?.workContext?.length) {
               addContextItems(context.workContext);

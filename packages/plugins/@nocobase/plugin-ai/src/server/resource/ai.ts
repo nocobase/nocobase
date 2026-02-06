@@ -10,7 +10,7 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
 import _ from 'lodash';
-import { getRecommendedModels } from '../../shared/recommended-models';
+import { getRecommendedModels } from '../../common/recommended-models';
 
 const aiResource: ResourceOptions = {
   name: 'ai',

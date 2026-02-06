@@ -23,7 +23,7 @@ export const SenderFooter: React.FC<{
 }> = ({ components, handleSubmit }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
 
   const loading = useChatMessagesStore.use.responseLoading();
   const addContextItems = useChatMessagesStore.use.addContextItems();
@@ -61,7 +61,7 @@ export const SenderFooter: React.FC<{
           ignore={(key) => key === 'flow-model.variable'}
         />
         <Upload />
-        {currentEmployee?.webSearch && <SearchSwitch />}
+        <SearchSwitch />
         <ModelSwitcher />
       </Flex>
       <Flex align="center" gap="middle">

@@ -8,24 +8,23 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Layout, Card, Button, Divider, Tooltip, notification, Avatar, Flex, Typography } from 'antd';
+import { Layout, Card, Button, Divider, Tooltip, notification, Avatar, Flex, Typography, Popover } from 'antd';
 import {
   CloseOutlined,
   ExpandOutlined,
-  EditOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
+  PlusCircleOutlined,
+  HistoryOutlined,
   ShrinkOutlined,
   CodeOutlined,
   CompressOutlined,
   BugOutlined, // [AI_DEBUG]
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
-const { Header, Footer, Sider } = Layout;
+const { Header, Footer } = Layout;
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
-import { css } from '@emotion/css';
+
 import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxStore } from './stores/chat-box';
@@ -65,41 +64,9 @@ export const ChatBox: React.FC = () => {
 
   return (
     <Layout style={{ height: '100%' }} ref={chatBoxRef}>
-      <Sider
-        width={!expanded ? '350px' : '20%'}
-        style={{
-          display: showConversations ? 'block' : 'none',
-          backgroundColor: token.colorBgContainer,
-          marginRight: '5px',
-        }}
-      >
-        <Conversations />
-      </Sider>
       <Layout
         style={{
           padding: '0 16px 16px',
-        }}
-        className={
-          showConversations && !expanded
-            ? css`
-                position: relative;
-                &::after {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  background-color: rgba(0, 0, 0, 0.5);
-                  width: 100%;
-                  height: 100%;
-                  cursor: pointer;
-                }
-              `
-            : ''
-        }
-        onClick={() => {
-          if (showConversations && !expanded) {
-            setShowConversations(false);
-          }
         }}
       >
         <Header
@@ -109,29 +76,48 @@ export const ChatBox: React.FC = () => {
             lineHeight: '48px',
             padding: 0,
             borderBottom: `1px solid ${token.colorBorder}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          <div
-            style={{
-              float: 'left',
-            }}
-          >
-            <Button
-              icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-              type="text"
-              onClick={() => setShowConversations(!showConversations)}
-            />
-          </div>
-          <div
-            style={{
-              float: 'right',
-            }}
-          >
+          <div />
+          <div>
             {currentEmployee ? (
               <>
                 <Tooltip arrow={false} title={t('New conversation')}>
-                  <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} />
+                  <Button icon={<PlusCircleOutlined />} type="text" onClick={startNewConversation} />
                 </Tooltip>
+                <Popover
+                  open={showConversations}
+                  onOpenChange={setShowConversations}
+                  trigger="click"
+                  placement="bottomLeft"
+                  arrow={false}
+                  zIndex={1101}
+                  styles={{
+                    body: {
+                      padding: 0,
+                    },
+                  }}
+                  content={
+                    <div
+                      style={{
+                        width: '350px',
+                        maxHeight: '400px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <Conversations />
+                    </div>
+                  }
+                >
+                  <Tooltip arrow={false} title={t('Conversation list')}>
+                    <Button icon={<HistoryOutlined />} type="text" />
+                  </Tooltip>
+                </Popover>
                 <UserPrompt />
                 {isEngineer(currentEmployee) && (
                   <Tooltip arrow={false} title={t('Code history')}>
@@ -179,6 +165,16 @@ export const ChatBox: React.FC = () => {
           }}
         >
           <Sender />
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: '10px',
+              fontSize: token.fontSizeSM,
+              color: token.colorTextTertiary,
+            }}
+          >
+            {t('AI disclaimer')}
+          </div>
         </Footer>
       </Layout>
     </Layout>
@@ -209,27 +205,25 @@ const ExpandChatBox: React.FC = observer(() => {
   );
 });
 
-const MobileLayoutChatBox: React.FC<{ showConversations: boolean; minimize: boolean }> = observer(
-  ({ showConversations, minimize }) => {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          left: '0',
-          top: '0',
-          width: showConversations ? '800px' : '100%',
-          height: '100%',
-          zIndex: dialogController.shouldHide ? -1 : 1100,
-          backgroundColor: 'white',
-          display: minimize ? 'none' : 'block',
-        }}
-      >
-        <ChatBox />
-        <ChatBoxMinimizeControl />
-      </div>
-    );
-  },
-);
+const MobileLayoutChatBox: React.FC<{ minimize: boolean }> = observer(({ minimize }) => {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: '0',
+        top: '0',
+        width: '100%',
+        height: '100%',
+        zIndex: dialogController.shouldHide ? -1 : 1100,
+        backgroundColor: 'white',
+        display: minimize ? 'none' : 'block',
+      }}
+    >
+      <ChatBox />
+      <ChatBoxMinimizeControl />
+    </div>
+  );
+});
 
 export const ChatBoxMinimizeControl: React.FC = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -278,12 +272,11 @@ export const ChatBoxMinimizeControl: React.FC = () => {
 export const ChatBoxWrapper: React.FC = () => {
   const expanded = useChatBoxStore.use.expanded();
   const minimize = useChatBoxStore.use.minimize();
-  const showConversations = useChatBoxStore.use.showConversations();
   const showCodeHistory = useChatBoxStore.use.showCodeHistory();
   const { isMobileLayout } = useMobileLayout();
 
   return isMobileLayout ? (
-    <MobileLayoutChatBox showConversations={showConversations} minimize={minimize} />
+    <MobileLayoutChatBox minimize={minimize} />
   ) : expanded ? (
     <ExpandChatBox />
   ) : (
@@ -291,10 +284,10 @@ export const ChatBoxWrapper: React.FC = () => {
       style={{
         position: 'fixed',
         transform: 'translateX(0px) !important',
-        right: showConversations ? '-800px' : '-450px',
+        right: '-450px',
         zIndex: 1,
         top: 0,
-        width: showConversations ? '800px' : '450px',
+        width: '450px',
         height: '100vh',
         overflow: 'hidden',
         borderInlineStart: '1px solid rgba(5, 5, 5, 0.06)',

@@ -45,6 +45,7 @@
   "Collection": "数据表",
   "Confirm whether to delete": "确定要删除吗？",
   "Conversation": "当前会话",
+  "Conversation list": "会话列表",
   "Copied": "已复制",
   "Copy": "复制",
   "Create a new datasource": "新建数据源",
@@ -182,6 +183,7 @@
   "Task settings": "任务设置",
   "Tasks": "任务",
   "Temperature description": "采样温度，介于 0 和 2 之间。更高的值，如 0.8，会使输出更随机，而更低的值，如 0.2，会使其更加集中和确定。",
+  "Thinking process": "思考过程",
   "Test flight": "可用性测试",
   "Text": "文本",
   "The parameters required by the tool": "工具所需的参数",
@@ -252,5 +254,7 @@
   "Model options": "模型选项",
   "Leave empty for no limit": "留空表示不限制",
   "Preview run JavaScript code": "预览运行 JavaScript 代码",
-  "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.": "对 JavaScript 代码进行语法检查、沙箱限制检查和试运行。返回成功/失败及诊断信息。在输出最终代码前调用此工具进行验证。"
+  "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.": "对 JavaScript 代码进行语法检查、沙箱限制检查和试运行。返回成功/失败及诊断信息。在输出最终代码前调用此工具进行验证。",
+  "Enter your question": "请输入你的问题",
+  "AI disclaimer": "AI 也可能出错，请检查信息内容。"
 }

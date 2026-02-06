@@ -45,6 +45,7 @@
   "Collection": "Collection",
   "Confirm whether to delete": "Confirm whether to delete",
   "Conversation": "Conversation",
+  "Conversation list": "Conversation list",
   "Copied": "Copied",
   "Copy": "Copy",
   "Create a new datasource": "Create a new data source",
@@ -182,6 +183,7 @@
   "Task settings": "Task settings",
   "Tasks": "Tasks",
   "Temperature description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.",
+  "Thinking process": "Thinking process",
   "Test flight": "Test flight",
   "Text": "Text",
   "The parameters required by the tool": "Parameters required by the tool",
@@ -250,5 +252,7 @@
   "Successful": "Successful",
   "Failure": "Failure",
   "Preview run JavaScript code": "Preview run JavaScript code",
-  "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.": "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works."
+  "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.": "Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.",
+  "Enter your question": "Enter your question",
+  "AI disclaimer": "AI can make mistakes, please check important info."
 }

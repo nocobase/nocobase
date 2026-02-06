@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { recommendedModels, isRecommendedModel, getRecommendedModels } from '../../llm-services/recommended-models';
+import { recommendedModels, isRecommendedModel, getRecommendedModels } from '../../../common/recommended-models';
 
 describe('recommended-models', () => {
   describe('recommendedModels', () => {

@@ -17,7 +17,6 @@ import { Markdown } from './markdown/Markdown';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
-import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
 import { ToolCard } from './generative-ui/ToolCard';
 import { useChatConversationsStore } from './stores/chat-conversations';
@@ -270,11 +269,14 @@ export const UserMessage: React.FC<{
       {items?.length ? (
         <div
           style={{
-            marginBottom: '4px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 4,
           }}
         >
           {items.map((item) => (
-            <Attachment file={item} key={item.filename} />
+            <Attachments.FileCard key={item.uid} item={item} />
           ))}
         </div>
       ) : null}

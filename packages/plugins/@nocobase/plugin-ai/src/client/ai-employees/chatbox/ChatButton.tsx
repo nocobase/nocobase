@@ -18,7 +18,7 @@ import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
-import { useChatConversationOptions } from './hooks/useChatConversationOptions';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -34,7 +34,7 @@ export const ChatButton: React.FC = observer(() => {
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const { resetDefaultWebSearch } = useChatConversationOptions();
+  const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
   const items = useMemo(() => {
     return aiEmployees
@@ -45,7 +45,7 @@ export const ChatButton: React.FC = observer(() => {
           <AIEmployeeListItem
             aiEmployee={employee}
             onClick={() => {
-              resetDefaultWebSearch();
+              setWebSearch(true);
               setOpen(true);
               switchAIEmployee(employee);
             }}

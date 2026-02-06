@@ -235,14 +235,8 @@ export class AIEmployee {
       model,
     };
 
-    // Preserve webSearch setting from employee's modelSettings if it exists
-    const employeeModelSettings = this.employee.modelSettings || {};
-    if (employeeModelSettings?.builtIn?.webSearch === true) {
-      if (this.webSearch !== false) {
-        modelOptions.builtIn = { webSearch: true };
-      } else {
-        modelOptions.builtIn = { webSearch: false };
-      }
+    if (this.webSearch === true) {
+      modelOptions.builtIn = { webSearch: true };
     }
 
     const service = await this.db.getRepository('llmServices').findOne({

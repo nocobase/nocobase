@@ -15,13 +15,6 @@ import { useT } from '../../locale';
 const schema = {
   type: 'object',
   properties: {
-    webSearch: {
-      type: 'boolean',
-      title: '{{t("Web search")}}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Switch',
-      default: false,
-    },
     temperature: {
       type: 'number',
       title: '{{t("Temperature")}}',

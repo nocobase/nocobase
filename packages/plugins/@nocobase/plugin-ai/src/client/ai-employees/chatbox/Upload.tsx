@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
-import { UploadOutlined } from '@ant-design/icons';
+import { PaperClipOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { useT } from '../../locale';
 import { useUploadFiles } from './hooks/useUploadFiles';
@@ -38,7 +38,7 @@ export const Upload: React.FC = () => {
   }, [attachments]);
 
   if (!currentEmployee) {
-    return <Button type="text" icon={<UploadOutlined />} disabled={true} />;
+    return <Button type="text" icon={<PaperClipOutlined />} disabled={true} />;
   }
   return (
     <Attachments
@@ -49,14 +49,14 @@ export const Upload: React.FC = () => {
         },
       }}
       placeholder={{
-        icon: <UploadOutlined />,
+        icon: <PaperClipOutlined />,
         title: t('Drag & Drop files here'),
       }}
       items={items}
       {...uploadProps}
     >
       <Tooltip title={t('Upload files')} arrow={false}>
-        <Button type="text" icon={<UploadOutlined />} />
+        <Button type="text" icon={<PaperClipOutlined />} />
       </Tooltip>
     </Attachments>
   );

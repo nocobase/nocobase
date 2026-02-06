@@ -10,6 +10,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
 import { GetRef } from 'antd';
+import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
 import { SenderHeader } from './SenderHeader';
@@ -65,6 +66,11 @@ const useSendMessage = () => {
 
 export const Sender: React.FC = () => {
   const t = useT();
+  const senderClassName = css`
+    .ant-sender-content {
+      padding: 16px;
+    }
+  `;
   const [handleSubmit] = useSendMessage();
   const senderRef = useRef<GetRef<typeof AntSender> | null>(null);
 
@@ -179,6 +185,7 @@ export const Sender: React.FC = () => {
       // components={{
       //   input: VariableInput,
       // }}
+      className={senderClassName}
       value={value}
       ref={senderRef}
       onChange={(value) => {
@@ -191,7 +198,7 @@ export const Sender: React.FC = () => {
       loading={responseLoading}
       footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
       disabled={!currentEmployee}
-      // placeholder={!currentEmployee ? t('Please choose an AI employee') : senderPlaceholder}
+      placeholder={t('Enter your question')}
       actions={false}
       autoSize={{ minRows: 2, maxRows: 8 }}
     />

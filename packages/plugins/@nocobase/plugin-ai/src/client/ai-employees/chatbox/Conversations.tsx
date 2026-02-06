@@ -8,12 +8,11 @@
  */
 
 import React, { memo, useMemo } from 'react';
-import { Layout, Input, Empty, Spin, App } from 'antd';
+import { Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
-import { SchemaComponent, useAPIClient, useActionContext, useToken } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useActionContext } from '@nocobase/client';
 import { useT } from '../../locale';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -131,12 +130,10 @@ export const Conversations: React.FC = memo(() => {
   const t = useT();
   const api = useAPIClient();
   const { modal, message } = App.useApp();
-  const { token } = useToken();
   const { aiEmployeesMap } = useAIEmployeesData();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-  const expanded = useChatBoxStore.use.expanded();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -201,25 +198,21 @@ export const Conversations: React.FC = memo(() => {
     setMessages([]);
     clear();
     messagesService.run(sessionId);
-    if (!expanded) {
-      setShowConversations(false);
-    }
+    setShowConversations(false);
   };
 
   return (
-    <Layout
+    <div
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         height: '100%',
-        paddingLeft: '16px',
-        paddingRight: '8px',
       }}
     >
-      <Header
+      <div
         style={{
-          backgroundColor: token.colorBgContainer,
-          height: '48px',
-          lineHeight: '48px',
-          padding: '0 5px',
+          padding: '8px 12px',
+          flexShrink: 0,
         }}
       >
         <Input.Search
@@ -227,16 +220,15 @@ export const Conversations: React.FC = memo(() => {
           onChange={(e) => {
             setKeyword(e.target.value);
           }}
-          style={{ verticalAlign: 'middle' }}
           placeholder={t('Search')}
           onSearch={(val) => conversationsService.run(1, val)}
           onClear={() => conversationsService.run(1)}
           allowClear={true}
         />
-      </Header>
-      <Content
+      </div>
+      <div
         style={{
-          height: '100%',
+          flex: 1,
           overflow: 'auto',
         }}
       >
@@ -276,7 +268,7 @@ export const Conversations: React.FC = memo(() => {
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )}
-      </Content>
-    </Layout>
+      </div>
+    </div>
   );
 });

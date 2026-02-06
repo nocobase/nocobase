@@ -316,6 +316,7 @@ export default {
         messages,
         editingMessageId,
         modelOverride,
+        webSearch,
         stream = true,
       } = ctx.action.params.values || {};
       const shouldStream = stream !== false;
@@ -397,7 +398,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
+          webSearch,
           modelOverride,
         );
         await aiEmployee.cancelToolCall();
@@ -429,7 +430,7 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, modelOverride } = ctx.action.params.values || {};
+      const { sessionId, modelOverride, webSearch } = ctx.action.params.values || {};
       let { messageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
@@ -481,7 +482,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
+          webSearch,
           conversation.options?.modelOverride,
         );
         await aiEmployee.stream({ messageId });
@@ -583,7 +584,7 @@ export default {
     async resumeToolCall(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId, modelOverride } = ctx.action.params.values || {};
+      const { sessionId, messageId, modelOverride, webSearch } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -636,7 +637,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
+          webSearch,
           conversation.options?.modelOverride,
         );
 

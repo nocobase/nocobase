@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
-import { Button, Card, Collapse, Tooltip, Tag, Flex } from 'antd';
+import React, { useState } from 'react';
+import { Button, Tooltip, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
   CheckCircleTwoTone,
@@ -18,13 +18,14 @@ import {
   QuestionCircleOutlined,
   PlaySquareOutlined,
   ToolOutlined,
+  DownOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { ToolCall, ToolsEntry, toToolsMap, useGlobalTheme, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
-import _ from 'lodash';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 
 const CallButton: React.FC<{
@@ -89,82 +90,107 @@ const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) =
   }
 };
 
+const ToolCallRow: React.FC<{
+  toolCall: ToolCall;
+  toolsMap: Map<string, ToolsEntry>;
+  isDarkTheme: boolean;
+}> = ({ toolCall, toolsMap, isDarkTheme }) => {
+  const t = useT();
+  const { token } = useToken();
+  const [expanded, setExpanded] = useState(false);
+
+  let args = toolCall.args;
+  try {
+    args = JSON.stringify(args, null, 2);
+  } catch (err) {
+    // ignore
+  }
+  const toolsEntry = toolsMap.get(toolCall.name);
+  const title = toolsEntry?.introduction?.title
+    ? Schema.compile(toolsEntry?.introduction?.title, { t })
+    : toolCall.name;
+  const description = toolsEntry?.introduction?.about
+    ? Schema.compile(toolsEntry?.introduction?.about, { t })
+    : toolCall.name;
+
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 12px',
+          borderRadius: token.borderRadiusSM,
+          background: token.colorFillTertiary,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <Flex align="center" gap={8}>
+          <ToolOutlined style={{ color: token.colorTextSecondary }} />
+          <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{t('Use skills')}</span>
+          <span style={{ fontSize: token.fontSizeSM, color: token.colorText }}>
+            {title}
+            {toolsEntry?.introduction?.about && (
+              <>
+                {' '}
+                <Tooltip title={description}>
+                  <QuestionCircleOutlined style={{ color: token.colorTextQuaternary }} />
+                </Tooltip>
+              </>
+            )}
+          </span>
+        </Flex>
+        <Flex align="center" gap={8}>
+          {expanded ? (
+            <UpOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+          ) : (
+            <DownOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+          )}
+          <InvokeStatus toolCall={toolCall} />
+        </Flex>
+      </div>
+      {expanded && (
+        <div style={{ padding: '4px 12px', fontSize: token.fontSizeSM }}>
+          <ReactMarkdown
+            components={{
+              code(props) {
+                const { children, className, node, ...rest } = props;
+                const match = /language-(\w+)/.exec(className || '');
+                return match ? (
+                  <SyntaxHighlighter
+                    {...rest}
+                    PreTag="div"
+                    language={match[1]}
+                    style={isDarkTheme ? dark : defaultStyle}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code {...rest} className={className}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {'```json\n' + args + '\n```'}
+          </ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const DefaultToolCard: React.FC<{
   messageId: string;
   tools: ToolsEntry[];
   toolCalls: ToolCall[];
 }> = ({ messageId, tools, toolCalls }) => {
   const toolsMap = toToolsMap(tools);
-  const t = useT();
-  const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
-
-  const items = toolCalls.map((toolCall) => {
-    let args = toolCall.args;
-    try {
-      args = JSON.stringify(args, null, 2);
-    } catch (err) {
-      // ignore
-    }
-    const toolsEntry = toolsMap.get(toolCall.name);
-    const title = toolsEntry?.introduction?.title
-      ? Schema.compile(toolsEntry?.introduction?.title, { t })
-      : toolCall.name;
-    const description = toolsEntry?.introduction?.about
-      ? Schema.compile(toolsEntry?.introduction?.about, { t })
-      : toolCall.name;
-
-    return {
-      key: toolCall.id,
-      label: (
-        <div
-          style={{
-            fontSize: token.fontSize,
-          }}
-        >
-          <Flex justify="space-between">
-            <Tag
-              style={{
-                marginLeft: 8,
-              }}
-            >
-              {title}{' '}
-              {toolsEntry?.introduction?.about && (
-                <Tooltip title={description}>
-                  <QuestionCircleOutlined />
-                </Tooltip>
-              )}
-            </Tag>
-            <InvokeStatus toolCall={toolCall} />
-          </Flex>
-        </div>
-      ),
-      children: (
-        <ReactMarkdown
-          components={{
-            code(props) {
-              const { children, className, node, ...rest } = props;
-              const match = /language-(\w+)/.exec(className || '');
-              return match ? (
-                <SyntaxHighlighter {...rest} PreTag="div" language={match[1]} style={isDarkTheme ? dark : defaultStyle}>
-                  {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-              ) : (
-                <code {...rest} className={className}>
-                  {children}
-                </code>
-              );
-            },
-          }}
-        >
-          {'```json\n' + args + '\n```'}
-        </ReactMarkdown>
-      ),
-      style: {
-        fontSize: token.fontSizeSM,
-      },
-    };
-  });
 
   const showCallButton =
     messageId &&
@@ -172,17 +198,11 @@ export const DefaultToolCard: React.FC<{
     !toolCalls.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
 
   return (
-    <Card
-      variant="borderless"
-      size="small"
-      title={
-        <span>
-          <ToolOutlined /> {t('Use skills')}
-        </span>
-      }
-      extra={showCallButton && <CallButton messageId={messageId} tools={tools} toolCalls={toolCalls} />}
-    >
-      <Collapse items={items} size="small" bordered={false} />
-    </Card>
+    <Flex vertical gap={8}>
+      {toolCalls.map((toolCall) => (
+        <ToolCallRow key={toolCall.id} toolCall={toolCall} toolsMap={toolsMap} isDarkTheme={isDarkTheme} />
+      ))}
+      {showCallButton && <CallButton messageId={messageId} tools={tools} toolCalls={toolCalls} />}
+    </Flex>
   );
 };

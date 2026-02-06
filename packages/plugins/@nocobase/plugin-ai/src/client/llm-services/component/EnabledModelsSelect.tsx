@@ -13,7 +13,7 @@ import { useForm, useField, observer } from '@formily/react';
 import { Select, Spin, Switch, Space, Tag, Typography } from 'antd';
 import { Field } from '@formily/core';
 import { useT } from '../../locale';
-import { isRecommendedModel } from '../recommended-models';
+import { isRecommendedModel } from '../../../common/recommended-models';
 
 const { Text } = Typography;
 

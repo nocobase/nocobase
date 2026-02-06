@@ -238,7 +238,6 @@ describe('LLM Services API Logic', () => {
       topP: 1,
       frequencyPenalty: 0,
       presencePenalty: 0,
-      webSearch: false,
     };
 
     it('should have correct default values for modelOptions', () => {
@@ -246,7 +245,8 @@ describe('LLM Services API Logic', () => {
       expect(defaultModelOptions.topP).toBe(1);
       expect(defaultModelOptions.frequencyPenalty).toBe(0);
       expect(defaultModelOptions.presencePenalty).toBe(0);
-      expect(defaultModelOptions.webSearch).toBe(false);
+      // webSearch is now session-only (chatbox UI), not in modelOptions defaults
+      expect((defaultModelOptions as any).webSearch).toBeUndefined();
       // maxTokens is intentionally undefined (no limit)
       expect((defaultModelOptions as any).maxTokens).toBeUndefined();
     });
@@ -263,7 +263,6 @@ describe('LLM Services API Logic', () => {
           topP: 0.9,
           frequencyPenalty: 0.5,
           presencePenalty: 0.3,
-          webSearch: true,
         },
       };
 
@@ -274,7 +273,6 @@ describe('LLM Services API Logic', () => {
 
       // modelOptions stores model runtime parameters
       expect(llmService.modelOptions.temperature).toBe(0.7);
-      expect(llmService.modelOptions.webSearch).toBe(true);
     });
 
     it('should validate modelOptions parameter ranges', () => {

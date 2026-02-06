@@ -7,26 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Tooltip } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
-import { useChatConversationOptions } from './hooks/useChatConversationOptions';
+import { useChatConversationsStore } from './stores/chat-conversations';
 import { useT } from '../../locale';
 
 export const SearchSwitch: React.FC = () => {
   const t = useT();
-  const { loading, webSearch, updateWebSearch } = useChatConversationOptions();
+  const webSearch = useChatConversationsStore.use.webSearch();
+  const setWebSearch = useChatConversationsStore.use.setWebSearch();
   const switchChecked = () => {
-    updateWebSearch(!webSearch);
+    setWebSearch(!webSearch);
   };
 
   return webSearch ? (
     <Tooltip title={t('Disable search')} arrow={false}>
-      <Button color="primary" variant="filled" icon={<GlobalOutlined />} onClick={switchChecked} loading={loading} />
+      <Button color="primary" variant="filled" icon={<GlobalOutlined />} onClick={switchChecked} />
     </Tooltip>
   ) : (
     <Tooltip title={t('Enable search')} arrow={false}>
-      <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} loading={loading} />
+      <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} />
     </Tooltip>
   );
 };
