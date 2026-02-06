@@ -342,6 +342,81 @@ export class CollectionManager {
     };
     return getChildrens(name);
   }
+  getChildrenCollectionsName(name, isSupportView = false) {
+    const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
+    if (this.childrenCollectionsName[cacheKey]) {
+      return this.childrenCollectionsName[cacheKey].slice();
+    }
+
+    const children: string[] = [];
+    const collections = [...this.getCollections()];
+    const getChildrenCollectionsInner = (collectionName: string) => {
+      const inheritCollections = collections.filter((v: any) => {
+        return [...v.inherits]?.includes(collectionName);
+      });
+      inheritCollections.forEach((v) => {
+        const collectionKey = v.name;
+        children.push(collectionKey);
+        return getChildrenCollectionsInner(collectionKey);
+      });
+      if (isSupportView) {
+        const sourceCollections = collections.filter((v: any) => {
+          return [...v.sources]?.length === 1 && v?.sources[0] === collectionName;
+        });
+        sourceCollections.forEach((v) => {
+          const collectionKey = v.name;
+          children.push(v.name);
+          return getChildrenCollectionsInner(collectionKey);
+        });
+      }
+      return _.uniq(children);
+    };
+
+    this.childrenCollectionsName[cacheKey] = getChildrenCollectionsInner(name);
+    return this.childrenCollectionsName[cacheKey];
+  }
+
+  getAllCollectionsInheritChain(name) {
+    if (this.allCollectionsInheritChain) {
+      return this.allCollectionsInheritChain.slice();
+    }
+
+    const collectionsInheritChain = [name];
+    const getInheritChain = (name: string) => {
+      const collection = this.getCollection(name);
+      if (collection) {
+        const { inherits } = collection as any;
+        const children = this.getChildrenCollectionsName(name);
+        // 搜寻祖先表
+        if (inherits) {
+          for (let index = 0; index < inherits.length; index++) {
+            const collectionKey = inherits[index];
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
+          }
+        }
+        // 搜寻后代表
+        if (children) {
+          for (let index = 0; index < children.length; index++) {
+            const collection = this.getCollection(children[index]);
+            const collectionKey = collection.name;
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
+          }
+        }
+      }
+      return collectionsInheritChain;
+    };
+
+    this.allCollectionsInheritChain = getInheritChain(name);
+    return this.allCollectionsInheritChain || [];
+  }
 }
 
 // Collection 负责管理自己的 Field
