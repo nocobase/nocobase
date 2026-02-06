@@ -141,11 +141,9 @@ export const ChatBox: React.FC = () => {
                   </Tooltip>
                 )}
                 {/* [AI_DEBUG] Debug panel button */}
-                {localStorage.getItem('AI_DEBUG') === 'true' && (
-                  <Tooltip arrow={false} title={t('Debug Panel')}>
-                    <Button icon={<BugOutlined />} type="text" onClick={() => setShowDebugPanel(true)} />
-                  </Tooltip>
-                )}
+                <Tooltip arrow={false} title={t('Debug Panel')}>
+                  <Button icon={<BugOutlined />} type="text" onClick={() => setShowDebugPanel(true)} />
+                </Tooltip>
                 <Divider type="vertical" />
               </>
             ) : null}

@@ -53,17 +53,12 @@ type DebugData = {
 type LogListener = (log: LogEntry, sessionId: string) => void;
 
 const STORAGE_KEY = 'AI_DEBUG_LOGS';
-const ENABLED_KEY = 'AI_DEBUG';
 const MAX_SESSIONS = 5;
 const MAX_LOGS_PER_SESSION = 500;
 
 class AIDebugLogger {
   // [AI_DEBUG] Listeners for real-time updates
   private listeners: Set<LogListener> = new Set();
-
-  private get enabled(): boolean {
-    return localStorage.getItem(ENABLED_KEY) === 'true';
-  }
 
   // [AI_DEBUG] Subscribe to log updates
   subscribe(callback: LogListener): () => void {
@@ -82,7 +77,7 @@ class AIDebugLogger {
     data: Record<string, any>,
     meta?: { employeeId?: string; employeeName?: string },
   ) {
-    if (!this.enabled || !sessionId) return;
+    if (!sessionId) return;
 
     const storage = this.getStorage();
     let session = storage.sessions.find((s) => s.sessionId === sessionId);
@@ -172,13 +167,6 @@ class AIDebugLogger {
     return this.getStorage().sessions.find((s) => s.sessionId === sessionId);
   }
 
-  enable() {
-    localStorage.setItem(ENABLED_KEY, 'true');
-  }
-
-  disable() {
-    localStorage.removeItem(ENABLED_KEY);
-  }
 }
 
 export const aiDebugLogger = new AIDebugLogger();
