@@ -372,6 +372,7 @@ export default class PluginWorkflowServer extends Plugin {
         'flow_nodes:update',
         'flow_nodes:destroy',
         'flow_nodes:destroyBranch',
+        'flow_nodes:duplicate',
         'flow_nodes:move',
         'flow_nodes:test',
         'jobs:get',
