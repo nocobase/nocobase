@@ -176,6 +176,9 @@ export const useChatMessageActions = () => {
                 if (target) {
                   target.invokeStatus = data.body?.invokeStatus;
                 }
+                if (target && data.body?.status) {
+                  target.status = data.body.status;
+                }
                 return {
                   ...last,
                   content: {

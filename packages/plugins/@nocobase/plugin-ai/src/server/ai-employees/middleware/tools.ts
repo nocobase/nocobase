@@ -57,9 +57,10 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
         throw e;
       } finally {
         await aiEmployee.updateToolCallDone(request.toolCall.id, result);
+        const toolCallResult = await aiEmployee.getToolCallResult(request.toolCall.id);
         runtime.writer?.({
           action: 'afterToolCall',
-          body: { toolCall },
+          body: { toolCall, toolCallResult },
         });
       }
     },

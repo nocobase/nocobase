@@ -412,6 +412,7 @@ export class AIEmployee {
             this.protocol.toolCallStatus({
               toolCall: { id: chunks.body?.toolCall?.id, name: chunks.body?.toolCall?.name },
               invokeStatus: 'done',
+              status: chunks.body?.toolCallResult?.status,
             });
           } else if (chunks.action === 'beforeSendToolMessage') {
             for (const toolCall of chunks.body?.messages
@@ -750,6 +751,17 @@ export class AIEmployee {
       },
     );
     return updated;
+  }
+
+  async getToolCallResult(toolCallId: string): Promise<AIToolMessage> {
+    return (
+      await this.aiToolMessagesModel.findOne({
+        where: {
+          sessionId: this.sessionId,
+          toolCallId,
+        },
+      })
+    )?.toJSON();
   }
 
   async getUserDecisions(messageId: string): Promise<UserDecision[]> {
@@ -1151,10 +1163,12 @@ class ChatStreamProtocol {
   toolCallStatus({
     toolCall,
     invokeStatus,
+    status,
     interruptAction,
   }: {
     toolCall: { id: string; name: string };
     invokeStatus: string;
+    status?: string;
     interruptAction?: {
       order: number;
       description: string;
@@ -1166,6 +1180,7 @@ class ChatStreamProtocol {
       body: {
         toolCall,
         invokeStatus,
+        status,
         interruptAction,
       },
     });
