@@ -254,5 +254,13 @@
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "A munkafolyamat közvetlenül aktiválódik a gomb megnyomásakor, adatmentés nélkül. Csak az \"Egyéni művelet esemény\"-hez való kötést támogatja.",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Az ismeretlen típusú munkafolyamat hibát okoz. Kérjük, törölje vagy ellenőrizze a bővítményt, amely ezt a típust biztosítja.",
   "Yes": "Yes",
-  "concat": "összefűzés"
+  "concat": "összefűzés",
+  "Failed to move node": "A csomópont áthelyezése sikertelen",
+  "Confirm move": "Áthelyezés megerősítése",
+  "Moving this node may remove variable references.": "A csomópont áthelyezése eltávolíthatja a változóhivatkozásokat.",
+  "Impacted current node variables": "A jelenlegi csomópont által hivatkozott változók",
+  "Impacted dependent node variables": "A jelenlegi csomópont változóira hivatkozó csomópontok",
+  "Keep variable references": "Változóhivatkozások megtartása",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "A változóhivatkozások megtartása kézi beállítást igényel, különben a munkafolyamat sikertelen lehet.",
+  "Failed to update node variables": "A csomópont változóinak frissítése sikertelen"
 }

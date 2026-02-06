@@ -233,6 +233,287 @@ describe('workflow > actions > nodes', () => {
     });
   });
 
+  describe('duplicate', () => {
+    it('should duplicate config but not key', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const origin = await workflow.createNode({
+        type: 'echo',
+        config: {
+          duplicateFlag: true,
+          foo: 'bar',
+        },
+      });
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: origin.id,
+        values: {
+          // NOTE: test if key is stripped
+          key: origin.key,
+          upstreamId: origin.id,
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.key).not.toBe(origin.key);
+      expect(res.body.data.config).toMatchObject({
+        duplicateFlag: true,
+        foo: 'bar',
+        duplicated: true,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[1].upstreamId).toBe(origin.id);
+    });
+
+    it('should duplicate config when required', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const origin = await workflow.createNode({
+        type: 'echo',
+        config: {
+          duplicateFlag: true,
+          foo: 'bar',
+        },
+      });
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: origin.id,
+        values: {
+          config: {
+            a: 1,
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.key).not.toBe(origin.key);
+      expect(res.body.data.config).toMatchObject({
+        a: 1,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].upstreamId).toBe(nodes[1].id);
+    });
+
+    it('duplicate as head when upstreamId is null', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: n2.id,
+        values: {
+          upstreamId: null,
+        },
+      });
+
+      expect(res.status).toBe(200);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const newNode = nodes.find((node) => node.id === res.body.data.id);
+      const n1Reload = nodes.find((node) => node.id === n1.id);
+      const n2Reload = nodes.find((node) => node.id === n2.id);
+
+      expect(newNode.upstreamId).toBeNull();
+      expect(newNode.downstreamId).toBe(n1.id);
+      expect(n1Reload.upstreamId).toBe(newNode.id);
+      expect(n1Reload.downstreamId).toBe(n2.id);
+      expect(n2Reload.upstreamId).toBe(n1.id);
+    });
+
+    it('duplicate after node with downstream', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+      });
+      await n2.setDownstream(n3);
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: n1.id,
+        values: {
+          upstreamId: n1.id,
+        },
+      });
+
+      expect(res.status).toBe(200);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const newNode = nodes.find((node) => node.id === res.body.data.id);
+      const n1Reload = nodes.find((node) => node.id === n1.id);
+      const n2Reload = nodes.find((node) => node.id === n2.id);
+      const n3Reload = nodes.find((node) => node.id === n3.id);
+
+      expect(n1Reload.downstreamId).toBe(newNode.id);
+      expect(newNode.upstreamId).toBe(n1.id);
+      expect(newNode.downstreamId).toBe(n2.id);
+      expect(n2Reload.upstreamId).toBe(newNode.id);
+      expect(n2Reload.downstreamId).toBe(n3.id);
+      expect(n3Reload.upstreamId).toBe(n2.id);
+    });
+
+    it('duplicate to branch head', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const b1 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+      const b2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: b1.id,
+      });
+      await b1.setDownstream(b2);
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: b1.id,
+        values: {
+          upstreamId: n1.id,
+          branchIndex: 0,
+        },
+      });
+
+      expect(res.status).toBe(200);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const newNode = nodes.find((node) => node.id === res.body.data.id);
+      const b1Reload = nodes.find((node) => node.id === b1.id);
+      const b2Reload = nodes.find((node) => node.id === b2.id);
+
+      expect(newNode.upstreamId).toBe(n1.id);
+      expect(newNode.branchIndex).toBe(0);
+      expect(newNode.downstreamId).toBe(b1.id);
+      expect(b1Reload.upstreamId).toBe(newNode.id);
+      expect(b1Reload.branchIndex).toBeNull();
+      expect(b1Reload.downstreamId).toBe(b2.id);
+      expect(b2Reload.upstreamId).toBe(b1.id);
+    });
+
+    it('duplicate to branch middle', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const b1 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+      const b2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: b1.id,
+      });
+      await b1.setDownstream(b2);
+      const b3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: b2.id,
+      });
+      await b2.setDownstream(b3);
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: b1.id,
+        values: {
+          upstreamId: b1.id,
+        },
+      });
+
+      expect(res.status).toBe(200);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const newNode = nodes.find((node) => node.id === res.body.data.id);
+      const b1Reload = nodes.find((node) => node.id === b1.id);
+      const b2Reload = nodes.find((node) => node.id === b2.id);
+      const b3Reload = nodes.find((node) => node.id === b3.id);
+
+      expect(b1Reload.downstreamId).toBe(newNode.id);
+      expect(newNode.upstreamId).toBe(b1.id);
+      expect(newNode.downstreamId).toBe(b2.id);
+      expect(b2Reload.upstreamId).toBe(newNode.id);
+      expect(b2Reload.downstreamId).toBe(b3.id);
+      expect(b3Reload.upstreamId).toBe(b2.id);
+    });
+
+    it('duplicate to branch tail', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const b1 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+      const b2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: b1.id,
+      });
+      await b1.setDownstream(b2);
+
+      const res = await agent.resource('flow_nodes').duplicate({
+        filterByTk: b1.id,
+        values: {
+          upstreamId: b2.id,
+        },
+      });
+
+      expect(res.status).toBe(200);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const newNode = nodes.find((node) => node.id === res.body.data.id);
+      const b2Reload = nodes.find((node) => node.id === b2.id);
+
+      expect(b2Reload.downstreamId).toBe(newNode.id);
+      expect(newNode.upstreamId).toBe(b2.id);
+      expect(newNode.downstreamId).toBeNull();
+    });
+  });
+
   describe('destroy', () => {
     it('node in executed workflow could not be destroyed', async () => {
       const workflow = await WorkflowModel.create({
@@ -1140,7 +1421,7 @@ describe('workflow > actions > nodes', () => {
       });
       expect(status).toBe(200);
 
-      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      const nodes: FlowNodeModel[] = await workflow.getNodes({ order: [['id', 'asc']] });
       const nodeMap = new Map(nodes.map((node) => [node.id, node]));
       const n1After = nodeMap.get(n1.id);
       const n2After = nodeMap.get(n2.id);

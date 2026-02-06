@@ -48,6 +48,8 @@ import { HideVariableContext } from './variable';
 import { useWorkflowAnyExecuted, useWorkflowExecuted } from './hooks';
 import { AddNodeContextProvider } from './AddNodeContext';
 import { RemoveNodeContextProvider } from './RemoveNodeContext';
+import { NodeDragContextProvider } from './NodeDragContext';
+import { NodeClipboardContextProvider } from './NodeClipboardContext';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -569,7 +571,11 @@ export function WorkflowCanvas() {
       </div>
       <AddNodeContextProvider>
         <RemoveNodeContextProvider>
-          <CanvasContent entry={entry} />
+          <NodeDragContextProvider>
+            <NodeClipboardContextProvider>
+              <CanvasContent entry={entry} />
+            </NodeClipboardContextProvider>
+          </NodeDragContextProvider>
         </RemoveNodeContextProvider>
       </AddNodeContextProvider>
     </FlowContext.Provider>
