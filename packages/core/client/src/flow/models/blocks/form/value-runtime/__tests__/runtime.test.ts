@@ -893,6 +893,99 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['users', 1, 'nickname'])).toBe('Q'));
   });
 
+  it('supports ctx.item.length in condition for to-many subform list (fork models)', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ users: [{ nickname: 'A' }, { nickname: 'B' }] });
+
+    const blockModel: any = {
+      uid: 'form-assign-length',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    // 提供集合元信息：RuleEngine 需要依赖 rootCollection 来识别对多关联并计算 ctx.item.length
+    const userRowCollection: any = { getField: () => null };
+    const usersField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: userRowCollection };
+    const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: rootCollection });
+    blockModel.context = blockCtx;
+
+    const masterModel: any = {
+      uid: 'users.nickname',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'users.nickname' };
+        }
+        return undefined;
+      },
+    };
+    const masterCtx = createFieldContext(runtime);
+    masterCtx.defineProperty('blockModel', { value: blockModel });
+    masterCtx.defineProperty('model', { value: masterModel });
+    masterModel.context = masterCtx;
+
+    const createRowModel = (forkId: string) => {
+      const rowModel: any = {
+        uid: 'users.nickname',
+        isFork: true,
+        forkId,
+        subModels: { field: {} },
+        getStepParams(flowKey: string, stepKey: string) {
+          if (flowKey === 'fieldSettings' && stepKey === 'init') {
+            return { fieldPath: 'users.nickname' };
+          }
+          return undefined;
+        },
+      };
+      const rowCtx = createFieldContext(runtime);
+      rowCtx.defineProperty('blockModel', { value: blockModel });
+      rowCtx.defineProperty('fieldIndex', { value: [forkId] });
+      rowCtx.defineProperty('model', { value: rowModel });
+      rowModel.context = rowCtx;
+      return rowModel;
+    };
+
+    const row0 = createRowModel('users:0');
+    const row1 = createRowModel('users:1');
+    masterModel.forks = new Set([row0, row1]);
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (cb: any) => {
+          cb(masterModel);
+        },
+      },
+    });
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'users.nickname',
+        mode: 'assign',
+        condition: {
+          logic: '$and',
+          items: [
+            { path: '{{ ctx.item.index }}', operator: '$eq', value: 1 },
+            { path: '{{ ctx.item.length }}', operator: '$eq', value: 2 },
+          ],
+        },
+        value: 'Z',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 1, 'nickname'])).toBe('Z'));
+    expect(formStub.getFieldValue(['users', 0, 'nickname'])).toBe('A');
+  });
+
   it('supports ctx.item.value.* in assign rule value and updates on row value changes (to-many fork models)', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
@@ -1252,7 +1345,10 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: {
           logic: '$and',
-          items: [{ path: '{{ ctx.item.parentItem.index }}', operator: '$eq', value: 1 }],
+          items: [
+            { path: '{{ ctx.item.parentItem.index }}', operator: '$eq', value: 1 },
+            { path: '{{ ctx.item.parentItem.length }}', operator: '$eq', value: 2 },
+          ],
         },
         value: 'Z',
       },

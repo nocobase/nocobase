@@ -1428,8 +1428,9 @@ export class RuleEngine {
     }
 
     // “当前项”链：用于多层级关系字段条件
-    // 语义：ctx.item -> { index?, __is_new__?, __is_stored__?, value, parentItem? }，其中：
+    // 语义：ctx.item -> { index?, length?, __is_new__?, __is_stored__?, value, parentItem? }，其中：
     // - index：仅当当前对象位于对多关联行内时存在（0-based）
+    // - length：仅当当前对象位于对多关联行内时存在，表示当前层数组总数
     // - value：当前对象的值（来自 formValues 的对应切片，支持无限嵌套属性访问）
     // - parentItem：上级项（同结构，可链式 parentItem.parentItem...）
     let itemCached: any;
@@ -1447,16 +1448,17 @@ export class RuleEngine {
 
   private buildItemChainValue(baseCtx: any, trackingFormValues: any, targetNamePath: NamePath | null) {
     const rootCollection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
-    const buildNode = (value: any, index: number | undefined, parentItem: any) => {
+    const buildNode = (value: any, index: number | undefined, length: number | undefined, parentItem: any) => {
       return {
         index,
+        length,
         __is_new__: value?.__is_new__,
         __is_stored__: value?.__is_stored__,
         value,
         parentItem,
       };
     };
-    const defaultRoot = buildNode(trackingFormValues, undefined, undefined);
+    const defaultRoot = buildNode(trackingFormValues, undefined, undefined, undefined);
     // item 仅用于“关系字段的子路径”场景；
     // 顶层字段/非关联嵌套对象字段应使用 formValues。
     if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) return undefined;
@@ -1496,7 +1498,14 @@ export class RuleEngine {
       const value = _.get(trackingFormValues, assocEntry.path);
       const lastSeg = assocEntry.path[assocEntry.path.length - 1];
       const index = assocEntry.toMany && typeof lastSeg === 'number' ? lastSeg : undefined;
-      return buildNode(value, index, build(idx - 1));
+      const length = (() => {
+        if (!assocEntry.toMany) return undefined;
+        // assocEntry.path: [..., associationKey, rowIndex]
+        const listPath = assocEntry.path.slice(0, -1);
+        const list = _.get(trackingFormValues, listPath);
+        return Array.isArray(list) ? list.length : undefined;
+      })();
+      return buildNode(value, index, length, build(idx - 1));
     };
 
     return assocEntries.length ? build(assocEntries.length - 1) : undefined;

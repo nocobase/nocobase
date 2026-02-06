@@ -54,6 +54,7 @@ export class PopupSubTableFormModel extends FormBlockModel {
         const recordData = this.context.view?.inputArgs?.record || {};
         const parentItem = this.context.view?.inputArgs?.parentItem as ItemChain | undefined;
         const itemIndex = this.context.view?.inputArgs?.itemIndex;
+        const itemLength = this.context.view?.inputArgs?.itemLength;
         const filterTargetKey = this.context.collection?.filterTargetKey;
         const hasPk = Array.isArray(filterTargetKey)
           ? filterTargetKey.length > 0 && filterTargetKey.every((k) => recordData?.[k] != null)
@@ -63,6 +64,7 @@ export class PopupSubTableFormModel extends FormBlockModel {
         const isNew = !!recordData?.__is_new__ || !hasPk;
         return {
           index: typeof itemIndex === 'number' ? itemIndex : undefined,
+          length: typeof itemLength === 'number' ? itemLength : undefined,
           __is_new__: isNew,
           __is_stored__: !!recordData?.__is_stored__ || (!isNew && hasPk),
           value: this.context.formValues,

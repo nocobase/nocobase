@@ -206,6 +206,7 @@ const ArrayNester = ({
       <Form.List name={name}>
         {(fields, { add, remove }) => {
           const displayFields = fields.length === 0 ? [{ key: '0', name: 0, isDefault: true }] : fields;
+          const itemLength = displayFields.length;
           return (
             <>
               {displayFields.map((field: any, index) => {
@@ -237,6 +238,7 @@ const ArrayNester = ({
                     const rowValue = currentFork.context.form.getFieldValue([name, fieldName]);
                     return {
                       index,
+                      length: itemLength,
                       __is_new__: rowValue?.__is_new__,
                       __is_stored__: rowValue?.__is_stored__,
                       value: rowValue,

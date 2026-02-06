@@ -175,6 +175,12 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
             type: 'number',
             paths: [...basePaths, 'index'],
           });
+          children.push({
+            title: t('Total count'),
+            name: 'length',
+            type: 'number',
+            paths: [...basePaths, 'length'],
+          });
         }
 
         children.push({
