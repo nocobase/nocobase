@@ -85,18 +85,6 @@ export const createLLMSchema = {
             },
           },
         },
-        modelOptions: {
-          type: 'object',
-          'x-component': 'ModelOptionsSettings',
-          'x-reactions': {
-            dependencies: ['provider'],
-            fulfill: {
-              schema: {
-                'x-visible': '{{!!$deps[0]}}',
-              },
-            },
-          },
-        },
         testFlight: {
           type: 'void',
           'x-component': 'LLMTestFlight',
@@ -304,10 +292,6 @@ export const llmsSchema = {
                                 placeholder:
                                   '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
                               },
-                            },
-                            modelOptions: {
-                              type: 'object',
-                              'x-component': 'ModelOptionsSettings',
                             },
                             testFlight: {
                               type: 'void',
