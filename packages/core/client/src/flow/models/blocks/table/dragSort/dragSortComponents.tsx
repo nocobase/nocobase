@@ -14,12 +14,26 @@ import { TinyColor } from '@ctrl/tinycolor';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 
+const sortHandleClass = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  padding: 6px;
+  margin: -6px;
+`;
+
 export const SortHandle: React.FC<{ id: string | number }> = (props) => {
   const { id, ...otherProps } = props;
   const { listeners, setNodeRef } = useSortable({
     id,
   });
-  return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
+  // return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
+  return (
+    <span ref={setNodeRef} {...otherProps} {...listeners} className={classNames(sortHandleClass)}>
+      <MenuOutlined />
+    </span>
+  );
 };
 
 export const SortableRow: React.FC<any> = (props) => {
