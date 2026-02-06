@@ -21,12 +21,11 @@ import {
   DownOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import ReactMarkdown from 'react-markdown';
-import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { ToolCall, ToolsEntry, toToolsMap, useGlobalTheme, useToken } from '@nocobase/client';
+import { ToolCall, ToolsEntry, toToolsMap, useToken, lazy } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+
+const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
 const CallButton: React.FC<{
   messageId: string;
@@ -103,8 +102,7 @@ const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) =
 const ToolCallRow: React.FC<{
   toolCall: ToolCall;
   toolsMap: Map<string, ToolsEntry>;
-  isDarkTheme: boolean;
-}> = ({ toolCall, toolsMap, isDarkTheme }) => {
+}> = ({ toolCall, toolsMap }) => {
   const t = useT();
   const { token } = useToken();
   const [expanded, setExpanded] = useState(false);
@@ -164,30 +162,7 @@ const ToolCallRow: React.FC<{
       </div>
       {expanded && (
         <div style={{ padding: '4px 12px', fontSize: token.fontSizeSM }}>
-          <ReactMarkdown
-            components={{
-              code(props) {
-                const { children, className, node, ...rest } = props;
-                const match = /language-(\w+)/.exec(className || '');
-                return match ? (
-                  <SyntaxHighlighter
-                    {...rest}
-                    PreTag="div"
-                    language={match[1]}
-                    style={isDarkTheme ? dark : defaultStyle}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code {...rest} className={className}>
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {'```json\n' + args + '\n```'}
-          </ReactMarkdown>
+          <CodeHighlight language="json" value={args as string} />
         </div>
       )}
     </div>
@@ -200,7 +175,6 @@ export const DefaultToolCard: React.FC<{
   toolCalls: ToolCall[];
 }> = ({ messageId, tools, toolCalls }) => {
   const toolsMap = toToolsMap(tools);
-  const { isDarkTheme } = useGlobalTheme();
 
   const showCallButton =
     messageId &&
@@ -210,7 +184,7 @@ export const DefaultToolCard: React.FC<{
   return (
     <Flex vertical gap={8}>
       {toolCalls.map((toolCall) => (
-        <ToolCallRow key={toolCall.id} toolCall={toolCall} toolsMap={toolsMap} isDarkTheme={isDarkTheme} />
+        <ToolCallRow key={toolCall.id} toolCall={toolCall} toolsMap={toolsMap} />
       ))}
       {showCallButton && <CallButton messageId={messageId} tools={tools} toolCalls={toolCalls} />}
     </Flex>

@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions } from '@nocobase/client';
-import { Echarts } from '../ui/ECharts';
+import { ToolsOptions, lazy } from '@nocobase/client';
+
+const { Echarts } = lazy(() => import('../ui/ECharts'), 'Echarts');
 
 export const chartGeneratorTool: [string, ToolsOptions] = [
   'chartGenerator',

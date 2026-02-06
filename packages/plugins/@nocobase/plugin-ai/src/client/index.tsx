@@ -11,57 +11,22 @@ import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
-import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
-import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
-import { deepseekProviderOptions } from './llm-providers/deepseek';
-import { LLMInstruction } from './workflow/nodes/llm';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { googleGenAIProviderOptions } from './llm-providers/google-genai';
-import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
-import { anthropicProviderOptions } from './llm-providers/anthropic';
-import {
-  AIEmployeeShortcutListModel,
-  AIEmployeeShortcutModel,
-  AIEmployeeButtonModel,
-} from './ai-employees/flow/models';
-import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
-import { FlowModelsContext } from './ai-employees/context/flow-models';
-import { formFillerTool } from './ai-employees/form-filler/tools';
-import './ai-employees/flow/events';
-import { aiEmployeesData } from './ai-employees/flow/context';
-import { dashscopeProviderOptions } from './llm-providers/dashscope';
-import { ollamaProviderOptions } from './llm-providers/ollama';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
-import { DatasourceSettingPage } from './ai-employees/admin/datasource';
-import { DatasourceContext } from './ai-employees/context/datasource';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
 const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
+const { DatasourceSettingPage } = lazy(() => import('./ai-employees/admin/datasource'), 'DatasourceSettingPage');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
 );
-import { CodeEditorContext } from './ai-employees/context/code-editor';
-import { setupAICoding } from './ai-employees/ai-coding/setup';
-import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
-import { setupDataModeling } from './ai-employees/data-modeling/setup';
-import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
-import {
-  getContextApisTool,
-  getContextEnvsTool,
-  getContextVarsTool,
-  lintAndTestJSTool,
-} from './ai-employees/ai-coding/tools/context-tools';
-import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
-import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
-import { suggestionsTool } from './ai-employees/suggestions/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -81,21 +46,21 @@ export class PluginAIClient extends Plugin {
       AIResourceContextCollector,
     });
 
-    this.flowEngine.registerModels({
-      AIEmployeeShortcutListModel,
-      AIEmployeeShortcutModel,
-      AIEmployeeButtonModel,
-    });
+    await this.registerFlowModels();
 
-    this.addPluginSettings();
-    this.setupAIFeatures();
-    this.setupWorkflow();
+    await this.addPluginSettings();
+    await this.setupAIFeatures();
+    await this.setupWorkflow();
 
+    const [{ setupDataModeling }, { setupAICoding }] = await Promise.all([
+      import('./ai-employees/data-modeling/setup'),
+      import('./ai-employees/ai-coding/setup'),
+    ]);
     setupDataModeling(this);
     setupAICoding();
   }
 
-  addPluginSettings() {
+  async addPluginSettings() {
     this.app.pluginSettingsManager.add('ai', {
       icon: 'TeamOutlined',
       title: tval('AI employees', { ns: namespace }),
@@ -130,13 +95,34 @@ export class PluginAIClient extends Plugin {
       Component: AdminSettings,
     });
 
+    const { PermissionsTab } = await import('./ai-employees/permissions/PermissionsTab');
     const aclPlugin = this.app.pm.get(PluginACLClient);
     if (aclPlugin) {
       aclPlugin.settingsUI.addPermissionsTab(PermissionsTab);
     }
   }
 
-  setupAIFeatures() {
+  async setupAIFeatures() {
+    const [
+      { aiEmployeesData },
+      { googleGenAIProviderOptions },
+      { openaiResponsesProviderOptions },
+      { anthropicProviderOptions },
+      { openaiCompletionsProviderOptions },
+      { deepseekProviderOptions },
+      { dashscopeProviderOptions },
+      { ollamaProviderOptions },
+    ] = await Promise.all([
+      import('./ai-employees/flow/context'),
+      import('./llm-providers/google-genai'),
+      import('./llm-providers/openai/responses'),
+      import('./llm-providers/anthropic'),
+      import('./llm-providers/openai/completions'),
+      import('./llm-providers/deepseek'),
+      import('./llm-providers/dashscope'),
+      import('./llm-providers/ollama'),
+    ]);
+
     this.app.flowEngine.context.defineProperty(...aiEmployeesData);
 
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
@@ -156,6 +142,14 @@ export class PluginAIClient extends Plugin {
       Component: StructuredOutputSettings,
     });
 
+    const [{ FlowModelsContext }, { DatasourceContext }, { CodeEditorContext }, { chartConfigWorkContext }] =
+      await Promise.all([
+        import('./ai-employees/context/flow-models'),
+        import('./ai-employees/context/datasource'),
+        import('./ai-employees/context/code-editor'),
+        import('./ai-employees/data-visualization/context'),
+      ]);
+
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
@@ -164,6 +158,24 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
 
     // 使用可视化员工的工具参数
+    const [
+      { vizSwitchModesTool, vizRunQueryTool },
+      { defineCollectionsTool },
+      { formFillerTool },
+      { chartGeneratorTool },
+      { listCodeSnippetTool, getCodeSnippetTool },
+      { getContextApisTool, getContextEnvsTool, getContextVarsTool, lintAndTestJSTool },
+      { suggestionsTool },
+    ] = await Promise.all([
+      import('./ai-employees/data-visualization/tools'),
+      import('./ai-employees/data-modeling/tools'),
+      import('./ai-employees/form-filler/tools'),
+      import('./ai-employees/chart-generator/tools'),
+      import('./ai-employees/ai-coding/tools'),
+      import('./ai-employees/ai-coding/tools/context-tools'),
+      import('./ai-employees/suggestions/tools'),
+    ]);
+
     this.ai.toolsManager.registerTools(...vizSwitchModesTool);
     this.ai.toolsManager.registerTools(...vizRunQueryTool);
 
@@ -179,12 +191,28 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 
-  setupWorkflow() {
+  async setupWorkflow() {
+    const [{ AIEmployeeTrigger }, { LLMInstruction }] = await Promise.all([
+      import('./workflow/triggers/ai-employee'),
+      import('./workflow/nodes/llm'),
+    ]);
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClient;
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
     // workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
+  }
+
+  private async registerFlowModels() {
+    const [{ AIEmployeeShortcutListModel, AIEmployeeShortcutModel, AIEmployeeButtonModel }] = await Promise.all([
+      import('./ai-employees/flow/models'),
+      import('./ai-employees/flow/events'),
+    ]);
+    this.flowEngine.registerModels({
+      AIEmployeeShortcutListModel,
+      AIEmployeeShortcutModel,
+      AIEmployeeButtonModel,
+    });
   }
 }
 

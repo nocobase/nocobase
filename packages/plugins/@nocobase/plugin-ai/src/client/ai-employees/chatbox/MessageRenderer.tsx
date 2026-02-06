@@ -12,8 +12,7 @@ import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from '
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { usePlugin, useToken } from '@nocobase/client';
-import { Markdown } from './markdown/Markdown';
+import { lazy, usePlugin, useToken } from '@nocobase/client';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
@@ -25,6 +24,8 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
+
+const { Markdown } = lazy(() => import('./markdown/Markdown'), 'Markdown');
 
 const { Link } = Typography;
 

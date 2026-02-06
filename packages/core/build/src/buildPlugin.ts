@@ -33,11 +33,7 @@ import { obfuscate } from './utils/obfuscationResult';
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
-const sourceGlobalFiles: string[] = [
-  'src/**/*.{ts,js,tsx,jsx,mjs}',
-  '!src/**/__tests__',
-  '!src/**/__benchmarks__',
-];
+const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
 
 const external = [
   // nocobase
@@ -144,6 +140,12 @@ const pluginPrefix = (
 ).split(',');
 
 const target_dir = 'dist';
+
+function appendAiFiles(cwd: string, files: string[]) {
+  const aiFiles = fg.globSync(['src/ai/**/*.md'], { cwd, absolute: true });
+  if (!aiFiles.length) return files;
+  return Array.from(new Set([...files, ...aiFiles]));
+}
 
 export function deleteServerFiles(cwd: string, log: PkgLog) {
   log('delete server files');
@@ -280,7 +282,8 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
 export async function buildPluginServer(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   log('build plugin server source');
   const packageJson = getPackageJson(cwd);
-  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  let serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  serverFiles = appendAiFiles(cwd, serverFiles);
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
   const otherExts = Array.from(
     new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
@@ -317,7 +320,8 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
 export async function buildProPluginServer(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   log('build pro plugin server source');
   const packageJson = getPackageJson(cwd);
-  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  let serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  serverFiles = appendAiFiles(cwd, serverFiles);
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
   const otherExts = Array.from(
     new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
@@ -330,10 +334,17 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
 
   // remove compilerOptions.paths in tsconfig.json
   let tsconfig = bundleRequire.loadTsConfig(path.join(cwd, 'tsconfig.json'));
-  fs.writeFileSync(path.join(cwd, 'tsconfig.json'), JSON.stringify({
-    ...tsconfig.data,
-    compilerOptions: { ...tsconfig.data.compilerOptions, paths: [] }
-  }, null, 2));
+  fs.writeFileSync(
+    path.join(cwd, 'tsconfig.json'),
+    JSON.stringify(
+      {
+        ...tsconfig.data,
+        compilerOptions: { ...tsconfig.data.compilerOptions, paths: [] },
+      },
+      null,
+      2,
+    ),
+  );
   tsconfig = bundleRequire.loadTsConfig(path.join(cwd, 'tsconfig.json'));
 
   // convert all ts to js, some files may not be referenced by the entry file
@@ -367,17 +378,13 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   const externalOptions = {
     external: [],
     noExternal: [],
-    onSuccess: async () => {},
+    onSuccess: async () => { },
     esbuildPlugins: [],
   };
   // other plugins build to a bundle just include plugin-commercial
   if (!cwd.includes(PLUGIN_COMMERCIAL)) {
     externalOptions.external = [/^[./]/];
-    externalOptions.noExternal = [
-      entryFile, 
-      /@nocobase\/plugin-commercial\/server/, 
-      /dist\/server\/index\.js/,
-    ];
+    externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
     externalOptions.onSuccess = async () => {
       const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
       serverFiles.forEach((file) => {
@@ -419,12 +426,21 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export async function buildPluginClient(cwd: string, userConfig: any, sourcemap: boolean, log: PkgLog, isCommercial = false) {
+export async function buildPluginClient(
+  cwd: string,
+  userConfig: any,
+  sourcemap: boolean,
+  log: PkgLog,
+  isCommercial = false,
+) {
   log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
   if (isCommercial) {
-    const commercialFiles = fg.globSync(clientGlobalFiles, { cwd: path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL), absolute: true });
+    const commercialFiles = fg.globSync(clientGlobalFiles, {
+      cwd: path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL),
+      absolute: true,
+    });
     clientFiles.push(...commercialFiles);
   }
   const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
@@ -579,10 +595,10 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
             {
               loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
               options: {
-                isCommercial
-              }
-            }
-          ]
+                isCommercial,
+              },
+            },
+          ],
         },
         {
           test: /\.ts$/,
@@ -607,10 +623,10 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
             {
               loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
               options: {
-                isCommercial
-              }
-            }
-          ]
+                isCommercial,
+              },
+            },
+          ],
         },
       ],
     },
@@ -718,7 +734,10 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  if (cwd.includes('/pro-plugins/') && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
+  if (
+    cwd.includes('/pro-plugins/') &&
+    fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))
+  ) {
     await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
