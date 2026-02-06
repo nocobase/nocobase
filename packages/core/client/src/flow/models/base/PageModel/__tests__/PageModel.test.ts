@@ -405,8 +405,7 @@ describe('PageModel', () => {
         await (pageModel as any).updateDocumentTitle('tab-late');
         expect(document.title).not.toBe('Late tab');
 
-        vi.runOnlyPendingTimers();
-        await Promise.resolve();
+        await vi.runAllTimersAsync();
 
         expect(document.title).toBe('Late tab');
       } finally {

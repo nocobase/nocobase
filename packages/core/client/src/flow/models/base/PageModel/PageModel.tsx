@@ -181,7 +181,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
       const activeTabModel = activeTabKey
         ? (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
         : this.getFirstTab();
-      if (!activeTabModel && activeTabKey && retryCount < 5) {
+      if (!activeTabModel && retryCount < 5) {
         window.setTimeout(() => {
           void this.updateDocumentTitle(activeTabKey, retryCount + 1);
         }, 0);
