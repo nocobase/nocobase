@@ -182,7 +182,7 @@ DuplicateActionModel.registerFlow({
   key: 'duplicateModeSettings',
   steps: {
     duplicateMode: {
-      title: tExpr('Duplicate mode'),
+      title: tExpr('Duplicate mode', { ns: NAMESPACE }),
       uiSchema(ctx) {
         const t = ctx.t;
         const collections =
