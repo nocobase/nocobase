@@ -580,8 +580,8 @@ DuplicateActionModel.registerFlow({
           },
           embed: {},
         };
-        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
-        const size = ctx.inputArgs.size || params.size || 'medium';
+        const openMode = ctx.inputArgs?.mode || params?.mode || 'drawer';
+        const size = ctx.inputArgs?.size || params?.size || 'medium';
         const filterTargetKey = ctx.blockModel.collection.filterTargetKey;
         const dataId = Array.isArray(ctx.blockModel.collection.filterTargetKey)
           ? Object.assign(
