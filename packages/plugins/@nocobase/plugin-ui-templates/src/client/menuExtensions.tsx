@@ -1063,6 +1063,7 @@ export function registerMenuExtensions() {
           ? (openViewParams as any).popupTemplateUid.trim()
           : '';
       const hasTemplate = !!templateUid;
+      const disablePopupTemplateMenu = !!(openViewParams as any)?.disablePopupTemplateMenu;
       const pluginT = getPluginT(model);
       if (hasTemplate) {
         return [
@@ -1073,6 +1074,9 @@ export function registerMenuExtensions() {
             sort: -8,
           },
         ];
+      }
+      if (disablePopupTemplateMenu) {
+        return [];
       }
       return [
         {
