@@ -126,6 +126,7 @@ export type ResendOptions = {
   sessionId: string;
   messageId?: string;
   aiEmployee: AIEmployee;
+  important?: string;
 };
 
 export type TaskMessage = {

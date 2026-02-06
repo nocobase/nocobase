@@ -214,7 +214,7 @@ export const useChatMessageActions = () => {
                 message: data.body,
               });
               error = true;
-              result = data.body;
+              result = data.errorName ? data.errorName : data.body;
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -364,7 +364,7 @@ export const useChatMessageActions = () => {
     }
   };
 
-  const resendMessages = async ({ sessionId, messageId, aiEmployee }: ResendOptions) => {
+  const resendMessages = async ({ sessionId, messageId, aiEmployee, important }: ResendOptions) => {
     const index = messages.findIndex((msg) => msg.key === messageId);
     setResponseLoading(true);
     setMessages((prev) => [
@@ -387,7 +387,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId, modelOverride },
+        data: { sessionId, messageId, modelOverride, important },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,

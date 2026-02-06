@@ -427,7 +427,11 @@ export class AIEmployee {
       this.protocol.endStream();
     } catch (err) {
       this.ctx.log.error(err);
-      this.sendErrorResponse(err.message);
+      if (err.name === 'GraphRecursionError') {
+        this.sendSpecificError({ name: err.name, message: err.message });
+      } else {
+        this.sendErrorResponse(err.message);
+      }
     } finally {
       this.ctx.res.end();
     }
@@ -523,7 +527,7 @@ export class AIEmployee {
           });
     }
 
-    return getSystemPrompt({
+    const systemPrompt = getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
         about: this.employee.about ?? this.employee.defaultPrompt,
@@ -539,6 +543,16 @@ export class AIEmployee {
       },
       knowledgeBase,
     });
+
+    const { important } = this.ctx.action.params.values || {};
+    if (important === 'GraphRecursionError') {
+      const importantPrompt = `<Important>You have already called tools multiple times and gathered sufficient information.
+First, provide a summary based on the existing information. Do not call additional tools.
+If information is missing, clearly state it in the summary.</Important>`;
+      return importantPrompt + '\n\n' + systemPrompt;
+    } else {
+      return systemPrompt;
+    }
   }
 
   async retrieveKnowledgeBase(userMessage: AIMessage): Promise<DocumentSegmentedWithScore[]> {
@@ -857,6 +871,10 @@ export class AIEmployee {
 
   sendErrorResponse(errorMessage: string) {
     sendSSEError(this.ctx, errorMessage);
+  }
+
+  sendSpecificError({ name, message }: { name: string; message: string }) {
+    sendSSEError(this.ctx, message, name);
   }
 
   // === Conversation/thread helpers ===

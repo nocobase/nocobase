@@ -431,7 +431,7 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, modelOverride, webSearch } = ctx.action.params.values || {};
+      const { sessionId, webSearch } = ctx.action.params.values || {};
       let { messageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
@@ -450,7 +450,7 @@ export default {
           return next();
         }
 
-        let resendMessage: AIMessageInput;
+        const resendMessages: AIMessageInput[] = [];
         if (messageId) {
           const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
             filter: {
@@ -471,14 +471,14 @@ export default {
           });
           messageId = message.messageId;
           if (['user', 'tool'].includes(message.role)) {
-            resendMessage = {
+            resendMessages.push({
               role: message.role,
               content: message.content,
               toolCalls: message.toolCalls,
               attachments: message.attachments,
               workContext: message.workContext,
               metadata: message.metadata,
-            };
+            });
           }
         }
 
@@ -497,7 +497,7 @@ export default {
           webSearch,
           conversation.options?.modelOverride,
         );
-        await aiEmployee.stream({ messageId, userMessages: resendMessage ? [resendMessage] : undefined });
+        await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Chat error warning');

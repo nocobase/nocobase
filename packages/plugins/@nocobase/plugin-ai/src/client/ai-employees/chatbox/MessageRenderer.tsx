@@ -307,30 +307,43 @@ export const ErrorMessage: React.FC<{
 
   const { resendMessages } = useChatMessageActions();
 
+  const showAlert = msg.content !== 'GraphRecursionError';
+  useEffect(() => {
+    if (msg.content === 'GraphRecursionError') {
+      resendMessages({
+        sessionId: currentConversation,
+        aiEmployee: currentEmployee,
+        important: msg.content,
+      });
+    }
+  }, [msg]);
+
   return (
-    <Alert
-      message={<>{msg.content} </>}
-      action={
-        <Button
-          onClick={() => {
-            let messageId: string;
-            const prev = messages[messages.length - 2];
-            if (prev && prev.role !== 'user') {
-              messageId = prev.key as string;
-            }
-            resendMessages({
-              sessionId: currentConversation,
-              messageId,
-              aiEmployee: currentEmployee,
-            });
-          }}
-          icon={<ReloadOutlined />}
-          type="text"
-        />
-      }
-      type="warning"
-      showIcon
-    />
+    showAlert && (
+      <Alert
+        message={<>{msg.content} </>}
+        action={
+          <Button
+            onClick={() => {
+              let messageId: string;
+              const prev = messages[messages.length - 2];
+              if (prev && prev.role !== 'user') {
+                messageId = prev.key as string;
+              }
+              resendMessages({
+                sessionId: currentConversation,
+                messageId,
+                aiEmployee: currentEmployee,
+              });
+            }}
+            icon={<ReloadOutlined />}
+            type="text"
+          />
+        }
+        type="warning"
+        showIcon
+      />
+    )
   );
 });
 
