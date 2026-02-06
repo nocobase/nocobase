@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Drawer, Input, Select, Button, Tag, Space, Typography, Empty, Tooltip, message } from 'antd';
-import { DeleteOutlined, CopyOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
+import { DownloadOutlined, CopyOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useToken } from '@nocobase/client';
 import { useT } from '../../locale';
@@ -219,11 +219,24 @@ export const DebugPanel: React.FC = () => {
     });
   }, [logs, filterType, searchText]);
 
-  const handleClear = () => {
-    if (currentConversation) {
-      aiDebugLogger.clearSession(currentConversation);
-      setLogs([]);
-    }
+  const handleExport = () => {
+    if (!currentConversation || logs.length === 0) return;
+    const session = aiDebugLogger.getSession(currentConversation);
+    const exportData = {
+      sessionId: currentConversation,
+      employeeId: session?.employeeId,
+      employeeName: session?.employeeName,
+      exportedAt: new Date().toISOString(),
+      logs,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const name = session?.employeeName || 'unknown';
+    a.download = `ai-chat-log-${name}-${new Date().toISOString().slice(0, 16).replace('T', '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -243,8 +256,8 @@ export const DebugPanel: React.FC = () => {
       open={showDebugPanel}
       onClose={() => setShowDebugPanel(false)}
       extra={
-        <Button icon={<DeleteOutlined />} size="small" onClick={handleClear}>
-          {t('Clear')}
+        <Button icon={<DownloadOutlined />} size="small" onClick={handleExport} disabled={logs.length === 0}>
+          {t('Export')}
         </Button>
       }
     >
