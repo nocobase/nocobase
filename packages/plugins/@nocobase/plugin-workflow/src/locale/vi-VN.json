@@ -254,5 +254,13 @@
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.",
   "Yes": "Yes",
-  "concat": "concat"
+  "concat": "concat",
+  "Failed to move node": "Không thể di chuyển nút",
+  "Confirm move": "Xác nhận di chuyển",
+  "Moving this node may remove variable references.": "Di chuyển nút này có thể loại bỏ các tham chiếu biến.",
+  "Impacted current node variables": "Các biến mà nút hiện tại tham chiếu",
+  "Impacted dependent node variables": "Các nút tham chiếu đến biến của nút hiện tại",
+  "Keep variable references": "Giữ tham chiếu biến",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Giữ tham chiếu biến cần điều chỉnh thủ công, nếu không quy trình có thể lỗi.",
+  "Failed to update node variables": "Không thể cập nhật biến của nút"
 }

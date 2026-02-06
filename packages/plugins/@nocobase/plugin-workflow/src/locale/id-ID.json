@@ -254,5 +254,13 @@
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Alur kerja akan dipicu langsung setelah tombol diklik, tanpa menyimpan data. Hanya mendukung untuk diikat dengan \"Peristiwa tindakan kustom\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Alur kerja dengan tipe tidak dikenal akan menyebabkan kesalahan. Harap hapus atau periksa plugin yang menyediakan tipe ini.",
   "Yes": "Yes",
-  "concat": "gabungkan"
+  "concat": "gabungkan",
+  "Failed to move node": "Gagal memindahkan node",
+  "Confirm move": "Konfirmasi pemindahan",
+  "Moving this node may remove variable references.": "Memindahkan node ini dapat menghapus referensi variabel.",
+  "Impacted current node variables": "Variabel yang dirujuk oleh node saat ini",
+  "Impacted dependent node variables": "Node yang merujuk variabel node saat ini",
+  "Keep variable references": "Pertahankan referensi variabel",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Mempertahankan referensi variabel memerlukan penyesuaian manual, jika tidak alur kerja dapat gagal.",
+  "Failed to update node variables": "Gagal memperbarui variabel node"
 }

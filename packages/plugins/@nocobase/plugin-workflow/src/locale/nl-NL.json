@@ -253,5 +253,13 @@
   "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.",
-  "Yes": "Yes"
+  "Yes": "Yes",
+  "Failed to move node": "Verplaatsen van knooppunt mislukt",
+  "Confirm move": "Verplaatsing bevestigen",
+  "Moving this node may remove variable references.": "Het verplaatsen van dit knooppunt kan variabele verwijzingen verwijderen.",
+  "Impacted current node variables": "Variabelen waarnaar de huidige node verwijst",
+  "Impacted dependent node variables": "Nodes die naar variabelen van de huidige node verwijzen",
+  "Keep variable references": "Variabelverwijzingen behouden",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Het behouden van variabelverwijzingen vereist handmatige aanpassing, anders kan de workflow falen.",
+  "Failed to update node variables": "Bijwerken van knooppuntvariabelen mislukt"
 }

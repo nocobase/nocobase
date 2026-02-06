@@ -254,4 +254,12 @@
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.",
   "Yes": "Yes",
+  "Failed to move node": "節點移動失敗",
+  "Confirm move": "確認移動",
+  "Moving this node may remove variable references.": "移動此節點可能會移除變數引用。",
+  "Impacted current node variables": "目前節點引用的變數",
+  "Impacted dependent node variables": "引用目前節點變數的節點",
+  "Keep variable references": "保留變數引用",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "已保留變數引用，請手動調整，否則工作流執行可能出錯。",
+  "Failed to update node variables": "更新節點變數失敗"
 }
