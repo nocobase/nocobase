@@ -708,17 +708,6 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.indexFieldForAI();
-
-    this.app.dataSourceManager.afterAddDataSource(() => {
-      let totalBytes = 0;
-      const index = this.app.aiManager.documentManager.getIndex('dataModels.fields');
-
-      index.export((key, data) => {
-        totalBytes += Buffer.byteLength(data);
-      });
-
-      console.log('index size:', totalBytes);
-    });
   }
 
   indexFieldForAI() {
