@@ -31,12 +31,15 @@ const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
       if (!message.content?.messageId) {
         continue;
       }
-      toolCalls[message.content.messageId] = message.content.tool_calls.map((x) => ({
-        id: x.id,
-        name: x.name,
-        invokeStatus: x.invokeStatus,
-      }));
+      toolCalls[message.content.messageId] = message.content.tool_calls
+        .filter((x) => x.willInterrupt === true)
+        .map((x) => ({
+          id: x.id,
+          name: x.name,
+          invokeStatus: x.invokeStatus,
+        }));
     }
+
     set({ toolCalls });
   },
   updateToolCallWaiting: (messageId: string, toolCallId: string) => {

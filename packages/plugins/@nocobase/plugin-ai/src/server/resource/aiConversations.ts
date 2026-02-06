@@ -224,15 +224,21 @@ export default {
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
+      const toolsList = await plugin.ai.toolsManager.listTools();
+      const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
+
       ctx.body = {
         rows: data.map((row: Model) => {
           if (row?.toolCalls?.length ?? 0 > 0) {
             for (const toolCall of row.toolCalls) {
+              const tools = toolsMap.get(toolCall.name);
               const toolMessage = toolMessageMap.get(toolCall.id);
               toolCall.invokeStatus = toolMessage?.invokeStatus;
               toolCall.auto = toolMessage?.auto;
               toolCall.status = toolMessage?.status;
               toolCall.content = toolMessage?.content; // [AI_DEBUG] tool execution result
+              toolCall.execution = tools?.execution;
+              toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
             }
           }
 
