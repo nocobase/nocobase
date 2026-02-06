@@ -10,14 +10,15 @@
 import { AIManager, defineTools } from '@nocobase/ai';
 import { DataSource } from '@nocobase/data-source-manager';
 import { Field } from '@nocobase/database';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Search field metadata")}}',
-    about:
-      '{{t("Search fields in data models by keyword (english first). Returns either search results or a suggested query.")}}',
+    title: `{{t("ai.tools.searchFieldMetadata.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.searchFieldMetadata.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'searchFieldMetadata',

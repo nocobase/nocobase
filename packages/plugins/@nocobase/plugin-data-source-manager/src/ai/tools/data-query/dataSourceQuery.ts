@@ -11,13 +11,15 @@ import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
 import { buildPagedToolResult, normalizeLimitOffset, truncateLongStrings, MAX_QUERY_LIMIT } from './utils';
+// @ts-ignore
+import pkg from '../../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Data source query")}}',
-    about: '{{t("Use dataSource, collectionName, and collection fields to query data from the database")}}',
+    title: `{{t("ai.tools.dataSourceQuery.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.dataSourceQuery.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'dataSourceQuery',

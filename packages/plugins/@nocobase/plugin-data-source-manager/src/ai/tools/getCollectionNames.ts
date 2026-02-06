@@ -9,13 +9,15 @@
 
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Get collection names")}}',
-    about: '{{t("Retrieve names and titles map of all collections")}}',
+    title: `{{t("ai.tools.getCollectionNames.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.getCollectionNames.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'getCollectionNames',

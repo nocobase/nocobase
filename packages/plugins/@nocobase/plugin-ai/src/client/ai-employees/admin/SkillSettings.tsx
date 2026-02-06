@@ -270,7 +270,7 @@ export const Skills: React.FC = () => {
                         {t('Custom skills')}
                       </div>
                       <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
-                        {t('Created by workflow. You can add/remove and set default permissions.')}
+                        {t('Created via workflow. You can add/remove and set default permissions.')}
                       </div>
                     </div>
                   ),
@@ -292,9 +292,9 @@ export const Skills: React.FC = () => {
                       >
                         <Button type="primary" icon={<PlusOutlined />}>
                           {t('Add skill')}
-                          <Tooltip title={t('Tools available for LLM function calling')}>
-                            <QuestionCircleOutlined style={{ marginLeft: '4px' }} />
-                          </Tooltip>
+                          {/* <Tooltip title={t('Tools available for LLM function calling')}> */}
+                          {/*   <QuestionCircleOutlined style={{ marginLeft: '4px' }} /> */}
+                          {/* </Tooltip> */}
                         </Button>
                       </Dropdown>
                     </div>

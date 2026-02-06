@@ -9,18 +9,20 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Get context environment")}}',
-    about: '{{t("Get current page/block/flow model metadata from context")}}',
+    title: `{{t("ai.tools.getContextApis.title")}}`,
+    about: `{{t("ai.tools.getContextApis.about")}}`,
   },
   definition: {
-    name: 'getContextEnvs',
-    description: 'Get current page/block/flow model metadata from context',
+    name: 'getContextApis',
+    description: 'Get available API methods from context',
     schema: z.object({}),
   },
   invoke: async (ctx, _args, id) => {

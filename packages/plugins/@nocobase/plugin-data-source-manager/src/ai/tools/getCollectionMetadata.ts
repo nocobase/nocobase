@@ -9,13 +9,15 @@
 
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Get collection metadata")}}',
-    about: '{{t("Retrieve metadata for specified collections and their fields")}}',
+    title: `{{t("ai.tools.getCollectionMetadata.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.getCollectionMetadata.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'getCollectionMetadata',

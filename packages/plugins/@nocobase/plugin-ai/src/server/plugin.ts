@@ -104,7 +104,7 @@ export class PluginAIServer extends Plugin {
 
     toolsManager.registerTools([
       createDocsSearchTool({ description: docsModulesDescription }),
-      createReadDocEntryTool({ description: docsModulesDescription }),
+      createReadDocEntryTool(),
     ]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this));

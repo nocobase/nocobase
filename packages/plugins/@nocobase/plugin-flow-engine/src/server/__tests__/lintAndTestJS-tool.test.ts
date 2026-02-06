@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import lintAndTestJS from '../ai/tools/coding/lintAndTestJS';
+import lintAndTestJS from '../../ai/tools/lintAndTestJS';
 
 describe('lintAndTestJS Tool', () => {
   it('should have correct tool metadata', () => {

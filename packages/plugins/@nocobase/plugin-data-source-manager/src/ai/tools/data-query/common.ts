@@ -8,12 +8,14 @@
  */
 
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../../package.json';
 
 export const ArgSchema = z.object({
-  datasource: z.string().describe('{{t("Data source key")}}'),
-  collectionName: z.string().describe('{{t("Collection name")}}'),
-  fields: z.array(z.string()).describe('{{t("Fields to be queried")}}'),
-  appends: z.array(z.string()).describe('{{t("Related collection to be queried")}}'),
+  datasource: z.string().describe(`{{t("ai.tools.dataQuery.args.datasource", { ns: "${pkg.name}" })}}`),
+  collectionName: z.string().describe(`{{t("ai.tools.dataQuery.args.collectionName", { ns: "${pkg.name}" })}}`),
+  fields: z.array(z.string()).describe(`{{t("ai.tools.dataQuery.args.fields", { ns: "${pkg.name}" })}}`),
+  appends: z.array(z.string()).describe(`{{t("ai.tools.dataQuery.args.appends", { ns: "${pkg.name}" })}}`),
   filter: z.object({}).catchall(z.any()).describe(`# Parameters definition
 \`\`\`
 export type QueryCondition = {
@@ -68,13 +70,9 @@ const example2: QueryObject = {
 const example3: QueryObject = { age: { $lt: 50 } };
 \`\`\`
 `),
-  sort: z
-    .array(z.string())
-    .describe(
-      '{{t("Sort field names. By default, they are in ascending order. A minus sign before the field name indicates descending order")}}',
-    ),
-  offset: z.number().optional().describe('{{t("Offset of records to be queried")}}'),
-  limit: z.number().optional().describe('{{t("Maximum number of records to be queried")}}'),
+  sort: z.array(z.string()).describe(`{{t("ai.tools.dataQuery.args.sort", { ns: "${pkg.name}" })}}`),
+  offset: z.number().optional().describe(`{{t("ai.tools.dataQuery.args.offset", { ns: "${pkg.name}" })}}`),
+  limit: z.number().optional().describe(`{{t("ai.tools.dataQuery.args.limit", { ns: "${pkg.name}" })}}`),
 });
 
 export type ArgType = z.infer<typeof ArgSchema>;

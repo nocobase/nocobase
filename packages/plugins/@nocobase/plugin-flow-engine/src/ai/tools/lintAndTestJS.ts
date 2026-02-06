@@ -9,15 +9,16 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Lint and test JavaScript code")}}',
-    about:
-      '{{t("Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.")}}',
+    title: `{{t("ai.tools.lintAndTestJS.title")}}`,
+    about: `{{t("ai.tools.lintAndTestJS.about")}}`,
   },
   definition: {
     name: 'lintAndTestJS',

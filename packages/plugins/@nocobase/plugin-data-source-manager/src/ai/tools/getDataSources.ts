@@ -9,13 +9,15 @@
 
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Get data sources")}}',
-    about: '{{t("Retrieve list of all available data sources")}}',
+    title: `{{t("ai.tools.getDataSources.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.getDataSources.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'getDataSources',

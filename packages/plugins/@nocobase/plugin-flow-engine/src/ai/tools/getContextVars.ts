@@ -9,15 +9,16 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Get context variables")}}',
-    about:
-      '{{t("Available variables from context, the actual value should be got via `await ctx.getVar()`, e.g. `await ctx.getVar(\'ctx.popup.record\')`")}}',
+    title: `{{t("ai.tools.getContextVars.title")}}`,
+    about: `{{t("ai.tools.getContextVars.about")}}`,
   },
   definition: {
     name: 'getContextVars',

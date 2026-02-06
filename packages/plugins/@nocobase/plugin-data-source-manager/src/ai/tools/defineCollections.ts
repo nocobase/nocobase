@@ -11,6 +11,8 @@ import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
 import _ from 'lodash';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 const idField = {
   name: 'id',
@@ -20,7 +22,7 @@ const idField = {
   allowNull: false,
   uiSchema: {
     type: 'number',
-    title: '{{t("ID")}}',
+    title: `{{t("ai.tools.defineCollections.fields.id", { ns: "${pkg.name}" })}}`,
     'x-component': 'InputNumber',
     'x-component-props': {
       stringMode: true,
@@ -38,7 +40,7 @@ const createdAtField = {
   field: 'createdAt',
   uiSchema: {
     type: 'datetime',
-    title: '{{t("Created at")}}',
+    title: `{{t("ai.tools.defineCollections.fields.createdAt", { ns: "${pkg.name}" })}}`,
     'x-component': 'DatePicker',
     'x-component-props': {},
     'x-read-pretty': true,
@@ -51,7 +53,7 @@ const updatedAtField = {
   interface: 'updatedAt',
   uiSchema: {
     type: 'datetime',
-    title: '{{t("Last updated at")}}',
+    title: `{{t("ai.tools.defineCollections.fields.updatedAt", { ns: "${pkg.name}" })}}`,
     'x-component': 'DatePicker',
     'x-component-props': {},
     'x-read-pretty': true,
@@ -67,8 +69,8 @@ class IntentError extends Error {
 export default defineTools({
   scope: 'SPECIFIED',
   introduction: {
-    title: '{{t("Define collections")}}',
-    about: '{{t("Create or edit collections")}}',
+    title: `{{t("ai.tools.defineCollections.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.defineCollections.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'defineCollections',

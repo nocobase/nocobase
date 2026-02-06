@@ -216,7 +216,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (!pluginRoot) {
       return;
     }
-    const basePath = resolve(pluginRoot, 'server/ai');
+    const basePath = resolve(pluginRoot, 'ai');
     if (!(await fsExists(basePath))) {
       return;
     }

@@ -10,14 +10,15 @@
 import { defineTools } from '@nocobase/ai';
 import { ArgSchema, ArgType } from './common';
 import { Context } from '@nocobase/actions';
+// @ts-ignore
+import pkg from '../../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Data source records counting")}}',
-    about:
-      '{{t("Use dataSource, collectionName, and collection fields to query data from the database, get total count of records")}}',
+    title: `{{t("ai.tools.dataSourceCounting.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.dataSourceCounting.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'dataSourceCounting',

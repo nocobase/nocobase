@@ -9,6 +9,8 @@
 
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 const createPrompt = `You are now entering the **New Schema Creation Flow**. Follow these rules:
 
@@ -50,8 +52,8 @@ export default defineTools({
   scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Intent Router")}}',
-    about: '{{t("Route intents to appropriate workflow")}}',
+    title: `{{t("ai.tools.intentRouter.title", { ns: "${pkg.name}" })}}`,
+    about: `{{t("ai.tools.intentRouter.about", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'intentRouter',
