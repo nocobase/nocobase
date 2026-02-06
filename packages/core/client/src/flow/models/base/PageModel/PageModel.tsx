@@ -157,10 +157,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 2) page with tabs: activeTab.documentTitle > active tab name
    */
   async updateDocumentTitle() {
-    // Only root pages should mutate browser title.
-    if (this.context?.closable) {
-      return;
-    }
     if (getPageActive(this.context) === false) {
       return;
     }

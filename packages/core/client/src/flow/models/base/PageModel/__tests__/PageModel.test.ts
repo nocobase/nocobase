@@ -319,5 +319,28 @@ describe('PageModel', () => {
 
       expect(document.title).toBe('Fallback tab title');
     });
+
+    it('should also update document title for closable page (popup)', async () => {
+      pageModel.props = { enableTabs: false, title: 'Popup page title' } as any;
+      (pageModel as any).context = {
+        closable: true,
+        view: {
+          inputArgs: { pageActive: true },
+          navigation: null,
+        },
+        resolveJsonTemplate: vi.fn(async () => 'Resolved popup doc title'),
+      } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Popup doc title',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Resolved popup doc title');
+    });
   });
 });
