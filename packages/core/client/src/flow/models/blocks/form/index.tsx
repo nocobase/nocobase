@@ -18,4 +18,6 @@ export * from './FormItemModel';
 export * from './FormJSFieldItemModel';
 export * from './JSFormActionModel';
 export * from './QuickEditFormModel';
+export * from './FormAssociationFieldGroupModel';
+export * from './FormAssociationItemModel';
 //
