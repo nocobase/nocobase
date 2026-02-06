@@ -130,4 +130,28 @@ const list = async (ctx: Context, next: Next) => {
   await next();
 };
 
-export default { list };
+const missing = async (ctx: Context, next: Next) => {
+  const { keys }: any = ctx.request.body || {};
+
+  const currentRoles = ctx.state.currentRoles || [];
+  if (!currentRoles.includes('root')) {
+    const role = await ctx.db.getRepository('roles').findOne({
+      filter: {
+        name: currentRoles,
+        allowConfigure: true,
+      },
+    });
+    if (!role) {
+      ctx.throw(403, 'No permission');
+    }
+  }
+
+  if (keys?.length > 0) {
+    const plugin = ctx.app.pm?.get('localization');
+    await plugin?.addNewTexts(keys.map((key) => ({ text: key.text, module: `resources.${key.ns}` })));
+  }
+
+  await next();
+};
+
+export default { list, missing };
