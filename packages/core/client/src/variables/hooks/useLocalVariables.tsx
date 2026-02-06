@@ -70,13 +70,16 @@ const useLocalVariables = (props?: Props) => {
   }
 
   const app = useApp();
-  const customVariables =
-    app.getVariables?.().map((variable) => {
-      return {
-        name: variable.name,
-        ctx: variable.useCtx(),
-      };
-    }) || [];
+  const customVariables = useMemo(
+    () =>
+      app.getVariables?.().map((variable) => {
+        return {
+          name: variable.name,
+          ctx: variable.useCtx(),
+        };
+      }) || [],
+    [],
+  );
 
   return useMemo(() => {
     return (
