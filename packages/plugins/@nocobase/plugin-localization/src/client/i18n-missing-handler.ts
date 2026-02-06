@@ -7,110 +7,82 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient, i18n } from '@nocobase/client';
+import { FlowEngineContext } from '@nocobase/flow-engine';
 import _ from 'lodash';
 
-const sentMissingKeys = new Set<string>();
-const pendingMissingKeys = new Map<string, string>();
-const DEBOUNCE_DELAY = 2000;
+export class MissingKeyHandler {
+  static DEBOUNCE_DELAY = 2000;
+  private sentMissingKeys = new Set<string>();
+  private pendingMissingKeys = new Map<string, { key: string; ns: string }>();
+  private submitPendingKeysDebounced: () => void;
+  private missingKeyHandler: (lngs: readonly string[], ns: string, key: string) => void;
 
-const shouldSaveKey = (key: string): boolean => {
-  if (key.startsWith('t{{') || key.startsWith('{{t(')) {
-    return false;
-  }
-  return true;
-};
-
-const submitPendingKeys = async (apiClient: APIClient) => {
-  if (pendingMissingKeys.size === 0) {
-    return;
+  constructor(private context: FlowEngineContext) {
+    this.submitPendingKeysDebounced = _.debounce(() => {
+      this.submitPendingKeys();
+    }, MissingKeyHandler.DEBOUNCE_DELAY);
   }
 
-  try {
-    const keysToSubmit = Array.from(pendingMissingKeys.entries()).map(([key, ns]) => ({
-      text: key,
-      ns,
-    }));
-
-    await apiClient.request({
-      method: 'POST',
-      url: '/localizationTexts:missing',
-      data: {
-        keys: keysToSubmit,
-      },
-    });
-
-    pendingMissingKeys.clear();
-  } catch (error) {
-    console.error('[i18n] Failed to submit missing keys:', error);
-  }
-};
-
-const submitPendingKeysDebounced = _.debounce((apiClient: APIClient) => {
-  submitPendingKeys(apiClient);
-}, DEBOUNCE_DELAY);
-
-/**
- * 配置 i18n 实例的 saveMissing 和 missingKeyHandler
- */
-const configureMissingKeyHandling = ({ apiClient }: { apiClient: APIClient }) => {
-  i18n.options.saveMissing = true;
-  // 只关心当前语言
-  i18n.options.saveMissingTo = 'current';
-  // 不放大复数
-  i18n.options.saveMissingPlurals = false;
-  // 只有真正缺失才触发
-  i18n.options.updateMissing = false;
-
-  i18n.options.missingKeyHandler = async (
-    lngs: readonly string[],
-    ns: string,
-    key: string,
-    fallbackValue: string,
-    updateMissing: boolean,
-    options: any,
-  ) => {
-    try {
-      if (!shouldSaveKey(key)) {
-        return fallbackValue || key;
+  register() {
+    const { i18n } = this.context;
+    i18n.options.saveMissing = true;
+    // i18n.options.saveMissingTo = 'current';
+    this.missingKeyHandler = (lngs: readonly string[], ns: string, key: string) => {
+      if (!this.context.flowSettingsEnabled) {
+        return;
       }
-
       const uniqueKey = `${ns}:${key}`;
-      if (sentMissingKeys.has(uniqueKey)) {
-        return fallbackValue || key;
+      if (!key || this.sentMissingKeys.has(uniqueKey) || !this.shouldSaveKey(key)) {
+        return;
       }
 
-      sentMissingKeys.add(uniqueKey);
+      try {
+        this.sentMissingKeys.add(uniqueKey);
+        this.pendingMissingKeys.set(uniqueKey, { key, ns });
+        this.submitPendingKeysDebounced();
+      } catch (error) {
+        console.error('[i18n] Error in missingKeyHandler:', error);
+      }
 
-      pendingMissingKeys.set(key, ns);
+      return;
+    };
+    i18n.on('missingKey', this.missingKeyHandler);
+  }
 
-      // 防抖提交
-      submitPendingKeysDebounced(apiClient);
-    } catch (error) {
-      console.error('[i18n] Error in missingKeyHandler:', error);
+  unregister() {
+    const { i18n } = this.context;
+    i18n.options.saveMissing = false;
+    if (this.missingKeyHandler) {
+      i18n.off('missingKey', this.missingKeyHandler);
+      this.missingKeyHandler = undefined;
+    }
+  }
+
+  private shouldSaveKey(key: string): boolean {
+    // ignore keys that match the pattern {{t(...)}}
+    const ignorePattern = /^\{\{\s*t\(.*\)\s*\}\}$/;
+    return !ignorePattern.test(key);
+  }
+
+  private async submitPendingKeys() {
+    if (this.pendingMissingKeys.size === 0) {
+      return;
     }
 
-    return fallbackValue || key;
-  };
-};
+    try {
+      const keysToSubmit = Array.from(this.pendingMissingKeys.values()).map(({ key, ns }) => ({ text: key, ns }));
 
-export const registerMissingKeyHandler = ({ apiClient }: { apiClient: APIClient }) => {
-  const prevOptions = {
-    saveMissing: i18n.options.saveMissing,
-    saveMissingTo: i18n.options.saveMissingTo,
-    saveMissingPlurals: i18n.options.saveMissingPlurals,
-    updateMissing: i18n.options.updateMissing,
-    missingKeyHandler: i18n.options.missingKeyHandler,
-  };
+      await this.context.api.request({
+        method: 'POST',
+        url: '/localizationTexts:missing',
+        data: {
+          keys: keysToSubmit,
+        },
+      });
 
-  configureMissingKeyHandling({ apiClient });
-
-  return () => {
-    i18n.options.saveMissing = prevOptions.saveMissing;
-    i18n.options.saveMissingTo = prevOptions.saveMissingTo;
-    i18n.options.saveMissingPlurals = prevOptions.saveMissingPlurals;
-    i18n.options.updateMissing = prevOptions.updateMissing;
-    i18n.options.missingKeyHandler = prevOptions.missingKeyHandler;
-    submitPendingKeysDebounced.cancel();
-  };
-};
+      this.pendingMissingKeys.clear();
+    } catch (error) {
+      console.error('[i18n] Failed to submit missing keys:', error);
+    }
+  }
+}
