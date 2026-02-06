@@ -215,9 +215,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
       }
     }
 
-    if (usedDefault) {
-      rawValue = this.normalizeDefaultFilterValue(rawValue, fieldModel);
-    }
+    rawValue = this.normalizeAssociationFilterValue(rawValue, fieldModel);
 
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
@@ -231,15 +229,19 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return rawValue;
   }
 
-  normalizeDefaultFilterValue(value: any, fieldModel: FieldModel) {
+  normalizeAssociationFilterValue(value: any, fieldModel: FieldModel) {
     if (value === null || typeof value === 'undefined') {
       return value;
     }
-    const fieldNames = (fieldModel as any)?.props?.fieldNames;
-    if (!fieldNames || typeof fieldNames.value !== 'string') {
+    const collectionField = (fieldModel as any)?.context?.collectionField;
+    const isAssociation =
+      typeof collectionField?.isAssociationField === 'function'
+        ? collectionField.isAssociationField()
+        : !!collectionField?.target;
+    if (!isAssociation) {
       return value;
     }
-    const valueKey = fieldNames.value || 'value';
+    const valueKey = collectionField?.targetKey || collectionField?.targetCollection?.filterTargetKey || 'id';
     if (Array.isArray(value)) {
       if (value.length === 0) return value;
       return value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
