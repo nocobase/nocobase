@@ -289,6 +289,9 @@ PopupSubTableEditActionModel.registerFlow({
                 ? associationModel.context.getFormValues()
                 : associationModel?.context?.formValues) ?? associationModel?.context?.record,
           } as any);
+        const itemLength = Array.isArray(associationModel?.props?.value)
+          ? associationModel.props.value.length
+          : undefined;
         const itemIndex = (() => {
           try {
             const list = associationModel?.props?.value;
@@ -336,6 +339,7 @@ PopupSubTableEditActionModel.registerFlow({
             record: ctx.record,
             parentItem,
             itemIndex,
+            itemLength,
           },
           content: () => <EditFormContent model={ctx.model} />,
           styles: {

@@ -614,6 +614,7 @@ PopupSubTableFieldModel.registerFlow({
           value: (typeof ctx?.getFormValues === 'function' ? ctx.getFormValues() : ctx.formValues) ?? ctx.record,
         };
         const itemIndex = Array.isArray(ctx.model?.props?.value) ? ctx.model.props.value.length : 0;
+        const itemLength = itemIndex + 1;
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -627,6 +628,7 @@ PopupSubTableFieldModel.registerFlow({
             collectionField: ctx.collectionField,
             parentItem,
             itemIndex,
+            itemLength,
           },
           content: () => <EditFormContent model={ctx.model} scene="create" />,
           styles: {

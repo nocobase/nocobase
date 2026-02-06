@@ -289,10 +289,31 @@ const MemoCell: React.FC<CellProps> = React.memo(
           const namePath = fieldPath.pop();
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('item', {
-            get: () => rowFork.context.item,
-            cache: false,
-          });
+          if (rowFork) {
+            fork.context.defineProperty('item', {
+              get: () => rowFork.context.item,
+              cache: false,
+            });
+            fork.context.defineProperty('fieldIndex', {
+              get: () => rowFork.context.fieldIndex,
+              cache: false,
+            });
+          } else {
+            fork.context.defineProperty('item', {
+              get: () => {
+                const list = (parent as any)?.parent?.props?.value;
+                const length = Array.isArray(list) ? list.length : undefined;
+                return {
+                  index: rowIdx,
+                  length,
+                  __is_new__: isNew,
+                  __is_stored__: record?.__is_stored__,
+                  value: record,
+                };
+              },
+              cache: false,
+            });
+          }
 
           if (parent.props.readPretty) {
             fork.setProps({ value });
@@ -530,6 +551,51 @@ export class SubTableColumnModel<
   renderItem(): any {
     return (props) => {
       const { value, id, rowIdx, record, parentFieldIndex, parentItem } = props || {};
+      // 子表格列模型本身没有行级 fieldIndex，上下文中无法把 `roles.name` 解析成 `roles[0].name`，
+      // 导致“默认值/赋值规则”在对多关系字段下无法生效。
+      // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
+      const baseFieldIndex = parentFieldIndex ?? (this.parent as any)?.context?.fieldIndex ?? this.context?.fieldIndex;
+      const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
+      const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
+      const rowForkKey = `row:${baseIndexKey}:${String(rowIdx)}`;
+      const rowFork: any = (() => {
+        const fork = this.createFork({}, rowForkKey);
+        const associationFieldPath =
+          (this.parent as any)?.fieldPath ??
+          (this.parent as any)?.context?.fieldPath ??
+          (this.parent as any)?.props?.name;
+        const associationKey =
+          (this.parent as any)?.context?.collectionField?.name ||
+          String(associationFieldPath || '')
+            .split('.')
+            .filter(Boolean)
+            .pop();
+        const rowIndex = Number(rowIdx);
+        if (associationKey && Number.isFinite(rowIndex)) {
+          fork.context.defineProperty('fieldIndex', {
+            value: [...baseArr, `${associationKey}:${rowIndex}`],
+          });
+        }
+        fork.context.defineProperty('item', {
+          get: () => {
+            const parentItemCtx = (parentItem ?? this.context?.item) as any;
+            const isNew = record?.__is_new__;
+            const isStored = record?.__is_stored__;
+            const list = (this.parent as any)?.props?.value;
+            const length = Array.isArray(list) ? list.length : undefined;
+            return {
+              index: Number.isFinite(rowIndex) ? rowIndex : undefined,
+              length,
+              __is_new__: isNew,
+              __is_stored__: isStored,
+              value: record,
+              parentItem: parentItemCtx,
+            };
+          },
+          cache: false,
+        });
+        return fork;
+      })();
       return (
         <MemoCell
           value={value}

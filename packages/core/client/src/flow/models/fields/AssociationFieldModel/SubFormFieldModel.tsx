@@ -238,6 +238,8 @@ const ArrayNester = ({
                       length: itemLength,
                       isNew: rowValue?.isNew ?? rowValue?.__is_new__,
                       isStored: rowValue?.isStored ?? rowValue?.__is_stored__,
+                      __is_new__: rowValue?.__is_new__,
+                      __is_stored__: rowValue?.__is_stored__,
                       value: rowValue,
                       parentItem,
                     } satisfies ItemChain;
