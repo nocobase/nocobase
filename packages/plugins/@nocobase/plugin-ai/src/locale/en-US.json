@@ -134,6 +134,8 @@
   "Messages": "Messages",
   "Model": "Model",
   "Model settings": "Model settings",
+  "Display name": "Display name",
+  "Model id": "Model id",
   "New AI employee": "New AI employee",
   "New conversation": "New conversation",
   "New from template": "New from template",
@@ -226,7 +228,7 @@
   "Add LLM service": "Add LLM service",
   "Default LLM service": "Default LLM service",
   "Default model": "Default model",
-  "Enabled models": "Enabled models",
+  "Enabled Models": "Enabled Models",
   "Allowed models": "Allowed models",
   "Select allowed models (leave empty for all)": "Select allowed models (leave empty for all)",
   "If no models are selected, all enabled models will be available for this AI employee.": "If no models are selected, all enabled models will be available for this AI employee.",
@@ -243,7 +245,7 @@
   "default": "default",
   "Auto Mode": "Auto Mode",
   "Custom models": "Custom models",
-  "Use system recommended models for best results": "Use system recommended models for best results",
+  "Automatically use the best models selected by the system": "Automatically use the best models selected by the system",
   "Select models manually from the list": "Select models manually from the list",
   "Select the models allowed to use": "Select the models allowed to use",
   "Selected recommended models": "Selected recommended models",
@@ -264,5 +266,9 @@
   "ai.tools.getContextVars.title": "Get context variables",
   "ai.tools.getContextVars.about": "Available variables from context. Get values via `await ctx.getVar()`, e.g. `await ctx.getVar('ctx.popup.record')`.",
   "ai.tools.lintAndTestJS.title": "Lint and test JavaScript code",
-  "ai.tools.lintAndTestJS.about": "Lint, sandbox-check, and trial-run a JavaScript snippet. Returns diagnostics. Call before outputting final code."
+  "ai.tools.lintAndTestJS.about": "Lint, sandbox-check, and trial-run a JavaScript snippet. Returns diagnostics. Call before outputting final code.",
+  "System recommended": "System recommended",
+  "Select provider model": "Select provider model",
+  "Custom model input": "Custom model input",
+  "Add model": "Add model"
 }

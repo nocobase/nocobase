@@ -40,7 +40,7 @@ export default {
     {
       name: 'enabledModels',
       type: 'json',
-      defaultValue: [],
+      defaultValue: { mode: 'recommended', models: [] },
     },
     {
       name: 'modelOptions',

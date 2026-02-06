@@ -135,6 +135,8 @@
   "Messages": "消息",
   "Model": "模型",
   "Model settings": "模型设置",
+  "Display name": "展示名称",
+  "Model id": "模型标识", 
   "New AI employee": "新建 AI 员工",
   "New conversation": "新建对话",
   "New from template": "从模板新建",
@@ -227,7 +229,7 @@
   "Add LLM service": "添加 LLM 服务",
   "Default LLM service": "默认 LLM 服务",
   "Default model": "默认模型",
-  "Enabled models": "启用的模型",
+  "Enabled Models": "启用模型",
   "Allowed models": "可选模型范围",
   "Select allowed models (leave empty for all)": "选择可用模型（留空则使用全部）",
   "If no models are selected, all enabled models will be available for this AI employee.": "如果未选择任何模型，则该 AI 员工可使用所有已启用的模型。",
@@ -244,7 +246,7 @@
   "default": "默认",
   "Auto Mode": "自动模式",
   "Custom models": "自定义模型",
-  "Use system recommended models for best results": "使用系统推荐的模型以获得最佳效果",
+  "Automatically use the best models selected by the system": "自动使用系统选择的最佳模型",
   "Select models manually from the list": "从列表中手动选择模型",
   "Select the models allowed to use": "选择允许使用的模型",
   "Selected recommended models": "已选择的推荐模型",
@@ -267,5 +269,9 @@
   "ai.tools.getContextVars.title": "获取上下文变量",
   "ai.tools.getContextVars.about": "来自上下文的可用变量。通过 `await ctx.getVar()` 获取值，例如 `await ctx.getVar('ctx.popup.record')`。",
   "ai.tools.lintAndTestJS.title": "检查并测试 JavaScript 代码",
-  "ai.tools.lintAndTestJS.about": "对 JavaScript 代码进行语法检查、沙箱限制检查和试运行，返回诊断信息。输出最终代码前调用。"
+  "ai.tools.lintAndTestJS.about": "对 JavaScript 代码进行语法检查、沙箱限制检查和试运行，返回诊断信息。输出最终代码前调用。",
+"System recommended": "系统推荐",
+  "Select provider model": "选择服务商模型",
+  "Custom model input": "自定义模型输入",
+  "Add model": "添加模型"
 }

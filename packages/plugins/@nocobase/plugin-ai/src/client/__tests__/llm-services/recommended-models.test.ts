@@ -20,14 +20,22 @@ describe('recommended-models', () => {
       expect(recommendedModels.dashscope).toBeDefined();
     });
 
+    it('should have { label, value } structure', () => {
+      const first = recommendedModels.openai[0];
+      expect(first).toHaveProperty('label');
+      expect(first).toHaveProperty('value');
+      expect(typeof first.label).toBe('string');
+      expect(typeof first.value).toBe('string');
+    });
+
     it('should have anthropic recommended models', () => {
       expect(recommendedModels.anthropic.length).toBeGreaterThan(0);
-      expect(recommendedModels.anthropic).toContain('claude-sonnet-4-20250514');
+      expect(recommendedModels.anthropic.some((m) => m.value === 'claude-sonnet-4-5')).toBe(true);
     });
 
     it('should have openai recommended models', () => {
       expect(recommendedModels.openai.length).toBeGreaterThan(0);
-      expect(recommendedModels.openai).toContain('gpt-4o');
+      expect(recommendedModels.openai.some((m) => m.value === 'gpt-5.2-codex')).toBe(true);
     });
 
     it('ollama should have empty recommended models', () => {
@@ -37,15 +45,11 @@ describe('recommended-models', () => {
 
   describe('isRecommendedModel', () => {
     it('should return true for exact match', () => {
-      expect(isRecommendedModel('openai', 'gpt-4o')).toBe(true);
+      expect(isRecommendedModel('openai', 'gpt-5.2-codex')).toBe(true);
     });
 
-    it('should return true for partial match (model contains recommended)', () => {
-      expect(isRecommendedModel('anthropic', 'claude-sonnet-4-20250514-latest')).toBe(true);
-    });
-
-    it('should return true for partial match (recommended contains model)', () => {
-      expect(isRecommendedModel('anthropic', 'claude-sonnet-4')).toBe(true);
+    it('should return true for partial match (model starts with recommended id)', () => {
+      expect(isRecommendedModel('anthropic', 'claude-sonnet-4-5-latest')).toBe(true);
     });
 
     it('should return false for non-recommended model', () => {
@@ -56,17 +60,16 @@ describe('recommended-models', () => {
       expect(isRecommendedModel('unknown-provider', 'some-model')).toBe(false);
     });
 
-    it('should be case insensitive', () => {
-      expect(isRecommendedModel('openai', 'GPT-4O')).toBe(true);
-      expect(isRecommendedModel('OPENAI', 'gpt-4o')).toBe(false); // provider is case sensitive
+    it('should be case insensitive for model id', () => {
+      expect(isRecommendedModel('openai', 'GPT-5.2-CODEX')).toBe(true);
     });
   });
 
   describe('getRecommendedModels', () => {
-    it('should return recommended models for known provider', () => {
+    it('should return { label, value } array for known provider', () => {
       const models = getRecommendedModels('openai');
-      expect(models).toContain('gpt-4o');
-      expect(models).toContain('gpt-4o-mini');
+      expect(models.length).toBeGreaterThan(0);
+      expect(models[0]).toEqual({ label: 'GPT-5.2 Codex', value: 'gpt-5.2-codex' });
     });
 
     it('should return empty array for unknown provider', () => {

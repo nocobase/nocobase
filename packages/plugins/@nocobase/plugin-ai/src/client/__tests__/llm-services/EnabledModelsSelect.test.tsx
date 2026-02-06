@@ -7,172 +7,175 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-
-/**
- * EnabledModelsSelect Component Logic Tests
- *
- * These tests verify the core logic of the EnabledModelsSelect component
- * without full React rendering to avoid timeout issues.
- */
-
-// Test the hasOptionsContent utility function logic
-const hasOptionsContent = (options: any): boolean => {
-  if (!options || typeof options !== 'object') return false;
-  return Object.values(options).some((v) => v !== undefined && v !== null && v !== '');
-};
-
-// Test mode determination logic
-const determineMode = (enabledModels: any): 'auto' | 'custom' => {
-  const isEmpty = !enabledModels || (Array.isArray(enabledModels) && enabledModels.length === 0);
-  return isEmpty ? 'auto' : 'custom';
-};
+import { describe, it, expect } from 'vitest';
+import {
+  formatModelLabel,
+  normalizeEnabledModels,
+  EnabledModelsConfig,
+} from '../../llm-services/component/EnabledModelsSelect';
 
 describe('EnabledModelsSelect Logic', () => {
-  describe('P0: hasOptionsContent utility', () => {
-    it('should return false for null', () => {
-      expect(hasOptionsContent(null)).toBe(false);
+  describe('P0: normalizeEnabledModels', () => {
+    it('should return recommended mode for null', () => {
+      expect(normalizeEnabledModels(null)).toEqual({ mode: 'recommended', models: [] });
     });
 
-    it('should return false for undefined', () => {
-      expect(hasOptionsContent(undefined)).toBe(false);
+    it('should return recommended mode for undefined', () => {
+      expect(normalizeEnabledModels(undefined)).toEqual({ mode: 'recommended', models: [] });
     });
 
-    it('should return false for empty object', () => {
-      expect(hasOptionsContent({})).toBe(false);
+    it('should return recommended mode for empty array (old format)', () => {
+      expect(normalizeEnabledModels([])).toEqual({ mode: 'recommended', models: [] });
     });
 
-    it('should return false for object with only empty values', () => {
-      expect(hasOptionsContent({ apiKey: '', baseURL: null })).toBe(false);
+    it('should convert old string[] format to custom mode', () => {
+      const result = normalizeEnabledModels(['gpt-4o', 'gpt-4o-mini']);
+      expect(result.mode).toBe('custom');
+      expect(result.models).toEqual([
+        { label: 'gpt-4o', value: 'gpt-4o' },
+        { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
+      ]);
     });
 
-    it('should return true for object with valid apiKey', () => {
-      expect(hasOptionsContent({ apiKey: 'test-key' })).toBe(true);
+    it('should pass through new recommended format', () => {
+      const input: EnabledModelsConfig = { mode: 'recommended', models: [] };
+      expect(normalizeEnabledModels(input)).toEqual(input);
     });
 
-    it('should return true for object with valid baseURL', () => {
-      expect(hasOptionsContent({ baseURL: 'https://api.example.com' })).toBe(true);
-    });
-  });
-
-  describe('P0: Auto Mode default state', () => {
-    it('should return auto mode when enabledModels is empty array', () => {
-      expect(determineMode([])).toBe('auto');
+    it('should pass through new provider format', () => {
+      const input: EnabledModelsConfig = {
+        mode: 'provider',
+        models: [{ label: 'GPT-4o', value: 'gpt-4o' }],
+      };
+      expect(normalizeEnabledModels(input)).toEqual(input);
     });
 
-    it('should return auto mode when enabledModels is undefined', () => {
-      expect(determineMode(undefined)).toBe('auto');
-    });
-
-    it('should return auto mode when enabledModels is null', () => {
-      expect(determineMode(null)).toBe('auto');
-    });
-  });
-
-  describe('P0: Data echo mode detection', () => {
-    it('should return custom mode when enabledModels has values', () => {
-      expect(determineMode(['gpt-4o', 'gpt-4o-mini'])).toBe('custom');
-    });
-
-    it('should return custom mode when enabledModels has single value', () => {
-      expect(determineMode(['gpt-4o'])).toBe('custom');
+    it('should pass through new custom format', () => {
+      const input: EnabledModelsConfig = {
+        mode: 'custom',
+        models: [{ label: 'My Model', value: 'my-model-v1' }],
+      };
+      expect(normalizeEnabledModels(input)).toEqual(input);
     });
   });
 
-  describe('P0: Switch to Auto Mode behavior', () => {
-    it('should clear enabledModels when switching to Auto Mode', () => {
-      // Simulate the behavior
-      let enabledModels = ['gpt-4o', 'gpt-4o-mini'];
-      let mode: 'auto' | 'custom' = 'custom';
+  describe('P0: formatModelLabel', () => {
+    it('should strip models/ prefix and capitalize', () => {
+      expect(formatModelLabel('models/gemini-3-pro-preview')).toBe('Gemini-3-Pro-Preview');
+    });
 
-      // Switch to auto mode
-      const switchToAuto = () => {
-        mode = 'auto';
-        enabledModels = [];
+    it('should strip ft: prefix and capitalize', () => {
+      expect(formatModelLabel('ft:gpt-4o-mini')).toBe('Gpt-4o-Mini');
+    });
+
+    it('should strip accounts/.../models/ prefix', () => {
+      expect(formatModelLabel('accounts/abc123/models/my-model')).toBe('My-Model');
+    });
+
+    it('should handle simple model ids', () => {
+      expect(formatModelLabel('gpt-4o')).toBe('Gpt-4o');
+    });
+
+    it('should handle underscores', () => {
+      expect(formatModelLabel('my_custom_model')).toBe('My-Custom-Model');
+    });
+
+    it('should handle mixed separators', () => {
+      expect(formatModelLabel('my-custom_model-v2')).toBe('My-Custom-Model-V2');
+    });
+  });
+
+  describe('P0: 3-mode selection behavior', () => {
+    it('should support recommended mode with empty models', () => {
+      const config: EnabledModelsConfig = { mode: 'recommended', models: [] };
+      expect(config.mode).toBe('recommended');
+      expect(config.models).toEqual([]);
+    });
+
+    it('should support provider mode with label+value models', () => {
+      const config: EnabledModelsConfig = {
+        mode: 'provider',
+        models: [
+          { label: 'Gemini-3-Pro-Preview', value: 'models/gemini-3-pro-preview' },
+          { label: 'GPT-5.2-Codex', value: 'gpt-5.2-codex' },
+        ],
+      };
+      expect(config.mode).toBe('provider');
+      expect(config.models).toHaveLength(2);
+      expect(config.models[0].label).toBe('Gemini-3-Pro-Preview');
+      expect(config.models[0].value).toBe('models/gemini-3-pro-preview');
+    });
+
+    it('should support custom mode with user-entered label+value', () => {
+      const config: EnabledModelsConfig = {
+        mode: 'custom',
+        models: [{ label: 'My Custom GPT', value: 'custom-gpt-v1' }],
+      };
+      expect(config.mode).toBe('custom');
+      expect(config.models[0].label).toBe('My Custom GPT');
+      expect(config.models[0].value).toBe('custom-gpt-v1');
+    });
+  });
+
+  describe('P0: Mode switch clears models', () => {
+    it('should reset to empty models when switching mode', () => {
+      let config: EnabledModelsConfig = {
+        mode: 'provider',
+        models: [{ label: 'GPT-4o', value: 'gpt-4o' }],
       };
 
-      switchToAuto();
-
-      expect(enabledModels).toEqual([]);
-      expect(mode).toBe('auto');
-    });
-  });
-
-  describe('P1: Model list loading conditions', () => {
-    it('should not load models when provider is missing', () => {
-      const shouldLoad = (provider: string, options: any) => {
-        return !!provider && hasOptionsContent(options);
-      };
-
-      expect(shouldLoad('', { apiKey: 'test' })).toBe(false);
-    });
-
-    it('should not load models when options is empty', () => {
-      const shouldLoad = (provider: string, options: any) => {
-        return !!provider && hasOptionsContent(options);
-      };
-
-      expect(shouldLoad('openai', {})).toBe(false);
-    });
-
-    it('should load models when both provider and options are valid', () => {
-      const shouldLoad = (provider: string, options: any) => {
-        return !!provider && hasOptionsContent(options);
-      };
-
-      expect(shouldLoad('openai', { apiKey: 'test-key' })).toBe(true);
-    });
-  });
-
-  describe('P1: Mode switch behavior', () => {
-    it('should toggle between auto and custom modes', () => {
-      let mode: 'auto' | 'custom' = 'auto';
-      let enabledModels: string[] = [];
+      // Switch to recommended
+      config = { mode: 'recommended', models: [] };
+      expect(config.models).toEqual([]);
+      expect(config.mode).toBe('recommended');
 
       // Switch to custom
-      const switchToCustom = () => {
-        mode = 'custom';
-      };
-
-      // Switch to auto
-      const switchToAuto = () => {
-        mode = 'auto';
-        enabledModels = [];
-      };
-
-      expect(mode).toBe('auto');
-
-      switchToCustom();
-      expect(mode).toBe('custom');
-
-      switchToAuto();
-      expect(mode).toBe('auto');
-      expect(enabledModels).toEqual([]);
+      config = { mode: 'custom', models: [] };
+      expect(config.models).toEqual([]);
+      expect(config.mode).toBe('custom');
     });
   });
 
-  describe('P1: Model selection in Custom Mode', () => {
-    it('should allow multiple model selection', () => {
-      let selectedModels: string[] = [];
-
-      // Select models
-      selectedModels = ['gpt-4o'];
-      expect(selectedModels).toEqual(['gpt-4o']);
-
-      selectedModels = ['gpt-4o', 'gpt-4o-mini'];
-      expect(selectedModels).toEqual(['gpt-4o', 'gpt-4o-mini']);
-
-      selectedModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'];
-      expect(selectedModels).toHaveLength(3);
+  describe('P1: Submission fallback rule', () => {
+    it('should fallback to recommended when provider mode has no models', () => {
+      const config: EnabledModelsConfig = { mode: 'provider', models: [] };
+      const hasValidModels = config.models.some((m) => m.value);
+      const submitted = hasValidModels ? config : { mode: 'recommended' as const, models: [] };
+      expect(submitted.mode).toBe('recommended');
     });
 
-    it('should preserve selected models when staying in custom mode', () => {
-      const selectedModels = ['gpt-4o', 'gpt-4o-mini'];
-      const mode = 'custom';
+    it('should fallback to recommended when custom mode has no valid models', () => {
+      const config: EnabledModelsConfig = { mode: 'custom', models: [{ label: '', value: '' }] };
+      const hasValidModels = config.models.some((m) => m.value);
+      const submitted = hasValidModels ? config : { mode: 'recommended' as const, models: [] };
+      expect(submitted.mode).toBe('recommended');
+    });
 
-      // Simulating no change in mode
-      expect(mode).toBe('custom');
-      expect(selectedModels).toEqual(['gpt-4o', 'gpt-4o-mini']);
+    it('should keep provider mode when models exist', () => {
+      const config: EnabledModelsConfig = {
+        mode: 'provider',
+        models: [{ label: 'GPT-4o', value: 'gpt-4o' }],
+      };
+      const hasValidModels = config.models.some((m) => m.value);
+      const submitted = hasValidModels ? config : { mode: 'recommended' as const, models: [] };
+      expect(submitted.mode).toBe('provider');
+    });
+  });
+
+  describe('P1: Custom mode add/remove', () => {
+    it('should add a new empty model row', () => {
+      const models = [{ label: 'A', value: 'a' }];
+      const updated = [...models, { label: '', value: '' }];
+      expect(updated).toHaveLength(2);
+    });
+
+    it('should remove a model row by index', () => {
+      const models = [
+        { label: 'A', value: 'a' },
+        { label: 'B', value: 'b' },
+      ];
+      const updated = models.filter((_, i) => i !== 0);
+      expect(updated).toEqual([{ label: 'B', value: 'b' }]);
     });
   });
 });

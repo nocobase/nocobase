@@ -17,7 +17,7 @@ import { useT } from '../../locale';
 interface LLMServiceData {
   llmService: string;
   llmServiceTitle: string;
-  enabledModels: { id: string; label: string }[];
+  enabledModels: { label: string; value: string }[];
 }
 
 // localStorage helpers
@@ -63,19 +63,31 @@ export const ModelSwitcher: React.FC = () => {
 
   const llmServices = Array.isArray(data) ? data : [];
 
-  // Flatten all models into a single list
+  // Flatten all models into a single list for lookup/validation
   const allModels = useMemo(
     () =>
       llmServices.flatMap((s) =>
         s.enabledModels.map((m) => ({
-          // Validation fields
           llmService: s.llmService,
-          model: m.id,
-          // UI Option fields
+          model: m.value,
           label: m.label,
-          value: m.id,
+          value: m.value,
         })),
       ),
+    [llmServices],
+  );
+
+  // Grouped options for Select dropdown
+  const groupedOptions = useMemo(
+    () =>
+      llmServices.map((s) => ({
+        label: <span style={{ color: '#999', fontSize: 12 }}>{s.llmServiceTitle}</span>,
+        title: s.llmServiceTitle,
+        options: s.enabledModels.map((m) => ({
+          label: m.label,
+          value: m.value,
+        })),
+      })),
     [llmServices],
   );
 
@@ -151,7 +163,7 @@ export const ModelSwitcher: React.FC = () => {
         size="small"
         value={value}
         onChange={handleChange}
-        options={allModels}
+        options={groupedOptions}
         style={{
           minWidth: 140,
           fontSize: 12,

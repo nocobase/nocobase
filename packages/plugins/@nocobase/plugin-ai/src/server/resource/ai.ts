@@ -131,18 +131,39 @@ const aiResource: ResourceOptions = {
     },
 
     listAllEnabledModels: async (ctx, next) => {
-      const services = await ctx.db.getRepository('llmServices').find();
+      const services = await ctx.db.getRepository('llmServices').find({ sort: 'sort' });
       const llmServices = services
         .map((service) => {
-          let models: string[] = service.enabledModels || [];
+          const raw = service.enabledModels;
+          let enabledModels: { label: string; value: string }[];
 
-          // If enabledModels is empty, use recommended models
-          if (models.length === 0) {
-            models = getRecommendedModels(service.provider);
+          // Handle new { mode, models } format
+          if (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.mode) {
+            if (raw.mode === 'recommended') {
+              enabledModels = getRecommendedModels(service.provider);
+            } else {
+              // provider or custom mode
+              enabledModels = (raw.models || [])
+                .filter((m: { value: string }) => m.value)
+                .map((m: { label: string; value: string }) => ({
+                  label: m.label || m.value,
+                  value: m.value,
+                }));
+            }
+          } else if (Array.isArray(raw)) {
+            // Backward compat: old string[] format
+            if (raw.length === 0) {
+              enabledModels = getRecommendedModels(service.provider);
+            } else {
+              enabledModels = raw.map((id: string) => ({ label: id, value: id }));
+            }
+          } else {
+            // null/undefined
+            enabledModels = getRecommendedModels(service.provider);
           }
 
           // Skip services with no available models
-          if (models.length === 0) {
+          if (enabledModels.length === 0) {
             return null;
           }
 
@@ -150,11 +171,7 @@ const aiResource: ResourceOptions = {
             llmService: service.name,
             llmServiceTitle: service.title,
             provider: service.provider,
-            enabledModels: models.map((id: string) => ({
-              id,
-              label: id,
-            })),
-            isAutoMode: (service.enabledModels || []).length === 0,
+            enabledModels,
           };
         })
         .filter(Boolean);

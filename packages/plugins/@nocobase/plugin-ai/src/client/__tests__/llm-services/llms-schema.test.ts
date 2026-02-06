@@ -20,10 +20,11 @@ describe('LLM Schema', () => {
       expect(drawerProperties.provider['x-component']).toBe('ProviderSelect');
     });
 
-    it('should have enabledModels field as required', () => {
+    it('should have enabledModels field with object type', () => {
       expect(drawerProperties.enabledModels).toBeDefined();
-      expect(drawerProperties.enabledModels.required).toBe(true);
+      expect(drawerProperties.enabledModels.type).toBe('object');
       expect(drawerProperties.enabledModels['x-component']).toBe('EnabledModelsSelect');
+      expect(drawerProperties.enabledModels.required).toBeUndefined();
     });
 
     it('should have title field as optional (no required)', () => {
@@ -79,15 +80,6 @@ describe('LLM Schema', () => {
     describe('P1: Field order', () => {
       it('should have correct field order in schema', () => {
         const fieldKeys = Object.keys(drawerProperties);
-        const expectedOrder = [
-          'provider',
-          'options',
-          'enabledModels',
-          'title',
-          'options.baseURL',
-          'testFlight',
-          'footer',
-        ];
 
         // Check relative positions
         expect(fieldKeys.indexOf('provider')).toBeLessThan(fieldKeys.indexOf('options'));
@@ -110,9 +102,10 @@ describe('LLM Schema', () => {
       expect(editDrawerProperties.provider['x-component']).toBe('ProviderDisplay');
     });
 
-    it('should have enabledModels field as required', () => {
+    it('should have enabledModels field with object type', () => {
       expect(editDrawerProperties.enabledModels).toBeDefined();
-      expect(editDrawerProperties.enabledModels.required).toBe(true);
+      expect(editDrawerProperties.enabledModels.type).toBe('object');
+      expect(editDrawerProperties.enabledModels.required).toBeUndefined();
     });
 
     it('should have title field as optional', () => {
@@ -138,9 +131,9 @@ describe('LLM Schema', () => {
   });
 
   describe('P0: Data storage structure', () => {
-    it('should store enabledModels as array type', () => {
+    it('should store enabledModels as object type', () => {
       const drawerProperties = createLLMSchema.properties.drawer.properties;
-      expect(drawerProperties.enabledModels.type).toBe('array');
+      expect(drawerProperties.enabledModels.type).toBe('object');
     });
 
     it('should store options as object type', () => {

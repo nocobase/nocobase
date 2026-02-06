@@ -13,6 +13,7 @@ import React, { useState } from 'react';
 import { Alert, Button, Divider, App, Tooltip } from 'antd';
 import { RocketOutlined } from '@ant-design/icons';
 import { getRecommendedModels } from '../../../common/recommended-models';
+import { normalizeEnabledModels } from './EnabledModelsSelect';
 import { useT } from '../../locale';
 
 export const LLMTestFlight: React.FC = observer(() => {
@@ -34,18 +35,22 @@ export const LLMTestFlight: React.FC = observer(() => {
     }
 
     // Determine which model to use
+    const config = normalizeEnabledModels(enabledModels);
     let model: string;
-    if (!enabledModels || enabledModels.length === 0) {
-      // Auto Mode: use first recommended model
+    if (config.mode === 'recommended') {
       const recommended = getRecommendedModels(provider);
       if (recommended.length === 0) {
         message.warning(t('No recommended models available for this provider'));
         return;
       }
-      model = recommended[0];
+      model = recommended[0].value;
     } else {
-      // Custom Mode: use first enabled model
-      model = enabledModels[0];
+      // provider or custom mode
+      if (config.models.length === 0) {
+        message.warning(t('No recommended models available for this provider'));
+        return;
+      }
+      model = config.models[0].value;
     }
 
     setSuccessful(false);

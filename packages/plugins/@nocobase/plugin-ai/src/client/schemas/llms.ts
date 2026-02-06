@@ -37,9 +37,9 @@ export const createLLMSchema = {
           },
         },
         enabledModels: {
-          type: 'array',
+          type: 'object',
           'x-decorator': 'FormItem',
-          title: '{{ t("Enabled models") }}',
+          title: '{{ t("Enabled Models") }}',
           'x-component': 'EnabledModelsSelect',
           'x-reactions': {
             dependencies: ['provider'],
@@ -266,9 +266,9 @@ export const llmsSchema = {
                               'x-component': 'Settings',
                             },
                             enabledModels: {
-                              type: 'array',
+                              type: 'object',
                               'x-decorator': 'FormItem',
-                              title: '{{ t("Enabled models") }}',
+                              title: '{{ t("Enabled Models") }}',
                               'x-component': 'EnabledModelsSelect',
                             },
                             title: {

@@ -11,18 +11,20 @@ import React, { useEffect, useState } from 'react';
 import { useForm, useField } from '@formily/react';
 import { Select } from 'antd';
 import { Field, LifeCycleTypes } from '@formily/core';
+import { normalizeEnabledModels } from './EnabledModelsSelect';
 
 export const DefaultModelSelect: React.FC<any> = (props) => {
   const [options, setOptions] = useState<{ label: string; value: string }[]>([]);
   const field = useField<Field>();
   const form = useForm();
 
-  const updateOptions = (enabledModels: string[]) => {
-    const items = (enabledModels || []).map((id: string) => ({
-      label: id,
-      value: id,
-    }));
-    setOptions(items);
+  const updateOptions = (enabledModels: unknown) => {
+    const config = normalizeEnabledModels(enabledModels);
+    if (config.mode === 'recommended') {
+      setOptions([]);
+      return;
+    }
+    setOptions(config.models.filter((m) => m.value));
   };
 
   useEffect(() => {
