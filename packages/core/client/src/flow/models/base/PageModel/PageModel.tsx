@@ -156,7 +156,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 1) page without tabs: page.documentTitle > page title
    * 2) page with tabs: activeTab.documentTitle > active tab name
    */
-  async updateDocumentTitle(preferredActiveTabKey?: string) {
+  async updateDocumentTitle(preferredActiveTabKey?: string, retryCount = 0) {
     if (getPageActive(this.context) === false) {
       return;
     }
@@ -181,6 +181,12 @@ export class PageModel extends FlowModel<PageModelStructure> {
       const activeTabModel = activeTabKey
         ? (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
         : this.getFirstTab();
+      if (!activeTabModel && activeTabKey && retryCount < 5) {
+        window.setTimeout(() => {
+          void this.updateDocumentTitle(activeTabKey, retryCount + 1);
+        }, 0);
+        return;
+      }
       const tabDocumentTitle = await resolveTemplate(activeTabModel?.stepParams?.pageTabSettings?.tab?.documentTitle);
       nextTitle = tabDocumentTitle || activeTabModel?.getTabTitle?.() || '';
     } else {

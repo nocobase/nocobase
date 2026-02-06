@@ -381,5 +381,37 @@ describe('PageModel', () => {
 
       expect(document.title).toBe('New tab');
     });
+
+    it('should retry once when active tab model is not ready yet', async () => {
+      vi.useFakeTimers();
+      try {
+        pageModel.props = { enableTabs: true, tabActiveKey: 'tab-late' } as any;
+        const lateTab = {
+          uid: 'tab-late',
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                documentTitle: '',
+              },
+            },
+          },
+          getTabTitle: vi.fn(() => 'Late tab'),
+          context: {},
+          subModels: { grid: { mapSubModels: vi.fn() } },
+        };
+        const getModel = vi.fn().mockReturnValueOnce(undefined).mockReturnValueOnce(lateTab).mockReturnValue(lateTab);
+        (pageModel as any).flowEngine = { getModel } as any;
+
+        await (pageModel as any).updateDocumentTitle('tab-late');
+        expect(document.title).not.toBe('Late tab');
+
+        vi.runOnlyPendingTimers();
+        await Promise.resolve();
+
+        expect(document.title).toBe('Late tab');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });
