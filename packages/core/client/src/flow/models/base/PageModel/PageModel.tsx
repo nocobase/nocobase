@@ -23,6 +23,7 @@ import {
   FlowSettingsButton,
   getEmitterViewActivatedVersion,
   getPageActive,
+  parsePathnameToViewParams,
   tExpr,
   VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
@@ -159,6 +160,17 @@ export class PageModel extends FlowModel<PageModelStructure> {
   async updateDocumentTitle(preferredActiveTabKey?: string, retryCount = 0) {
     if (getPageActive(this.context) === false) {
       return;
+    }
+
+    const hasRouteNavigation = !!this.context?.view?.navigation;
+    const currentViewUid = this.context?.view?.inputArgs?.viewUid;
+    const routePathname = this.flowEngine?.context?.route?.pathname;
+    // In route-managed multi-view mode, only the top view in URL should mutate document.title.
+    if (hasRouteNavigation && currentViewUid && typeof routePathname === 'string') {
+      const topViewUid = parsePathnameToViewParams(routePathname).at(-1)?.viewUid;
+      if (topViewUid && topViewUid !== currentViewUid) {
+        return;
+      }
     }
 
     const updateVersion = ++this.documentTitleUpdateVersion;

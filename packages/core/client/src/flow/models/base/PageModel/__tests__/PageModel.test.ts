@@ -44,6 +44,19 @@ vi.mock('@nocobase/flow-engine', () => {
     Droppable: ({ children }: any) => children,
     DragHandler: () => null,
     getPageActive: (ctx: any) => ctx?.view?.inputArgs?.pageActive,
+    parsePathnameToViewParams: (pathname: string) => {
+      if (!pathname) return [];
+      const segments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+      const result: Array<{ viewUid: string }> = [];
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        if ((segment === 'admin' || segment === 'view') && segments[i + 1]) {
+          result.push({ viewUid: segments[i + 1] });
+          i += 1;
+        }
+      }
+      return result;
+    },
     getEmitterViewActivatedVersion: (emitter: unknown): number => {
       if (!emitter || (typeof emitter !== 'object' && typeof emitter !== 'function')) return 0;
       const raw = Reflect.get(emitter as object, VIEW_ACTIVATED_VERSION);
@@ -411,6 +424,68 @@ describe('PageModel', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+
+    it('should skip title update when current route-managed view is not top view in URL', async () => {
+      pageModel.props = { enableTabs: false, title: 'Main page title' } as any;
+      (pageModel as any).context = {
+        closable: false,
+        view: {
+          inputArgs: { pageActive: true, viewUid: 'main-view' },
+          navigation: {},
+        },
+        resolveJsonTemplate: vi.fn(async () => 'Main document title'),
+      } as any;
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(),
+        context: {
+          route: {
+            pathname: '/admin/main-view/view/popup-view',
+          },
+        },
+      } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Main document title',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('');
+    });
+
+    it('should allow title update when current route-managed view is top view in URL', async () => {
+      pageModel.props = { enableTabs: false, title: 'Popup page title' } as any;
+      (pageModel as any).context = {
+        closable: true,
+        view: {
+          inputArgs: { pageActive: true, viewUid: 'popup-view' },
+          navigation: {},
+        },
+        resolveJsonTemplate: vi.fn(async () => 'Popup document title'),
+      } as any;
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(),
+        context: {
+          route: {
+            pathname: '/admin/main-view/view/popup-view',
+          },
+        },
+      } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Popup document title',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Popup document title');
     });
   });
 });
