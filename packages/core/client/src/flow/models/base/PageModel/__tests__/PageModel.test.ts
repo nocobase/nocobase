@@ -75,6 +75,7 @@ describe('PageModel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    document.title = '';
 
     // Create PageModel instance
     pageModel = new PageModel({});
@@ -226,6 +227,97 @@ describe('PageModel', () => {
 
       expect(typeof listeners['view:activated']).toBe('function');
       expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+    });
+  });
+
+  describe('document title priority', () => {
+    beforeEach(() => {
+      (pageModel as any).context = {
+        closable: false,
+        view: {
+          inputArgs: { pageActive: true },
+          navigation: null,
+        },
+        resolveJsonTemplate: vi.fn(async (value: string) => value),
+      } as any;
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(),
+      } as any;
+    });
+
+    it('should use page documentTitle first when enableTabs is false', async () => {
+      pageModel.props = { enableTabs: false, title: 'Page title' } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Page doc title',
+          },
+        },
+      };
+      (pageModel as any).context.resolveJsonTemplate = vi.fn(async () => 'Resolved page doc title');
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect((pageModel as any).context.resolveJsonTemplate).toHaveBeenCalledWith('Page doc title');
+      expect(document.title).toBe('Resolved page doc title');
+    });
+
+    it('should fallback to page title when page documentTitle is empty', async () => {
+      pageModel.props = { enableTabs: false, title: 'Fallback page title' } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: '',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Fallback page title');
+    });
+
+    it('should use active tab documentTitle first when enableTabs is true', async () => {
+      pageModel.props = { enableTabs: true } as any;
+      const activeTab = {
+        uid: 'tab-1',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: 'Tab doc title',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Tab title'),
+      };
+      (pageModel as any).subModels = { tabs: [activeTab] };
+      (pageModel as any).context.resolveJsonTemplate = vi.fn(async () => 'Resolved tab doc title');
+      (pageModel as any).flowEngine.getModel = vi.fn(() => activeTab);
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Resolved tab doc title');
+    });
+
+    it('should fallback to tab title when active tab documentTitle is empty', async () => {
+      pageModel.props = { enableTabs: true } as any;
+      const activeTab = {
+        uid: 'tab-1',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: '',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Fallback tab title'),
+      };
+      (pageModel as any).subModels = { tabs: [activeTab] };
+      (pageModel as any).flowEngine.getModel = vi.fn(() => activeTab);
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Fallback tab title');
     });
   });
 });
