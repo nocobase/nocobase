@@ -8,11 +8,12 @@
  */
 
 import { tval } from '@nocobase/utils/client';
-import { DataModelingCard } from '../ui/DataModelingCard';
-import { DataModelingModal } from '../ui/DataModelingModal';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { useAISelectionContext } from '../../1.x/selector/AISelectorProvider';
-import { useDataSource, ToolsOptions } from '@nocobase/client';
+import { lazy, useDataSource, ToolsOptions } from '@nocobase/client';
+
+const { DataModelingCard } = lazy(() => import('../ui/DataModelingCard'), 'DataModelingCard');
+const { DataModelingModal } = lazy(() => import('../ui/DataModelingModal'), 'DataModelingModal');
 
 export const defineCollectionsTool: [string, ToolsOptions] = [
   'defineCollections',
