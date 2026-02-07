@@ -16,6 +16,7 @@ import { existsSync } from 'fs';
 import { AIManager } from '../ai-manager';
 import { LoadAndRegister } from './types';
 import { Logger } from '@nocobase/logger';
+import { isNonEmptyObject } from './utils';
 
 export type ToolsLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
 export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
@@ -44,7 +45,10 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     }
     const grouped = new Map<string, FileDescriptor[]>();
     for (const fd of this.files) {
-      const key = fd.basename === 'description.md' || fd.name === 'index' ? fd.directory : fd.name;
+      const key =
+        fd.basename === 'index.ts' || fd.basename === 'index.js' || fd.basename === 'description.md'
+          ? fd.directory
+          : fd.name;
       if (!grouped.has(key)) {
         grouped.set(key, []);
       }
@@ -63,7 +67,11 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
           }
           try {
             const module = await importModule(tsFile.path);
-            entry.toolsOptions = typeof module === 'function' ? module() : module;
+            if (isNonEmptyObject(module)) {
+              entry.toolsOptions = typeof module === 'function' ? module() : module;
+            } else {
+              entry.toolsOptions = undefined;
+            }
           } catch (e) {
             this.log?.error(`tools [${name}] load fail: error occur when import ${tsFile.path}`, e);
             return null;
@@ -102,12 +110,18 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
         this.log?.warn(`tools [${descriptor.name}] register ignored: duplicate register for tools`);
         continue;
       }
-      toolsOptions.definition.name = name;
-      if (!_.isEmpty(description)) {
-        toolsOptions.definition.description = description;
+      if (toolsOptions.definition) {
+        toolsOptions.definition.name = name;
+        if (!_.isEmpty(description)) {
+          toolsOptions.definition.description = description;
+        }
       }
-
-      toolsManager.registerTools(toolsOptions);
+      try {
+        toolsManager.registerTools(toolsOptions);
+      } catch (e) {
+        this.log?.error(`tools [${descriptor.name}] register ignored: error occur when invoke registerTools`, e);
+        continue;
+      }
     }
   }
 }

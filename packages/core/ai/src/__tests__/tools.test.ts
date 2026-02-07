@@ -25,7 +25,10 @@ describe('Tools loader test cases', () => {
     aiManager = app.aiManager;
     toolsManager = aiManager.toolsManager;
     loader = new ToolsLoader(aiManager, {
-      scan: { basePath, pattern: ['**/tools/**/*.ts', '**/tools/**/*/description.md'] },
+      scan: {
+        basePath,
+        pattern: ['**/tools/**/*.ts', '**/tools/**/*.js', '!**/tools/**/*.d.ts', '**/tools/**/*/description.md'],
+      },
     });
   });
 
@@ -70,7 +73,7 @@ describe('Tools loader test cases', () => {
     expect(await tools.invoke(null, null, null)).toEqual({ status: 'success' });
   });
 
-  it.skip('should load tools directory in skills directory ', async () => {
+  it('should load tools directory in skills directory ', async () => {
     await loader.load();
     const tools = await toolsManager.getTools('search');
     expect(tools).toBeDefined();
@@ -104,5 +107,25 @@ describe('Tools loader test cases', () => {
     await loader.load();
     const tools = await toolsManager.getTools('ignored');
     expect(tools).toBeUndefined();
+  });
+
+  it('should load .js file', async () => {
+    await loader.load();
+    const toolsNames = ['formFiller', 'formFiller2'];
+    for (const toolsName of toolsNames) {
+      const tools = await toolsManager.getTools(toolsName);
+      expect(tools).toBeDefined();
+      expect(tools.definition.name).eq(toolsName);
+      expect(tools.definition.description).eq('Fill the form with the given content');
+      expect(await tools.invoke(null, null, null)).toEqual({ status: 'success' });
+    }
+  });
+
+  it('should ignore empty file', async () => {
+    const toolsLoader = new ToolsLoader(aiManager, {
+      scan: { basePath, pattern: ['tools/empty.ts'] },
+    });
+    delete process.env.VITEST;
+    await expect(toolsLoader.load()).resolves.not.toThrow();
   });
 });
