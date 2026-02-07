@@ -60,8 +60,10 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
       return undefined;
     }
     const { threadId, checkpointNs, checkpointId, parentCheckpointId } = checkpointRow;
-    const checkpointBlobs = await this.getCheckpointBlobs([threadId]);
-    const checkpointWrites = await this.getCheckpointWrites([threadId]);
+    const [checkpointBlobs, checkpointWrites] = await Promise.all([
+      this.getCheckpointBlobs([threadId]),
+      this.getCheckpointWrites([threadId]),
+    ]);
     checkpointRow.channelValues = Object.entries(checkpointRow.checkpoint.channel_versions ?? {})
       .map(([channel, version]) => checkpointBlobs[`${threadId}:${checkpointNs}:${channel}:${version}`])
       .filter((x) => x?.length)
@@ -116,8 +118,10 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
     }
 
     const result = (await this.checkpointsModel.findAll(findOptions)).map((x) => x.toJSON());
-    const checkpointWrites = await this.getCheckpointWrites(result.map((x) => x.threadId));
-    const checkpointBlobs = await this.getCheckpointBlobs(result.map((x) => x.threadId));
+    const [checkpointWrites, checkpointBlobs] = await Promise.all([
+      this.getCheckpointWrites(result.map((x) => x.threadId)),
+      this.getCheckpointBlobs(result.map((x) => x.threadId)),
+    ]);
 
     for (const checkpointRow of result) {
       const { threadId, checkpointNs, checkpointId } = checkpointRow;
@@ -189,32 +193,36 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
         : this.getNextVersion(undefined);
   }
 
-  put(
+  async put(
     config: RunnableConfig,
     checkpoint: Checkpoint,
     metadata: CheckpointMetadata,
     newVersions: ChannelVersions,
   ): Promise<RunnableConfig> {
-    return this.sequelize.transaction(async (transaction) => {
-      if (config.configurable === undefined) {
-        throw new Error(`Missing "configurable" field in "config" param`);
-      }
-      const { thread_id, checkpoint_ns = '', checkpoint_id } = config.configurable;
+    if (config.configurable === undefined) {
+      throw new Error(`Missing "configurable" field in "config" param`);
+    }
+    const { thread_id, checkpoint_ns = '', checkpoint_id } = config.configurable;
 
-      const nextConfig = {
-        configurable: {
-          thread_id,
-          checkpoint_ns,
-          checkpoint_id: checkpoint.id,
-        },
-      };
-      const serializedCheckpoint = this._dumpCheckpoint(checkpoint);
-      const serializedBlobs = await this._dumpBlobs(thread_id, checkpoint_ns, checkpoint.channel_values, newVersions);
+    const nextConfig = {
+      configurable: {
+        thread_id,
+        checkpoint_ns,
+        checkpoint_id: checkpoint.id,
+      },
+    };
+    const serializedCheckpoint = this._dumpCheckpoint(checkpoint);
+    const serializedBlobs = await this._dumpBlobs(thread_id, checkpoint_ns, checkpoint.channel_values, newVersions);
+    const serializedMetadata = await this._dumpMetadata(metadata);
 
+    return await this.sequelize.transaction(async (transaction) => {
       const checkpointBlobs = await this.checkpointBlobsModel.findAll({
         where: {
           threadId: thread_id,
           checkpointNs: checkpoint_ns,
+        },
+        attributes: {
+          exclude: ['blob'],
         },
         transaction,
       });
@@ -240,6 +248,7 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
 
       const checkPointFindOptions: FindOptions = {
         where: { threadId: thread_id, checkpointNs: checkpoint_ns, checkpointId: checkpoint.id },
+        transaction,
       };
       const existed = await this.checkpointsModel.count(checkPointFindOptions);
       if (existed === 0) {
@@ -250,7 +259,7 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
             checkpointId: checkpoint.id,
             parentCheckpointId: checkpoint_id,
             checkpoint: serializedCheckpoint,
-            metadata: await this._dumpMetadata(metadata),
+            metadata: serializedMetadata,
           },
           {
             transaction,
@@ -260,7 +269,7 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
         await this.checkpointsModel.update(
           {
             checkpoint: serializedCheckpoint,
-            metadata: await this._dumpMetadata(metadata),
+            metadata: serializedMetadata,
           },
           {
             transaction,
@@ -272,25 +281,29 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
       return nextConfig;
     });
   }
-  putWrites(config: RunnableConfig, writes: PendingWrite[], taskId: string): Promise<void> {
+  async putWrites(config: RunnableConfig, writes: PendingWrite[], taskId: string): Promise<void> {
     if (!config.configurable?.thread_id) {
       throw new Error('config.configurable.thread_id is required');
     }
-    return this.sequelize.transaction(async (transaction) => {
-      const dumpedWrites = await this._dumpWrites(
-        config.configurable?.thread_id,
-        config.configurable?.checkpoint_ns,
-        config.configurable?.checkpoint_id,
-        taskId,
-        writes,
-      );
-
+    const dumpedWrites = await this._dumpWrites(
+      config.configurable?.thread_id,
+      config.configurable?.checkpoint_ns,
+      config.configurable?.checkpoint_id,
+      taskId,
+      writes,
+    );
+    return await this.sequelize.transaction(async (transaction) => {
       const checkpointWrites = await this.checkpointWritesModel.findAll({
         where: {
           threadId: config.configurable?.thread_id,
           checkpointNs: config.configurable?.checkpoint_ns,
           checkpointId: config.configurable?.checkpoint_id,
+          taskId,
         },
+        attributes: {
+          exclude: ['blob'],
+        },
+        transaction,
       });
       const duplicateWritesFilter = checkpointWrites.map(
         ({ threadId, checkpointNs, checkpointId, taskId, idx }) =>
