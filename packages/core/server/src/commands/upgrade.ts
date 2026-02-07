@@ -10,6 +10,8 @@
 /* istanbul ignore file -- @preserve */
 
 import Application from '../application';
+import { PluginManager } from '../plugin-manager';
+import { findAllPlugins } from '../plugin-manager/findPackageNames';
 
 /**
  * TODO
@@ -20,6 +22,12 @@ export default (app: Application) => {
     .ipc()
     .auth()
     .action(async (options) => {
+      await app.aiManager.documentManager.createDocsIndex({
+        findAllPlugins,
+        pm: PluginManager,
+        logger: app.log,
+      });
+
       await app.upgrade(options);
       app.log.info(`✨  NocoBase has been upgraded to v${app.getVersion()}`);
     });

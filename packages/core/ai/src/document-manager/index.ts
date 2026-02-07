@@ -8,6 +8,8 @@
  */
 
 import { Document, DocumentOptions, IndexOptions } from 'flexsearch';
+import type { DocsIndexOptions } from './create-docs-index';
+import { createDocsIndex } from './create-docs-index';
 import { Index } from './search-index';
 
 export class DocumentManager {
@@ -33,6 +35,11 @@ export class DocumentManager {
   getDocument(name: string): Document | undefined {
     return this.documents.get(name);
   }
+
+  createDocsIndex(options: DocsIndexOptions): Promise<void> {
+    return createDocsIndex(options);
+  }
 }
 
 export { Index as FlexSearchIndex } from 'flexsearch';
+export type { DocsIndexOptions } from './create-docs-index';

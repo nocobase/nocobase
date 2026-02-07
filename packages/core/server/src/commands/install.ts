@@ -10,6 +10,8 @@
 /* istanbul ignore file -- @preserve */
 
 import Application from '../application';
+import { PluginManager } from '../plugin-manager';
+import { findAllPlugins } from '../plugin-manager/findPackageNames';
 
 export default (app: Application) => {
   app
@@ -23,6 +25,11 @@ export default (app: Application) => {
       if (options.lang) {
         process.env.INIT_APP_LANG = options.lang;
       }
+      await app.aiManager.documentManager.createDocsIndex({
+        findAllPlugins,
+        pm: PluginManager,
+        logger: app.log,
+      });
       await app.install(options);
       const reinstall = options.clean || options.force;
       app.log.info(`app ${reinstall ? 'reinstalled' : 'installed'} successfully [v${app.getVersion()}]`);
