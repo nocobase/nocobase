@@ -16,6 +16,7 @@ import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
 export const useChatBoxEffect = () => {
   const { aiEmployees } = useAIEmployeesData();
 
+  const open = useChatBoxStore.use.open();
   const senderRef = useChatBoxStore.use.senderRef();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setRoles = useChatBoxStore.use.setRoles();
@@ -53,4 +54,11 @@ export const useChatBoxEffect = () => {
       senderRef?.current?.focus();
     }
   }, [open]);
+
+  // Refresh conversations when current employee changes
+  useEffect(() => {
+    if (currentEmployee && open) {
+      conversationsService.run();
+    }
+  }, [currentEmployee?.username]);
 };

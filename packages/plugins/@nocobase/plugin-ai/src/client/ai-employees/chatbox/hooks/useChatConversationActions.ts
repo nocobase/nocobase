@@ -12,23 +12,38 @@ import { Conversation } from '../../types';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
+import { useChatBoxStore } from '../stores/chat-box';
 
 export const useChatConversationActions = () => {
   const api = useAPIClient();
   const setConversations = useChatConversationsStore.use.setConversations();
   const keyword = useChatConversationsStore.use.keyword();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
   const conversationsService = useRequest<Conversation[]>(
-    (page = 1, keyword = '') =>
-      api
+    (page = 1, keyword = '') => {
+      const filter: any = {};
+
+      // Filter by current AI employee
+      if (currentEmployee?.username) {
+        filter['aiEmployee.username'] = currentEmployee.username;
+      }
+
+      // Filter by keyword
+      if (keyword) {
+        filter.title = { $includes: keyword };
+      }
+
+      return api
         .resource('aiConversations')
         .list({
           sort: ['-updatedAt'],
           appends: ['aiEmployee'],
           page,
           pageSize: 15,
-          filter: keyword ? { title: { $includes: keyword } } : {},
+          filter,
         })
-        .then((res) => res?.data),
+        .then((res) => res?.data);
+    },
     {
       manual: true,
       onSuccess: (data, params) => {

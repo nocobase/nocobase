@@ -273,5 +273,8 @@
 "System recommended": "系统推荐",
   "Select provider model": "选择服务商模型",
   "Custom model input": "自定义模型输入",
-  "Add model": "添加模型"
+  "Add model": "添加模型",
+  "No LLM services enabled yet": "暂无已启用的 LLM 服务",
+  "No model available": "无可用模型",
+  "Please contact the administrator to configure models": "请联系管理员配置模型"
 }

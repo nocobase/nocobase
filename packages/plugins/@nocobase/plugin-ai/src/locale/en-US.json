@@ -225,7 +225,7 @@
   "Please complete model setting before submitting": "Please complete model setting before submitting",
   "Select provider": "Select provider",
   "Select model": "Select model",
-  "Add LLM service": "Add LLM service",
+  "Add LLM service": "Add LLM Service",
   "Default LLM service": "Default LLM service",
   "Default model": "Default model",
   "Enabled Models": "Enabled Models",
@@ -270,5 +270,8 @@
   "System recommended": "System recommended",
   "Select provider model": "Select provider model",
   "Custom model input": "Custom model input",
-  "Add model": "Add model"
+  "Add model": "Add model",
+  "No LLM services enabled yet": "No LLM services enabled yet",
+  "No model available": "No model available",
+  "Please contact the administrator to configure models": "Please contact the administrator to configure models"
 }

@@ -11,10 +11,10 @@ import React, { useEffect, useRef } from 'react';
 import { Layout, Card, Button, Divider, Tooltip, notification, Avatar, Flex, Typography, Popover } from 'antd';
 import {
   CloseOutlined,
-  ExpandOutlined,
+  FullscreenOutlined,
   PlusCircleOutlined,
   HistoryOutlined,
-  ShrinkOutlined,
+  FullscreenExitOutlined,
   CodeOutlined,
   CompressOutlined,
   VerticalRightOutlined,
@@ -157,7 +157,7 @@ export const ChatBox: React.FC = () => {
               />
             ) : (
               <Button
-                icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
+                icon={!expanded ? <FullscreenOutlined /> : <FullscreenExitOutlined />}
                 type="text"
                 onClick={() => setExpanded(!expanded)}
               />

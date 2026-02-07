@@ -147,7 +147,7 @@ const ProviderDisplay: React.FC = () => {
   return <span>{provider?.label || field.value}</span>;
 };
 
-const ProviderSelect: React.FC = () => {
+export const ProviderSelect: React.FC = () => {
   const { token } = theme.useToken();
   const field = useField<Field>();
   const providers = useLLMProviders();

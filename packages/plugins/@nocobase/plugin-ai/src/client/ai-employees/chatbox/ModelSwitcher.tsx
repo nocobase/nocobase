@@ -8,11 +8,12 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Select, Spin, Button, Tooltip } from 'antd';
-import { PlusOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
-import { useAPIClient, useRequest, useApp, useACLRoleContext } from '@nocobase/client';
+import { Dropdown, Spin, Typography, App } from 'antd';
+import { PlusOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons';
+import { useAPIClient, useRequest, useApp } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
+import { AddLLMModal } from './AddLLMModal';
 
 interface LLMServiceData {
   llmService: string;
@@ -41,16 +42,18 @@ export const ModelSwitcher: React.FC = () => {
   const t = useT();
   const api = useAPIClient();
   const app = useApp();
+  const { message } = App.useApp();
   const [isOpen, setIsOpen] = useState(false);
-  const { allowAll, snippets } = useACLRoleContext();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const modelOverride = useChatBoxStore.use.modelOverride();
   const setModelOverride = useChatBoxStore.use.setModelOverride();
 
-  const hasConfigPermission = allowAll || snippets?.includes('pm.*') || snippets?.includes('pm.ai');
+  const hasConfigPermission = app.pluginSettingsManager.has('ai.llm-services');
+
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   // Fetch available models
-  const { data, loading, error } = useRequest<LLMServiceData[]>(
+  const { data, loading, refresh } = useRequest<LLMServiceData[]>(
     () =>
       api
         .resource('ai')
@@ -74,20 +77,6 @@ export const ModelSwitcher: React.FC = () => {
           value: m.value,
         })),
       ),
-    [llmServices],
-  );
-
-  // Grouped options for Select dropdown
-  const groupedOptions = useMemo(
-    () =>
-      llmServices.map((s) => ({
-        label: <span style={{ color: '#999', fontSize: 12 }}>{s.llmServiceTitle}</span>,
-        title: s.llmServiceTitle,
-        options: s.enabledModels.map((m) => ({
-          label: m.label,
-          value: m.value,
-        })),
-      })),
     [llmServices],
   );
 
@@ -115,8 +104,8 @@ export const ModelSwitcher: React.FC = () => {
     setModelOverride(allModels[0]);
   }, [currentEmployee?.username, allModels]);
 
-  // Current value
-  const value = useMemo(() => {
+  // Current selected model value
+  const selectedModel = useMemo(() => {
     if (modelOverride && isValid(modelOverride)) {
       return modelOverride.model;
     }
@@ -126,9 +115,18 @@ export const ModelSwitcher: React.FC = () => {
     return undefined;
   }, [modelOverride, allModels]);
 
+  // Current display label
+  const selectedLabel = useMemo(() => {
+    if (selectedModel) {
+      const found = allModels.find((m) => m.model === selectedModel);
+      return found?.label || selectedModel;
+    }
+    return undefined;
+  }, [selectedModel, allModels]);
+
   // Handle selection
-  const handleChange = (val: string) => {
-    const target = allModels.find((m) => m.value === val);
+  const handleSelect = (modelValue: string) => {
+    const target = allModels.find((m) => m.value === modelValue);
     if (target) {
       const newValue = { llmService: target.llmService, model: target.model };
       setModelOverride(newValue);
@@ -138,51 +136,127 @@ export const ModelSwitcher: React.FC = () => {
     }
   };
 
-  // Navigate to LLM config page
-  const handleAddLLM = () => {
-    app.router.navigate('/admin/settings/ai/llm-services', { state: { autoOpenAddNew: true } });
+  // Open add LLM modal or show warning
+  const handleAddModel = () => {
+    if (hasConfigPermission) {
+      setAddModalOpen(true);
+    } else {
+      message.warning(t('Please contact the administrator to configure models'));
+    }
   };
 
-  // Render conditions
   if (!currentEmployee) return null;
   if (loading) return <Spin size="small" />;
 
-  if (!allModels.length) {
-    return hasConfigPermission ? (
-      <Tooltip title={t('Add LLM service')}>
-        <Button size="small" icon={<PlusOutlined />} onClick={handleAddLLM}>
-          {t('Add LLM service')}
-        </Button>
-      </Tooltip>
-    ) : null;
+  const hasModels = allModels.length > 0;
+
+  // Build dropdown menu items
+  const menuItems: any[] = [];
+
+  llmServices.forEach((service, sIndex) => {
+    if (sIndex > 0) {
+      menuItems.push({ type: 'divider', key: `divider-${sIndex}` });
+    }
+    // Group label
+    menuItems.push({
+      key: `group-${service.llmService}`,
+      label: (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {service.llmServiceTitle}
+        </Typography.Text>
+      ),
+      disabled: true,
+      style: { cursor: 'default', padding: '4px 12px', height: 'auto', minHeight: 0 },
+    });
+    // Model items
+    service.enabledModels.forEach((model) => {
+      const isSelected = selectedModel === model.value;
+      menuItems.push({
+        key: model.value,
+        label: (
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span>{model.label}</span>
+            {isSelected && <CheckOutlined style={{ fontSize: 12, color: '#1890ff' }} />}
+          </span>
+        ),
+        onClick: () => handleSelect(model.value),
+      });
+    });
+  });
+
+  // Empty placeholder when no services
+  if (!hasModels) {
+    menuItems.push({
+      key: 'empty-placeholder',
+      label: (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t('No LLM services enabled yet')}
+        </Typography.Text>
+      ),
+      disabled: true,
+      style: { cursor: 'default', padding: '16px 12px', height: 'auto', minHeight: 0 },
+    });
   }
 
-  return (
-    <Tooltip title={t('Select model')}>
-      <Select
-        size="small"
-        value={value}
-        onChange={handleChange}
-        options={groupedOptions}
+  // Add divider and "Add LLM Service" button at the bottom
+  if (menuItems.length > 0) {
+    menuItems.push({ type: 'divider', key: 'divider-add' });
+  }
+  menuItems.push({
+    key: 'add-model',
+    icon: <PlusOutlined />,
+    label: t('Add LLM service'),
+    onClick: handleAddModel,
+  });
+
+  const dropdownContent = (
+    <span
+      onClick={(e) => {
+        // Allow dropdown to handle click
+        e.stopPropagation();
+      }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: 12,
+        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        borderRadius: 6,
+        height: 28,
+        padding: '0 8px',
+        cursor: 'pointer',
+        minWidth: hasModels ? 'auto' : undefined,
+        userSelect: 'none',
+      }}
+    >
+      <span
         style={{
-          minWidth: 140,
-          fontSize: 12,
-          backgroundColor: 'rgba(0, 0, 0, 0.04)',
-          borderRadius: 6,
-          height: 28,
-          padding: '0 4px',
+          color: hasModels ? 'rgba(0, 0, 0, 0.88)' : '#ff4d4f',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: 160,
         }}
-        suffixIcon={
-          isOpen ? (
-            <UpOutlined style={{ fontSize: 10, color: 'rgba(0, 0, 0, 0.45)' }} />
-          ) : (
-            <DownOutlined style={{ fontSize: 10, color: 'rgba(0, 0, 0, 0.45)' }} />
-          )
-        }
-        onDropdownVisibleChange={setIsOpen}
-        variant="borderless"
-        popupMatchSelectWidth={false}
-      />
-    </Tooltip>
+      >
+        {hasModels ? selectedLabel : t('No model available')}
+      </span>
+      <DownOutlined style={{ fontSize: 10, color: hasModels ? 'rgba(0, 0, 0, 0.45)' : '#ff4d4f' }} />
+    </span>
+  );
+
+  return (
+    <>
+      <Dropdown
+        menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
+        trigger={['click']}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      >
+        {dropdownContent}
+      </Dropdown>
+      {hasConfigPermission && (
+        <AddLLMModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onSuccess={refresh} />
+      )}
+    </>
   );
 };
