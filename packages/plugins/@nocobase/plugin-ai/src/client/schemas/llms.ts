@@ -85,22 +85,22 @@ export const createLLMSchema = {
             },
           },
         },
-        testFlight: {
-          type: 'void',
-          'x-component': 'LLMTestFlight',
-          'x-reactions': {
-            dependencies: ['provider'],
-            fulfill: {
-              schema: {
-                'x-visible': '{{!!$deps[0]}}',
-              },
-            },
-          },
-        },
         footer: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
           properties: {
+            testFlight: {
+              type: 'void',
+              'x-component': 'LLMTestFlight',
+              'x-reactions': {
+                dependencies: ['provider'],
+                fulfill: {
+                  schema: {
+                    'x-visible': '{{!!$deps[0]}}',
+                  },
+                },
+              },
+            },
             cancel: {
               title: '{{ t("Cancel") }}',
               'x-component': 'Action',
@@ -298,14 +298,14 @@ export const llmsSchema = {
                                   '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
                               },
                             },
-                            testFlight: {
-                              type: 'void',
-                              'x-component': 'LLMTestFlight',
-                            },
                             footer: {
                               type: 'void',
                               'x-component': 'Action.Drawer.Footer',
                               properties: {
+                                testFlight: {
+                                  type: 'void',
+                                  'x-component': 'LLMTestFlight',
+                                },
                                 cancel: {
                                   title: '{{ t("Cancel") }}',
                                   'x-component': 'Action',

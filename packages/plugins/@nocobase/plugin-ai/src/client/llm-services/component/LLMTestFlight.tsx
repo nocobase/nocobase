@@ -10,7 +10,7 @@
 import { useForm, observer } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import React, { useState } from 'react';
-import { Alert, Button, Divider, App, Tooltip } from 'antd';
+import { Button, App, Tooltip } from 'antd';
 import { RocketOutlined } from '@ant-design/icons';
 import { getRecommendedModels } from '../../../common/recommended-models';
 import { normalizeEnabledModels } from './EnabledModelsSelect';
@@ -21,8 +21,6 @@ export const LLMTestFlight: React.FC = observer(() => {
   const form = useForm();
   const api = useAPIClient();
   const { message } = App.useApp();
-  const [failureMessage, setFailureMessage] = useState('');
-  const [successful, setSuccessful] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleTest = async () => {
@@ -53,8 +51,6 @@ export const LLMTestFlight: React.FC = observer(() => {
       model = config.models[0].value;
     }
 
-    setSuccessful(false);
-    setFailureMessage('');
     setLoading(true);
 
     try {
@@ -66,42 +62,22 @@ export const LLMTestFlight: React.FC = observer(() => {
         },
       });
       if (res.data.data.code !== 0) {
-        setFailureMessage(res.data.data.message);
+        message.error(res.data.data.message || t('Failure'));
       } else {
-        setSuccessful(true);
+        message.success(t('Successful'));
       }
     } catch (error: any) {
-      setFailureMessage(error.message || 'Test failed');
+      message.error(error.message || t('Failure'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Divider style={{ borderColor: '#f0f0f0', marginTop: 30, marginBottom: 30 }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span>{t('Test flight')}</span>
-        <Tooltip title={t('Test connection with the configured API Key')}>
-          <Button type="primary" shape="circle" icon={<RocketOutlined />} loading={loading} onClick={handleTest} />
-        </Tooltip>
-      </div>
-      {successful && (
-        <div style={{ marginTop: 16 }}>
-          <Alert message={t('Successful')} type="success" closable onClose={() => setSuccessful(false)} />
-        </div>
-      )}
-      {failureMessage && (
-        <div style={{ marginTop: 16 }}>
-          <Alert
-            message={t('Failure')}
-            description={failureMessage}
-            type="warning"
-            closable
-            onClose={() => setFailureMessage('')}
-          />
-        </div>
-      )}
-    </div>
+    <Tooltip title={t('Test connection with the configured API Key')}>
+      <Button icon={<RocketOutlined />} loading={loading} onClick={handleTest}>
+        {t('Test flight')}
+      </Button>
+    </Tooltip>
   );
 });
