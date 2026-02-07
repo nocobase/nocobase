@@ -24,6 +24,15 @@ export interface GetPropertiesOptions {
   transaction?: Transaction;
 }
 
+export type FlowModelAttachPosition = 'first' | 'last' | TargetPosition;
+
+export interface FlowModelAttachOptions {
+  parentId: string;
+  subKey: string;
+  subType: 'array' | 'object';
+  position?: FlowModelAttachPosition;
+}
+
 type BreakRemoveOnType = {
   [key: string]: any;
 };
@@ -1557,6 +1566,163 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       return this.findModelById(treePath['descendant'], options);
     }
     return null;
+  }
+
+  @transaction()
+  async attach(uid: string, attachOptions: FlowModelAttachOptions, options?: Transactionable) {
+    const { transaction } = options || {};
+    const modelUid = String(uid || '').trim();
+    const parentId = String(attachOptions?.parentId || '').trim();
+    const subKey = String(attachOptions?.subKey || '').trim();
+    const subType = attachOptions?.subType;
+
+    if (!modelUid || !parentId || !subKey || (subType !== 'array' && subType !== 'object')) {
+      throw new Error('flowModels:attach missing required params');
+    }
+    if (modelUid === parentId) {
+      throw new Error('flowModels:attach cannot attach model to itself');
+    }
+
+    const treeTable = this.flowModelTreePathTableName;
+
+    const modelInstance = await this.model.findByPk(modelUid, { transaction });
+    if (!modelInstance) {
+      throw new Error(`flowModels:attach uid '${modelUid}' not found`);
+    }
+    const parentInstance = await this.model.findByPk(parentId, { transaction });
+    if (!parentInstance) {
+      throw new Error(`flowModels:attach parentId '${parentId}' not found`);
+    }
+
+    // 环检测：禁止将祖先挂到其子孙节点下
+    const cycle = await this.database.sequelize.query(
+      `SELECT 1 as v
+       FROM ${treeTable}
+       WHERE ancestor = :ancestor AND descendant = :descendant AND depth > 0
+       LIMIT 1`,
+      {
+        type: 'SELECT',
+        replacements: {
+          ancestor: modelUid,
+          descendant: parentId,
+        },
+        transaction,
+      },
+    );
+    if (cycle?.length) {
+      throw new Error('flowModels:attach cycle detected');
+    }
+
+    // object 子模型：同一 parent + subKey 只能存在一个
+    if (subType === 'object') {
+      const conflict = await this.database.sequelize.query(
+        `SELECT TreeTable.descendant as uid
+         FROM ${treeTable} as TreeTable
+                  LEFT JOIN ${treeTable} as NodeInfo
+                            ON NodeInfo.descendant = TreeTable.descendant
+                                AND NodeInfo.depth = 0
+         WHERE TreeTable.depth = 1
+           AND TreeTable.ancestor = :ancestor
+           AND NodeInfo.type = :type
+           AND TreeTable.descendant != :uid
+         LIMIT 1`,
+        {
+          type: 'SELECT',
+          replacements: {
+            ancestor: parentId,
+            type: subKey,
+            uid: modelUid,
+          },
+          transaction,
+        },
+      );
+      if (conflict?.length) {
+        throw new Error(`flowModels:attach subKey '${subKey}' already exists on parent '${parentId}'`);
+      }
+    }
+
+    const normalizePosition = (input: unknown): FlowModelAttachPosition => {
+      if (!input) return 'last';
+      if (input === 'first' || input === 'last') return input;
+      if (typeof input === 'object') {
+        const p = input as any;
+        const type = p?.type;
+        const target = String(p?.target || '').trim();
+        if ((type === 'before' || type === 'after') && target) {
+          return { type, target };
+        }
+      }
+      throw new Error('flowModels:attach invalid position');
+    };
+
+    const position: FlowModelAttachPosition =
+      subType === 'object' ? 'last' : normalizePosition(attachOptions?.position as any);
+
+    // 目标排序锚点校验：before/after 必须是同 parent + subKey 下的兄弟节点
+    if (typeof position === 'object') {
+      const target = String(position.target || '').trim();
+      if (target === modelUid) {
+        throw new Error('flowModels:attach position target cannot be itself');
+      }
+
+      const ok = await this.database.sequelize.query(
+        `SELECT 1 as v
+         FROM ${treeTable} as TreeTable
+                  LEFT JOIN ${treeTable} as NodeInfo
+                            ON NodeInfo.descendant = TreeTable.descendant
+                                AND NodeInfo.depth = 0
+         WHERE TreeTable.depth = 1
+           AND TreeTable.ancestor = :ancestor
+           AND TreeTable.descendant = :descendant
+           AND NodeInfo.type = :type
+         LIMIT 1`,
+        {
+          type: 'SELECT',
+          replacements: {
+            ancestor: parentId,
+            descendant: target,
+            type: subKey,
+          },
+          transaction,
+        },
+      );
+      if (!ok?.length) {
+        throw new Error('flowModels:attach position target is not a sibling under the same parent/subKey');
+      }
+    }
+
+    // 清理旧路径缓存（旧祖先）
+    await this.clearXUidPathCache(modelUid, transaction);
+
+    // 更新 root options：确保 nodesToModel 能按 subKey/subType 正确挂载
+    await modelInstance.update(
+      {
+        options: {
+          ...(modelInstance.get('options') as any),
+          parentId,
+          parent: parentId,
+          subKey,
+          subType,
+        },
+      },
+      { transaction, hooks: false },
+    );
+
+    // 更新 tree path：移动（move）语义
+    await this.insertSingleNode(
+      {
+        uid: modelUid,
+        name: modelUid,
+        childOptions: {
+          parentUid: parentId,
+          type: subKey,
+          position,
+        },
+      } as any,
+      { transaction, removeParentsIfNoChildren: false },
+    );
+
+    return await this.findModelById(modelUid, { transaction, includeAsyncNode: true });
   }
 
   async move(options) {
