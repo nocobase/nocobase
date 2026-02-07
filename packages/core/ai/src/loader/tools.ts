@@ -44,7 +44,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     }
     const grouped = new Map<string, FileDescriptor[]>();
     for (const fd of this.files) {
-      const key = fd.basename === 'description.md' || fd.basename === 'index.ts' ? fd.directory : fd.name;
+      const key = fd.basename === 'description.md' || fd.name === 'index' ? fd.directory : fd.name;
       if (!grouped.has(key)) {
         grouped.set(key, []);
       }
@@ -54,7 +54,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
     this.toolsDescriptors = await Promise.all(
       Array.from(grouped.entries())
         .map(async ([name, fds]) => {
-          const tsFile = fds.find((fd) => fd.extname === '.ts');
+          const tsFile = fds.find((fd) => fd.extname === '.ts' || fd.extname === '.js');
           const descFile = fds.find((fd) => fd.basename === 'description.md');
           const entry: ToolsDescriptor = { name, tsFile, descFile };
           if (!tsFile || !existsSync(tsFile.path)) {
