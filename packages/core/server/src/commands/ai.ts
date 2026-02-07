@@ -8,8 +8,7 @@
  */
 
 import type Application from '../application';
-import { findAllPlugins } from '../plugin-manager/findPackageNames';
-import { PluginManager } from '../plugin-manager';
+import { createDocsIndex, DocsIndexOptions } from '../ai/create-docs-index';
 
 export default (app: Application) => {
   const ai = app.command('ai');
@@ -17,12 +16,7 @@ export default (app: Application) => {
   ai.command('create-docs-index')
     .option('--pkg [pkg]', 'Generate docs index for the specified plugin package (comma separated).')
     .action(async (...cliArgs) => {
-      const [opts] = cliArgs as [{ pkg?: string | string[] }?];
-      await app.aiManager.documentManager.createDocsIndex({
-        pkg: opts?.pkg,
-        findAllPlugins,
-        pm: PluginManager,
-        logger: app.log,
-      });
+      const [opts] = cliArgs as [DocsIndexOptions?];
+      await createDocsIndex(app, opts);
     });
 };

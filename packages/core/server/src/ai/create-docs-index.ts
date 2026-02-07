@@ -10,17 +10,13 @@
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
-import { Index as FlexSearchIndex } from 'flexsearch';
-import type { SystemLogger } from '@nocobase/logger';
+import { FlexSearchIndex } from '@nocobase/ai';
+import type Application from '../application';
+import { findAllPlugins } from '../plugin-manager/findPackageNames';
+import { PluginManager } from '../plugin-manager';
 
 export type DocsIndexOptions = {
   pkg?: string | string[];
-  findAllPlugins: () => Promise<string[]>;
-  pm: {
-    parseName: (pkg: string) => Promise<{ packageName: string }>;
-  };
-  storageDir?: string;
-  logger?: SystemLogger;
 };
 
 interface BuildResult {
@@ -36,6 +32,10 @@ type DirectoryChildren = Map<
     directories: string[];
   }
 >;
+
+const DOCS_STORAGE_DIR = path.resolve(process.cwd(), 'storage/ai/docs');
+const REFERENCE_START = '<!-- docs:references:start -->';
+const REFERENCE_END = '<!-- docs:references:end -->';
 
 interface DocEntryMeta {
   absolutePath: string;
@@ -61,12 +61,10 @@ interface ModuleGroup {
   docMap: Map<string, DocEntryMeta>;
 }
 
-const DEFAULT_DOCS_STORAGE_DIR = path.resolve(process.cwd(), 'storage/ai/docs');
-const REFERENCE_START = '<!-- docs:references:start -->';
-const REFERENCE_END = '<!-- docs:references:end -->';
-
-function normalizePkgs(pkg?: string | string[]) {
-  if (!pkg) return [];
+async function resolvePkgs(pkg?: string | string[]) {
+  if (!pkg) {
+    return await findAllPlugins();
+  }
   const scopes = (Array.isArray(pkg) ? pkg : pkg.split(',')).map((item) => item.trim()).filter(Boolean);
   return Array.from(new Set(scopes));
 }
@@ -213,10 +211,7 @@ async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> 
   return groups;
 }
 
-async function buildDocsIndexForPackages(
-  packageNames: string[],
-  docsStorageDir: string,
-): Promise<Map<string, BuildResult>> {
+async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<string, BuildResult>> {
   const moduleGroups: Map<string, ModuleGroup[]> = new Map();
   const moduleDescriptions: Map<string, string> = new Map();
   const conflicts: Map<string, string[]> = new Map();
@@ -249,7 +244,7 @@ async function buildDocsIndexForPackages(
   const results = new Map<string, BuildResult>();
 
   for (const [moduleName, groups] of moduleGroups.entries()) {
-    const outputDir = path.join(docsStorageDir, moduleName);
+    const outputDir = path.join(DOCS_STORAGE_DIR, moduleName);
 
     if (!groups.length) {
       results.set(moduleName, { created: false, reason: 'no doc files found' });
@@ -349,8 +344,8 @@ async function buildDocsIndexForPackages(
         description: moduleDescriptions.get(moduleName) || '',
       };
     }
-    await fs.ensureDir(docsStorageDir);
-    await fs.writeJSON(path.join(docsStorageDir, 'meta.json'), metaOutput, { spaces: 2 });
+    await fs.ensureDir(DOCS_STORAGE_DIR);
+    await fs.writeJSON(path.join(DOCS_STORAGE_DIR, 'meta.json'), metaOutput, { spaces: 2 });
   }
 
   return results;
@@ -491,45 +486,42 @@ function stripExistingReferenceBlock(content: string) {
   return `${before}\n\n${after}`;
 }
 
-export async function createDocsIndex(options: DocsIndexOptions): Promise<void> {
-  const pkgs = options.pkg ? normalizePkgs(options.pkg) : await options.findAllPlugins();
+export async function createDocsIndex(app: Application, options: DocsIndexOptions = {}) {
+  const pkgs = await resolvePkgs(options.pkg);
   if (!pkgs.length) {
-    options.logger?.info?.('No plugin packages detected for docs index generation');
+    app.log.info('No plugin packages detected for docs index generation');
     return;
   }
 
   const packageNames: string[] = [];
   for (const pkg of pkgs) {
     try {
-      const { packageName } = await options.pm.parseName(pkg);
+      const { packageName } = await PluginManager.parseName(pkg);
       packageNames.push(packageName);
     } catch (error) {
-      options.logger?.error?.(error, { pkg });
+      app.log.error(error, { pkg });
     }
   }
 
   if (!packageNames.length) {
-    options.logger?.info?.('No plugin packages resolved for docs index generation');
+    app.log.info('No plugin packages resolved for docs index generation');
     return;
   }
 
-  const docsStorageDir = options.storageDir || DEFAULT_DOCS_STORAGE_DIR;
-  const results = await buildDocsIndexForPackages(packageNames, docsStorageDir);
+  const results = await buildDocsIndexForPackages(packageNames);
   if (!results.size) {
-    options.logger?.info?.('No module docs found to index');
+    app.log.info('No module docs found to index');
     return;
   }
 
-  if (options.logger) {
-    for (const [moduleName, item] of results.entries()) {
-      if (item.created) {
-        options.logger.info?.(`Docs index generated for module "${moduleName}"`);
-        if (item.conflicts?.length) {
-          options.logger.warn?.(`Module "${moduleName}" has conflicts: ${item.conflicts.join('; ')}`);
-        }
-      } else {
-        options.logger.info?.(`Skipped docs index for module "${moduleName}": ${item.reason}`);
+  for (const [moduleName, result] of results.entries()) {
+    if (result.created) {
+      app.log.info(`Docs index generated for module "${moduleName}"`);
+      if (result.conflicts?.length) {
+        app.log.warn(`Module "${moduleName}" has conflicts: ${result.conflicts.join('; ')}`);
       }
+    } else {
+      app.log.info(`Skipped docs index for module "${moduleName}": ${result.reason}`);
     }
   }
 }
