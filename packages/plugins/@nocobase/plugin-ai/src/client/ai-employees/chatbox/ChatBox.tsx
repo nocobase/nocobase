@@ -101,7 +101,7 @@ export const ChatBox: React.FC = () => {
                 <Popover
                   open={showConversations}
                   onOpenChange={setShowConversations}
-                  trigger="click"
+                  trigger="hover"
                   placement="bottomLeft"
                   arrow={false}
                   zIndex={1101}

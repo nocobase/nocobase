@@ -8,7 +8,7 @@
  */
 
 import React, { memo, useMemo } from 'react';
-import { Input, Empty, Spin, App } from 'antd';
+import { Input, Empty, Spin, App, Tag } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
 import { SchemaComponent, useAPIClient, useActionContext } from '@nocobase/client';
 import { useT } from '../../locale';
@@ -154,11 +154,25 @@ export const Conversations: React.FC = memo(() => {
   const items = useMemo(() => {
     const result: ConversationsProps['items'] = conversations.map((item, index) => {
       const title = item.title || t('New conversation');
+      const nickname = item.aiEmployee?.nickname;
+      const labelContent = (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {nickname && (
+            <Tag
+              color="default"
+              style={{ marginRight: 0, flexShrink: 0, fontSize: 12, lineHeight: '18px', padding: '0 4px' }}
+            >
+              {nickname}
+            </Tag>
+          )}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+        </span>
+      );
       return {
         key: item.sessionId,
         title,
         timestamp: new Date(item.updatedAt).getTime(),
-        label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{title}</div> : title,
+        label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{labelContent}</div> : labelContent,
       };
     });
     if (conversationsLoading) {

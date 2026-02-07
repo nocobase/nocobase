@@ -248,7 +248,7 @@ export const ModelSwitcher: React.FC = () => {
     <>
       <Dropdown
         menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
-        trigger={['click']}
+        trigger={['hover']}
         open={isOpen}
         onOpenChange={setIsOpen}
       >
