@@ -107,7 +107,12 @@ function buildDirectoryChildren(files: string[], docsDir: string): DirectoryChil
 async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> {
   const packageJsonPath = require.resolve(`${packageName}/package.json`);
   const packageDir = path.dirname(packageJsonPath);
-  const docsDir = path.join(packageDir, 'src', 'ai', 'docs');
+  const distDocsDir = path.join(packageDir, 'dist', 'ai', 'docs');
+  const srcDocsDir = path.join(packageDir, 'src', 'ai', 'docs');
+  const preferSrc = process.env.APP_ENV !== 'production';
+  const preferredDocsDir = preferSrc ? srcDocsDir : distDocsDir;
+  const fallbackDocsDir = preferSrc ? distDocsDir : srcDocsDir;
+  const docsDir = (await fs.pathExists(preferredDocsDir)) ? preferredDocsDir : fallbackDocsDir;
 
   if (!(await fs.pathExists(docsDir))) {
     return [];
