@@ -9,6 +9,7 @@
 
 import * as functions from '@formulajs/formulajs';
 import { round } from 'mathjs';
+import 'ses';
 
 import { evaluate, Scope } from '.';
 
@@ -18,7 +19,7 @@ export interface FormulaEvaluatorOptions {
   blockedIdentifiers?: string[];
 }
 
-function buildEndowments(scope: Scope, blockedIdentifiers: string[]) {
+function buildEndowments(scope: Scope, blockedIdentifiers: string[] = []) {
   const endowments: Record<string, any> = Object.create(null);
   for (const key of FUNCTION_NAMES) {
     endowments[key] = functions[key];
