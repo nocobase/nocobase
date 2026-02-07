@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@nocobase-example/plugin-nested-action",
-  "version": "2.0.0-beta.20",
+  "version": "2.0.0-beta.21",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
