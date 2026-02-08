@@ -367,6 +367,10 @@ export class AIEmployee {
               this.protocol.content(provider.parseResponseChunk(chunk.content));
             }
 
+            if (chunk.tool_call_chunks) {
+              this.protocol.toolCallChunks(chunk.tool_call_chunks);
+            }
+
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
               this.protocol.webSearch(webSearch);
@@ -398,7 +402,7 @@ export class AIEmployee {
         } else if (mode === 'custom') {
           if (chunks.action === 'initToolCalls') {
             toolCalls = chunks.body?.toolCalls ?? [];
-            this.protocol.toolCallChunks(chunks.body);
+            this.protocol.toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             this.protocol.toolCallStatus({
               toolCall: {
@@ -1220,6 +1224,10 @@ class ChatStreamProtocol {
 
   toolCallChunks(content: unknown) {
     this.write({ type: 'tool_call_chunks', body: content });
+  }
+
+  toolCalls(content: unknown) {
+    this.write({ type: 'tool_calls', body: content });
   }
 
   toolCallStatus({

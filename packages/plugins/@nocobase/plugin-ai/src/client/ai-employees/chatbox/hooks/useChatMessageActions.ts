@@ -151,11 +151,30 @@ export const useChatMessageActions = () => {
                 loading: false,
               }));
             }
-            if (data.type === 'tool_call_chunks' && data.body?.toolCalls?.length > 0) {
+            if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
               // [AI_DEBUG] stream_delta
               aiDebugLogger.log(sessionId, 'stream_delta', {
-                chunk: data.body.toolCalls[0],
+                chunk: (data.body.toolCalls ?? [])[0],
               });
+              updateLastMessage((last) => {
+                const toolCalls = last.content.tool_calls || [];
+                const toolCallChunk = data.body[0];
+                if (toolCallChunk.name) {
+                  toolCalls.push(toolCallChunk);
+                } else {
+                  toolCalls[toolCalls.length - 1].args += data.body[0].args;
+                }
+                return {
+                  ...last,
+                  content: {
+                    ...last.content,
+                    tool_calls: toolCalls,
+                  },
+                  loading: false,
+                };
+              });
+            }
+            if (data.type === 'tool_calls' && data.body?.toolCalls?.length > 0) {
               updateLastMessage((last) => {
                 return {
                   ...last,
