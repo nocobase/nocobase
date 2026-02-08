@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAPIClient, usePlugin } from '@nocobase/client';
 import { useForm, useField, observer } from '@formily/react';
 import { Select, Spin, Radio, Space, Tag, Typography, Input, Button } from 'antd';
@@ -116,12 +116,21 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   // Derive current config from field value
   const config = normalizeEnabledModels(field.value);
 
+  // Cache models per mode so switching doesn't lose edits
+  const modelsCache = useRef<Record<string, Array<{ label: string; value: string }>>>({
+    recommended: [],
+    provider: [],
+    custom: [],
+  });
+
   // Initialize field value on mount if it's an old format
   useEffect(() => {
     const normalized = normalizeEnabledModels(field.value);
     if (field.value !== normalized && (Array.isArray(field.value) || !field.value)) {
       field.value = normalized;
     }
+    // Seed cache with initial models
+    modelsCache.current[normalized.mode] = normalized.models;
   }, []);
 
   // Fetch models when provider or options change (needed for provider mode)
@@ -168,7 +177,10 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   };
 
   const handleModeChange = (newMode: 'recommended' | 'provider' | 'custom') => {
-    updateFieldValue({ mode: newMode, models: [] });
+    // Save current mode's models to cache
+    modelsCache.current[config.mode] = config.models;
+    // Restore target mode's models from cache
+    updateFieldValue({ mode: newMode, models: modelsCache.current[newMode] || [] });
   };
 
   const handleProviderModelsChange = (selectedValues: string[]) => {
@@ -202,9 +214,9 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
           <Radio value="recommended">{t('System recommended')}</Radio>
           {config.mode === 'recommended' && (
             <Text type="secondary" style={{ paddingLeft: 24 }}>
-              {t('Models tested and recommended by NocoBase')}
+              {t('Recommended by system for best results, e.g.')}
               {provider && getRecommendedModels(provider).length > 0 &&
-                t(', such as: ') + getRecommendedModels(provider).map((m) => m.label).join(', ')}
+                ' ' + getRecommendedModels(provider).map((m) => m.label).join(', ')}
             </Text>
           )}
 
