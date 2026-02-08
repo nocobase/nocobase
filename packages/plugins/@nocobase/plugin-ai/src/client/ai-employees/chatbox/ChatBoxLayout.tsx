@@ -24,7 +24,6 @@ export const ChatBoxLayout: React.FC<{
 }> = (props) => {
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
-  const collapsed = useChatBoxStore.use.collapsed();
   const activeTool = useChatToolsStore.use.activeTool();
   // [AI_DEBUG]
   const showDebugPanel = useChatBoxStore.use.showDebugPanel();
@@ -41,24 +40,24 @@ export const ChatBoxLayout: React.FC<{
           <style type="text/css">
             {`
 html {
-  padding-left: ${collapsed ? 40 : 450}px;
+  padding-left: 450px;
 }
 html body {
   position: relative;
   overflow: hidden;
-  transform: translateX(-${collapsed ? 40 : 450}px);
+  transform: translateX(-450px);
 }
 .ant-dropdown-placement-topLeft {
-  transform: translateX(${collapsed ? 40 : 450}px) !important;
+  transform: translateX(450px) !important;
 }
 .ant-dropdown-placement-bottomLeft {
-  transform: translateX(${collapsed ? 40 : 450}px) !important;
+  transform: translateX(450px) !important;
 }
 .ant-dropdown-menu-submenu-placement-rightTop {
-  transform: translateX(${collapsed ? 40 : 450}px) !important;
+  transform: translateX(450px) !important;
 }
 .ant-dropdown-menu-submenu-placement-rightBottom {
-  transform: translateX(${collapsed ? 40 : 450}px) !important;
+  transform: translateX(450px) !important;
 }
 `}
           </style>

@@ -31,6 +31,7 @@ export const ChatButton: React.FC = observer(() => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   const { switchAIEmployee } = useChatBoxActions();
 
@@ -70,6 +71,11 @@ export const ChatButton: React.FC = observer(() => {
         onOpenChange={(nextOpen) => setDropdownOpen(nextOpen)}
       >
         <div
+          onClick={() => {
+            if (!currentEmployee) return;
+            setDropdownOpen(false);
+            setOpen(true);
+          }}
           className={css`
             z-index: 1050;
             position: fixed;
@@ -80,6 +86,7 @@ export const ChatButton: React.FC = observer(() => {
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
 
             opacity: 0.7;
             background: rgba(255, 255, 255);

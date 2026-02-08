@@ -17,8 +17,6 @@ import {
   FullscreenExitOutlined,
   CodeOutlined,
   CompressOutlined,
-  VerticalRightOutlined,
-  VerticalLeftOutlined,
   BugOutlined, // [AI_DEBUG]
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
@@ -46,7 +44,6 @@ export const ChatBox: React.FC = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const expanded = useChatBoxStore.use.expanded();
   const setExpanded = useChatBoxStore.use.setExpanded();
-  const setCollapsed = useChatBoxStore.use.setCollapsed();
   const setMinimize = useChatBoxStore.use.setMinimize();
   const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
@@ -85,13 +82,7 @@ export const ChatBox: React.FC = () => {
             justifyContent: 'space-between',
           }}
         >
-          <div>
-            {!isMobileLayout && !expanded && (
-              <Tooltip arrow={false} title={t('Collapse panel')}>
-                <Button icon={<VerticalLeftOutlined />} type="text" onClick={() => setCollapsed(true)} />
-              </Tooltip>
-            )}
-          </div>
+          <div></div>
           <div>
             {currentEmployee ? (
               <>
@@ -162,7 +153,9 @@ export const ChatBox: React.FC = () => {
                 onClick={() => setExpanded(!expanded)}
               />
             )}
-            <Button icon={<CloseOutlined />} type="text" onClick={() => setOpen(false)} />
+            <Tooltip arrow={false} title={t('Collapse panel')}>
+              <Button icon={<CloseOutlined />} type="text" onClick={() => setOpen(false)} />
+            </Tooltip>
           </div>
         </Header>
         <Messages />
@@ -277,39 +270,8 @@ export const ChatBoxMinimizeControl: React.FC = () => {
   return <>{contextHolder}</>;
 };
 
-const CollapsedBar: React.FC = () => {
-  const setCollapsed = useChatBoxStore.use.setCollapsed();
-  const { token } = useToken();
-  const t = useT();
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        right: '-40px',
-        top: 0,
-        width: '40px',
-        height: '100vh',
-        backgroundColor: token.colorBgContainer,
-        borderInlineStart: `1px solid ${token.colorBorderSecondary}`,
-        boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.06)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        paddingTop: '8px',
-        zIndex: 100,
-      }}
-    >
-      <Tooltip arrow={false} title={t('Expand panel')} placement="left">
-        <Button icon={<VerticalRightOutlined />} type="text" onClick={() => setCollapsed(false)} />
-      </Tooltip>
-    </div>
-  );
-};
-
 export const ChatBoxWrapper: React.FC = () => {
   const expanded = useChatBoxStore.use.expanded();
-  const collapsed = useChatBoxStore.use.collapsed();
   const minimize = useChatBoxStore.use.minimize();
   const showCodeHistory = useChatBoxStore.use.showCodeHistory();
   const { isMobileLayout } = useMobileLayout();
@@ -320,10 +282,6 @@ export const ChatBoxWrapper: React.FC = () => {
 
   if (expanded) {
     return <ExpandChatBox />;
-  }
-
-  if (collapsed) {
-    return <CollapsedBar />;
   }
 
   return (
