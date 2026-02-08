@@ -9,6 +9,12 @@
 
 import _ from 'lodash';
 
+export function isNumeric(str: any) {
+  if (typeof str === 'number') return true;
+  if (typeof str != 'string') return false;
+  return !Number.isNaN(str as any) && !Number.isNaN(Number.parseFloat(str));
+}
+
 export const isString = (value: any): value is string => {
   return typeof value === 'string';
 };

@@ -8,6 +8,39 @@
  */
 
 import { Model } from '@nocobase/database';
+import { isNumeric, parseFilter } from '@nocobase/utils';
+
+export async function parseWorkflowFilter({
+  filter,
+  collectionInstance,
+  scope,
+}: {
+  filter: any;
+  collectionInstance: any;
+  scope?: Record<string, any>;
+}) {
+  if (!filter) {
+    return filter;
+  }
+
+  const database = collectionInstance?.context?.database;
+  const timezone = database?.options?.rawTimezone || database?.options?.timezone;
+  const collectionName = collectionInstance?.name;
+  const getField = (path: string) => {
+    const fieldPath = path
+      .split('.')
+      .filter((part) => !part.startsWith('$') && !isNumeric(part))
+      .join('.');
+    return database?.getFieldByPath(`${collectionName}.${fieldPath}`);
+  };
+
+  return parseFilter(filter, {
+    vars: scope,
+    timezone,
+    getField,
+    now: new Date(),
+  });
+}
 
 export function toJSON(data: any): any {
   if (Array.isArray(data)) {

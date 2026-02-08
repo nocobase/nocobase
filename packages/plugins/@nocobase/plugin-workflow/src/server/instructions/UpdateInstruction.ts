@@ -12,6 +12,7 @@ import { parseCollectionName } from '@nocobase/data-source-manager';
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
+import { parseWorkflowFilter } from '../utils';
 import { Instruction } from '.';
 
 export class UpdateInstruction extends Instruction {
@@ -20,10 +21,19 @@ export class UpdateInstruction extends Instruction {
 
     const [dataSourceName, collectionName] = parseCollectionName(collection);
 
-    const { repository } = this.workflow.app.dataSourceManager.dataSources
+    const collectionInstance = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
+    const { repository } = collectionInstance;
     const options = processor.getParsedValue(params, node.id);
+    if (params.filter) {
+      const scope = processor.getScope(node.id);
+      options.filter = await parseWorkflowFilter({
+        filter: params.filter,
+        collectionInstance,
+        scope,
+      });
+    }
     const result = await repository.update({
       ...options,
       context: {

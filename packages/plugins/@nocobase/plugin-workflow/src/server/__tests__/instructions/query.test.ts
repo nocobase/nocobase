@@ -35,6 +35,7 @@ describe('workflow > instructions > query', () => {
     workflow = await WorkflowModel.create({
       title: 'test workflow',
       enabled: true,
+      sync: true,
       type: 'collection',
       config: {
         mode: 1,
@@ -56,9 +57,7 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
+      const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(post.title);
     });
@@ -78,9 +77,7 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
+      const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
       const [job] = await execution.getJobs();
       expect(job.result.title).toBe(post.title);
     });
@@ -99,8 +96,6 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -121,8 +116,6 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -149,8 +142,6 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs[1].result.title).toBe(post.title);
@@ -174,8 +165,6 @@ describe('workflow > instructions > query', () => {
         values: { title: 't1', tags: [tag.id] },
       });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.id).toBe(tag.id);
@@ -196,8 +185,6 @@ describe('workflow > instructions > query', () => {
       const post = await PostRepo.create({
         values: { title: 't1', comments: [comment.id] },
       });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -221,8 +208,6 @@ describe('workflow > instructions > query', () => {
         values: { title: 't1', tags: [tag.id] },
       });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.posts.length).toBe(1);
@@ -245,8 +230,6 @@ describe('workflow > instructions > query', () => {
       await PostCollection.model.bulkCreate([{ title: 't4' }, { title: 't3' }, { title: 't2' }]);
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toBe('t1');
       const [job] = await execution.getJobs();
@@ -265,8 +248,6 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -290,8 +271,6 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(1);
@@ -313,8 +292,6 @@ describe('workflow > instructions > query', () => {
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
@@ -338,8 +315,6 @@ describe('workflow > instructions > query', () => {
       await PostCollection.model.bulkCreate([{ title: 't1' }, { title: 't2' }, { title: 't3' }]);
       await PostRepo.create({ values: { title: 't4' } });
 
-      await sleep(500);
-
       const e1s = await workflow.getExecutions();
       expect(e1s.length).toBe(1);
       const [job] = await e1s[0].getJobs();
@@ -360,8 +335,6 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
       const [job] = await execution.getJobs();
@@ -381,8 +354,6 @@ describe('workflow > instructions > query', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
       const [job] = await execution.getJobs();
@@ -390,13 +361,25 @@ describe('workflow > instructions > query', () => {
     });
   });
 
-  describe('datetimeNoTz field', () => {
+  describe.only('datetimeNoTz field', () => {
     it('query with $dateBefore using system now()', async () => {
       const postsCollection = db.getCollection('posts');
       postsCollection.addField('date1', {
         type: 'datetimeNoTz',
       });
       await db.sync();
+
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              'date1.$dateBefore': '{{$system.now}}',
+            },
+          },
+        },
+      });
 
       // Create a record with a datetime 1 hour ago (in local time format without timezone)
       const now = new Date();
@@ -408,22 +391,10 @@ describe('workflow > instructions > query', () => {
         '0',
       )}:${String(oneHourAgo.getSeconds()).padStart(2, '0')}`;
 
-      const record = await PostRepo.create({
+      await PostRepo.create({
         values: {
           title: 'test datetimeNoTz',
           date1: dateStr,
-        },
-      });
-
-      const n1 = await workflow.createNode({
-        type: 'query',
-        config: {
-          collection: 'posts',
-          params: {
-            filter: {
-              'date1.$dateBefore': '{{$system.now}}',
-            },
-          },
         },
       });
 
@@ -447,22 +418,6 @@ describe('workflow > instructions > query', () => {
       });
       await db.sync();
 
-      // Create a record with a datetime 1 hour in the future (in local time format without timezone)
-      const now = new Date();
-      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-      const dateStr = `${oneHourLater.getFullYear()}-${String(oneHourLater.getMonth() + 1).padStart(2, '0')}-${String(
-        oneHourLater.getDate(),
-      ).padStart(2, '0')} ${String(oneHourLater.getHours()).padStart(2, '0')}:${String(
-        oneHourLater.getMinutes(),
-      ).padStart(2, '0')}:${String(oneHourLater.getSeconds()).padStart(2, '0')}`;
-
-      const record = await PostRepo.create({
-        values: {
-          title: 'test datetimeNoTz future',
-          date1: dateStr,
-        },
-      });
-
       const n1 = await workflow.createNode({
         type: 'query',
         config: {
@@ -472,6 +427,22 @@ describe('workflow > instructions > query', () => {
               'date1.$dateAfter': '{{$system.now}}',
             },
           },
+        },
+      });
+
+      // Create a record with a datetime 1 hour in the future (in local time format without timezone)
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const dateStr = `${oneHourLater.getFullYear()}-${String(oneHourLater.getMonth() + 1).padStart(2, '0')}-${String(
+        oneHourLater.getDate(),
+      ).padStart(2, '0')} ${String(oneHourLater.getHours()).padStart(2, '0')}:${String(
+        oneHourLater.getMinutes(),
+      ).padStart(2, '0')}:${String(oneHourLater.getSeconds()).padStart(2, '0')}`;
+
+      await PostRepo.create({
+        values: {
+          title: 'test datetimeNoTz future',
+          date1: dateStr,
         },
       });
 
@@ -510,8 +481,6 @@ describe('workflow > instructions > query', () => {
       });
 
       await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);

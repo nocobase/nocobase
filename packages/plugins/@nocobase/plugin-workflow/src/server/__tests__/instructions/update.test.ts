@@ -204,6 +204,103 @@ describe('workflow > instructions > update', () => {
     });
   });
 
+  describe('datetimeNoTz field', () => {
+    it('update with $dateBefore using system now()', async () => {
+      const postsCollection = db.getCollection('posts');
+      postsCollection.addField('date1', {
+        type: 'datetimeNoTz',
+      });
+      await db.sync();
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              'date1.$dateBefore': '{{$system.now}}',
+            },
+            values: {
+              title: 'updated before',
+            },
+          },
+        },
+      });
+
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const dateStr = `${oneHourAgo.getFullYear()}-${String(oneHourAgo.getMonth() + 1).padStart(2, '0')}-${String(
+        oneHourAgo.getDate(),
+      ).padStart(2, '0')} ${String(oneHourAgo.getHours()).padStart(2, '0')}:${String(oneHourAgo.getMinutes()).padStart(
+        2,
+        '0',
+      )}:${String(oneHourAgo.getSeconds()).padStart(2, '0')}`;
+
+      const post = await PostRepo.create({
+        values: {
+          title: 'test datetimeNoTz',
+          date1: dateStr,
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      expect(updatedPost.title).toBe('updated before');
+    });
+
+    it('update with $dateAfter using system now()', async () => {
+      const postsCollection = db.getCollection('posts');
+      postsCollection.addField('date1', {
+        type: 'datetimeNoTz',
+      });
+      await db.sync();
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              'date1.$dateAfter': '{{$system.now}}',
+            },
+            values: {
+              title: 'updated after',
+            },
+          },
+        },
+      });
+
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const dateStr = `${oneHourLater.getFullYear()}-${String(oneHourLater.getMonth() + 1).padStart(2, '0')}-${String(
+        oneHourLater.getDate(),
+      ).padStart(2, '0')} ${String(oneHourLater.getHours()).padStart(2, '0')}:${String(
+        oneHourLater.getMinutes(),
+      ).padStart(2, '0')}:${String(oneHourLater.getSeconds()).padStart(2, '0')}`;
+
+      const post = await PostRepo.create({
+        values: {
+          title: 'test datetimeNoTz future',
+          date1: dateStr,
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions({ order: [['id', 'DESC']] });
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      expect(updatedPost.title).toBe('updated after');
+    });
+  });
+
   describe('multiple data source', () => {
     it('update one', async () => {
       const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');

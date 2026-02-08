@@ -10,7 +10,7 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { getDateVars, uid } from '@nocobase/utils';
+import { getDateVars, isNumeric, uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -215,12 +215,6 @@ function getUser(ctx) {
     });
     return user;
   };
-}
-
-function isNumeric(str: any) {
-  if (typeof str === 'number') return true;
-  if (typeof str != 'string') return false;
-  return !isNaN(str as any) && !isNaN(parseFloat(str));
 }
 
 export function createContextVariablesScope(ctx) {
