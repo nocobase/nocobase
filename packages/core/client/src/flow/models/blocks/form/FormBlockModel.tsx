@@ -483,7 +483,7 @@ export const FormBlockContent = ({
       <div ref={containerRef} style={containerStyle}>
         {grid}
         {actions ? (
-          <div style={{ paddingTop: model.context.themeToken.padding }} ref={actionsRef}>
+          <div style={{ paddingTop: model.context?.themeToken?.padding }} ref={actionsRef}>
             {actions}
           </div>
         ) : null}
