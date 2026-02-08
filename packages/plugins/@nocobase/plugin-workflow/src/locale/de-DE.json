@@ -253,5 +253,13 @@
   "Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).": "Workflow wird vor erfolgreichem Löschen ausgelöst (unterstützt nur Ereignis vor der Aktion im lokalen Modus).",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "Workflow wird direkt ausgelöst, sobald der Button geklickt wird, ohne Datenspeicherung. Unterstützt nur die Bindung an \"Benutzerdefiniertes Aktionsereignis\".",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow mit unbekanntem Typ verursacht Fehler. Bitte löschen Sie ihn oder überprüfen Sie das Plugin, das diesen Typ bereitstellt.",
-  "Yes": "Yes"
+  "Yes": "Yes",
+  "Failed to move node": "Knoten konnte nicht verschoben werden",
+  "Confirm move": "Verschiebung bestätigen",
+  "Moving this node may remove variable references.": "Das Verschieben dieses Knotens kann Variablenreferenzen entfernen.",
+  "Impacted current node variables": "Vom aktuellen Knoten referenzierte Variablen",
+  "Impacted dependent node variables": "Knoten, die Variablen des aktuellen Knotens referenzieren",
+  "Keep variable references": "Variablenreferenzen beibehalten",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Das Beibehalten von Variablenreferenzen erfordert eine manuelle Anpassung, andernfalls kann der Workflow fehlschlagen.",
+  "Failed to update node variables": "Aktualisierung der Knotenvariablen fehlgeschlagen"
 }

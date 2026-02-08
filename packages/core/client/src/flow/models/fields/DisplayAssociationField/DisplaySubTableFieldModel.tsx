@@ -56,7 +56,7 @@ const AddFieldColumn = ({ model }) => {
     <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClasses={['TableColumnModel']}
+      subModelBaseClasses={['TableColumnModel', 'TableAssociationFieldGroupModel']}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
@@ -210,8 +210,11 @@ export class DisplaySubTableFieldModel extends FieldModel {
   }
 
   getBaseColumns() {
-    const baseColumns = this.mapSubModels('columns', (column: any) => column.getColumnProps()).filter((v) => {
-      return !v?.hidden;
+    const baseColumns = this.mapSubModels(
+      'columns',
+      (column: any) => column.use === 'TableColumnModel' && column.getColumnProps(),
+    ).filter((v) => {
+      return v && !v?.hidden;
     });
 
     return baseColumns;

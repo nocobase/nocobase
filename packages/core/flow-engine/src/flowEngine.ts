@@ -907,16 +907,26 @@ export class FlowEngine {
    */
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const model = this.findModelByParentId(options.parentId, options.subKey);
-    if (model) {
-      return model as T;
-    }
-    const hydrated = this.hydrateModelFromPreviousEngines<T>(options);
-    if (hydrated) {
-      return hydrated as T;
+    const refresh = !!options?.refresh;
+    if (!refresh) {
+      const model = this.findModelByParentId(options.parentId, options.subKey);
+      if (model) {
+        return model as T;
+      }
+      const hydrated = this.hydrateModelFromPreviousEngines<T>(options);
+      if (hydrated) {
+        return hydrated as T;
+      }
     }
     const data = await this._modelRepository.findOne(options);
-    return data?.uid ? this.createModel<T>(data as any) : null;
+    if (!data?.uid) return null;
+    if (refresh) {
+      const existing = this.getModel(data.uid);
+      if (existing) {
+        this.removeModelWithSubModels(existing.uid);
+      }
+    }
+    return this.createModel<T>(data as any);
   }
 
   /**
