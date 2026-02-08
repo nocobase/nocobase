@@ -7,31 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect, useState } from 'react';
-import { useApp } from '../../../application';
-import { ToolsEntry } from '../types';
+import { useContext } from 'react';
+import { ToolsContext } from './context';
 
 export const useTools = () => {
-  const [tools, setTools] = useState<ToolsEntry[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState(null);
-  const app = useApp();
-  const { toolsManager } = app.aiManager;
-  const toolsWithHooks = toolsManager.useTools();
-  useEffect(() => {
-    toolsManager
-      .listTools()
-      .then((items) => setTools(items.map((it) => ({ ...it, ...(toolsWithHooks.get(it.definition.name) ?? {}) }))))
-      .finally(() => setLoading(false))
-      .catch((e) => {
-        console.error(e);
-        setError(e);
-      });
-  }, []);
-
-  return {
-    tools,
-    loading,
-    error,
-  };
+  const ctx = useContext(ToolsContext);
+  if (!ctx) {
+    throw new Error('useTools must be used within a ToolsProvider');
+  }
+  return ctx;
 };
+
+export * from './context';
+export * from './provider';

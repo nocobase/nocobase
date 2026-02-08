@@ -16,31 +16,12 @@ type ChatToolCallState = {
 };
 
 export interface ChatToolCallActions {
-  updateByMessages: (messages: Message[]) => void;
   updateToolCallInvokeStatus: (messageId: string, toolCallId: string, invokeStatus: string) => void;
   isAllWaiting: (messageId: string) => boolean;
   isInterrupted: (messageId: string, toolCallId: string) => boolean;
 }
 const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
   toolCalls: {},
-  updateByMessages: (messages: Message[]) => {
-    const toolCalls = {};
-    for (const message of messages) {
-      if ((message.content?.tool_calls ?? []).length === 0) {
-        continue;
-      }
-      if (!message.content?.messageId) {
-        continue;
-      }
-      toolCalls[message.content.messageId] = message.content.tool_calls
-        .filter((x) => x.willInterrupt === true)
-        .map((x) => ({
-          id: x.id,
-          invokeStatus: x.invokeStatus,
-        }));
-    }
-    set({ toolCalls });
-  },
   updateToolCallInvokeStatus: (messageId: string, toolCallId: string, invokeStatus: string) => {
     set((state) => {
       const list = state.toolCalls[messageId] ?? [];
