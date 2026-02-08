@@ -290,4 +290,29 @@ describe('FilterForm custom field record select', () => {
       bindingSpy.mockRestore();
     }
   });
+
+  it('falls back to compatible operator when selected operator is invalid for field model', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
+
+    const model = engine.createModel<FilterFormCustomFieldModel>({
+      uid: 'custom-operator-fallback',
+      use: 'FilterFormCustomFieldModel',
+    });
+
+    model.setStepParams('formItemSettings', 'fieldSettings', {
+      fieldModel: 'SelectFieldModel',
+      title: 'Tags',
+      name: 'tags',
+      operator: '$eq',
+      fieldModelProps: {
+        mode: 'multiple',
+        options: [{ label: 'A', value: 'a' }],
+      },
+    });
+
+    await model.applyFlow('formItemSettings');
+
+    expect(model.operator).toBe('$match');
+  });
 });

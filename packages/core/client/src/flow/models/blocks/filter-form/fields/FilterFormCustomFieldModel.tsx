@@ -13,6 +13,8 @@ import { CollectionField, FieldModelRenderer, FlowModelContext, FormItem, tExpr 
 import { uid } from '@nocobase/utils/client';
 import { FieldComponentProps } from './FieldComponentProps';
 import { FieldModelSelect } from '../FieldModelSelect';
+import { FieldOperatorSelect } from '../FieldOperatorSelect';
+import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } from '../customFieldOperators';
 import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
 import { SourceCascader } from '../SourceCascader';
 
@@ -97,7 +99,32 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
    * @returns
    */
   getFilterValue() {
-    return this.context.form?.getFieldValue(this.props.name);
+    const rawValue = this.context.form?.getFieldValue(this.props.name);
+    const operatorMeta = this.getCurrentOperatorMeta();
+    if (operatorMeta?.noValue) {
+      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      if (Array.isArray(options)) {
+        return rawValue;
+      }
+      return true;
+    }
+    return rawValue;
+  }
+
+  private getCurrentOperatorMeta() {
+    const fieldSettings = this.getStepParams('formItemSettings', 'fieldSettings') || {};
+    const fieldModel = fieldSettings.fieldModel;
+    const source = fieldSettings.source || [];
+    const fieldModelProps = this.customFieldProps || fieldSettings.fieldModelProps || {};
+    const operatorList = resolveCustomFieldOperatorList({
+      flowEngine: this.flowEngine,
+      fieldModel,
+      source,
+      fieldModelProps,
+    });
+    const operator = this.operator || fieldSettings.operator;
+    if (!operator) return null;
+    return operatorList.find((item) => item.value === operator) || null;
   }
 
   /**
@@ -229,6 +256,26 @@ FilterFormCustomFieldModel.registerFlow({
             },
           ],
         },
+        operator: {
+          type: 'string',
+          title: tExpr('Operator'),
+          'x-component': FieldOperatorSelect,
+          'x-decorator': 'FormItem',
+          'x-reactions': [
+            {
+              dependencies: ['fieldModel', 'source', 'fieldModelProps'],
+              fulfill: {
+                state: {
+                  componentProps: {
+                    fieldModel: '{{$deps[0]}}',
+                    source: '{{$deps[1]}}',
+                    fieldModelProps: '{{$deps[2] || {}}}',
+                  },
+                },
+              },
+            },
+          ],
+        },
       },
       defaultParams(ctx) {
         return {
@@ -236,7 +283,7 @@ FilterFormCustomFieldModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const { fieldModel, fieldModelProps = {}, title, name } = params;
+        const { fieldModel, fieldModelProps = {}, title, name, source = [], operator } = params;
         ctx.model.setProps({
           label: title,
           name: name,
@@ -291,11 +338,21 @@ FilterFormCustomFieldModel.registerFlow({
           });
         }
 
-        if (fieldModel === 'DateTimeFilterFieldModel' && fieldModelProps.isRange) {
-          ctx.model.operator = '$dateBetween';
-        } else {
-          ctx.model.operator = undefined;
-        }
+        const operatorList = resolveCustomFieldOperatorList({
+          flowEngine: ctx.model.flowEngine,
+          fieldModel,
+          source,
+          fieldModelProps: resolvedFieldModelProps,
+        });
+        const operatorIsValid = !!operatorList.find((item) => item.value === operator);
+        ctx.model.operator =
+          (operatorIsValid ? operator : undefined) ||
+          resolveDefaultCustomFieldOperator({
+            flowEngine: ctx.model.flowEngine,
+            fieldModel,
+            source,
+            fieldModelProps: resolvedFieldModelProps,
+          });
 
         ctx.model.customFieldProps = fieldModelProps;
       },
