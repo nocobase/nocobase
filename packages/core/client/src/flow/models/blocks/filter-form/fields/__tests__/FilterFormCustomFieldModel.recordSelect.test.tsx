@@ -12,7 +12,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { App, ConfigProvider } from 'antd';
 import { createForm } from '@formily/core';
 import { Field, FormProvider } from '@formily/react';
-import { render, waitFor } from '@nocobase/test/client';
+import { fireEvent, render, waitFor } from '@nocobase/test/client';
 import {
   FilterableItemModel,
   FlowEngine,
@@ -214,6 +214,89 @@ describe('FilterForm custom field record select', () => {
       // @ts-ignore
       const value = form.values?.props || {};
       expect(value.recordSelectTargetCollection).toBeUndefined();
+    });
+  });
+
+  it('hides association fields from value field options', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ HostModel, FilterFormCustomRecordSelectFieldModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'roles',
+      fields: [{ name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } }],
+    });
+    ds.addCollection({
+      name: 'users',
+      titleField: 'nickname',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        { name: 'nickname', type: 'string', interface: 'input', filterable: { operators: [] } },
+        {
+          name: 'hiddenText',
+          type: 'string',
+          interface: 'input',
+          title: 'Hidden text',
+          filterable: false,
+        },
+        {
+          name: 'roles',
+          type: 'belongsToMany',
+          interface: 'm2m',
+          target: 'roles',
+          title: 'Roles relation',
+          filterable: { operators: [] },
+        },
+      ],
+    });
+    ds.addCollection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'author',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'users',
+          filterable: { operators: [] },
+        },
+      ],
+    });
+
+    const host = engine.createModel<HostModel>({
+      uid: 'host-value-field-options',
+      use: 'HostModel',
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      const value = form.values?.props as any;
+      expect(value.recordSelectTargetCollection).toBe('users');
+    });
+
+    const valueFieldSelector = await waitFor(() => {
+      const selectors = document.querySelectorAll('.ant-select-selector');
+      expect(selectors.length).toBeGreaterThanOrEqual(3);
+      return selectors[2] as HTMLElement;
+    });
+    fireEvent.mouseDown(valueFieldSelector);
+
+    await waitFor(() => {
+      const optionTexts = Array.from(document.querySelectorAll('.ant-select-item-option-content')).map(
+        (node) => node.textContent?.trim(),
+      );
+      expect(optionTexts).toContain('nickname');
+      expect(optionTexts).not.toContain('Hidden text');
+      expect(optionTexts).not.toContain('Roles relation');
     });
   });
 

@@ -24,6 +24,7 @@ const RECORD_SELECT_VALUE_FIELD_KEY = 'recordSelectValueField';
 const RECORD_SELECT_ALLOW_MULTIPLE_KEY = 'allowMultiple';
 const RECORD_SELECT_MULTIPLE_KEY = 'multiple';
 const RECORD_SELECT_VALUE_MODE_KEY = 'valueMode';
+const RELATION_FIELD_TYPES = new Set(['belongsTo', 'belongsToMany', 'hasOne', 'hasMany', 'belongsToArray']);
 
 // 字段组件属性配置组件
 export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[] }> = ({
@@ -155,11 +156,28 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   }, [activeCollection, appDataSourceManager, translateLabel]);
   const valueFieldOptions = useMemo(() => {
     if (!activeCollection?.getFields) return [];
-    return (activeCollection.getFields() || []).map((fieldItem: any) => ({
-      label: translateLabel(fieldItem.options?.uiSchema?.title) || translateLabel(fieldItem.title) || fieldItem.name,
-      value: fieldItem.name,
-    }));
-  }, [activeCollection, translateLabel]);
+    const shouldKeep = (fieldItem: any) => {
+      const fieldOptions = fieldItem?.options || {};
+      const interfaceName = fieldOptions.interface || fieldItem?.interface;
+      if (fieldOptions.filterable === false || !interfaceName) {
+        return false;
+      }
+      if (appDataSourceManager) {
+        const fieldInterface = appDataSourceManager.collectionFieldInterfaceManager?.getFieldInterface?.(interfaceName);
+        if (!fieldInterface?.filterable) {
+          return false;
+        }
+      }
+      const relationType = fieldOptions.type || fieldItem?.type;
+      return !RELATION_FIELD_TYPES.has(relationType);
+    };
+    return (activeCollection.getFields() || [])
+      .filter((fieldItem: any) => shouldKeep(fieldItem))
+      .map((fieldItem: any) => ({
+        label: translateLabel(fieldItem.options?.uiSchema?.title) || translateLabel(fieldItem.title) || fieldItem.name,
+        value: fieldItem.name,
+      }));
+  }, [activeCollection, appDataSourceManager, translateLabel]);
 
   useEffect(() => {
     if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
@@ -173,14 +191,20 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   }, [fieldModel, resolvedFieldModel, activeCollectionName, activeCollection, propsValue]);
   useEffect(() => {
     if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;
-    if (!activeCollectionName || propsValue?.[RECORD_SELECT_VALUE_FIELD_KEY]) return;
-    const defaultValueField = activeCollection?.filterTargetKey || 'id';
+    if (!activeCollectionName) return;
+    const currentValueField = propsValue?.[RECORD_SELECT_VALUE_FIELD_KEY];
+    const availableValueFields = valueFieldOptions.map((item) => item.value);
+    if (currentValueField && availableValueFields.includes(currentValueField)) return;
+    const preferredValueField = activeCollection?.filterTargetKey;
+    const defaultValueField =
+      (preferredValueField && availableValueFields.includes(preferredValueField) && preferredValueField) ||
+      availableValueFields[0];
     if (!defaultValueField) return;
     field.setValue({
       ...getCurrentValue(),
       [RECORD_SELECT_VALUE_FIELD_KEY]: defaultValueField,
     });
-  }, [fieldModel, resolvedFieldModel, activeCollectionName, activeCollection, propsValue]);
+  }, [fieldModel, resolvedFieldModel, activeCollectionName, activeCollection, propsValue, valueFieldOptions]);
 
   useEffect(() => {
     if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;

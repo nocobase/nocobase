@@ -15,6 +15,7 @@ import { Field, FormProvider } from '@formily/react';
 import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { act } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider } from '@nocobase/flow-engine';
+import { operators } from '../../../../../collection-manager';
 
 import { FieldOperatorSelect } from '../FieldOperatorSelect';
 import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } from '../customFieldOperators';
@@ -36,6 +37,30 @@ function createEngineWithCollections() {
     fields: [
       { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
       { name: 'uid', type: 'string', interface: 'input', filterable: { operators: [] } },
+      { name: 'createdAt', type: 'date', interface: 'datetime', filterable: { operators: [] } },
+      {
+        name: 'pluginInSource',
+        type: 'integer',
+        interface: 'number',
+        filterable: {
+          operators: [
+            { label: '{{t("=")}}', value: '$eq' },
+            { label: '{{t("≠")}}', value: '$ne' },
+            {
+              label: 'plugin-in',
+              value: '$in',
+              schema: { 'x-component': 'MultipleKeywordsInput' },
+            },
+            {
+              label: 'plugin-notIn',
+              value: '$notIn',
+              schema: { 'x-component': 'MultipleKeywordsInput' },
+            },
+            { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+            { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
+          ],
+        },
+      },
     ],
   });
   ds.addCollection({
@@ -139,6 +164,96 @@ describe('custom field operators', () => {
     });
     expect(multipleStringValueOps.some((item) => item.value === '$in')).toBe(true);
     expect(multipleStringValueOps.some((item) => item.value === '$includes')).toBe(true);
+
+    const multipleDateValueOps = resolveCustomFieldOperatorList({
+      flowEngine: engine,
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+      fieldModelProps: {
+        recordSelectDataSourceKey: 'main',
+        recordSelectTargetCollection: 'users',
+        recordSelectValueField: 'createdAt',
+        allowMultiple: true,
+        multiple: true,
+      },
+    });
+    expect(multipleDateValueOps.some((item) => item.value === '$in')).toBe(true);
+    expect(multipleDateValueOps.some((item) => item.value === '$notIn')).toBe(true);
+  });
+
+  it('does not rely on enum operators for record select multiple in/notIn', () => {
+    const engine = createEngineWithCollections();
+    const originalEnumOperators = [...(operators.enumType || [])];
+    operators.enumType.splice(
+      0,
+      operators.enumType.length,
+      ...operators.enumType.filter((item) => item.value !== '$in' && item.value !== '$notIn'),
+    );
+
+    try {
+      const multipleNumberValueOps = resolveCustomFieldOperatorList({
+        flowEngine: engine,
+        fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+        fieldModelProps: {
+          recordSelectDataSourceKey: 'main',
+          recordSelectTargetCollection: 'users',
+          recordSelectValueField: 'id',
+          allowMultiple: true,
+          multiple: true,
+        },
+      });
+      expect(multipleNumberValueOps.some((item) => item.value === '$in')).toBe(true);
+      expect(multipleNumberValueOps.some((item) => item.value === '$notIn')).toBe(true);
+
+      const multipleStringValueOps = resolveCustomFieldOperatorList({
+        flowEngine: engine,
+        fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+        fieldModelProps: {
+          recordSelectDataSourceKey: 'main',
+          recordSelectTargetCollection: 'users',
+          recordSelectValueField: 'uid',
+          allowMultiple: true,
+          multiple: true,
+        },
+      });
+      expect(multipleStringValueOps.some((item) => item.value === '$in')).toBe(true);
+      expect(multipleStringValueOps.some((item) => item.value === '$notIn')).toBe(true);
+
+      const multipleDateValueOps = resolveCustomFieldOperatorList({
+        flowEngine: engine,
+        fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+        fieldModelProps: {
+          recordSelectDataSourceKey: 'main',
+          recordSelectTargetCollection: 'users',
+          recordSelectValueField: 'createdAt',
+          allowMultiple: true,
+          multiple: true,
+        },
+      });
+      expect(multipleDateValueOps.some((item) => item.value === '$in')).toBe(true);
+      expect(multipleDateValueOps.some((item) => item.value === '$notIn')).toBe(true);
+    } finally {
+      operators.enumType.splice(0, operators.enumType.length, ...originalEnumOperators);
+    }
+  });
+
+  it('normalizes in/notIn operators even when source field provides plugin variants', () => {
+    const engine = createEngineWithCollections();
+    const operatorList = resolveCustomFieldOperatorList({
+      flowEngine: engine,
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+      fieldModelProps: {
+        recordSelectDataSourceKey: 'main',
+        recordSelectTargetCollection: 'users',
+        recordSelectValueField: 'pluginInSource',
+        allowMultiple: true,
+        multiple: true,
+      },
+    });
+
+    const inOperator = operatorList.find((item) => item.value === '$in');
+    const notInOperator = operatorList.find((item) => item.value === '$notIn');
+    expect(inOperator?.schema?.['x-component']).toBe('Select');
+    expect(notInOperator?.schema?.['x-component']).toBe('Select');
   });
 
   it('prefers date between as default when range is enabled', () => {

@@ -36,6 +36,16 @@ const MODEL_OPERATOR_MAP: Record<string, OperatorMeta[] | ((props: Record<string
 };
 
 const MULTI_VALUE_OPERATOR_VALUES = new Set(['$in', '$notIn', '$empty', '$notEmpty', '$includes', '$notIncludes']);
+const MULTI_VALUE_IN_OPERATOR: OperatorMeta = {
+  label: '{{t("is any of")}}',
+  value: '$in',
+  schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
+};
+const MULTI_VALUE_NOT_IN_OPERATOR: OperatorMeta = {
+  label: '{{t("is none of")}}',
+  value: '$notIn',
+  schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
+};
 const INTERFACE_FALLBACK_OPERATORS: Record<string, OperatorMeta[]> = {
   input: operators.string,
   email: operators.string,
@@ -120,37 +130,26 @@ function toUniqueOperators(operatorList: OperatorMeta[] = []): OperatorMeta[] {
 }
 
 function toMultiValueOperators(baseList: OperatorMeta[] = []): OperatorMeta[] {
-  const inOpFromEnum = operators.enumType?.find((item) => item.value === '$in');
-  const notInOpFromEnum = operators.enumType?.find((item) => item.value === '$notIn');
+  const hasInInBaseList = baseList.some((item) => item?.value === '$in');
+  const hasNotInInBaseList = baseList.some((item) => item?.value === '$notIn');
   const mapped = baseList.filter(
     (item) =>
-      MULTI_VALUE_OPERATOR_VALUES.has(item?.value) ||
+      (MULTI_VALUE_OPERATOR_VALUES.has(item?.value) && item?.value !== '$in' && item?.value !== '$notIn') ||
       item?.noValue ||
       item?.value === '$exists' ||
       item?.value === '$notExists',
   );
   const hasIn = mapped.some((item) => item.value === '$in');
   const hasNotIn = mapped.some((item) => item.value === '$notIn');
-  const hasEq = baseList.some((item) => item.value === '$eq');
-  const hasNe = baseList.some((item) => item.value === '$ne');
+  const hasValueComparableOperator = baseList.some(
+    (item) => item?.value && !item.noValue && item.value !== '$exists' && item.value !== '$notExists',
+  );
 
-  if (!hasIn && hasEq) {
-    mapped.unshift(
-      inOpFromEnum || {
-        label: '{{t("is any of")}}',
-        value: '$in',
-        schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
-      },
-    );
+  if (!hasIn && (hasValueComparableOperator || hasInInBaseList)) {
+    mapped.unshift(MULTI_VALUE_IN_OPERATOR);
   }
-  if (!hasNotIn && hasNe) {
-    mapped.push(
-      notInOpFromEnum || {
-        label: '{{t("is none of")}}',
-        value: '$notIn',
-        schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
-      },
-    );
+  if (!hasNotIn && (hasValueComparableOperator || hasNotInInBaseList)) {
+    mapped.push(MULTI_VALUE_NOT_IN_OPERATOR);
   }
   return toUniqueOperators(mapped);
 }
