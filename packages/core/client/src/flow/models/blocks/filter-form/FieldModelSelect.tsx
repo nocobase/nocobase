@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { FilterableItemModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { Select } from '@formily/antd-v5';
 
@@ -16,23 +16,35 @@ export function FieldModelSelect(props) {
   const flowEngine = useFlowEngine();
   const ctx = useFlowContext();
   const valueMap = props.valueMap || {};
+  const sourceKey = source.join('.');
+  const previousSourceKeyRef = useRef<string>();
   const normalizeValue = (value) => (valueMap && valueMap[value] ? valueMap[value] : value);
 
   const defaultValue = useMemo(() => {
     if (!source.length) return undefined;
-    const collectionField = flowEngine.dataSourceManager.getCollectionField(source.join('.'));
+    const collectionField = flowEngine.dataSourceManager.getCollectionField(sourceKey);
     const binding = FilterableItemModel.getDefaultBindingByField(ctx.model.context, collectionField);
     if (!binding) {
       return;
     }
     return normalizeValue(binding.modelName);
-  }, [source.join('.'), valueMap]);
+  }, [sourceKey, valueMap]);
 
   useEffect(() => {
-    if (!props.value && defaultValue) {
+    if (!defaultValue) {
+      previousSourceKeyRef.current = sourceKey;
+      return;
+    }
+
+    const sourceChanged = previousSourceKeyRef.current !== undefined && previousSourceKeyRef.current !== sourceKey;
+    previousSourceKeyRef.current = sourceKey;
+
+    // Keep field model aligned with latest source metadata.
+    // Users can still adjust it manually after the auto-fill.
+    if ((!props.value || sourceChanged) && normalizeValue(props.value) !== defaultValue) {
       onChange?.(defaultValue);
     }
-  }, [defaultValue, onChange, props.value]);
+  }, [defaultValue, onChange, props.value, sourceKey]);
 
   return <Select allowClear {...props} value={normalizeValue(props.value ?? defaultValue)} />;
 }

@@ -8,13 +8,21 @@
  */
 
 import React from 'react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { App, ConfigProvider } from 'antd';
 import { createForm } from '@formily/core';
 import { Field, FormProvider } from '@formily/react';
 import { render, waitFor } from '@nocobase/test/client';
-import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import {
+  FilterableItemModel,
+  FlowEngine,
+  FlowEngineProvider,
+  FlowModel,
+  FlowModelProvider,
+  FlowModelRenderer,
+} from '@nocobase/flow-engine';
 
+import { FieldModelSelect } from '../../FieldModelSelect';
 import { FieldComponentProps } from '../FieldComponentProps';
 import { FilterFormCustomFieldModel } from '../FilterFormCustomFieldModel';
 import { FilterFormCustomRecordSelectFieldModel } from '../FilterFormCustomRecordSelectFieldModel';
@@ -40,6 +48,34 @@ class HostModel extends FlowModel {
         </FlowModelProvider>
       </FormProvider>
     );
+  }
+}
+
+class HostScalarSourceModel extends FlowModel {
+  render() {
+    const source = ['main', 'roles', 'uid'];
+    return (
+      <FormProvider form={form}>
+        <FlowModelProvider model={this}>
+          <Field
+            name="props"
+            component={[
+              FieldComponentProps,
+              {
+                fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+                source,
+              },
+            ]}
+          />
+        </FlowModelProvider>
+      </FormProvider>
+    );
+  }
+}
+
+class HostFieldModelSelectModel extends FlowModel {
+  render() {
+    return null;
   }
 }
 
@@ -94,6 +130,7 @@ describe('FilterForm custom field record select', () => {
     );
 
     await waitFor(() => {
+      // @ts-ignore
       const value = form.values?.props;
       expect(value.recordSelectDataSourceKey).toBe('main');
       expect(value.recordSelectTargetCollection).toBe('users');
@@ -143,5 +180,114 @@ describe('FilterForm custom field record select', () => {
       label: 'name',
       value: 'id',
     });
+  });
+
+  it('does not crash when source field has no target and field model is record select', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ HostScalarSourceModel, FilterFormCustomRecordSelectFieldModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'roles',
+      fields: [
+        { name: 'uid', type: 'string', interface: 'input', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+
+    const host = engine.createModel<HostScalarSourceModel>({
+      uid: 'host-scalar',
+      use: 'HostScalarSourceModel',
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      // @ts-ignore
+      const value = form.values?.props || {};
+      expect(value.recordSelectTargetCollection).toBeUndefined();
+    });
+  });
+
+  it('auto updates field model when source changes', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ HostFieldModelSelectModel });
+    const bindingSpy = vi.spyOn(FilterableItemModel, 'getDefaultBindingByField').mockImplementation((_, field) => {
+      if (field?.name === 'title') {
+        return { modelName: 'InputFieldModel' } as any;
+      }
+      if (field?.name === 'age') {
+        return { modelName: 'NumberFieldModel' } as any;
+      }
+      return undefined as any;
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'posts',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input', filterable: { operators: [] } },
+        { name: 'age', type: 'integer', interface: 'number', filterable: { operators: [] } },
+      ],
+    });
+
+    const host = engine.createModel<HostFieldModelSelectModel>({
+      uid: 'host-field-model-select',
+      use: 'HostFieldModelSelectModel',
+    });
+
+    let currentFieldModelValue: string | undefined;
+    const TestField: React.FC<{ source: string[] }> = ({ source }) => {
+      const [value, setValue] = React.useState<string>();
+      React.useEffect(() => {
+        currentFieldModelValue = value;
+      }, [value]);
+
+      return <FieldModelSelect source={source} value={value} onChange={setValue} />;
+    };
+
+    const { rerender } = render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelProvider model={host}>
+              <TestField source={['main', 'posts', 'title']} />
+            </FlowModelProvider>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    try {
+      await waitFor(() => {
+        expect(currentFieldModelValue).toBe('InputFieldModel');
+      });
+
+      rerender(
+        <FlowEngineProvider engine={engine}>
+          <ConfigProvider>
+            <App>
+              <FlowModelProvider model={host}>
+                <TestField source={['main', 'posts', 'age']} />
+              </FlowModelProvider>
+            </App>
+          </ConfigProvider>
+        </FlowEngineProvider>,
+      );
+
+      await waitFor(() => {
+        expect(currentFieldModelValue).toBe('NumberFieldModel');
+      });
+    } finally {
+      bindingSpy.mockRestore();
+    }
   });
 });

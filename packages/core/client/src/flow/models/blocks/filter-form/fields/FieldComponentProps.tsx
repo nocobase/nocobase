@@ -63,11 +63,14 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     const fieldPath = (hasDataSourceKey ? sourceValue.slice(1) : sourceValue).join('.');
     const collectionField = flowEngine.dataSourceManager.getCollectionField(`${resolvedDataSourceKey}.${fieldPath}`);
     const binding = FilterableItemModel.getDefaultBindingByField(ctx.model.context, collectionField);
+    if (!collectionField && resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') {
+      return;
+    }
     if (!binding && resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') {
       return;
     }
 
-    const fieldProps = collectionField.getComponentProps();
+    const fieldProps = collectionField?.getComponentProps?.() || {};
 
     const props =
       binding && typeof binding.defaultProps === 'function'
@@ -79,7 +82,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     const shouldFillRecordSelect =
       resolvedFieldModel === 'FilterFormCustomRecordSelectFieldModel' ||
       (!resolvedFieldModel && collectionField?.target);
-    if (shouldFillRecordSelect && collectionField) {
+    if (shouldFillRecordSelect && collectionField?.target) {
       const targetCollection =
         collectionField.targetCollection ||
         flowEngine.dataSourceManager.getCollection(collectionField.dataSourceKey, collectionField.target);
