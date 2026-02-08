@@ -19,14 +19,7 @@ export { Evaluator, evaluate, appendArrayColumn } from '../utils';
 
 export const evaluators = new Registry<Evaluator>();
 
-lockdownSes({
-  consoleTaming: 'unsafe',
-  errorTaming: 'unsafe',
-  overrideTaming: 'moderate',
-  stackFiltering: 'verbose',
-});
-
-const formulajs = createFormulaEvaluator({
+const baseFormulajs = createFormulaEvaluator({
   blockedIdentifiers: [
     ...BASE_BLOCKED_IDENTIFIERS,
     'process',
@@ -38,6 +31,19 @@ const formulajs = createFormulaEvaluator({
     'Buffer',
   ],
 });
+let formulaLockdownReady = false;
+function formulajs(expression, scope) {
+  if (!formulaLockdownReady) {
+    lockdownSes({
+      consoleTaming: 'unsafe',
+      errorTaming: 'unsafe',
+      overrideTaming: 'moderate',
+      stackFiltering: 'verbose',
+    });
+    formulaLockdownReady = true;
+  }
+  return baseFormulajs(expression, scope);
+}
 
 evaluators.register('math.js', mathjs);
 evaluators.register('formula.js', formulajs);
