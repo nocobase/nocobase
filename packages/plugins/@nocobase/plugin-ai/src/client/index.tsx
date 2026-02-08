@@ -31,6 +31,7 @@ import {
 } from './ai-employees/flow/models';
 import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
+import { LLMServicesRepository } from './llm-services/LLMServicesRepository';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { DatasourceContext } from './ai-employees/context/datasource';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
@@ -137,6 +138,9 @@ export class PluginAIClient extends Plugin {
 
   async setupAIFeatures() {
     this.app.flowEngine.context.defineProperty(...aiEmployeesData);
+
+    const llmServicesRepository = new LLMServicesRepository(this.app.apiClient);
+    this.app.flowEngine.context.defineProperty('llmServicesRepository', { value: llmServicesRepository });
 
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);

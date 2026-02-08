@@ -17,6 +17,8 @@ import {
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
+  useDestroyActionProps,
+  useBulkDestroyActionProps,
   usePlugin,
   useRequest,
 } from '@nocobase/client';
@@ -41,6 +43,7 @@ import PluginAIClient from '..';
 import { LLMTestFlight } from './component/LLMTestFlight';
 import { EnabledModelsSelect } from './component/EnabledModelsSelect';
 import { ModelOptionsSettings } from './component/ModelOptionsSettings';
+import { useLLMServicesRepository } from './hooks/useLLMServicesRepository';
 
 const useCreateFormProps = () => {
   const form = useMemo(
@@ -88,6 +91,7 @@ const useCreateActionProps = () => {
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
   const t = useT();
+  const llmServicesRepo = useLLMServicesRepository();
 
   return {
     type: 'primary',
@@ -98,6 +102,7 @@ const useCreateActionProps = () => {
         values,
       });
       refresh();
+      llmServicesRepo.refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
     },
@@ -113,6 +118,7 @@ const useEditActionProps = () => {
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();
+  const llmServicesRepo = useLLMServicesRepository();
 
   return {
     type: 'primary',
@@ -124,6 +130,7 @@ const useEditActionProps = () => {
         filterByTk: values[filterTk],
       });
       refresh();
+      llmServicesRepo.refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
@@ -204,6 +211,7 @@ const EnabledSwitch: React.FC = observer(
     const collection = useCollection();
     const filterTk = collection.getFilterTargetKey();
     const checked = field.value !== false;
+    const llmServicesRepo = useLLMServicesRepository();
 
     return (
       <Switch
@@ -216,12 +224,37 @@ const EnabledSwitch: React.FC = observer(
             filterByTk: record[filterTk],
           });
           refresh();
+          llmServicesRepo.refresh();
         }}
       />
     );
   },
   { displayName: 'EnabledSwitch' },
 );
+
+const useLLMDestroyActionProps = () => {
+  const props = useDestroyActionProps();
+  const llmServicesRepo = useLLMServicesRepository();
+  return {
+    ...props,
+    async onClick(e?, callBack?) {
+      await props.onClick(e, callBack);
+      llmServicesRepo.refresh();
+    },
+  };
+};
+
+const useLLMBulkDestroyActionProps = () => {
+  const props = useBulkDestroyActionProps();
+  const llmServicesRepo = useLLMServicesRepository();
+  return {
+    ...props,
+    async onClick(e?, callBack?) {
+      await props.onClick(e, callBack);
+      llmServicesRepo.refresh();
+    },
+  };
+};
 
 const AddNew = () => {
   const t = useT();
@@ -333,7 +366,16 @@ export const LLMServices: React.FC = () => {
               ModelOptionsSettings,
               EnabledSwitch,
             }}
-            scope={{ t, providers, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
+            scope={{
+              t,
+              providers,
+              useEditFormProps,
+              useCancelActionProps,
+              useCreateActionProps,
+              useEditActionProps,
+              useDestroyActionProps: useLLMDestroyActionProps,
+              useBulkDestroyActionProps: useLLMBulkDestroyActionProps,
+            }}
           />
         </ExtendCollectionsProvider>
       </LLMProvidersContext.Provider>
