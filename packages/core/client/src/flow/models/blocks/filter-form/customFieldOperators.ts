@@ -35,7 +35,7 @@ const MODEL_OPERATOR_MAP: Record<string, OperatorMeta[] | ((props: Record<string
   CheckboxGroupFieldModel: operators.array,
 };
 
-const MULTI_VALUE_OPERATOR_VALUES = new Set(['$in', '$notIn', '$empty', '$notEmpty']);
+const MULTI_VALUE_OPERATOR_VALUES = new Set(['$in', '$notIn', '$empty', '$notEmpty', '$includes', '$notIncludes']);
 const INTERFACE_FALLBACK_OPERATORS: Record<string, OperatorMeta[]> = {
   input: operators.string,
   email: operators.string,
@@ -122,11 +122,19 @@ function toUniqueOperators(operatorList: OperatorMeta[] = []): OperatorMeta[] {
 function toMultiValueOperators(baseList: OperatorMeta[] = []): OperatorMeta[] {
   const inOpFromEnum = operators.enumType?.find((item) => item.value === '$in');
   const notInOpFromEnum = operators.enumType?.find((item) => item.value === '$notIn');
-  const mapped = baseList.filter((item) => MULTI_VALUE_OPERATOR_VALUES.has(item?.value));
+  const mapped = baseList.filter(
+    (item) =>
+      MULTI_VALUE_OPERATOR_VALUES.has(item?.value) ||
+      item?.noValue ||
+      item?.value === '$exists' ||
+      item?.value === '$notExists',
+  );
   const hasIn = mapped.some((item) => item.value === '$in');
   const hasNotIn = mapped.some((item) => item.value === '$notIn');
+  const hasEq = baseList.some((item) => item.value === '$eq');
+  const hasNe = baseList.some((item) => item.value === '$ne');
 
-  if (!hasIn) {
+  if (!hasIn && hasEq) {
     mapped.unshift(
       inOpFromEnum || {
         label: '{{t("is any of")}}',
@@ -135,7 +143,7 @@ function toMultiValueOperators(baseList: OperatorMeta[] = []): OperatorMeta[] {
       },
     );
   }
-  if (!hasNotIn) {
+  if (!hasNotIn && hasNe) {
     mapped.push(
       notInOpFromEnum || {
         label: '{{t("is none of")}}',

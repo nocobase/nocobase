@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { App, ConfigProvider } from 'antd';
 import { createForm } from '@formily/core';
 import { Field, FormProvider } from '@formily/react';
-import { fireEvent, render, waitFor } from '@nocobase/test/client';
+import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { act } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider } from '@nocobase/flow-engine';
 
@@ -124,6 +124,21 @@ describe('custom field operators', () => {
     });
     expect(multipleNumberValueOps.some((item) => item.value === '$in')).toBe(true);
     expect(multipleNumberValueOps.some((item) => item.value === '$gt')).toBe(false);
+    expect(multipleNumberValueOps.some((item) => item.value === '$includes')).toBe(false);
+
+    const multipleStringValueOps = resolveCustomFieldOperatorList({
+      flowEngine: engine,
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+      fieldModelProps: {
+        recordSelectDataSourceKey: 'main',
+        recordSelectTargetCollection: 'users',
+        recordSelectValueField: 'uid',
+        allowMultiple: true,
+        multiple: true,
+      },
+    });
+    expect(multipleStringValueOps.some((item) => item.value === '$in')).toBe(true);
+    expect(multipleStringValueOps.some((item) => item.value === '$includes')).toBe(true);
   });
 
   it('prefers date between as default when range is enabled', () => {
@@ -320,6 +335,82 @@ describe('custom field operators', () => {
 
     await waitFor(() => {
       expect(currentOperator).toBe('$includes');
+    });
+  });
+
+  it('updates operator option list when record select value field changes in multiple mode', async () => {
+    const engine = createEngineWithCollections();
+    const host = engine.createModel<HostModel>({
+      uid: 'host-operator-record-select-value-field-multiple',
+      use: 'HostModel',
+    });
+
+    const TestSelect: React.FC<{ fieldModelProps?: Record<string, any> }> = ({ fieldModelProps }) => {
+      const [value, setValue] = React.useState<string>('$in');
+      return (
+        <FieldOperatorSelect
+          fieldModel="FilterFormCustomRecordSelectFieldModel"
+          fieldModelProps={fieldModelProps}
+          value={value}
+          onChange={setValue}
+        />
+      );
+    };
+
+    const { container, rerender } = render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelProvider model={host}>
+              <TestSelect
+                fieldModelProps={{
+                  recordSelectDataSourceKey: 'main',
+                  recordSelectTargetCollection: 'users',
+                  recordSelectValueField: 'id',
+                  allowMultiple: true,
+                  multiple: true,
+                }}
+              />
+            </FlowModelProvider>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const selector = container.querySelector('.ant-select-selector');
+    expect(selector).toBeTruthy();
+    fireEvent.mouseDown(selector!);
+
+    await waitFor(() => {
+      expect(screen.queryByText('contains')).not.toBeInTheDocument();
+    });
+
+    rerender(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelProvider model={host}>
+              <TestSelect
+                fieldModelProps={{
+                  recordSelectDataSourceKey: 'main',
+                  recordSelectTargetCollection: 'users',
+                  recordSelectValueField: 'uid',
+                  allowMultiple: true,
+                  multiple: true,
+                }}
+              />
+            </FlowModelProvider>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const selectorAfterRerender = container.querySelector('.ant-select-selector');
+    expect(selectorAfterRerender).toBeTruthy();
+    fireEvent.mouseDown(selectorAfterRerender!);
+
+    await waitFor(() => {
+      expect(screen.getByText('contains')).toBeInTheDocument();
     });
   });
 
