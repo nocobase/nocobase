@@ -200,7 +200,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const fieldModel = this.subModels.field as FieldModel;
+    const fieldModel = this.subModels.field as FieldModel & { getFilterValue?: () => any };
     const fieldValue = fieldModel.getFilterValue
       ? fieldModel.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
