@@ -341,6 +341,77 @@ describe('DefaultValue component', () => {
     );
   });
 
+  it('default value relation editor keeps origin title-field mapping', async () => {
+    const onChange = vi.fn();
+    const originalCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // 捕获 DefaultValue 内部创建的临时模型，验证其关系字段映射是否继承原字段配置
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = originalCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+      }
+      return created;
+    }) as any;
+
+    // 关闭测试桩对 selectSettings 的覆盖，避免把 fieldNames 强制重置为 collectionField 默认值
+    RecordSelectFieldModel.registerFlow({ key: 'selectSettings', manual: true, steps: {} });
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: {
+        name: 'assignees',
+        value: [
+          { id: 24, nickname: 'User 24' },
+          { id: 26, nickname: 'User 26' },
+        ],
+        onChange,
+        metaTree: simpleMetaTree,
+      },
+      subModels: {
+        field: {
+          use: 'RecordSelectFieldModel',
+          props: {
+            // 原筛选字段使用 nickname 作为 title-field 展示
+            fieldNames: { label: 'nickname', value: 'id' },
+            allowMultiple: true,
+            multiple: true,
+          },
+        },
+      },
+    });
+    host.context.defineProperty('collectionField', {
+      value: {
+        interface: 'm2m',
+        type: 'belongsToMany',
+        isAssociationField: () => true,
+        // 底层集合默认仍是 id，用于模拟“默认值弹窗退化显示 id”的真实场景
+        fieldNames: { label: 'id', value: 'id' },
+        targetCollection: {
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy();
+    });
+
+    // 期望：临时关系字段继承原字段的 title-field 映射（nickname），而不是退化为 id
+    expect(capturedTempRoot.subModels.fields[0].props.fieldNames).toEqual({ label: 'nickname', value: 'id' });
+  });
+
   it('safe backfill when saving (setStepParams): overwrite when empty/unmodified or equals last default value; otherwise do not overwrite', async () => {
     const formStub = createFormStub();
 

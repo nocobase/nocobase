@@ -76,8 +76,7 @@ function createTempFieldClass(Base: any) {
         return !!(byType || byInterface);
       };
       const inferredMultiple = inferMultipleFromCollectionField();
-      const multiple =
-        typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferredMultiple;
+      const multiple = typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferredMultiple;
       const allowMultiple =
         typeof originalProps.allowMultiple !== 'undefined'
           ? originalProps.allowMultiple
@@ -322,14 +321,36 @@ export const DefaultValue = connect((props: Props) => {
       ? PreferredClassFromOrigin
       : BoundClass || (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || FallbackClass;
     const TempFieldClass = createTempFieldClass(BaseClass);
+    // 继承原关系字段的显示映射，避免默认值编辑器回退为 id 展示
+    const inheritedFieldNames = (origin as any)?.props?.fieldNames;
+    const inheritedTitleField = (origin as any)?.props?.titleField;
+    // 继承 selectSettings 中已保存的参数（如 title-field、多选开关）
+    const inheritedSelectFieldNamesStep = (origin as any)?.getStepParams?.('selectSettings', 'fieldNames');
+    const inheritedSelectAllowMultipleStep = (origin as any)?.getStepParams?.('selectSettings', 'allowMultiple');
+    const tempFieldStepParams: Record<string, any> = {};
+    if (init) {
+      tempFieldStepParams.fieldSettings = { init };
+    }
+    if (inheritedSelectFieldNamesStep || inheritedSelectAllowMultipleStep) {
+      tempFieldStepParams.selectSettings = {
+        ...(inheritedSelectFieldNamesStep ? { fieldNames: inheritedSelectFieldNamesStep } : {}),
+        ...(inheritedSelectAllowMultipleStep ? { allowMultiple: inheritedSelectAllowMultipleStep } : {}),
+      };
+    }
     const fieldSub = {
       use: TempFieldClass,
       uid: uid(),
       parentId: null,
       subKey: null,
       subType: null,
-      stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false, allowClear: true, ...host?.customFieldProps },
+      stepParams: Object.keys(tempFieldStepParams).length ? tempFieldStepParams : undefined,
+      props: {
+        disabled: false,
+        allowClear: true,
+        ...(typeof inheritedFieldNames !== 'undefined' ? { fieldNames: inheritedFieldNames } : {}),
+        ...(typeof inheritedTitleField !== 'undefined' ? { titleField: inheritedTitleField } : {}),
+        ...host?.customFieldProps,
+      },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
