@@ -39,6 +39,11 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "ctx.request()",
+            "link": "/runjs/context/request"
+          },
+          {
+            "type": "custom-link",
             "label": "ctx.render()",
             "link": "/runjs/context/render"
           },

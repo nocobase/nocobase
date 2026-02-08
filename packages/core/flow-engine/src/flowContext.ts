@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { APIClient } from '@nocobase/sdk';
+import { APIClient, RequestOptions } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
@@ -2990,6 +2990,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
   declare getVar: (path: string) => Promise<any>;
+  declare request: (options: RequestOptions) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -3017,6 +3018,9 @@ class BaseFlowEngineContext extends FlowContext {
 
   constructor() {
     super();
+    this.defineMethod('request', async function (options: RequestOptions) {
+      return this.api.request(options);
+    });
     this.defineMethod(
       'runjs',
       async function (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) {
