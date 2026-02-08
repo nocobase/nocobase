@@ -25,6 +25,14 @@ import { BlockSceneEnum } from '../../../../base';
 import { FormBlockModel, FormComponent } from '../../../../blocks/form/FormBlockModel';
 import { createItemChainMetaFactory, createItemChainResolver, type ItemChain } from '../../itemChain';
 
+function buildCurrentItemTitle(t: (key: string) => string, collectionField?: any) {
+  const rawLabel =
+    (typeof collectionField?.title === 'string' && collectionField.title) ||
+    (typeof collectionField?.name === 'string' && collectionField.name);
+  const label = typeof rawLabel === 'string' && rawLabel ? t(rawLabel) : '';
+  return label ? `${t('Current item')}（${label}）` : t('Current item');
+}
+
 export class PopupSubTableFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.subForm;
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
@@ -74,17 +82,20 @@ export class PopupSubTableFormModel extends FormBlockModel {
       cache: false,
       meta: createItemChainMetaFactory({
         t: this.context.t,
-        title: this.context.t('Current object'),
+        title: buildCurrentItemTitle(this.context.t, this.context.view?.inputArgs?.collectionField),
         showParentIndex: typeof (this.context.view?.inputArgs?.parentItem as any)?.index === 'number',
         collectionAccessor: () => this.context.collection,
-        valueAccessor: (ctx) => ctx?.item?.value,
+        propertiesAccessor: (ctx) => ctx?.item?.value,
         parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.context.view?.inputArgs?.parentItem as any)?.value,
+        parentItemMetaAccessor: () => this.context.view?.inputArgs?.parentItemMeta,
       }),
       resolveOnServer: createItemChainResolver({
         collectionAccessor: () => this.context.collection,
-        valueAccessor: () => this.context.formValues,
+        propertiesAccessor: () => this.context.formValues,
         parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,
-        parentValueAccessor: () => (this.context.view?.inputArgs?.parentItem as any)?.value,
+        parentPropertiesAccessor: () => (this.context.view?.inputArgs?.parentItem as any)?.value,
+        parentItemResolverAccessor: () => this.context.view?.inputArgs?.parentItemResolver,
       }),
       serverOnlyWhenContextParams: true,
     });
