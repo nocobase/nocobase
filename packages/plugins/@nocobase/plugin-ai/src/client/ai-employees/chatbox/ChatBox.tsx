@@ -8,23 +8,23 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Layout, Card, Button, Divider, Tooltip, notification, Avatar, Flex, Typography, Popover } from 'antd';
+import { Layout, Card, Button, Divider, Tooltip, notification, Avatar, Flex, Typography } from 'antd';
 import {
   CloseOutlined,
   FullscreenOutlined,
   PlusCircleOutlined,
-  HistoryOutlined,
   FullscreenExitOutlined,
   CodeOutlined,
   CompressOutlined,
   BugOutlined, // [AI_DEBUG]
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
 const { Header, Footer } = Layout;
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
-
 import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxStore } from './stores/chat-box';
@@ -63,7 +63,39 @@ export const ChatBox: React.FC = () => {
   const { isMobileLayout } = useMobileLayout();
 
   return (
-    <Layout style={{ height: '100%' }} ref={chatBoxRef}>
+    <Layout style={{ height: '100%', position: 'relative' }} ref={chatBoxRef}>
+      {showConversations && (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 10,
+              cursor: 'pointer',
+            }}
+            onClick={() => setShowConversations(false)}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: expanded ? '50%' : '300px',
+              height: '100%',
+              backgroundColor: token.colorBgContainer,
+              zIndex: 11,
+              borderRight: `1px solid ${token.colorBorder}`,
+              overflow: 'hidden',
+            }}
+          >
+            <Conversations />
+          </div>
+        </>
+      )}
       <Layout
         style={{
           padding: '0 16px 16px',
@@ -82,43 +114,22 @@ export const ChatBox: React.FC = () => {
             justifyContent: 'space-between',
           }}
         >
-          <div></div>
+          <div>
+            <Button
+              icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+              type="text"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowConversations(!showConversations);
+              }}
+            />
+          </div>
           <div>
             {currentEmployee ? (
               <>
                 <Tooltip arrow={false} title={t('New conversation')}>
                   <Button icon={<PlusCircleOutlined />} type="text" onClick={startNewConversation} />
                 </Tooltip>
-                <Popover
-                  open={showConversations}
-                  onOpenChange={setShowConversations}
-                  trigger="hover"
-                  placement="bottomLeft"
-                  arrow={false}
-                  zIndex={1101}
-                  styles={{
-                    body: {
-                      padding: 0,
-                    },
-                  }}
-                  content={
-                    <div
-                      style={{
-                        width: '350px',
-                        maxHeight: '400px',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                      }}
-                    >
-                      <Conversations />
-                    </div>
-                  }
-                >
-                  <Tooltip arrow={false} title={t('Conversation list')}>
-                    <Button icon={<HistoryOutlined />} type="text" />
-                  </Tooltip>
-                </Popover>
                 <UserPrompt />
                 {isEngineer(currentEmployee) && (
                   <Tooltip arrow={false} title={t('Code history')}>

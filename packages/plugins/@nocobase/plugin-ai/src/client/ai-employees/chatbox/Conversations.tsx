@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useMemo } from 'react';
-import { Input, Empty, Spin, App, Tag } from 'antd';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
+import { Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
 import { SchemaComponent, useAPIClient, useActionContext } from '@nocobase/client';
+import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { ConversationsProps } from '@ant-design/x';
@@ -152,27 +153,13 @@ export const Conversations: React.FC = memo(() => {
   const { startNewConversation, clear } = useChatBoxActions();
 
   const items = useMemo(() => {
-    const result: ConversationsProps['items'] = conversations.map((item, index) => {
+    const result: ConversationsProps['items'] = conversations.map((item) => {
       const title = item.title || t('New conversation');
-      const nickname = item.aiEmployee?.nickname;
-      const labelContent = (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {nickname && (
-            <Tag
-              color="default"
-              style={{ marginRight: 0, flexShrink: 0, fontSize: 12, lineHeight: '18px', padding: '0 4px' }}
-            >
-              {nickname}
-            </Tag>
-          )}
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
-        </span>
-      );
       return {
         key: item.sessionId,
         title,
         timestamp: new Date(item.updatedAt).getTime(),
-        label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{labelContent}</div> : labelContent,
+        label: title,
       };
     });
     if (conversationsLoading) {
@@ -189,7 +176,16 @@ export const Conversations: React.FC = memo(() => {
       });
     }
     return result;
-  }, [conversations, conversationsLoading, lastConversationRef]);
+  }, [conversations, conversationsLoading]);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!listRef.current || !conversations.length) return;
+    const lastLi = listRef.current.querySelector('.ant-conversations-item:last-child');
+    if (lastLi) {
+      lastConversationRef(lastLi as HTMLElement);
+    }
+  }, [conversations, lastConversationRef]);
 
   const deleteConversation = async (sessionId: string) => {
     await api.resource('aiConversations').destroy({
@@ -241,13 +237,27 @@ export const Conversations: React.FC = memo(() => {
         />
       </div>
       <div
+        ref={listRef}
         style={{
           flex: 1,
-          overflow: 'auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         {conversations && conversations.length ? (
           <AntConversations
+            className={css`
+              .ant-conversations-item {
+                .ant-conversations-label {
+                  display: block !important;
+                  overflow: hidden !important;
+                  text-overflow: ellipsis !important;
+                  white-space: nowrap !important;
+                  max-width: calc(100% - 30px);
+                }
+              }
+            `}
             activeKey={currentConversation}
             onActiveChange={selectConversation}
             items={items}
