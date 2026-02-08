@@ -540,9 +540,12 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
     }
     const writes = await this.checkpointWritesModel.findAll({
       where: {
-        threadId: {
-          [Op.in]: threadIds,
-        },
+        threadId:
+          threadIds.length === 1
+            ? threadIds[0]
+            : {
+                [Op.in]: threadIds,
+              },
       },
     });
 
@@ -645,9 +648,12 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
   ): Promise<Record<string, [Uint8Array, Uint8Array, Uint8Array][]>> {
     const blobs = await this.checkpointBlobsModel.findAll({
       where: {
-        threadId: {
-          [Op.in]: threadIds,
-        },
+        threadId:
+          threadIds.length === 1
+            ? threadIds[0]
+            : {
+                [Op.in]: threadIds,
+              },
       },
     });
     const result: Record<

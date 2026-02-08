@@ -148,13 +148,22 @@ export const conversationMiddleware = (
     }),
     stateSchema: z.object({
       messageId: z.coerce.string().optional(),
-      lastHumanMessageIndex: z.number().default(0),
-      lastAIMessageIndex: z.number().default(0),
-      lastToolMessageIndex: z.number().default(0),
-      lastMessageIndex: z.number().default(0),
+      lastMessageIndex: z
+        .object({
+          lastHumanMessageIndex: z.number().default(0),
+          lastAIMessageIndex: z.number().default(0),
+          lastToolMessageIndex: z.number().default(0),
+          lastMessageIndex: z.number().default(0),
+        })
+        .default({
+          lastHumanMessageIndex: 0,
+          lastAIMessageIndex: 0,
+          lastToolMessageIndex: 0,
+          lastMessageIndex: 0,
+        }),
     }),
     beforeAgent: async (state) => {
-      const lastHumanMessageIndex = state.lastHumanMessageIndex;
+      const lastHumanMessageIndex = state.lastMessageIndex.lastHumanMessageIndex;
       const userMessages = state.messages
         .filter((x) => x.type === 'human')
         .slice(lastHumanMessageIndex)
@@ -174,7 +183,7 @@ export const conversationMiddleware = (
     },
     beforeModel: async (state, runtime) => {
       const { messageId } = state;
-      const lastToolMessageIndex = state.lastToolMessageIndex;
+      const lastToolMessageIndex = state.lastMessageIndex.lastToolMessageIndex;
       const toolMessages = state.messages
         .filter((x) => x.type === 'tool')
         .slice(lastToolMessageIndex)
@@ -198,10 +207,12 @@ export const conversationMiddleware = (
     afterModel: async (state, runtime) => {
       try {
         const newState = {
-          lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
-          lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
-          lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
-          lastMessageIndex: state.messages.length,
+          lastMessageIndex: {
+            lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
+            lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
+            lastToolMessageIndex: state.messages.filter((x) => x.type === 'tool').length,
+            lastMessageIndex: state.messages.length,
+          },
         };
         const lastMessage = state.messages.at(-1);
         if (lastMessage?.type !== 'ai') {

@@ -22,12 +22,7 @@ import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
-import {
-  conversationMiddleware,
-  debugMiddleware,
-  toolCallStatusMiddleware,
-  toolInteractionMiddleware,
-} from './middleware';
+import { conversationMiddleware, toolCallStatusMiddleware, toolInteractionMiddleware } from './middleware';
 import { ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
@@ -81,10 +76,12 @@ export class AIEmployee {
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
     return {
-      lastHumanMessageIndex: messages.filter((m) => m.role === 'user').length,
-      lastAIMessageIndex: messages.filter((m) => m.role === this.employee.username).length,
-      lastToolMessageIndex: messages.filter((m) => m.role === 'tool').length,
-      lastMessageIndex: messages.length,
+      lastMessageIndex: {
+        lastHumanMessageIndex: messages.filter((m) => m.role === 'user').length,
+        lastAIMessageIndex: messages.filter((m) => m.role === this.employee.username).length,
+        lastToolMessageIndex: messages.filter((m) => m.role === 'tool').length,
+        lastMessageIndex: messages.length,
+      },
     };
   }
 
@@ -1101,7 +1098,6 @@ If information is missing, clearly state it in the summary.</Important>`;
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
       conversationMiddleware(this, { providerName, model, messageId, agentThread }),
-      debugMiddleware(this, this.ctx.logger),
     ];
   }
 
