@@ -444,6 +444,8 @@ export const useChatMessageActions = () => {
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
+      const controller = new AbortController();
+      setAbortController(controller);
       try {
         const sendRes = await api.request({
           url: 'aiConversations:resumeToolCall',
@@ -452,6 +454,7 @@ export const useChatMessageActions = () => {
           data: { sessionId, messageId, toolCallIds, toolCallResults, modelOverride },
           responseType: 'stream',
           adapter: 'fetch',
+          signal: controller?.signal,
         });
 
         if (!sendRes?.data) {
@@ -461,8 +464,13 @@ export const useChatMessageActions = () => {
 
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       } catch (err) {
+        if (err.name === 'CanceledError') {
+          return;
+        }
         setResponseLoading(false);
         throw err;
+      } finally {
+        setAbortController(null);
       }
     },
     [],
