@@ -255,6 +255,7 @@ export const DebugPanel: React.FC = () => {
       width={500}
       open={showDebugPanel}
       onClose={() => setShowDebugPanel(false)}
+      styles={{ body: { padding: 0, overflow: 'hidden' } }}
       extra={
         <Button icon={<DownloadOutlined />} size="small" onClick={handleExport} disabled={logs.length === 0}>
           {t('Export')}
@@ -266,7 +267,6 @@ export const DebugPanel: React.FC = () => {
           display: flex;
           flex-direction: column;
           height: 100%;
-          margin: -24px;
         `}
       >
         {/* Filters */}
