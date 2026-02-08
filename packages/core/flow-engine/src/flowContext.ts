@@ -3018,7 +3018,10 @@ class BaseFlowEngineContext extends FlowContext {
 
   constructor() {
     super();
-    this.defineMethod('request', async function (options: RequestOptions) {
+    this.defineMethod('getModel', (modelName: string, searchInPreviousEngines?: boolean) => {
+      return this.engine.getModel(modelName, searchInPreviousEngines);
+    });
+    this.defineMethod('request', (options: RequestOptions) => {
       return this.api.request(options);
     });
     this.defineMethod(
