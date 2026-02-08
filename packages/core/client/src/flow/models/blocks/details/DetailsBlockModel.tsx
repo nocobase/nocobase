@@ -271,7 +271,7 @@ const DetailsBlockContent = ({
             style={{
               textAlign: 'right',
               lineHeight: '0px',
-              padding: isConfigMode && model.context.themeToken.padding,
+              paddingBottom: isConfigMode && model.context.themeToken.padding,
             }}
           >
             <Space wrap>

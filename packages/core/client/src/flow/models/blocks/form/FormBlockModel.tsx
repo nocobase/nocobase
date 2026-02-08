@@ -482,7 +482,11 @@ export const FormBlockContent = ({
     <FormComponent model={model} layoutProps={layoutProps} onFinish={onFinish} style={formStyle}>
       <div ref={containerRef} style={containerStyle}>
         {grid}
-        {actions ? <div ref={actionsRef}>{actions}</div> : null}
+        {actions ? (
+          <div style={{ paddingTop: model.context.themeToken.padding }} ref={actionsRef}>
+            {actions}
+          </div>
+        ) : null}
         {footer ? <div ref={footerRef}>{footer}</div> : null}
       </div>
     </FormComponent>
