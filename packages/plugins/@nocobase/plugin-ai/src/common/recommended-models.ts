@@ -14,24 +14,24 @@
  */
 export const recommendedModels: Record<string, { label: string; value: string }[]> = {
   'google-genai': [
-    { label: 'Gemini-3-Pro-Preview', value: 'models/gemini-3-pro-preview' },
-    { label: 'Gemini-3-Flash-Preview', value: 'models/gemini-3-flash-preview' },
+    { label: 'Gemini 3 Pro Preview', value: 'models/gemini-3-pro-preview' },
+    { label: 'Gemini 3 Flash Preview', value: 'models/gemini-3-flash-preview' },
   ],
   openai: [
     { label: 'GPT-5.2-Codex', value: 'gpt-5.2-codex' },
     { label: 'GPT-5.2', value: 'gpt-5.2' },
   ],
   anthropic: [
-    { label: 'Claude-Opus-4.5', value: 'claude-opus-4-5' },
-    { label: 'Claude-Sonnet-4.5', value: 'claude-sonnet-4-5' },
+    { label: 'Claude Opus 4.5', value: 'claude-opus-4-5' },
+    { label: 'Claude Sonnet 4.5', value: 'claude-sonnet-4-5' },
   ],
   dashscope: [
-    { label: 'Qwen3-Max', value: 'qwen3-max-2026-01-23' },
-    { label: 'Kimi-K2-Thinking', value: 'kimi-k2-thinking' },
+    { label: 'Qwen3 Max', value: 'qwen3-max-2026-01-23' },
+    { label: 'Kimi K2 Thinking', value: 'kimi-k2-thinking' },
   ],
   deepseek: [
-    { label: 'DeepSeek-Chat', value: 'deepseek-chat' },
-    { label: 'DeepSeek-Reasoner', value: 'deepseek-reasoner' },
+    { label: 'DeepSeek Chat', value: 'deepseek-chat' },
+    { label: 'DeepSeek Reasoner', value: 'deepseek-reasoner' },
   ],
   ollama: [],
 };

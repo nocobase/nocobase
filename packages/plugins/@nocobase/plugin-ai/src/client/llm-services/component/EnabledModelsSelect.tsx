@@ -8,13 +8,14 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, usePlugin } from '@nocobase/client';
 import { useForm, useField, observer } from '@formily/react';
 import { Select, Spin, Radio, Space, Tag, Typography, Input, Button } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { useT } from '../../locale';
 import { isRecommendedModel } from '../../../common/recommended-models';
+import type PluginAIClient from '../../index';
 
 const { Text } = Typography;
 
@@ -24,23 +25,48 @@ export interface EnabledModelsConfig {
 }
 
 /**
- * Format a model ID into a human-readable label (client-only).
- * 1. Strip prefixes: `models/`, `ft:`, `accounts/.../models/`
- * 2. Split on `-` and `_`
- * 3. Capitalize first letter of each segment
- * 4. Rejoin with `-`
+ * Strip known prefixes from a model ID.
  */
-export const formatModelLabel = (id: string): string => {
+export const stripModelIdPrefix = (id: string): string => {
   let name = id;
-  // Strip known prefixes
   name = name.replace(/^models\//, '');
   name = name.replace(/^ft:/, '');
   name = name.replace(/^accounts\/[^/]+\/models\//, '');
-  // Split on - and _
-  const segments = name.split(/[-_]/);
-  // Capitalize first letter of each segment
-  const capitalized = segments.map((s) => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s));
-  return capitalized.join('-');
+  return name;
+};
+
+export const capitalize = (s: string) => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/**
+ * Merge consecutive short (≤2 digit) numeric segments with '.'.
+ * e.g. ["claude","opus","4","5","20251101"] → ["claude","opus","4.5","20251101"]
+ */
+export const mergeVersionSegments = (segments: string[]): string[] => {
+  const result: string[] = [];
+  let i = 0;
+  while (i < segments.length) {
+    if (/^\d{1,2}$/.test(segments[i])) {
+      let version = segments[i];
+      while (i + 1 < segments.length && /^\d{1,2}$/.test(segments[i + 1])) {
+        version += '.' + segments[i + 1];
+        i++;
+      }
+      result.push(version);
+    } else {
+      result.push(segments[i]);
+    }
+    i++;
+  }
+  return result;
+};
+
+/**
+ * Default fallback: space-separated, version-merged.
+ */
+export const formatModelLabel = (id: string): string => {
+  const name = stripModelIdPrefix(id);
+  const segments = mergeVersionSegments(name.split(/[-_]/));
+  return segments.map(capitalize).join(' ');
 };
 
 /**
@@ -71,6 +97,7 @@ export const normalizeEnabledModels = (value: unknown): EnabledModelsConfig => {
 export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   const api = useAPIClient();
   const t = useT();
+  const plugin = usePlugin('ai') as PluginAIClient;
   const [options, setOptions] = useState<{ label: string; value: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const field = useField<Field>();
@@ -78,6 +105,10 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
 
   const provider = form.values.provider;
   const formOptions = form.values.options;
+
+  // Use provider-specific formatModelLabel if available, otherwise default
+  const providerOptions = provider ? plugin.aiManager.llmProviders.get(provider) : null;
+  const labelFormatter = providerOptions?.formatModelLabel || formatModelLabel;
 
   // Access deep properties to establish observer tracking
   const optionsKey = JSON.stringify(formOptions);
@@ -108,7 +139,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
           .listProviderModels({ values: { provider, options: formOptions } }, { skipNotify: true });
         const items =
           res?.data?.data?.map(({ id }: { id: string }) => ({
-            label: formatModelLabel(id),
+            label: labelFormatter(id),
             value: id,
           })) || [];
 
@@ -144,7 +175,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
     const models = selectedValues.map((val) => {
       // Find label from options
       const opt = options.find((o) => o.value === val);
-      return { label: opt ? opt.label : formatModelLabel(val), value: val };
+      return { label: opt ? opt.label : labelFormatter(val), value: val };
     });
     updateFieldValue({ mode: 'provider', models });
   };

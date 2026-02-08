@@ -10,9 +10,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatModelLabel,
+  mergeVersionSegments,
   normalizeEnabledModels,
   EnabledModelsConfig,
 } from '../../llm-services/component/EnabledModelsSelect';
+import { openaiResponsesProviderOptions } from '../../llm-providers/openai/responses';
 
 describe('EnabledModelsSelect Logic', () => {
   describe('P0: normalizeEnabledModels', () => {
@@ -59,29 +61,68 @@ describe('EnabledModelsSelect Logic', () => {
     });
   });
 
-  describe('P0: formatModelLabel', () => {
-    it('should strip models/ prefix and capitalize', () => {
-      expect(formatModelLabel('models/gemini-3-pro-preview')).toBe('Gemini-3-Pro-Preview');
+  describe('P0: mergeVersionSegments', () => {
+    it('should merge consecutive short numeric segments with dot', () => {
+      expect(mergeVersionSegments(['claude', 'opus', '4', '5'])).toEqual(['claude', 'opus', '4.5']);
+      expect(mergeVersionSegments(['claude', 'opus', '4', '5', '20251101'])).toEqual([
+        'claude',
+        'opus',
+        '4.5',
+        '20251101',
+      ]);
     });
 
-    it('should strip ft: prefix and capitalize', () => {
-      expect(formatModelLabel('ft:gpt-4o-mini')).toBe('Gpt-4o-Mini');
+    it('should not merge long numeric segments', () => {
+      expect(mergeVersionSegments(['model', '20251101'])).toEqual(['model', '20251101']);
     });
 
-    it('should strip accounts/.../models/ prefix', () => {
-      expect(formatModelLabel('accounts/abc123/models/my-model')).toBe('My-Model');
+    it('should leave non-numeric segments unchanged', () => {
+      expect(mergeVersionSegments(['gpt', '4o'])).toEqual(['gpt', '4o']);
+    });
+  });
+
+  describe('P0: formatModelLabel (default, space-separated)', () => {
+    it('should format Anthropic models with version merging', () => {
+      expect(formatModelLabel('claude-sonnet-4-5')).toBe('Claude Sonnet 4.5');
+      expect(formatModelLabel('claude-opus-4-5-20251101')).toBe('Claude Opus 4.5 20251101');
+      expect(formatModelLabel('claude-opus-4-6')).toBe('Claude Opus 4.6');
     });
 
-    it('should handle simple model ids', () => {
-      expect(formatModelLabel('gpt-4o')).toBe('Gpt-4o');
+    it('should format models with existing dot versions', () => {
+      expect(formatModelLabel('claude-sonnet-4.5')).toBe('Claude Sonnet 4.5');
     });
 
-    it('should handle underscores', () => {
-      expect(formatModelLabel('my_custom_model')).toBe('My-Custom-Model');
+    it('should format Gemini models with spaces', () => {
+      expect(formatModelLabel('models/gemini-3-pro-preview')).toBe('Gemini 3 Pro Preview');
     });
 
-    it('should handle mixed separators', () => {
-      expect(formatModelLabel('my-custom_model-v2')).toBe('My-Custom-Model-V2');
+    it('should strip prefixes', () => {
+      expect(formatModelLabel('ft:some-model')).toBe('Some Model');
+      expect(formatModelLabel('accounts/abc123/models/my-model')).toBe('My Model');
+    });
+
+    it('should handle underscores and mixed separators', () => {
+      expect(formatModelLabel('my_custom_model')).toBe('My Custom Model');
+      expect(formatModelLabel('my-custom_model-v2')).toBe('My Custom Model V2');
+    });
+  });
+
+  describe('P0: OpenAI formatModelLabel (hyphen-separated)', () => {
+    const openaiFormat = openaiResponsesProviderOptions.formatModelLabel!;
+
+    it('should format GPT models with uppercase GPT and hyphens', () => {
+      expect(openaiFormat('gpt-4o')).toBe('GPT-4o');
+      expect(openaiFormat('gpt-5.2')).toBe('GPT-5.2');
+      expect(openaiFormat('gpt-5.2-codex')).toBe('GPT-5.2-Codex');
+      expect(openaiFormat('gpt-5.1-codex-mini')).toBe('GPT-5.1-Codex-Mini');
+    });
+
+    it('should strip ft: prefix for GPT models', () => {
+      expect(openaiFormat('ft:gpt-4o-mini')).toBe('GPT-4o-Mini');
+    });
+
+    it('should format non-GPT OpenAI models with hyphens', () => {
+      expect(openaiFormat('o3-mini')).toBe('O3-Mini');
     });
   });
 
@@ -96,13 +137,13 @@ describe('EnabledModelsSelect Logic', () => {
       const config: EnabledModelsConfig = {
         mode: 'provider',
         models: [
-          { label: 'Gemini-3-Pro-Preview', value: 'models/gemini-3-pro-preview' },
+          { label: 'Gemini 3 Pro Preview', value: 'models/gemini-3-pro-preview' },
           { label: 'GPT-5.2-Codex', value: 'gpt-5.2-codex' },
         ],
       };
       expect(config.mode).toBe('provider');
       expect(config.models).toHaveLength(2);
-      expect(config.models[0].label).toBe('Gemini-3-Pro-Preview');
+      expect(config.models[0].label).toBe('Gemini 3 Pro Preview');
       expect(config.models[0].value).toBe('models/gemini-3-pro-preview');
     });
 

@@ -20,6 +20,7 @@ export type LLMProviderOptions = {
       msg: any;
     }>;
   };
+  formatModelLabel?: (id: string) => string;
 };
 
 export type ToolOptions = {
