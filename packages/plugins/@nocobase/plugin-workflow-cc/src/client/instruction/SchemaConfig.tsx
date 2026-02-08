@@ -52,6 +52,7 @@ import {
   updateWorkflowCcTaskAssociationFields,
   type CCTaskTempAssociationFieldConfig,
 } from '../models/CCTaskCardDetailsItemModel';
+import { TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
 
 function useTriggerInitializers(): SchemaInitializerItemType | null {
   const { workflow } = useFlowContext();
@@ -618,7 +619,19 @@ export function CCTaskCardConfigButton() {
     [form, setFormValueChanged],
   );
 
+  const cleanupTempAssociationFields = useCallback(() => {
+    const collection = ctx.dataSourceManager?.getCollection('main', 'workflowCcTasks');
+    if (!collection) return;
+    collection
+      .getFields()
+      .filter((field) => field.name?.startsWith(TEMP_ASSOCIATION_PREFIX))
+      .forEach((field) => {
+        collection.removeField(field.name);
+      });
+  }, [ctx.dataSourceManager]);
+
   const openConfig = useCallback(() => {
+    cleanupTempAssociationFields();
     ctx.viewer.open({
       type: 'dialog',
       width: 800,
@@ -643,7 +656,17 @@ export function CCTaskCardConfigButton() {
         />
       ),
     });
-  }, [ctx.viewer, flowContext.workflow, form, node, onUidChange, setFormValueChanged, t, upstreamNodes]);
+  }, [
+    cleanupTempAssociationFields,
+    ctx.viewer,
+    flowContext.workflow,
+    form,
+    node,
+    onUidChange,
+    setFormValueChanged,
+    t,
+    upstreamNodes,
+  ]);
 
   return (
     <Button icon={<CreditCardOutlined />} type="default" onClick={openConfig} disabled={false}>
