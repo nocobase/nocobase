@@ -8,6 +8,7 @@
  */
 
 import { Registry, BASE_BLOCKED_IDENTIFIERS } from '@nocobase/utils';
+import { lockdownSes } from '@nocobase/utils';
 
 import { Evaluator } from '../utils';
 import mathjs from '../utils/mathjs';
@@ -17,6 +18,13 @@ import string from '../utils/string';
 export { Evaluator, evaluate, appendArrayColumn } from '../utils';
 
 export const evaluators = new Registry<Evaluator>();
+
+lockdownSes({
+  consoleTaming: 'unsafe',
+  errorTaming: 'unsafe',
+  overrideTaming: 'moderate',
+  stackFiltering: 'verbose',
+});
 
 const formulajs = createFormulaEvaluator({
   blockedIdentifiers: [
