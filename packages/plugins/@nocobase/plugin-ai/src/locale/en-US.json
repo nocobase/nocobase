@@ -246,6 +246,8 @@
   "Auto Mode": "Auto Mode",
   "Custom models": "Custom models",
   "Automatically use the best models selected by the system": "Automatically use the best models selected by the system",
+  "Models tested and recommended by NocoBase": "Models tested and recommended by NocoBase",
+  ", such as: ": ", such as: ",
   "Select models manually from the list": "Select models manually from the list",
   "Select the models allowed to use": "Select the models allowed to use",
   "Selected recommended models": "Selected recommended models",

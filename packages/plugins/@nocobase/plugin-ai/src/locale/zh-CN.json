@@ -247,6 +247,8 @@
   "Auto Mode": "自动模式",
   "Custom models": "自定义模型",
   "Automatically use the best models selected by the system": "自动使用系统选择的最佳模型",
+  "Models tested and recommended by NocoBase": "经过 NocoBase 测试推荐的模型",
+  ", such as: ": "，例如：",
   "Select models manually from the list": "从列表中手动选择模型",
   "Select the models allowed to use": "选择允许使用的模型",
   "Selected recommended models": "已选择的推荐模型",

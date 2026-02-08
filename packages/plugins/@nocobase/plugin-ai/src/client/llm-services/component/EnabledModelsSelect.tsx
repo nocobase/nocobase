@@ -14,7 +14,7 @@ import { Select, Spin, Radio, Space, Tag, Typography, Input, Button } from 'antd
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { useT } from '../../locale';
-import { isRecommendedModel } from '../../../common/recommended-models';
+import { isRecommendedModel, getRecommendedModels } from '../../../common/recommended-models';
 import type PluginAIClient from '../../index';
 
 const { Text } = Typography;
@@ -201,8 +201,10 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
         <Space direction="vertical" style={{ width: '100%' }}>
           <Radio value="recommended">{t('System recommended')}</Radio>
           {config.mode === 'recommended' && (
-            <Text type="secondary" style={{ fontSize: 12, paddingLeft: 24 }}>
-              {t('Automatically use the best models selected by the system')}
+            <Text type="secondary" style={{ paddingLeft: 24 }}>
+              {t('Models tested and recommended by NocoBase')}
+              {provider && getRecommendedModels(provider).length > 0 &&
+                t(', such as: ') + getRecommendedModels(provider).map((m) => m.label).join(', ')}
             </Text>
           )}
 
