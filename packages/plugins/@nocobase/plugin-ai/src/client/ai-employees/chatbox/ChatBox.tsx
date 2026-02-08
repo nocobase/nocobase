@@ -286,7 +286,7 @@ const CollapsedBar: React.FC = () => {
     <div
       style={{
         position: 'fixed',
-        right: 0,
+        right: '-40px',
         top: 0,
         width: '40px',
         height: '100vh',

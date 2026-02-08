@@ -36,29 +36,29 @@ export const ChatBoxLayout: React.FC<{
     <>
       {props.children}
       <ChatButton />
-      {open && !expanded && !collapsed && !isMobileLayout ? (
+      {open && !expanded && !isMobileLayout ? (
         <Helmet>
           <style type="text/css">
             {`
 html {
-  padding-left: 450px;
+  padding-left: ${collapsed ? 40 : 450}px;
 }
 html body {
   position: relative;
   overflow: hidden;
-  transform: translateX(-450px);
+  transform: translateX(-${collapsed ? 40 : 450}px);
 }
 .ant-dropdown-placement-topLeft {
-  transform: translateX(450px) !important;
+  transform: translateX(${collapsed ? 40 : 450}px) !important;
 }
 .ant-dropdown-placement-bottomLeft {
-  transform: translateX(450px) !important;
+  transform: translateX(${collapsed ? 40 : 450}px) !important;
 }
 .ant-dropdown-menu-submenu-placement-rightTop {
-  transform: translateX(450px) !important;
+  transform: translateX(${collapsed ? 40 : 450}px) !important;
 }
 .ant-dropdown-menu-submenu-placement-rightBottom {
-  transform: translateX(450px) !important;
+  transform: translateX(${collapsed ? 40 : 450}px) !important;
 }
 `}
           </style>
