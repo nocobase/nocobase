@@ -66,32 +66,6 @@ const modalSchema: Record<string, any> = {
           'x-component': 'ProviderSelect',
           required: true,
         },
-        options: {
-          type: 'object',
-          'x-component': 'ModalSettings',
-          'x-reactions': {
-            dependencies: ['provider'],
-            fulfill: {
-              schema: {
-                'x-visible': '{{!!$deps[0]}}',
-              },
-            },
-          },
-        },
-        enabledModels: {
-          type: 'object',
-          'x-decorator': 'FormItem',
-          title: '{{ t("Enabled Models") }}',
-          'x-component': 'EnabledModelsSelect',
-          'x-reactions': {
-            dependencies: ['provider'],
-            fulfill: {
-              schema: {
-                'x-visible': '{{!!$deps[0]}}',
-              },
-            },
-          },
-        },
         title: {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -110,6 +84,18 @@ const modalSchema: Record<string, any> = {
             },
           },
         },
+        options: {
+          type: 'object',
+          'x-component': 'ModalSettings',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
         'options.baseURL': {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -118,6 +104,20 @@ const modalSchema: Record<string, any> = {
           'x-component-props': {
             placeholder: '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
           },
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
+        enabledModels: {
+          type: 'object',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Enabled Models") }}',
+          'x-component': 'EnabledModelsSelect',
           'x-reactions': {
             dependencies: ['provider'],
             fulfill: {

@@ -24,32 +24,6 @@ export const createLLMSchema = {
           'x-component': 'ProviderSelect',
           required: true,
         },
-        options: {
-          type: 'object',
-          'x-component': 'Settings',
-          'x-reactions': {
-            dependencies: ['provider'],
-            fulfill: {
-              schema: {
-                'x-visible': '{{!!$deps[0]}}',
-              },
-            },
-          },
-        },
-        enabledModels: {
-          type: 'object',
-          'x-decorator': 'FormItem',
-          title: '{{ t("Enabled Models") }}',
-          'x-component': 'EnabledModelsSelect',
-          'x-reactions': {
-            dependencies: ['provider'],
-            fulfill: {
-              schema: {
-                'x-visible': '{{!!$deps[0]}}',
-              },
-            },
-          },
-        },
         title: {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -68,6 +42,18 @@ export const createLLMSchema = {
             },
           },
         },
+        options: {
+          type: 'object',
+          'x-component': 'Settings',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
         'options.baseURL': {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -76,6 +62,20 @@ export const createLLMSchema = {
           'x-component-props': {
             placeholder: '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
           },
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
+        enabledModels: {
+          type: 'object',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Enabled Models") }}',
+          'x-component': 'EnabledModelsSelect',
           'x-reactions': {
             dependencies: ['provider'],
             fulfill: {
@@ -272,21 +272,15 @@ export const llmsSchema = {
                               title: '{{ t("Provider") }}',
                               'x-component': 'ProviderDisplay',
                             },
-                            options: {
-                              type: 'object',
-                              'x-component': 'Settings',
-                            },
-                            enabledModels: {
-                              type: 'object',
-                              'x-decorator': 'FormItem',
-                              title: '{{ t("Enabled Models") }}',
-                              'x-component': 'EnabledModelsSelect',
-                            },
                             title: {
                               type: 'string',
                               'x-decorator': 'FormItem',
                               title: '{{ t("Title") }}',
                               'x-component': 'Input',
+                            },
+                            options: {
+                              type: 'object',
+                              'x-component': 'Settings',
                             },
                             'options.baseURL': {
                               type: 'string',
@@ -297,6 +291,12 @@ export const llmsSchema = {
                                 placeholder:
                                   '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
                               },
+                            },
+                            enabledModels: {
+                              type: 'object',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Enabled Models") }}',
+                              'x-component': 'EnabledModelsSelect',
                             },
                             footer: {
                               type: 'void',
