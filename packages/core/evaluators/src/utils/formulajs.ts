@@ -9,6 +9,7 @@
 
 import * as functions from '@formulajs/formulajs';
 import { round } from 'mathjs';
+import 'ses';
 
 import { evaluate, Scope } from '.';
 
