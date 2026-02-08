@@ -3403,6 +3403,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     );
     this.defineMethod('requireAsync', async (url: string) => {
+      // 判断是否为 CSS 文件（支持 example.css?v=123 等形式）
+      if (isCssFile(url)) {
+        return this.loadCSS(url);
+      }
       const u = resolveModuleUrl(url, { raw: true });
       return await runjsRequireAsync(this.requirejs, u);
     });
