@@ -20,7 +20,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const rowIndex = model.context.fieldIndex;
-  const resultIndex = castArray(rowIndex);
+  const resultIndex = castArray(rowIndex).filter(Boolean);
   const record = model.context.record;
   const collectionName = model.context.collectionField.name;
   const isConfigMode = !!model.context.flowSettingsEnabled;

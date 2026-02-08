@@ -76,4 +76,32 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
     const dispatchedParams = child.dispatchEvent.mock.calls[0][1];
     expect(dispatchedParams.navigation).toBe(false);
   });
+
+  it('dispatches the popupSettings bound event (object form) when opening external popup', async () => {
+    const { parent, child } = setup();
+
+    child.getFlow = vi.fn((key: string) => {
+      if (key !== 'popupSettings') return undefined;
+      return { on: { eventName: 'openDuplicatePopup' } };
+    });
+
+    await (parent.context as any).openView('child-uid', { mode: 'drawer' });
+
+    expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(child.dispatchEvent.mock.calls[0][0]).toBe('openDuplicatePopup');
+  });
+
+  it('falls back to click when popupSettings has no explicit on event', async () => {
+    const { parent, child } = setup();
+
+    child.getFlow = vi.fn((key: string) => {
+      if (key !== 'popupSettings') return undefined;
+      return { on: undefined };
+    });
+
+    await (parent.context as any).openView('child-uid', { mode: 'drawer' });
+
+    expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(child.dispatchEvent.mock.calls[0][0]).toBe('click');
+  });
 });

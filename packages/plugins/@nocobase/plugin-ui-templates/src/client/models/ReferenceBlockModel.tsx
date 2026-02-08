@@ -727,7 +727,17 @@ ReferenceBlockModel.registerFlow({
           (parent as any).emitter?.emit?.('onSubModelAdded', newModel);
           await (newModel as any).afterAddAsSubModel?.();
 
-          await engine.modelRepository.destroy(newModel.uid);
+          // 将服务端 duplicate 出来的完整子树挂载到目标父节点
+          await ctx.api.request({
+            method: 'POST',
+            url: 'flowModels:attach',
+            params: {
+              uid: newModel.uid,
+              parentId: parent.uid,
+              subKey,
+              subType,
+            },
+          });
           await newModel.save();
 
           (newModel as any).isNew = false;
