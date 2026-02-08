@@ -77,6 +77,92 @@ function rewrapReactiveRender(fieldModel: any) {
   fieldModel.setupReactiveRender?.();
 }
 
+function remapMetaTreePaths(node: MetaTreeNode, fromPrefix: string[], toPrefix: string[]): MetaTreeNode {
+  const src = Array.isArray(node?.paths) ? node.paths.map((p) => String(p)) : [];
+  let nextPaths = src;
+  if (fromPrefix.length && src.length >= fromPrefix.length && fromPrefix.every((seg, idx) => src[idx] === seg)) {
+    nextPaths = [...toPrefix, ...src.slice(fromPrefix.length)];
+  }
+
+  const remapChildren = (children: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>)) => {
+    if (Array.isArray(children)) {
+      return children.map((child) => remapMetaTreePaths(child, fromPrefix, toPrefix));
+    }
+    if (typeof children === 'function') {
+      return async () => {
+        const loaded = await children();
+        return Array.isArray(loaded) ? loaded.map((child) => remapMetaTreePaths(child, fromPrefix, toPrefix)) : [];
+      };
+    }
+    return children;
+  };
+
+  return {
+    ...node,
+    paths: nextPaths,
+    children: node?.children ? remapChildren(node.children as any) : undefined,
+  };
+}
+
+function attachBaseItemAsParent(extraItem: MetaTreeNode, baseItem: MetaTreeNode | undefined): MetaTreeNode {
+  if (!baseItem) return extraItem;
+  const mappedBaseItem = remapMetaTreePaths(baseItem, ['item'], ['item', 'parentItem']);
+  const mappedBase: MetaTreeNode = {
+    ...mappedBaseItem,
+    name: 'parentItem',
+    title: mappedBaseItem.title?.replace('Current item', 'Parent item') || 'Parent item',
+  };
+  const rewrite = (node: MetaTreeNode): MetaTreeNode => {
+    const children = Array.isArray(node.children) ? node.children : [];
+    const hasParent = children.some((child) => child?.name === 'parentItem');
+    if (!hasParent) {
+      return {
+        ...node,
+        children: [...children, mappedBase],
+      };
+    }
+
+    const nextChildren = children.map((child) => {
+      if (child?.name !== 'parentItem') return child;
+      return rewrite(child);
+    });
+    return {
+      ...node,
+      children: nextChildren,
+    };
+  };
+
+  return rewrite(extraItem);
+}
+
+export function mergeItemMetaTreeForAssignValue(baseTree: MetaTreeNode[], extraTree: MetaTreeNode[]): MetaTreeNode[] {
+  const base = Array.isArray(baseTree) ? baseTree : [];
+  const extra = Array.isArray(extraTree) ? extraTree : [];
+  if (!extra.length) return base;
+
+  const baseItem = base.find((node) => node?.name === 'item');
+  const extraItem = extra.find((node) => node?.name === 'item');
+  if (!extraItem) {
+    return base;
+  }
+
+  const mergedItem = attachBaseItemAsParent(extraItem, baseItem);
+  const out: MetaTreeNode[] = [];
+  let itemReplaced = false;
+  for (const node of base) {
+    if (!itemReplaced && node?.name === 'item') {
+      out.push(mergedItem);
+      itemReplaced = true;
+      continue;
+    }
+    out.push(node);
+  }
+  if (!itemReplaced) {
+    out.push(mergedItem);
+  }
+  return out;
+}
+
 /**
  * 根据所选字段渲染对应的赋值编辑器：
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
@@ -486,6 +572,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
       const extra = extraMetaTreeRef.current;
       const extraTree = Array.isArray(extra) ? extra : [];
+      const mergedBase = mergeItemMetaTreeForAssignValue(base as MetaTreeNode[], extraTree as MetaTreeNode[]);
       return [
         {
           title: tExpr('Constant'),
@@ -496,8 +583,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
-        ...extraTree,
-        ...base,
+        ...mergedBase,
       ];
     };
   }, [flowCtx, ConstantValueEditor, NullComponent, RunJSComponent]);

@@ -28,28 +28,72 @@ export function createRootItemChain(formValues: any): ItemChain {
   };
 }
 
+function createScopedItemContext(ctx: any, item: any) {
+  if (!ctx || typeof ctx !== 'object') {
+    return { item };
+  }
+  const scoped = Object.create(ctx);
+  Object.defineProperty(scoped, 'item', {
+    value: item,
+    configurable: true,
+    enumerable: true,
+    writable: false,
+  });
+  return scoped;
+}
+
+async function resolveMetaFactory(metaOrFactory: any) {
+  if (!metaOrFactory) return null;
+  if (typeof metaOrFactory === 'function') {
+    return (await metaOrFactory()) || null;
+  }
+  return metaOrFactory;
+}
+
 export function createItemChainMetaFactory(options: {
   t: (key: string) => string;
   title: string;
   showIndex?: boolean;
   showParentIndex?: boolean;
   collectionAccessor: () => any;
-  valueAccessor: (ctx: any) => any;
+  propertiesAccessor: (ctx: any) => any;
   parentCollectionAccessor?: () => any;
+  parentPropertiesAccessor?: (ctx: any) => any;
+  parentItemMetaAccessor?: () => any;
 }) {
-  const { t, title, showIndex, showParentIndex, collectionAccessor, valueAccessor, parentCollectionAccessor } = options;
-  const valueMetaFactory = createAssociationAwareObjectMetaFactory(collectionAccessor, title, valueAccessor);
-  const parentValueMetaFactory = parentCollectionAccessor
-    ? createAssociationAwareObjectMetaFactory(parentCollectionAccessor, title, (ctx) => ctx?.item?.parentItem?.value)
+  const {
+    t,
+    title,
+    showIndex,
+    showParentIndex,
+    collectionAccessor,
+    propertiesAccessor,
+    parentCollectionAccessor,
+    parentPropertiesAccessor,
+    parentItemMetaAccessor,
+  } = options;
+  const propertiesMetaFactory = createAssociationAwareObjectMetaFactory(collectionAccessor, title, propertiesAccessor);
+  const fallbackParentPropertiesMetaFactory = parentCollectionAccessor
+    ? createAssociationAwareObjectMetaFactory(
+        parentCollectionAccessor,
+        title,
+        (ctx) => parentPropertiesAccessor?.(ctx) ?? ctx?.item?.parentItem?.value,
+      )
     : null;
 
   const factory: any = async () => {
-    const valueMeta = await valueMetaFactory();
-    if (!valueMeta) return null;
+    const propertiesMeta = await propertiesMetaFactory();
+    if (!propertiesMeta) return null;
 
-    const parentValueMeta = parentValueMetaFactory ? await parentValueMetaFactory() : null;
-    const buildVars = (valueMeta as any).buildVariablesParams;
-    const parentBuildVars = parentValueMeta ? (parentValueMeta as any).buildVariablesParams : null;
+    const parentItemMeta = await resolveMetaFactory(parentItemMetaAccessor?.());
+    const fallbackParentPropertiesMeta = fallbackParentPropertiesMetaFactory
+      ? await fallbackParentPropertiesMetaFactory()
+      : null;
+
+    const buildVars = (propertiesMeta as any).buildVariablesParams;
+    const parentBuildVars = parentItemMeta
+      ? (parentItemMeta as any).buildVariablesParams
+      : (fallbackParentPropertiesMeta as any)?.buildVariablesParams;
 
     const createIndexMeta = () => ({ type: 'number', title: t('Index (starts from 0)') });
     const createLengthMeta = () => ({ type: 'number', title: t('Total count') });
@@ -59,21 +103,28 @@ export function createItemChainMetaFactory(options: {
       properties.index = createIndexMeta();
       properties.length = createLengthMeta();
     }
-    properties.value = { ...(valueMeta as any), title: t('Properties') };
+    properties.value = { ...(propertiesMeta as any), title: t('Attributes') };
 
-    const parentProperties: Record<string, any> = {};
-    if (showParentIndex !== false) {
-      parentProperties.index = createIndexMeta();
-      parentProperties.length = createLengthMeta();
+    if (parentItemMeta) {
+      properties.parentItem = {
+        ...(parentItemMeta as any),
+        title: parentItemMeta.title?.replace(t('Current item'), t('Parent item')) || t('Parent item'),
+      };
+    } else {
+      const parentProperties: Record<string, any> = {};
+      if (showParentIndex !== false) {
+        parentProperties.index = createIndexMeta();
+        parentProperties.length = createLengthMeta();
+      }
+      parentProperties.value = fallbackParentPropertiesMeta
+        ? { ...(fallbackParentPropertiesMeta as any), title: t('Attributes') }
+        : { type: 'object', title: t('Attributes') };
+      properties.parentItem = {
+        type: 'object',
+        title: parentItemMeta?.title?.replace(t('Current item'), t('Parent item')) || t('Parent item'),
+        properties: parentProperties,
+      };
     }
-    parentProperties.value = parentValueMeta
-      ? { ...(parentValueMeta as any), title: t('Properties') }
-      : { type: 'object', title: t('Properties') };
-    properties.parentItem = {
-      type: 'object',
-      title: t('Parent object'),
-      properties: parentProperties,
-    };
 
     const meta: any = {
       type: 'object',
@@ -90,9 +141,9 @@ export function createItemChainMetaFactory(options: {
         }
 
         if (typeof parentBuildVars === 'function') {
-          const built = await parentBuildVars(ctx);
+          const built = await parentBuildVars(createScopedItemContext(ctx, ctx?.item?.parentItem));
           if (built && typeof built === 'object' && Object.keys(built).length) {
-            out.parentItem = { value: built };
+            out.parentItem = parentItemMeta ? built : { value: built };
           }
         }
 
@@ -109,14 +160,15 @@ export function createItemChainMetaFactory(options: {
 
 export function createItemChainResolver(options: {
   collectionAccessor: () => any;
-  valueAccessor?: () => unknown;
+  propertiesAccessor?: () => unknown;
   parentCollectionAccessor?: () => any;
-  parentValueAccessor?: () => unknown;
+  parentPropertiesAccessor?: () => unknown;
+  parentItemResolverAccessor?: () => ((subPath: string) => boolean) | undefined;
 }): (subPath: string) => boolean {
-  const base = createAssociationSubpathResolver(options.collectionAccessor, options.valueAccessor);
+  const base = createAssociationSubpathResolver(options.collectionAccessor, options.propertiesAccessor);
   const baseParent =
     typeof options.parentCollectionAccessor === 'function'
-      ? createAssociationSubpathResolver(options.parentCollectionAccessor, options.parentValueAccessor)
+      ? createAssociationSubpathResolver(options.parentCollectionAccessor, options.parentPropertiesAccessor)
       : null;
   return (p: string) => {
     const raw = String(p || '');
@@ -125,8 +177,18 @@ export function createItemChainResolver(options: {
     if (raw.startsWith('value.')) {
       return base(raw.slice('value.'.length));
     }
-    if (raw.startsWith('parentItem.value.')) {
-      return baseParent ? baseParent(raw.slice('parentItem.value.'.length)) : false;
+    if (raw === 'parentItem') return false;
+    if (raw.startsWith('parentItem.')) {
+      const parentPath = raw.slice('parentItem.'.length);
+      const parentResolver = options.parentItemResolverAccessor?.();
+      if (typeof parentResolver === 'function') {
+        return parentResolver(parentPath);
+      }
+      if (parentPath === 'value') return false;
+      if (parentPath.startsWith('value.')) {
+        return baseParent ? baseParent(parentPath.slice('value.'.length)) : false;
+      }
+      return false;
     }
     return false;
   };

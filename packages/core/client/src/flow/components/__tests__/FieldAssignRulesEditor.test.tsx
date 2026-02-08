@@ -11,10 +11,24 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render } from '@nocobase/test/client';
+import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../FieldAssignRulesEditor';
+import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 
-vi.mock('../FieldAssignValueInput', () => ({
-  FieldAssignValueInput: () => <div data-testid="mock-value-input" />,
+vi.mock('../FieldAssignValueInput', async () => {
+  const actual = await vi.importActual<typeof import('../FieldAssignValueInput')>('../FieldAssignValueInput');
+  return {
+    ...actual,
+    FieldAssignValueInput: (props: any) => (
+      <div data-testid="mock-value-input" data-extra={Array.isArray(props?.extraMetaTree) ? 'yes' : 'no'} />
+    ),
+  };
+});
+
+vi.mock('../ConditionBuilder', () => ({
+  ConditionBuilder: (props: any) => (
+    <div data-testid="mock-condition-builder" data-extra={props?.extraMetaTree ? 'yes' : 'no'} />
+  ),
 }));
 
 describe('FieldAssignRulesEditor', () => {
@@ -56,6 +70,64 @@ describe('FieldAssignRulesEditor', () => {
     expect(active?.textContent).toContain('a');
   });
 
+  it('uses extra item tree only in value editor', () => {
+    const userCollection = {
+      getField: () => null,
+      getFields: () => [
+        {
+          name: 'nickname',
+          title: 'Nickname',
+          type: 'string',
+          interface: 'input',
+          isAssociationField: () => false,
+        },
+      ],
+    };
+    const m2oField: any = {
+      name: 'Created_By',
+      title: 'Created_By',
+      type: 'belongsTo',
+      interface: 'm2o',
+      isAssociationField: () => true,
+      targetCollection: userCollection,
+    };
+    const m2mCollection: any = {
+      getField: (name: string) => (name === 'Created_By' ? m2oField : null),
+      getFields: () => [m2oField],
+    };
+    const m2mField: any = {
+      name: 'm2m',
+      title: 'm2m',
+      type: 'belongsToMany',
+      interface: 'm2m',
+      isAssociationField: () => true,
+      targetCollection: m2mCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'm2m' ? m2mField : null),
+      getFields: () => [m2mField],
+    };
+
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'm2m.Created_By',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+      },
+    ];
+
+    const { getByTestId } = render(
+      wrap(
+        <FieldAssignRulesEditor t={t} fieldOptions={[]} rootCollection={rootCollection} value={value} showCondition />,
+      ),
+    );
+
+    expect(getByTestId('mock-value-input').getAttribute('data-extra')).toBe('yes');
+    expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('no');
+  });
+
   it('renders empty state when no items', () => {
     const { container } = render(
       wrap(<FieldAssignRulesEditor t={t} fieldOptions={[]} value={[]} showCondition={false} />),
@@ -63,5 +135,83 @@ describe('FieldAssignRulesEditor', () => {
 
     expect(container.querySelector('.ant-collapse')).toBeNull();
     expect(container.textContent).toContain('No data');
+  });
+
+  it('merges extra item tree into base item while keeping order', () => {
+    const base: MetaTreeNode[] = [
+      { name: 'formValues', title: 'Current form', type: 'object', paths: ['formValues'] },
+      {
+        name: 'item',
+        title: 'Current item（o2m）',
+        type: 'object',
+        paths: ['item'],
+        children: [
+          {
+            name: 'attributes',
+            title: 'Attributes',
+            type: 'object',
+            paths: ['item', 'value'],
+          },
+        ],
+      },
+      { name: 'user', title: 'Current user', type: 'object', paths: ['user'] },
+    ];
+    const extra: MetaTreeNode[] = [
+      {
+        name: 'item',
+        title: 'Current item（Created By）',
+        type: 'object',
+        paths: ['item'],
+        children: [
+          {
+            name: 'attributes',
+            title: 'Attributes',
+            type: 'object',
+            paths: ['item', 'value'],
+          },
+          {
+            name: 'parentItem',
+            title: 'Parent item（m2m）',
+            type: 'object',
+            paths: ['item', 'parentItem'],
+            children: [
+              { name: 'index', title: 'Index (starts from 0)', type: 'number', paths: ['item', 'parentItem', 'index'] },
+              {
+                name: 'attributes',
+                title: 'Attributes',
+                type: 'object',
+                paths: ['item', 'parentItem', 'value'],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const merged = mergeItemMetaTreeForAssignValue(base, extra);
+    expect(merged.map((node) => node.name)).toEqual(['formValues', 'item', 'user']);
+    expect(merged.filter((node) => node.name === 'item')).toHaveLength(1);
+
+    const itemNode = merged.find((node) => node.name === 'item')!;
+    const parent = (itemNode.children as MetaTreeNode[]).find((node) => node.name === 'parentItem');
+    expect(parent).toBeTruthy();
+
+    const nestedParent = ((parent?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');
+    expect(nestedParent).toBeTruthy();
+    expect(nestedParent?.paths).toEqual(['item', 'parentItem', 'parentItem']);
+    expect(nestedParent?.title).toBe('Parent item（o2m）');
+  });
+
+  it('keeps base tree when extra has no item node', () => {
+    const base: MetaTreeNode[] = [
+      { name: 'formValues', title: 'Current form', type: 'object', paths: ['formValues'] },
+      { name: 'item', title: 'Current item', type: 'object', paths: ['item'] },
+    ];
+    const extra: MetaTreeNode[] = [
+      { name: 'collection', title: 'Current collection', type: 'object', paths: ['collection'] },
+    ];
+
+    const merged = mergeItemMetaTreeForAssignValue(base, extra);
+    expect(merged).toEqual(base);
   });
 });

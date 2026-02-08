@@ -20,6 +20,15 @@ import { ActionWithoutPermission } from '../../base/ActionModel';
 import { createItemChainMetaFactory, createItemChainResolver, createRootItemChain, type ItemChain } from './itemChain';
 import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
 
+function buildCurrentItemTitle(t: (key: string) => string, collectionField?: any, fallbackName?: string) {
+  const rawLabel =
+    (typeof collectionField?.title === 'string' && collectionField.title) ||
+    (typeof collectionField?.name === 'string' && collectionField.name) ||
+    fallbackName;
+  const label = typeof rawLabel === 'string' && rawLabel ? t(rawLabel) : '';
+  return label ? `${t('Current item')}（${label}）` : t('Current item');
+}
+
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
     super.onInit(options);
@@ -113,18 +122,24 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
       cache: false,
       meta: createItemChainMetaFactory({
         t: this.context.t,
-        title: this.context.t('Current object'),
+        title: buildCurrentItemTitle(this.context.t, this.context.collectionField, this.props.name),
         showIndex: isToManyAssociationField(this.context.collectionField),
         showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
         collectionAccessor: () => this.context.collection,
-        valueAccessor: (ctx) => ctx?.item?.value,
+        propertiesAccessor: (ctx) => ctx?.item?.value,
         parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
+        parentItemMetaAccessor: () => (this.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
       }),
       resolveOnServer: createItemChainResolver({
         collectionAccessor: () => this.context.collection,
-        valueAccessor: () => this.context.form.getFieldValue(this.props.name),
+        propertiesAccessor: () => this.context.form.getFieldValue(this.props.name),
         parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentValueAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
+        parentItemResolverAccessor: () =>
+          (this.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
+            | ((subPath: string) => boolean)
+            | undefined,
       }),
       serverOnlyWhenContextParams: true,
     });
@@ -248,19 +263,30 @@ const ArrayNester = ({
                   cache: false,
                   meta: createItemChainMetaFactory({
                     t: currentFork.context.t,
-                    title: currentFork.context.t('Current object'),
+                    title: buildCurrentItemTitle(
+                      currentFork.context.t,
+                      model?.context?.collectionField,
+                      model?.props?.name,
+                    ),
                     showIndex: true,
                     showParentIndex: Array.isArray(rowIndex) && rowIndex.length > 0,
                     collectionAccessor: () => currentFork.context.collection,
-                    valueAccessor: (ctx) => ctx?.item?.value,
+                    propertiesAccessor: (ctx) => ctx?.item?.value,
                     parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                    parentPropertiesAccessor: () =>
+                      (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
+                    parentItemMetaAccessor: () => (model?.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
                   }),
                   resolveOnServer: createItemChainResolver({
                     collectionAccessor: () => currentFork.context.collection,
-                    valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
+                    propertiesAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
                     parentCollectionAccessor: () => model?.context?.collectionField?.collection,
-                    parentValueAccessor: () =>
+                    parentPropertiesAccessor: () =>
                       (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
+                    parentItemResolverAccessor: () =>
+                      (model?.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
+                        | ((subPath: string) => boolean)
+                        | undefined,
                   }),
                   serverOnlyWhenContextParams: true,
                 });
@@ -348,17 +374,23 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       cache: false,
       meta: createItemChainMetaFactory({
         t: this.context.t,
-        title: this.context.t('Current object'),
+        title: buildCurrentItemTitle(this.context.t, this.context.collectionField, this.props.name),
         showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
         collectionAccessor: () => this.context.collection,
-        valueAccessor: (ctx) => ctx?.item?.value,
+        propertiesAccessor: (ctx) => ctx?.item?.value,
         parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value,
+        parentItemMetaAccessor: () => (this.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
       }),
       resolveOnServer: createItemChainResolver({
         collectionAccessor: () => this.context.collection,
-        valueAccessor: () => (this.context as any)?.item?.value,
+        propertiesAccessor: () => (this.context as any)?.item?.value,
         parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentValueAccessor: () => (this.parent as any)?.context?.item?.value,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value,
+        parentItemResolverAccessor: () =>
+          (this.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
+            | ((subPath: string) => boolean)
+            | undefined,
       }),
       serverOnlyWhenContextParams: true,
     });
