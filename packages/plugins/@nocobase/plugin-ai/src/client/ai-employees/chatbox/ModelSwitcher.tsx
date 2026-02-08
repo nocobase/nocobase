@@ -93,7 +93,16 @@ export const ModelSwitcher: React.FC = () => {
 
     // Try cache first
     const cachedId = loadFromStorage(currentEmployee.username);
-    const cachedModel = cachedId ? allModels.find((m) => m.model === cachedId) : null;
+    let cachedModel = null;
+    if (cachedId) {
+      if (cachedId.includes(':')) {
+        const [cachedService, cachedModelId] = cachedId.split(':');
+        cachedModel = allModels.find((m) => m.llmService === cachedService && m.model === cachedModelId) || null;
+      } else {
+        // Backward compatibility: old format stored only model id
+        cachedModel = allModels.find((m) => m.model === cachedId) || null;
+      }
+    }
 
     if (cachedModel) {
       setModelOverride({ llmService: cachedModel.llmService, model: cachedModel.model });
@@ -107,10 +116,10 @@ export const ModelSwitcher: React.FC = () => {
   // Current selected model value
   const selectedModel = useMemo(() => {
     if (modelOverride && isValid(modelOverride)) {
-      return modelOverride.model;
+      return modelOverride;
     }
     if (allModels.length) {
-      return allModels[0].model;
+      return { llmService: allModels[0].llmService, model: allModels[0].model };
     }
     return undefined;
   }, [modelOverride, allModels]);
@@ -118,20 +127,20 @@ export const ModelSwitcher: React.FC = () => {
   // Current display label
   const selectedLabel = useMemo(() => {
     if (selectedModel) {
-      const found = allModels.find((m) => m.model === selectedModel);
-      return found?.label || selectedModel;
+      const found = allModels.find((m) => m.llmService === selectedModel.llmService && m.model === selectedModel.model);
+      return found?.label || selectedModel.model;
     }
     return undefined;
   }, [selectedModel, allModels]);
 
   // Handle selection
-  const handleSelect = (modelValue: string) => {
-    const target = allModels.find((m) => m.value === modelValue);
+  const handleSelect = (llmService: string, modelValue: string) => {
+    const target = allModels.find((m) => m.llmService === llmService && m.value === modelValue);
     if (target) {
       const newValue = { llmService: target.llmService, model: target.model };
       setModelOverride(newValue);
       if (currentEmployee) {
-        saveToStorage(currentEmployee.username, target.model);
+        saveToStorage(currentEmployee.username, `${target.llmService}:${target.model}`);
       }
     }
   };
@@ -170,16 +179,17 @@ export const ModelSwitcher: React.FC = () => {
     });
     // Model items
     service.enabledModels.forEach((model) => {
-      const isSelected = selectedModel === model.value;
+      const isSelected =
+        selectedModel && selectedModel.llmService === service.llmService && selectedModel.model === model.value;
       menuItems.push({
-        key: model.value,
+        key: `${service.llmService}:${model.value}`,
         label: (
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <span>{model.label}</span>
             {isSelected && <CheckOutlined style={{ fontSize: 12, color: '#1890ff' }} />}
           </span>
         ),
-        onClick: () => handleSelect(model.value),
+        onClick: () => handleSelect(service.llmService, model.value),
       });
     });
   });
