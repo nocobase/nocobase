@@ -137,12 +137,10 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       const segs = parseTargetPathToSegments(targetPath);
       if (!segs.length) return undefined;
 
-      // levels: root -> ... -> current object collection (target field's owner object)
-      const levels: Array<{ collection: any; toMany: boolean; viaLabel?: string }> = [
-        { collection: rootCollection, toMany: false, viaLabel: undefined },
-      ];
+      // levels: current item (target field if association) -> ... -> parent association chain
+      const levels: Array<{ collection: any; toMany: boolean; viaLabel?: string }> = [];
       let current = rootCollection;
-      for (let i = 0; i < segs.length - 1; i++) {
+      for (let i = 0; i < segs.length; i++) {
         const seg = segs[i] as string;
         const field = current?.getField?.(seg);
         if (!field?.isAssociationField?.()) break;
@@ -160,7 +158,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
       // 仅在“关系字段的子路径”场景下追加 item 变量树；
       // 顶层字段/非关联嵌套对象字段应使用 formValues（避免语义混淆）。
-      if (levels.length <= 1) {
+      if (levels.length <= 0) {
         return undefined;
       }
 
@@ -191,12 +189,12 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
           children: async () => buildCollectionMetaTreeNodes(level.collection, [...basePaths, 'value'], new Set()),
         });
 
-        if (idx > 0) {
+        if (idx - 1 >= 0) {
           // 直接把上级项节点作为子节点，避免出现 “Parent item / Parent item” 的重复层级
-          children.push(buildObjectNode(idx - 1, [...basePaths, 'parentItem'], 'parentItem', 'Parent object'));
+          children.push(buildObjectNode(idx - 1, [...basePaths, 'parentItem'], 'parentItem', 'Parent item'));
         }
 
-        const viaLabel = idx > 0 ? level?.viaLabel : undefined;
+        const viaLabel = level?.viaLabel;
         const titleWithSuffix = viaLabel ? `${t(titleKey)}（${viaLabel}）` : t(titleKey);
 
         return {
@@ -208,7 +206,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         };
       };
 
-      return [buildObjectNode(levels.length - 1, ['item'], 'item', 'Current object')];
+      return [buildObjectNode(levels.length - 1, ['item'], 'item', 'Current item')];
     },
     [buildCollectionMetaTreeNodes, rootCollection, t],
   );
@@ -563,7 +561,6 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
               <ConditionBuilder
                 value={item.condition || { logic: '$and', items: [] }}
                 onChange={(condition) => patchItem(index, { condition })}
-                extraMetaTree={extraMetaTree}
               />
             </div>
           )}

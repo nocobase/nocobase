@@ -289,6 +289,8 @@ PopupSubTableEditActionModel.registerFlow({
                 ? associationModel.context.getFormValues()
                 : associationModel?.context?.formValues) ?? associationModel?.context?.record,
           } as any);
+        const parentItemOptions =
+          ctx?.getPropertyOptions?.('item') ?? associationModel?.context?.getPropertyOptions?.('item');
         const itemLength = Array.isArray(associationModel?.props?.value)
           ? associationModel.props.value.length
           : undefined;
@@ -338,6 +340,8 @@ PopupSubTableEditActionModel.registerFlow({
             collectionField: ctx.collectionField,
             record: ctx.record,
             parentItem,
+            parentItemMeta: parentItemOptions?.meta,
+            parentItemResolver: parentItemOptions?.resolveOnServer,
             itemIndex,
             itemLength,
           },
