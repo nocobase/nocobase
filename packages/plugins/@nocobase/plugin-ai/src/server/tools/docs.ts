@@ -203,7 +203,10 @@ export function createDocsSearchTool(options?: { description?: string }): ToolsO
     },
     definition: {
       name: 'searchDocs',
-      description: `Search docs by module identifiers (for example, runjs) and English keywords, and return the available document paths. ${options.description}`,
+      description: `Search indexed documentation using a FlexSearch-based keyword index.
+The index is built from module identifiers (e.g. "runjs") and English technical terms.
+Use concise, exact keywords (module names, API names, identifiers). Avoid natural language queries or vague wording.
+Return matching document paths only. ${options.description}`,
       schema: z.object({
         module: z.string().min(1, 'module is required').describe('Module key, e.g. runjs'),
         query: z.string().min(1, 'query is required').describe('Search keyword or phrase in English'),
