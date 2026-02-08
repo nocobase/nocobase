@@ -139,19 +139,20 @@ function toMultiValueOperators(baseList: OperatorMeta[] = []): OperatorMeta[] {
       item?.value === '$exists' ||
       item?.value === '$notExists',
   );
-  const hasIn = mapped.some((item) => item.value === '$in');
-  const hasNotIn = mapped.some((item) => item.value === '$notIn');
   const hasValueComparableOperator = baseList.some(
     (item) => item?.value && !item.noValue && item.value !== '$exists' && item.value !== '$notExists',
   );
+  const shouldProvideIn = hasValueComparableOperator || hasInInBaseList;
+  const shouldProvideNotIn = hasValueComparableOperator || hasNotInInBaseList;
+  const normalizedInGroup: OperatorMeta[] = [];
 
-  if (!hasIn && (hasValueComparableOperator || hasInInBaseList)) {
-    mapped.unshift(MULTI_VALUE_IN_OPERATOR);
+  if (shouldProvideIn) {
+    normalizedInGroup.push(MULTI_VALUE_IN_OPERATOR);
   }
-  if (!hasNotIn && (hasValueComparableOperator || hasNotInInBaseList)) {
-    mapped.push(MULTI_VALUE_NOT_IN_OPERATOR);
+  if (shouldProvideNotIn) {
+    normalizedInGroup.push(MULTI_VALUE_NOT_IN_OPERATOR);
   }
-  return toUniqueOperators(mapped);
+  return toUniqueOperators([...normalizedInGroup, ...mapped]);
 }
 
 function getRecordSelectValueField(flowEngine: any, fieldModelProps: Record<string, any> = {}, source: string[] = []) {

@@ -148,6 +148,9 @@ describe('custom field operators', () => {
       },
     });
     expect(multipleNumberValueOps.some((item) => item.value === '$in')).toBe(true);
+    expect(multipleNumberValueOps.findIndex((item) => item.value === '$notIn')).toBe(
+      multipleNumberValueOps.findIndex((item) => item.value === '$in') + 1,
+    );
     expect(multipleNumberValueOps.some((item) => item.value === '$gt')).toBe(false);
     expect(multipleNumberValueOps.some((item) => item.value === '$includes')).toBe(false);
 
@@ -254,6 +257,9 @@ describe('custom field operators', () => {
     const notInOperator = operatorList.find((item) => item.value === '$notIn');
     expect(inOperator?.schema?.['x-component']).toBe('Select');
     expect(notInOperator?.schema?.['x-component']).toBe('Select');
+    expect(operatorList.findIndex((item) => item.value === '$notIn')).toBe(
+      operatorList.findIndex((item) => item.value === '$in') + 1,
+    );
   });
 
   it('prefers date between as default when range is enabled', () => {
