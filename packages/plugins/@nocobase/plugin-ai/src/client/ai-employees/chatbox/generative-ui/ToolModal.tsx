@@ -46,7 +46,7 @@ export const ToolModal: React.FC = () => {
   const C = modal?.Component;
 
   const adjustArgs = useChatToolsStore.use.adjustArgs();
-  const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId, tools });
+  const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
   const decisions = getDecisionActions(activeTool);
   const { onOk } = useOnOk(decisions, adjustArgs);
 

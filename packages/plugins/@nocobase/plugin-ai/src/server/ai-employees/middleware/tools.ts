@@ -26,9 +26,13 @@ export const toolInteractionMiddleware = (aiEmployee: AIEmployee, tools: ToolsEn
 export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typeof createMiddleware> => {
   return createMiddleware({
     name: 'ToolCallStatusMiddleware',
+    stateSchema: z.object({
+      messageId: z.coerce.string().optional(),
+    }),
     wrapToolCall: async (request, handler) => {
       const { runtime, toolCall } = request;
-      await aiEmployee.updateToolCallPending(request.toolCall.id);
+      const { messageId } = request.state;
+      await aiEmployee.updateToolCallPending(messageId, request.toolCall.id);
       runtime.writer?.({ action: 'beforeToolCall', body: { toolCall } });
       let result;
       try {
@@ -56,8 +60,8 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
         });
         throw e;
       } finally {
-        await aiEmployee.updateToolCallDone(request.toolCall.id, result);
-        const toolCallResult = await aiEmployee.getToolCallResult(request.toolCall.id);
+        await aiEmployee.updateToolCallDone(messageId, request.toolCall.id, result);
+        const toolCallResult = await aiEmployee.getToolCallResult(messageId, request.toolCall.id);
         runtime.writer?.({
           action: 'afterToolCall',
           body: { toolCall, toolCallResult },

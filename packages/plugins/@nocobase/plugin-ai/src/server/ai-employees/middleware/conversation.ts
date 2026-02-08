@@ -18,6 +18,7 @@ import {
 } from '../../types/ai-message.type';
 import z from 'zod';
 import { Model } from '@nocobase/database';
+import { ToolsEntry } from '@nocobase/ai';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
@@ -117,11 +118,13 @@ export const conversationMiddleware = (
 
   const fillToolCall = (
     message: AIConversationMessage,
+    toolsMap: Map<string, ToolsEntry>,
     initializedToolCalls: Model<AIToolMessage>[],
     toolCalls: AIToolCall[],
   ) => {
     const initializedToolCallMap = new Map(initializedToolCalls.map((x) => x.toJSON()).map((x) => [x.toolCallId, x]));
     for (const toolCall of toolCalls) {
+      const tools = toolsMap.get(toolCall.name);
       const { status, content, invokeStatus, invokeStartTime, invokeEndTime, auto, execution } =
         initializedToolCallMap.get(toolCall.id) ?? {};
       toolCall.sessionId = message.sessionId;
@@ -133,6 +136,8 @@ export const conversationMiddleware = (
       toolCall.invokeEndTime = invokeEndTime;
       toolCall.auto = auto;
       toolCall.execution = execution;
+      toolCall.willInterrupt = tools?.execution === 'frontend' || auto === false;
+      toolCall.defaultPermission = tools?.defaultPermission;
     }
   };
 
@@ -142,6 +147,7 @@ export const conversationMiddleware = (
       ctx: z.any(),
     }),
     stateSchema: z.object({
+      messageId: z.coerce.string().optional(),
       lastHumanMessageIndex: z.number().default(0),
       lastAIMessageIndex: z.number().default(0),
       lastToolMessageIndex: z.number().default(0),
@@ -167,6 +173,7 @@ export const conversationMiddleware = (
       });
     },
     beforeModel: async (state, runtime) => {
+      const { messageId } = state;
       const lastToolMessageIndex = state.lastToolMessageIndex;
       const toolMessages = state.messages
         .filter((x) => x.type === 'tool')
@@ -174,14 +181,18 @@ export const conversationMiddleware = (
         .map((x) => x as ToolMessage)
         .map(convertToolMessage);
       if (toolMessages.length) {
+        for (const tm of toolMessages) {
+          tm.metadata.messageId = messageId;
+        }
         await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
           await conversation.addMessages(toolMessages);
           await aiEmployee.confirmToolCall(
             transaction,
+            messageId,
             toolMessages.map((x) => x.metadata.toolCallId as string),
           );
         });
-        runtime.writer?.({ action: 'beforeSendToolMessage', body: { messages: toolMessages } });
+        runtime.writer?.({ action: 'beforeSendToolMessage', body: { messageId, messages: toolMessages } });
       }
     },
     afterModel: async (state, runtime) => {
@@ -209,13 +220,15 @@ export const conversationMiddleware = (
 
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIConversationMessage = await conversation.addMessages(values);
+            state.messageId = result.messageId;
             if (toolCalls?.length) {
+              const toolsMap = await aiEmployee.getToolsMap();
               const initializedToolCalls = await aiEmployee.initToolCall(
                 transaction,
                 result.messageId,
                 toolCalls as any,
               );
-              fillToolCall(result, initializedToolCalls, toolCalls as any);
+              fillToolCall(result, toolsMap, initializedToolCalls, toolCalls as any);
             }
           });
         }

@@ -7,24 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DecisionActions, ToolCall, ToolsEntry, toToolsMap, useAPIClient, useApp } from '@nocobase/client';
+import { DecisionActions, ToolCall, useAPIClient, useApp } from '@nocobase/client';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from './useChatMessageActions';
 import { UserDecision } from '../../types';
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 
-export const useToolCallActions = ({ messageId, tools }: { messageId: string; tools: ToolsEntry[] }) => {
+export const useToolCallActions = ({ messageId }: { messageId: string }) => {
   const app = useApp();
   const api = useAPIClient();
   const sessionId = useChatConversationsStore.use.currentConversation();
   const aiEmployee = useChatBoxStore.use.currentEmployee();
-  const updateToolCallWaiting = useChatToolCallStore.use.updateToolCallWaiting();
+  const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
   const isAllWaiting = useChatToolCallStore.use.isAllWaiting();
+  const isInterrupted = useChatToolCallStore.use.isInterrupted();
   const { resumeToolCall } = useChatMessageActions();
-  const toolsMap = toToolsMap(tools);
+
+  const { toolsManager } = app.aiManager;
+  const toolsMap = toolsManager.useTools();
 
   const updateUserDecision = async (toolCallId: string, userDecision: UserDecision) => {
+    if (!isInterrupted(messageId, toolCallId)) {
+      return;
+    }
+
     const { data: res } = await api
       .resource('aiConversations')
       .updateUserDecision({ values: { sessionId, messageId, toolCallId, userDecision } });
@@ -32,7 +39,7 @@ export const useToolCallActions = ({ messageId, tools }: { messageId: string; to
       return;
     }
 
-    updateToolCallWaiting(messageId, toolCallId);
+    updateToolCallInvokeStatus(messageId, toolCallId, 'waiting');
     if (!isAllWaiting(messageId)) {
       return;
     }

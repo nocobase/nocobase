@@ -384,9 +384,14 @@ export class AIEmployee {
                 if (!interruptAction) {
                   continue;
                 }
-                await this.updateToolCallInterrupted(toolCall.id, interruptAction);
+                await this.updateToolCallInterrupted(toolCall.messageId, toolCall.id, interruptAction);
                 this.protocol.toolCallStatus({
-                  toolCall: { id: toolCall.id, name: toolCall.name },
+                  toolCall: {
+                    messageId: toolCall.messageId,
+                    id: toolCall.id,
+                    name: toolCall.name,
+                    willInterrupt: toolCall.willInterrupt,
+                  },
                   invokeStatus: 'interrupted',
                   interruptAction,
                 });
@@ -399,21 +404,49 @@ export class AIEmployee {
             this.protocol.toolCallChunks(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             this.protocol.toolCallStatus({
-              toolCall: { id: chunks.body?.toolCall?.id, name: chunks.body?.toolCall?.name },
+              toolCall: {
+                messageId: chunks.body?.toolCall?.messageId,
+                id: chunks.body?.toolCall?.id,
+                name: chunks.body?.toolCall?.name,
+                willInterrupt: chunks.body?.toolCall?.willInterrupt,
+              },
               invokeStatus: 'pending',
             });
           } else if (chunks.action === 'afterToolCall') {
             this.protocol.toolCallStatus({
-              toolCall: { id: chunks.body?.toolCall?.id, name: chunks.body?.toolCall?.name },
+              toolCall: {
+                messageId: chunks.body?.toolCall?.messageId,
+                id: chunks.body?.toolCall?.id,
+                name: chunks.body?.toolCall?.name,
+                willInterrupt: chunks.body?.toolCall?.willInterrupt,
+              },
               invokeStatus: 'done',
               status: chunks.body?.toolCallResult?.status,
             });
           } else if (chunks.action === 'beforeSendToolMessage') {
-            for (const toolCall of chunks.body?.messages
-              ?.map((x) => x.metadata)
-              .map((x) => ({ id: x.toolCallId, name: x.toolName })) ?? []) {
-              this.protocol.toolCallStatus({ toolCall, invokeStatus: 'confirmed' });
+            const { messageId, messages } = chunks.body ?? {};
+            if (messages.length) {
+              const toolsMap = await this.getToolsMap();
+              const toolCallResultMap = await this.getToolCallResultMap(
+                messageId,
+                messages.map((x) => x.metadata).map((x) => x.toolCallId),
+              );
+              for (const { metadata } of messages) {
+                const tools = toolsMap.get(metadata.toolName);
+                const toolCallResult = toolCallResultMap.get(metadata.toolCallId);
+                this.protocol.toolCallStatus({
+                  toolCall: {
+                    messageId,
+                    id: metadata.toolCallId,
+                    name: metadata.toolName,
+                    willInterrupt: tools?.execution === 'frontend' || toolCallResult?.auto === false,
+                  },
+                  invokeStatus: 'confirmed',
+                  status: toolCallResult?.status,
+                });
+              }
             }
+
             this.protocol.newMessage();
           }
         }
@@ -681,6 +714,7 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   async updateToolCallInterrupted(
+    messageId: string,
     toolCallId: string,
     interruptAction: {
       order: number;
@@ -697,6 +731,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       {
         where: {
           sessionId: this.sessionId,
+          messageId,
           toolCallId,
           invokeStatus: 'init',
         },
@@ -705,7 +740,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     return updated;
   }
 
-  async updateToolCallPending(toolCallId: string) {
+  async updateToolCallPending(messageId: string, toolCallId: string) {
     const [updated] = await this.aiToolMessagesModel.update(
       {
         invokeStatus: 'pending',
@@ -714,6 +749,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       {
         where: {
           sessionId: this.sessionId,
+          messageId,
           toolCallId,
           invokeStatus: {
             [Op.in]: ['init', 'waiting'],
@@ -724,7 +760,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     return updated;
   }
 
-  async updateToolCallDone(toolCallId: string, result: any) {
+  async updateToolCallDone(messageId: string, toolCallId: string, result: any) {
     const [updated] = await this.aiToolMessagesModel.update(
       {
         invokeStatus: 'done',
@@ -735,6 +771,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       {
         where: {
           sessionId: this.sessionId,
+          messageId,
           toolCallId,
           invokeStatus: 'pending',
         },
@@ -743,7 +780,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     return updated;
   }
 
-  async confirmToolCall(transaction: Transaction, toolCallIds: string[]) {
+  async confirmToolCall(transaction: Transaction, messageId: string, toolCallIds: string[]) {
     const [updated] = await this.aiToolMessagesModel.update(
       {
         invokeStatus: 'confirmed',
@@ -751,6 +788,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       {
         where: {
           sessionId: this.sessionId,
+          messageId,
           toolCallId: {
             [Op.in]: toolCallIds,
           },
@@ -761,15 +799,31 @@ If information is missing, clearly state it in the summary.</Important>`;
     return updated;
   }
 
-  async getToolCallResult(toolCallId: string): Promise<AIToolMessage> {
+  async getToolCallResult(messageId: string, toolCallId: string): Promise<AIToolMessage> {
     return (
       await this.aiToolMessagesModel.findOne({
         where: {
           sessionId: this.sessionId,
+          messageId,
           toolCallId,
         },
       })
     )?.toJSON();
+  }
+
+  async getToolCallResultMap(messageId: string, toolCallIds: string[]): Promise<Map<string, AIToolMessage>> {
+    const list: AIToolMessage[] = (
+      await this.aiToolMessagesModel.findAll({
+        where: {
+          sessionId: this.sessionId,
+          messageId,
+          toolCallId: {
+            [Op.in]: toolCallIds,
+          },
+        },
+      })
+    ).map((it) => it.toJSON());
+    return new Map(list.map((it) => [it.toolCallId, it]));
   }
 
   async getUserDecisions(messageId: string): Promise<UserDecision[]> {
@@ -1073,7 +1127,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     throw new Error('Fail to create new agent thread');
   }
 
-  private async getToolsMap() {
+  async getToolsMap() {
     const tools = await this.listTools();
     return new Map(tools.map((tool) => [tool.definition.name, tool]));
   }
@@ -1178,7 +1232,7 @@ class ChatStreamProtocol {
     status,
     interruptAction,
   }: {
-    toolCall: { id: string; name: string };
+    toolCall: { messageId: string; id: string; name: string; willInterrupt: boolean };
     invokeStatus: string;
     status?: string;
     interruptAction?: {

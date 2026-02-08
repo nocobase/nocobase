@@ -12,13 +12,14 @@ import { create } from 'zustand';
 import { createSelectors } from './create-selectors';
 
 type ChatToolCallState = {
-  toolCalls: Record<string, { id: string; name: string; invokeStatus: string }[]>;
+  toolCalls: Record<string, { id: string; invokeStatus: string }[]>;
 };
 
 export interface ChatToolCallActions {
   updateByMessages: (messages: Message[]) => void;
-  updateToolCallWaiting: (messageId: string, toolCallId: string) => void;
+  updateToolCallInvokeStatus: (messageId: string, toolCallId: string, invokeStatus: string) => void;
   isAllWaiting: (messageId: string) => boolean;
+  isInterrupted: (messageId: string, toolCallId: string) => boolean;
 }
 const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
   toolCalls: {},
@@ -35,24 +36,29 @@ const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
         .filter((x) => x.willInterrupt === true)
         .map((x) => ({
           id: x.id,
-          name: x.name,
           invokeStatus: x.invokeStatus,
         }));
     }
-
     set({ toolCalls });
   },
-  updateToolCallWaiting: (messageId: string, toolCallId: string) => {
+  updateToolCallInvokeStatus: (messageId: string, toolCallId: string, invokeStatus: string) => {
     set((state) => {
-      const list = state.toolCalls[messageId];
-      if (!list) return state;
+      const list = state.toolCalls[messageId] ?? [];
 
-      return {
+      const exists = list.some((tc) => tc.id === toolCallId);
+
+      const nextList = exists
+        ? list.map((tc) => (tc.id === toolCallId ? { ...tc, invokeStatus } : tc))
+        : [...list, { id: toolCallId, invokeStatus }];
+
+      const result = {
         toolCalls: {
           ...state.toolCalls,
-          [messageId]: list.map((tc) => (tc.id === toolCallId ? { ...tc, invokeStatus: 'waiting' } : tc)),
+          [messageId]: nextList,
         },
       };
+
+      return result;
     });
   },
   isAllWaiting: (messageId: string) => {
@@ -60,6 +66,11 @@ const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
     if (!list || list.length === 0) return false;
 
     return list.every((x) => x.invokeStatus === 'waiting');
+  },
+  isInterrupted: (messageId: string, toolCallId: string) => {
+    const list = get().toolCalls[messageId] ?? [];
+    const toolCall = list.find((x) => x.id === toolCallId);
+    return toolCall?.invokeStatus === 'interrupted';
   },
 }));
 

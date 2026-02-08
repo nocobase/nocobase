@@ -29,12 +29,11 @@ const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'Code
 
 const CallButton: React.FC<{
   messageId: string;
-  tools: ToolsEntry[];
   toolCalls: ToolCall[];
-}> = ({ messageId, tools, toolCalls }) => {
+}> = ({ messageId, toolCalls }) => {
   const t = useT();
   const { token } = useToken();
-  const { getDecisionActions } = useToolCallActions({ messageId, tools });
+  const { getDecisionActions } = useToolCallActions({ messageId });
   const [loading, setLoading] = useState(false);
   return (
     <Flex align="center" gap={8}>
@@ -186,7 +185,7 @@ export const DefaultToolCard: React.FC<{
       {toolCalls.map((toolCall) => (
         <ToolCallRow key={toolCall.id} toolCall={toolCall} toolsMap={toolsMap} />
       ))}
-      {showCallButton && <CallButton messageId={messageId} tools={tools} toolCalls={toolCalls} />}
+      {showCallButton && <CallButton messageId={messageId} toolCalls={toolCalls} />}
     </Flex>
   );
 };

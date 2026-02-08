@@ -221,8 +221,12 @@ export default {
           },
         },
       });
+      const toolMessageKey = (messageId: string, toolCallId: string) => `${messageId}:${toolCallId}`;
       const toolMessageMap = new Map<string, any>(
-        toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
+        toolMessages.map((toolMessage: Model) => [
+          toolMessageKey(toolMessage.messageId, toolMessage.toolCallId),
+          toolMessage,
+        ]),
       );
 
       const toolsList = await plugin.ai.toolsManager.listTools();
@@ -233,13 +237,14 @@ export default {
           if (row?.toolCalls?.length ?? 0 > 0) {
             for (const toolCall of row.toolCalls) {
               const tools = toolsMap.get(toolCall.name);
-              const toolMessage = toolMessageMap.get(toolCall.id);
+              const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
               toolCall.invokeStatus = toolMessage?.invokeStatus;
               toolCall.auto = toolMessage?.auto;
               toolCall.status = toolMessage?.status;
               toolCall.content = toolMessage?.content; // [AI_DEBUG] tool execution result
               toolCall.execution = tools?.execution;
               toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
+              toolCall.defaultPermission = tools?.defaultPermission;
             }
           }
 
@@ -507,6 +512,7 @@ export default {
     },
 
     async updateUserDecision(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
@@ -569,6 +575,7 @@ export default {
       const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
         filter: {
           sessionId,
+          messageId,
           toolCallId: {
             $in: toolCallIds,
           },
@@ -577,12 +584,20 @@ export default {
       const toolMessageMap = new Map<string, any>(
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
+
+      const toolsList = await plugin.ai.toolsManager.listTools();
+      const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
+
       for (const toolCall of toolCalls) {
+        const tools = toolsMap.get(toolCall.name);
         const toolMessage = toolMessageMap.get(toolCall.id);
         toolCall.invokeStatus = toolMessage?.invokeStatus;
         toolCall.auto = toolMessage?.auto;
         toolCall.status = toolMessage?.status;
         toolCall.content = toolMessage?.content;
+        toolCall.execution = tools?.execution;
+        toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
+        toolCall.defaultPermission = tools?.defaultPermission;
       }
 
       ctx.body = {

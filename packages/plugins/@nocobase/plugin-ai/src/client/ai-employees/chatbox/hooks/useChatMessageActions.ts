@@ -19,6 +19,7 @@ import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxStore } from '../stores/chat-box';
 import { parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
+import { useChatToolCallStore } from '../stores/chat-tool-call';
 
 export const useChatMessageActions = () => {
   const app = useApp();
@@ -42,6 +43,8 @@ export const useChatMessageActions = () => {
   const setWebSearching = useChatMessagesStore.use.setWebSearching();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
 
   const messagesService = useRequest<{
     data: Message[];
@@ -70,6 +73,9 @@ export const useChatMessageActions = () => {
             const toolCalls = msg.content?.tool_calls;
             if (toolCalls?.length) {
               for (const tc of toolCalls) {
+                if (tc.willInterrupt) {
+                  updateToolCallInvokeStatus(msg.messageId, tc.id, tc.invokeStatus);
+                }
                 if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
                   const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
                   aiDebugLogger.log(sessionId, 'tool_result', {
@@ -151,39 +157,40 @@ export const useChatMessageActions = () => {
                 chunk: data.body.toolCalls[0],
               });
               updateLastMessage((last) => {
-                const toolCalls = last.content.tool_calls || [];
-                const toolCallChunk = data.body.toolCalls[0];
-                if (toolCallChunk.name) {
-                  toolCalls.push(toolCallChunk);
-                } else {
-                  toolCalls[toolCalls.length - 1].args += data.body.toolCalls[0].args;
-                }
                 return {
                   ...last,
                   content: {
                     ...last.content,
-                    tool_calls: toolCalls,
+                    tool_calls: data.body.toolCalls,
                   },
                   loading: false,
                 };
               });
             }
             if (data.type === 'tool_call_status') {
+              if (data.body?.toolCall) {
+                const { toolCall, invokeStatus } = data.body;
+                if (toolCall.willInterrupt) {
+                  updateToolCallInvokeStatus(toolCall.messageId, toolCall.id, invokeStatus);
+                }
+              }
               updateLastMessage((last) => {
                 const toolCalls = last.content.tool_calls || [];
                 const toolCallId = data.body?.toolCall?.id;
-                const target = toolCalls.find((t) => t.id == toolCallId);
-                if (target) {
-                  target.invokeStatus = data.body?.invokeStatus;
-                }
-                if (target && data.body?.status) {
-                  target.status = data.body.status;
-                }
+                const nextToolCalls = toolCalls.map((t) =>
+                  t.id === toolCallId
+                    ? {
+                        ...t,
+                        invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
+                        status: data.body?.status ?? t.status,
+                      }
+                    : t,
+                );
                 return {
                   ...last,
                   content: {
                     ...last.content,
-                    tool_calls: toolCalls,
+                    tool_calls: nextToolCalls,
                   },
                   loading: false,
                 };

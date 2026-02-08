@@ -20,7 +20,7 @@ export const ToolCard: React.FC<{
 }> = ({ toolCalls, messageId }) => {
   const { tools, loading } = useTools();
   const toolsMap = toToolsMap(tools);
-  const { getDecisionActions } = useToolCallActions({ messageId, tools });
+  const { getDecisionActions } = useToolCallActions({ messageId });
   const toolsWithUI: ({ C: ComponentType<ToolsUIProperties> } & ToolsUIProperties)[] = [];
   const toolsWithoutUI: ToolCall[] = [];
   for (const t of toolCalls) {
@@ -45,7 +45,7 @@ export const ToolCard: React.FC<{
       toolsWithUI.push({
         C,
         messageId,
-        tools: toolsMap.get(toolCall.name),
+        tools: toolEntry,
         toolCall,
         decisions: getDecisionActions(toolCall),
       });
@@ -58,23 +58,19 @@ export const ToolCard: React.FC<{
     if (!messageId) {
       return;
     }
-    if (!toolsMap?.size) {
-      return;
-    }
     if (!toolCalls?.length) {
       return;
     }
     const task = async () => {
       for (const toolCall of toolCalls) {
-        const tool = toolsMap.get(toolCall.name);
-        if (toolCall.invokeStatus === 'interrupted' && tool.defaultPermission === 'ALLOW') {
+        if (toolCall.invokeStatus === 'interrupted' && toolCall.defaultPermission === 'ALLOW') {
           const decision = getDecisionActions(toolCall);
           await decision.approve();
         }
       }
     };
     task();
-  }, [messageId, toolsMap, toolCalls, getDecisionActions]);
+  }, [messageId, toolCalls]);
 
   return (
     <>
