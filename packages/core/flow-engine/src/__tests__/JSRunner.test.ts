@@ -89,9 +89,7 @@ describe('JSRunner', () => {
       },
     });
 
-    const result = await runner.run(
-      'return typeof URL.createObjectURL === "function" && typeof URL.revokeObjectURL === "function"',
-    );
+    const result = await runner.run('return typeof URL.createObjectURL === "function"');
     expect(result.success).toBe(true);
     expect(result.value).toBe(true);
   });

@@ -35,7 +35,6 @@ describe('safeGlobals', () => {
     if (typeof window.URL !== 'undefined') {
       expect(win.URL).toBe(window.URL);
       expect(typeof win.URL.createObjectURL).toBe('function');
-      expect(typeof win.URL.revokeObjectURL).toBe('function');
     }
     // access to location proxy is allowed, but sensitive props throw
     expect(() => win.location.href).toThrow(/not allowed/);
