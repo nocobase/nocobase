@@ -26,7 +26,7 @@ export const recommendedModels: Record<string, { label: string; value: string }[
   ],
   dashscope: [
     { label: 'Qwen3 Max', value: 'qwen3-max-2026-01-23' },
-    { label: 'Kimi K2 Thinking', value: 'kimi-k2-thinking' },
+    { label: 'Kimi K2.5', value: 'kimi-k2.5' },
   ],
   deepseek: [
     { label: 'DeepSeek Chat', value: 'deepseek-chat' },
