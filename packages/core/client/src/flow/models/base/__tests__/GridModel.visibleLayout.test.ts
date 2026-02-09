@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { EMPTY_COLUMN_UID, FlowEngine } from '@nocobase/flow-engine';
 import { GridModel } from '../GridModel';
 
 describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
@@ -185,6 +185,33 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     const { rows, sizes } = (model as any).getVisibleLayout();
     // 第一个单元格中的 h 应被剔除，只剩 v；列宽保持不变
     expect(rows.row1).toEqual([['v'], ['v']]);
+    expect(sizes.row1).toEqual([8, 16]);
+  });
+
+  it('ignores EMPTY_COLUMN uid in runtime mode without crashing', () => {
+    engine.flowSettings.disable();
+
+    const visible = engine.createModel({ use: 'FlowModel', uid: 'v' });
+
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-7',
+      props: {
+        rows: {
+          row1: [[EMPTY_COLUMN_UID, 'ghost', 'v'], ['ghost-2']],
+        },
+        sizes: {
+          row1: [8, 16],
+        },
+      },
+      structure: {} as any,
+    });
+
+    (model as any).subModels = { items: [visible] };
+
+    const { rows, sizes } = (model as any).getVisibleLayout();
+    // unknown uid 视为可见（避免误删），但 EMPTY_COLUMN_UID 必须被剔除
+    expect(rows.row1).toEqual([['ghost', 'v'], ['ghost-2']]);
     expect(sizes.row1).toEqual([8, 16]);
   });
 });

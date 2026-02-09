@@ -1607,8 +1607,10 @@
   "Cascader": "级联选择",
   "Subform":"子表单",
   "Edit popup (Add new)":"编辑弹窗（添加）",
-  "Edit popup (Select record)":"编辑弹窗（选择纪录）",
-  "Remove record":"移除纪录",
+  "Edit popup (Select record)":"编辑弹窗（选择记录）",
+  "Remove record":"移除记录",
   "Are you sure you want to remove it?":"你确定要移除吗？",
-  "Create record":"创建记录"
+  "Create record":"创建记录",
+  "Duplicate record":"复制记录",
+  "Are you sure you want to duplicate it?":"你确定要复制吗？"
 }

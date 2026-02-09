@@ -61,7 +61,8 @@ export class FormBlockModel<
   _defaultCustomModelClasses = {
     FormActionGroupModel: 'FormActionGroupModel',
     FormItemModel: 'FormItemModel',
-    FormCustomItemModel: 'FormCustomItemModel',
+    FormAssociationFieldGroupModel: 'FormAssociationFieldGroupModel',
+    // FormCustomItemModel: 'FormCustomItemModel',
   };
 
   customModelClasses: CustomFormBlockModelClassesEnum = {};
@@ -300,6 +301,11 @@ export class FormBlockModel<
         const isConfiguredField = activeTopLevel.has(top);
 
         if (isConfiguredField) {
+          // 编辑表单场景：若前端已将关联字段清空（但尚未提交到服务端），
+          // 则不应回落到服务端按 DB 值解析（否则会把“旧关联值”解析回来）。
+          const topValue = this.form?.getFieldValue?.(top);
+          if (topValue == null) return false;
+          if (Array.isArray(topValue) && topValue.length === 0) return false;
           // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
           const assocResolver = createAssociationSubpathResolver(
             () => this.collection,
@@ -400,7 +406,7 @@ export function FormComponent({
   return (
     <Form
       form={model.form}
-      initialValues={model.context.record || initialValues}
+      initialValues={model.context?.view?.inputArgs?.formData || model.context.record || initialValues}
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onFieldsChange={(changedFields) => {

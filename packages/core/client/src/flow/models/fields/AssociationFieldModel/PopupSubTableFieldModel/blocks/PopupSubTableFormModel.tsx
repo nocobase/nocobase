@@ -110,6 +110,7 @@ export class PopupSubTableFormModel extends FormBlockModel {
     FormActionGroupModel: 'PopupSubTableFormActionGroupModel',
     FormItemModel: 'FormItemModel',
     FormCustomItemModel: 'FormCustomItemModel',
+    FormAssociationFieldGroupModel: 'FormAssociationFieldGroupModel',
   };
 
   protected defaultBlockTitle() {
