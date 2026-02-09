@@ -1424,6 +1424,8 @@
   "Use simple pagination mode": "Usa modalità di paginazione semplice",
   "Use the same time zone (GMT) for all users": "Usa lo stesso fuso orario (GMT) per tutti gli utenti",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Utilizzato per scenari con drag and drop, supporta ordinamento raggruppato",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Utente",
   "User not found. Please sign in again to continue.": "Impossibile trovare l'utente. Accedi nuovamente per continuare.",
   "User password changed, please signin again.": "La password dell'utente è stata modificata, accedi di nuovo.",

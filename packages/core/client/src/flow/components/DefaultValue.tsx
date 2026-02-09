@@ -76,10 +76,16 @@ function createTempFieldClass(Base: any) {
           (relationInterface === 'm2m' || relationInterface === 'o2m' || relationInterface === 'mbm');
         return !!(byType || byInterface);
       };
-      const multiple =
-        typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCollectionField();
-      if (typeof multiple !== 'undefined') {
-        this.setProps({ multiple });
+      const inferredMultiple = inferMultipleFromCollectionField();
+      const multiple = typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferredMultiple;
+      const allowMultiple =
+        typeof originalProps.allowMultiple !== 'undefined'
+          ? originalProps.allowMultiple
+          : typeof originalProps.multiple !== 'undefined'
+            ? originalProps.multiple
+            : inferredMultiple;
+      if (typeof multiple !== 'undefined' || typeof allowMultiple !== 'undefined') {
+        this.setProps({ multiple, allowMultiple });
       }
 
       // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
@@ -276,6 +282,12 @@ export const DefaultValue = connect((props: Props) => {
     }
     return { ...(baseFlags || {}), ...(componentFlags || {}) };
   }, [model, componentFlags]);
+  // 外层经常传入新的 flags 对象引用（内容不变），这里做深比较稳定引用，避免临时模型被误重建
+  const stableMergedFlagsRef = React.useRef<Record<string, any> | undefined>(undefined);
+  if (!isEqual(stableMergedFlagsRef.current, mergedFlags)) {
+    stableMergedFlagsRef.current = mergedFlags;
+  }
+  const stableMergedFlags = stableMergedFlagsRef.current;
 
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
@@ -309,6 +321,7 @@ export const DefaultValue = connect((props: Props) => {
       relationInterface === 'm2m' ||
       relationInterface === 'o2m' ||
       relationInterface === 'mbm';
+    const shouldKeepDropdownOpenOnSelect = Boolean(stableMergedFlags?.isInSetDefaultValueDialog && isToManyRelation);
 
     const FallbackClass = isToManyRelation ? RecordSelectFieldModel : InputFieldModel;
     const BoundClass = editableBinding
@@ -322,14 +335,37 @@ export const DefaultValue = connect((props: Props) => {
       ? PreferredClassFromOrigin
       : BoundClass || (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || FallbackClass;
     const TempFieldClass = createTempFieldClass(BaseClass);
+    // 继承原关系字段的显示映射，避免默认值编辑器回退为 id 展示
+    const inheritedFieldNames = (origin as any)?.props?.fieldNames;
+    const inheritedTitleField = (origin as any)?.props?.titleField;
+    // 继承 selectSettings 中已保存的参数（如 title-field、多选开关）
+    const inheritedSelectFieldNamesStep = (origin as any)?.getStepParams?.('selectSettings', 'fieldNames');
+    const inheritedSelectAllowMultipleStep = (origin as any)?.getStepParams?.('selectSettings', 'allowMultiple');
+    const tempFieldStepParams: Record<string, any> = {};
+    if (init) {
+      tempFieldStepParams.fieldSettings = { init };
+    }
+    if (inheritedSelectFieldNamesStep || inheritedSelectAllowMultipleStep) {
+      tempFieldStepParams.selectSettings = {
+        ...(inheritedSelectFieldNamesStep ? { fieldNames: inheritedSelectFieldNamesStep } : {}),
+        ...(inheritedSelectAllowMultipleStep ? { allowMultiple: inheritedSelectAllowMultipleStep } : {}),
+      };
+    }
     const fieldSub = {
       use: TempFieldClass,
       uid: uid(),
       parentId: null,
       subKey: null,
       subType: null,
-      stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false, allowClear: true, ...host?.customFieldProps },
+      stepParams: Object.keys(tempFieldStepParams).length ? tempFieldStepParams : undefined,
+      props: {
+        disabled: false,
+        allowClear: true,
+        ...(typeof inheritedFieldNames !== 'undefined' ? { fieldNames: inheritedFieldNames } : {}),
+        ...(typeof inheritedTitleField !== 'undefined' ? { titleField: inheritedTitleField } : {}),
+        ...(shouldKeepDropdownOpenOnSelect ? { keepDropdownOpenOnSelect: true } : {}),
+        ...host?.customFieldProps,
+      },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
@@ -346,11 +382,11 @@ export const DefaultValue = connect((props: Props) => {
       if (dataSource) created.context?.defineProperty?.('dataSource', { get: () => dataSource });
       if (targetCollection) created.context?.defineProperty?.('collection', { get: () => targetCollection });
     }
-    if (mergedFlags) {
-      created.context?.defineProperty?.('flags', { value: mergedFlags });
+    if (stableMergedFlags) {
+      created.context?.defineProperty?.('flags', { value: stableMergedFlags });
     }
     return created;
-  }, [model, mergedFlags]);
+  }, [model, stableMergedFlags]);
 
   // Cleanup temporary models on unmount to avoid leaking into engine instance map
   React.useEffect(() => {

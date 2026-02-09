@@ -142,6 +142,7 @@ export const computeDiagnosticsFromText = (text: string): Diagnostic[] => {
       'JSON',
       'Intl',
       'URL',
+      'Blob',
       'Error',
       'TypeError',
       'encodeURIComponent',

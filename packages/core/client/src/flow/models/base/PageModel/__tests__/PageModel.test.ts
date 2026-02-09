@@ -44,6 +44,19 @@ vi.mock('@nocobase/flow-engine', () => {
     Droppable: ({ children }: any) => children,
     DragHandler: () => null,
     getPageActive: (ctx: any) => ctx?.view?.inputArgs?.pageActive,
+    parsePathnameToViewParams: (pathname: string) => {
+      if (!pathname) return [];
+      const segments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+      const result: Array<{ viewUid: string }> = [];
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        if ((segment === 'admin' || segment === 'view') && segments[i + 1]) {
+          result.push({ viewUid: segments[i + 1] });
+          i += 1;
+        }
+      }
+      return result;
+    },
     getEmitterViewActivatedVersion: (emitter: unknown): number => {
       if (!emitter || (typeof emitter !== 'object' && typeof emitter !== 'function')) return 0;
       const raw = Reflect.get(emitter as object, VIEW_ACTIVATED_VERSION);
@@ -75,6 +88,7 @@ describe('PageModel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    document.title = '';
 
     // Create PageModel instance
     pageModel = new PageModel({});
@@ -226,6 +240,252 @@ describe('PageModel', () => {
 
       expect(typeof listeners['view:activated']).toBe('function');
       expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+    });
+  });
+
+  describe('document title priority', () => {
+    beforeEach(() => {
+      (pageModel as any).context = {
+        closable: false,
+        view: {
+          inputArgs: { pageActive: true },
+          navigation: null,
+        },
+        resolveJsonTemplate: vi.fn(async (value: string) => value),
+      } as any;
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(),
+      } as any;
+    });
+
+    it('should use page documentTitle first when enableTabs is false', async () => {
+      pageModel.props = { enableTabs: false, title: 'Page title' } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Page doc title',
+          },
+        },
+      };
+      (pageModel as any).context.resolveJsonTemplate = vi.fn(async () => 'Resolved page doc title');
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect((pageModel as any).context.resolveJsonTemplate).toHaveBeenCalledWith('Page doc title');
+      expect(document.title).toBe('Resolved page doc title');
+    });
+
+    it('should fallback to page title when page documentTitle is empty', async () => {
+      pageModel.props = { enableTabs: false, title: 'Fallback page title' } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: '',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Fallback page title');
+    });
+
+    it('should use active tab documentTitle first when enableTabs is true', async () => {
+      pageModel.props = { enableTabs: true } as any;
+      const activeTab = {
+        uid: 'tab-1',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: 'Tab doc title',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Tab title'),
+      };
+      (pageModel as any).subModels = { tabs: [activeTab] };
+      (pageModel as any).context.resolveJsonTemplate = vi.fn(async () => 'Resolved tab doc title');
+      (pageModel as any).flowEngine.getModel = vi.fn(() => activeTab);
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Resolved tab doc title');
+    });
+
+    it('should fallback to tab title when active tab documentTitle is empty', async () => {
+      pageModel.props = { enableTabs: true } as any;
+      const activeTab = {
+        uid: 'tab-1',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: '',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Fallback tab title'),
+      };
+      (pageModel as any).subModels = { tabs: [activeTab] };
+      (pageModel as any).flowEngine.getModel = vi.fn(() => activeTab);
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Fallback tab title');
+    });
+
+    it('should also update document title for closable page (popup)', async () => {
+      pageModel.props = { enableTabs: false, title: 'Popup page title' } as any;
+      (pageModel as any).context = {
+        closable: true,
+        view: {
+          inputArgs: { pageActive: true },
+          navigation: null,
+        },
+        resolveJsonTemplate: vi.fn(async () => 'Resolved popup doc title'),
+      } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Popup doc title',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Resolved popup doc title');
+    });
+
+    it('should update title immediately with target tab key on tab switch', async () => {
+      pageModel.props = { enableTabs: true, tabActiveKey: 'tab-old' } as any;
+      const tabOld = {
+        uid: 'tab-old',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: '',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Old tab'),
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      const tabNew = {
+        uid: 'tab-new',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: '',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'New tab'),
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      (pageModel as any).subModels = { tabs: [tabOld, tabNew] };
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn((uid: string) => (uid === 'tab-new' ? tabNew : tabOld)),
+      };
+
+      pageModel.invokeTabModelLifecycleMethod('tab-new', 'onActive');
+      await Promise.resolve();
+
+      expect(document.title).toBe('New tab');
+    });
+
+    it('should retry once when active tab model is not ready yet', async () => {
+      vi.useFakeTimers();
+      try {
+        pageModel.props = { enableTabs: true, tabActiveKey: 'tab-late' } as any;
+        const lateTab = {
+          uid: 'tab-late',
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                documentTitle: '',
+              },
+            },
+          },
+          getTabTitle: vi.fn(() => 'Late tab'),
+          context: {},
+          subModels: { grid: { mapSubModels: vi.fn() } },
+        };
+        const getModel = vi.fn().mockReturnValueOnce(undefined).mockReturnValueOnce(lateTab).mockReturnValue(lateTab);
+        (pageModel as any).flowEngine = { getModel } as any;
+
+        await (pageModel as any).updateDocumentTitle('tab-late');
+        expect(document.title).not.toBe('Late tab');
+
+        await vi.runAllTimersAsync();
+
+        expect(document.title).toBe('Late tab');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should skip title update when current route-managed view is not top view in URL', async () => {
+      pageModel.props = { enableTabs: false, title: 'Main page title' } as any;
+      (pageModel as any).context = {
+        closable: false,
+        view: {
+          inputArgs: { pageActive: true, viewUid: 'main-view' },
+          navigation: {},
+        },
+        resolveJsonTemplate: vi.fn(async () => 'Main document title'),
+      } as any;
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(),
+        context: {
+          route: {
+            pathname: '/admin/main-view/view/popup-view',
+          },
+        },
+      } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Main document title',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('');
+    });
+
+    it('should allow title update when current route-managed view is top view in URL', async () => {
+      pageModel.props = { enableTabs: false, title: 'Popup page title' } as any;
+      (pageModel as any).context = {
+        closable: true,
+        view: {
+          inputArgs: { pageActive: true, viewUid: 'popup-view' },
+          navigation: {},
+        },
+        resolveJsonTemplate: vi.fn(async () => 'Popup document title'),
+      } as any;
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(),
+        context: {
+          route: {
+            pathname: '/admin/main-view/view/popup-view',
+          },
+        },
+      } as any;
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Popup document title',
+          },
+        },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Popup document title');
     });
   });
 });

@@ -1424,6 +1424,8 @@
   "Use simple pagination mode": "Egyszerű lapozási mód használata",
   "Use the same time zone (GMT) for all users": "Minden felhasználó számára ugyanazt az időzónát (GMT) használja",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Húzd és ejts rendezési forgatókönyvekhez használva, csoportosítási rendezés támogatásával",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Felhasználó",
   "User not found. Please sign in again to continue.": "Felhasználó nem található. Kérjük, jelentkezzen be újra a folytatáshoz.",
   "User password changed, please signin again.": "A felhasználói jelszó megváltozott, kérjük, jelentkezzen be újra.",

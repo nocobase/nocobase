@@ -56,4 +56,12 @@ describe('code-editor linter', () => {
     const diags = computeDiagnosticsFromText(code);
     expect(diags.length).toBe(0);
   });
+
+  it('does not warn for allowed global Blob', () => {
+    const code = `const b = new Blob(['x']);\nb.size;`;
+    const diags = computeDiagnosticsFromText(code);
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('Possible undefined variable: Blob'))).toBe(
+      false,
+    );
+  });
 });
