@@ -8,12 +8,13 @@
  */
 
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-import { Button, Cascader, Tooltip } from 'antd';
+import { Button, Cascader, Input, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { cx, css } from '@emotion/css';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import {
   buildContextSelectorItems,
+  filterLoadedContextSelectorItems,
   formatPathToValue,
   parseValueToPath,
   preloadContextSelectorPath,
@@ -34,6 +35,49 @@ const cascaderPopupAutoHeightClassName = css`
   }
 `;
 
+const cascaderSearchInputClassName = css`
+  padding: 8px;
+  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+`;
+
+type SelectedPathInfo = {
+  text: string;
+  meta?: ContextSelectorItem['meta'];
+};
+
+const getSelectedPathInfo = (path: string[] | undefined, options: ContextSelectorItem[]): SelectedPathInfo => {
+  if (!Array.isArray(path) || path.length === 0) {
+    return { text: '', meta: undefined };
+  }
+
+  const labels: string[] = [];
+  let currentOptions = options;
+  let selectedMeta: ContextSelectorItem['meta'] | undefined;
+
+  for (const segment of path) {
+    const matchedOption = currentOptions.find((item) => String(item.value) === String(segment));
+    if (!matchedOption) {
+      break;
+    }
+
+    const label =
+      typeof matchedOption.meta?.title === 'string'
+        ? matchedOption.meta.title
+        : typeof matchedOption.label === 'string'
+          ? matchedOption.label
+          : String(matchedOption.value);
+
+    labels.push(label);
+    selectedMeta = matchedOption.meta;
+    currentOptions = Array.isArray(matchedOption.children) ? matchedOption.children : [];
+  }
+
+  return {
+    text: labels.join(' / '),
+    meta: selectedMeta,
+  };
+};
+
 const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   value,
   onChange,
@@ -53,7 +97,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
 
   // 获取引擎上下文中的翻译函数，若不可用则回退为原文
-  const flowCtx = useFlowContext<any>();
+  const flowCtx = useFlowContext();
 
   const translateOptions = useCallback(
     (items: ContextSelectorItem[] | undefined): ContextSelectorItem[] => {
@@ -63,7 +107,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
         const meta = o.meta;
         const disabled = meta ? !!(typeof meta.disabled === 'function' ? meta.disabled() : meta.disabled) : false;
         const disabledReason = meta
-          ? ((typeof meta.disabledReason === 'function' ? meta.disabledReason() : meta.disabledReason) as any)
+          ? typeof meta.disabledReason === 'function'
+            ? meta.disabledReason()
+            : meta.disabledReason
           : undefined;
 
         // 文本国际化：仅当 label 为字符串时进行翻译
@@ -98,7 +144,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 用于强制重新渲染的状态
   const [updateFlag, setUpdateFlag] = useState(0);
+  const [searchText, setSearchText] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
+  const isSearchEnabled = showSearch || children === null;
 
   // 构建选项
   // 注意：rc-cascader 内部对 options 做了基于引用的缓存（useEntities）。
@@ -112,6 +161,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       return !ignoreFieldNames.includes(item.meta?.name || '');
     });
   }, [resolvedMetaTree, updateFlag, translateOptions, ignoreFieldNames]);
+
+  const displayOptions = useMemo(() => {
+    if (!isSearchEnabled || !searchText.trim()) {
+      return options;
+    }
+    return filterLoadedContextSelectorItems(options, searchText);
+  }, [isSearchEnabled, options, searchText]);
 
   // 内部展开路径：在 onlyLeafSelectable=true 时，点击父节点不会触发 onChange，
   // 但会触发 loadData。我们在此记录路径以在懒加载后保持展开。
@@ -158,7 +214,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
         triggerUpdate();
       }
     },
-    [triggerUpdate],
+    [triggerUpdate, translateOptions],
   );
 
   const currentPath = useMemo(() => {
@@ -251,10 +307,81 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     return cx(cascaderPopupAutoHeightClassName, cascaderProps.popupClassName);
   }, [cascaderProps.popupClassName]);
 
+  const {
+    onDropdownVisibleChange: cascaderOnDropdownVisibleChange,
+    dropdownRender: cascaderDropdownRender,
+    ...restCascaderProps
+  } = cascaderProps;
+
+  const selectedPathInfo = useMemo(() => getSelectedPathInfo(effectivePath, options), [effectivePath, options]);
+
+  const isDropdownVisible = open !== undefined ? open : dropdownOpen;
+
+  const handleDropdownVisibleChange = useCallback(
+    (visible: boolean) => {
+      if (open === undefined) {
+        setDropdownOpen(visible);
+      }
+      if (!visible) {
+        setSearchText('');
+      }
+      cascaderOnDropdownVisibleChange?.(visible);
+    },
+    [cascaderOnDropdownVisibleChange, open],
+  );
+
+  const renderDropdown = useCallback(
+    (menu: React.ReactNode) => {
+      const cascaderMenu = cascaderDropdownRender ? cascaderDropdownRender(menu) : menu;
+      if (!isSearchEnabled || children === null) {
+        return cascaderMenu;
+      }
+
+      return (
+        <>
+          <div className={cascaderSearchInputClassName}>
+            <Input
+              allowClear
+              size="small"
+              value={searchText}
+              placeholder={flowCtx.t('Search')}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </div>
+          {cascaderMenu}
+        </>
+      );
+    },
+    [cascaderDropdownRender, children, flowCtx, isSearchEnabled, searchText],
+  );
+
+  const inlinePlaceholder =
+    typeof restCascaderProps.placeholder === 'string' ? restCascaderProps.placeholder : flowCtx.t('Search');
+  const hasSelectedPath = !!effectivePath?.length;
+
+  const handleInlineInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const nextValue = event.target.value;
+
+      // 下拉关闭态下点击清空：应清空真实已选值，而不是仅清空搜索词。
+      if (!isDropdownVisible && nextValue === '' && hasSelectedPath) {
+        setTempSelectedPath([]);
+        onChange?.('', selectedPathInfo.meta);
+        return;
+      }
+
+      setSearchText(nextValue);
+    },
+    [hasSelectedPath, isDropdownVisible, onChange, selectedPathInfo],
+  );
+
+  const inlineInputValue = isDropdownVisible ? searchText : selectedPathInfo.text;
+
   return (
     <Cascader
-      {...cascaderProps}
-      options={options}
+      {...restCascaderProps}
+      options={displayOptions}
       value={tempSelectedPath && tempSelectedPath.length > 0 ? tempSelectedPath : effectivePath}
       onChange={handleChange}
       loadData={handleLoadData}
@@ -262,10 +389,23 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       changeOnSelect={!onlyLeafSelectable}
       expandTrigger="click"
       open={open}
-      showSearch={children === null}
+      showSearch={false}
       popupClassName={mergedPopupClassName}
+      dropdownRender={renderDropdown}
+      onDropdownVisibleChange={handleDropdownVisibleChange}
     >
-      {children === null ? null : children || defaultChildren}
+      {children === null ? (
+        <Input
+          allowClear
+          value={inlineInputValue}
+          placeholder={inlinePlaceholder}
+          onChange={handleInlineInputChange}
+          onKeyDown={(e) => e.stopPropagation()}
+          disabled={restCascaderProps.disabled}
+        />
+      ) : (
+        children || defaultChildren
+      )}
     </Cascader>
   );
 };
