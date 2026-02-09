@@ -132,7 +132,7 @@ export function toSelectValue(
       }
       // Handle string or number values
       return {
-        label: typeof item === 'number' ? String(item) : item,
+        label: item,
         value: item,
       };
     };
