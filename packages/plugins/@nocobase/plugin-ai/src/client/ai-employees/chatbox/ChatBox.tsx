@@ -21,7 +21,7 @@ import {
   MenuFoldOutlined,
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
-const { Header, Footer } = Layout;
+const { Header, Footer, Sider } = Layout;
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
@@ -49,6 +49,7 @@ export const ChatBox: React.FC = () => {
   const setShowConversations = useChatBoxStore.use.setShowConversations();
   const setShowCodeHistory = useChatBoxStore.use.setShowCodeHistory();
   // [AI_DEBUG]
+  const showDebugPanel = useChatBoxStore.use.showDebugPanel();
   const setShowDebugPanel = useChatBoxStore.use.setShowDebugPanel();
 
   const { startNewConversation } = useChatBoxActions();
@@ -64,7 +65,7 @@ export const ChatBox: React.FC = () => {
 
   return (
     <Layout style={{ height: '100%', position: 'relative' }} ref={chatBoxRef}>
-      {showConversations && (
+      {showConversations && !expanded && (
         <>
           <div
             style={{
@@ -84,7 +85,7 @@ export const ChatBox: React.FC = () => {
               position: 'absolute',
               top: 0,
               left: 0,
-              width: expanded ? '50%' : '300px',
+              width: '300px',
               height: '100%',
               backgroundColor: token.colorBgContainer,
               zIndex: 11,
@@ -95,6 +96,18 @@ export const ChatBox: React.FC = () => {
             <Conversations />
           </div>
         </>
+      )}
+      {showConversations && expanded && (
+        <Sider
+          width={300}
+          style={{
+            backgroundColor: token.colorBgContainer,
+            borderRight: `1px solid ${token.colorBorder}`,
+            overflow: 'hidden',
+          }}
+        >
+          <Conversations />
+        </Sider>
       )}
       <Layout>
         <Header
@@ -138,9 +151,11 @@ export const ChatBox: React.FC = () => {
                   </Tooltip>
                 )}
                 {/* [AI_DEBUG] Debug panel button */}
-                <Tooltip arrow={false} title={t('Debug Panel')}>
-                  <Button icon={<BugOutlined />} type="text" onClick={() => setShowDebugPanel(true)} />
-                </Tooltip>
+                {!expanded && (
+                  <Tooltip arrow={false} title={t('Debug Panel')}>
+                    <Button icon={<BugOutlined />} type="text" onClick={() => setShowDebugPanel(!showDebugPanel)} />
+                  </Tooltip>
+                )}
                 <Divider type="vertical" />
               </>
             ) : null}
@@ -156,7 +171,12 @@ export const ChatBox: React.FC = () => {
               <Button
                 icon={!expanded ? <FullscreenOutlined /> : <FullscreenExitOutlined />}
                 type="text"
-                onClick={() => setExpanded(!expanded)}
+                onClick={() => {
+                  if (!expanded) {
+                    setShowDebugPanel(false);
+                  }
+                  setExpanded(!expanded);
+                }}
               />
             )}
             <Tooltip arrow={false} title={t('Collapse panel')}>
