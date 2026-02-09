@@ -23,6 +23,15 @@ import { Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../../../base';
 import { FormBlockModel, FormComponent } from '../../../../blocks/form/FormBlockModel';
+import { createItemChainMetaFactory, createItemChainResolver, type ItemChain } from '../../itemChain';
+
+function buildCurrentItemTitle(t: (key: string) => string, collectionField?: any) {
+  const rawLabel =
+    (typeof collectionField?.title === 'string' && collectionField.title) ||
+    (typeof collectionField?.name === 'string' && collectionField.name);
+  const label = typeof rawLabel === 'string' && rawLabel ? t(rawLabel) : '';
+  return label ? `${t('Current item')}（${label}）` : t('Current item');
+}
 
 export class PopupSubTableFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.subForm;
@@ -46,6 +55,49 @@ export class PopupSubTableFormModel extends FormBlockModel {
         return recordData;
       },
       cache: false,
+    });
+
+    this.context.defineProperty('item', {
+      get: () => {
+        const recordData = this.context.view?.inputArgs?.record || {};
+        const parentItem = this.context.view?.inputArgs?.parentItem as ItemChain | undefined;
+        const itemIndex = this.context.view?.inputArgs?.itemIndex;
+        const itemLength = this.context.view?.inputArgs?.itemLength;
+        const filterTargetKey = this.context.collection?.filterTargetKey;
+        const hasPk = Array.isArray(filterTargetKey)
+          ? filterTargetKey.length > 0 && filterTargetKey.every((k) => recordData?.[k] != null)
+          : filterTargetKey
+            ? recordData?.[filterTargetKey] != null
+            : false;
+        const isNew = !!recordData?.__is_new__ || !hasPk;
+        return {
+          index: typeof itemIndex === 'number' ? itemIndex : undefined,
+          length: typeof itemLength === 'number' ? itemLength : undefined,
+          __is_new__: isNew,
+          __is_stored__: !!recordData?.__is_stored__ || (!isNew && hasPk),
+          value: this.context.formValues,
+          parentItem,
+        } satisfies ItemChain;
+      },
+      cache: false,
+      meta: createItemChainMetaFactory({
+        t: this.context.t,
+        title: buildCurrentItemTitle(this.context.t, this.context.view?.inputArgs?.collectionField),
+        showParentIndex: typeof (this.context.view?.inputArgs?.parentItem as any)?.index === 'number',
+        collectionAccessor: () => this.context.collection,
+        propertiesAccessor: (ctx) => ctx?.item?.value,
+        parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.context.view?.inputArgs?.parentItem as any)?.value,
+        parentItemMetaAccessor: () => this.context.view?.inputArgs?.parentItemMeta,
+      }),
+      resolveOnServer: createItemChainResolver({
+        collectionAccessor: () => this.context.collection,
+        propertiesAccessor: () => this.context.formValues,
+        parentCollectionAccessor: () => this.context.view?.inputArgs?.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.context.view?.inputArgs?.parentItem as any)?.value,
+        parentItemResolverAccessor: () => this.context.view?.inputArgs?.parentItemResolver,
+      }),
+      serverOnlyWhenContextParams: true,
     });
   }
 

@@ -699,11 +699,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   }
                   const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
+                  const record = this.context.record;
+                  const itemOptions = this.context.getPropertyOptions('item');
                   // 注意：record/currentObject 需要保持“动态读取”，不要在 render 时捕获一次后复用，否则在子表单里
                   // 切换关联字段（Select）时会出现取值永远不更新的问题。
                   // 同时需要透传 resolveOnServer/meta 等配置，避免关联字段子路径失去后端解析能力。
                   const recordOptions = this.context.getPropertyOptions?.('record');
-                  const currentObjectOptions = this.context.getPropertyOptions?.('currentObject');
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -723,12 +724,11 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                             resolveOnServer: recordOptions?.resolveOnServer,
                             serverOnlyWhenContextParams: recordOptions?.serverOnlyWhenContextParams,
                           });
-                          fork.context.defineProperty('currentObject', {
-                            get: () => this.context.currentObject,
+                          const { value: _value, ...rest } = (itemOptions || {}) as any;
+                          fork.context.defineProperty('item', {
+                            ...rest,
+                            get: () => this.context.item,
                             cache: false,
-                            meta: currentObjectOptions?.meta,
-                            resolveOnServer: currentObjectOptions?.resolveOnServer,
-                            serverOnlyWhenContextParams: currentObjectOptions?.serverOnlyWhenContextParams,
                           });
                           return fork;
                         })();

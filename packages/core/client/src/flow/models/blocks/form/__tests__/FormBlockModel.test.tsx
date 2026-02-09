@@ -25,6 +25,11 @@ import {
 // Helpers
 // -----------------------------
 
+function getByPath(obj: any, namePath: any) {
+  const path = Array.isArray(namePath) ? namePath : [namePath];
+  return path.reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
+}
+
 async function createTestFormModelSubclass() {
   return class TestFormModel extends FormBlockModel {
     constructor(options: any) {
@@ -248,6 +253,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
       getFieldsValue: () => ({ ...store }),
       getFieldValue: (k: string) => store[k],
       setFieldValue: (k: string, v: any) => (store[k] = v),
+      getFieldValue: (namePath: any) => getByPath(store, namePath),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
@@ -295,7 +301,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(flows.has('eventSettings')).toBe(true);
   });
 
-  it('delegates layout/linkageRules stepParams to grid model', async () => {
+  it('delegates layout/assignRules/linkageRules stepParams to grid model', async () => {
     const model = await setupFormModel();
     const engine = model.flowEngine as FlowEngine;
 
@@ -324,18 +330,23 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
       labelWrap: false,
       colon: false,
     };
+    const assignRulesParams = { value: [{ key: 'a1', targetPath: 'title', value: 'hello' }] };
     model.setStepParams('formModelSettings', 'layout', layoutParams);
+    model.setStepParams('formModelSettings', 'assignRules', assignRulesParams);
     model.setStepParams('eventSettings', 'linkageRules', { value: [{ key: 'r1' }] });
 
     expect(grid.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(grid.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(grid.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
 
     // model reads delegated params from grid first
     expect(model.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(model.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(model.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
 
     // model no longer stores these params locally
     expect((model.stepParams as any)?.formModelSettings?.layout).toBeUndefined();
+    expect((model.stepParams as any)?.formModelSettings?.assignRules).toBeUndefined();
     expect((model.stepParams as any)?.eventSettings?.linkageRules).toBeUndefined();
 
     await model.saveStepParams();
@@ -376,6 +387,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
       getFieldsValue: () => ({ ...mem }),
       getFieldValue: (k: string) => mem[k],
       setFieldValue: (k: string, v: any) => (mem[k] = v),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ assignees: [{ id: 3 }, { id: 5 }] });
@@ -414,6 +426,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
       getFieldsValue: () => ({ ...mem2 }),
       getFieldValue: (k: string) => mem2[k],
       setFieldValue: (k: string, v: any) => (mem2[k] = v),
+      getFieldValue: (namePath: any) => getByPath(mem2, namePath),
     };
     (model.context as any).defineProperty('form', { value: fakeForm2 });
     fakeForm2.setFieldsValue({ customer: { id: 9 } });

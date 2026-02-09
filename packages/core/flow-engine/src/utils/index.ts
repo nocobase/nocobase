@@ -61,7 +61,19 @@ export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowEr
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
 
 // 安全全局对象（window/document）
-export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';
+export {
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  createSafeRunJSGlobals,
+  runjsWithSafeGlobals,
+} from './safeGlobals';
+
+// RunJS value helpers
+export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';
+
+// RunJS helpers
+export { resolveRunJSObjectValues } from './resolveRunJSObjectValues';
 
 // RunJS 代码兼容预处理（{{ }}）与 JSX 编译
 export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';

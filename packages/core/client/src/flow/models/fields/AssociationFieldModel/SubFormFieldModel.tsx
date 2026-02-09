@@ -9,14 +9,7 @@
 
 import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import {
-  tExpr,
-  observable,
-  FlowModelRenderer,
-  useFlowModel,
-  createAssociationAwareObjectMetaFactory,
-  createAssociationSubpathResolver,
-} from '@nocobase/flow-engine';
+import { tExpr, observable, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip, Space } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +17,17 @@ import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
+import { createItemChainMetaFactory, createItemChainResolver, createRootItemChain, type ItemChain } from './itemChain';
+import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
+
+function buildCurrentItemTitle(t: (key: string) => string, collectionField?: any, fallbackName?: string) {
+  const rawLabel =
+    (typeof collectionField?.title === 'string' && collectionField.title) ||
+    (typeof collectionField?.name === 'string' && collectionField.name) ||
+    fallbackName;
+  const label = typeof rawLabel === 'string' && rawLabel ? t(rawLabel) : '';
+  return label ? `${t('Current item')}（${label}）` : t('Current item');
+}
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -76,6 +80,17 @@ export const ObjectNester = (props) => {
       });
     }
   }, [props.disabled, grid]);
+  useEffect(() => {
+    const itemOptions = model?.context?.getPropertyOptions?.('item');
+    const { value: _value, ...rest } = (itemOptions || {}) as any;
+    grid.context.defineProperty('item', {
+      get: () => {
+        return model?.context?.item;
+      },
+      ...rest,
+      cache: false,
+    });
+  }, [grid, model]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -86,24 +101,46 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
-    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
-      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    this.context.blockModel.emitter.on('formValuesChange', (payload) => {
+      this.dispatchEvent('formValuesChange', payload, { debounce: true });
     });
 
-    this.context.defineProperty('currentObject', {
+    this.context.defineProperty('item', {
       get: () => {
-        return this.context.form.getFieldValue(this.props.name);
+        const parentItem =
+          ((this.parent as any)?.context?.item as ItemChain | undefined) ??
+          createRootItemChain(this.context.formValues);
+        const value = this.context.form.getFieldValue(this.props.name);
+        return {
+          index: undefined,
+          __is_new__: value?.__is_new__,
+          __is_stored__: value?.__is_stored__,
+          value,
+          parentItem,
+        } satisfies ItemChain;
       },
       cache: false,
-      meta: createAssociationAwareObjectMetaFactory(
-        () => this.context.collection,
-        this.context.t('Current object'),
-        () => this.context.form.getFieldValue(this.props.name),
-      ),
-      resolveOnServer: createAssociationSubpathResolver(
-        () => this.context.collection,
-        () => this.context.form.getFieldValue(this.props.name),
-      ),
+      meta: createItemChainMetaFactory({
+        t: this.context.t,
+        title: buildCurrentItemTitle(this.context.t, this.context.collectionField, this.props.name),
+        showIndex: isToManyAssociationField(this.context.collectionField),
+        showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
+        collectionAccessor: () => this.context.collection,
+        propertiesAccessor: (ctx) => ctx?.item?.value,
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
+        parentItemMetaAccessor: () => (this.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
+      }),
+      resolveOnServer: createItemChainResolver({
+        collectionAccessor: () => this.context.collection,
+        propertiesAccessor: () => this.context.form.getFieldValue(this.props.name),
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
+        parentItemResolverAccessor: () =>
+          (this.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
+            | ((subPath: string) => boolean)
+            | undefined,
+      }),
       serverOnlyWhenContextParams: true,
     });
   }
@@ -169,7 +206,7 @@ const ArrayNester = ({
       get: () => disabled,
       cache: false,
     });
-  }, [disabled]);
+  }, [disabled, gridModel.context]);
 
   return (
     <Card
@@ -184,7 +221,7 @@ const ArrayNester = ({
       <Form.List name={name}>
         {(fields, { add, remove }) => {
           const displayFields = fields.length === 0 ? [{ key: '0', name: 0, isDefault: true }] : fields;
-
+          const itemLength = displayFields.length;
           return (
             <>
               {displayFields.map((field: any, index) => {
@@ -208,49 +245,81 @@ const ArrayNester = ({
                   cache: false,
                 });
 
-                currentFork.context.defineProperty('currentObject', {
-                  get: () => currentFork.context.form.getFieldValue([name, fieldName]) || {},
+                currentFork.context.defineProperty('item', {
+                  get: () => {
+                    const parentItem =
+                      ((model?.parent as any)?.context?.item as ItemChain | undefined) ??
+                      createRootItemChain(model?.context?.formValues);
+                    const rowValue = currentFork.context.form.getFieldValue([name, fieldName]);
+                    return {
+                      index,
+                      length: itemLength,
+                      __is_new__: rowValue?.__is_new__,
+                      __is_stored__: rowValue?.__is_stored__,
+                      value: rowValue,
+                      parentItem,
+                    } satisfies ItemChain;
+                  },
                   cache: false,
-                  meta: createAssociationAwareObjectMetaFactory(
-                    () => currentFork.context.collection,
-                    currentFork.context.t('Current object'),
-                    () => currentFork.context.form.getFieldValue([name, fieldName]),
-                  ),
-                  resolveOnServer: createAssociationSubpathResolver(
-                    () => currentFork.context.collection,
-                    () => currentFork.context.form.getFieldValue([name, fieldName]),
-                  ),
+                  meta: createItemChainMetaFactory({
+                    t: currentFork.context.t,
+                    title: buildCurrentItemTitle(
+                      currentFork.context.t,
+                      model?.context?.collectionField,
+                      model?.props?.name,
+                    ),
+                    showIndex: true,
+                    showParentIndex: Array.isArray(rowIndex) && rowIndex.length > 0,
+                    collectionAccessor: () => currentFork.context.collection,
+                    propertiesAccessor: (ctx) => ctx?.item?.value,
+                    parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                    parentPropertiesAccessor: () =>
+                      (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
+                    parentItemMetaAccessor: () => (model?.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
+                  }),
+                  resolveOnServer: createItemChainResolver({
+                    collectionAccessor: () => currentFork.context.collection,
+                    propertiesAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
+                    parentCollectionAccessor: () => model?.context?.collectionField?.collection,
+                    parentPropertiesAccessor: () =>
+                      (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
+                    parentItemResolverAccessor: () =>
+                      (model?.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
+                        | ((subPath: string) => boolean)
+                        | undefined,
+                  }),
                   serverOnlyWhenContextParams: true,
                 });
 
+                const rowValue = value?.[index];
+                const removable =
+                  !disabled && !isDefault && (allowDisassociation || rowValue?.__is_new__ || rowValue?.__is_stored__);
+
                 return (
-                  // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                   <div key={key} style={{ marginBottom: 12 }}>
-                    {!disabled &&
-                      !isDefault &&
-                      (allowDisassociation || value?.[index]?.__is_new__ || value?.[index]?.__is_stored__) && (
-                        <div style={{ textAlign: 'right' }}>
-                          <Tooltip title={t('Remove')}>
-                            <CloseOutlined
-                              style={{ zIndex: 1000, color: '#a8a3a3' }}
-                              onClick={() => {
-                                remove(index);
-                                const gridFork = forksRef.current[key];
+                    {removable && (
+                      <div style={{ textAlign: 'right' }}>
+                        <Tooltip title={t('Remove')}>
+                          <CloseOutlined
+                            style={{ zIndex: 1000, color: '#a8a3a3' }}
+                            onClick={() => {
+                              remove(index);
+                              const gridFork = forksRef.current[key];
+                              // 同时销毁子模型的 fork
+                              gridFork.mapSubModels('items', (item) => {
+                                const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
                                 // 同时销毁子模型的 fork
-                                gridFork.mapSubModels('items', (item) => {
-                                  const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
-                                  // 同时销毁子模型的 fork
-                                  item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
-                                  item.getFork(cacheKey)?.dispose();
-                                });
-                                gridFork.dispose();
-                                // 删除 fork 缓存
-                                delete forksRef.current[key];
-                              }}
-                            />
-                          </Tooltip>
-                        </div>
-                      )}
+                                item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                                item.getFork(cacheKey)?.dispose();
+                              });
+                              gridFork.dispose();
+                              // 删除 fork 缓存
+                              delete forksRef.current[key];
+                            }}
+                          />
+                        </Tooltip>
+                      </div>
+                    )}
 
                     <FlowModelRenderer model={currentFork} showFlowSettings={false} />
                     <Divider />
@@ -296,21 +365,33 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
-    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
-      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    this.context.blockModel.emitter.on('formValuesChange', (payload) => {
+      this.dispatchEvent('formValuesChange', payload, { debounce: true });
     });
 
-    this.context.defineProperty('currentObject', {
-      value: null,
-      meta: createAssociationAwareObjectMetaFactory(
-        () => this.context.collection,
-        this.context.t('Current object'),
-        (ctx) => ctx['currentObject'],
-      ),
-      resolveOnServer: createAssociationSubpathResolver(
-        () => this.context.collection,
-        () => this.context['currentObject'],
-      ),
+    this.context.defineProperty('item', {
+      get: () => undefined,
+      cache: false,
+      meta: createItemChainMetaFactory({
+        t: this.context.t,
+        title: buildCurrentItemTitle(this.context.t, this.context.collectionField, this.props.name),
+        showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
+        collectionAccessor: () => this.context.collection,
+        propertiesAccessor: (ctx) => ctx?.item?.value,
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value,
+        parentItemMetaAccessor: () => (this.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
+      }),
+      resolveOnServer: createItemChainResolver({
+        collectionAccessor: () => this.context.collection,
+        propertiesAccessor: () => (this.context as any)?.item?.value,
+        parentCollectionAccessor: () => this.context.collectionField?.collection,
+        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value,
+        parentItemResolverAccessor: () =>
+          (this.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
+            | ((subPath: string) => boolean)
+            | undefined,
+      }),
       serverOnlyWhenContextParams: true,
     });
 
@@ -522,7 +603,10 @@ SubFormListFieldModel.registerFlow({
       use: 'subFormFieldLinkageRules',
       afterParamsSave(ctx) {
         // 保存后，自动运行一次
-        ctx.model.applyFlow('eventSettings');
+        ctx.model.applyFlow('eventSettings', {
+          changedValues: {},
+          allValues: ctx.form?.getFieldsValue(true),
+        });
       },
     },
   },

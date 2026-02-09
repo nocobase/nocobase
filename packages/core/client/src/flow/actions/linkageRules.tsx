@@ -24,15 +24,30 @@ import {
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
-import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  CopyOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
-import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
+import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
+import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import _ from 'lodash';
 import { SubFormFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
+import {
+  findFormItemModelByFieldPath,
+  getCollectionFromModel,
+  isToManyAssociationField,
+} from '../internal/utils/modelUtils';
+import { parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -50,6 +65,22 @@ interface LinkageRule {
     params?: any;
   }[];
 }
+
+const previewValueForLog = (value: any) => {
+  if (value == null) return value;
+  const t = typeof value;
+  if (t === 'string' || t === 'number' || t === 'boolean') return value;
+  if (Array.isArray(value)) {
+    if (value.length <= 3) return value;
+    return `[Array(${value.length})]`;
+  }
+  if (t === 'object') {
+    const id = (value as any)?.id;
+    if (id != null) return { id };
+    return '[Object]';
+  }
+  return `[${t}]`;
+};
 
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
@@ -159,6 +190,52 @@ function buildAbsoluteFieldPathArray(
     listRootPath,
     listRowIndex,
     hasUnmatchedIndices: idxPtr < indices.length,
+  };
+}
+
+function normalizeAssignRuleItemsFromLinkageParams(
+  raw: any,
+  legacy: { mode: 'default' | 'assign'; valueKey: 'assignValue' | 'initialValue' },
+  resolveTargetPath?: (legacyFieldUid: string) => string | undefined,
+): FieldAssignRuleItem[] {
+  if (Array.isArray(raw)) {
+    return raw as any;
+  }
+
+  if (!raw || typeof raw !== 'object') return [];
+
+  // legacy object params: { field, assignValue } | { field, initialValue }
+  const legacyField = (raw as any)?.field;
+  const legacyValue = (raw as any)?.[legacy.valueKey];
+  if (legacyField) {
+    const targetPath = resolveTargetPath?.(String(legacyField));
+    if (!targetPath) return [];
+    return [
+      {
+        key: 'legacy',
+        enable: true,
+        targetPath,
+        mode: legacy.mode,
+        condition: { logic: '$and', items: [] },
+        value: legacyValue,
+      },
+    ];
+  }
+
+  // legacy empty: keep empty list
+  return [];
+}
+
+function createLegacyTargetPathResolver(ctx: FlowContext) {
+  return (legacyFieldUid: string) => {
+    try {
+      const m: any = ctx.engine?.getModel?.(legacyFieldUid);
+      const fp = m?.getStepParams?.('fieldSettings', 'init')?.fieldPath || m?.fieldPath;
+      return fp ? String(fp) : undefined;
+    } catch (error) {
+      console.warn(`Failed to resolve legacy field uid ${legacyFieldUid}:`, error);
+      return undefined;
+    }
   };
 }
 
@@ -608,6 +685,82 @@ export const linkageSetDetailsFieldProps = defineAction({
   },
 });
 
+type ArrayFieldComponentProps = {
+  value?: unknown;
+  onChange?: (value: unknown) => void;
+};
+
+const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
+const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
+
+const getAclActionName = (model: any): string | undefined => {
+  const name = model?.getAclActionName?.() ?? model?.context?.actionName;
+  return typeof name === 'string' ? name : undefined;
+};
+
+const FieldAssignRulesActionComponent: React.FC<
+  ArrayFieldComponentProps & {
+    legacy: typeof LEGACY_ASSIGN_RULE | typeof LEGACY_DEFAULT_RULE;
+    fixedMode?: 'assign' | 'default';
+    enforceAssignOnUpdate?: boolean;
+  }
+> = (props) => {
+  const { value, onChange, legacy, fixedMode, enforceAssignOnUpdate } = props;
+  const ctx = useFlowContext();
+
+  const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+
+  const fieldOptions = React.useMemo(() => {
+    return collectFieldAssignCascaderOptions({
+      formBlockModel: ctx.model,
+      t,
+      maxFormItemDepth: 1,
+    });
+  }, [ctx.model, t]);
+
+  const isUpdateForm = getAclActionName(ctx.model) === 'update';
+  const shouldForceAssign = !!enforceAssignOnUpdate && isUpdateForm;
+  const effectiveFixedMode = shouldForceAssign ? 'assign' : fixedMode;
+
+  const normalized = normalizeAssignRuleItemsFromLinkageParams(value, legacy, createLegacyTargetPathResolver(ctx));
+
+  const effectiveValue = shouldForceAssign
+    ? normalized.map((it): FieldAssignRuleItem => ({ ...it, mode: 'assign' }))
+    : normalized;
+
+  const handleChange = React.useCallback(
+    (next: FieldAssignRuleItem[]) => {
+      if (typeof onChange !== 'function') return;
+      if (!Array.isArray(next)) return onChange(next);
+      return onChange(shouldForceAssign ? next.map((it) => ({ ...it, mode: 'assign' })) : next);
+    },
+    [onChange, shouldForceAssign],
+  );
+
+  return (
+    <FieldAssignRulesEditor
+      t={t}
+      fieldOptions={fieldOptions}
+      rootCollection={getCollectionFromModel(ctx.model)}
+      value={effectiveValue}
+      onChange={handleChange}
+      fixedMode={effectiveFixedMode}
+    />
+  );
+};
+
+const LinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (props) => {
+  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_ASSIGN_RULE} enforceAssignOnUpdate />;
+};
+
+const SubFormLinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (props) => {
+  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_ASSIGN_RULE} enforceAssignOnUpdate />;
+};
+
+const SetFieldsDefaultValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {
+  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_DEFAULT_RULE} fixedMode="default" />;
+};
+
 export const linkageAssignField = defineAction({
   name: 'linkageAssignField',
   title: tExpr('Field assignment'),
@@ -615,78 +768,63 @@ export const linkageAssignField = defineAction({
   sort: 200,
   uiSchema: {
     value: {
-      type: 'object',
-      'x-component': (props) => {
-        const { value = { field: undefined, assignValue: undefined }, onChange } = props;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const ctx = useFlowContext();
-        const t = ctx.model.translate.bind(ctx.model);
-
-        const fieldOptions = getFormFields(ctx);
-
-        const selectedFieldUid = value.field;
-
-        const handleFieldChange = (selectedField) => {
-          const nextField = selectedField;
-          const changed = nextField !== selectedFieldUid;
-          onChange({
-            ...value,
-            field: nextField,
-            // 切换字段时清空赋值
-            assignValue: changed ? undefined : value.assignValue,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
-              <Select
-                value={selectedFieldUid}
-                onChange={handleFieldChange}
-                placeholder={t('Please select field')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            {selectedFieldUid && (
-              <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Assign value')}</div>
-                <FieldAssignValueInput
-                  key={selectedFieldUid}
-                  fieldUid={selectedFieldUid}
-                  value={value.assignValue}
-                  onChange={(v) => onChange({ ...value, assignValue: v })}
-                />
-              </div>
-            )}
-          </div>
-        );
-      },
+      type: 'array',
+      'x-component': LinkageAssignFieldComponent,
     },
   },
-  handler: (ctx, { value, setProps }) => {
-    // 字段赋值处理逻辑
-    const { assignValue, field } = value || {};
-    if (!field) return;
+  handler: (ctx, { value, setProps, addFormValuePatch }) => {
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'assign', valueKey: 'assignValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
+    if (!items.length) return;
     try {
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-      const fieldModel = gridModels.find((model: any) => model.uid === field);
-      if (!fieldModel) return;
-      const collectionField = (fieldModel as any)?.collectionField;
-      const finalValue = coerceForToOneField(collectionField, assignValue);
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof finalValue === 'undefined') {
-        setProps(fieldModel as FlowModel, {});
-        return;
+      const evaluator = (path: any, operator: string, right: any) => {
+        if (!operator) return true;
+        return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+      };
+
+      for (const it of items) {
+        if (it?.enable === false) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
+
+        const condition = it?.condition;
+        if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+          continue;
+        }
+
+        const fieldModel = findFormItemModelByFieldPath(ctx.model, targetPath);
+        const top = targetPath.split('.')[0];
+        const collectionField =
+          (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
+        const finalValue = coerceForToOneField(collectionField, it?.value);
+
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof finalValue === 'undefined') {
+          if (fieldModel) {
+            setProps(fieldModel as FlowModel, {});
+          }
+          continue;
+        }
+
+        const actionName = (ctx.model as any)?.getAclActionName?.() ?? (ctx.model as any)?.context?.actionName;
+        const isEditForm = actionName === 'update';
+        const mode = isEditForm ? 'assign' : it?.mode === 'default' ? 'default' : 'assign';
+        if (fieldModel) {
+          if (mode === 'default') {
+            setProps(fieldModel as FlowModel, { initialValue: finalValue });
+          } else {
+            setProps(fieldModel as FlowModel, { value: finalValue });
+          }
+        } else if (typeof addFormValuePatch === 'function') {
+          // 对关联字段子属性（如 user.name）等没有独立 FormItemModel 的目标，直接写入表单值
+          addFormValuePatch({ path: targetPath, value: finalValue, whenEmpty: mode === 'default' });
+        }
       }
-      setProps(fieldModel as FlowModel, { value: finalValue });
     } catch (error) {
-      console.warn(`Failed to assign value to field ${field}:`, error);
+      console.warn('[linkageAssignField] Failed to assign value to fields', error);
     }
   },
 });
@@ -698,105 +836,120 @@ export const subFormLinkageAssignField = defineAction({
   sort: 200,
   uiSchema: {
     value: {
-      type: 'object',
-      'x-component': (props) => {
-        const { value = { field: undefined, assignValue: undefined }, onChange } = props;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const ctx = useFlowContext();
-        const t = ctx.model.translate.bind(ctx.model);
-
-        const fieldOptions = getFormFieldsByForkModel(ctx);
-
-        const selectedFieldUid = value.field;
-
-        const handleFieldChange = (selectedField) => {
-          const nextField = selectedField;
-          const changed = nextField !== selectedFieldUid;
-          onChange({
-            ...value,
-            field: nextField,
-            // 切换字段时清空赋值
-            assignValue: changed ? undefined : value.assignValue,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
-              <Select
-                value={selectedFieldUid}
-                onChange={handleFieldChange}
-                placeholder={t('Please select field')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            {selectedFieldUid && (
-              <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Assign value')}</div>
-                <FieldAssignValueInput
-                  key={selectedFieldUid}
-                  fieldUid={selectedFieldUid}
-                  value={value.assignValue}
-                  onChange={(v) => onChange({ ...value, assignValue: v })}
-                />
-              </div>
-            )}
-          </div>
-        );
-      },
+      type: 'array',
+      'x-component': SubFormLinkageAssignFieldComponent,
     },
   },
-  handler: (ctx, { value, setProps }) => {
+  handler: (ctx, { value, setProps, addFormValuePatch }) => {
     // 字段赋值处理逻辑
-    const { assignValue, field } = value || {};
-    if (!field) return;
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'assign', valueKey: 'assignValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
+    if (!items.length) return;
     try {
-      const formItemModel = ctx.engine.getModel(field);
-      if (!formItemModel) return;
+      const evaluator = (path: any, operator: string, right: any) => {
+        if (!operator) return true;
+        return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+      };
 
-      const fieldKey = ctx?.model?.context?.fieldKey;
-      const forkKey = fieldKey ? `${fieldKey}:${field}` : null;
+      const resolveTargetFieldModel = (fieldUid: string) => {
+        const formItemModel = ctx.engine.getModel(fieldUid);
+        if (!formItemModel) return null;
 
-      let model = forkKey ? formItemModel.getFork(forkKey) : null;
+        const fieldKey = ctx?.model?.context?.fieldKey;
+        const forkKey = fieldKey ? `${fieldKey}:${fieldUid}` : null;
 
-      // 对多子表单（Form.List）场景：
-      // - 确保用于写入的 fieldPathArray 为可落地的“绝对路径”
-      if (fieldKey) {
-        const fieldPath =
-          formItemModel?.fieldPath || formItemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-        const built = buildAbsoluteFieldPathArray(fieldPath, fieldKey);
+        let model = forkKey ? formItemModel.getFork(forkKey) : null;
 
-        // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
-        if (!model && forkKey) {
-          model = formItemModel.createFork({}, forkKey);
+        // 对多子表单（Form.List）场景：
+        // - 确保用于写入的 fieldPathArray 为可落地的“绝对路径”
+        if (fieldKey) {
+          const fieldPath =
+            formItemModel?.fieldPath || formItemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+          const built = buildAbsoluteFieldPathArray(fieldPath, fieldKey);
+
+          // 主动创建对应的 FormItem fork，并注入 fieldPathArray 供赋值使用
+          if (!model && forkKey) {
+            model = formItemModel.createFork({}, forkKey);
+          }
+          if (model?.isFork && built) {
+            model?.context?.defineProperty?.('fieldPathArray', { value: built.fieldPathArray });
+          }
         }
-        if (model.isFork) {
-          model?.context?.defineProperty?.('fieldPathArray', { value: built.fieldPathArray });
+
+        // 适配对一子表单的场景（无行级 fieldKey）
+        if (!model) {
+          model = formItemModel as any;
+        }
+
+        return model as any;
+      };
+
+      for (const it of items) {
+        if (it?.enable === false) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
+        const itemModel = targetPath ? findFormItemModelByFieldPath(ctx.model, targetPath) : null;
+        const fieldUid = itemModel?.uid ? String(itemModel.uid) : '';
+
+        const condition = it?.condition;
+        if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+          continue;
+        }
+
+        const top = targetPath.split('.')[0];
+        const collectionField =
+          (itemModel as any)?.collectionField ??
+          getCollectionFromModel((ctx.model as any)?.parent ?? ctx.model)?.getField?.(top);
+        const finalValue = coerceForToOneField(collectionField, it?.value);
+
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof finalValue === 'undefined') {
+          if (!fieldUid) continue;
+          const model = resolveTargetFieldModel(fieldUid);
+          if (model) setProps(model, {});
+          continue;
+        }
+
+        const actionName = (ctx.model as any)?.getAclActionName?.() ?? (ctx.model as any)?.context?.actionName;
+        const isEditForm = actionName === 'update';
+        const mode = isEditForm ? 'assign' : it?.mode === 'default' ? 'default' : 'assign';
+
+        if (!fieldUid) {
+          if (typeof addFormValuePatch === 'function') {
+            const parentName = (ctx.model as any)?.parent?.props?.name;
+            const parts = Array.isArray(parentName) ? parentName : parentName != null ? [parentName] : [];
+            let prefix = '';
+            for (const seg of parts) {
+              if (seg == null) continue;
+              if (typeof seg === 'number') {
+                prefix += `[${seg}]`;
+                continue;
+              }
+              if (!prefix) prefix = String(seg);
+              else prefix += `.${String(seg)}`;
+            }
+            const fullPath = prefix ? `${prefix}.${targetPath}` : targetPath;
+            if (fullPath) {
+              addFormValuePatch({ path: fullPath, value: finalValue, whenEmpty: mode === 'default' });
+            }
+          }
+          continue;
+        }
+
+        const model = resolveTargetFieldModel(fieldUid);
+        if (!model) continue;
+
+        if (mode === 'default') {
+          setProps(model, { initialValue: finalValue });
+        } else {
+          setProps(model, { value: finalValue });
         }
       }
-
-      // 适配对一子表单的场景（无行级 fieldKey）
-      if (!model) {
-        model = formItemModel as any;
-      }
-
-      const collectionField = (formItemModel as any)?.collectionField;
-      const finalValue = coerceForToOneField(collectionField, assignValue);
-
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof finalValue === 'undefined') {
-        setProps(model, {});
-        return;
-      }
-      setProps(model, { value: finalValue });
     } catch (error) {
-      console.warn(`Failed to assign value to field ${field}:`, error);
+      console.warn('[subFormLinkageAssignField] Failed to assign value to fields', error);
     }
   },
 });
@@ -808,76 +961,56 @@ export const setFieldsDefaultValue = defineAction({
   sort: 200,
   uiSchema: {
     value: {
-      type: 'object',
-      'x-component': (props) => {
-        const { value = { field: undefined, initialValue: undefined }, onChange } = props;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const ctx = useFlowContext();
-        const t = ctx.model.translate.bind(ctx.model);
-
-        const fieldOptions = getFormFields(ctx);
-
-        const selectedFieldUid = value.field;
-
-        const handleFieldChange = (selectedField) => {
-          const nextField = selectedField;
-          const changed = nextField !== selectedFieldUid;
-          onChange({
-            ...value,
-            field: nextField,
-            initialValue: changed ? undefined : value.initialValue,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
-              <Select
-                value={selectedFieldUid}
-                onChange={handleFieldChange}
-                placeholder={t('Please select field')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            {selectedFieldUid && (
-              <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Default value')}</div>
-                <FieldAssignValueInput
-                  key={selectedFieldUid}
-                  fieldUid={selectedFieldUid}
-                  value={value.initialValue}
-                  onChange={(v) => onChange({ ...value, initialValue: v })}
-                />
-              </div>
-            )}
-          </div>
-        );
-      },
+      type: 'array',
+      'x-component': SetFieldsDefaultValueComponent,
     },
   },
-  handler: (ctx, { value, setProps }) => {
-    const { initialValue, field } = value || {};
-    if (!field) return;
+  handler: (ctx, { value, setProps, addFormValuePatch }) => {
+    const items = normalizeAssignRuleItemsFromLinkageParams(
+      value,
+      { mode: 'default', valueKey: 'initialValue' },
+      createLegacyTargetPathResolver(ctx),
+    );
+    if (!items.length) return;
     try {
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-      const fieldModel = gridModels.find((model: any) => model.uid === field);
-      if (!fieldModel) return;
-      const collectionField = (fieldModel as any)?.collectionField;
-      const finalInitialValue = coerceForToOneField(collectionField, initialValue);
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof finalInitialValue === 'undefined') {
-        setProps(fieldModel as FlowModel, {});
-        return;
+      const evaluator = (path: any, operator: string, right: any) => {
+        if (!operator) return true;
+        return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+      };
+
+      for (const it of items) {
+        if (it?.enable === false) continue;
+        const targetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!targetPath) continue;
+
+        const condition = it?.condition;
+        if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+          continue;
+        }
+
+        const fieldModel = findFormItemModelByFieldPath(ctx.model, targetPath);
+        const top = targetPath.split('.')[0];
+        const collectionField =
+          (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
+        const finalInitialValue = coerceForToOneField(collectionField, it?.value);
+
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof finalInitialValue === 'undefined') {
+          if (fieldModel) {
+            setProps(fieldModel as FlowModel, {});
+          }
+          continue;
+        }
+
+        if (fieldModel) {
+          setProps(fieldModel as FlowModel, { initialValue: finalInitialValue });
+        } else if (typeof addFormValuePatch === 'function') {
+          // 对关联字段子属性等没有独立 FormItemModel 的目标：仅当当前值为空时写入一次，避免覆盖用户输入
+          addFormValuePatch({ path: targetPath, value: finalInitialValue, whenEmpty: true });
+        }
       }
-      setProps(fieldModel as FlowModel, { initialValue: finalInitialValue });
     } catch (error) {
-      console.warn(`Failed to assign value to field ${field}:`, error);
+      console.warn('[setFieldsDefaultValue] Failed to set fields default value', error);
     }
   },
 });
@@ -1020,6 +1153,7 @@ const LinkageRulesUI = observer(
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
+    const assignPriorityTip = t('Assignment takes precedence over form field assignment');
 
     // 创建新规则的默认值
     const createNewRule = (): LinkageRule => ({
@@ -1261,6 +1395,14 @@ const LinkageRulesUI = observer(
                         >
                           <span style={{ fontWeight: 500, color: '#262626' }}>
                             {t(actionDef.title)}
+                            {action.name === 'linkageAssignField' || action.name === 'subFormLinkageAssignField' ? (
+                              <Tooltip title={assignPriorityTip}>
+                                <QuestionCircleOutlined
+                                  style={{ marginInlineStart: 4 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </Tooltip>
+                            ) : null}
                             <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                           </span>
                           <Tooltip title={t('Delete action')}>
@@ -1347,6 +1489,125 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
   const linkageRules: LinkageRule[] = params.value as LinkageRule[];
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
+  const directValuePatches: Array<{ path: any; value: any }> = [];
+  const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
+  const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
+    if (!Array.isArray(namePath) || !namePath.length) return true;
+    if (!rootCollection?.getField) return true;
+
+    let collection: any = rootCollection;
+    for (let i = 0; i < namePath.length; i++) {
+      const seg = namePath[i] as any;
+      if (typeof seg === 'number') continue;
+      if (typeof seg !== 'string') continue;
+
+      const field = collection?.getField?.(seg);
+      if (!field) continue;
+
+      const isAssoc = !!field?.isAssociationField?.();
+      const hasTarget = !!field?.targetCollection;
+      const toMany = isToManyAssociationField(field);
+
+      if (toMany && i + 1 < namePath.length) {
+        const next = namePath[i + 1] as any;
+        if (typeof next !== 'number') return false;
+      }
+
+      if (isAssoc && hasTarget) {
+        collection = field.targetCollection;
+      }
+    }
+
+    return true;
+  };
+  const resolveNamePathForPatch = (path: any): Array<string | number> | null => {
+    if (!path) return null;
+    if (Array.isArray(path)) {
+      const ok = path.length && path.every((seg) => typeof seg === 'string' || typeof seg === 'number');
+      return ok ? (path as Array<string | number>) : null;
+    }
+    if (typeof path !== 'string') return null;
+    const fieldIndex = (ctx.model as any)?.context?.fieldIndex;
+    return resolveDynamicNamePath(path, fieldIndex);
+  };
+  const addFormValuePatch = (patch: { path: any; value: any; whenEmpty?: boolean }) => {
+    if (!patch) return;
+    const path = (patch as any)?.path;
+    if (!path) return;
+    const resolvedPath = resolveNamePathForPatch(path);
+    if (!resolvedPath) {
+      console.warn('[linkageRules] Skip linkage assignment due to failed path resolution', {
+        flowKey: ctx.flowKey,
+        modelUid: ctx.model?.uid,
+        attemptedPath: path,
+      });
+      return;
+    }
+    if (!isSafeToWriteAssociationSubpath(resolvedPath)) {
+      console.warn('[linkageRules] Skip linkage assignment for to-many association subpath without row index', {
+        flowKey: ctx.flowKey,
+        modelUid: ctx.model?.uid,
+        attemptedPath: path,
+        resolvedPath,
+      });
+      return;
+    }
+    const whenEmpty = !!(patch as any)?.whenEmpty;
+    try {
+      const form = ctx.model?.context?.form;
+      const current = form?.getFieldValue?.(resolvedPath);
+      if (whenEmpty && typeof current !== 'undefined' && current !== null && current !== '') {
+        return;
+      }
+      if (_.isEqual(current, (patch as any)?.value)) {
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    directValuePatches.push({ path: resolvedPath, value: (patch as any)?.value });
+  };
+
+  const getModelTargetPathForPatch = (model: any): string | null => {
+    if (!model || typeof model !== 'object') return null;
+    try {
+      const init = model?.getStepParams?.('fieldSettings', 'init') as any;
+      const initFieldPath = typeof init?.fieldPath === 'string' ? init.fieldPath : '';
+      const initAssocPath = typeof init?.associationPathName === 'string' ? init.associationPathName : '';
+
+      const fieldPath = initFieldPath || (typeof model?.fieldPath === 'string' ? model.fieldPath : '');
+      const assocPath =
+        initAssocPath || (typeof model?.associationPathName === 'string' ? model.associationPathName : '');
+
+      if (assocPath) {
+        if (!fieldPath) return assocPath;
+        if (fieldPath.startsWith(`${assocPath}.`)) return fieldPath;
+        return `${assocPath}.${fieldPath}`;
+      }
+      if (fieldPath) return fieldPath;
+    } catch {
+      // ignore
+    }
+
+    const name = model?.props?.name;
+    if (typeof name === 'string' && name) return name;
+    if (Array.isArray(name) && name.length) {
+      let out = '';
+      for (const seg of name) {
+        if (typeof seg === 'number') {
+          out += `[${seg}]`;
+          continue;
+        }
+        if (typeof seg !== 'string' || !seg) continue;
+        if (!out) out = seg;
+        else out += `.${seg}`;
+      }
+      return out || null;
+    }
+
+    return null;
+  };
 
   allModels.forEach((model: any) => {
     // 重置临时属性
@@ -1394,7 +1655,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           };
 
           // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
-          ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps });
+          ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps, addFormValuePatch });
         });
       }
     });
@@ -1447,15 +1708,80 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     // 目前只有表单的“字段赋值”有 value 属性
     if ('value' in newProps && model.context.form) {
-      const path = model.isFork ? model.context.fieldPathArray : model.props.name;
-      if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
-        model.context.form.setFieldValue(path, newProps.value);
-        model.context.blockModel?.dispatchEvent('formValuesChange', {});
-        model.context.blockModel?.emitter.emit('formValuesChange', {});
+      const targetPath = getModelTargetPathForPatch(model);
+      if (!targetPath) {
+        console.warn('[linkageRules] Skip linkage assignment due to missing target path', {
+          flowKey: ctx.flowKey,
+          modelUid: ctx.model?.uid,
+          targetUid: model?.uid,
+        });
+      } else {
+        addFormValuePatch({ path: targetPath, value: newProps.value });
       }
     }
 
     model.__props = null;
+  });
+
+  const allPatches = [...directValuePatches];
+  if (!allPatches.length) return;
+
+  const directCtx = ctx as any;
+  const directSetter = directCtx?.setFormValues;
+  const blockCtx = (ctx.model as any)?.context?.blockModel?.context;
+  const blockSetter = blockCtx?.setFormValues;
+
+  const trySetFormValues = async (fn: any, thisArg: any, source: string) => {
+    await fn.call(thisArg, allPatches, { source });
+  };
+
+  if (typeof directSetter === 'function') {
+    try {
+      await trySetFormValues(directSetter, directCtx, 'linkage');
+      return;
+    } catch (error) {
+      console.warn('[linkageRules] Failed to set form values via setFormValues', {
+        flowKey: ctx.flowKey,
+        modelUid: (ctx.model as any)?.uid,
+        setter: 'ctx',
+        patchCount: allPatches.length,
+        patches: allPatches.slice(0, 10).map((p) => ({ path: p.path, value: previewValueForLog(p.value) })),
+      });
+      console.warn(error);
+    }
+  }
+
+  if (typeof blockSetter === 'function') {
+    try {
+      await trySetFormValues(blockSetter, blockCtx, 'linkage');
+      return;
+    } catch (error) {
+      console.warn('[linkageRules] Failed to set form values via setFormValues', {
+        flowKey: ctx.flowKey,
+        modelUid: (ctx.model as any)?.uid,
+        setter: 'blockModel',
+        patchCount: allPatches.length,
+        patches: allPatches.slice(0, 10).map((p) => ({ path: p.path, value: previewValueForLog(p.value) })),
+      });
+      console.warn(error);
+    }
+  }
+
+  // 最后兜底：无 setFormValues（非表单 block scope）或 setFormValues 失败时直接写入 antd form。
+  // 注意：antd form 可能已被 FormValueRuntime patch；此处不要再手动触发 formValuesChange 以避免自触发循环。
+  allPatches.forEach(({ path, value }) => {
+    try {
+      const form = ctx.model?.context?.form;
+      if (typeof form?.getFieldValue === 'function') {
+        const prev = form.getFieldValue(path);
+        if (_.isEqual(prev, value)) {
+          return;
+        }
+      }
+      form?.setFieldValue?.(path, value);
+    } catch (error) {
+      console.warn('[linkageRules] Failed to set form field value (fallback setFieldValue)', { path }, error);
+    }
   });
 };
 
@@ -1535,8 +1861,289 @@ export const fieldLinkageRules = defineAction({
     if (ctx.model.hidden) {
       return;
     }
-    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
-    return commonLinkageRulesHandler(ctx, resolved);
+
+    const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
+    const getRowScopeKeyForTargetPath = (targetPath: string): string | null => {
+      if (!rootCollection?.getField) return null;
+      const segs = parsePathString(String(targetPath || '')).filter((seg) => typeof seg !== 'object');
+      if (segs.length < 2) return null;
+      let collection: any = rootCollection;
+      const toManyChain: string[] = [];
+      for (let i = 0; i < segs.length - 1; i++) {
+        const seg = segs[i];
+        if (typeof seg !== 'string') continue;
+        const field = collection?.getField?.(seg);
+        if (!field?.isAssociationField?.()) break;
+        const toMany = isToManyAssociationField(field);
+        if (toMany) toManyChain.push(seg);
+        if (toMany) {
+          const next = segs[i + 1] as any;
+          if (typeof next === 'number') {
+            i += 1;
+          }
+        }
+        collection = field?.targetCollection;
+        if (!collection?.getField) break;
+      }
+      if (!toManyChain.length) return null;
+      const deepest = toManyChain[toManyChain.length - 1];
+      const occurrence = toManyChain.filter((n) => n === deepest).length;
+      return `${deepest}#${occurrence}`;
+    };
+
+    const requiresRowIndexForTargetPath = (targetPath: string): boolean => {
+      if (!rootCollection?.getField) return false;
+      const segs = parsePathString(String(targetPath || '')).filter((seg) => typeof seg !== 'object');
+      if (segs.length < 2) return false;
+      let collection: any = rootCollection;
+      for (let i = 0; i < segs.length - 1; i++) {
+        const seg = segs[i];
+        if (typeof seg !== 'string') continue;
+        const field = collection?.getField?.(seg);
+        if (!field?.isAssociationField?.()) break;
+        const toMany = isToManyAssociationField(field);
+        if (toMany) {
+          const next = segs[i + 1] as any;
+          if (typeof next !== 'number') return true;
+          i += 1;
+        }
+        collection = field?.targetCollection;
+        if (!collection?.getField) break;
+      }
+      return false;
+    };
+
+    const legacyTargetPathResolver = createLegacyTargetPathResolver(ctx);
+    const splitParams = () => {
+      const rawRules = params?.value;
+      if (!Array.isArray(rawRules) || !rawRules.length) {
+        return { blockParams: params, rowParamsByKey: new Map<string, any>() };
+      }
+
+      const blockRules: any[] = [];
+      const rowRulesByKey = new Map<string, any[]>();
+
+      const addRowRule = (rowKey: string, baseRule: any, actions: any[]) => {
+        if (!rowKey || !actions.length) return;
+        const arr = rowRulesByKey.get(rowKey) || [];
+        arr.push({ ...baseRule, actions });
+        rowRulesByKey.set(rowKey, arr);
+      };
+
+      for (const rule of rawRules) {
+        if (!rule || typeof rule !== 'object') continue;
+        const baseRule = {
+          key: (rule as any).key,
+          title: (rule as any).title,
+          enable: (rule as any).enable,
+          condition: (rule as any).condition,
+        };
+        const actions = Array.isArray((rule as any).actions) ? ((rule as any).actions as any[]) : [];
+
+        const blockActions: any[] = [];
+        const rowActionsByKey = new Map<string, any[]>();
+
+        for (const action of actions) {
+          const actionName = (action as any)?.name;
+          const actionParams = (action as any)?.params;
+          const rawValue = actionParams?.value;
+
+          const splitAssignAction = (legacy: {
+            mode: 'default' | 'assign';
+            valueKey: 'assignValue' | 'initialValue';
+          }) => {
+            const items = normalizeAssignRuleItemsFromLinkageParams(rawValue, legacy, legacyTargetPathResolver);
+            if (!items.length) return { block: null as any, rows: new Map<string, any>() };
+
+            const blockItems: any[] = [];
+            const rowItemsByKey = new Map<string, any[]>();
+
+            for (const it of items) {
+              const targetPath = it?.targetPath ? String(it.targetPath) : '';
+              if (!targetPath) {
+                blockItems.push(it);
+                continue;
+              }
+
+              const rowScopeKey = getRowScopeKeyForTargetPath(targetPath);
+              if (rowScopeKey && requiresRowIndexForTargetPath(targetPath)) {
+                const arr = rowItemsByKey.get(rowScopeKey) || [];
+                arr.push(it);
+                rowItemsByKey.set(rowScopeKey, arr);
+              } else {
+                blockItems.push(it);
+              }
+            }
+
+            const blockAction =
+              blockItems.length > 0
+                ? {
+                    ...action,
+                    params: { ...actionParams, value: blockItems },
+                  }
+                : null;
+
+            const rowActions = new Map<string, any>();
+            for (const [rowScopeKey, rowItems] of rowItemsByKey.entries()) {
+              if (!rowItems.length) continue;
+              rowActions.set(rowScopeKey, {
+                ...action,
+                params: { ...actionParams, value: rowItems },
+              });
+            }
+
+            return { block: blockAction, rows: rowActions };
+          };
+
+          if (actionName === 'linkageAssignField') {
+            const split = splitAssignAction({ mode: 'assign', valueKey: 'assignValue' });
+            if (split.block) blockActions.push(split.block);
+            split.rows.forEach((a, rowKey) => {
+              const arr = rowActionsByKey.get(rowKey) || [];
+              arr.push(a);
+              rowActionsByKey.set(rowKey, arr);
+            });
+            continue;
+          }
+
+          if (actionName === 'setFieldsDefaultValue') {
+            const split = splitAssignAction({ mode: 'default', valueKey: 'initialValue' });
+            if (split.block) blockActions.push(split.block);
+            split.rows.forEach((a, rowKey) => {
+              const arr = rowActionsByKey.get(rowKey) || [];
+              arr.push(a);
+              rowActionsByKey.set(rowKey, arr);
+            });
+            continue;
+          }
+
+          // other actions: run at block scope only
+          blockActions.push(action);
+        }
+
+        if (blockActions.length) {
+          blockRules.push({ ...baseRule, actions: blockActions });
+        }
+
+        rowActionsByKey.forEach((actionsForKey, rowKey) => {
+          addRowRule(rowKey, baseRule, actionsForKey);
+        });
+      }
+
+      const blockParams = { ...params, value: blockRules };
+      const rowParamsByKey = new Map<string, any>();
+      rowRulesByKey.forEach((rulesForKey, rowKey) => {
+        rowParamsByKey.set(rowKey, { ...params, value: rulesForKey });
+      });
+
+      return { blockParams, rowParamsByKey };
+    };
+
+    const { blockParams, rowParamsByKey } = splitParams();
+
+    const resolvedBlock = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, blockParams);
+    await commonLinkageRulesHandler(ctx, resolvedBlock);
+
+    if (!rowParamsByKey.size) {
+      return;
+    }
+
+    const getRowScopeKeyFromModel = (model: any): string | null => {
+      const fieldIndex = model?.context?.fieldIndex;
+      const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
+      if (!arr.length) return null;
+      const entries: Array<{ name: string; index: number }> = [];
+      for (const it of arr) {
+        if (typeof it !== 'string') continue;
+        const [name, indexStr] = it.split(':');
+        const index = Number(indexStr);
+        if (!name || Number.isNaN(index)) continue;
+        entries.push({ name, index });
+      }
+      if (!entries.length) return null;
+      const deepest = entries[entries.length - 1].name;
+      const occurrence = entries.reduce((count, e) => (e.name === deepest ? count + 1 : count), 0);
+      return `${deepest}#${occurrence}`;
+    };
+
+    const isRowGridForkModel = (model: any): boolean => {
+      if (!model || typeof model !== 'object') return false;
+      if ((model as any)?.subModels?.field) return false;
+      if (!(model as any)?.subModels?.items) return false;
+      return !!getRowScopeKeyFromModel(model);
+    };
+
+    const collectRowGridForksByKey = (): Map<string, FlowModel[]> => {
+      const out = new Map<string, FlowModel[]>();
+      const engine = ctx.engine;
+      if (!engine?.forEachModel) return out;
+
+      engine.forEachModel((m: FlowModel) => {
+        const forks: any = (m as any)?.forks;
+        if (!forks || typeof forks.forEach !== 'function') return;
+        forks.forEach((fork: any) => {
+          if (!fork || fork.disposed) return;
+          if (!isRowGridForkModel(fork)) return;
+          const rowScopeKey = getRowScopeKeyFromModel(fork);
+          if (!rowScopeKey) return;
+          const arr = out.get(rowScopeKey) || [];
+          arr.push(fork as FlowModel);
+          out.set(rowScopeKey, arr);
+        });
+      });
+
+      return out;
+    };
+
+    const runRowScoped = async (): Promise<boolean> => {
+      const forksByKey = collectRowGridForksByKey();
+      let hasAnyRowFork = false;
+      for (const [rowScopeKey, rowParams] of rowParamsByKey.entries()) {
+        const forks = forksByKey.get(rowScopeKey) || [];
+        if (forks.length) hasAnyRowFork = true;
+        if (!forks.length) continue;
+        for (const forkModel of forks) {
+          const rowCtx = new FlowRuntimeContext(forkModel, ctx.flowKey);
+          try {
+            const resolvedRow = await resolveLinkageRulesParamsPreservingRunJsScripts(rowCtx, rowParams);
+            await commonLinkageRulesHandler(rowCtx, resolvedRow);
+          } catch (error) {
+            console.warn('[linkageRules] Failed to run row-scoped linkage rules', {
+              flowKey: ctx.flowKey,
+              modelUid: ctx.model?.uid,
+              rowScopeKey,
+              forkUid: forkModel?.uid,
+            });
+            console.warn(error);
+          }
+        }
+      }
+      return hasAnyRowFork;
+    };
+
+    const hasAnyRowFork = await runRowScoped();
+
+    // 如果当前未找到任何 row fork，但存在需要 row 上下文的赋值规则，延迟一帧再跑一次（解决 add 新行时 fork 尚未创建的问题）
+    if (!hasAnyRowFork) {
+      const flagKey = '__pendingLinkageRowScopedRetry__';
+      const anyModel = ctx.model as any;
+      if (!anyModel?.[flagKey]) {
+        console.warn('[linkageRules] Row-scoped linkage assignment deferred (row forks not ready), will retry', {
+          flowKey: ctx.flowKey,
+          modelUid: (ctx.model as any)?.uid,
+          rowKeys: Array.from(rowParamsByKey.keys()),
+        });
+        anyModel[flagKey] = true;
+        setTimeout(() => {
+          anyModel[flagKey] = false;
+          const base = ctx.model as any;
+          if (!base || base.disposed) return;
+          void runRowScoped().catch((error) => {
+            console.warn('[linkageRules] Failed to retry row-scoped linkage rules', error);
+          });
+        }, 0);
+      }
+    }
   },
 });
 
@@ -1566,7 +2173,11 @@ export const subFormFieldLinkageRules = defineAction({
     }
     const grid = ctx.model?.subModels?.grid;
     if (!grid) {
-      throw new Error('[subFormFieldLinkageRules] Missing subModels.grid');
+      console.warn('[subFormFieldLinkageRules] Missing subModels.grid', {
+        flowKey: ctx.flowKey,
+        modelUid: ctx.model?.uid,
+      });
+      return;
     }
 
     // 适配对一子表单的场景
@@ -1575,8 +2186,17 @@ export const subFormFieldLinkageRules = defineAction({
         return;
       }
       const flowContext = new FlowRuntimeContext(grid, ctx.flowKey);
-      const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
-      await commonLinkageRulesHandler(flowContext, resolved);
+      try {
+        const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
+        await commonLinkageRulesHandler(flowContext, resolved);
+      } catch (error) {
+        console.warn('[subFormFieldLinkageRules] Failed to run linkage rules (to-one)', {
+          flowKey: ctx.flowKey,
+          modelUid: ctx.model?.uid,
+          gridUid: grid?.uid,
+        });
+        console.warn(error);
+      }
     } else {
       await Promise.all(
         (grid.forks || []).map(async (forkModel: FlowModel) => {
@@ -1584,8 +2204,18 @@ export const subFormFieldLinkageRules = defineAction({
             return;
           }
           const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
-          const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
-          await commonLinkageRulesHandler(flowContext, resolved);
+          try {
+            const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
+            await commonLinkageRulesHandler(flowContext, resolved);
+          } catch (error) {
+            console.warn('[subFormFieldLinkageRules] Failed to run linkage rules for fork', {
+              flowKey: ctx.flowKey,
+              modelUid: ctx.model?.uid,
+              forkUid: forkModel?.uid,
+              gridUid: grid?.uid,
+            });
+            console.warn(error);
+          }
         }),
       );
     }
