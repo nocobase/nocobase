@@ -18,7 +18,7 @@ import {
   toOperatorSelectOptions,
 } from './customFieldOperators';
 
-export const FieldOperatorSelect = observer((props) => {
+export const FieldOperatorSelect = observer((props: any) => {
   const { fieldModel, source = [], fieldModelProps = {}, value, onChange, ...others } = props;
   const currentField = useField<any>();
   const flowEngine = useFlowEngine();
