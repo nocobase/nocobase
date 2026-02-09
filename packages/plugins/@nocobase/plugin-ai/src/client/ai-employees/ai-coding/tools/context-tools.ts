@@ -9,6 +9,7 @@
 
 import { ToolsOptions } from '@nocobase/client';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { FlowContext } from '@nocobase/flow-engine';
 
 export const getContextApisTool: [string, ToolsOptions] = [
   'getContextApis',
@@ -58,8 +59,12 @@ export const getContextVarsTool: [string, ToolsOptions] = [
 export const lintAndTestJSTool: [string, ToolsOptions] = [
   'lintAndTestJS',
   {
-    async invoke(_app, { code }) {
-      if (!this.flowContext?.previewRunJS) {
+    async invoke(app, { code }) {
+      let ctx: FlowContext = this.flowContext;
+      if (!ctx) {
+        ctx = app.flowEngine?.context;
+      }
+      if (!ctx?.previewRunJS) {
         return {
           status: 'error',
           content: {
@@ -69,7 +74,7 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
       try {
-        const content = await this.flowContext.previewRunJS(code);
+        const content = await ctx.previewRunJS(code);
         return {
           status: 'success',
           content,

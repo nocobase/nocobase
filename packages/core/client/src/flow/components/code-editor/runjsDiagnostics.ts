@@ -19,7 +19,7 @@ import jsx from 'acorn-jsx';
 import * as acornWalk from 'acorn-walk';
 import {
   JSRunner,
-  type FlowContext,
+  FlowContext,
   createSafeDocument,
   createSafeNavigator,
   createSafeWindow,
@@ -946,8 +946,23 @@ export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<Dia
   return { issues: sortIssuesStable(issues), logs, execution };
 }
 
+function createPreviewFlowContext(ctx: FlowContext): FlowContext {
+  const previewCtx = new FlowContext();
+  previewCtx.addDelegate(ctx);
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function' && !ctx.element) {
+    try {
+      const previewEl: any = document.createElement('div');
+      previewCtx.defineProperty('element', { value: previewEl });
+    } catch (_) {
+      // ignore preview element injection failures
+    }
+  }
+  return previewCtx;
+}
+
 export async function previewRunJS(code: string, ctx: FlowContext): Promise<PreviewRunJSResult> {
-  const result = await diagnoseRunJS(code, ctx);
+  const previewCtx = createPreviewFlowContext(ctx);
+  const result = await diagnoseRunJS(code, previewCtx);
   const success = result.issues.length === 0;
   const message = formatRunJSPreviewMessage(result);
   const final = message.length > MAX_MESSAGE_CHARS ? clampText(message, MAX_MESSAGE_CHARS) : message;
