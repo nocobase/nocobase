@@ -1425,6 +1425,8 @@
   "Use simple pagination mode": "Gunakan mode penomoran halaman sederhana",
   "Use the same time zone (GMT) for all users": "Gunakan zona waktu yang sama (GMT) untuk semua pengguna",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Digunakan untuk skenario pengurutan seret dan lepas, mendukung pengurutan kelompok",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Pengguna",
   "User not found. Please sign in again to continue.": "Pengguna tidak ditemukan. Harap masuk lagi untuk melanjutkan.",
   "User password changed, please signin again.": "Kata sandi pengguna berubah, harap masuk lagi.",
