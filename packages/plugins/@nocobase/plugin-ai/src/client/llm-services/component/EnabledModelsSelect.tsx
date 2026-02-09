@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAPIClient, usePlugin } from '@nocobase/client';
 import { useForm, useField, observer } from '@formily/react';
-import { Select, Spin, Radio, Space, Tag, Typography, Input, Button } from 'antd';
+import { Select, Spin, Radio, Space, Tag, Typography, Input, Button, App } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { useT } from '../../locale';
@@ -104,6 +104,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   const [loading, setLoading] = useState(false);
   const field = useField<Field>();
   const form = useForm();
+  const { message } = App.useApp();
 
   const provider = form.values.provider;
   const formOptions = form.values.options;
@@ -135,44 +136,56 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
     modelsCache.current[normalized.mode] = normalized.models;
   }, []);
 
-  // Fetch models when provider or options change (needed for provider mode)
+  // Reset options when provider or options change so stale data is cleared
+  const prevKeyRef = useRef<string>('');
   useEffect(() => {
+    const currentKey = `${provider}:${optionsKey}`;
+    if (prevKeyRef.current && prevKeyRef.current !== currentKey) {
+      setOptions([]);
+    }
+    prevKeyRef.current = currentKey;
+  }, [provider, optionsKey]);
+
+  // Fetch models on demand when the Select dropdown is opened
+  const fetchModels = async () => {
     if (!provider) {
       setOptions([]);
       return;
     }
+    try {
+      setLoading(true);
+      const res = await api
+        .resource('ai')
+        .listProviderModels({ values: { provider, options: formOptions } }, { skipNotify: true });
+      const items =
+        res?.data?.data?.map(({ id }: { id: string }) => ({
+          label: labelFormatter(id),
+          value: id,
+        })) || [];
 
-    const fetchModels = async () => {
-      try {
-        setLoading(true);
-        const res = await api
-          .resource('ai')
-          .listProviderModels({ values: { provider, options: formOptions } }, { skipNotify: true });
-        const items =
-          res?.data?.data?.map(({ id }: { id: string }) => ({
-            label: labelFormatter(id),
-            value: id,
-          })) || [];
+      // Sort: recommended models first
+      const sortedItems = items.sort((a: { value: string }, b: { value: string }) => {
+        const aRecommended = isRecommendedModel(provider, a.value);
+        const bRecommended = isRecommendedModel(provider, b.value);
+        if (aRecommended && !bRecommended) return -1;
+        if (!aRecommended && bRecommended) return 1;
+        return 0;
+      });
 
-        // Sort: recommended models first
-        const sortedItems = items.sort((a: { value: string }, b: { value: string }) => {
-          const aRecommended = isRecommendedModel(provider, a.value);
-          const bRecommended = isRecommendedModel(provider, b.value);
-          if (aRecommended && !bRecommended) return -1;
-          if (!aRecommended && bRecommended) return 1;
-          return 0;
-        });
+      setOptions(sortedItems);
+    } catch (error: any) {
+      setOptions([]);
+      message.error(error?.response?.data?.errors?.[0]?.message || error?.message || 'Failed to fetch models');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setOptions(sortedItems);
-      } catch {
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchModels();
-  }, [provider, optionsKey]);
+  const handleDropdownVisibleChange = (open: boolean) => {
+    if (open) {
+      fetchModels();
+    }
+  };
 
   const updateFieldValue = (newConfig: EnabledModelsConfig) => {
     field.value = { ...newConfig };
@@ -236,6 +249,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
                 notFoundContent={loading ? <Spin size="small" /> : undefined}
                 value={config.models.map((m) => m.value)}
                 onChange={handleProviderModelsChange}
+                onDropdownVisibleChange={handleDropdownVisibleChange}
                 placeholder={t('Select models to enable')}
                 style={{ width: '100%' }}
                 optionRender={(option) => {

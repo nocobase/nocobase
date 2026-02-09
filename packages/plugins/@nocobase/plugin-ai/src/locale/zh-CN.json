@@ -254,7 +254,7 @@
   "Recommended": "推荐",
   "Select models to enable": "选择要启用的模型",
   "Please fill in the API Key first": "请先填写 API Key",
-  "No recommended models available for this provider": "该服务商没有可用的推荐模型",
+  "Please set up Enabled Models first": "请先设置 Enabled Models",
   "Test connection with the configured API Key": "测试配置的 API Key 连接",
   "Successful": "成功",
   "Failure": "失败",
