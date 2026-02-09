@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-import { Button, Cascader, Input, Tooltip } from 'antd';
+import { Button, Cascader, Input, Tooltip, theme } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { cx, css } from '@emotion/css';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
@@ -33,11 +33,6 @@ const cascaderPopupAutoHeightClassName = css`
     height: fit-content;
     max-height: 50vh;
   }
-`;
-
-const cascaderSearchInputClassName = css`
-  padding: 8px;
-  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
 `;
 
 type SelectedPathInfo = {
@@ -113,6 +108,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   ignoreFieldNames,
   ...cascaderProps
 }) => {
+  const { token } = theme.useToken();
+
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
@@ -333,6 +330,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const mergedPopupClassName = useMemo(() => {
     return cx(cascaderPopupAutoHeightClassName, cascaderProps.popupClassName);
   }, [cascaderProps.popupClassName]);
+
+  const cascaderSearchInputClassName = useMemo(() => {
+    return css`
+      padding: 8px;
+      border-bottom: 1px solid ${token.colorSplit};
+    `;
+  }, [token.colorSplit]);
 
   const {
     onDropdownVisibleChange: cascaderOnDropdownVisibleChange,
