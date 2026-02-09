@@ -176,106 +176,102 @@ const useMapHeight = ({
   return mapHeight;
 };
 
-const MapBlockContent = ({
-  model,
-  heightMode,
-  height,
-}: {
-  model: MapBlockModel;
-  heightMode?: string;
-  height?: number;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const actionsRef = useRef<HTMLDivElement>(null);
-  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
-  const mapHeight = useMapHeight({
-    heightMode,
-    containerRef,
-    actionsRef,
-    deps: [height],
-  });
-  const mapStyle = useMemo(() => {
-    if (mapHeight == null) return undefined;
-    return { height: mapHeight, overflow: 'auto' };
-  }, [mapHeight]);
-  const containerStyle: any = isFixedHeight
-    ? {
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        height: '100%',
-      }
-    : undefined;
-  const isConfigMode = !!model.context.flowSettingsEnabled;
+const MapBlockContent = observer(
+  ({ model, heightMode, height }: { model: MapBlockModel; heightMode?: string; height?: number }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const actionsRef = useRef<HTMLDivElement>(null);
+    const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+    const mapHeight = useMapHeight({
+      heightMode,
+      containerRef,
+      actionsRef,
+      deps: [height],
+    });
+    const mapStyle = useMemo(() => {
+      if (mapHeight == null) return undefined;
+      return { height: mapHeight, overflow: 'auto' };
+    }, [mapHeight]);
+    const containerStyle: any = isFixedHeight
+      ? {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          height: '100%',
+        }
+      : undefined;
+    const isConfigMode = !!model.context.flowSettingsEnabled;
 
-  return (
-    <div ref={containerRef} style={containerStyle}>
-      <div ref={actionsRef}>
-        <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <Space>
-              {model.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position === 'left') {
-                  return (
-                    <FlowModelRenderer
-                      key={action.uid}
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                    />
-                  );
-                }
-
-                return null;
-              })}
-              {/* 占位 */}
-              <span></span>
-            </Space>
-            <Space wrap>
-              {model.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                // @ts-ignore
-                if (action.props.position !== 'left') {
-                  return (
-                    <Droppable model={action} key={action.uid}>
+    return (
+      <div ref={containerRef} style={containerStyle}>
+        <div ref={actionsRef}>
+          <DndProvider>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}
+            >
+              <Space>
+                {model.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
                       <FlowModelRenderer
+                        key={action.uid}
                         model={action}
                         showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
                       />
-                    </Droppable>
-                  );
-                }
+                    );
+                  }
 
-                return null;
-              })}
-              {model.renderConfigureAction()}
-            </Space>
-          </div>
-        </DndProvider>
+                  return null;
+                })}
+                {/* 占位 */}
+                <span></span>
+              </Space>
+              <Space wrap>
+                {model.mapSubModels('actions', (action) => {
+                  if (action.hidden && !isConfigMode) {
+                    return;
+                  }
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <FlowModelRenderer
+                          model={action}
+                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                          extraToolbarItems={[
+                            {
+                              key: 'drag-handler',
+                              component: DragHandler,
+                              sort: 1,
+                            },
+                          ]}
+                        />
+                      </Droppable>
+                    );
+                  }
+
+                  return null;
+                })}
+                {model.renderConfigureAction()}
+              </Space>
+            </div>
+          </DndProvider>
+        </div>
+        <div className="nb-map-content" style={mapStyle}>
+          <MapBlockComponent
+            {...model.props}
+            fields={model.collection.getFields()}
+            name={model.collection.name}
+            primaryKey={model.collection.filterTargetKey}
+            setSelectedRecordKeys={model.setSelectedRecordKeys.bind(model)}
+            dataSource={model.resource.getData()}
+            height={mapHeight ? mapHeight - 5 : null}
+          />
+        </div>
       </div>
-      <div className="nb-map-content" style={mapStyle}>
-        <MapBlockComponent
-          {...model.props}
-          fields={model.collection.getFields()}
-          name={model.collection.name}
-          primaryKey={model.collection.filterTargetKey}
-          setSelectedRecordKeys={model.setSelectedRecordKeys.bind(model)}
-          dataSource={model.resource.getData()}
-          height={mapHeight ? mapHeight - 5 : null}
-        />
-      </div>
-    </div>
-  );
-};
+    );
+  },
+);
 
 const getCollectionFieldsOptions = (
   collectionName: string,

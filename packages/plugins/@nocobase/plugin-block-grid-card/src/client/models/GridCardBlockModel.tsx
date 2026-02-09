@@ -16,6 +16,7 @@ import {
   AddSubModelButton,
   FlowSettingsButton,
   FlowModel,
+  observer,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
@@ -200,161 +201,157 @@ const useGridCardHeight = ({
   return listHeight;
 };
 
-const GridCardBlockContent = ({
-  model,
-  heightMode,
-  height,
-}: {
-  model: GridCardBlockModel;
-  heightMode?: string;
-  height?: number;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const actionsRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
-  const ctx = model.context;
-  const token = ctx.themeToken;
-  const listHeight = useGridCardHeight({
-    heightMode,
-    containerRef,
-    actionsRef,
-    listRef,
-    deps: [height],
-  });
-  const listClassName = useMemo(
-    () => css`
-      .ant-spin-nested-loading {
-        height: var(--nb-grid-card-height);
-        overflow: auto;
-        margin-left: -${token.marginLG}px;
-        margin-right: -${token.marginLG}px;
-        padding-left: ${token.marginLG}px;
-        padding-right: ${token.marginLG}px;
-      }
-      .ant-spin-nested-loading > .ant-spin-container {
-        min-height: 100%;
-      }
-    `,
-    [],
-  );
-  const listStyle = useMemo(() => {
-    if (listHeight == null) return model.props?.style;
-    return {
-      ...(model.props?.style || {}),
-      ['--nb-grid-card-height' as any]: `${listHeight}px`,
-    };
-  }, [listHeight, model.props?.style]);
+const GridCardBlockContent = observer(
+  ({ model, heightMode, height }: { model: GridCardBlockModel; heightMode?: string; height?: number }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const actionsRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
+    const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+    const ctx = model.context;
+    const token = ctx.themeToken;
+    const listHeight = useGridCardHeight({
+      heightMode,
+      containerRef,
+      actionsRef,
+      listRef,
+      deps: [height],
+    });
+    const listClassName = useMemo(
+      () => css`
+        .ant-spin-nested-loading {
+          height: var(--nb-grid-card-height);
+          overflow: auto;
+          margin-left: -${token.marginLG}px;
+          margin-right: -${token.marginLG}px;
+          padding-left: ${token.marginLG}px;
+          padding-right: ${token.marginLG}px;
+        }
+        .ant-spin-nested-loading > .ant-spin-container {
+          min-height: 100%;
+        }
+      `,
+      [],
+    );
+    const listStyle = useMemo(() => {
+      if (listHeight == null) return model.props?.style;
+      return {
+        ...(model.props?.style || {}),
+        ['--nb-grid-card-height' as any]: `${listHeight}px`,
+      };
+    }, [listHeight, model.props?.style]);
 
-  const isConfigMode = !!model.context.flowSettingsEnabled;
-  const columnCount = model.props.columnCount;
-  const containerStyle: any = isFixedHeight
-    ? {
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        height: '100%',
-      }
-    : undefined;
+    const isConfigMode = !!model.context.flowSettingsEnabled;
+    const columnCount = model.props.columnCount;
+    const containerStyle: any = isFixedHeight
+      ? {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          height: '100%',
+        }
+      : undefined;
 
-  return (
-    <div ref={containerRef} style={containerStyle}>
-      <div ref={actionsRef}>
-        <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <Space wrap>
-              {model.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position === 'left') {
-                  return (
-                    <FlowModelRenderer
-                      key={action.uid}
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                    />
-                  );
-                }
-
-                return null;
-              })}
-              {/* 占位 */}
-              <span></span>
-            </Space>
-            <Space wrap>
-              {model.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                // @ts-ignore
-                if (action.props.position !== 'left') {
-                  return (
-                    <Droppable model={action} key={action.uid}>
+    return (
+      <div ref={containerRef} style={containerStyle}>
+        <div ref={actionsRef}>
+          <DndProvider>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}
+            >
+              <Space wrap>
+                {model.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
                       <FlowModelRenderer
+                        key={action.uid}
                         model={action}
                         showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
                       />
-                    </Droppable>
-                  );
-                }
-
-                return null;
-              })}
-              {model.renderConfiguireActions()}
-            </Space>
-          </div>
-        </DndProvider>
-      </div>
-      <div ref={listRef} style={{ flex: 1, minHeight: 0 }}>
-        <List
-          {...model.props}
-          className={model.props?.className ? `${model.props.className} ${listClassName}` : listClassName}
-          style={listStyle}
-          pagination={model.pagination()}
-          loading={model.resource?.loading}
-          dataSource={model.resource.getData()}
-          grid={{
-            ...columnCount,
-            sm: columnCount.xs,
-            xl: columnCount.lg,
-            gutter: [token.marginBlock / 2, token.marginBlock / 2],
-          }}
-          renderItem={(item, index) => {
-            const itemModel = model.subModels.item.createFork({}, `${index}`);
-            itemModel.context.defineProperty('record', {
-              get: () => item,
-              cache: false,
-              resolveOnServer: true,
-            });
-            itemModel.context.defineProperty('index', {
-              get: () => index,
-              cache: false,
-              resolveOnServer: true,
-            });
-            return (
-              <Col
-                className={css`
-                  height: 100%;
-                  > div {
-                    height: 100%;
+                    );
                   }
-                `}
-              >
-                <FlowModelRenderer model={itemModel} />
-              </Col>
-            );
-          }}
-        />
+
+                  return null;
+                })}
+                {/* 占位 */}
+                <span></span>
+              </Space>
+              <Space wrap>
+                {model.mapSubModels('actions', (action) => {
+                  if (action.hidden && !isConfigMode) {
+                    return;
+                  }
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <FlowModelRenderer
+                          model={action}
+                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                          extraToolbarItems={[
+                            {
+                              key: 'drag-handler',
+                              component: DragHandler,
+                              sort: 1,
+                            },
+                          ]}
+                        />
+                      </Droppable>
+                    );
+                  }
+
+                  return null;
+                })}
+                {model.renderConfiguireActions()}
+              </Space>
+            </div>
+          </DndProvider>
+        </div>
+        <div ref={listRef} style={{ flex: 1, minHeight: 0 }}>
+          <List
+            {...model.props}
+            className={model.props?.className ? `${model.props.className} ${listClassName}` : listClassName}
+            style={listStyle}
+            pagination={model.pagination()}
+            loading={model.resource?.loading}
+            dataSource={model.resource.getData()}
+            grid={{
+              ...columnCount,
+              sm: columnCount.xs,
+              xl: columnCount.lg,
+              gutter: [token.marginBlock / 2, token.marginBlock / 2],
+            }}
+            renderItem={(item, index) => {
+              const itemModel = model.subModels.item.createFork({}, `${index}`);
+              itemModel.context.defineProperty('record', {
+                get: () => item,
+                cache: false,
+                resolveOnServer: true,
+              });
+              itemModel.context.defineProperty('index', {
+                get: () => index,
+                cache: false,
+                resolveOnServer: true,
+              });
+              return (
+                <Col
+                  className={css`
+                    height: 100%;
+                    > div {
+                      height: 100%;
+                    }
+                  `}
+                >
+                  <FlowModelRenderer model={itemModel} />
+                </Col>
+              );
+            }}
+          />
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
 
 GridCardBlockModel.registerFlow({
   key: 'resourceSettings2',
