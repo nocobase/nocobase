@@ -60,5 +60,5 @@ ctx.element.innerHTML = '<h1>Hello World</h1>';
 推荐的方式：
 
 ```js
-ctx.render('<h1>Hello World</h1>');
+ctx.render(<h1>Hello World</h1>);
 ```
