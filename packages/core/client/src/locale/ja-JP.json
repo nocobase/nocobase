@@ -1441,6 +1441,8 @@
   "Use simple pagination mode": "シンプルなページネーションモードを使用",
   "Use the same time zone (GMT) for all users": "すべてのユーザーが同じタイムゾーン（GMT）を使用する",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "ドラッグ＆ドロップによる並べ替えで使用され、グループ分けソートをサポート",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "ユーザー",
   "User not found. Please sign in again to continue.": "ユーザーが見つかりません。再度ログインしてください。",
   "User password changed, please signin again.": "ユーザーパスワードが変更されました。再度ログインしてください。",
