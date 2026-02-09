@@ -1431,6 +1431,8 @@
   "Use simple pagination mode": "Use simple pagination mode",
   "Use the same time zone (GMT) for all users": "Tüm kullanıcılar için aynı saat dilimini (GMT) kullanın",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Used for drag and drop sorting scenarios, supporting grouping sorting",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Kullanıcı",
   "User not found. Please sign in again to continue.": "User not found. Please sign in again to continue.",
   "User password changed, please signin again.": "User password changed, please signin again.",

@@ -1430,6 +1430,8 @@
   "Use simple pagination mode": "Использовать простой режим пагинации",
   "Use the same time zone (GMT) for all users": "Использовать одну временную зону (GMT) для всех пользователей",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Используется для сценариев сортировки перетаскиванием, поддерживает групповую сортировку",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Пользователь",
   "User not found. Please sign in again to continue.": "Пользователь не найден. Пожалуйста, войдите снова, чтобы продолжить.",
   "User password changed, please signin again.": "Пароль пользователя изменен, пожалуйста, войдите снова.",
