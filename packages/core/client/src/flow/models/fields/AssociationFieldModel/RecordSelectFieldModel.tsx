@@ -148,9 +148,6 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     Object.assign(keepOpenRuntime, patch);
     if (Object.prototype.hasOwnProperty.call(patch, 'open')) {
       setDropdownOpen(keepOpenRuntime.open);
-    } else {
-      // 仅修改标记位时也触发一次刷新，确保后续可见性事件读取到最新值
-      setDropdownOpen((prev) => prev);
     }
   };
   const isConfigMode = !!model.context.flowSettingsEnabled;
