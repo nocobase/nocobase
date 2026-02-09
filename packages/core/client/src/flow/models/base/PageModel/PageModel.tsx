@@ -158,6 +158,10 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 2) page with tabs: activeTab.documentTitle > active tab name
    */
   async updateDocumentTitle(preferredActiveTabKey?: string, retryCount = 0) {
+    // Guard against updates after unmount
+    if (this.unmounted) {
+      return;
+    }
     if (getPageActive(this.context) === false) {
       return;
     }
@@ -195,6 +199,13 @@ export class PageModel extends FlowModel<PageModelStructure> {
         : this.getFirstTab();
       if (!activeTabModel && retryCount < 5) {
         window.setTimeout(() => {
+          // Guard against updates after unmount or from stale retries.
+          if (this.unmounted) {
+            return;
+          }
+          if (updateVersion !== this.documentTitleUpdateVersion) {
+            return;
+          }
           void this.updateDocumentTitle(activeTabKey, retryCount + 1);
         }, 0);
         return;
