@@ -85,6 +85,41 @@ Currently supported field models:
 - Select: Dropdown (can be configured for single or multiple selection)
 - Radio group: Radio buttons
 - Checkbox group: Checkboxes
+- Record select: Relationship record picker for filtering related data
+
+#### Record select (custom relationship field)
+
+`Record select` is suitable for scenarios where you filter by related records. For example, filtering orders by customer, or filtering tasks by assignee.
+
+Configuration options:
+
+- **Target collection**: The collection to load selectable records from.
+- **Title field**: The field used as display text in the dropdown and selected tags (for example, name or title).
+- **Value field**: The field used as the actual submitted filter value, usually the primary key (for example, `id`).
+- **Multiple**: Whether multiple selections are allowed.
+- **Operator**: Defines how the filter condition is matched (see Operator below).
+
+Recommended setup:
+
+1. Use a readable field for `Title field` (such as name), instead of raw IDs.
+2. Use a primary key for `Value field` to keep filtering stable and unique.
+3. For single-select scenarios, usually disable `Multiple`; for multi-select scenarios, enable `Multiple` and choose a matching `Operator`.
+
+#### Operator
+
+`Operator` defines the matching rule between the filter form value and the connected target field value.
+
+Common options:
+
+- **Equals / Not equals**: Common for single-value matching.
+- **Contains / Not contains**: Common for text or collection-style matching.
+- **In / Not in**: Common for multi-value matching (for example, selecting multiple customers and matching any of them).
+
+Selection tips:
+
+1. For single-select fields, prefer `Equals`.
+2. For multi-select fields, prefer `In`.
+3. If the result looks incorrect, first check whether `Multiple` and `Operator` are aligned, then verify the `Connect fields` mapping.
 
 ### Collapse
 
