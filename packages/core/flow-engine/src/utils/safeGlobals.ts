@@ -9,7 +9,7 @@
 
 /**
  * 统一的安全全局对象代理：window/document/navigator
- * - window：仅允许常用的定时器、console、Math、Date、FormData、addEventListener、open（安全包装）、location（安全代理）
+ * - window：仅允许常用的定时器、console、Math、Date、FormData、Blob、URL、addEventListener、open（安全包装）、location（安全代理）
  * - document：仅允许 createElement/querySelector/querySelectorAll
  * - navigator：仅提供极少量低风险能力（clipboard.writeText、onLine、language、languages）
  * - 不允许随意访问未声明的属性，最小权限原则
@@ -211,6 +211,8 @@ export function createSafeWindow(extra?: Record<string, any>) {
     Math,
     Date,
     FormData,
+    ...(typeof Blob !== 'undefined' ? { Blob } : {}),
+    ...(typeof URL !== 'undefined' ? { URL } : {}),
     // 事件侦听仅绑定到真实 window，便于少量需要的全局监听
     addEventListener: addEventListener.bind(window),
     // 安全的 window.open 代理
