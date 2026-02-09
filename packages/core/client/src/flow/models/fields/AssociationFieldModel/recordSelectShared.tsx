@@ -139,7 +139,7 @@ export function toSelectValue(
       if (!Array.isArray(record)) return [];
       return record.map((item) => toValue(item)).filter(Boolean);
     }
-    if (Array.isArray(record) && !multiple) {
+    if (Array.isArray(record)) {
       return toValue(record[0]);
     }
     return toValue(record as AssociationOption);
