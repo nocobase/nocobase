@@ -18,6 +18,12 @@ import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } fro
 import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
 import { SourceCascader } from '../SourceCascader';
 
+const RECORD_SELECT_REQUIRED_PROP_KEYS = [
+  'recordSelectTargetCollection',
+  'recordSelectTitleField',
+  'recordSelectValueField',
+] as const;
+
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   customFieldModelInstance = null;
   customFieldProps = null;
@@ -261,6 +267,7 @@ FilterFormCustomFieldModel.registerFlow({
           title: tExpr('Operator'),
           'x-component': FieldOperatorSelect,
           'x-decorator': 'FormItem',
+          required: true,
           'x-reactions': [
             {
               dependencies: ['fieldModel', 'source', 'fieldModelProps'],
@@ -301,6 +308,21 @@ FilterFormCustomFieldModel.registerFlow({
             multiple,
             valueMode: fieldModelProps?.valueMode || 'value',
           };
+
+          const missingFieldLabels = RECORD_SELECT_REQUIRED_PROP_KEYS.filter(
+            (key) => !resolvedFieldModelProps?.[key],
+          ).map((key) => {
+            if (key === 'recordSelectTargetCollection') return ctx.t('Target collection');
+            if (key === 'recordSelectTitleField') return ctx.t('Title field');
+            return ctx.t('Value field');
+          });
+          if (!operator) {
+            missingFieldLabels.push(ctx.t('Operator'));
+          }
+          if (missingFieldLabels.length) {
+            throw new Error(`${ctx.t('Please select')}: ${missingFieldLabels.join(', ')}`);
+          }
+
           recordSelectCollectionField = ctx.model.buildRecordSelectCollectionField(ctx, {
             ...resolvedFieldModelProps,
             name,

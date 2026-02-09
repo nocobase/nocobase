@@ -386,7 +386,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
             />
           </FormItem>
         )}
-        <FormItem label={t('Target collection')}>
+        <FormItem label={t('Target collection')} required>
           <Select
             allowClear
             showSearch
@@ -403,7 +403,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
             }}
           />
         </FormItem>
-        <FormItem label={t('Title field')}>
+        <FormItem label={t('Title field')} required>
           <Select
             allowClear
             showSearch
@@ -417,7 +417,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
         <div style={{ color: 'var(--colorTextDescription)', marginTop: -8, marginBottom: 8 }}>
           {t('Used for display in the dropdown and selected tags.')}
         </div>
-        <FormItem label={t('Value field')}>
+        <FormItem label={t('Value field')} required>
           <Select
             allowClear
             showSearch
