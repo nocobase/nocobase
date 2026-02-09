@@ -29,6 +29,7 @@ vi.mock('../ConditionBuilder', () => ({
   ConditionBuilder: (props: any) => (
     <div data-testid="mock-condition-builder" data-extra={props?.extraMetaTree ? 'yes' : 'no'} />
   ),
+  commonConditionHandler: vi.fn(),
 }));
 
 describe('FieldAssignRulesEditor', () => {
@@ -198,7 +199,7 @@ describe('FieldAssignRulesEditor', () => {
 
     const nestedParent = ((parent?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');
     expect(nestedParent).toBeTruthy();
-    expect(nestedParent?.paths).toEqual(['item', 'parentItem', 'parentItem']);
+    expect(nestedParent?.paths).toEqual(['item', 'parentItem']);
     expect(nestedParent?.title).toBe('Parent item（o2m）');
   });
 

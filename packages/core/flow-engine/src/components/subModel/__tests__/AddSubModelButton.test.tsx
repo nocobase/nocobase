@@ -1181,8 +1181,11 @@ describe('AddSubModelButton toggleable behavior', () => {
     await user.hover(screen.getByText('Fields'));
     // 初始未选中
     await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
-    const getSwitch = () => screen.getAllByRole('switch')[0];
-    expect(getSwitch()).toHaveAttribute('aria-checked', 'false');
+    const getSwitch = async () => {
+      await waitFor(() => expect(document.querySelectorAll('[role="switch"]').length).toBeGreaterThan(0));
+      return document.querySelectorAll('[role="switch"]')[0] as HTMLElement;
+    };
+    expect(await getSwitch()).toHaveAttribute('aria-checked', 'false');
 
     // 点击以选中，菜单不应被关闭；仍可见 Fields 和 Field 1
     // 需要等待子菜单项动画结束，避免 pointer-events: none 导致点击失败
@@ -1192,8 +1195,8 @@ describe('AddSubModelButton toggleable behavior', () => {
     await waitFor(() => {
       expect(screen.getByText('Fields')).toBeInTheDocument();
       expect(screen.getByText('Field 1')).toBeInTheDocument();
-      expect(getSwitch()).toHaveAttribute('aria-checked', 'true');
     });
+    expect(await getSwitch()).toHaveAttribute('aria-checked', 'true');
 
     // 再次点击以取消选中，菜单仍保持
     // 二级子菜单在点击后可能被 rc-menu 收起，需要先重新展开
@@ -1207,8 +1210,8 @@ describe('AddSubModelButton toggleable behavior', () => {
     await waitFor(() => {
       expect(screen.getByText('Fields')).toBeInTheDocument();
       expect(screen.getByText('Field 1')).toBeInTheDocument();
-      expect(getSwitch()).toHaveAttribute('aria-checked', 'false');
     });
+    expect(await getSwitch()).toHaveAttribute('aria-checked', 'false');
   });
 
   test('submenu (second-level) toggleable stays open and updates state', async () => {
