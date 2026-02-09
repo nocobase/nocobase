@@ -195,6 +195,13 @@ export class PageModel extends FlowModel<PageModelStructure> {
         : this.getFirstTab();
       if (!activeTabModel && retryCount < 5) {
         window.setTimeout(() => {
+          // Guard against updates after unmount or from stale retries.
+          if (this.unmounted) {
+            return;
+          }
+          if (updateVersion !== this.documentTitleUpdateVersion) {
+            return;
+          }
           void this.updateDocumentTitle(activeTabKey, retryCount + 1);
         }, 0);
         return;
