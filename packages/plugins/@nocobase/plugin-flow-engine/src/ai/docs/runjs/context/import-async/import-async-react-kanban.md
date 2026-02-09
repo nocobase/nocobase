@@ -8,7 +8,7 @@ description: "Load @asseinfo/react-kanban in NocoBase RunJS via ctx.importAsync,
 In NocoBase RunJS (e.g. JS block or JS field), use `ctx.importAsync()` to load React and `@asseinfo/react-kanban`; create a container with `document.createElement`, render it into the current block with `ctx.render()`, then mount the board with `createRoot().render()`. No JSX—use `React.createElement`.
 
 ```ts
-// 1. Load styles (ctx.importAsync for .css uses ctx.loadCSS)
+// 1. Load styles (ctx.importAsync directly loads .css)
 await ctx.importAsync('@asseinfo/react-kanban@2.2.0/dist/styles.css');
 
 // 2. Load React, react-dom, @asseinfo/react-kanban (?deps ensures same React instance)
