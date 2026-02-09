@@ -65,4 +65,54 @@ describe('linkage assign actions - legacy params', () => {
 
     expect(setProps).toHaveBeenCalledWith(forkModel, { value: 'y' });
   });
+
+  it('subFormLinkageAssignField should normalize nested relative targetPath by host fieldPath', () => {
+    const ctx: any = {
+      model: {
+        uid: 'sub-form-model',
+        parent: {
+          getStepParams: (flowKey: string, stepKey: string) => {
+            if (flowKey === 'fieldSettings' && stepKey === 'init') {
+              return { fieldPath: 'M2M.M2M' };
+            }
+            return {};
+          },
+        },
+        subModels: { grid: { subModels: { items: [] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => null),
+      },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+    const addFormValuePatch = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r1',
+          enable: true,
+          targetPath: 'Name',
+          mode: 'assign',
+          condition: { logic: '$and', items: [] },
+          value: '333',
+        },
+      ],
+      setProps,
+      addFormValuePatch,
+    });
+
+    expect(setProps).not.toHaveBeenCalled();
+    expect(addFormValuePatch).toHaveBeenCalledWith({
+      path: 'M2M.M2M.Name',
+      value: '333',
+      whenEmpty: false,
+    });
+    expect(addFormValuePatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'Name',
+      }),
+    );
+  });
 });

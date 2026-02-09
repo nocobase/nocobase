@@ -239,6 +239,126 @@ function createLegacyTargetPathResolver(ctx: FlowContext) {
   };
 }
 
+function getSubFormHostFieldPath(ctx: FlowContext): string | null {
+  const tryReadFieldPath = (model: any): string | null => {
+    if (!model || typeof model !== 'object') return null;
+    const fromStepParams = model?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+    const fromFieldPath = model?.fieldPath;
+    const fieldPath =
+      (typeof fromStepParams === 'string' && fromStepParams) ||
+      (typeof fromFieldPath === 'string' && fromFieldPath) ||
+      '';
+    return fieldPath || null;
+  };
+
+  // row fork 场景下，直接 parent 常为 grid model，需要向上回溯到真正的子表单宿主字段模型
+  let cursor: any = (ctx.model as any)?.parent;
+  while (cursor) {
+    const fieldPath = tryReadFieldPath(cursor);
+    if (fieldPath) return fieldPath;
+    cursor = cursor?.parent;
+  }
+
+  // 兜底：部分上下文通过 delegate 暴露 prefixFieldPath
+  const fromPrefix = (ctx.model as any)?.context?.prefixFieldPath;
+  if (typeof fromPrefix === 'string' && fromPrefix) {
+    return fromPrefix;
+  }
+
+  return null;
+}
+
+function normalizeSubFormTargetPath(
+  ctx: FlowContext,
+  rawTargetPath: string,
+): {
+  targetPath: string;
+  fieldModel: any;
+} | null {
+  const targetPath = String(rawTargetPath || '').trim();
+  if (!targetPath) return null;
+
+  const hit = findFormItemModelByFieldPath(ctx.model, targetPath);
+  if (hit) {
+    return {
+      targetPath,
+      fieldModel: hit,
+    };
+  }
+
+  const hostFieldPath = getSubFormHostFieldPath(ctx);
+  if (!hostFieldPath) {
+    return null;
+  }
+
+  const hostSegs = String(hostFieldPath)
+    .split('.')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const rawSegs = String(targetPath)
+    .split('.')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!hostSegs.length || !rawSegs.length) {
+    return null;
+  }
+
+  const joinSegs = (segs: string[]) => segs.filter(Boolean).join('.');
+  const candidates: string[] = [];
+  const pushCandidate = (path: string) => {
+    const normalized = String(path || '').trim();
+    if (!normalized) return;
+    if (!candidates.includes(normalized)) {
+      candidates.push(normalized);
+    }
+  };
+
+  pushCandidate(targetPath);
+
+  // 重叠拼接：例如 host="M2M.M2M" + raw="M2M.Name" => "M2M.M2M.Name"
+  const overlapCandidates: string[] = [];
+  const maxOverlap = Math.min(hostSegs.length, rawSegs.length);
+  for (let overlap = maxOverlap; overlap >= 1; overlap--) {
+    const hostTail = hostSegs.slice(hostSegs.length - overlap);
+    const rawHead = rawSegs.slice(0, overlap);
+    if (!_.isEqual(hostTail, rawHead)) continue;
+    const merged = joinSegs([...hostSegs, ...rawSegs.slice(overlap)]);
+    if (merged && !overlapCandidates.includes(merged)) {
+      overlapCandidates.push(merged);
+    }
+    pushCandidate(merged);
+  }
+
+  const prefixed = joinSegs([...hostSegs, ...rawSegs]);
+  pushCandidate(prefixed);
+
+  for (const candidate of candidates) {
+    const matched = findFormItemModelByFieldPath(ctx.model, candidate);
+    if (matched) {
+      return {
+        targetPath: candidate,
+        fieldModel: matched,
+      };
+    }
+  }
+
+  // 无可命中字段模型时，按最安全且最可能正确的规则选择写入目标：
+  // 1) 单段路径默认视为“当前子表单相对路径” => host + raw
+  // 2) 多段路径若能与 host 后缀重叠，则优先重叠拼接结果
+  // 3) 否则保留原路径（避免盲目前缀导致越级）
+  const chosenPath = rawSegs.length === 1 ? prefixed : overlapCandidates.length > 0 ? overlapCandidates[0] : targetPath;
+
+  if (!chosenPath) {
+    return null;
+  }
+
+  return {
+    targetPath: chosenPath,
+    fieldModel: null,
+  };
+}
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: tExpr('Set block state'),
@@ -889,9 +1009,16 @@ export const subFormLinkageAssignField = defineAction({
 
       for (const it of items) {
         if (it?.enable === false) continue;
-        const targetPath = it?.targetPath ? String(it.targetPath) : '';
-        if (!targetPath) continue;
-        const itemModel = targetPath ? findFormItemModelByFieldPath(ctx.model, targetPath) : null;
+        const rawTargetPath = it?.targetPath ? String(it.targetPath) : '';
+        if (!rawTargetPath) continue;
+
+        const normalized = normalizeSubFormTargetPath(ctx, rawTargetPath);
+        if (!normalized?.targetPath) {
+          continue;
+        }
+
+        const targetPath = normalized.targetPath;
+        const itemModel = normalized.fieldModel || null;
         const fieldUid = itemModel?.uid ? String(itemModel.uid) : '';
 
         const condition = it?.condition;
@@ -919,22 +1046,7 @@ export const subFormLinkageAssignField = defineAction({
 
         if (!fieldUid) {
           if (typeof addFormValuePatch === 'function') {
-            const parentName = (ctx.model as any)?.parent?.props?.name;
-            const parts = Array.isArray(parentName) ? parentName : parentName != null ? [parentName] : [];
-            let prefix = '';
-            for (const seg of parts) {
-              if (seg == null) continue;
-              if (typeof seg === 'number') {
-                prefix += `[${seg}]`;
-                continue;
-              }
-              if (!prefix) prefix = String(seg);
-              else prefix += `.${String(seg)}`;
-            }
-            const fullPath = prefix ? `${prefix}.${targetPath}` : targetPath;
-            if (fullPath) {
-              addFormValuePatch({ path: fullPath, value: finalValue, whenEmpty: mode === 'default' });
-            }
+            addFormValuePatch({ path: targetPath, value: finalValue, whenEmpty: mode === 'default' });
           }
           continue;
         }
