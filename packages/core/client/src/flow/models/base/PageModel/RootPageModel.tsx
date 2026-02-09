@@ -113,6 +113,7 @@ RootPageModel.registerFlow({
                 tab: {
                   title: route.title,
                   icon: route.icon,
+                  documentTitle: route.options?.documentTitle,
                 },
               },
             },
