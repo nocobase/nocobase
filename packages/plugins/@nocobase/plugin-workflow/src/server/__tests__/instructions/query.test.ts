@@ -361,7 +361,7 @@ describe('workflow > instructions > query', () => {
     });
   });
 
-  describe.only('datetimeNoTz field', () => {
+  describe('datetimeNoTz field', () => {
     it('query with $dateBefore using system now()', async () => {
       const postsCollection = db.getCollection('posts');
       postsCollection.addField('date1', {
