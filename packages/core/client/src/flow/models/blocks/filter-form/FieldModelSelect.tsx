@@ -18,7 +18,9 @@ export function FieldModelSelect(props) {
   const valueMap = props.valueMap || {};
   const sourceKey = source.join('.');
   const previousSourceKeyRef = useRef<string>();
-  const normalizeValue = (value) => (valueMap && valueMap[value] ? valueMap[value] : value);
+  const normalizeValue = useMemo(() => {
+    return (value) => (valueMap && valueMap[value] ? valueMap[value] : value);
+  }, [valueMap]);
 
   const defaultValue = useMemo(() => {
     if (!source.length) return undefined;
@@ -28,7 +30,7 @@ export function FieldModelSelect(props) {
       return;
     }
     return normalizeValue(binding.modelName);
-  }, [sourceKey, valueMap]);
+  }, [sourceKey, normalizeValue]);
 
   useEffect(() => {
     if (!defaultValue) {
