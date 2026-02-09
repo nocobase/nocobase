@@ -1449,6 +1449,8 @@
   "Use the built-in static file server": "Utilizar el servidor de archivos estático incorporado",
   "Use the same time zone (GMT) for all users": "Utilizar la misma zona horaria (GMT) para todos los usuarios",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Used for drag and drop sorting scenarios, supporting grouping sorting",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Usuario",
   "User not found. Please sign in again to continue.": "User not found. Please sign in again to continue.",
   "User password changed, please signin again.": "User password changed, please signin again.",

@@ -23,12 +23,14 @@ import {
   FlowSettingsButton,
   getEmitterViewActivatedVersion,
   getPageActive,
+  parsePathnameToViewParams,
   tExpr,
   VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React, { ReactNode } from 'react';
+import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { BasePageTabModel } from './PageTabModel';
 
 type PageModelStructure = {
@@ -44,6 +46,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   private lastSeenEmitterViewActivatedVersion = 0;
   private dirtyRefreshScheduled = false;
   private unmounted = false;
+  private documentTitleUpdateVersion = 0;
 
   private getActiveTabKey(): string | undefined {
     const viewParams = this.context.view?.navigation?.viewParams;
@@ -77,6 +80,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     this.unmounted = false;
     this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
+    void this.updateDocumentTitle();
 
     // When a nested view (popup/page) is closed, the opener view becomes active again.
     // We align this with the existing tab lifecycle by invoking `onActive` for the current tab blocks.
@@ -140,6 +144,86 @@ export class PageModel extends FlowModel<PageModelStructure> {
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
         item[method]?.();
       });
+    }
+
+    if (method === 'onActive') {
+      void this.updateDocumentTitle(tabActiveKey);
+    }
+  }
+
+  /**
+   * Resolve configured document title template and update browser tab title.
+   * Priority:
+   * 1) page without tabs: page.documentTitle > page title
+   * 2) page with tabs: activeTab.documentTitle > active tab name
+   */
+  async updateDocumentTitle(preferredActiveTabKey?: string, retryCount = 0) {
+    // Guard against updates after unmount
+    if (this.unmounted) {
+      return;
+    }
+    if (getPageActive(this.context) === false) {
+      return;
+    }
+
+    const hasRouteNavigation = !!this.context?.view?.navigation;
+    const currentViewUid = this.context?.view?.inputArgs?.viewUid;
+    const routePathname = this.flowEngine?.context?.route?.pathname;
+    // In route-managed multi-view mode, only the top view in URL should mutate document.title.
+    if (hasRouteNavigation && currentViewUid && typeof routePathname === 'string') {
+      const topViewUid = parsePathnameToViewParams(routePathname).at(-1)?.viewUid;
+      if (topViewUid && topViewUid !== currentViewUid) {
+        return;
+      }
+    }
+
+    const updateVersion = ++this.documentTitleUpdateVersion;
+
+    const resolveTemplate = async (template?: string) => {
+      if (!template || typeof template !== 'string') {
+        return '';
+      }
+      try {
+        const resolved = await this.context.resolveJsonTemplate?.(template);
+        return resolved == null ? '' : String(resolved);
+      } catch (error) {
+        return template;
+      }
+    };
+
+    let nextTitle = '';
+    if (this.props.enableTabs) {
+      const activeTabKey = preferredActiveTabKey || this.getActiveTabKey();
+      const activeTabModel = activeTabKey
+        ? (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
+        : this.getFirstTab();
+      if (!activeTabModel && retryCount < 5) {
+        window.setTimeout(() => {
+          // Guard against updates after unmount or from stale retries.
+          if (this.unmounted) {
+            return;
+          }
+          if (updateVersion !== this.documentTitleUpdateVersion) {
+            return;
+          }
+          void this.updateDocumentTitle(activeTabKey, retryCount + 1);
+        }, 0);
+        return;
+      }
+      const tabDocumentTitle = await resolveTemplate(activeTabModel?.stepParams?.pageTabSettings?.tab?.documentTitle);
+      nextTitle = tabDocumentTitle || activeTabModel?.getTabTitle?.() || '';
+    } else {
+      const pageDocumentTitle = await resolveTemplate(this.stepParams?.pageSettings?.general?.documentTitle);
+      nextTitle = pageDocumentTitle || this.props.title || '';
+    }
+
+    // Skip stale async updates (for quick tab/page switches).
+    if (updateVersion !== this.documentTitleUpdateVersion) {
+      return;
+    }
+
+    if (typeof nextTitle === 'string' && nextTitle !== '') {
+      document.title = nextTitle;
     }
   }
 
@@ -281,6 +365,19 @@ PageModel.registerFlow({
             },
           },
         },
+        documentTitle: {
+          type: 'string',
+          title: tExpr('Document title'),
+          description: tExpr(
+            'Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.',
+          ),
+          'x-decorator': 'FormItem',
+          'x-component': TextAreaWithContextSelector,
+          'x-component-props': {
+            rows: 1,
+            maxRows: 6,
+          },
+        },
         displayTitle: {
           type: 'boolean',
           title: tExpr('Display page title'),
@@ -332,6 +429,7 @@ PageModel.registerFlow({
             marginBottom: 0,
           });
         }
+        void (ctx.model as PageModel).updateDocumentTitle();
       },
     },
   },

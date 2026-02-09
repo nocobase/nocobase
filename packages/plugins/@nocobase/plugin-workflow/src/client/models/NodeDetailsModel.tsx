@@ -29,7 +29,7 @@ export class NodeDetailsModel extends CollectionBlockModel<{
     RecordActionGroupModel: 'RecordActionGroupModel',
     DetailsItemModel: 'DetailsItemModel',
     DetailsAssociationFieldGroupModel: 'DetailsAssociationFieldGroupModel',
-    DetailsCustomItemModel: 'DetailsCustomItemModel',
+    DetailsCustomItemModel: 'TaskCardCommonItemModel',
   };
 
   customModelClasses = {};

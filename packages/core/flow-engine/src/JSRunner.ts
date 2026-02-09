@@ -34,13 +34,41 @@ export class JSRunner {
       return typeof fn === 'function' ? fn.bind(globalThis) : fn;
     };
 
+    const providedGlobals = options.globals || {};
+    const liftedGlobals: Record<string, any> = {};
+
+    // Auto-lift selected globals from safe window into top-level sandbox globals
+    // so user code can access them directly (e.g. `new Blob(...)`).
+    if (!Object.prototype.hasOwnProperty.call(providedGlobals, 'Blob')) {
+      try {
+        const blobCtor = (providedGlobals as any).window?.Blob;
+        if (typeof blobCtor !== 'undefined') {
+          liftedGlobals.Blob = blobCtor;
+        }
+      } catch {
+        // ignore when window proxy blocks property access
+      }
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(providedGlobals, 'URL')) {
+      try {
+        const urlCtor = (providedGlobals as any).window?.URL;
+        if (typeof urlCtor !== 'undefined') {
+          liftedGlobals.URL = urlCtor;
+        }
+      } catch {
+        // ignore when window proxy blocks property access
+      }
+    }
+
     this.globals = {
       console,
       setTimeout: bindWindowFn('setTimeout'),
       clearTimeout: bindWindowFn('clearTimeout'),
       setInterval: bindWindowFn('setInterval'),
       clearInterval: bindWindowFn('clearInterval'),
-      ...(options.globals || {}),
+      ...liftedGlobals,
+      ...providedGlobals,
     };
     this.timeoutMs = options.timeoutMs ?? 5000; // 默认 5 秒超时
   }

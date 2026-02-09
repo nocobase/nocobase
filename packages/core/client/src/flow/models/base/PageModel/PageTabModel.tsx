@@ -11,6 +11,7 @@ import { tExpr, FlowModel, FlowModelRenderer, observable } from '@nocobase/flow-
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { Icon } from '../../../../icon';
+import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { RemoteFlowModelRenderer } from '../../../FlowPage';
 import { BlockGridModel } from '../BlockGridModel';
@@ -94,6 +95,19 @@ BasePageTabModel.registerFlow({
           'x-decorator': 'FormItem',
           required: true,
         },
+        documentTitle: {
+          type: 'string',
+          title: tExpr('Document title'),
+          description: tExpr(
+            'Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.',
+          ),
+          'x-decorator': 'FormItem',
+          'x-component': TextAreaWithContextSelector,
+          'x-component-props': {
+            rows: 1,
+            maxRows: 6,
+          },
+        },
         icon: {
           title: tExpr('Icon'),
           'x-decorator': 'FormItem',
@@ -104,6 +118,8 @@ BasePageTabModel.registerFlow({
         const translate = typeof ctx?.t === 'function' ? ctx.t.bind(ctx) : (value: string) => value;
         ctx.model.setProps('title', params.title ? translate(params.title, { ns: 'lm-flow-engine' }) : undefined);
         ctx.model.setProps('icon', params.icon);
+        const pageModel = ctx.engine.getModel(ctx.model.parentId) as { updateDocumentTitle?: () => Promise<void> };
+        void pageModel?.updateDocumentTitle?.();
       },
     },
   },
@@ -131,6 +147,7 @@ export class RootPageTabModel extends BasePageTabModel {
 
   async save() {
     const json = this.serialize();
+    const documentTitle = this.stepParams?.pageTabSettings?.tab?.documentTitle;
     await this.context.api.request({
       method: 'post',
       url: 'desktopRoutes:updateOrCreate',
@@ -143,6 +160,7 @@ export class RootPageTabModel extends BasePageTabModel {
         icon: this.getTabIcon(),
         options: {
           flowRegistry: json.flowRegistry,
+          documentTitle,
         },
       },
     });

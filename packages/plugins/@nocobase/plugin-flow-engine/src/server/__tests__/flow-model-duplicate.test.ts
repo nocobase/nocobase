@@ -123,4 +123,54 @@ describe('flow-model duplicate', () => {
     expect(newChild.uid).not.toBe('shared-child');
     expect(newChild.parentId).toBe(newInner.uid);
   });
+
+  it('should duplicate async subtrees (async nodes are not returned by default)', async () => {
+    const tree = {
+      uid: 'dup-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'dup-root',
+            use: 'RootModel',
+            subModels: {
+              // 模拟弹窗/子页面等按需加载的异步子树
+              page: {
+                uid: 'dup-page',
+                async: true,
+                use: 'PageModel',
+                subModels: {
+                  content: {
+                    uid: 'dup-page-content',
+                    use: 'ContentModel',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    } as any;
+
+    await repository.insertModel(tree);
+
+    const duplicated = await repository.duplicate('dup-root');
+    expect(duplicated).toBeTruthy();
+    expect(duplicated.uid).not.toBe('dup-root');
+
+    // duplicate() 默认返回不包含 async 子树（与 findModelById 的默认行为一致）
+    expect(duplicated.subModels?.page).toBeUndefined();
+
+    // 需要显式 includeAsyncNode 才能读取到异步子树
+    const duplicatedWithAsync = await repository.findModelById(duplicated.uid, { includeAsyncNode: true });
+    const newPage = duplicatedWithAsync.subModels?.page;
+    expect(newPage).toBeTruthy();
+    expect(newPage.uid).not.toBe('dup-page');
+    expect(newPage.parentId).toBe(duplicated.uid);
+
+    const newContent = newPage.subModels?.content;
+    expect(newContent).toBeTruthy();
+    expect(newContent.uid).not.toBe('dup-page-content');
+    expect(newContent.parentId).toBe(newPage.uid);
+  });
 });
