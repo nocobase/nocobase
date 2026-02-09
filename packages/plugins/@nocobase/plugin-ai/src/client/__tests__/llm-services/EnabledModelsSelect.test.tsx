@@ -99,6 +99,9 @@ describe('EnabledModelsSelect Logic', () => {
     it('should strip prefixes', () => {
       expect(formatModelLabel('ft:some-model')).toBe('Some Model');
       expect(formatModelLabel('accounts/abc123/models/my-model')).toBe('My Model');
+      expect(formatModelLabel('anthropic/claude-opus-4-6')).toBe('Claude Opus 4.6');
+      expect(formatModelLabel('qwen/qwen3-coder-next')).toBe('Qwen3 Coder Next');
+      expect(formatModelLabel('moonshotai/kimi-k2.5')).toBe('Kimi K2.5');
     });
 
     it('should handle underscores and mixed separators', () => {
