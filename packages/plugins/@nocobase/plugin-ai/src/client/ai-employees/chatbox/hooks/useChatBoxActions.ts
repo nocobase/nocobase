@@ -127,7 +127,6 @@ export const useChatBoxActions = () => {
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
       clear();
-      setModelOverride(null);
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
       if (!open) {

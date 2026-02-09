@@ -474,6 +474,10 @@ export default {
             },
             sort: ['-messageId'],
           });
+          if (!message) {
+            sendErrorResponse(ctx, 'No messages to resend');
+            return next();
+          }
           messageId = message.messageId;
           if (['user', 'tool'].includes(message.role)) {
             resendMessages.push({
