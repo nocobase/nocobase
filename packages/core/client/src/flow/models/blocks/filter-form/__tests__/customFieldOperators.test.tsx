@@ -15,7 +15,7 @@ import { Field, FormProvider } from '@formily/react';
 import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { act } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider } from '@nocobase/flow-engine';
-import { operators } from '../../../../../collection-manager';
+import * as operators from '../../../../../collection-manager/interfaces/properties/operators';
 
 import { FieldOperatorSelect } from '../FieldOperatorSelect';
 import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } from '../customFieldOperators';

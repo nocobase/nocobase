@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { operators } from '../../../../collection-manager';
+import * as operators from '../../../../collection-manager/interfaces/properties/operators';
 
 type OperatorMeta = {
   label: string;
