@@ -10,7 +10,6 @@
 /**
  * NocoBase officially recommended models for each LLM provider.
  * These models are tested to ensure quality and compatibility.
- * Updated: January 2026
  */
 export const recommendedModels: Record<string, { label: string; value: string }[]> = {
   'google-genai': [
@@ -18,11 +17,11 @@ export const recommendedModels: Record<string, { label: string; value: string }[
     { label: 'Gemini 3 Flash Preview', value: 'models/gemini-3-flash-preview' },
   ],
   openai: [
-    { label: 'GPT-5.2-Codex', value: 'gpt-5.2-codex' },
+    { label: 'GPT-5.3-Codex', value: 'gpt-5.3-codex' },
     { label: 'GPT-5.2', value: 'gpt-5.2' },
   ],
   anthropic: [
-    { label: 'Claude Opus 4.5', value: 'claude-opus-4-5' },
+    { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
     { label: 'Claude Sonnet 4.5', value: 'claude-sonnet-4-5' },
   ],
   dashscope: [
@@ -41,7 +40,7 @@ export const recommendedModels: Record<string, { label: string; value: string }[
  */
 export const isRecommendedModel = (provider: string, modelId: string): boolean => {
   const models = recommendedModels[provider] || [];
-  return models.some((m) => modelId.toLowerCase().startsWith(m.value.toLowerCase()));
+  return models.some((m) => modelId.toLowerCase() === m.value.toLowerCase());
 };
 
 /**

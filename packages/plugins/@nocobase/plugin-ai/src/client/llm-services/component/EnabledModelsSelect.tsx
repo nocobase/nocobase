@@ -29,9 +29,11 @@ export interface EnabledModelsConfig {
  */
 export const stripModelIdPrefix = (id: string): string => {
   let name = id;
-  name = name.replace(/^models\//, '');
   name = name.replace(/^ft:/, '');
-  name = name.replace(/^accounts\/[^/]+\/models\//, '');
+  const slashIndex = name.lastIndexOf('/');
+  if (slashIndex !== -1) {
+    name = name.substring(slashIndex + 1);
+  }
   return name;
 };
 

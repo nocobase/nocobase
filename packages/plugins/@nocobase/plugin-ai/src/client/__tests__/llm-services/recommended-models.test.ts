@@ -30,12 +30,18 @@ describe('recommended-models', () => {
 
     it('should have anthropic recommended models', () => {
       expect(recommendedModels.anthropic.length).toBeGreaterThan(0);
-      expect(recommendedModels.anthropic.some((m) => m.value === 'claude-sonnet-4-5')).toBe(true);
+      recommendedModels.anthropic.forEach((m) => {
+        expect(m).toHaveProperty('label');
+        expect(m).toHaveProperty('value');
+      });
     });
 
     it('should have openai recommended models', () => {
       expect(recommendedModels.openai.length).toBeGreaterThan(0);
-      expect(recommendedModels.openai.some((m) => m.value === 'gpt-5.2-codex')).toBe(true);
+      recommendedModels.openai.forEach((m) => {
+        expect(m).toHaveProperty('label');
+        expect(m).toHaveProperty('value');
+      });
     });
 
     it('ollama should have empty recommended models', () => {
@@ -44,16 +50,13 @@ describe('recommended-models', () => {
   });
 
   describe('isRecommendedModel', () => {
-    it('should return true for exact match', () => {
-      expect(isRecommendedModel('openai', 'gpt-5.2-codex')).toBe(true);
-    });
-
-    it('should return true for partial match (model starts with recommended id)', () => {
-      expect(isRecommendedModel('anthropic', 'claude-sonnet-4-5-latest')).toBe(true);
+    it('should return true for exact match with first recommended model', () => {
+      const first = recommendedModels.openai[0];
+      expect(isRecommendedModel('openai', first.value)).toBe(true);
     });
 
     it('should return false for non-recommended model', () => {
-      expect(isRecommendedModel('openai', 'gpt-3.5-turbo')).toBe(false);
+      expect(isRecommendedModel('openai', 'non-existent-model-xyz')).toBe(false);
     });
 
     it('should return false for unknown provider', () => {
@@ -61,7 +64,8 @@ describe('recommended-models', () => {
     });
 
     it('should be case insensitive for model id', () => {
-      expect(isRecommendedModel('openai', 'GPT-5.2-CODEX')).toBe(true);
+      const first = recommendedModels.openai[0];
+      expect(isRecommendedModel('openai', first.value.toUpperCase())).toBe(true);
     });
   });
 
@@ -69,7 +73,8 @@ describe('recommended-models', () => {
     it('should return { label, value } array for known provider', () => {
       const models = getRecommendedModels('openai');
       expect(models.length).toBeGreaterThan(0);
-      expect(models[0]).toEqual({ label: 'GPT-5.2 Codex', value: 'gpt-5.2-codex' });
+      expect(models[0]).toHaveProperty('label');
+      expect(models[0]).toHaveProperty('value');
     });
 
     it('should return empty array for unknown provider', () => {
