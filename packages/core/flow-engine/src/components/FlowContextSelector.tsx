@@ -45,6 +45,28 @@ type SelectedPathInfo = {
   meta?: ContextSelectorItem['meta'];
 };
 
+const formatPathSegmentTitle = (segment: string) => {
+  return segment
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
+const getFallbackMetaFromPath = (path: string[] | undefined): ContextSelectorItem['meta'] | undefined => {
+  if (!path?.length) {
+    return undefined;
+  }
+
+  const name = path[path.length - 1];
+  return {
+    name,
+    title: formatPathSegmentTitle(name),
+    type: 'string',
+    paths: path,
+  };
+};
+
 const getSelectedPathInfo = (path: string[] | undefined, options: ContextSelectorItem[]): SelectedPathInfo => {
   if (!Array.isArray(path) || path.length === 0) {
     return { text: '', meta: undefined };
@@ -225,6 +247,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 而 value path 仍包含根键（如 ['collection', 'field']）时，自动丢弃不存在的首段，确保级联能正确对齐。
   const effectivePath = useMemo(() => {
     if (!currentPath || currentPath.length === 0) return currentPath;
+
+    if (options.length === 0) {
+      return currentPath;
+    }
+
     const topValues = new Set(options.map((o) => String(o.value)));
     const needTrim = !topValues.has(String(currentPath[0]));
     const fixed = needTrim ? currentPath.slice(1) : currentPath;
@@ -314,8 +341,14 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   } = cascaderProps;
 
   const selectedPathInfo = useMemo(() => getSelectedPathInfo(effectivePath, options), [effectivePath, options]);
+  const selectedPathMeta = useMemo(
+    () => selectedPathInfo.meta ?? getFallbackMetaFromPath(effectivePath),
+    [effectivePath, selectedPathInfo.meta],
+  );
 
-  const isDropdownVisible = open !== undefined ? open : dropdownOpen;
+  const mergedOpen = open !== undefined ? open : children === null ? dropdownOpen : undefined;
+
+  const isDropdownVisible = !!mergedOpen;
 
   const handleDropdownVisibleChange = useCallback(
     (visible: boolean) => {
@@ -331,8 +364,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   );
 
   const renderDropdown = useCallback(
-    (menu: React.ReactNode) => {
-      const cascaderMenu = cascaderDropdownRender ? cascaderDropdownRender(menu) : menu;
+    (menu: React.ReactElement) => {
+      const cascaderMenuNode = cascaderDropdownRender ? cascaderDropdownRender(menu) : menu;
+      const cascaderMenu = React.isValidElement(cascaderMenuNode) ? cascaderMenuNode : <>{cascaderMenuNode}</>;
       if (!isSearchEnabled || children === null) {
         return cascaderMenu;
       }
@@ -360,6 +394,12 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     typeof restCascaderProps.placeholder === 'string' ? restCascaderProps.placeholder : flowCtx.t('Search');
   const hasSelectedPath = !!effectivePath?.length;
 
+  const handleInlineInputFocus = useCallback(() => {
+    if (open === undefined) {
+      setDropdownOpen(true);
+    }
+  }, [open]);
+
   const handleInlineInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const nextValue = event.target.value;
@@ -367,16 +407,20 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 下拉关闭态下点击清空：应清空真实已选值，而不是仅清空搜索词。
       if (!isDropdownVisible && nextValue === '' && hasSelectedPath) {
         setTempSelectedPath([]);
-        onChange?.('', selectedPathInfo.meta);
+        onChange?.('', selectedPathMeta);
         return;
+      }
+
+      if (open === undefined && !isDropdownVisible) {
+        setDropdownOpen(true);
       }
 
       setSearchText(nextValue);
     },
-    [hasSelectedPath, isDropdownVisible, onChange, selectedPathInfo],
+    [hasSelectedPath, isDropdownVisible, onChange, open, selectedPathMeta],
   );
 
-  const inlineInputValue = isDropdownVisible ? searchText : selectedPathInfo.text;
+  const inlineInputValue = isDropdownVisible ? searchText : selectedPathInfo.text || (effectivePath?.join(' / ') ?? '');
 
   return (
     <Cascader
@@ -388,7 +432,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       loading={loading}
       changeOnSelect={!onlyLeafSelectable}
       expandTrigger="click"
-      open={open}
+      open={mergedOpen}
       showSearch={false}
       popupClassName={mergedPopupClassName}
       dropdownRender={renderDropdown}
@@ -399,6 +443,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
           allowClear
           value={inlineInputValue}
           placeholder={inlinePlaceholder}
+          onFocus={handleInlineInputFocus}
           onChange={handleInlineInputChange}
           onKeyDown={(e) => e.stopPropagation()}
           disabled={restCascaderProps.disabled}
