@@ -39,6 +39,8 @@ const useFieldPermissionMessage = (model, allowEdit) => {
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, [t, dataSource, collection, name]);
 
+  // Return null if editing is allowed or if required dependencies are missing
+  // (can't show permission message without translation function and data source info)
   if (allowEdit || !t || !dataSource) {
     return null;
   }

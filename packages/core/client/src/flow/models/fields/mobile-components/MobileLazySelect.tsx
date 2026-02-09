@@ -106,15 +106,19 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   }, [realOptions, valueKey]);
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() =>
-    deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode),
+  
+  const derivedRecords = useMemo(
+    () => deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode),
+    [value, valueKey, optionMap, isMultiple, valueMode],
   );
+  
+  const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() => derivedRecords);
 
   useEffect(() => {
     if (visible) {
-      setSelectedRecords(deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode));
+      setSelectedRecords(derivedRecords);
     }
-  }, [isMultiple, optionMap, value, valueKey, valueMode, visible]);
+  }, [derivedRecords, visible]);
 
   useEffect(() => {
     if (!visible) {
