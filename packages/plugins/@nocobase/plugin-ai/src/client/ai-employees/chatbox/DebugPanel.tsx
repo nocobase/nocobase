@@ -14,7 +14,7 @@
  * to find and remove related code in other files.
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Drawer, Input, Select, Button, Tag, Space, Typography, Empty, Tooltip, message } from 'antd';
 import { DownloadOutlined, CopyOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
@@ -23,6 +23,7 @@ import { useT } from '../../locale';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { aiDebugLogger, LogEntry, LogType } from '../../debug-logger';
+import { VirtualList, VirtualListRef } from './VirtualList';
 
 const { Text } = Typography;
 const { Search } = Input;
@@ -56,10 +57,11 @@ const LOG_TYPE_OPTIONS = [
 
 interface LogItemProps {
   log: LogEntry;
+  expanded: boolean;
+  onToggleExpand: () => void;
 }
 
-const LogItem: React.FC<LogItemProps> = ({ log }) => {
-  const [expanded, setExpanded] = useState(false);
+const LogItem: React.FC<LogItemProps> = ({ log, expanded, onToggleExpand }) => {
   const { token } = useToken();
 
   const formatTime = (timestamp: number) => {
@@ -108,7 +110,7 @@ const LogItem: React.FC<LogItemProps> = ({ log }) => {
           gap: 8px;
           cursor: pointer;
         `}
-        onClick={() => setExpanded(!expanded)}
+        onClick={onToggleExpand}
       >
         {expanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
         <Text type="secondary" style={{ fontFamily: 'monospace', fontSize: 12 }}>
@@ -166,7 +168,8 @@ export const DebugPanel: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
-  const listRef = useRef<HTMLDivElement>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const virtualListRef = useRef<VirtualListRef>(null);
   const t = useT();
   const { token } = useToken();
 
@@ -195,13 +198,6 @@ export const DebugPanel: React.FC = () => {
     return unsubscribe;
   }, [currentConversation]);
 
-  // Auto-scroll to bottom when new logs arrive
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [logs]);
-
   // Filter logs
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
@@ -218,6 +214,32 @@ export const DebugPanel: React.FC = () => {
       return true;
     });
   }, [logs, filterType, searchText]);
+
+  // Auto-scroll to bottom when new logs arrive
+  useEffect(() => {
+    if (filteredLogs.length > 0) {
+      requestAnimationFrame(() => {
+        virtualListRef.current?.scrollTo({ index: filteredLogs.length - 1, align: 'bottom' });
+      });
+    }
+  }, [logs]);
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const getItemKey = useCallback(
+    (log: LogEntry) => (expandedIds.has(log.id) ? `${log.id}-e` : log.id),
+    [expandedIds],
+  );
 
   const handleExport = () => {
     if (!currentConversation || logs.length === 0) return;
@@ -296,21 +318,21 @@ export const DebugPanel: React.FC = () => {
         </div>
 
         {/* Log list */}
-        <div
-          ref={listRef}
-          className={css`
-            flex: 1;
-            overflow-y: auto;
-          `}
-        >
-          {!currentConversation ? (
-            <Empty description={t('No conversation selected')} style={{ marginTop: 100 }} />
-          ) : filteredLogs.length === 0 ? (
-            <Empty description={t('No logs')} style={{ marginTop: 100 }} />
-          ) : (
-            filteredLogs.map((log) => <LogItem key={log.id} log={log} />)
-          )}
-        </div>
+        {!currentConversation ? (
+          <Empty description={t('No conversation selected')} style={{ marginTop: 100 }} />
+        ) : filteredLogs.length === 0 ? (
+          <Empty description={t('No logs')} style={{ marginTop: 100 }} />
+        ) : (
+          <VirtualList ref={virtualListRef} data={filteredLogs} itemKey={getItemKey} itemHeight={40}>
+            {(log) => (
+              <LogItem
+                log={log}
+                expanded={expandedIds.has(log.id)}
+                onToggleExpand={() => toggleExpand(log.id)}
+              />
+            )}
+          </VirtualList>
+        )}
       </div>
     </Drawer>
   );
