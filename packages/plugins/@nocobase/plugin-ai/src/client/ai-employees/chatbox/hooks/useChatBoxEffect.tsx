@@ -12,6 +12,7 @@ import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
 import { useChatConversationActions } from './useChatConversationActions';
 import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
+import { useTools } from '@nocobase/client';
 
 export const useChatBoxEffect = () => {
   const { aiEmployees } = useAIEmployeesData();
@@ -22,6 +23,8 @@ export const useChatBoxEffect = () => {
   const setRoles = useChatBoxStore.use.setRoles();
 
   const { conversationsService } = useChatConversationActions();
+
+  const { refresh } = useTools();
 
   useEffect(() => {
     if (!aiEmployees) {
@@ -52,6 +55,7 @@ export const useChatBoxEffect = () => {
     if (open) {
       conversationsService.run();
       senderRef?.current?.focus();
+      refresh();
     }
   }, [open]);
 
