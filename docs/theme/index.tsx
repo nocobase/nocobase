@@ -16,6 +16,23 @@ import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
 import { transformHref, useLangPrefix } from './utils';
 
+function AiTranslation() {
+  const lang = useLang();
+  if (lang === 'en' || lang === 'cn') {
+    return null;
+  }
+  return (
+    <div className="rspress-directive tip">
+      <div className="rspress-directive-title">TIP</div>
+      <div className="rspress-directive-content">
+        <p>
+        이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 <a href="/" className="rp-link ">영어 버전</a>을 참조하세요
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
 
@@ -30,6 +47,7 @@ function getCustomMDXComponent() {
         </LlmsContainer>
         <PluginInfo />
         <ProvidedBy />
+        <AiTranslation />
       </>
     );
   };
@@ -127,7 +145,7 @@ function LanguageDropdown() {
           >
             {LANGUAGES.map((language) => {
               const href = getLanguageHref(language.code);
-              
+
               if (language.code === currentLanguage.code) {
                 return (
                   <div key={language.code}>
