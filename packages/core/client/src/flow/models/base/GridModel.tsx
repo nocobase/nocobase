@@ -699,7 +699,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   }
                   const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
-                  const record = this.context.record;
                   const itemOptions = this.context.getPropertyOptions('item');
                   // 注意：record/currentObject 需要保持“动态读取”，不要在 render 时捕获一次后复用，否则在子表单里
                   // 切换关联字段（Select）时会出现取值永远不更新的问题。

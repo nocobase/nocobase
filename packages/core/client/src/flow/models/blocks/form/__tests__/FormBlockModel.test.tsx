@@ -251,9 +251,8 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (values: Record<string, any>) => Object.assign(store, values),
       getFieldsValue: () => ({ ...store }),
-      getFieldValue: (k: string) => store[k],
-      setFieldValue: (k: string, v: any) => (store[k] = v),
       getFieldValue: (namePath: any) => getByPath(store, namePath),
+      setFieldValue: (k: string, v: any) => (store[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
@@ -385,9 +384,8 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (v: any) => Object.assign(mem, v),
       getFieldsValue: () => ({ ...mem }),
-      getFieldValue: (k: string) => mem[k],
-      setFieldValue: (k: string, v: any) => (mem[k] = v),
       getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ assignees: [{ id: 3 }, { id: 5 }] });
@@ -424,9 +422,8 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm2 = {
       setFieldsValue: (v: any) => Object.assign(mem2, v),
       getFieldsValue: () => ({ ...mem2 }),
-      getFieldValue: (k: string) => mem2[k],
-      setFieldValue: (k: string, v: any) => (mem2[k] = v),
       getFieldValue: (namePath: any) => getByPath(mem2, namePath),
+      setFieldValue: (k: string, v: any) => (mem2[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm2 });
     fakeForm2.setFieldsValue({ customer: { id: 9 } });
