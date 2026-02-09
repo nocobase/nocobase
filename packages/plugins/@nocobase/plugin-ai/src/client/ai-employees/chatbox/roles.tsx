@@ -35,6 +35,11 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
   error: {
     placement: 'start',
     variant: 'borderless',
+    styles: {
+      content: {
+        margin: '8px 16px',
+      },
+    },
     messageRender: (msg: any) => <ErrorMessage msg={msg} />,
   },
   hint: {
