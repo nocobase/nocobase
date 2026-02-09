@@ -3092,7 +3092,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     });
     this.defineProperty('sql', {
-      get: () => new FlowSQLRepository(this),
+      get: (ctx) => new FlowSQLRepository(ctx),
+      cache: false,
       info: {
         description: 'SQL helper (FlowSQLRepository).',
         detail: 'FlowSQLRepository',

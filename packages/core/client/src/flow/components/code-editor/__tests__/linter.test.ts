@@ -95,4 +95,12 @@ describe('code-editor linter', () => {
     expect(diags.some((d) => d.severity === 'warning' && d.message.includes('ctx.bar'))).toBe(true);
     expect(diags.some((d) => d.severity === 'warning' && d.message === 'This expression is not callable.')).toBe(true);
   });
+
+  it('does not warn for allowed global Blob', () => {
+    const code = `const b = new Blob(['x']);\nb.size;`;
+    const diags = computeDiagnosticsFromText(code);
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('Possible undefined variable: Blob'))).toBe(
+      false,
+    );
+  });
 });

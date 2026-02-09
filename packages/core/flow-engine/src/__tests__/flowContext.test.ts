@@ -1345,6 +1345,84 @@ describe('FlowEngine context', () => {
     expect(engine.context.appName).toBe('NocoBase');
   });
 
+  it('ctx.sql should resolve template variables from caller context in delegate chain', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { data: [] } }));
+    engine.context.defineProperty('api', {
+      value: { request },
+    });
+    engine.context.defineProperty('minId', {
+      get: () => 999,
+      cache: false,
+    });
+
+    const callerCtx = new FlowContext();
+    callerCtx.addDelegate(engine.context);
+    callerCtx.defineProperty('minId', {
+      get: () => 1,
+      cache: false,
+    });
+
+    await callerCtx.sql.run('SELECT * FROM users WHERE id > {{ctx.minId}}', { type: 'selectRows' });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    const config = request.mock.calls[0]?.[0];
+    expect(config?.url).toBe('flowSql:run');
+    expect(config?.data.bind.__var1).toBe(1);
+  });
+
+  it('ctx.sql should not share repository instance between different caller contexts', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { data: [] } }));
+    engine.context.defineProperty('api', {
+      value: { request },
+    });
+
+    const caller1 = new FlowContext();
+    caller1.addDelegate(engine.context);
+    caller1.defineProperty('minId', {
+      get: () => 1,
+      cache: false,
+    });
+
+    const caller2 = new FlowContext();
+    caller2.addDelegate(engine.context);
+    caller2.defineProperty('minId', {
+      get: () => 2,
+      cache: false,
+    });
+
+    expect(caller1.sql).not.toBe(caller2.sql);
+
+    await caller1.sql.run('SELECT * FROM users WHERE id > {{ctx.minId}}', { type: 'selectRows' });
+    await caller2.sql.run('SELECT * FROM users WHERE id > {{ctx.minId}}', { type: 'selectRows' });
+
+    expect(request).toHaveBeenCalledTimes(2);
+    const config1 = request.mock.calls[0]?.[0];
+    const config2 = request.mock.calls[1]?.[0];
+    expect(config1?.data.bind.__var1).toBe(1);
+    expect(config2?.data.bind.__var1).toBe(2);
+  });
+
+  it('engine.context.sql should keep working when accessed directly', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { data: [] } }));
+    engine.context.defineProperty('api', {
+      value: { request },
+    });
+    engine.context.defineProperty('minId', {
+      get: () => 3,
+      cache: false,
+    });
+
+    await engine.context.sql.run('SELECT * FROM users WHERE id > {{ctx.minId}}', { type: 'selectRows' });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    const config = request.mock.calls[0]?.[0];
+    expect(config?.url).toBe('flowSql:run');
+    expect(config?.data.bind.__var1).toBe(3);
+  });
+
   it('engine.context.getVar should resolve variable by path', async () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('foo', { value: { bar: 1 } });

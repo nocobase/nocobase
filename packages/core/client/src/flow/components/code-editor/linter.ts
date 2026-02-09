@@ -639,6 +639,7 @@ export const computeDiagnosticsFromText = (
       'JSON',
       'Intl',
       'URL',
+      'Blob',
       'Error',
       'TypeError',
       'encodeURIComponent',
