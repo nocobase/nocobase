@@ -101,7 +101,8 @@ BasePageTabModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : undefined);
+        const translate = typeof ctx?.t === 'function' ? ctx.t.bind(ctx) : (value: string) => value;
+        ctx.model.setProps('title', params.title ? translate(params.title, { ns: 'lm-flow-engine' }) : undefined);
         ctx.model.setProps('icon', params.icon);
       },
     },

@@ -179,7 +179,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   flattenSubMenus = true,
 }) => {
   const { message } = App.useApp();
-  const t = model.context.t;
+  const t = useMemo(() => getT(model), [model]);
   const [visible, setVisible] = useState(false);
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
   const [refreshTick, setRefreshTick] = useState(0);
@@ -237,7 +237,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     return () => {
       mounted = false;
     };
-  }, [model, menuLevels, t, refreshTick, visible, message]);
+  }, [model, menuLevels, t, refreshTick, visible]);
 
   // 统一的复制 UID 方法
   const copyUidToClipboard = useCallback(
