@@ -26,16 +26,20 @@ import { BlockSceneEnum } from '../../../base';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 const useFieldPermissionMessage = (model, allowEdit) => {
-  const collection = model.context.collectionField?.collection;
-  const dataSource = collection.dataSource;
-  const t = model.context.t;
-  const name = model.context.collectionField?.name || model.fieldPath;
+  const collectionField = model?.context?.collectionField;
+  const collection = collectionField?.collection;
+  const dataSource = collection?.dataSource;
+  const t = model?.context?.t;
+  const name = collectionField?.name || model.fieldPath;
+
   const nameValue = useMemo(() => {
+    if (!t || !dataSource) return '';
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
-  if (allowEdit) {
+  }, [t, dataSource, collection, name]);
+
+  if (allowEdit || !t || !dataSource) {
     return null;
   }
   const messageValue = t(
@@ -197,7 +201,7 @@ const FilterFormLazySelect = (props: Readonly<LazySelectProps>) => {
         ) : (
           <ActionWithoutPermission
             forbidden={{ actionName: 'create' }}
-            collection={model.collectionField.targetCollection}
+            collection={model?.collectionField?.targetCollection}
             message={fieldAclMessage}
           >
             <Button onClick={others.onModalAddClick} disabled={!allowEdit} style={{ opacity: '0.3' }}>

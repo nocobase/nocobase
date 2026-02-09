@@ -51,12 +51,12 @@ export function buildOpenerUids(ctx: FlowRuntimeContext, inputArgs: Record<strin
 
 export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'options' | 'value' | 'onChange'> {
   fieldNames: AssociationFieldNames;
-  value?: AssociationOption | AssociationOption[] | string | string[];
+  value?: AssociationOption | AssociationOption[] | string | string[] | number | number[];
   multiple?: boolean;
   allowMultiple?: boolean;
   options?: AssociationOption[];
   valueMode?: 'record' | 'value';
-  onChange: (option: AssociationOption | AssociationOption[] | string | string[]) => void;
+  onChange: (option: AssociationOption | AssociationOption[] | string | string[] | number | number[]) => void;
   onDropdownVisibleChange?: (open: boolean) => void;
   onPopupScroll?: SelectProps<any>['onPopupScroll'];
   onSearch?: SelectProps<any>['onSearch'];
@@ -101,7 +101,7 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
 }
 
 export function toSelectValue(
-  record: AssociationOption | AssociationOption[] | string | string[] | undefined,
+  record: AssociationOption | AssociationOption[] | string | string[] | number | number[] | undefined,
   fieldNames: AssociationFieldNames,
   multiple = false,
   valueMode: 'record' | 'value' = 'record',
@@ -122,7 +122,7 @@ export function toSelectValue(
   };
 
   if (valueMode === 'value') {
-    const toValue = (item: AssociationOption | string) => {
+    const toValue = (item: AssociationOption | string | number) => {
       if (typeof item === 'object' && item !== null) {
         return convert(item);
       }
@@ -130,8 +130,9 @@ export function toSelectValue(
       if (matchedOption) {
         return convert(matchedOption);
       }
+      // Handle string or number values
       return {
-        label: item,
+        label: typeof item === 'number' ? String(item) : item,
         value: item,
       };
     };
@@ -158,7 +159,7 @@ export function toSelectValue(
 
 export function resolveOptions(
   options: AssociationOption[] | undefined,
-  value: AssociationOption | AssociationOption[] | string | string[] | undefined,
+  value: AssociationOption | AssociationOption[] | string | string[] | number | number[] | undefined,
   isMultiple: boolean,
 ) {
   if (options?.length) {
