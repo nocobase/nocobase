@@ -46,7 +46,11 @@ export class BasePageTabModel extends FlowModel<{
   }
 
   getTabTitle(defaultTitle = 'Untitled') {
-    return this.context.t(this.stepParams.pageTabSettings?.tab?.title || defaultTitle);
+    const translatedDefaultTitle = this.context.t(defaultTitle, { ns: 'client' });
+    const translatedTitle = this.stepParams.pageTabSettings?.tab?.title
+      ? this.context.t(this.stepParams.pageTabSettings?.tab?.title, { ns: 'lm-flow-engine' })
+      : undefined;
+    return translatedTitle || translatedDefaultTitle;
   }
 
   getTabIcon() {
@@ -97,7 +101,7 @@ BasePageTabModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : undefined);
         ctx.model.setProps('icon', params.icon);
       },
     },
