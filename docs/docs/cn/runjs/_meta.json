@@ -54,11 +54,6 @@
           },
           {
             "type": "custom-link",
-            "label": "ctx.createResource()",
-            "link": "/runjs/context/create-resource"
-          },
-          {
-            "type": "custom-link",
             "label": "ctx.dataSource",
             "link": "/runjs/context/data-source"
           },
@@ -119,6 +114,11 @@
           },
           {
             "type": "custom-link",
+            "label": "ctx.initResource()",
+            "link": "/runjs/context/init-resource"
+          },
+          {
+            "type": "custom-link",
             "label": "ctx.libs",
             "link": "/runjs/context/libs"
           },
@@ -131,6 +131,11 @@
             "type": "custom-link",
             "label": "ctx.logger",
             "link": "/runjs/context/logger"
+          },
+          {
+            "type": "custom-link",
+            "label": "ctx.makeResource()",
+            "link": "/runjs/context/make-resource"
           },
           {
             "type": "custom-link",
@@ -211,11 +216,6 @@
             "type": "custom-link",
             "label": "ctx.t()",
             "link": "/runjs/context/t"
-          },
-          {
-            "type": "custom-link",
-            "label": "ctx.useResource()",
-            "link": "/runjs/context/use-resource"
           },
           {
             "type": "custom-link",

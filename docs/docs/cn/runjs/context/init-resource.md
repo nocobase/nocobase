@@ -1,4 +1,4 @@
-# ctx.initResource(type)
+# ctx.initResource()
 
 **初始化**当前上下文的 resource：若尚未存在 `ctx.resource`，则按指定类型创建一个并绑定到上下文；若已存在则直接使用。之后可通过 `ctx.resource` 访问。
 

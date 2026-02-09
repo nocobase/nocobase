@@ -1,4 +1,4 @@
-# ctx.makeResource(type)
+# ctx.makeResource()
 
 **新建**一个 resource 实例并返回，**不会**写入或改变 `ctx.resource`。适合需要多个独立 resource 或临时使用的场景。
 
