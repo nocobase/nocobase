@@ -104,7 +104,18 @@ export abstract class Instruction {
    * 2.0
    */
   getCreateModelMenuItem?({ node, workflow }): SubModelItem | null;
+  /**
+   * @experimental
+   */
+  useTempAssociationSource?(node): TempAssociationSource | null;
 }
+
+export type TempAssociationSource = {
+  collection: string;
+  nodeId: string | number;
+  nodeKey: string;
+  nodeType: 'workflow' | 'node';
+};
 
 function useUpdateAction() {
   const form = useForm();

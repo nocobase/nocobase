@@ -23,6 +23,16 @@ import ccCollection from '../common/collections/workflowCcTasks';
 import { TASK_TYPE_CC } from '../common/constants';
 import { ccTodo } from './tasks';
 
+// FlowModel imports
+import { CCChildPageModel } from './models/CCChildPageModel';
+import { CCChildPageTabModel } from './models/CCChildPageTabModel';
+import { CCBlockGridModel } from './models/CCBlockGridModel';
+import { CCTriggerBlockGridModel } from './models/CCTriggerBlockGridModel';
+import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
+import { CCTaskCardGridModel } from './models/CCTaskCardGridModel';
+import { CCTaskCardDetailsItemModel } from './models/CCTaskCardDetailsItemModel';
+import { CCTaskCardDetailsAssociationFieldGroupModel } from './models/CCTaskCardDetailsAssociationFieldGroupModel';
+
 function WorkflowCCProvider(props) {
   return <ExtendCollectionsProvider collections={[ccCollection]}>{props.children}</ExtendCollectionsProvider>;
 }
@@ -35,6 +45,20 @@ export class PluginWorkflowCCClient extends Plugin {
     const workflow = this.app.pm.get(PluginWorkflowClient);
     workflow.registerInstruction('cc', CCInstruction);
     workflow.registerTaskType(TASK_TYPE_CC, ccTodo);
+
+    // Register FlowModels
+    this.flowEngine.registerModels({
+      // User interface 相关
+      CCChildPageModel,
+      CCChildPageTabModel,
+      CCBlockGridModel,
+      CCTriggerBlockGridModel,
+      // Task card 相关
+      CCTaskCardDetailsModel,
+      CCTaskCardGridModel,
+      CCTaskCardDetailsItemModel,
+      CCTaskCardDetailsAssociationFieldGroupModel,
+    });
 
     this.app.schemaInitializerManager.add(addBlockButton);
     // this.app.schemaInitializerManager.add(addActionButton);
