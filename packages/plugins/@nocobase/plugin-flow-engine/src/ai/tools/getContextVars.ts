@@ -22,8 +22,10 @@ export default defineTools({
   },
   definition: {
     name: 'getContextVars',
-    description:
-      "Available variables from context, the actual value should be got via `await ctx.getVar()`, e.g. `await ctx.getVar('ctx.popup.record')`",
+    description: `Available variables from context.
+Variables are references only and do not contain actual values.
+You must retrieve the real value explicitly via \`await ctx.getVar(path)\`,
+for example: \`await ctx.getVar('ctx.popup.record')\`.`,
     schema: z.object({
       path: z.string().optional().describe('Variable path for progressive disclosure'),
       depth: z.number().optional().describe('Max depth for variable traversal, default 3'),
