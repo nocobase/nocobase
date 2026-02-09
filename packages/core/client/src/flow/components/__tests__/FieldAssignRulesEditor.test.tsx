@@ -202,7 +202,7 @@ describe('FieldAssignRulesEditor', () => {
 
     const nestedParent = ((parent?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');
     expect(nestedParent).toBeTruthy();
-    expect(nestedParent?.paths).toEqual(['item', 'parentItem', 'parentItem']);
+    expect(nestedParent?.paths).toEqual(['item', 'parentItem']);
     expect(nestedParent?.title).toBe('Parent item（o2m）');
   });
 
