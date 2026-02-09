@@ -3057,7 +3057,16 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
     EventDefinition<TModel, TCtx>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
+  /**
+   * @deprecated use `makeResource` instead
+   */
   declare createResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;
+  /**
+   * Create a new resource instance without adding it to the context.
+   * @param resourceType - The resource type.
+   * @returns The resource instance.
+   */
+  declare makeResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;
 }
 
 export class FlowEngineContext extends BaseFlowEngineContext {
@@ -3553,17 +3562,34 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         context: this.createProxy(),
       });
     });
+    this.defineMethod('makeResource', function (this: BaseFlowEngineContext, resourceType) {
+      return this.engine.createResource(resourceType, {
+        context: this.createProxy(),
+      });
+    });
     // Provide useResource in base engine context so RunJS can call it directly
+    this.defineMethod(
+      'initResource',
+      function (
+        this: BaseFlowEngineContext,
+        className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource',
+      ) {
+        if (!this.has('resource')) {
+          this.defineProperty('resource', {
+            get: () => this.createResource(className),
+          });
+        }
+        return this.resource;
+      },
+    );
+    // @deprecated use `initResource` instead
     this.defineMethod(
       'useResource',
       function (
         this: BaseFlowEngineContext,
         className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource',
       ) {
-        if (this.has('resource')) return;
-        this.defineProperty('resource', {
-          get: () => this.createResource(className),
-        });
+        return this.initResource(className);
       },
     );
   }
@@ -3751,7 +3777,19 @@ export class FlowRuntimeContext<
 > extends BaseFlowModelContext {
   declare steps: Record<string, { params: Record<string, any>; uiSchema?: any; result?: any }>;
   stepResults: Record<string, any> = {};
-  declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
+  /**
+   * @deprecated use `initResource` instead
+   */
+  declare useResource: (
+    className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource',
+  ) => void;
+  /**
+   * Initialize a resource instance without adding it to the context.
+   * @param className - The resource class name.
+   */
+  declare initResource: (
+    className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource',
+  ) => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
   declare setStepParams: (stepKey: string, params?: any) => void;
   declare getStepResults: (stepKey: string) => any;
@@ -3773,20 +3811,27 @@ export class FlowRuntimeContext<
       return _.get(this.steps, [stepKey, 'result']);
     });
     this.defineMethod(
-      'useResource',
+      'initResource',
       (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
         if (model.context.has('resource')) {
-          console.warn(`[FlowRuntimeContext] useResource - resource already defined in context: ${className}`);
+          console.log(`[FlowRuntimeContext] useResource - resource already defined in context: ${className}`);
           return;
         }
         model.context.defineProperty('resource', {
           get: () => {
-            return this.createResource(className);
+            return this.makeResource(className);
           },
         });
         if (!model['resource']) {
           model['resource'] = model.context.resource;
         }
+      },
+    );
+    // @deprecated use `initResource` instead
+    this.defineMethod(
+      'useResource',
+      (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
+        return this.initResource(className);
       },
     );
     this.defineProperty('resource', {
