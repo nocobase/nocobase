@@ -27,10 +27,10 @@ type SQLSaveOptions = {
 };
 
 export class FlowSQLRepository {
-  protected ctx: FlowEngineContext;
+  protected ctx: FlowContext;
 
-  constructor(ctx: FlowEngineContext) {
-    this.ctx = new FlowContext() as FlowEngineContext;
+  constructor(ctx: FlowContext) {
+    this.ctx = new FlowContext();
     this.ctx.addDelegate(ctx);
     this.ctx.defineProperty('offset', {
       get: () => 0,
