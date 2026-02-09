@@ -39,7 +39,7 @@ export class MissingKeyHandler {
         return;
       }
       const uniqueKey = `${ns}:${key}`;
-      if (!key || this.sentMissingKeys.has(uniqueKey) || !this.shouldSaveKey(key)) {
+      if (!key || this.sentMissingKeys.has(uniqueKey)) {
         return;
       }
 
