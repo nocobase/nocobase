@@ -211,16 +211,20 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
     <div style={{ width: '100%' }}>
       <Radio.Group value={config.mode} onChange={(e) => handleModeChange(e.target.value)} style={{ width: '100%' }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Radio value="recommended">{t('System recommended')}</Radio>
+          <Radio value="recommended">{t('Recommended models')}</Radio>
           {config.mode === 'recommended' && (
             <Text type="secondary" style={{ paddingLeft: 24 }}>
-              {t('Recommended by system for best results, e.g.')}
-              {provider && getRecommendedModels(provider).length > 0 &&
-                ' ' + getRecommendedModels(provider).map((m) => m.label).join(', ')}
+              {t('Use recommended models:')}
+              {provider &&
+                getRecommendedModels(provider).length > 0 &&
+                ' ' +
+                  getRecommendedModels(provider)
+                    .map((m) => m.label)
+                    .join(', ')}
             </Text>
           )}
 
-          <Radio value="provider">{t('Select provider model')}</Radio>
+          <Radio value="provider">{t('Select models')}</Radio>
           {config.mode === 'provider' && (
             <div style={{ paddingLeft: 24 }}>
               <Select
@@ -249,7 +253,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
             </div>
           )}
 
-          <Radio value="custom">{t('Custom model input')}</Radio>
+          <Radio value="custom">{t('Manual input')}</Radio>
           {config.mode === 'custom' && (
             <div style={{ paddingLeft: 24 }}>
               {config.models.map((model, index) => (
