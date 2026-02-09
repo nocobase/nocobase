@@ -8,11 +8,12 @@
  */
 
 import { z } from 'zod';
-import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, { Processor } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
-import { ToolRegisterOptions } from '../manager/tool-manager';
 import { truncateLongStrings } from './utils';
 import { ToolsRegistration } from '@nocobase/ai';
+import { Plugin } from '@nocobase/server';
+import _ from 'lodash';
 
 interface ParameterConfig {
   name: string;
@@ -102,7 +103,7 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
   };
 };
 
-export const getWorkflowCallers = (plugin) => async (register: ToolsRegistration) => {
+export const getWorkflowCallers = (plugin: Plugin, prefix?: string) => async (register: ToolsRegistration) => {
   const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
   const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values()).filter(
     (item) => item.type === 'ai-employee',
@@ -117,7 +118,7 @@ export const getWorkflowCallers = (plugin) => async (register: ToolsRegistration
         about: workflow.description,
       },
       definition: {
-        name: workflow.key,
+        name: !_.isEmpty(prefix) ? `${prefix}-${workflow.key}` : workflow.key,
         description: workflow.description,
         schema: buildSchema(config),
       },

@@ -107,7 +107,7 @@ export class PluginAIServer extends Plugin {
       createReadDocEntryTool(),
     ]);
 
-    toolsManager.registerDynamicTools(getWorkflowCallers(this));
+    toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
   }
 
   defineResources() {
