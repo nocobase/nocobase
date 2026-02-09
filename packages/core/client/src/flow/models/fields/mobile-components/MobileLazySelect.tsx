@@ -42,40 +42,38 @@ function getValueKey(fieldNames: LazySelectProps['fieldNames']) {
   return fieldNames?.value ?? 'value';
 }
 
-const deriveRecordsFromValue = _.memoize(
-  (
-    value: LazySelectProps['value'],
-    valueKey: string,
-    optionMap: Map<any, AssociationOption>,
-    isMultiple: boolean,
-    valueMode: LazySelectProps['valueMode'] = 'record',
-  ) => {
-    if (isMultiple) {
-      if (Array.isArray(value)) {
-        return (value.filter(Boolean) as any[]).map((item) => {
-          if (valueMode === 'value') {
-            return optionMap.get(item) ?? { [valueKey]: item };
-          }
-          const key = item?.[valueKey];
-          return optionMap.get(key) ?? item;
-        });
-      }
-      return [];
+function deriveRecordsFromValue(
+  value: LazySelectProps['value'],
+  valueKey: string,
+  optionMap: Map<any, AssociationOption>,
+  isMultiple: boolean,
+  valueMode: LazySelectProps['valueMode'] = 'record',
+) {
+  if (isMultiple) {
+    if (Array.isArray(value)) {
+      return (value.filter(Boolean) as any[]).map((item) => {
+        if (valueMode === 'value') {
+          return optionMap.get(item) ?? { [valueKey]: item };
+        }
+        const key = item?.[valueKey];
+        return optionMap.get(key) ?? item;
+      });
     }
-
-    if (valueMode === 'value' && (typeof value === 'string' || typeof value === 'number')) {
-      return [optionMap.get(value) ?? { [valueKey]: value }].filter(Boolean);
-    }
-
-    if (value && typeof value === 'object') {
-      const key = (value as AssociationOption)[valueKey];
-      const resolved = optionMap.get(key) ?? (value as AssociationOption);
-      return resolved ? [resolved] : [];
-    }
-
     return [];
-  },
-);
+  }
+
+  if (valueMode === 'value' && (typeof value === 'string' || typeof value === 'number')) {
+    return [optionMap.get(value) ?? { [valueKey]: value }].filter(Boolean);
+  }
+
+  if (value && typeof value === 'object') {
+    const key = (value as AssociationOption)[valueKey];
+    const resolved = optionMap.get(key) ?? (value as AssociationOption);
+    return resolved ? [resolved] : [];
+  }
+
+  return [];
+}
 
 export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   const {
@@ -108,15 +106,19 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   }, [realOptions, valueKey]);
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() =>
-    deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode),
+  
+  const derivedRecords = useMemo(
+    () => deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode),
+    [value, valueKey, optionMap, isMultiple, valueMode],
   );
+  
+  const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() => derivedRecords);
 
   useEffect(() => {
     if (visible) {
-      setSelectedRecords(deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode));
+      setSelectedRecords(derivedRecords);
     }
-  }, [isMultiple, optionMap, value, valueKey, valueMode, visible]);
+  }, [derivedRecords, visible]);
 
   useEffect(() => {
     if (!visible) {
