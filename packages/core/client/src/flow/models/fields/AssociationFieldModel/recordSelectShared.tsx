@@ -149,7 +149,7 @@ export function toSelectValue(
     if (!Array.isArray(record)) return [];
     return record.filter(isAssociationOption).map(convert).filter(Boolean);
   }
-  if (Array.isArray(record) && !multiple) {
+  if (Array.isArray(record)) {
     const first = record[0];
     return isAssociationOption(first) ? convert(first) : undefined;
   }
