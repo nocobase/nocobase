@@ -23,7 +23,7 @@ const snippet: SnippetModule = {
   },
   content: `
 // Fetch users
-const { data } = await ctx.api.request({
+const { data } = await ctx.request({
   url: 'users:list',
   method: 'get',
   params: { pageSize: 5 },

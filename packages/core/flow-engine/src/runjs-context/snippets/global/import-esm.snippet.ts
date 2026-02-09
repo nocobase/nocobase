@@ -23,7 +23,7 @@ const snippet: SnippetModule = {
   content: `
 // Import an ESM module by URL
 // Works in yarn dev and yarn start
-const mod = await ctx.importAsync('https://cdn.jsdelivr.net/npm/lit-html@2/+esm');
+const mod = await ctx.importAsync('lit-html@2');
 const { html, render } = mod;
 
 const container = document.createElement('div');

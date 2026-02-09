@@ -34,8 +34,8 @@ ctx.render(container);
 
 // 不做显式清理逻辑；如需存储信息，统一挂在 ctx.model 上
 
-// 使用 ctx.useResource 加载 users:list（真实数据）
-ctx.useResource('MultiRecordResource');
+// 使用 ctx.initResource 加载 users:list（真实数据）
+ctx.initResource('MultiRecordResource');
 const resource = ctx.resource;
 resource.setDataSourceKey && resource.setDataSourceKey('main');
 resource.setResourceName && resource.setResourceName('users');
@@ -80,7 +80,7 @@ function makeAvatarTexture(user, idx) {
   return tex;
 }
 
-const THREE = await ctx.importAsync('https://esm.sh/three@0.160.0');
+const THREE = await ctx.importAsync('three@0.160.0');
 const { Scene, PerspectiveCamera, WebGLRenderer, Color, AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, SphereGeometry, Raycaster, Vector2 } = THREE;
 
 const scene = new Scene();
@@ -186,7 +186,7 @@ async function getPrimaryKeyField() {
   if (__pkField) return __pkField;
   const name = (resource && resource.getResourceName) ? resource.getResourceName() : 'users';
   try {
-    const meta = await ctx.api.request({ url: 'collections:get', method: 'get', params: { filterByTk: name } });
+    const meta = await ctx.request({ url: 'collections:get', method: 'get', params: { filterByTk: name } });
     const data = (meta && meta.data) ? meta.data : {};
     // prefer filterTargetKey, fallback to fields.primaryKey
     const ft = (data && data.filterTargetKey) ? data.filterTargetKey : (data && data.options && data.options.filterTargetKey);

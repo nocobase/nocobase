@@ -32,7 +32,7 @@ mountNode.appendChild(target);
 ctx.render(mountNode);
 
 async function bootstrap() {
-  const mod = await ctx.importAsync('https://esm.sh/vue@3.4.27/dist/vue.runtime.esm-browser.js');
+  const mod = await ctx.importAsync('vue@3.4.27/dist/vue.runtime.esm-browser.js');
   const createApp = mod?.createApp;
   const ref = mod?.ref;
   const h = mod?.h;
