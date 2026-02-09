@@ -115,6 +115,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
 
   const tasks: Task[] = Object.values(taskMap);
 
+  // Store flow context for frontend context tools
+  useChatMessagesStore.getState().setFlowContext(ctx);
+
   return aiEmployee ? (
     <Tooltip
       placement="topRight"
@@ -132,9 +135,6 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             border: '1px solid #eee',
           }}
           onClick={() => {
-            // Store flow context for frontend context tools
-            useChatMessagesStore.getState().setFlowContext(ctx);
-
             if (!open || currentEmployee?.username !== aiEmployee.username) {
               if (editorRef.logs.find((log) => log.level === 'error')) {
                 triggerTask({ aiEmployee, tasks: [taskMap['logsDiagnosis']] });
