@@ -243,8 +243,8 @@ ActionModel.registerFlow({
       handler(ctx, params) {
         const { title, tooltip, ...rest } = params;
         ctx.model.setProps({
-          title: title ? ctx.t(title) : undefined,
-          tooltip: tooltip ? ctx.t(tooltip) : undefined,
+          title: title ? ctx.t(title, { ns: 'lm-flow-engine' }) : undefined,
+          tooltip: tooltip ? ctx.t(tooltip, { ns: 'lm-flow-engine' }) : undefined,
           ...rest,
         });
       },
