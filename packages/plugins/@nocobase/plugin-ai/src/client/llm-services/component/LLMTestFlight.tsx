@@ -38,14 +38,14 @@ export const LLMTestFlight: React.FC = observer(() => {
     if (config.mode === 'recommended') {
       const recommended = getRecommendedModels(provider);
       if (recommended.length === 0) {
-        message.warning(t('No recommended models available for this provider'));
+        message.warning(t('Please set up Enabled Models first'));
         return;
       }
       model = recommended[0].value;
     } else {
       // provider or custom mode
       if (config.models.length === 0) {
-        message.warning(t('No recommended models available for this provider'));
+        message.warning(t('Please set up Enabled Models first'));
         return;
       }
       model = config.models[0].value;

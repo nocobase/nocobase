@@ -253,7 +253,7 @@
   "Recommended": "Recommended",
   "Select models to enable": "Select models to enable",
   "Please fill in the API Key first": "Please fill in the API Key first",
-  "No recommended models available for this provider": "No recommended models available for this provider",
+  "Please set up Enabled Models first": "Please set up Enabled Models first",
   "Test connection with the configured API Key": "Test connection with the configured API Key",
   "Successful": "Successful",
   "Failure": "Failure",
