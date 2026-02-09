@@ -10,6 +10,7 @@
     "@koa/cors": "^5.0.0",
     "@koa/multer": "^3.1.0",
     "@koa/router": "^13.1.0",
+    "@nocobase/ai": "2.0.0-alpha.70",
     "@nocobase/acl": "2.0.0-alpha.70",
     "@nocobase/actions": "2.0.0-alpha.70",
     "@nocobase/auth": "2.0.0-alpha.70",
