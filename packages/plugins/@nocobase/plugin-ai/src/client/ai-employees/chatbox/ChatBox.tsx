@@ -96,18 +96,13 @@ export const ChatBox: React.FC = () => {
           </div>
         </>
       )}
-      <Layout
-        style={{
-          padding: '0 16px 16px',
-        }}
-      >
+      <Layout>
         <Header
           style={{
             backgroundColor: token.colorBgContainer,
             height: '48px',
             lineHeight: '48px',
             padding: '0 16px',
-            margin: '0 -16px',
             borderBottom: `1px solid ${token.colorBorder}`,
             display: 'flex',
             alignItems: 'center',
@@ -180,7 +175,7 @@ export const ChatBox: React.FC = () => {
           <div
             style={{
               textAlign: 'center',
-              marginTop: '10px',
+              margin: '10px 0',
               fontSize: token.fontSizeSM,
               color: token.colorTextTertiary,
             }}

@@ -181,26 +181,32 @@ export const Sender: React.FC = () => {
   };
 
   return (
-    <AntSender
-      // components={{
-      //   input: VariableInput,
-      // }}
-      className={senderClassName}
-      value={value}
-      ref={senderRef}
-      onChange={(value) => {
-        setValue(value);
+    <div
+      style={{
+        margin: '8px 16px',
       }}
-      onPaste={handlePaste}
-      onSubmit={handleSubmit}
-      onCancel={cancelRequest}
-      header={<SenderHeader />}
-      loading={responseLoading}
-      footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
-      disabled={!currentEmployee}
-      placeholder={t('Enter your question')}
-      actions={false}
-      autoSize={{ minRows: 2, maxRows: 8 }}
-    />
+    >
+      <AntSender
+        // components={{
+        //   input: VariableInput,
+        // }}
+        className={senderClassName}
+        value={value}
+        ref={senderRef}
+        onChange={(value) => {
+          setValue(value);
+        }}
+        onPaste={handlePaste}
+        onSubmit={handleSubmit}
+        onCancel={cancelRequest}
+        header={<SenderHeader />}
+        loading={responseLoading}
+        footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
+        disabled={!currentEmployee}
+        placeholder={t('Enter your question')}
+        actions={false}
+        autoSize={{ minRows: 2, maxRows: 8 }}
+      />
+    </div>
   );
 };

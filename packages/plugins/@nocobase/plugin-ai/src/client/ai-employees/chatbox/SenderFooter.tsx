@@ -63,8 +63,8 @@ export const SenderFooter: React.FC<{
         />
         <Upload />
         <SearchSwitch />
-        <ModelSwitcher />
         <AIEmployeeSwitcher />
+        <ModelSwitcher />
       </Flex>
       <Flex align="center" gap="middle">
         {loading ? (
