@@ -209,7 +209,7 @@ const SkillSettings: React.FC<{
 
   return (
     <RemoteSelect
-      defaultValue={field.value?.skills ?? defaultSkills}
+      defaultValue={field.value?.skills}
       onChange={handleChange}
       manual={false}
       multiple={true}
@@ -305,6 +305,11 @@ AIEmployeeShortcutModel.registerFlow({
                       nullable: true,
                       'x-decorator': 'FormItem',
                       'x-component': () => <SkillSettings aiEmployeesMap={aiEmployeesMap} />,
+                      'x-decorator-props': {
+                        tooltip: escapeT('Restrict task skills; leave blank to use all AI employee skills.', {
+                          ns: namespace,
+                        }),
+                      },
                     },
                   },
                 },

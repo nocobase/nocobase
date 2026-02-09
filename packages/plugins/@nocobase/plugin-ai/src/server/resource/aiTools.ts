@@ -45,12 +45,15 @@ export const aiTools: ResourceOptions = {
       const bindingSkillNames = aiEmployee.skillSettings.skills.map((skill) => skill.name);
 
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = await plugin.aiManager.toolManager.listTools();
-      const result = tools
-        .flatMap(({ group, tools }) => tools.map((tool) => ({ ...tool, group })))
-        .filter((tool) => bindingSkillNames.includes(tool.name));
+      const tools = await plugin.ai.toolsManager.listTools();
+      const result = tools.filter(
+        (tool) => tool.scope === 'GENERAL' || bindingSkillNames.includes(tool.definition.name),
+      );
 
-      ctx.body = result;
+      ctx.body = result.map(({ introduction, definition }) => ({
+        title: introduction?.title ?? definition.name,
+        name: definition.name,
+      }));
       await next();
     },
   },
