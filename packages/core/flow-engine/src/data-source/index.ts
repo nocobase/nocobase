@@ -99,7 +99,9 @@ export class DataSource {
   }
 
   get displayName() {
-    return this.options.displayName ? this.flowEngine.translate(this.options.displayName) : this.key;
+    return this.options.displayName
+      ? this.flowEngine.translate(this.options.displayName, { ns: 'lm-collections' })
+      : this.key;
   }
 
   get key() {
@@ -418,7 +420,7 @@ export class Collection {
     return this.options.storage || 'local';
   }
   get title() {
-    return this.options.title ? this.flowEngine.translate(this.options.title) : this.name;
+    return this.options.title ? this.flowEngine.translate(this.options.title, { ns: 'lm-collections' }) : this.name;
   }
 
   get titleCollectionField() {
@@ -691,8 +693,8 @@ export class CollectionField {
   }
 
   get title() {
-    const titleValue = this.options?.uiSchema?.title || this.options?.title || this.options.name;
-    return this.flowEngine.translate(titleValue);
+    const titleValue = this.options?.uiSchema?.title || this.options?.title;
+    return titleValue ? this.flowEngine.translate(titleValue, { ns: 'lm-collections' }) : this.options.name;
   }
 
   set title(value: string) {
@@ -711,11 +713,17 @@ export class CollectionField {
         }
         return {
           ...v,
+          label: v.label ? this.flowEngine.translate(v.label, { ns: 'lm-collections' }) : v.label,
           value: Number(v.value),
         };
       });
     }
-    return options;
+    return options.map((v) => {
+      return {
+        ...v,
+        label: v.label ? this.flowEngine.translate(v.label, { ns: 'lm-collections' }) : v.label,
+      };
+    });
   }
 
   get defaultValue() {
