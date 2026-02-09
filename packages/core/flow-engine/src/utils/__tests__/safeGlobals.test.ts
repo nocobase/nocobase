@@ -28,6 +28,15 @@ describe('safeGlobals', () => {
     expect(win.console).toBeDefined();
     expect(win.foo).toBe(123);
     expect(new win.FormData()).toBeInstanceOf(window.FormData);
+    if (typeof window.Blob !== 'undefined') {
+      expect(typeof win.Blob).toBe('function');
+      expect(new win.Blob(['x'])).toBeInstanceOf(window.Blob);
+    }
+    if (typeof window.URL !== 'undefined') {
+      expect(win.URL).toBe(window.URL);
+      expect(typeof win.URL.createObjectURL).toBe('function');
+      expect(typeof win.URL.revokeObjectURL).toBe('function');
+    }
     // access to location proxy is allowed, but sensitive props throw
     expect(() => win.location.href).toThrow(/not allowed/);
   });
