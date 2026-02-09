@@ -28,6 +28,8 @@ import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
 import { Command } from '@langchain/langgraph';
+import { concat } from '@langchain/core/utils/stream';
+import { convertAIMessage } from './utils';
 
 export interface ModelOverride {
   llmService: string;
@@ -149,7 +151,7 @@ export class AIEmployee {
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
 
-    return { provider, chatContext, config, state };
+    return { providerName: service.provider, model, provider, chatContext, config, state };
   }
 
   async stream({
@@ -162,7 +164,7 @@ export class AIEmployee {
     userDecisions?: UserDecision[];
   }) {
     try {
-      const { provider, chatContext, config, state } = await this.buildChatContext({
+      const { providerName, model, provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
         userMessages,
         userDecisions,
@@ -176,6 +178,8 @@ export class AIEmployee {
       });
       await this.processChatStream(stream, {
         signal,
+        providerName,
+        model,
         provider,
       });
 
@@ -351,18 +355,44 @@ export class AIEmployee {
     stream: any,
     options: {
       signal: AbortSignal;
+      providerName: string;
+      model: string;
       provider: LLMProvider;
       allowEmpty?: boolean;
     },
   ) {
     let toolCalls: AIToolCall[];
-    const { signal, provider, allowEmpty = false } = options;
+    const { signal, providerName, model, provider, allowEmpty = false } = options;
+
+    let gathered: any;
+    signal.addEventListener('abort', async () => {
+      if (gathered?.type === 'ai') {
+        const values = convertAIMessage({
+          aiEmployee: this,
+          providerName,
+          model,
+          aiMessage: gathered,
+        });
+        if (values) {
+          values.metadata.interrupted = true;
+        }
+
+        await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+          const result: AIMessage = await conversation.addMessages(values);
+          if (toolCalls?.length) {
+            await this.initToolCall(transaction, result.messageId, toolCalls as any);
+          }
+        });
+      }
+    });
+
     try {
       this.protocol.startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk] = chunks;
           if (chunk.type === 'ai') {
+            gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
             if (chunk.content) {
               this.protocol.content(provider.parseResponseChunk(chunk.content));
             }

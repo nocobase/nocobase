@@ -19,6 +19,11 @@ import {
 import z from 'zod';
 import { Model } from '@nocobase/database';
 import { ToolsEntry } from '@nocobase/ai';
+import {
+  convertAIMessage as _convertAIMessage,
+  convertHumanMessage as _convertHumanMessage,
+  convertToolMessage as _convertToolMessage,
+} from '../utils';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
@@ -29,92 +34,25 @@ export const conversationMiddleware = (
     agentThread?: { sessionId: string; thread: number };
   },
 ) => {
-  const { providerName: provider, model, messageId, agentThread } = options;
-  const convertAIMessage = (aiMessage: AIMessage): AIMessageInput => {
-    const message = aiMessage.content;
-    const toolCalls = aiMessage.tool_calls;
-    const skills = aiEmployee.skillSettings?.skills;
+  const { providerName, model, messageId, agentThread } = options;
 
-    if (!message && !toolCalls?.length) {
-      return null;
-    }
+  const convertAIMessage = (aiMessage: AIMessage): AIMessageInput =>
+    _convertAIMessage({
+      aiEmployee,
+      providerName,
+      model,
+      aiMessage,
+    });
 
-    const values: AIMessageInput = {
-      role: aiEmployee.employee.username,
-      content: {
-        type: 'text',
-        content: message,
-      },
-      metadata: {
-        id: aiMessage.id,
-        model,
-        provider,
-        usage_metadata: {},
-      },
-      toolCalls: null,
-    };
+  const convertHumanMessage = (humanMessage: HumanMessage): AIMessageInput =>
+    _convertHumanMessage({ providerName, model, humanMessage });
 
-    if (toolCalls?.length) {
-      values.toolCalls = toolCalls as any;
-      values.metadata.autoCallTools = toolCalls
-        .filter((tool: { name: string }) => {
-          return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
-        })
-        .map((tool: { name: string }) => tool.name);
-    }
-
-    if (aiMessage.usage_metadata) {
-      values.metadata.usage_metadata = aiMessage.usage_metadata;
-    }
-    if (aiMessage.response_metadata) {
-      values.metadata.response_metadata = aiMessage.response_metadata;
-    }
-    if (aiMessage.additional_kwargs) {
-      values.metadata.additional_kwargs = aiMessage.additional_kwargs;
-    }
-
-    return values;
-  };
-
-  const convertHumanMessage = (aiMessage: HumanMessage): AIMessageInput => {
-    if (!aiMessage.additional_kwargs.userContent) {
-      return null;
-    }
-
-    const values: AIMessageInput = {
-      role: 'user',
-      content: aiMessage.additional_kwargs?.userContent as AIMessageContent,
-      metadata: {
-        id: aiMessage.id,
-        model,
-        provider,
-      },
-    };
-
-    values.attachments = aiMessage.additional_kwargs.attachments as any;
-    values.workContext = aiMessage.additional_kwargs.workContext as any;
-
-    return values;
-  };
-
-  const convertToolMessage = (message: ToolMessage): AIMessageInput => {
-    const values: AIMessageInput = {
-      role: 'tool',
-      content: {
-        type: 'text',
-        content: message.content,
-      },
-      metadata: {
-        id: message.id,
-        model,
-        provider,
-        toolCallId: message.tool_call_id,
-        toolName: message.name,
-      },
-    };
-
-    return values;
-  };
+  const convertToolMessage = (toolMessage: ToolMessage): AIMessageInput =>
+    _convertToolMessage({
+      providerName,
+      model,
+      toolMessage,
+    });
 
   const fillToolCall = (
     message: AIConversationMessage,
@@ -220,15 +158,14 @@ export const conversationMiddleware = (
         }
 
         aiEmployee.removeAbortController();
+        if (runtime.signal?.aborted) {
+          return newState;
+        }
 
         const aiMessage = lastMessage as AIMessage;
         const toolCalls = aiMessage.tool_calls;
         const values = convertAIMessage(aiMessage);
         if (values) {
-          if (runtime.signal?.aborted) {
-            values.metadata.interrupted = true;
-          }
-
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIConversationMessage = await conversation.addMessages(values);
             state.messageId = result.messageId;
