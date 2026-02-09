@@ -370,6 +370,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       index = extractIndex(record.__index);
     }
     const rowKey = getRowKey(record, this.collection.filterTargetKey);
+    const rowKeyString = rowKey == null ? rowKey : String(rowKey);
     return (
       <div
         role="button"
@@ -379,7 +380,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         })}
       >
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-          {this.props.dragSort && this.props.dragSortBy && <SortHandle id={rowKey} />}
+          {this.props.dragSort && this.props.dragSortBy && <SortHandle id={rowKeyString} />}
           {this.props.showIndex && <TableIndex index={index} />}
         </div>
 
@@ -816,6 +817,7 @@ const HighPerformanceTable = React.memo(
     const onRow = useCallback(
       (record, rowIndex) => {
         const rowKey = getRowKey(record, model.collection.filterTargetKey);
+        const rowKeyString = rowKey == null ? rowKey : String(rowKey);
 
         return {
           onClick: async (event) => {
@@ -828,7 +830,7 @@ const HighPerformanceTable = React.memo(
             }
           },
           rowIndex,
-          'data-row-key': rowKey,
+          'data-row-key': rowKeyString,
         };
       },
       [highlightedRowKey, model],

@@ -8,9 +8,10 @@
  */
 
 import { MenuOutlined } from '@ant-design/icons';
+import { TinyColor } from '@ctrl/tinycolor';
 import { useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
-import { TinyColor } from '@ctrl/tinycolor';
+import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 
@@ -37,27 +38,28 @@ export const SortHandle: React.FC<{ id: string | number }> = (props) => {
 };
 
 export const SortableRow: React.FC<any> = (props) => {
+  const { token }: any = theme.useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, active, over } = useSortable({
     id,
   });
   const { rowIndex, ...others } = props;
   const isOver = over?.id == id;
-
   const classObj = useMemo(() => {
+    const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
     return {
       topActiveClass: css`
         & > td {
-          border-top: 2px solid var(--colorSettings) !important;
+          border-top: 2px solid ${borderColor} !important;
         }
       `,
       bottomActiveClass: css`
         & > td {
-          border-bottom: 2px solid var(--colorSettings) !important;
+          border-bottom: 2px solid ${borderColor} !important;
         }
       `,
     };
-  }, []);
+  }, [token.colorSettings]);
 
   const className =
     (active?.data.current?.sortable.index ?? -1) > rowIndex ? classObj.topActiveClass : classObj.bottomActiveClass;
