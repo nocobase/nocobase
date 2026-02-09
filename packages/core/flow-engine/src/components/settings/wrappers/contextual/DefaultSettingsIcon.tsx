@@ -179,7 +179,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   flattenSubMenus = true,
 }) => {
   const { message } = App.useApp();
-  const t = useMemo(() => getT(model), [model]);
+  const t = model.context.t;
   const [visible, setVisible] = useState(false);
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
   const [refreshTick, setRefreshTick] = useState(0);
@@ -614,7 +614,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             };
             items.push({
               key: uniqueKey,
-              label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,
+              label: <MenuLabelItem title={stepInfo.title} uiMode={uiMode} itemProps={itemProps} />,
             });
           });
           if (flow.options.divider === 'bottom') {
