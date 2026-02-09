@@ -25,11 +25,15 @@ vi.mock('../FieldAssignValueInput', async () => {
   };
 });
 
-vi.mock('../ConditionBuilder', () => ({
-  ConditionBuilder: (props: any) => (
-    <div data-testid="mock-condition-builder" data-extra={props?.extraMetaTree ? 'yes' : 'no'} />
-  ),
-}));
+vi.mock('../ConditionBuilder', async () => {
+  const actual = await vi.importActual<typeof import('../ConditionBuilder')>('../ConditionBuilder');
+  return {
+    ...actual,
+    ConditionBuilder: (props: any) => (
+      <div data-testid="mock-condition-builder" data-extra={props?.extraMetaTree ? 'yes' : 'no'} />
+    ),
+  };
+});
 
 describe('FieldAssignRulesEditor', () => {
   const t = (key: string) => key;
