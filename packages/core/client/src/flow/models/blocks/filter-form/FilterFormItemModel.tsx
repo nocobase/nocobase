@@ -206,12 +206,10 @@ export class FilterFormItemModel extends FilterableItemModel<{
       : this.context.form?.getFieldValue(this.props.name);
 
     let rawValue = fieldValue;
-    let usedDefault = false;
 
     if (!this.mounted) {
       if (_.isEmpty(fieldValue)) {
         rawValue = this.getDefaultValue();
-        usedDefault = true;
       }
     }
 
