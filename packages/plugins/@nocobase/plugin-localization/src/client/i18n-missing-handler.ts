@@ -12,6 +12,7 @@ import _ from 'lodash';
 
 export class MissingKeyHandler {
   static DEBOUNCE_DELAY = 2000;
+  static fallbackNS = 'client';
   private sentMissingKeys = new Set<string>();
   private pendingMissingKeys = new Map<string, { key: string; ns: string }>();
   private submitPendingKeysDebounced: () => void;
@@ -29,6 +30,12 @@ export class MissingKeyHandler {
     // i18n.options.saveMissingTo = 'current';
     this.missingKeyHandler = (lngs: readonly string[], ns: string, key: string) => {
       if (!this.context.flowSettingsEnabled) {
+        return;
+      }
+      if (ns !== MissingKeyHandler.fallbackNS) {
+        this.removeClientFallback(key);
+      }
+      if (this.isFallbackClient(ns, key)) {
         return;
       }
       const uniqueKey = `${ns}:${key}`;
@@ -62,6 +69,38 @@ export class MissingKeyHandler {
     // ignore keys that match the pattern {{t(...)}}
     const ignorePattern = /^\{\{\s*t\(.*\)\s*\}\}$/;
     return !ignorePattern.test(key);
+  }
+
+  private isFallbackClient(ns: string, key: string): boolean {
+    if (ns !== MissingKeyHandler.fallbackNS) {
+      return false;
+    }
+
+    for (const pending of this.pendingMissingKeys.values()) {
+      if (pending.key === key && pending.ns !== MissingKeyHandler.fallbackNS) {
+        return true;
+      }
+    }
+
+    for (const sent of this.sentMissingKeys) {
+      const separatorIndex = sent.indexOf(':');
+      if (separatorIndex > -1) {
+        const sentNs = sent.slice(0, separatorIndex);
+        const sentKey = sent.slice(separatorIndex + 1);
+        if (sentKey === key && sentNs !== MissingKeyHandler.fallbackNS) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private removeClientFallback(key: string) {
+    if (!key) {
+      return;
+    }
+    this.pendingMissingKeys.delete(`${MissingKeyHandler.fallbackNS}:${key}`);
   }
 
   private async submitPendingKeys() {
