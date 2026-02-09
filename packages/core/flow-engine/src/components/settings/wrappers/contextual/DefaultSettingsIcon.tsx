@@ -656,7 +656,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 items.push({
                   key: uniqueKey,
-                  label: t(stepInfo.title),
+                  label: stepInfo.title,
                 });
               });
             });
@@ -671,7 +671,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 subMenuChildren.push({
                   key: uniqueKey,
-                  label: t(stepInfo.title),
+                  label: stepInfo.title,
                 });
               });
             });
