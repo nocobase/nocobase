@@ -17,19 +17,19 @@ export const collectionTransform = (collection: CollectionOptions, app: Applicat
   const { rawTitle, title, fields = [], ...rest } = collection;
   return {
     ...rest,
-    title: rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' }),
+    title: rawTitle ? title : app.context.t(title, { ns: 'lm-collections' }),
     rawTitle: rawTitle || title,
     fields: fields?.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {
         const title = uiSchema.title;
-        uiSchema.title = uiSchema.rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' });
+        uiSchema.title = uiSchema.rawTitle ? title : app.context.t(title, { ns: 'lm-collections' });
         uiSchema.rawTitle = uiSchema.rawTitle || title;
       }
       if (Array.isArray(uiSchema?.enum)) {
         uiSchema.enum = uiSchema.enum.map((item) => ({
           ...item,
           value: item?.value === undefined ? item : item.value,
-          label: item.rawLabel ? item.label : app.i18n.t(item.label, { ns: 'lm-collections' }),
+          label: item.rawLabel ? item.label : app.context.t(item.label, { ns: 'lm-collections' }),
           rawLabel: item.rawLabel || item.label,
         }));
       }

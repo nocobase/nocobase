@@ -33,15 +33,13 @@ export class FlowI18n {
       return keyOrTemplate;
     }
 
-    // 先尝试一次翻译
-    let result = this.translateKey(keyOrTemplate, options);
-
     // 检查翻译结果是否包含模板语法，如果有则进行模板编译
-    if (this.isTemplate(result)) {
-      result = this.compileTemplate(result);
+    if (this.isTemplate(keyOrTemplate)) {
+      return this.compileTemplate(keyOrTemplate);
     }
 
-    return result;
+    // 先尝试一次翻译
+    return this.translateKey(keyOrTemplate, options);
   }
 
   /**
