@@ -359,7 +359,7 @@ TableColumnModel.registerFlow({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
-        const title = ctx.t(params.title || ctx.model.collectionField?.title);
+        const title = params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : ctx.model.collectionField?.title;
         ctx.model.setProps('title', title || ctx.fieldPath);
       },
     },
@@ -373,7 +373,7 @@ TableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
+        ctx.model.setProps('tooltip', params.tooltip ? ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) : undefined);
       },
     },
     width: {

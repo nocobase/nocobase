@@ -41,7 +41,7 @@ TableCustomColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const title = ctx.engine.translate(params.title);
+        const title = params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : undefined;
         ctx.model.setProps('title', title);
       },
     },
@@ -54,7 +54,7 @@ TableCustomColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
+        ctx.model.setProps('tooltip', params.tooltip ? ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) : undefined);
       },
     },
     width: {
