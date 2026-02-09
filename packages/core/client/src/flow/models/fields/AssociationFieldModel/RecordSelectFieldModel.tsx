@@ -22,7 +22,6 @@ import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
 import { PlusOutlined } from '@ant-design/icons';
-import React, { useEffect, useMemo, useRef } from 'react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
