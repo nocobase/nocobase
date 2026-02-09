@@ -23,12 +23,28 @@ export default defineTools({
   definition: {
     name: 'getContextVars',
     description: `Available variables from context.
+
 Variables are references only and do not contain actual values.
-You must retrieve the real value explicitly via \`await ctx.getVar(path)\`,
-for example: \`await ctx.getVar('ctx.popup.record')\`.`,
+You must explicitly resolve values via \`await ctx.getVar(path)\`.
+
+The \`path\` supports progressive drilling (dot-notation).
+When you only need a specific field, prefer a more precise path
+instead of fetching the entire object, e.g.
+\`await ctx.getVar('ctx.popup.record.id')\` rather than
+\`await ctx.getVar('ctx.popup.record')\`.`,
     schema: z.object({
-      path: z.string().optional().describe('Variable path for progressive disclosure'),
-      depth: z.number().optional().describe('Max depth for variable traversal, default 3'),
+      path: z
+        .string()
+        .optional()
+        .describe(
+          'Dot-notated variable path. Supports progressive drilling. Prefer the most specific path when only a subset of data is needed.',
+        ),
+      depth: z
+        .number()
+        .optional()
+        .describe(
+          'Maximum traversal depth when exploring variables. Default is 3. Use smaller depth when the target structure is known.',
+        ),
     }),
   },
   invoke: async (ctx, _args, id) => {
