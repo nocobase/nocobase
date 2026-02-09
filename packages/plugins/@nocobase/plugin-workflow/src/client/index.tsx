@@ -57,6 +57,7 @@ import executions from '../common/collections/executions';
 import workflowCategories from '../common/collections/workflowCategories';
 import workflowStats from '../common/collections/workflowStats';
 import workflowVersionStats from '../common/collections/workflowVersionStats';
+import { NodeDetailsGridModel } from './models/NodeDetailsGridModel';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -256,6 +257,7 @@ export default class PluginWorkflowClient extends Plugin {
 
     this.flowEngine.registerModels({
       NodeDetailsModel,
+      NodeDetailsGridModel,
       NodeValueModel,
       TaskCardCommonItemModel,
     });

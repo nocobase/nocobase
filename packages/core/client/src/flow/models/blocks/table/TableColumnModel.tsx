@@ -141,7 +141,12 @@ export class TableColumnModel extends DisplayItemModel {
           key: fieldPath,
           label: field.title,
           refreshTargets: ['TableCustomColumnModel/TableJSFieldItemModel'],
-          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
+          toggleable: (subModel) => {
+            return (
+              subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath &&
+              subModel.use === 'TableColumnModel'
+            );
+          },
           useModel: this.name,
           createModelOptions: () => ({
             use: this.name,
@@ -297,7 +302,9 @@ export class TableColumnModel extends DisplayItemModel {
           fork.context.defineProperty('recordIndex', {
             get: () => record?.__index || index,
           });
-          const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
+          const namePath = this.context.prefixFieldPath
+            ? this.fieldPath.replace(`${this.context.prefixFieldPath}.`, '')
+            : this.fieldPath;
           const value = get(record, namePath);
           return (
             <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>

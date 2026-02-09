@@ -1446,6 +1446,8 @@
   "Use simple pagination mode": "使用简单分页模式",
   "Use the same time zone (GMT) for all users": "所有用户使用同一时区 (格林尼治标准时间)",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "用于拖拽排序场景，支持分组排序",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "当前标签页激活时作为浏览器页签标题。支持变量。留空时使用标签名称。",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "未启用标签页时作为浏览器页签标题。支持变量。留空时使用页面标题。",
   "User": "用户",
   "User not found. Please sign in again to continue.": "无法找到用户信息，请重新登录以继续。",
   "User password changed, please signin again.": "用户密码已更改，请重新登录。",
@@ -1591,8 +1593,10 @@
   "Cascader": "级联选择",
   "Subform":"子表单",
   "Edit popup (Add new)":"编辑弹窗（添加）",
-  "Edit popup (Select record)":"编辑弹窗（选择纪录）",
-  "Remove record":"移除纪录",
+  "Edit popup (Select record)":"编辑弹窗（选择记录）",
+  "Remove record":"移除记录",
   "Are you sure you want to remove it?":"你确定要移除吗？",
-  "Create record":"创建记录"
+  "Create record":"创建记录",
+  "Duplicate record":"复制记录",
+  "Are you sure you want to duplicate it?":"你确定要复制吗？"
 }
