@@ -73,7 +73,14 @@ const AIMessageRenderer: React.FC<{
 }> = ({ msg }) => {
   switch (msg.type) {
     case 'greeting':
-      return <Bubble content={msg.content} />;
+      return (
+        <Bubble
+          content={msg.content}
+          style={{
+            marginBottom: '8px',
+          }}
+        />
+      );
     default:
       return (
         <Bubble

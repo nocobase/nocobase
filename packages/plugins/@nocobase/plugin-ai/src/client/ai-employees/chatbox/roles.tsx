@@ -44,8 +44,12 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
   },
   task: {
     placement: 'start',
-    avatar: { icon: '', style: { visibility: 'hidden' } },
     variant: 'borderless',
+    styles: {
+      content: {
+        margin: '0px 16px 8px',
+      },
+    },
     messageRender: (msg: any) => <TaskMessage msg={msg} />,
   },
 };
@@ -62,7 +66,7 @@ export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   styles: {
     content: {
       width: '95%',
-      margin: '8px 16px 0px',
+      margin: '8px 16px 0',
       marginInlineEnd: 16,
     },
   },
