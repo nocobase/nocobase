@@ -17,8 +17,7 @@ import {
   MinusCircleFilled,
   QuestionCircleOutlined,
   CheckOutlined,
-  ToolOutlined,
-  DownOutlined,
+  RightOutlined,
   UpOutlined,
 } from '@ant-design/icons';
 import { ToolCall, ToolsEntry, toToolsMap, useToken, lazy } from '@nocobase/client';
@@ -128,17 +127,19 @@ const ToolCallRow: React.FC<{
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '6px 12px',
-          borderRadius: token.borderRadiusSM,
-          background: token.colorFillTertiary,
           cursor: 'pointer',
           userSelect: 'none',
         }}
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          if (args === '{}') {
+            return;
+          }
+          setExpanded(!expanded);
+        }}
       >
         <Flex align="center" gap={8}>
-          <ToolOutlined style={{ color: token.colorTextSecondary }} />
-          <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorTextSecondary }}>{t('Use skills')}</span>
-          <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorText }}>
+          <InvokeStatus toolCall={toolCall} />
+          <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorTextSecondary }}>
             {title}
             {toolsEntry?.introduction?.about && (
               <>
@@ -151,12 +152,13 @@ const ToolCallRow: React.FC<{
           </span>
         </Flex>
         <Flex align="center" gap={8}>
-          {expanded ? (
-            <UpOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
-          ) : (
-            <DownOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
-          )}
-          <InvokeStatus toolCall={toolCall} />
+          {args !== '{}' ? (
+            expanded ? (
+              <UpOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+            ) : (
+              <RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+            )
+          ) : null}
         </Flex>
       </div>
       {expanded && (

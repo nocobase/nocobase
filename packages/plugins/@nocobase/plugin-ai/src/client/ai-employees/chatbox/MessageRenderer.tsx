@@ -41,7 +41,7 @@ const MessageWrapper = React.forwardRef<
   return (
     <div ref={ref} {...props} onMouseEnter={() => setShowFooter(true)} onMouseLeave={() => setShowFooter(false)}>
       {children}
-      {footer && <div style={{ marginTop: '4px', opacity: showFooter ? 1 : 0 }}>{footer}</div>}
+      {footer && <div style={{ marginTop: '4px', display: showFooter ? 'flex' : 'none' }}>{footer}</div>}
     </div>
   );
 });
@@ -57,7 +57,6 @@ const AITextMessageRenderer: React.FC<{
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 16,
         }}
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}

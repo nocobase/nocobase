@@ -54,7 +54,7 @@ export const DataModelingCard: React.FC<
     <>
       <Card
         style={{
-          marginBottom: '16px',
+          margin: '16px 0',
           cursor: 'pointer',
         }}
         onClick={() => {
