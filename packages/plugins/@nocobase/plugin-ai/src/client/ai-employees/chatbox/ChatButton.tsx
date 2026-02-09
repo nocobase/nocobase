@@ -72,7 +72,6 @@ export const ChatButton: React.FC = observer(() => {
       >
         <div
           onClick={() => {
-            if (!currentEmployee) return;
             setDropdownOpen(false);
             setOpen(true);
           }}

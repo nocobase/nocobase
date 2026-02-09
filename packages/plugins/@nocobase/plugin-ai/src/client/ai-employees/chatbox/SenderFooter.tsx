@@ -16,6 +16,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import _ from 'lodash';
 import { SearchSwitch } from './SearchSwitch';
 import { ModelSwitcher } from './ModelSwitcher';
+import { AIEmployeeSwitcher } from './AIEmployeeSwitch';
 
 export const SenderFooter: React.FC<{
   components: any;
@@ -63,6 +64,7 @@ export const SenderFooter: React.FC<{
         <Upload />
         <SearchSwitch />
         <ModelSwitcher />
+        <AIEmployeeSwitcher />
       </Flex>
       <Flex align="center" gap="middle">
         {loading ? (
