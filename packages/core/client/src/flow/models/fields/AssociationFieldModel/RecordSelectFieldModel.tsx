@@ -10,7 +10,6 @@ import {
   CollectionField,
   EditableItemModel,
   tExpr,
-  FilterableItemModel,
   MultiRecordResource,
   useFlowViewContext,
   FlowModelRenderer,
@@ -23,7 +22,7 @@ import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
 import { PlusOutlined } from '@ant-design/icons';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -123,6 +122,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     value,
     multiple,
     allowMultiple,
+    keepDropdownOpenOnSelect = false,
     options,
     quickCreate,
     onChange,
@@ -131,8 +131,25 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     ...others
   } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
+  const shouldKeepOpenOnSelect = Boolean(keepDropdownOpenOnSelect && isMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const model: any = useFlowModel();
+  // 运行时状态挂在 model 上，避免值变化触发重渲染后本地状态丢失导致下拉收起
+  const keepOpenRuntimeRef = useRef<{ open?: boolean; preventCloseOnSelect: boolean }>();
+  if (!keepOpenRuntimeRef.current) {
+    const runtimeState =
+      model.__keepOpenOnSelectRuntime ||
+      (model.__keepOpenOnSelectRuntime = { open: undefined, preventCloseOnSelect: false });
+    keepOpenRuntimeRef.current = runtimeState;
+  }
+  const keepOpenRuntime = keepOpenRuntimeRef.current;
+  const [dropdownOpen, setDropdownOpen] = useState<boolean | undefined>(keepOpenRuntime.open);
+  const setKeepOpenRuntime = (patch: Partial<{ open?: boolean; preventCloseOnSelect: boolean }>) => {
+    Object.assign(keepOpenRuntime, patch);
+    if (Object.prototype.hasOwnProperty.call(patch, 'open')) {
+      setDropdownOpen(keepOpenRuntime.open);
+    }
+  };
   const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const QuickAddContent = ({ searchText }) => {
@@ -207,11 +224,41 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         options={realOptions}
         value={toSelectValue(value, fieldNames, isMultiple)}
         mode={isMultiple ? 'multiple' : undefined}
+        open={shouldKeepOpenOnSelect ? dropdownOpen : undefined}
         onChange={(value, option) => {
           onChange(option as AssociationOption | AssociationOption[]);
         }}
+        onSelect={(selectedValue, option) => {
+          if (shouldKeepOpenOnSelect) {
+            setKeepOpenRuntime({ preventCloseOnSelect: true, open: true });
+          }
+          others.onSelect?.(selectedValue, option);
+        }}
+        onDropdownVisibleChange={(open) => {
+          if (shouldKeepOpenOnSelect) {
+            // 仅拦截“点击选项后触发的关闭”，其它关闭行为保持默认
+            if (!open && keepOpenRuntime.preventCloseOnSelect) {
+              setKeepOpenRuntime({ preventCloseOnSelect: false, open: true });
+              others.onDropdownVisibleChange?.(true);
+              return;
+            }
+            setKeepOpenRuntime({ preventCloseOnSelect: false, open });
+          }
+          others.onDropdownVisibleChange?.(open);
+        }}
         optionRender={({ data }) => {
-          return <LabelByField option={data} fieldNames={fieldNames} />;
+          return (
+            <div
+              onMouseDown={() => {
+                if (shouldKeepOpenOnSelect) {
+                  // 提前标记“本次关闭由点击选项触发”，避免事件顺序导致漏拦截
+                  setKeepOpenRuntime({ preventCloseOnSelect: true });
+                }
+              }}
+            >
+              <LabelByField option={data} fieldNames={fieldNames} />
+            </div>
+          );
         }}
         popupMatchSelectWidth
         labelRender={(data) => {
@@ -805,10 +852,4 @@ EditableItemModel.bindModelToInterface(
   'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   { isDefault: true, order: 1 },
-);
-
-FilterableItemModel.bindModelToInterface(
-  'RecordSelectFieldModel',
-  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
-  { isDefault: true },
 );

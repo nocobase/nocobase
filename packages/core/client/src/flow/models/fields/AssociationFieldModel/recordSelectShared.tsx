@@ -54,6 +54,8 @@ export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'option
   value?: AssociationOption | AssociationOption[];
   multiple?: boolean;
   allowMultiple?: boolean;
+  // 在特定场景（如默认值弹窗）下，多选点击选项后保持下拉展开
+  keepDropdownOpenOnSelect?: boolean;
   options?: AssociationOption[];
   onChange: (option: AssociationOption | AssociationOption[]) => void;
   onDropdownVisibleChange?: (open: boolean) => void;

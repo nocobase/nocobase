@@ -19,6 +19,7 @@ import { Empty } from 'antd';
 import _, { debounce } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
+import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { FilterManager } from '../filter-manager';
@@ -199,15 +200,20 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const fieldValue = this.subModels.field.getFilterValue
-      ? this.subModels.field.getFilterValue()
+    const fieldModel = this.subModels.field as FieldModel & { getFilterValue?: () => any };
+    const fieldValue = fieldModel.getFilterValue
+      ? fieldModel.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
 
     let rawValue = fieldValue;
 
     if (!this.mounted) {
-      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+      if (_.isEmpty(fieldValue)) {
+        rawValue = this.getDefaultValue();
+      }
     }
+
+    rawValue = this.normalizeAssociationFilterValue(rawValue, fieldModel);
 
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
@@ -219,6 +225,29 @@ export class FilterFormItemModel extends FilterableItemModel<{
     }
 
     return rawValue;
+  }
+
+  normalizeAssociationFilterValue(value: any, fieldModel: FieldModel) {
+    if (value === null || typeof value === 'undefined') {
+      return value;
+    }
+    const collectionField = (fieldModel as any)?.context?.collectionField;
+    const isAssociation =
+      typeof collectionField?.isAssociationField === 'function'
+        ? collectionField.isAssociationField()
+        : !!collectionField?.target;
+    if (!isAssociation) {
+      return value;
+    }
+    const valueKey = collectionField?.targetKey || collectionField?.targetCollection?.filterTargetKey || 'id';
+    if (Array.isArray(value)) {
+      if (value.length === 0) return value;
+      return value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
+    }
+    if (typeof value === 'object') {
+      return (value as any)?.[valueKey];
+    }
+    return value;
   }
 
   getDefaultValue() {
@@ -302,10 +331,16 @@ FilterFormItemModel.registerFlow({
         const collectionField = ctx.model.collectionField;
         if (collectionField?.getComponentProps) {
           const componentProps = collectionField.getComponentProps();
-          const { rules, required, ...restProps } = componentProps || {};
+          const fieldModel = ctx.model.subModels?.field;
+          const shouldIgnoreMultiple = fieldModel instanceof RecordSelectFieldModel;
+          const { rules, required, multiple, allowMultiple, maxCount, ...restProps } = componentProps || {};
 
           // 筛选表单不继承字段的后端校验
-          ctx.model.setProps({ ...restProps, rules: undefined, required: undefined });
+          ctx.model.setProps({
+            ...(shouldIgnoreMultiple ? restProps : { ...restProps, multiple, allowMultiple, maxCount }),
+            rules: undefined,
+            required: undefined,
+          });
         }
         ctx.model.setProps({
           name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一

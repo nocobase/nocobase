@@ -31,6 +31,7 @@ export * from './pattern';
 export * from './validation';
 export * from './columnFixed';
 export * from './linkageRulesRefresh';
+export * from './blockHeight';
 export {
   fieldLinkageRules,
   subFormFieldLinkageRules,

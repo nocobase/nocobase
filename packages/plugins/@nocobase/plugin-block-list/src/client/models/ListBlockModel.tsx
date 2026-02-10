@@ -17,13 +17,15 @@ import {
   AddSubModelButton,
   FlowSettingsButton,
   FlowModel,
+  observer,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel, dispatchEventDeep } from '@nocobase/client';
-import React from 'react';
+import React, { useMemo, useRef } from 'react';
 import { List, Space } from 'antd';
 import { css } from '@emotion/css';
 import { ListItemModel } from './ListItemModel';
+import { useListHeight } from './utils';
 
 type ListBlockModelStructure = {
   subModels: {
@@ -184,42 +186,99 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   }
 
   renderComponent() {
-    return (
-      <>
-        {this.renderActions()}
-        <List
-          {...this.props}
-          pagination={this.pagination()}
-          loading={this.resource?.loading}
-          dataSource={this.resource.getData()}
-          renderItem={(item, index) => {
-            const model = this.subModels.item.createFork({}, `${index}`);
-            model.context.defineProperty('record', {
-              get: () => item,
-              cache: false,
-            });
-            model.context.defineProperty('index', {
-              get: () => index,
-              cache: false,
-            });
-            return (
-              <List.Item
-                key={index}
-                className={css`
-                  > div {
-                    width: 100%;
-                  }
-                `}
-              >
-                <FlowModelRenderer model={model} />
-              </List.Item>
-            );
-          }}
-        />
-      </>
-    );
+    const { heightMode, height } = this.decoratorProps;
+    return <ListBlockContent model={this} heightMode={heightMode} height={height} />;
   }
 }
+
+const ListBlockContent = observer(
+  ({ model, heightMode, height }: { model: ListBlockModel; heightMode?: string; height?: number }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const actionsRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
+    const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+    const ctx = model.context;
+    const token = ctx.themeToken;
+
+    const listHeight = useListHeight({
+      heightMode,
+      containerRef,
+      actionsRef,
+      listRef,
+      deps: [height],
+    });
+    const listClassName = useMemo(
+      () => css`
+        .ant-spin-nested-loading {
+          height: var(--nb-list-height);
+          overflow: auto;
+          margin-left: -${token.marginLG}px;
+          margin-right: -${token.marginLG}px;
+          padding-left: ${token.marginLG}px;
+          padding-right: ${token.marginLG}px;
+        }
+        .ant-spin-nested-loading > .ant-spin-container {
+          min-height: 100%;
+        }
+      `,
+      [],
+    );
+    const listStyle = useMemo(() => {
+      if (listHeight == null) return model.props?.style;
+      return {
+        ...(model.props?.style || {}),
+        ['--nb-list-height' as any]: `${listHeight}px`,
+      };
+    }, [listHeight, model.props?.style]);
+    const containerStyle: any = isFixedHeight
+      ? {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          height: '100%',
+        }
+      : undefined;
+
+    return (
+      <div ref={containerRef} style={containerStyle}>
+        <div ref={actionsRef}>{model.renderActions()}</div>
+        <div ref={listRef} style={{ flex: 1, minHeight: 0 }}>
+          <List
+            {...model.props}
+            className={model.props?.className ? `${model.props.className} ${listClassName}` : listClassName}
+            style={listStyle}
+            pagination={model.pagination()}
+            loading={model.resource?.loading}
+            dataSource={model.resource.getData()}
+            renderItem={(item, index) => {
+              const itemModel = model.subModels.item.createFork({}, `${index}`);
+              itemModel.context.defineProperty('record', {
+                get: () => item,
+                cache: false,
+              });
+              itemModel.context.defineProperty('index', {
+                get: () => index,
+                cache: false,
+              });
+              return (
+                <List.Item
+                  key={index}
+                  className={css`
+                    > div {
+                      width: 100%;
+                    }
+                  `}
+                >
+                  <FlowModelRenderer model={itemModel} />
+                </List.Item>
+              );
+            }}
+          />
+        </div>
+      </div>
+    );
+  },
+);
 
 ListBlockModel.registerFlow({
   key: 'resourceSettings2',

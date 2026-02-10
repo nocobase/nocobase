@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { render } from '@testing-library/react';
+import React, { useRef } from 'react';
+import { render, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
-import { FormBlockModel } from '../../../..';
+import { FormBlockContent, FormBlockModel } from '../../../..';
 import { Application } from '../../../../../application/Application';
 import {
   InputFieldInterface,
@@ -21,6 +21,7 @@ import {
   M2OFieldInterface,
   NumberFieldInterface,
 } from '../../../../../collection-manager/interfaces';
+import { Form } from 'antd';
 // -----------------------------
 // Helpers
 // -----------------------------
@@ -556,5 +557,117 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const out = await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
     expect(out).toEqual({ who: 'L1' });
+  });
+});
+
+const createRect = (height: number) => ({
+  x: 0,
+  y: 0,
+  width: 100,
+  height,
+  top: 0,
+  left: 0,
+  right: 100,
+  bottom: height,
+  toJSON: () => {},
+});
+
+const setRect = (node: HTMLElement | null, height: number) => {
+  if (!node) return;
+  node.getBoundingClientRect = () => createRect(height);
+};
+
+const FormContentHarness = ({
+  heightMode,
+  height,
+  gridModel,
+}: {
+  heightMode?: string;
+  height?: number;
+  gridModel: any;
+}) => {
+  const [form] = Form.useForm();
+  const modelRef = useRef<any>();
+  if (!modelRef.current) {
+    modelRef.current = {
+      form,
+      context: { view: { inputArgs: {} }, record: {} },
+      markUserModifiedFields: vi.fn(),
+      dispatchEvent: vi.fn(),
+      emitter: { emit: vi.fn() },
+    };
+  }
+
+  return (
+    <FormBlockContent
+      model={modelRef.current}
+      gridModel={gridModel}
+      heightMode={heightMode}
+      height={height}
+      grid={<div data-testid="grid" />}
+      actions={<div data-testid="actions" />}
+      footer={<div data-testid="footer" />}
+    />
+  );
+};
+
+describe('FormBlockModel block height', () => {
+  const originalResizeObserver = globalThis.ResizeObserver;
+
+  beforeEach(() => {
+    if (typeof globalThis.ResizeObserver === 'undefined') {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      } as any;
+    }
+  });
+
+  afterEach(() => {
+    globalThis.ResizeObserver = originalResizeObserver;
+  });
+
+  it('updates grid height when heightMode is fixed', async () => {
+    const gridModel: any = {
+      props: {},
+      setProps: vi.fn(),
+    };
+    gridModel.setProps = vi.fn((next) => Object.assign(gridModel.props, next));
+
+    const { container, rerender } = render(
+      <FormContentHarness heightMode="specifyValue" height={200} gridModel={gridModel} />,
+    );
+
+    gridModel.setProps.mockClear();
+
+    const gridEl = container.querySelector('[data-testid="grid"]') as HTMLElement;
+    const containerEl = gridEl?.parentElement as HTMLElement;
+    const actionsWrapper = container.querySelector('[data-testid="actions"]')?.parentElement as HTMLElement;
+    const footerWrapper = container.querySelector('[data-testid="footer"]')?.parentElement as HTMLElement;
+
+    setRect(containerEl, 400);
+    setRect(actionsWrapper, 40);
+    setRect(footerWrapper, 20);
+
+    rerender(<FormContentHarness heightMode="specifyValue" height={201} gridModel={gridModel} />);
+
+    await waitFor(() => {
+      expect(gridModel.setProps).toHaveBeenLastCalledWith({ height: 340 });
+    });
+  });
+
+  it('clears grid height when heightMode is not fixed', async () => {
+    const gridModel: any = {
+      props: { height: 120 },
+      setProps: vi.fn(),
+    };
+    gridModel.setProps = vi.fn((next) => Object.assign(gridModel.props, next));
+
+    render(<FormContentHarness heightMode="default" height={200} gridModel={gridModel} />);
+
+    await waitFor(() => {
+      expect(gridModel.setProps).toHaveBeenCalledWith({ height: undefined });
+    });
   });
 });

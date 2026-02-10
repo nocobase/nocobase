@@ -19,7 +19,7 @@ import {
 import { Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../base/BlockModel';
-import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { FormBlockContent, FormBlockModel } from './FormBlockModel';
 import { submitHandler } from './submitHandler';
 
 // CreateFormModel - 专门用于新增记录
@@ -56,30 +56,38 @@ export class CreateFormModel extends FormBlockModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const { heightMode, height } = this.decoratorProps;
     return (
-      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        <DndProvider>
-          <Space wrap>
-            {this.mapSubModels('actions', (action) => {
-              if (action.hidden && !isConfigMode) {
-                return;
-              }
-              return (
-                <Droppable model={action} key={action.uid}>
-                  <MemoFlowModelRenderer
-                    key={action.uid}
-                    model={action}
-                    showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
-                    extraToolbarItems={this.actionExtraToolbarItems}
-                  />
-                </Droppable>
-              );
-            })}
-            {this.renderConfigureActions()}
-          </Space>
-        </DndProvider>
-      </FormComponent>
+      <FormBlockContent
+        model={this}
+        gridModel={this.subModels.grid}
+        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
+        heightMode={heightMode}
+        height={height}
+        grid={<FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />}
+        actions={
+          <DndProvider>
+            <Space wrap>
+              {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
+                return (
+                  <Droppable model={action} key={action.uid}>
+                    <MemoFlowModelRenderer
+                      key={action.uid}
+                      model={action}
+                      showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
+                      extraToolbarItems={this.actionExtraToolbarItems}
+                    />
+                  </Droppable>
+                );
+              })}
+              {this.renderConfigureActions()}
+            </Space>
+          </DndProvider>
+        }
+      />
     );
   }
 }
