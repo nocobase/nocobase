@@ -132,9 +132,12 @@ export const localizationSchema: ISchema = {
       'x-uid': 'input',
       'x-component': 'Table.Void',
       'x-component-props': {
-        rowKey: 'translationId',
+        rowKey: 'id',
         rowSelection: {
           type: 'checkbox',
+          getCheckboxProps: (record) => ({
+            disabled: !record?.translationId,
+          }),
         },
         useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
