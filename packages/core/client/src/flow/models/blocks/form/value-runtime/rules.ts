@@ -1464,11 +1464,23 @@ export class RuleEngine {
     // - length：仅当当前对象位于对多关联行内时存在，表示当前层数组总数
     // - value：当前对象的值（来自 formValues 的对应切片，支持无限嵌套属性访问）
     // - parentItem：上级项（同结构，可链式 parentItem.parentItem...）
+    // 计算顺序：
+    // 1) 优先按 targetNamePath 从 formValues 构建“关联链 item”
+    // 2) 若无法构建（例如目标字段是顶层路径），回退到上游显式注入的 baseCtx.item
+    //    （如 PopupSubTable 新增弹窗传入的 parentItem 链）
     let itemCached: any;
     let itemCachedReady = false;
+    const getFallbackItem = () => {
+      try {
+        return baseCtx?.item;
+      } catch {
+        return undefined;
+      }
+    };
     const getItem = () => {
       if (!itemCachedReady) {
-        itemCached = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath);
+        const chainItem = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath);
+        itemCached = typeof chainItem === 'undefined' ? getFallbackItem() : chainItem;
         itemCachedReady = true;
       }
       return itemCached;

@@ -664,8 +664,21 @@ export const subFormLinkageSetFieldProps = defineAction({
     // 根据 uid 找到对应的字段 model 并设置属性
     fields.forEach((fieldUid: string) => {
       try {
-        const formItemModel = ctx.engine.getModel(fieldUid);
-        const forkModel = formItemModel.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
+        const formItemModel = ctx.engine?.getModel?.(fieldUid);
+        if (!formItemModel) {
+          console.warn('[subFormLinkageSetFieldProps] Target field model not found', {
+            fieldUid,
+            modelUid: ctx.model?.uid,
+          });
+          return;
+        }
+
+        const fieldKey = ctx.model?.context?.fieldKey;
+        const forkKey = fieldKey ? `${fieldKey}:${fieldUid}` : undefined;
+        const forkModel =
+          forkKey && typeof (formItemModel as any).getFork === 'function'
+            ? (formItemModel as any).getFork(forkKey)
+            : null;
 
         let model = forkModel;
 
