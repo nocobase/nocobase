@@ -33,7 +33,7 @@ export class MissingKeyHandler {
         return;
       }
 
-      if (!ns?.startsWith('lm-')) {
+      if (ns === 'client') {
         return;
       }
 
