@@ -64,6 +64,13 @@ function createTempFieldClass(Base: any) {
       if (eventName !== 'beforeRender') return;
       const originalProps = this._originalModel?.props || {};
       const collectionField = this.context?.collectionField;
+      const nextProps: Record<string, any> = {};
+      if (originalProps?.fieldNames) {
+        nextProps.fieldNames = originalProps.fieldNames;
+      }
+      if (typeof originalProps?.allowMultiple !== 'undefined') {
+        nextProps.allowMultiple = originalProps.allowMultiple;
+      }
       const inferMultipleFromCollectionField = () => {
         const relationType = collectionField?.type;
         const relationInterface = collectionField?.interface;
@@ -78,7 +85,10 @@ function createTempFieldClass(Base: any) {
       const multiple =
         typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCollectionField();
       if (typeof multiple !== 'undefined') {
-        this.setProps({ multiple });
+        nextProps.multiple = multiple;
+      }
+      if (Object.keys(nextProps).length) {
+        this.setProps(nextProps);
       }
 
       // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
@@ -321,8 +331,11 @@ export const DefaultValue = connect((props: Props) => {
       parentId: null,
       subKey: null,
       subType: null,
-      stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false, allowClear: true, ...host?.customFieldProps },
+      stepParams: {
+        ...(origin?.stepParams || {}),
+        ...(init ? { fieldSettings: { init } } : {}),
+      },
+      props: { disabled: false, allowClear: true, ...(origin?.props || {}), ...host?.customFieldProps },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',

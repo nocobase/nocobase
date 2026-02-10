@@ -388,7 +388,7 @@ FilterFormCustomFieldModel.registerFlow({
             fieldModelProps: resolvedFieldModelProps,
           });
 
-        ctx.model.customFieldProps = fieldModelProps;
+        ctx.model.customFieldProps = resolvedFieldModelProps;
       },
     },
     connectFields: {
