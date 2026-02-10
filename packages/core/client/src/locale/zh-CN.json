@@ -1598,5 +1598,8 @@
   "Are you sure you want to remove it?":"你确定要移除吗？",
   "Create record":"创建记录",
   "Duplicate record":"复制记录",
-  "Are you sure you want to duplicate it?":"你确定要复制吗？"
+  "Are you sure you want to duplicate it?":"你确定要复制吗？",
+  "Edit page": "编辑页面",
+  "Page title": "页面标题",
+  "Document title": "文档标题"
 }
