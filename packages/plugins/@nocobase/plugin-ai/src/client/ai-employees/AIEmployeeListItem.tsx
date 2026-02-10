@@ -22,8 +22,8 @@ export const AIEmployeeListItem: React.FC<{
 
   return (
     <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
-      <Flex align="center" onClick={onClick} style={{ padding: '4px 2px' }} gap={10}>
-        <Avatar shape="circle" size={40} src={avatars(aiEmployee.avatar)} />
+      <Flex align="center" onClick={onClick} style={{ padding: '4px 2px' }} gap={8}>
+        <Avatar shape="circle" size={36} src={avatars(aiEmployee.avatar)} />
         <Flex vertical={true}>
           <div
             style={{

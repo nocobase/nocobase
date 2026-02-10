@@ -61,11 +61,11 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
 
 export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   placement: 'start',
-  avatar: aiEmployee.avatar ? (
-    <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
-      <Avatar shape="circle" size="large" src={avatars(aiEmployee.avatar)} />
-    </Popover>
-  ) : null,
+  // avatar: aiEmployee.avatar ? (
+  //   <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
+  //     <Avatar shape="circle" size="large" src={avatars(aiEmployee.avatar)} />
+  //   </Popover>
+  // ) : null,
   typing: { step: 5, interval: 20 },
   variant: 'borderless',
   styles: {
@@ -73,6 +73,7 @@ export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
       width: '95%',
       margin: '8px 16px 0',
       marginInlineEnd: 16,
+      minHeight: 0,
     },
   },
   messageRender: (msg: any) => {
