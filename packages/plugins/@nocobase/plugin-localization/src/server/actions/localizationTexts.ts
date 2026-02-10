@@ -131,7 +131,7 @@ const list = async (ctx: Context, next: Next) => {
 };
 
 const missing = async (ctx: Context, next: Next) => {
-  const { keys }: any = ctx.request.body || {};
+  const { keys, locale }: any = ctx.request.body || {};
 
   const currentRoles = ctx.state.currentRoles || [];
   if (!currentRoles.includes('root')) {
@@ -151,7 +151,13 @@ const missing = async (ctx: Context, next: Next) => {
 
   if (keys?.length > 0) {
     const plugin = ctx.app.pm?.get('localization');
-    await plugin?.addNewTexts(keys.map((key) => ({ text: key.text, module: `resources.${key.ns}` })));
+    const currentLocale = locale || ctx.get('X-Locale') || 'en-US';
+    await plugin?.addNewTexts(
+      keys.map((key) => ({ text: key.text, module: `resources.${key.ns}` })),
+      {
+        locale: currentLocale,
+      },
+    );
   }
 
   await next();

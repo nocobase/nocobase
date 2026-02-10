@@ -17,6 +17,7 @@ export class MissingKeyHandler {
   private pendingMissingKeys = new Map<string, { key: string; ns: string }>();
   private submitPendingKeysDebounced: () => void;
   private missingKeyHandler: (lngs: readonly string[], ns: string, key: string) => void;
+  private currentLocale?: string;
 
   constructor(private context: FlowEngineContext) {
     this.submitPendingKeysDebounced = _.debounce(() => {
@@ -50,6 +51,7 @@ export class MissingKeyHandler {
       }
 
       try {
+        this.currentLocale = this.context.i18n?.language;
         this.sentMissingKeys.add(uniqueKey);
         this.pendingMissingKeys.set(uniqueKey, { key, ns });
         this.submitPendingKeysDebounced();
@@ -116,6 +118,7 @@ export class MissingKeyHandler {
         url: '/localizationTexts:missing',
         data: {
           keys: keysToSubmit,
+          locale: this.currentLocale,
         },
       });
 
