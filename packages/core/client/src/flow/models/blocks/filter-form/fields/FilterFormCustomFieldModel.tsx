@@ -357,6 +357,15 @@ FilterFormCustomFieldModel.registerFlow({
         } else {
           ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...resolvedFieldModelProps });
         }
+        if (fieldModel === 'FilterFormCustomRecordSelectFieldModel') {
+          const titleFieldParam =
+            resolvedFieldModelProps?.recordSelectTitleField || resolvedFieldModelProps?.fieldNames?.label;
+          if (titleFieldParam) {
+            ctx.model.customFieldModelInstance.setStepParams('selectSettings', 'fieldNames', {
+              label: titleFieldParam,
+            });
+          }
+        }
         if (recordSelectCollectionField) {
           ctx.model.customFieldModelInstance.context.defineProperty('collectionField', {
             value: recordSelectCollectionField,

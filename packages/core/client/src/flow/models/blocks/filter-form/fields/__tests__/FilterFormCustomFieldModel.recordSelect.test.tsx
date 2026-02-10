@@ -400,4 +400,73 @@ describe('FilterForm custom field record select', () => {
 
     expect(model.operator).toBe('$match');
   });
+
+  it('keeps custom title field after applying select settings', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
+    engine.registerActions({
+      titleField: {
+        name: 'titleField',
+        defaultParams: (ctx: any) => ({
+          label: ctx.model.context.collectionField.targetCollectionTitleFieldName,
+        }),
+        handler: (ctx: any, params: any) => {
+          const valueField =
+            ctx.model.props?.fieldNames?.value || ctx.model.context.collectionField.targetCollection?.filterTargetKey;
+          ctx.model.setProps({
+            fieldNames: {
+              label: params?.label,
+              value: valueField || 'id',
+            },
+          });
+        },
+      },
+      dataScope: {
+        name: 'dataScope',
+        handler: () => {},
+      },
+      sortingRule: {
+        name: 'sortingRule',
+        handler: () => {},
+      },
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'users',
+      titleField: 'nickname',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        { name: 'nickname', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+
+    const model = engine.createModel<FilterFormCustomFieldModel>({
+      uid: 'custom-keep-title-field',
+      use: 'FilterFormCustomFieldModel',
+    });
+
+    model.setStepParams('formItemSettings', 'fieldSettings', {
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+      title: 'User',
+      name: 'user',
+      operator: '$eq',
+      fieldModelProps: {
+        recordSelectDataSourceKey: 'main',
+        recordSelectTargetCollection: 'users',
+        recordSelectTitleField: 'id',
+        recordSelectValueField: 'id',
+      },
+    });
+
+    await model.applyFlow('formItemSettings');
+
+    const customRecordSelect = model.customFieldModelInstance as any;
+    expect(customRecordSelect?.props?.fieldNames?.label).toBe('id');
+
+    await customRecordSelect.applyFlow('selectSettings');
+
+    expect(customRecordSelect?.props?.fieldNames?.label).toBe('id');
+  });
 });
