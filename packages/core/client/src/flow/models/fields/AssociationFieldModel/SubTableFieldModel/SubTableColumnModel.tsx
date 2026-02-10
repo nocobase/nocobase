@@ -533,8 +533,13 @@ SubTableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const title = ctx.t(params.title, { ns: 'lm-flow-engine' });
-        ctx.model.setProps('title', title || ctx.fieldPath.split('.').pop());
+        if (params.title && params.title === ctx.model.collectionField?.title) {
+          ctx.model.setProps({ title: params.title });
+        } else {
+          ctx.model.setProps({
+            title: ctx.t(params.title, { ns: 'lm-flow-engine' }) || ctx.fieldPath.split('.').pop(),
+          });
+        }
       },
     },
     tooltip: {

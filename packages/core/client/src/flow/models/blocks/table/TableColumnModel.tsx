@@ -364,8 +364,11 @@ TableColumnModel.registerFlow({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
-        const title = ctx.t(params.title, { ns: 'lm-flow-engine' });
-        ctx.model.setProps('title', title || ctx.fieldPath);
+        if (params.title && params.title === ctx.model.collectionField?.title) {
+          ctx.model.setProps({ title: params.title });
+        } else {
+          ctx.model.setProps({ title: ctx.t(params.title, { ns: 'lm-flow-engine' }) || ctx.fieldPath });
+        }
       },
     },
 
