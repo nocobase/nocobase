@@ -206,6 +206,14 @@ export abstract class LLMProvider {
     return this.builtInTools();
   }
 
+  resolveTools(toolDefinitions: any[]): any[] {
+    const builtIn = this.builtInTools();
+    if (builtIn.length > 0 && toolDefinitions.length > 0 && this.isToolConflict()) {
+      return [...builtIn];
+    }
+    return [...builtIn, ...toolDefinitions];
+  }
+
   parseWebSearchAction(chunk: AIMessageChunk): { type: string; query: string }[] {
     return [];
   }

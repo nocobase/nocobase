@@ -279,10 +279,7 @@ export class AIEmployee {
   }) {
     const model = provider.createModel();
     const toolDefinitions = tools?.map(ToolDefinition.from('ToolsEntry')) ?? [];
-    const allTools = [
-      ...provider.getBuiltInTools(toolDefinitions?.length && toolDefinitions.length > 0),
-      ...toolDefinitions,
-    ];
+    const allTools = provider.resolveTools(toolDefinitions);
     const checkpointer = new SequelizeCollectionSaver(() => this.ctx.app.mainDataSource);
     return createLangChainAgent({ model, tools: allTools, middleware, systemPrompt, checkpointer });
   }
@@ -394,7 +391,10 @@ export class AIEmployee {
           if (chunk.type === 'ai') {
             gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
             if (chunk.content) {
-              this.protocol.content(provider.parseResponseChunk(chunk.content));
+              const parsedContent = provider.parseResponseChunk(chunk.content);
+              if (parsedContent) {
+                this.protocol.content(parsedContent);
+              }
             }
 
             if (chunk.tool_call_chunks) {
@@ -999,6 +999,12 @@ If information is missing, clearly state it in the summary.</Important>`;
       const workContext = msg.workContext;
       const userContent = msg.content;
       let { content } = userContent ?? {};
+
+      // Handle array content from providers like Anthropic web search (backward compat)
+      if (Array.isArray(content)) {
+        const textBlocks = content.filter((block: any) => block.type === 'text');
+        content = textBlocks.map((block: any) => block.text).join('') || '';
+      }
 
       // 截断消息内容
       if (typeof content === 'string') {

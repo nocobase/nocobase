@@ -43,6 +43,7 @@ export const useChatMessageActions = () => {
   const setWebSearching = useChatMessagesStore.use.setWebSearching();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentWebSearch = useChatConversationsStore.use.webSearch();
 
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
 
@@ -161,7 +162,7 @@ export const useChatMessageActions = () => {
                 const toolCallChunk = data.body[0];
                 if (toolCallChunk.name) {
                   toolCalls.push(toolCallChunk);
-                } else {
+                } else if (toolCalls.length > 0) {
                   toolCalls[toolCalls.length - 1].args += data.body[0].args;
                 }
                 return {
@@ -366,6 +367,7 @@ export const useChatMessageActions = () => {
           systemMessage,
           editingMessageId,
           modelOverride,
+          webSearch,
         },
         responseType: 'stream',
         adapter: 'fetch',
@@ -413,7 +415,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId, modelOverride, important },
+        data: { sessionId, messageId, modelOverride, important, webSearch: currentWebSearch },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -477,7 +479,7 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:resumeToolCall',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults, modelOverride },
+          data: { sessionId, messageId, toolCallIds, toolCallResults, modelOverride, webSearch: currentWebSearch },
           responseType: 'stream',
           adapter: 'fetch',
           signal: controller?.signal,

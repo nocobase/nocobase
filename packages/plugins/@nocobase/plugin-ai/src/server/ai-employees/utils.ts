@@ -30,11 +30,32 @@ export const convertAIMessage = ({
     return null;
   }
 
+  // Extract text content and references from array content (e.g., Anthropic web search response)
+  let textContent: any = message;
+  let reference: { title: string; url: string }[] | undefined;
+
+  if (Array.isArray(message)) {
+    const textBlocks = message.filter((block: any) => block.type === 'text');
+    textContent = textBlocks.map((block: any) => block.text).join('') || '';
+
+    for (const block of message) {
+      if (block.type === 'web_search_tool_result' && Array.isArray(block.content)) {
+        reference = reference || [];
+        for (const item of block.content) {
+          if (item.type === 'web_search_result' && item.url) {
+            reference.push({ title: item.title || '', url: item.url });
+          }
+        }
+      }
+    }
+  }
+
   const values: AIMessageInput = {
     role: aiEmployee.employee.username,
     content: {
       type: 'text',
-      content: message,
+      content: textContent,
+      ...(reference?.length ? { reference } : {}),
     },
     metadata: {
       id: aiMessage.id,

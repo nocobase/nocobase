@@ -87,8 +87,6 @@ export class GoogleGenAIProvider extends LLMProvider {
       const textMessage = content.content.find((msg) => msg.type === 'text');
       content.content = textMessage?.text;
     }
-    // [DEBUG] Google GenAI grounding metadata
-    console.log('[WebSearch Debug] Google GenAI metadata:', JSON.stringify(metadata?.response_metadata, null, 2));
     if (metadata?.response_metadata?.groundingMetadata?.groundingChunks?.length) {
       content.reference = content.reference ?? [];
       for (const groundingChunk of metadata?.response_metadata?.groundingMetadata?.groundingChunks ?? []) {
@@ -100,7 +98,6 @@ export class GoogleGenAIProvider extends LLMProvider {
           url: groundingChunk.web.uri,
         });
       }
-      console.log('[WebSearch Debug] Google GenAI references:', content.reference);
     }
 
     return {
@@ -161,17 +158,8 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   protected builtInTools(): any[] {
-    // [DEBUG] Google GenAI builtInTools
-    console.log(
-      '[WebSearch Debug] Google GenAI builtInTools called, modelOptions.builtIn =',
-      this.modelOptions?.builtIn,
-    );
     if (this.modelOptions?.builtIn?.webSearch === true) {
-      const groundingTool = {
-        googleSearch: {},
-      };
-      console.log('[WebSearch Debug] Google GenAI returning googleSearch tool');
-      return [groundingTool];
+      return [{ googleSearch: {} }];
     }
     return [];
   }
