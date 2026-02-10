@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
-import React from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
@@ -338,6 +338,7 @@ export function FormComponent({
   layoutProps?: any;
   initialValues?: any;
   onFinish?: (values: any) => void;
+  [key: string]: any;
 }) {
   return (
     <Form
@@ -356,6 +357,141 @@ export function FormComponent({
     </Form>
   );
 }
+
+type UseFormGridHeightOptions = {
+  heightMode?: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  actionsRef?: React.RefObject<HTMLDivElement>;
+  footerRef?: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+};
+
+const getOuterHeight = (element?: HTMLElement | null) => {
+  if (!element) return 0;
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = parseFloat(style.marginTop) || 0;
+  const marginBottom = parseFloat(style.marginBottom) || 0;
+  return rect.height + marginTop + marginBottom;
+};
+
+const useFormGridHeight = ({
+  heightMode,
+  containerRef,
+  actionsRef,
+  footerRef,
+  deps = [],
+}: UseFormGridHeightOptions) => {
+  const [gridHeight, setGridHeight] = useState<number>();
+
+  const calcGridHeight = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setGridHeight((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const containerHeight = container.getBoundingClientRect().height;
+    if (!containerHeight) return;
+    const actionsHeight = getOuterHeight(actionsRef?.current || null);
+    const footerHeight = getOuterHeight(footerRef?.current || null);
+    const nextHeight = Math.max(0, Math.floor(containerHeight - actionsHeight - footerHeight));
+    setGridHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [heightMode, containerRef, actionsRef, footerRef]);
+
+  useLayoutEffect(() => {
+    calcGridHeight();
+  }, [calcGridHeight, ...deps]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
+    const container = containerRef.current;
+    const actions = actionsRef?.current || null;
+    const footer = footerRef?.current || null;
+    const observer = new ResizeObserver(() => calcGridHeight());
+    observer.observe(container);
+    if (actions) observer.observe(actions);
+    if (footer) observer.observe(footer);
+    return () => observer.disconnect();
+  }, [calcGridHeight, containerRef, actionsRef, footerRef, ...deps]);
+
+  return gridHeight;
+};
+
+type FormBlockContentProps = {
+  model: FormBlockModel;
+  gridModel: FormGridModel;
+  layoutProps?: any;
+  onFinish?: (values: any) => void;
+  grid: React.ReactNode;
+  actions?: React.ReactNode;
+  footer?: React.ReactNode;
+  heightMode?: string;
+  height?: number;
+};
+
+export const FormBlockContent = ({
+  model,
+  gridModel,
+  layoutProps,
+  onFinish,
+  grid,
+  actions,
+  footer,
+  heightMode,
+  height,
+}: FormBlockContentProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const gridHeight = useFormGridHeight({
+    heightMode,
+    containerRef,
+    actionsRef: actions ? actionsRef : undefined,
+    footerRef: footer ? footerRef : undefined,
+    deps: [height],
+  });
+
+  useEffect(() => {
+    if (!gridModel) return;
+    const nextHeight = isFixedHeight ? gridHeight : undefined;
+    if (gridModel.props?.height === nextHeight) return;
+    gridModel.setProps({ height: nextHeight });
+  }, [gridModel, gridHeight, isFixedHeight]);
+
+  const formStyle = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }
+    : undefined;
+
+  const containerStyle: any = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        flex: 1,
+      }
+    : undefined;
+
+  return (
+    <FormComponent model={model} layoutProps={layoutProps} onFinish={onFinish} style={formStyle}>
+      <div ref={containerRef} style={containerStyle}>
+        {grid}
+        {actions ? (
+          <div style={{ paddingTop: model.context?.themeToken?.padding }} ref={actionsRef}>
+            {actions}
+          </div>
+        ) : null}
+        {footer ? <div ref={footerRef}>{footer}</div> : null}
+      </div>
+    </FormComponent>
+  );
+};
 
 FormBlockModel.define({
   hide: true,

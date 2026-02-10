@@ -34,7 +34,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey } from './utils';
+import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
 
@@ -444,6 +444,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   renderComponent() {
     const highlightedRowKey = this.props.highlightedRowKey;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const { heightMode, height } = this.decoratorProps;
     return !this.columns.value.length ? (
       <Skeleton paragraph={{ rows: 3 }} />
     ) : (
@@ -506,23 +507,79 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             </Space>
           </div>
         </DndProvider>
-        <HighPerformanceSpin spinning={!!this.resource.loading}>
-          <HighPerformanceTable
-            model={this}
-            size={this.props.size}
-            virtual={this.props.virtual}
-            dataSource={this.resource.getData()}
-            columns={this.columns.value}
-            pagination={this.pagination()}
-            highlightedRowKey={highlightedRowKey}
-            defaultExpandAllRows={this.props.defaultExpandAllRows}
-            expandedRowKeys={this.props.expandedRowKeys}
-          />
-        </HighPerformanceSpin>
+        <TableBlockContent
+          model={this}
+          size={this.props.size}
+          virtual={this.props.virtual}
+          dataSource={this.resource.getData()}
+          columns={this.columns.value}
+          pagination={this.pagination()}
+          highlightedRowKey={highlightedRowKey}
+          defaultExpandAllRows={this.props.defaultExpandAllRows}
+          expandedRowKeys={this.props.expandedRowKeys}
+          heightMode={heightMode}
+          height={height}
+        />
       </>
     );
   }
 }
+
+const TableBlockContent = (props: {
+  model: TableBlockModel;
+  size: any;
+  virtual: boolean;
+  dataSource: any;
+  columns: any;
+  pagination: any;
+  highlightedRowKey: string;
+  defaultExpandAllRows?: boolean;
+  expandedRowKeys?: any[];
+  heightMode?: string;
+  height?: number;
+}) => {
+  const {
+    model,
+    size,
+    virtual,
+    dataSource,
+    columns,
+    pagination,
+    highlightedRowKey,
+    defaultExpandAllRows,
+    expandedRowKeys,
+    heightMode,
+    height,
+  } = props;
+  const tableAreaRef = useRef<HTMLDivElement>(null);
+  const scrollY = useBlockHeight({
+    heightMode,
+    tableAreaRef,
+    deps: [height, heightMode],
+  });
+  const tableScroll = useMemo(() => {
+    const y = scrollY && scrollY > 0 && dataSource?.length ? scrollY : undefined;
+    return { x: 'max-content', y };
+  }, [scrollY, dataSource?.length]);
+  return (
+    <div ref={tableAreaRef} style={{ flex: 1, minHeight: 0 }}>
+      <HighPerformanceSpin spinning={!!model.resource.loading}>
+        <HighPerformanceTable
+          model={model}
+          size={size}
+          virtual={virtual}
+          dataSource={dataSource}
+          columns={columns}
+          pagination={pagination}
+          highlightedRowKey={highlightedRowKey}
+          defaultExpandAllRows={defaultExpandAllRows}
+          expandedRowKeys={expandedRowKeys}
+          tableScroll={tableScroll}
+        />
+      </HighPerformanceSpin>
+    </div>
+  );
+};
 
 TableBlockModel.registerFlow({
   key: 'resourceSettings2',
@@ -713,7 +770,6 @@ TableBlockModel.define({
   sort: 300,
 });
 
-const tableScroll = { x: 'max-content' };
 const HighPerformanceTable = React.memo(
   (props: {
     model: TableBlockModel;
@@ -725,6 +781,7 @@ const HighPerformanceTable = React.memo(
     highlightedRowKey: string;
     defaultExpandAllRows?: boolean;
     expandedRowKeys?: any[];
+    tableScroll;
   }) => {
     const {
       model,
@@ -736,6 +793,7 @@ const HighPerformanceTable = React.memo(
       highlightedRowKey,
       defaultExpandAllRows,
       expandedRowKeys,
+      tableScroll,
     } = props;
     const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
       model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
