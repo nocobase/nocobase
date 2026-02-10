@@ -99,9 +99,7 @@ export class DataSource {
   }
 
   get displayName() {
-    return this.options.displayName
-      ? this.flowEngine.translate(this.options.displayName, { ns: 'lm-collections' })
-      : this.key;
+    return this.flowEngine.translate(this.options.displayName, { ns: 'lm-collections' }) || this.key;
   }
 
   get key() {
@@ -498,7 +496,7 @@ export class Collection {
     return this.options.storage || 'local';
   }
   get title() {
-    return this.options.title ? this.flowEngine.translate(this.options.title, { ns: 'lm-collections' }) : this.name;
+    return this.flowEngine.translate(this.options.title, { ns: 'lm-collections' }) || this.name;
   }
 
   get titleCollectionField() {
@@ -772,7 +770,7 @@ export class CollectionField {
 
   get title() {
     const titleValue = this.options?.uiSchema?.title || this.options?.title;
-    return titleValue ? this.flowEngine.translate(titleValue, { ns: 'lm-collections' }) : this.options.name;
+    return this.flowEngine.translate(titleValue, { ns: 'lm-collections' }) || this.options.name;
   }
 
   set title(value: string) {
@@ -799,7 +797,7 @@ export class CollectionField {
     return options.map((v) => {
       return {
         ...v,
-        label: v.label ? this.flowEngine.translate(v.label, { ns: 'lm-collections' }) : v.label,
+        label: this.flowEngine.translate(v.label, { ns: 'lm-collections' }),
       };
     });
   }

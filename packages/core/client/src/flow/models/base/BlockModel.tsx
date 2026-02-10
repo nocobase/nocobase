@@ -130,8 +130,8 @@ BlockModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        const title = params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : undefined;
-        const description = params.description ? ctx.t(params.description, { ns: 'lm-flow-engine' }) : undefined;
+        const title = ctx.t(params.title, { ns: 'lm-flow-engine' });
+        const description = ctx.t(params.description, { ns: 'lm-flow-engine' });
         ctx.model.setDecoratorProps({ title, description });
       },
     },

@@ -533,7 +533,7 @@ SubTableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const title = params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : ctx.model.collectionField?.title;
+        const title = ctx.t(params.title, { ns: 'lm-flow-engine' });
         ctx.model.setProps('title', title || ctx.fieldPath.split('.').pop());
       },
     },
@@ -546,7 +546,7 @@ SubTableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip ? ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) : undefined);
+        ctx.model.setProps('tooltip', ctx.t(params.tooltip, { ns: 'lm-flow-engine' }));
       },
     },
     width: {

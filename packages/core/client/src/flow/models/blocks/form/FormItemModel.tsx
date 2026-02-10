@@ -216,7 +216,7 @@ FormItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({
-          label: params.label ? ctx.t(params.label, { ns: 'lm-flow-engine' }) : ctx.collectionField?.title,
+          label: ctx.t(params.label, { ns: 'lm-flow-engine' }),
         });
       },
     },
@@ -320,7 +320,7 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip ? ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) : undefined });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -336,7 +336,7 @@ FormItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({
-          extra: params.description ? ctx.t(params.description, { ns: 'lm-flow-engine' }) : undefined,
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
         });
       },
     },

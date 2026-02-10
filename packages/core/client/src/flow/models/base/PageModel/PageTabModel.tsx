@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, FlowModel, FlowModelRenderer, observable } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, observable, tExpr } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { Icon } from '../../../../icon';
-import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
+import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { RemoteFlowModelRenderer } from '../../../FlowPage';
 import { BlockGridModel } from '../BlockGridModel';
 
@@ -48,9 +48,7 @@ export class BasePageTabModel extends FlowModel<{
 
   getTabTitle(defaultTitle = 'Untitled') {
     const translatedDefaultTitle = this.context.t(defaultTitle, { ns: 'client' });
-    const translatedTitle = this.stepParams.pageTabSettings?.tab?.title
-      ? this.context.t(this.stepParams.pageTabSettings?.tab?.title, { ns: 'lm-flow-engine' })
-      : undefined;
+    const translatedTitle = this.context.t(this.stepParams.pageTabSettings?.tab?.title, { ns: 'lm-desktop-routes' });
     return translatedTitle || translatedDefaultTitle;
   }
 
@@ -116,7 +114,7 @@ BasePageTabModel.registerFlow({
       },
       async handler(ctx, params) {
         const translate = typeof ctx?.t === 'function' ? ctx.t.bind(ctx) : (value: string) => value;
-        ctx.model.setProps('title', params.title ? translate(params.title, { ns: 'lm-flow-engine' }) : undefined);
+        ctx.model.setProps('title', translate(params.title, { ns: 'lm-desktop-routes' }));
         ctx.model.setProps('icon', params.icon);
         const pageModel = ctx.engine.getModel(ctx.model.parentId) as { updateDocumentTitle?: () => Promise<void> };
         void pageModel?.updateDocumentTitle?.();
