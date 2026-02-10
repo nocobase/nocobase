@@ -2278,4 +2278,145 @@ describe('FormValueRuntime (form assign rules)', () => {
     const resolvedWithExplicit = (runtime as any).tryResolveNamePath(ctx, 'products[0].products.id');
     expect(resolvedWithExplicit).toEqual(['products', 0, 'products', 0, 'id']);
   });
+
+  it('keeps deeper linkage write when same txId writes same path later from outer scope', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ name: 'init' });
+
+    const blockModel: any = {
+      uid: 'form-linkage-scope-depth-keep-inner',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: '456' }], {
+      source: 'linkage',
+      txId: 'tx-same',
+      linkageTxId: 'tx-same',
+      linkageScopeDepth: 1,
+    });
+    expect(formStub.getFieldValue(['name'])).toBe('456');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: '123' }], {
+      source: 'linkage',
+      txId: 'tx-same',
+      linkageTxId: 'tx-same',
+      linkageScopeDepth: 0,
+    });
+    expect(formStub.getFieldValue(['name'])).toBe('456');
+  });
+
+  it('keeps last-write behavior for same-depth linkage writes in same txId', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ name: 'init' });
+
+    const blockModel: any = {
+      uid: 'form-linkage-scope-depth-same-level',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: 'first' }], {
+      source: 'linkage',
+      txId: 'tx-same-level',
+      linkageTxId: 'tx-same-level',
+      linkageScopeDepth: 1,
+    });
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: 'second' }], {
+      source: 'linkage',
+      txId: 'tx-same-level',
+      linkageTxId: 'tx-same-level',
+      linkageScopeDepth: 1,
+    });
+
+    expect(formStub.getFieldValue(['name'])).toBe('second');
+  });
+
+  it('does not block linkage writes across different linkageTxId', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ name: 'init' });
+
+    const blockModel: any = {
+      uid: 'form-linkage-scope-depth-different-tx',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: '456' }], {
+      source: 'linkage',
+      txId: 'tx-a',
+      linkageTxId: 'tx-a',
+      linkageScopeDepth: 1,
+    });
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: '123' }], {
+      source: 'linkage',
+      txId: 'tx-b',
+      linkageTxId: 'tx-b',
+      linkageScopeDepth: 0,
+    });
+
+    expect(formStub.getFieldValue(['name'])).toBe('123');
+  });
+
+  it('propagates linkageTxId in emitted formValuesChange payload', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ name: 'init' });
+
+    const blockModel: any = {
+      uid: 'form-linkage-propagate-linkage-txid',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    await runtime.setFormValues(blockCtx, [{ path: ['name'], value: '456' }], {
+      source: 'linkage',
+      txId: 'tx-current',
+      linkageTxId: 'tx-root',
+      linkageScopeDepth: 1,
+    });
+
+    const dispatchCalls = blockModel.dispatchEvent.mock.calls.filter((call: any[]) => call[0] === 'formValuesChange');
+    expect(dispatchCalls.length).toBeGreaterThan(0);
+    const payload = dispatchCalls[dispatchCalls.length - 1][1];
+    expect(payload.txId).toBe('tx-current');
+    expect(payload.linkageTxId).toBe('tx-root');
+  });
 });

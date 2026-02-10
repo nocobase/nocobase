@@ -13,7 +13,7 @@ import _ from 'lodash';
 import { evaluateCondition } from './conditions';
 import { collectStaticDepsFromRunJSValue, collectStaticDepsFromTemplateValue, DepCollector, recordDep } from './deps';
 import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
-import type { FormAssignRuleItem, NamePath, Patch, SetOptions, ValueSource } from './types';
+import type { FormAssignRuleItem, FormValueWriteMeta, NamePath, Patch, SetOptions, ValueSource } from './types';
 import { createTxId, isEmptyValue } from './utils';
 import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
 
@@ -71,7 +71,7 @@ export type RuleEngineOptions = {
   setFormValues: (callerCtx: any, patch: Patch, options?: SetOptions) => Promise<void>;
   findExplicitHit: (pathKey: string) => string | null;
   lastDefaultValueByPathKey: Map<string, any>;
-  lastWriteMetaByPathKey: Map<string, { source: ValueSource; writeSeq: number }>;
+  lastWriteMetaByPathKey: Map<string, FormValueWriteMeta>;
   observableBindings: Map<string, ObservableBinding>;
 };
 

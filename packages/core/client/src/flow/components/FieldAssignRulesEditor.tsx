@@ -599,6 +599,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
               <ConditionBuilder
                 value={item.condition || { logic: '$and', items: [] }}
                 onChange={(condition) => patchItem(index, { condition })}
+                extraMetaTree={extraMetaTree}
               />
             </div>
           )}

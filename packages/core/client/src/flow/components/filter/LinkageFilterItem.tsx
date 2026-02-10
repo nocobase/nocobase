@@ -22,6 +22,7 @@ import {
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
 import { lazy } from '../../../lazy-helper';
+import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
@@ -99,6 +100,24 @@ const fallbackStringOperators: OperatorMeta[] = [
   { value: '$empty', label: 'is empty', noValue: true },
   { value: '$notEmpty', label: 'is not empty', noValue: true },
 ];
+
+export function mergeExtraMetaTreeWithBase(
+  baseMetaTree: MetaTreeNode[] | undefined,
+  extraMetaTree?: MetaTreeNode[],
+): MetaTreeNode[] {
+  const base = Array.isArray(baseMetaTree) ? baseMetaTree : [];
+  const extra = Array.isArray(extraMetaTree) ? extraMetaTree : [];
+  if (!extra.length) return base;
+
+  const extraItem = extra.find((node) => node?.name === 'item');
+  if (!extraItem) {
+    return [...extra, ...base];
+  }
+
+  const mergedBase = mergeItemMetaTreeForAssignValue(base, [extraItem]);
+  const extraNonItem = extra.filter((node) => node?.name !== 'item');
+  return [...extraNonItem, ...mergedBase];
+}
 
 /**
  * LinkageFilterItem：左/右均为可变量输入，适用于联动规则等“前端逻辑”场景
@@ -216,12 +235,11 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
   const rightMetaTreeGetter = useMemo(() => {
     return async () => {
       const baseMetaTree = (model?.context.getPropertyMetaTree() || ctx.getPropertyMetaTree()) as MetaTreeNode[];
-      const extra = Array.isArray(extraMetaTree) ? extraMetaTree : [];
+      const mergedMetaTree = mergeExtraMetaTreeWithBase(baseMetaTree, extraMetaTree);
       return [
         { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'] },
         { title: t('Null'), name: 'null', type: 'object', paths: ['null'] },
-        ...extra,
-        ...(Array.isArray(baseMetaTree) ? baseMetaTree : []),
+        ...mergedMetaTree,
       ];
     };
   }, [ctx, model, t, extraMetaTree]);
@@ -230,8 +248,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
   const leftMetaTreeGetter = useCallback(() => {
     const tree = model?.context?.getPropertyMetaTree?.() || ctx.getPropertyMetaTree();
     const base = Array.isArray(tree) ? tree : [];
-    const extra = Array.isArray(extraMetaTree) ? extraMetaTree : [];
-    return extra.length ? [...extra, ...base] : base;
+    return mergeExtraMetaTreeWithBase(base, extraMetaTree);
   }, [ctx, model, extraMetaTree]);
 
   // 右侧 converters：常量/空值特殊处理；变量沿用默认（表达式）

@@ -24,11 +24,33 @@ export interface SetOptions {
   triggerEvent?: boolean;
   markExplicit?: boolean;
   txId?: string;
+  /**
+   * linkage 规则定义所在层级，数值越大表示层级越内层。
+   * 仅在 source='linkage' 且 linkageTxId 有效时参与同事务冲突裁决。
+   */
+  linkageScopeDepth?: number;
+  /**
+   * linkage 链路事务 id（通常来自 formValuesChange payload 的 txId）。
+   * 仅在 source='linkage' 时使用。
+   */
+  linkageTxId?: string;
+}
+
+export interface FormValueWriteMeta {
+  source: ValueSource;
+  writeSeq: number;
+  linkageScopeDepth?: number;
+  linkageTxId?: string;
 }
 
 export interface FormValuesChangePayload {
   source: ValueSource;
   txId: string;
+  /**
+   * linkage 链路根事务 id。
+   * 用于跨事件继续沿用同一 linkage 冲突裁决边界。
+   */
+  linkageTxId?: string;
   changedPaths: NamePath[];
   changedValues?: any;
   allValues?: any;

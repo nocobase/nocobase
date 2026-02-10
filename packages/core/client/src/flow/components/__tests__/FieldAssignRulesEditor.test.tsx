@@ -129,7 +129,7 @@ describe('FieldAssignRulesEditor', () => {
     );
 
     expect(getByTestId('mock-value-input').getAttribute('data-extra')).toBe('yes');
-    expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('no');
+    expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('yes');
   });
 
   it('renders empty state when no items', () => {

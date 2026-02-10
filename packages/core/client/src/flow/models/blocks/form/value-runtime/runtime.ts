@@ -16,7 +16,15 @@ import { createFormValuesProxy } from './deps';
 import { createFormPatcher } from './form-patch';
 import { namePathToPathKey, pathKeyToNamePath, resolveDynamicNamePath } from './path';
 import { RuleEngine } from './rules';
-import type { FormAssignRuleItem, FormValuesChangePayload, NamePath, Patch, SetOptions, ValueSource } from './types';
+import type {
+  FormAssignRuleItem,
+  FormValueWriteMeta,
+  FormValuesChangePayload,
+  NamePath,
+  Patch,
+  SetOptions,
+  ValueSource,
+} from './types';
 import { createTxId, MAX_WRITES_PER_PATH_PER_TX } from './utils';
 
 type ObservableBinding = {
@@ -35,7 +43,7 @@ export class FormValueRuntime {
   private readonly valuesMirror = observable({});
   private readonly explicitSet = new Set<string>();
   private readonly lastDefaultValueByPathKey = new Map<string, any>();
-  private readonly lastWriteMetaByPathKey = new Map<string, { source: ValueSource; writeSeq: number }>();
+  private readonly lastWriteMetaByPathKey = new Map<string, FormValueWriteMeta>();
   private readonly observableBindings = new Map<string, ObservableBinding>();
   private readonly changeTick = observable.ref(0);
   private readonly txWriteCounts = new Map<string, Map<string, number>>();
@@ -437,18 +445,68 @@ export class FormValueRuntime {
     const markExplicit = options?.markExplicit ?? source !== 'default';
     const ownsTxId = typeof options?.txId === 'undefined';
 
+    const linkageScopeDepth =
+      source === 'linkage' && Number.isFinite(Number(options?.linkageScopeDepth))
+        ? Number(options?.linkageScopeDepth)
+        : 0;
+    const linkageTxId =
+      source === 'linkage' && typeof options?.linkageTxId === 'string' && options.linkageTxId
+        ? String(options.linkageTxId)
+        : undefined;
+
+    const shouldSkipByLinkageScope = (pathKey: string): boolean => {
+      if (source !== 'linkage') return false;
+      if (!linkageTxId) return false;
+      const lastWrite = this.lastWriteMetaByPathKey.get(pathKey);
+      if (!lastWrite) return false;
+      if (lastWrite.source !== 'linkage') return false;
+      if (!lastWrite.linkageTxId || lastWrite.linkageTxId !== linkageTxId) return false;
+      const lastDepth = Number.isFinite(Number(lastWrite.linkageScopeDepth)) ? Number(lastWrite.linkageScopeDepth) : 0;
+      return lastDepth > linkageScopeDepth;
+    };
+
+    const buildWriteMeta = (writeSeq: number): FormValueWriteMeta => {
+      if (source === 'linkage') {
+        return {
+          source,
+          writeSeq,
+          linkageScopeDepth,
+          linkageTxId,
+        };
+      }
+      return {
+        source,
+        writeSeq,
+      };
+    };
+
+    const buildChangePayload = (payload: FormValuesChangePayload): FormValuesChangePayload => {
+      if (source === 'linkage' && linkageTxId) {
+        return {
+          ...payload,
+          linkageTxId,
+        };
+      }
+      return payload;
+    };
+
     try {
       const changedPaths: NamePath[] = [];
 
       if (!Array.isArray(patch)) {
-        const patchKeys = Object.keys(patch || {});
+        const patchEntries = Object.entries(patch || {}).filter(([pathKey]) => !shouldSkipByLinkageScope(pathKey));
+        const patchToApply = Object.fromEntries(patchEntries);
+        const patchKeys = patchEntries.map(([pathKey]) => pathKey);
+        if (!patchKeys.length) {
+          return;
+        }
         if (patchKeys.length) {
           this.writeSeq += 1;
         }
         this.suppressFormCallbackDepth++;
         try {
-          form.setFieldsValue?.(patch);
-          _.merge(this.valuesMirror, patch);
+          form.setFieldsValue?.(patchToApply);
+          _.merge(this.valuesMirror, patchToApply);
           this.bumpChangeTick();
         } finally {
           this.suppressFormCallbackDepth--;
@@ -456,25 +514,27 @@ export class FormValueRuntime {
 
         const writeSeq = this.writeSeq;
         for (const k of patchKeys) {
-          this.lastWriteMetaByPathKey.set(k, { source, writeSeq });
+          this.lastWriteMetaByPathKey.set(k, buildWriteMeta(writeSeq));
         }
 
         if (markExplicit) {
-          for (const k of Object.keys(patch || {})) {
+          for (const k of patchKeys) {
             this.markExplicit(k);
           }
         }
 
         if (triggerEvent) {
           const allValues = this.getFormValuesSnapshot();
-          this.emitFormValuesChange({
-            source,
-            txId,
-            changedPaths: Object.keys(patch || {}).map((k) => [k]),
-            changedValues: patch,
-            allValues,
-            allValuesSnapshot: allValues,
-          });
+          this.emitFormValuesChange(
+            buildChangePayload({
+              source,
+              txId,
+              changedPaths: patchKeys.map((k) => [k]),
+              changedValues: patchToApply,
+              allValues,
+              allValuesSnapshot: allValues,
+            }),
+          );
         }
         return;
       }
@@ -495,6 +555,8 @@ export class FormValueRuntime {
         const pathKey = namePathToPathKey(namePath);
         const rawValue = item.value;
         const value = isObservable(rawValue) ? toJS(rawValue) : rawValue;
+
+        if (shouldSkipByLinkageScope(pathKey)) continue;
 
         const prevFormValue = this.getFormValueAtPath(namePath);
         if (_.isEqual(prevFormValue, value)) continue;
@@ -553,7 +615,7 @@ export class FormValueRuntime {
       }
 
       for (const { pathKey } of filteredToWrite) {
-        this.lastWriteMetaByPathKey.set(pathKey, { source, writeSeq });
+        this.lastWriteMetaByPathKey.set(pathKey, buildWriteMeta(writeSeq));
       }
 
       if (markExplicit) {
@@ -574,7 +636,7 @@ export class FormValueRuntime {
         const obs = rawValue;
 
         const disposer = observe(obs, () => {
-          this.applyBoundValue(callerCtx, namePath, pathKey, toJS(obs), source);
+          this.applyBoundValue(callerCtx, namePath, pathKey, toJS(obs), source, linkageScopeDepth, linkageTxId);
         });
 
         const existing = this.observableBindings.get(pathKey);
@@ -586,14 +648,16 @@ export class FormValueRuntime {
 
       if (triggerEvent) {
         const allValues = this.getFormValuesSnapshot();
-        this.emitFormValuesChange({
-          source,
-          txId,
-          changedPaths,
-          changedValues: {},
-          allValues,
-          allValuesSnapshot: allValues,
-        });
+        this.emitFormValuesChange(
+          buildChangePayload({
+            source,
+            txId,
+            changedPaths,
+            changedValues: {},
+            allValues,
+            allValuesSnapshot: allValues,
+          }),
+        );
       }
     } finally {
       if (ownsTxId) {
@@ -602,7 +666,15 @@ export class FormValueRuntime {
     }
   }
 
-  private applyBoundValue(callerCtx: any, namePath: NamePath, pathKey: string, nextValue: any, source: ValueSource) {
+  private applyBoundValue(
+    callerCtx: any,
+    namePath: NamePath,
+    pathKey: string,
+    nextValue: any,
+    source: ValueSource,
+    linkageScopeDepth?: number,
+    linkageTxId?: string,
+  ) {
     if (this.disposed) return;
     const form = this.getForm?.();
     if (!form) return;
@@ -622,18 +694,35 @@ export class FormValueRuntime {
       this.suppressFormCallbackDepth--;
     }
 
-    this.lastWriteMetaByPathKey.set(pathKey, { source, writeSeq });
+    const writeMeta: FormValueWriteMeta =
+      source === 'linkage'
+        ? {
+            source,
+            writeSeq,
+            linkageScopeDepth: Number.isFinite(Number(linkageScopeDepth)) ? Number(linkageScopeDepth) : 0,
+            linkageTxId: typeof linkageTxId === 'string' && linkageTxId ? linkageTxId : undefined,
+          }
+        : {
+            source,
+            writeSeq,
+          };
+
+    this.lastWriteMetaByPathKey.set(pathKey, writeMeta);
 
     const txId = createTxId();
     const allValues = this.getFormValuesSnapshot();
-    this.emitFormValuesChange({
+    const payload: FormValuesChangePayload = {
       source,
       txId,
       changedPaths: [namePath],
       changedValues: {},
       allValues,
       allValuesSnapshot: allValues,
-    });
+    };
+    if (source === 'linkage' && linkageTxId) {
+      payload.linkageTxId = linkageTxId;
+    }
+    this.emitFormValuesChange(payload);
 
     if (source === 'default' && this.isExplicit(pathKey)) {
       const existing = this.observableBindings.get(pathKey);

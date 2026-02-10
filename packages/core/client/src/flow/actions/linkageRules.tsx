@@ -40,7 +40,7 @@ import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import _ from 'lodash';
-import { SubFormFieldModel } from '../models';
+import { SubFormFieldModel, SubFormListFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
 import {
   findFormItemModelByFieldPath,
@@ -80,6 +80,24 @@ const previewValueForLog = (value: any) => {
     return '[Object]';
   }
   return `[${t}]`;
+};
+
+const getLinkageScopeDepthFromModel = (model: any): number => {
+  let depth = 0;
+  let cursor = model;
+  while (cursor) {
+    if (cursor instanceof SubFormFieldModel || cursor instanceof SubFormListFieldModel) {
+      depth += 1;
+    }
+    cursor = cursor?.parent;
+  }
+  return depth;
+};
+
+const getLinkageScopeDepthFromContext = (ctx: FlowContext): number => {
+  const fromCtx = Number((ctx as any)?.linkageScopeDepth);
+  if (Number.isFinite(fromCtx)) return fromCtx;
+  return getLinkageScopeDepthFromModel((ctx as any)?.model);
 };
 
 // 获取表单中所有字段的 model 实例的通用函数
@@ -1913,9 +1931,21 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const directSetter = directCtx?.setFormValues;
   const blockCtx = (ctx.model as any)?.context?.blockModel?.context;
   const blockSetter = blockCtx?.setFormValues;
+  const rawInputArgs = directCtx?.inputArgs as any;
+  const linkageTxId =
+    typeof rawInputArgs?.linkageTxId === 'string' && rawInputArgs.linkageTxId
+      ? rawInputArgs.linkageTxId
+      : typeof rawInputArgs?.txId === 'string'
+        ? rawInputArgs.txId
+        : undefined;
+  const linkageScopeDepth = getLinkageScopeDepthFromContext(ctx);
 
   const trySetFormValues = async (fn: any, thisArg: any, source: string) => {
-    await fn.call(thisArg, allPatches, { source });
+    await fn.call(thisArg, allPatches, {
+      source,
+      linkageTxId,
+      linkageScopeDepth,
+    });
   };
 
   if (typeof directSetter === 'function') {
@@ -2044,6 +2074,24 @@ export const fieldLinkageRules = defineAction({
     if (ctx.model.hidden) {
       return;
     }
+
+    const rootLinkageScopeDepth = 0;
+    const defineSharedRuntimeMeta = (targetCtx: any) => {
+      if (!targetCtx || typeof targetCtx.defineProperty !== 'function') return;
+      const inputArgs = (ctx as any)?.inputArgs;
+      if (inputArgs && typeof inputArgs === 'object') {
+        targetCtx.defineProperty('inputArgs', {
+          value: {
+            ...inputArgs,
+          },
+        });
+      }
+      targetCtx.defineProperty('linkageScopeDepth', {
+        value: rootLinkageScopeDepth,
+      });
+    };
+
+    defineSharedRuntimeMeta(ctx as any);
 
     const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
     const getRowScopeKeyForTargetPath = (targetPath: string): string | null => {
@@ -2287,6 +2335,7 @@ export const fieldLinkageRules = defineAction({
         if (!forks.length) continue;
         for (const forkModel of forks) {
           const rowCtx = new FlowRuntimeContext(forkModel, ctx.flowKey);
+          defineSharedRuntimeMeta(rowCtx as any);
           try {
             const resolvedRow = await resolveLinkageRulesParamsPreservingRunJsScripts(rowCtx, rowParams);
             await commonLinkageRulesHandler(rowCtx, resolvedRow);
@@ -2363,6 +2412,8 @@ export const subFormFieldLinkageRules = defineAction({
       return;
     }
 
+    const linkageScopeDepth = getLinkageScopeDepthFromModel((ctx as any)?.model);
+
     const createScopedFlowContext = (model: FlowModel) => {
       const flowContext = new FlowRuntimeContext(model, ctx.flowKey);
       const inputArgs = (ctx as any)?.inputArgs;
@@ -2373,6 +2424,9 @@ export const subFormFieldLinkageRules = defineAction({
           },
         });
       }
+      flowContext.defineProperty('linkageScopeDepth', {
+        value: linkageScopeDepth,
+      });
       return flowContext;
     };
 
