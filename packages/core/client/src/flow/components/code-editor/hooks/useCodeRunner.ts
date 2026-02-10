@@ -49,6 +49,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const activeRunTokenRef = useRef(0);
   const cancelActiveCaptureRef = useRef<(() => void) | null>(null);
   const clearLogs = useCallback(() => setLogs([]), []);
+  const tr = hostCtx?.t || ((key: string) => key);
   const run = useCallback(
     async (code: string): Promise<RunResult | undefined> => {
       setRunning(true);
@@ -164,7 +165,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
 
         const pushRunResultLog = (res: RunResult) => {
           if (!res?.success) {
-            const errText = res?.timeout ? 'Execution timed out' : String(res?.error || 'Unknown error');
+            const errText = res?.timeout ? tr('Execution timed out') : String(res?.error || tr('Unknown error'));
             const pos = parseErrorLineColumn(res?.error);
             if (pos && typeof pos.line === 'number' && typeof pos.column === 'number') {
               setLogs((prev) => [...prev, { level: 'error', msg: errText, line: pos.line, column: pos.column }]);
@@ -172,7 +173,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
               push('error', [errText]);
             }
           } else {
-            push('info', ['Execution succeeded']);
+            push('info', [tr('Execution succeeded')]);
           }
         };
 
@@ -203,14 +204,14 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
 
         return { success: true, value: undefined };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err) || 'Run preview failed';
+        const msg = err instanceof Error ? err.message : String(err) || tr('Run preview failed');
         setLogs((prev) => [...prev, { level: 'error', msg }]);
         return { success: false, error: err };
       } finally {
         setRunning(false);
       }
     },
-    [hostCtx, version],
+    [hostCtx, version, tr],
   );
 
   return { run, logs, clearLogs, running };

@@ -13,6 +13,7 @@ import {
   isInheritedFrom,
   resolveDefaultParams,
   resolveStepUiSchema,
+  resolveStepDisabledInSettings,
   shouldHideStepInSettings,
   FlowExitException,
   defineAction,
@@ -1114,6 +1115,100 @@ describe('Utils', () => {
 
       expect(consoleSpy).toHaveBeenCalled();
       expect(result).toBe(false);
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== resolveStepDisabledInSettings() FUNCTION ====================
+  describe('resolveStepDisabledInSettings()', () => {
+    let mockFlow: any;
+    let mockStep: StepDefinition;
+
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {},
+      };
+
+      mockStep = {
+        key: 'testStep',
+        handler: vi.fn(),
+      };
+    });
+
+    test('returns disabled=false when step is falsy', async () => {
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, null as any);
+      expect(result).toEqual({ disabled: false });
+    });
+
+    test('respects static step.disabledInSettings and disabledReasonInSettings', async () => {
+      mockStep.disabledInSettings = true;
+      mockStep.disabledReasonInSettings = 'legacy reason';
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toEqual({ disabled: true, reason: 'legacy reason' });
+    });
+
+    test('falls back to action disabled settings when step value is undefined', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        disabledInSettings: true,
+        disabledReasonInSettings: 'from action',
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toEqual({ disabled: true, reason: 'from action' });
+    });
+
+    test('prefers step disabled settings over action values', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        disabledInSettings: false,
+        disabledReasonInSettings: 'from action',
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockStep.disabledInSettings = true;
+      mockStep.disabledReasonInSettings = 'from step';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toEqual({ disabled: true, reason: 'from step' });
+    });
+
+    test('evaluates function disabled settings with FlowRuntimeContext', async () => {
+      const disabledFn = vi.fn().mockResolvedValue(true);
+      const reasonFn = vi.fn().mockResolvedValue('computed reason');
+      mockStep.disabledInSettings = disabledFn as any;
+      mockStep.disabledReasonInSettings = reasonFn as any;
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+
+      expect(disabledFn).toHaveBeenCalledTimes(1);
+      expect(reasonFn).toHaveBeenCalledTimes(1);
+      const disabledCtx = disabledFn.mock.calls[0][0] as FlowRuntimeContext;
+      const reasonCtx = reasonFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect(disabledCtx).toBeInstanceOf(FlowRuntimeContext);
+      expect(reasonCtx).toBeInstanceOf(FlowRuntimeContext);
+      expect((disabledCtx as any).currentStep).toBeInstanceOf(ContextPathProxy);
+      expect(String((disabledCtx as any).currentStep)).toBe('{{ctx.currentStep}}');
+      expect(result).toEqual({ disabled: true, reason: 'computed reason' });
+    });
+
+    test('returns disabled=false when function disabledInSettings throws', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockStep.disabledInSettings = vi.fn().mockRejectedValue(new Error('boom')) as any;
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result).toEqual({ disabled: false });
       consoleSpy.mockRestore();
     });
   });

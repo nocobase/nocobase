@@ -173,6 +173,18 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
    */
   hideInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
   /**
+   * Whether to disable this step/action in settings menus.
+   * - Supports static boolean and dynamic decision based on runtime context.
+   * - StepDefinition.disabledInSettings can override the ActionDefinition value.
+   */
+  disabledInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  /**
+   * Optional reason shown when this step/action is disabled in settings menus.
+   * - Supports static string and dynamic resolver based on runtime context.
+   * - StepDefinition.disabledReasonInSettings can override the ActionDefinition value.
+   */
+  disabledReasonInSettings?: string | ((ctx: TCtx) => string | Promise<string>);
+  /**
    * 在执行 Action 前为 ctx 定义临时属性。
    * - 仅支持 PropertyOptions 形态（例如：{ foo: { value: 5 } }）；
    * - 或函数形式（接收 ctx，返回 PropertyOptions 对象；支持 Promise）。

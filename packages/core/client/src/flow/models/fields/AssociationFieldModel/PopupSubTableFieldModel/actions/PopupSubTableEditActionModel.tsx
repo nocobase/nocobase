@@ -279,6 +279,54 @@ PopupSubTableEditActionModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const associationModel = ctx?.associationModel;
+        const parentItem =
+          ctx?.item ??
+          associationModel?.context?.item ??
+          ({
+            value:
+              (typeof associationModel?.context?.getFormValues === 'function'
+                ? associationModel.context.getFormValues()
+                : associationModel?.context?.formValues) ?? associationModel?.context?.record,
+          } as any);
+        const parentItemOptions =
+          ctx?.getPropertyOptions?.('item') ?? associationModel?.context?.getPropertyOptions?.('item');
+        const itemLength = Array.isArray(associationModel?.props?.value)
+          ? associationModel.props.value.length
+          : undefined;
+        const itemIndex = (() => {
+          try {
+            const list = associationModel?.props?.value;
+            const rec = ctx?.record;
+            if (!Array.isArray(list) || !rec) return undefined;
+
+            const byRef = list.indexOf(rec);
+            if (byRef >= 0) return byRef;
+
+            if (rec.__index__ != null) {
+              const byIndex = list.findIndex((r) => r?.__index__ === rec.__index__);
+              if (byIndex >= 0) return byIndex;
+            }
+
+            const key = ctx?.collection?.filterTargetKey;
+            if (Array.isArray(key)) {
+              const hasAll = key.every((k) => rec?.[k] != null);
+              if (!hasAll) return undefined;
+              const byPk = list.findIndex((r) => key.every((k) => r?.[k] === rec?.[k]));
+              return byPk >= 0 ? byPk : undefined;
+            }
+            if (key) {
+              const pk = rec?.[key];
+              if (pk == null) return undefined;
+              const byPk = list.findIndex((r) => r?.[key] === pk);
+              return byPk >= 0 ? byPk : undefined;
+            }
+            return undefined;
+          } catch (e) {
+            void e;
+            return undefined;
+          }
+        })();
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -291,6 +339,11 @@ PopupSubTableEditActionModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
             record: ctx.record,
+            parentItem,
+            parentItemMeta: parentItemOptions?.meta,
+            parentItemResolver: parentItemOptions?.resolveOnServer,
+            itemIndex,
+            itemLength,
           },
           content: () => <EditFormContent model={ctx.model} />,
           styles: {

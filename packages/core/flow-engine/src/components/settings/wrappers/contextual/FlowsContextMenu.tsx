@@ -7,14 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, ExclamationCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleOutlined, QuestionCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Alert, Dropdown, Modal } from 'antd';
+import { Alert, Dropdown, Modal, Tooltip, theme } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { getT, setupRuntimeContextSteps, shouldHideStepInSettings } from '../../../../utils';
+import {
+  getT,
+  resolveStepDisabledInSettings,
+  setupRuntimeContextSteps,
+  shouldHideStepInSettings,
+} from '../../../../utils';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { ActionDefinition } from '../../../../types';
 import { observer } from '../../../../reactive';
@@ -74,6 +79,21 @@ const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
 const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, position = 'right', showDeleteButton = true }) => {
     const t = getT(model);
+    const { token } = theme.useToken();
+    const disabledIconColor = token?.colorTextTertiary || token?.colorTextDescription || token?.colorTextSecondary;
+    const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<any[]>([]);
+    const isStepMenuItemDisabled = useCallback(
+      (key: string) => {
+        const [flowKey, stepKey] = key.split(':');
+        if (!flowKey || !stepKey) return false;
+        return configurableFlowsAndSteps.some(({ flow, steps }) => {
+          if (flow.key !== flowKey) return false;
+          return steps.some((stepInfo) => stepInfo.stepKey === stepKey && !!stepInfo.disabled);
+        });
+      },
+      [configurableFlowsAndSteps],
+    );
+
     const handleMenuClick = useCallback(
       ({ key }: { key: string }) => {
         if (key === 'delete') {
@@ -99,6 +119,9 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             },
           });
         } else {
+          if (isStepMenuItemDisabled(key)) {
+            return;
+          }
           // 处理step配置，key格式为 "flowKey:stepKey"
           const [flowKey, stepKey] = key.split(':');
           try {
@@ -127,7 +150,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           }
         }
       },
-      [model],
+      [isStepMenuItemDisabled, model],
     );
 
     if (!model) {
@@ -156,6 +179,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
                 if (await shouldHideStepInSettings(model as FlowModel, flow, actionStep)) {
                   return null;
                 }
+                const disabledState = await resolveStepDisabledInSettings(model as FlowModel, flow, actionStep);
 
                 // 从step获取uiSchema（如果存在）
                 const stepUiSchema: ActionDefinition['uiSchema'] = actionStep.uiSchema || {};
@@ -191,6 +215,8 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
                   step: actionStep,
                   uiSchema: mergedUiSchema,
                   title: actionStep.title || stepKey,
+                  disabled: disabledState.disabled,
+                  disabledReason: disabledState.reason,
                 };
               }),
             ).then((steps) => steps.filter(Boolean));
@@ -205,8 +231,6 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         return [];
       }
     }, [model]);
-
-    const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<any[]>([]);
 
     useEffect(() => {
       let mounted = true;
@@ -243,7 +267,17 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           menuItems.push({
             key: `${flow.key}:${stepInfo.stepKey}`,
             icon: <SettingOutlined />,
-            label: stepInfo.title,
+            label: stepInfo.disabled ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {stepInfo.title}
+                <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                  <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+                </Tooltip>
+              </span>
+            ) : (
+              stepInfo.title
+            ),
+            disabled: !!stepInfo.disabled,
           });
         });
       });

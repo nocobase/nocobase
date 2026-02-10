@@ -10,13 +10,15 @@
 import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { EditFormModel } from './EditFormModel';
 import type { FormBlockModel } from './FormBlockModel';
+import { omitHiddenModelValuesFromSubmit } from './submitValues';
 
 export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?: any) => void) {
   const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
 
   await blockModel.form.validateFields();
-  const values = blockModel.form.getFieldsValue(true);
+  const rawValues = blockModel.form.getFieldsValue(true);
+  const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
   if (resource instanceof SingleRecordResource) {
     if (blockModel instanceof EditFormModel) {
       const currentFilterByTk = resource.getMeta('currentFilterByTk');
