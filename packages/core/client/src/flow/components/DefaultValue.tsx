@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- */
-
 import { connect } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -20,6 +16,9 @@ import {
   VariableTag,
   isVariableExpression,
   parseValueToPath,
+  isRunJSValue,
+  normalizeRunJSValue,
+  runjsWithSafeGlobals,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -33,6 +32,8 @@ import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
+import { RunJSValueEditor } from './RunJSValueEditor';
+import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
 
 interface Props {
   value: any;
@@ -189,6 +190,17 @@ export const DefaultValue = connect((props: Props) => {
   const resolveMaybeVariable = React.useCallback(
     async (rawVal: any) => {
       let out = rawVal;
+      // RunJS default: execute and use the computed result for preview/backfill
+      if (isRunJSValue(out)) {
+        try {
+          const { code, version } = normalizeRunJSValue(out);
+          const ret = await runjsWithSafeGlobals(model?.context, code, { version });
+          out = ret?.success ? ret.value : undefined;
+        } catch {
+          out = undefined;
+        }
+        return out;
+      }
       if (isVariableExpression(out)) {
         const resolved = await model?.context?.resolveJsonTemplate?.(out);
         if (typeof resolved !== 'undefined') out = resolved;
@@ -205,12 +217,7 @@ export const DefaultValue = connect((props: Props) => {
   // 构建动态 NamePath（兼容数组子表单的行索引）
   const buildDynamicName = React.useCallback(
     (nameParts: (string | number)[], fieldIndex?: string[]): (string | number)[] => {
-      if (!fieldIndex?.length) return nameParts;
-      const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
-      const idx = Number(indexStr);
-      const lastIndex = nameParts.findIndex((p) => String(p) === lastField);
-      if (lastIndex === -1) return nameParts;
-      return [idx, ...nameParts.slice(lastIndex + 1)];
+      return buildDynamicNamePath(nameParts, fieldIndex);
     },
     [],
   );
@@ -574,6 +581,13 @@ export const DefaultValue = connect((props: Props) => {
     }
     return NullValuePlaceholder;
   }, [flowContext]);
+
+  const RunJSComponent = useMemo(() => {
+    const C: React.FC<any> = (inputProps) => (
+      <RunJSValueEditor t={flowContext.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+    );
+    return C;
+  }, [flowContext]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       let base: MetaTreeNode[] = [];
@@ -590,19 +604,26 @@ export const DefaultValue = connect((props: Props) => {
           name: 'constant',
           type: 'string',
           paths: ['constant'],
-          render: InputComponent,
+          render: InputComponent as (props: any) => JSX.Element,
         },
         {
           title: flowContext.t?.('Null') ?? 'Null',
           name: 'null',
           type: 'object',
           paths: ['null'],
-          render: NullComponent,
+          render: NullComponent as (props: any) => JSX.Element,
+        },
+        {
+          title: flowContext.t?.('RunJS') ?? 'RunJS',
+          name: 'runjs',
+          type: 'object',
+          paths: ['runjs'],
+          render: RunJSComponent as (props: any) => JSX.Element,
         },
         ...base,
       ];
     };
-  }, [propMetaTree, flowContext, InputComponent, NullComponent]);
+  }, [propMetaTree, flowContext, InputComponent, NullComponent, RunJSComponent]);
 
   // Ensure temp field is editable. Do not override value/onChange here to avoid racing with VariableInput
   React.useEffect(() => {
@@ -622,16 +643,19 @@ export const DefaultValue = connect((props: Props) => {
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return InputComponent;
           if (firstPath === 'null') return NullComponent;
+          if (firstPath === 'runjs') return RunJSComponent;
           return VariableTag;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}
