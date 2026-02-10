@@ -50,6 +50,43 @@ const getTargetFilterableFields = (field: any, collection?: Collection, model?: 
 
 const MAX_ASSOCIATION_DEPTH = 5;
 
+const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
+  const collectionField = fieldModel?.context?.collectionField;
+  if (!collectionField?.isAssociationField?.()) {
+    return value;
+  }
+
+  const fieldNames = fieldModel?.props?.fieldNames || collectionField?.fieldNames || {};
+  const valueKey =
+    fieldNames?.value ||
+    collectionField?.targetKey ||
+    collectionField?.targetCollection?.filterTargetKey ||
+    collectionField?.collection?.filterTargetKey ||
+    'id';
+  const pickValue = (item: any) => {
+    const target = item && typeof item === 'object' && typeof item?.data !== 'undefined' ? item.data : item;
+    if (!target || typeof target !== 'object') {
+      return target;
+    }
+    if (typeof target?.[valueKey] !== 'undefined') {
+      return target[valueKey];
+    }
+    if (typeof target?.id !== 'undefined') {
+      return target.id;
+    }
+    if (typeof target?.value !== 'undefined') {
+      return target.value;
+    }
+    return target;
+  };
+
+  if (Array.isArray(value)) {
+    return value.map(pickValue);
+  }
+
+  return pickValue(value);
+};
+
 const buildFilterFormFieldItem = ({
   model,
   collection,
@@ -399,7 +436,8 @@ export class FilterFormItemModel extends FilterableItemModel<{
     let rawValue = fieldValue;
 
     if (!this.mounted) {
-      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+      const sourceValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+      rawValue = normalizeAssociationDefaultFilterValue(sourceValue, this.subModels?.field);
     }
 
     const operatorMeta = this.getCurrentOperatorMeta();
