@@ -1472,6 +1472,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const modelClass = getModelClassName(this);
       const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
       const runCtx = new Ctor(this);
+      runCtx.defineMethod('t', (key: string, options?: any) => {
+        return this.t(key, { ns: 'runjs', ...options });
+      });
       const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });

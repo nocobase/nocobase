@@ -34,7 +34,8 @@ export class MissingKeyHandler {
         return;
       }
 
-      if (!ns?.startsWith('lm-')) {
+      // 为了兼容 v1，暂不处理 client 和 ui-schema-storage 的缺失 key
+      if (ns === 'client' || ns === 'ui-schema-storage') {
         return;
       }
 
