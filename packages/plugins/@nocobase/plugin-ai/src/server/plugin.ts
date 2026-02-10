@@ -40,6 +40,7 @@ import { AIContextDatasourceManager } from './manager/ai-context-datasource-mana
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
+import { kimiProviderOptions } from './llm-providers/kimi';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -95,6 +96,7 @@ export class PluginAIServer extends Plugin {
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
   }
 
   registerTools() {

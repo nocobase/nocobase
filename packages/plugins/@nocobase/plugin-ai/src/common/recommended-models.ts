@@ -24,13 +24,15 @@ export const recommendedModels: Record<string, { label: string; value: string }[
     { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
     { label: 'Claude Sonnet 4.5', value: 'claude-sonnet-4-5' },
   ],
-  dashscope: [
-    { label: 'Qwen3 Max', value: 'qwen3-max-2026-01-23' },
-    { label: 'Kimi K2.5', value: 'kimi-k2.5' },
-  ],
+  dashscope: [{ label: 'Qwen3 Max', value: 'qwen3-max-2026-01-23' }],
   deepseek: [
     { label: 'DeepSeek Chat', value: 'deepseek-chat' },
     { label: 'DeepSeek Reasoner', value: 'deepseek-reasoner' },
+  ],
+  kimi: [
+    { label: 'Kimi K2.5', value: 'kimi-k2.5' },
+    { label: 'Kimi K2', value: 'kimi-k2-0905-Preview' },
+    { label: 'Kimi K2 Turbo', value: 'kimi-k2-turbo-preview' },
   ],
   ollama: [],
 };

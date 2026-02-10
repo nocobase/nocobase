@@ -144,6 +144,7 @@ const providerHints: Record<string, string> = {
   'openai-completions': 'GPT (Completions, Legacy)',
   dashscope: 'Qwen',
   deepseek: 'DeepSeek',
+  kimi: 'Kimi',
   ollama: 'Local models',
 };
 

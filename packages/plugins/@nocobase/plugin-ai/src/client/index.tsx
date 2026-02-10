@@ -21,6 +21,7 @@ import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { ollamaProviderOptions } from './llm-providers/ollama';
+import { kimiProviderOptions } from './llm-providers/kimi';
 import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
@@ -149,6 +150,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
