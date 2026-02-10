@@ -254,6 +254,7 @@ export const ModelSwitcher: React.FC = observer(
           trigger={['hover']}
           open={isOpen}
           onOpenChange={setIsOpen}
+          overlayStyle={{ zIndex: 1200 }}
         >
           {dropdownContent}
         </Dropdown>

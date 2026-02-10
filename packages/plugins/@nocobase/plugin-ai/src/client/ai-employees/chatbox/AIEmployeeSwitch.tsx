@@ -77,9 +77,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
         userSelect: 'none',
       }}
     >
-      {currentEmployee ? (
-        <Avatar shape="square" size={20} src={avatars(currentEmployee.avatar)} style={{ borderRadius: 4 }} />
-      ) : null}
+      {currentEmployee ? <Avatar shape="circle" size={20} src={avatars(currentEmployee.avatar)} /> : null}
       <span
         style={{
           color: hasEmployees ? 'rgba(0, 0, 0, 0.88)' : '#ff4d4f',
@@ -101,6 +99,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
       trigger={['hover']}
       open={isOpen}
       onOpenChange={setIsOpen}
+      overlayStyle={{ zIndex: 1200 }}
     >
       {dropdownContent}
     </Dropdown>

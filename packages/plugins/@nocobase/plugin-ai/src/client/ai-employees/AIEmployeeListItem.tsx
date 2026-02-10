@@ -22,12 +22,12 @@ export const AIEmployeeListItem: React.FC<{
 
   return (
     <Popover content={<ProfileCard aiEmployee={aiEmployee} variant="simple" />} placement="leftTop">
-      <Flex align="center" onClick={onClick} style={{ padding: '4px 2px' }} gap={10}>
-        <Avatar shape="circle" size={40} src={avatars(aiEmployee.avatar)} />
+      <Flex align="center" onClick={onClick} style={{ padding: '4px 2px' }} gap={8}>
+        <Avatar shape="circle" size={36} src={avatars(aiEmployee.avatar)} />
         <Flex vertical={true}>
           <div
             style={{
-              fontSize: token.fontSize,
+              fontSize: token.fontSizeSM,
               color: token.colorText,
               lineHeight: 1.4,
             }}
@@ -36,8 +36,8 @@ export const AIEmployeeListItem: React.FC<{
           </div>
           <div
             style={{
-              fontSize: token.fontSize,
-              color: '#999',
+              fontSize: token.fontSizeSM,
+              color: token.colorTextSecondary,
               lineHeight: 1.4,
             }}
           >
