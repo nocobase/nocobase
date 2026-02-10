@@ -69,7 +69,7 @@ const rowSelectCheckboxWrapperClass = css`
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding-right: 8px;
+  padding-right: 0px;
   .nb-table-index {
     opacity: 0;
   }
@@ -81,6 +81,7 @@ const rowSelectCheckboxWrapperClass = css`
 `;
 
 const rowSelectCheckboxWrapperClassHover = css`
+  min-height: 16px;
   &:hover {
     .nb-table-index {
       opacity: 0;
@@ -371,6 +372,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     }
     const rowKey = getRowKey(record, this.collection.filterTargetKey);
     const rowKeyString = rowKey == null ? rowKey : String(rowKey);
+    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
     return (
       <div
         role="button"
@@ -380,7 +382,18 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         })}
       >
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-          {this.props.dragSort && this.props.dragSortBy && <SortHandle id={rowKeyString} />}
+          {showDragHandle && (
+            <SortHandle
+              id={rowKeyString}
+              style={{
+                position: 'absolute',
+                left: -12,
+                top: '50%',
+                justifyContent: 'center',
+                transform: 'translateY(-50%)',
+              }}
+            />
+          )}
           {this.props.showIndex && <TableIndex index={index} />}
         </div>
 
@@ -876,6 +889,29 @@ const HighPerformanceTable = React.memo(
       };
     }, [model.components, BodyWrapperComponent, RowComponent]);
 
+    const tableClassName = useMemo(() => {
+      const baseClass = css`
+        .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+          display: inline;
+        }
+        .ant-table-column-sorters .ant-table-column-title {
+          overflow: visible;
+        }
+      `;
+
+      const selectionPaddingClass =
+        model.props.dragSort && model.props.dragSortBy
+          ? css`
+              .ant-table-thead > tr > th.ant-table-selection-column,
+              .ant-table-tbody > tr > td.ant-table-selection-column {
+                padding-left: 20px !important;
+              }
+            `
+          : undefined;
+
+      return classNames(baseClass, selectionPaddingClass);
+    }, [model.props.dragSort, model.props.dragSortBy]);
+
     return (
       <MemoizedTable
         components={components}
@@ -891,14 +927,7 @@ const HighPerformanceTable = React.memo(
         onChange={handleChange}
         rowClassName={rowClassName}
         onRow={onRow}
-        className={css`
-          .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
-            display: inline;
-          }
-          .ant-table-column-sorters .ant-table-column-title {
-            overflow: visible;
-          }
-        `}
+        className={tableClassName}
         defaultExpandAllRows={defaultExpandAllRows}
         expandable={expandable}
         indentSize={15}

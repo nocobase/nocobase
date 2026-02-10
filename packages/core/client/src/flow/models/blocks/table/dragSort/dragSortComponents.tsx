@@ -28,11 +28,9 @@ const sortHandleClass = css`
   align-items: center;
   justify-content: center;
   cursor: grab;
-  padding: 6px;
-  margin: -6px;
 `;
 
-export const SortHandle: React.FC<{ id: string | number }> = (props) => {
+export const SortHandle: React.FC<{ id: string | number; style?: React.CSSProperties }> = (props) => {
   const { id: _id, ...otherProps } = props;
   const dragSortContext = React.useContext(DragSortRowContext);
   // return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
