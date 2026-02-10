@@ -220,4 +220,5 @@ export const anthropicProviderOptions: LLMProviderMeta = {
     ],
   },
   provider: AnthropicProvider,
+  supportWebSearch: true,
 };

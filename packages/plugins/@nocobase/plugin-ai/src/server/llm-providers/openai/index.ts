@@ -44,6 +44,7 @@ export const openaiResponsesProviderOptions: LLMProviderMeta = {
   embedding,
   title: 'OpenAI',
   provider: OpenAIResponsesProvider,
+  supportWebSearch: true,
 };
 
 export const openaiCompletionsProviderOptions: LLMProviderMeta = {

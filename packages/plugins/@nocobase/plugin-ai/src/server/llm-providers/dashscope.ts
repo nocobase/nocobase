@@ -80,6 +80,7 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
 export const dashscopeProviderOptions = {
   title: '{{t("Dashscope", {ns: "ai"})}}',
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
+  supportWebSearch: true,
   models: {
     [SupportedModel.LLM]: [
       'qwen-long',

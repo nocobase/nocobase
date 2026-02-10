@@ -13,6 +13,7 @@ export interface LLMServiceItem {
   llmService: string;
   llmServiceTitle: string;
   enabledModels: { label: string; value: string }[];
+  supportWebSearch?: boolean;
 }
 
 export class LLMServicesRepository {

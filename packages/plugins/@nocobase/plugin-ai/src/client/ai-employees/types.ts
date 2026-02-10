@@ -45,16 +45,6 @@ export type Conversation = {
   aiEmployee: AIEmployee;
 };
 
-export type ConversationOptions = {
-  sessionId: string;
-  options: {
-    conversationSetting?: ConversationSetting;
-  };
-};
-export type ConversationSetting = {
-  webSearch?: boolean;
-};
-
 export type ContextItem = {
   type: string;
   uid: string;

@@ -29,7 +29,7 @@ const store = create<ChatConversationsState & ChatConversationsActions>((set) =>
   currentConversation: undefined,
   conversations: [],
   keyword: '',
-  webSearch: true,
+  webSearch: false,
 
   setCurrentConversation: (id) => set({ currentConversation: id }),
   setKeyword: (keyword) => set({ keyword }),

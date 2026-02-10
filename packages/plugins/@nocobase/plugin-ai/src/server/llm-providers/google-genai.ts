@@ -192,4 +192,5 @@ export const googleGenAIProviderOptions: LLMProviderMeta = {
   },
   provider: GoogleGenAIProvider,
   embedding: GoogleGenAIEmbeddingProvider,
+  supportWebSearch: true,
 };

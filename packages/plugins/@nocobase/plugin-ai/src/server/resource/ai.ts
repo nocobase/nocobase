@@ -132,6 +132,7 @@ const aiResource: ResourceOptions = {
     },
 
     listAllEnabledModels: async (ctx, next) => {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const services = await ctx.db.getRepository('llmServices').find({ sort: 'sort' });
       const llmServices = services
         .filter((service) => service.enabled !== false)
@@ -169,11 +170,13 @@ const aiResource: ResourceOptions = {
             return null;
           }
 
+          const providerMeta = plugin.aiManager.llmProviders.get(service.provider);
           return {
             llmService: service.name,
             llmServiceTitle: service.title,
             provider: service.provider,
             enabledModels,
+            supportWebSearch: providerMeta?.supportWebSearch ?? false,
           };
         })
         .filter(Boolean);
