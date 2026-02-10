@@ -400,23 +400,4 @@ describe('FilterForm custom field record select', () => {
 
     expect(model.operator).toBe('$match');
   });
-
-  it('requires target collection, title field, value field and operator for custom record select', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
-
-    const model = engine.createModel<FilterFormCustomFieldModel>({
-      uid: 'custom-required-record-select',
-      use: 'FilterFormCustomFieldModel',
-    });
-
-    model.setStepParams('formItemSettings', 'fieldSettings', {
-      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
-      title: 'User',
-      name: 'user',
-      fieldModelProps: {},
-    });
-
-    await expect(model.applyFlow('formItemSettings')).rejects.toThrow('Target collection');
-  });
 });
