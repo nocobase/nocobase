@@ -29,7 +29,7 @@ import {
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Input, Space, Divider } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
 import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
@@ -179,6 +179,10 @@ const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
 const FieldModelRendererOptimize = React.memo((props: any) => {
   const { model, onChange, value, ...rest } = props;
   const pendingValueRef = React.useRef<any>(props?.value);
+
+  useEffect(() => {
+    pendingValueRef.current = value;
+  }, [value]);
 
   const handleChange = React.useCallback(
     (value: any) => {
