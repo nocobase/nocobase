@@ -19,12 +19,9 @@ const HeightMode = {
 
 export const blockHeight = defineAction({
   name: 'blockHeight',
-  title: tExpr('Block Height'),
+  title: tExpr('Block height'),
   uiMode: {
     type: 'dialog',
-    props: {
-      width: 800,
-    },
   },
   uiSchema: (ctx) => {
     const { t } = ctx;
