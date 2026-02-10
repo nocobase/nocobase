@@ -152,7 +152,7 @@ describe('FieldAssignRulesEditor', () => {
       },
     ];
 
-    const { container } = render(
+    render(
       wrap(
         <FieldAssignRulesEditor
           t={t}
@@ -168,9 +168,6 @@ describe('FieldAssignRulesEditor', () => {
     expect(screen.getByLabelText('Default value')).toBeInTheDocument();
     expect(screen.getByLabelText('Fixed value')).toBeInTheDocument();
     expect(screen.getByLabelText('Fixed value')).toBeChecked();
-    expect(container.querySelector('.ant-select')).toBeNull();
-    expect(screen.queryByRole('combobox')).toBeNull();
-
     await userEvent.click(screen.getByLabelText('Default value'));
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();

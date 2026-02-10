@@ -18,6 +18,35 @@ export type ItemChain = {
   parentItem?: ItemChain;
 };
 
+export type ItemChainResolver = (subPath: string) => boolean;
+
+export type ParentItemAccessors = {
+  parentPropertiesAccessor: (ctx?: any) => any;
+  parentItemMetaAccessor: () => any;
+  parentItemResolverAccessor: () => ItemChainResolver | undefined;
+};
+
+export function createItemChainGetter(options: {
+  valueAccessor: () => any;
+  parentItemAccessor?: () => ItemChain | undefined;
+  indexAccessor?: () => number | undefined;
+  lengthAccessor?: () => number | undefined;
+  isNewAccessor?: () => boolean | undefined;
+  isStoredAccessor?: () => boolean | undefined;
+}): () => ItemChain {
+  return () => {
+    const value = options.valueAccessor();
+    return {
+      index: options.indexAccessor?.(),
+      length: options.lengthAccessor?.(),
+      __is_new__: options.isNewAccessor?.() ?? value?.__is_new__,
+      __is_stored__: options.isStoredAccessor?.() ?? value?.__is_stored__,
+      value,
+      parentItem: options.parentItemAccessor?.(),
+    };
+  };
+}
+
 export function createRootItemChain(formValues: any): ItemChain {
   return {
     index: undefined,
@@ -25,6 +54,61 @@ export function createRootItemChain(formValues: any): ItemChain {
     __is_stored__: formValues?.__is_stored__,
     value: formValues,
     parentItem: undefined,
+  };
+}
+
+export function resolveRecordPersistenceState(
+  record: any,
+  filterTargetKey: string | string[] | null | undefined,
+): {
+  record: any;
+  hasPrimaryKey: boolean;
+  isNew: boolean;
+  isStored: boolean;
+} {
+  const hasPrimaryKey = Array.isArray(filterTargetKey)
+    ? filterTargetKey.length > 0 && filterTargetKey.every((key) => record?.[key] != null)
+    : filterTargetKey
+      ? record?.[filterTargetKey] != null
+      : false;
+  const isNew = !!record?.__is_new__ || !hasPrimaryKey;
+  const isStored = !!record?.__is_stored__ || (!isNew && hasPrimaryKey);
+  return {
+    record,
+    hasPrimaryKey,
+    isNew,
+    isStored,
+  };
+}
+
+export function buildCurrentItemTitle(t: (key: string) => string, collectionField?: any, fallbackName?: string) {
+  const rawLabel =
+    (typeof collectionField?.title === 'string' && collectionField.title) ||
+    (typeof collectionField?.name === 'string' && collectionField.name) ||
+    fallbackName;
+  const label = typeof rawLabel === 'string' && rawLabel ? t(rawLabel) : '';
+  return label ? `${t('Current item')}（${label}）` : t('Current item');
+}
+
+export function createParentItemAccessorsFromContext(options: {
+  parentContextAccessor: () => any;
+  fallbackParentPropertiesAccessor?: (ctx?: any) => any;
+}): ParentItemAccessors {
+  return {
+    parentPropertiesAccessor: (ctx?: any) => {
+      return options.parentContextAccessor?.()?.item?.value ?? options.fallbackParentPropertiesAccessor?.(ctx);
+    },
+    parentItemMetaAccessor: () => options.parentContextAccessor?.()?.getPropertyOptions?.('item')?.meta,
+    parentItemResolverAccessor: () =>
+      options.parentContextAccessor?.()?.getPropertyOptions?.('item')?.resolveOnServer as ItemChainResolver | undefined,
+  };
+}
+
+export function createParentItemAccessorsFromInputArgs(inputArgsAccessor: () => any): ParentItemAccessors {
+  return {
+    parentPropertiesAccessor: () => (inputArgsAccessor?.()?.parentItem as ItemChain | undefined)?.value,
+    parentItemMetaAccessor: () => inputArgsAccessor?.()?.parentItemMeta,
+    parentItemResolverAccessor: () => inputArgsAccessor?.()?.parentItemResolver as ItemChainResolver | undefined,
   };
 }
 
@@ -191,5 +275,68 @@ export function createItemChainResolver(options: {
       return false;
     }
     return false;
+  };
+}
+
+export type ItemChainMetaAndResolverOptions = {
+  metaFactoryOptions: Parameters<typeof createItemChainMetaFactory>[0];
+  resolverOptions: Parameters<typeof createItemChainResolver>[0];
+};
+
+export function createItemChainMetaAndResolver(options: ItemChainMetaAndResolverOptions) {
+  return {
+    meta: createItemChainMetaFactory(options.metaFactoryOptions),
+    resolveOnServer: createItemChainResolver(options.resolverOptions),
+  };
+}
+
+export type AssociationItemChainContextPropertyOptions = {
+  t: (key: string) => string;
+  title: string;
+  showIndex?: boolean;
+  showParentIndex?: boolean;
+  collectionAccessor: () => any;
+  propertiesAccessor: (ctx: any) => any;
+  resolverPropertiesAccessor?: () => unknown;
+  parentCollectionAccessor?: () => any;
+  parentAccessors?: Partial<ParentItemAccessors>;
+  useParentItemMeta?: boolean;
+  useParentItemResolver?: boolean;
+};
+
+export function createAssociationItemChainContextPropertyOptions(options: AssociationItemChainContextPropertyOptions) {
+  const parentPropertiesAccessor = options.parentAccessors?.parentPropertiesAccessor;
+  const parentItemMetaAccessor =
+    options.useParentItemMeta === false ? undefined : options.parentAccessors?.parentItemMetaAccessor;
+  const parentItemResolverAccessor =
+    options.useParentItemResolver === false ? undefined : options.parentAccessors?.parentItemResolverAccessor;
+
+  return createItemChainContextPropertyOptions({
+    metaFactoryOptions: {
+      t: options.t,
+      title: options.title,
+      showIndex: options.showIndex,
+      showParentIndex: options.showParentIndex,
+      collectionAccessor: options.collectionAccessor,
+      propertiesAccessor: options.propertiesAccessor,
+      parentCollectionAccessor: options.parentCollectionAccessor,
+      parentPropertiesAccessor,
+      parentItemMetaAccessor,
+    },
+    resolverOptions: {
+      collectionAccessor: options.collectionAccessor,
+      propertiesAccessor: options.resolverPropertiesAccessor,
+      parentCollectionAccessor: options.parentCollectionAccessor,
+      parentPropertiesAccessor,
+      parentItemResolverAccessor,
+    },
+  });
+}
+
+export function createItemChainContextPropertyOptions(options: ItemChainMetaAndResolverOptions) {
+  return {
+    cache: false as const,
+    ...createItemChainMetaAndResolver(options),
+    serverOnlyWhenContextParams: true as const,
   };
 }

@@ -17,16 +17,18 @@ import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
-import { createItemChainMetaFactory, createItemChainResolver, createRootItemChain, type ItemChain } from './itemChain';
+import {
+  buildCurrentItemTitle,
+  createAssociationItemChainContextPropertyOptions,
+  createItemChainGetter,
+  createParentItemAccessorsFromContext,
+  createRootItemChain,
+  type ItemChain,
+} from './itemChain';
 import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
 
-function buildCurrentItemTitle(t: (key: string) => string, collectionField?: any, fallbackName?: string) {
-  const rawLabel =
-    (typeof collectionField?.title === 'string' && collectionField.title) ||
-    (typeof collectionField?.name === 'string' && collectionField.name) ||
-    fallbackName;
-  const label = typeof rawLabel === 'string' && rawLabel ? t(rawLabel) : '';
-  return label ? `${t('Current item')}（${label}）` : t('Current item');
+function resolveParentItemWithFallback(parentContextAccessor: () => any, formValuesAccessor: () => any): ItemChain {
+  return (parentContextAccessor()?.item as ItemChain | undefined) ?? createRootItemChain(formValuesAccessor());
 }
 
 class FormAssociationFieldModel extends AssociationFieldModel {
@@ -105,43 +107,34 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
       this.dispatchEvent('formValuesChange', payload, { debounce: true });
     });
 
+    const parentAccessors = createParentItemAccessorsFromContext({
+      parentContextAccessor: () => (this.parent as any)?.context,
+      fallbackParentPropertiesAccessor: () => this.context.formValues,
+    });
+
+    const getParentItem = () =>
+      resolveParentItemWithFallback(
+        () => (this.parent as any)?.context,
+        () => this.context.formValues,
+      );
+    const getSubFormItem = createItemChainGetter({
+      valueAccessor: () => this.context.form.getFieldValue(this.props.name),
+      parentItemAccessor: getParentItem,
+    });
+
     this.context.defineProperty('item', {
-      get: () => {
-        const parentItem =
-          ((this.parent as any)?.context?.item as ItemChain | undefined) ??
-          createRootItemChain(this.context.formValues);
-        const value = this.context.form.getFieldValue(this.props.name);
-        return {
-          index: undefined,
-          __is_new__: value?.__is_new__,
-          __is_stored__: value?.__is_stored__,
-          value,
-          parentItem,
-        } satisfies ItemChain;
-      },
-      cache: false,
-      meta: createItemChainMetaFactory({
+      get: getSubFormItem,
+      ...createAssociationItemChainContextPropertyOptions({
         t: this.context.t,
         title: buildCurrentItemTitle(this.context.t, this.context.collectionField, this.props.name),
         showIndex: isToManyAssociationField(this.context.collectionField),
         showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
         collectionAccessor: () => this.context.collection,
         propertiesAccessor: (ctx) => ctx?.item?.value,
+        resolverPropertiesAccessor: () => this.context.form.getFieldValue(this.props.name),
         parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
-        parentItemMetaAccessor: () => (this.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
+        parentAccessors,
       }),
-      resolveOnServer: createItemChainResolver({
-        collectionAccessor: () => this.context.collection,
-        propertiesAccessor: () => this.context.form.getFieldValue(this.props.name),
-        parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value ?? this.context.formValues,
-        parentItemResolverAccessor: () =>
-          (this.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
-            | ((subPath: string) => boolean)
-            | undefined,
-      }),
-      serverOnlyWhenContextParams: true,
     });
   }
   onMount() {
@@ -201,6 +194,15 @@ const ArrayNester = ({
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
   const collectionName = model.context.collectionField.name;
+  const getParentItem = () =>
+    resolveParentItemWithFallback(
+      () => (model?.parent as any)?.context,
+      () => model?.context?.formValues,
+    );
+  const parentAccessors = createParentItemAccessorsFromContext({
+    parentContextAccessor: () => (model?.parent as any)?.context,
+    fallbackParentPropertiesAccessor: () => model?.context?.formValues,
+  });
   useEffect(() => {
     gridModel.context.defineProperty('parentDisabled', {
       get: () => disabled,
@@ -245,23 +247,16 @@ const ArrayNester = ({
                   cache: false,
                 });
 
+                const getRowItem = createItemChainGetter({
+                  valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
+                  parentItemAccessor: getParentItem,
+                  indexAccessor: () => index,
+                  lengthAccessor: () => itemLength,
+                });
+
                 currentFork.context.defineProperty('item', {
-                  get: () => {
-                    const parentItem =
-                      ((model?.parent as any)?.context?.item as ItemChain | undefined) ??
-                      createRootItemChain(model?.context?.formValues);
-                    const rowValue = currentFork.context.form.getFieldValue([name, fieldName]);
-                    return {
-                      index,
-                      length: itemLength,
-                      __is_new__: rowValue?.__is_new__,
-                      __is_stored__: rowValue?.__is_stored__,
-                      value: rowValue,
-                      parentItem,
-                    } satisfies ItemChain;
-                  },
-                  cache: false,
-                  meta: createItemChainMetaFactory({
+                  get: getRowItem,
+                  ...createAssociationItemChainContextPropertyOptions({
                     t: currentFork.context.t,
                     title: buildCurrentItemTitle(
                       currentFork.context.t,
@@ -272,23 +267,10 @@ const ArrayNester = ({
                     showParentIndex: Array.isArray(rowIndex) && rowIndex.length > 0,
                     collectionAccessor: () => currentFork.context.collection,
                     propertiesAccessor: (ctx) => ctx?.item?.value,
+                    resolverPropertiesAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
                     parentCollectionAccessor: () => model?.context?.collectionField?.collection,
-                    parentPropertiesAccessor: () =>
-                      (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
-                    parentItemMetaAccessor: () => (model?.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
+                    parentAccessors,
                   }),
-                  resolveOnServer: createItemChainResolver({
-                    collectionAccessor: () => currentFork.context.collection,
-                    propertiesAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),
-                    parentCollectionAccessor: () => model?.context?.collectionField?.collection,
-                    parentPropertiesAccessor: () =>
-                      (model?.parent as any)?.context?.item?.value ?? model?.context?.formValues,
-                    parentItemResolverAccessor: () =>
-                      (model?.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
-                        | ((subPath: string) => boolean)
-                        | undefined,
-                  }),
-                  serverOnlyWhenContextParams: true,
                 });
 
                 const rowValue = value?.[index];
@@ -369,30 +351,22 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       this.dispatchEvent('formValuesChange', payload, { debounce: true });
     });
 
+    const parentAccessors = createParentItemAccessorsFromContext({
+      parentContextAccessor: () => (this.parent as any)?.context,
+    });
+
     this.context.defineProperty('item', {
       get: () => undefined,
-      cache: false,
-      meta: createItemChainMetaFactory({
+      ...createAssociationItemChainContextPropertyOptions({
         t: this.context.t,
         title: buildCurrentItemTitle(this.context.t, this.context.collectionField, this.props.name),
         showParentIndex: Array.isArray(this.context.fieldIndex) && this.context.fieldIndex.length > 0,
         collectionAccessor: () => this.context.collection,
         propertiesAccessor: (ctx) => ctx?.item?.value,
+        resolverPropertiesAccessor: () => (this.context as any)?.item?.value,
         parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value,
-        parentItemMetaAccessor: () => (this.parent as any)?.context?.getPropertyOptions?.('item')?.meta,
+        parentAccessors,
       }),
-      resolveOnServer: createItemChainResolver({
-        collectionAccessor: () => this.context.collection,
-        propertiesAccessor: () => (this.context as any)?.item?.value,
-        parentCollectionAccessor: () => this.context.collectionField?.collection,
-        parentPropertiesAccessor: () => (this.parent as any)?.context?.item?.value,
-        parentItemResolverAccessor: () =>
-          (this.parent as any)?.context?.getPropertyOptions?.('item')?.resolveOnServer as
-            | ((subPath: string) => boolean)
-            | undefined,
-      }),
-      serverOnlyWhenContextParams: true,
     });
 
     this.onSelectExitRecordClick = () => {

@@ -22,19 +22,103 @@ import { Button, Select, Tooltip, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
+import {
+  buildCurrentItemTitle,
+  createAssociationItemChainContextPropertyOptions,
+  createItemChainGetter,
+  createItemChainMetaAndResolver,
+  createParentItemAccessorsFromInputArgs,
+  createRootItemChain,
+  type ItemChain,
+} from './itemChain';
 import { buildOpenerUids, LabelByField } from './recordSelectShared';
+
+export function buildRecordPickerParentItemContext(ctx: any): {
+  parentItem: ItemChain;
+  parentItemMeta: any;
+  parentItemResolver: ((subPath: string) => boolean) | undefined;
+} {
+  const formValues =
+    (typeof ctx?.getFormValues === 'function' ? ctx.getFormValues() : undefined) ??
+    ctx?.formValues ??
+    ctx?.record ??
+    {};
+  const parentItem = (ctx?.item as ItemChain | undefined) ?? createRootItemChain(formValues);
+  const t = typeof ctx?.t === 'function' ? ctx.t : (value: string) => value;
+  const collectionAccessor = () => ctx?.collectionField?.collection ?? ctx?.collection ?? null;
+  const propertiesAccessor = () => parentItem?.value;
+  const parentPropertiesAccessor = () => parentItem?.parentItem?.value;
+
+  const fallback = createItemChainMetaAndResolver({
+    metaFactoryOptions: {
+      t,
+      title: t('Current item'),
+      collectionAccessor,
+      propertiesAccessor,
+      parentCollectionAccessor: collectionAccessor,
+      parentPropertiesAccessor,
+      showParentIndex: false,
+    },
+    resolverOptions: {
+      collectionAccessor,
+      propertiesAccessor,
+      parentCollectionAccessor: collectionAccessor,
+      parentPropertiesAccessor,
+    },
+  });
+  const { meta: parentItemMeta = fallback.meta, resolveOnServer: parentItemResolver = fallback.resolveOnServer } =
+    ctx?.getPropertyOptions?.('item') || {};
+
+  return {
+    parentItem,
+    parentItemMeta,
+    parentItemResolver,
+  };
+}
+
+export function injectRecordPickerPopupContext(model: FlowModel, viewCtx: any, fieldModel?: any) {
+  if (model && fieldModel) {
+    model.context.defineProperty('flowSettingsEnabled', {
+      get: () => fieldModel.context.flowSettingsEnabled,
+      cache: false,
+    });
+  }
+
+  const inputArgs = viewCtx?.view?.inputArgs || {};
+  const collectionField = inputArgs.collectionField;
+  const t = typeof viewCtx?.t === 'function' ? viewCtx.t : (value: string) => value;
+  const currentCollection = collectionField?.targetCollection ?? collectionField?.collection ?? null;
+  const parentAccessors = createParentItemAccessorsFromInputArgs(() => inputArgs);
+  const currentItemValueAccessor = () => inputArgs.currentItemValue ?? {};
+  const itemPropertyOptions = createAssociationItemChainContextPropertyOptions({
+    t,
+    title: buildCurrentItemTitle(t, collectionField),
+    collectionAccessor: () => currentCollection,
+    propertiesAccessor: currentItemValueAccessor,
+    resolverPropertiesAccessor: currentItemValueAccessor,
+    parentCollectionAccessor: () => collectionField?.collection ?? null,
+    parentAccessors,
+    useParentItemMeta: false,
+  });
+  const getPopupItem = createItemChainGetter({
+    valueAccessor: currentItemValueAccessor,
+    parentItemAccessor: () => inputArgs.parentItem,
+    isNewAccessor: () => true,
+    isStoredAccessor: () => false,
+  });
+
+  model.context.defineProperty('item', {
+    get: getPopupItem,
+    ...itemPropertyOptions,
+  });
+}
 
 function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
       const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
-      if (model && fieldModel) {
-        model.context.defineProperty('flowSettingsEnabled', {
-          get: () => fieldModel.context.flowSettingsEnabled,
-          cache: false,
-        });
-      }
+      injectRecordPickerPopupContext(model, ctx, fieldModel);
       return model;
     },
     {
@@ -307,6 +391,8 @@ RecordPickerFieldModel.registerFlow({
         const sourceRecord = ctx.item?.value ?? ctx.record;
         const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
         const associationName = ctx.collectionField?.resourceName;
+        const { parentItem, parentItemMeta, parentItemResolver } = buildRecordPickerParentItemContext(ctx);
+        const currentItemValue = ctx.inputArgs.currentItemValue ?? {};
         const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
@@ -320,6 +406,10 @@ RecordPickerFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
+            parentItem,
+            parentItemMeta,
+            parentItemResolver,
+            currentItemValue,
             openerUids,
             rowSelectionProps: {
               type: toOne ? 'radio' : 'checkbox',

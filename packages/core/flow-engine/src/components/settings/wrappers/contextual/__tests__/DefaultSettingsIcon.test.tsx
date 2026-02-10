@@ -310,8 +310,13 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       expect(disabledItem.disabled).toBe(true);
     });
 
+    const resolvedLabel =
+      React.isValidElement(disabledItem.label) && typeof disabledItem.label.type === 'function'
+        ? (disabledItem.label.type as any)(disabledItem.label.props)
+        : disabledItem.label;
+
     const tooltipElement = findElement(
-      disabledItem.label,
+      resolvedLabel,
       (element) =>
         Object.prototype.hasOwnProperty.call(element.props || {}, 'title') && element.props.title === disabledReason,
     );
