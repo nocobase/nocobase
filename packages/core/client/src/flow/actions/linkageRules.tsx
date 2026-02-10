@@ -20,6 +20,9 @@ import {
   createSafeDocument,
   createSafeNavigator,
   observer,
+  isRunJSValue,
+  normalizeRunJSValue,
+  runjsWithSafeGlobals,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
@@ -255,6 +258,26 @@ function createLegacyTargetPathResolver(ctx: FlowContext) {
       return undefined;
     }
   };
+}
+
+const SKIP_RUNJS_ASSIGN_VALUE = Symbol('SKIP_RUNJS_ASSIGN_VALUE');
+
+async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any) {
+  if (!isRunJSValue(rawValue)) {
+    return rawValue;
+  }
+
+  try {
+    const { code, version } = normalizeRunJSValue(rawValue);
+    const ret = await runjsWithSafeGlobals(ctx, code, { version });
+    if (!ret?.success) {
+      return SKIP_RUNJS_ASSIGN_VALUE;
+    }
+    return ret.value;
+  } catch (error) {
+    console.warn('[linkageRules] Failed to evaluate RunJS assign value', error);
+    return SKIP_RUNJS_ASSIGN_VALUE;
+  }
 }
 
 function getSubFormHostFieldPath(ctx: FlowContext): string | null {
@@ -909,7 +932,7 @@ export const linkageAssignField = defineAction({
       'x-component': LinkageAssignFieldComponent,
     },
   },
-  handler: (ctx, { value, setProps, addFormValuePatch }) => {
+  handler: async (ctx, { value, setProps, addFormValuePatch }) => {
     const items = normalizeAssignRuleItemsFromLinkageParams(
       value,
       { mode: 'assign', valueKey: 'assignValue' },
@@ -936,7 +959,15 @@ export const linkageAssignField = defineAction({
         const top = targetPath.split('.')[0];
         const collectionField =
           (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
-        const finalValue = coerceForToOneField(collectionField, it?.value);
+        let runtimeValue = it?.value;
+        if (isRunJSValue(runtimeValue)) {
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
+          if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
+            continue;
+          }
+        }
+
+        const finalValue = coerceForToOneField(collectionField, runtimeValue);
 
         // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
         if (typeof finalValue === 'undefined') {
@@ -975,7 +1006,7 @@ export const subFormLinkageAssignField = defineAction({
       'x-component': SubFormLinkageAssignFieldComponent,
     },
   },
-  handler: (ctx, { value, setProps, addFormValuePatch }) => {
+  handler: async (ctx, { value, setProps, addFormValuePatch }) => {
     // 字段赋值处理逻辑
     const items = normalizeAssignRuleItemsFromLinkageParams(
       value,
@@ -1133,7 +1164,15 @@ export const subFormLinkageAssignField = defineAction({
         const collectionField =
           (itemModel as any)?.collectionField ??
           getCollectionFromModel((ctx.model as any)?.parent ?? ctx.model)?.getField?.(top);
-        const finalValue = coerceForToOneField(collectionField, it?.value);
+        let runtimeValue = it?.value;
+        if (isRunJSValue(runtimeValue)) {
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
+          if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
+            continue;
+          }
+        }
+
+        const finalValue = coerceForToOneField(collectionField, runtimeValue);
 
         // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
         if (typeof finalValue === 'undefined') {
@@ -1179,7 +1218,7 @@ export const setFieldsDefaultValue = defineAction({
       'x-component': SetFieldsDefaultValueComponent,
     },
   },
-  handler: (ctx, { value, setProps, addFormValuePatch }) => {
+  handler: async (ctx, { value, setProps, addFormValuePatch }) => {
     const items = normalizeAssignRuleItemsFromLinkageParams(
       value,
       { mode: 'default', valueKey: 'initialValue' },
@@ -1206,7 +1245,15 @@ export const setFieldsDefaultValue = defineAction({
         const top = targetPath.split('.')[0];
         const collectionField =
           (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
-        const finalInitialValue = coerceForToOneField(collectionField, it?.value);
+        let runtimeValue = it?.value;
+        if (isRunJSValue(runtimeValue)) {
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
+          if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
+            continue;
+          }
+        }
+
+        const finalInitialValue = coerceForToOneField(collectionField, runtimeValue);
 
         // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
         if (typeof finalInitialValue === 'undefined') {
@@ -1829,50 +1876,48 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   });
 
   // 1. 运行所有的联动规则
-  linkageRules
-    .filter((rule) => rule.enable)
-    .forEach((rule) => {
-      const { condition: conditions, actions } = rule;
+  for (const rule of linkageRules.filter((r) => r.enable)) {
+    const { condition: conditions, actions } = rule;
 
-      const matched = evaluateConditions(removeInvalidFilterItems(conditions), evaluator);
-      if (matched) {
-        actions.forEach((action) => {
-          const setProps = (
-            model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
-            props: any,
-          ) => {
-            // 存储原始值，用于恢复
-            if (!model.__originalProps) {
-              model.__originalProps = {
-                hiddenModel: model.hidden,
-                hiddenText: undefined,
-                disabled: undefined,
-                required: undefined,
-                hidden: undefined,
-                ...model.props,
-              };
-            }
+    const matched = evaluateConditions(removeInvalidFilterItems(conditions), evaluator);
+    if (!matched) continue;
 
-            if (!model.__props) {
-              model.__props = {};
-            }
-
-            // 临时存起来，遍历完所有规则后，再统一处理
-            model.__props = {
-              ...model.__props,
-              ...props,
-            };
-
-            if (allModels.indexOf(model) === -1) {
-              allModels.push(model);
-            }
+    for (const action of actions) {
+      const setProps = (
+        model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
+        props: any,
+      ) => {
+        // 存储原始值，用于恢复
+        if (!model.__originalProps) {
+          model.__originalProps = {
+            hiddenModel: model.hidden,
+            hiddenText: undefined,
+            disabled: undefined,
+            required: undefined,
+            hidden: undefined,
+            ...model.props,
           };
+        }
 
-          // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
-          ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps, addFormValuePatch });
-        });
-      }
-    });
+        if (!model.__props) {
+          model.__props = {};
+        }
+
+        // 临时存起来，遍历完所有规则后，再统一处理
+        model.__props = {
+          ...model.__props,
+          ...props,
+        };
+
+        if (allModels.indexOf(model) === -1) {
+          allModels.push(model);
+        }
+      };
+
+      // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
+      await ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps, addFormValuePatch });
+    }
+  }
 
   // 2. 合并去重（按 uid）后再实际更改相关 model 的状态，避免重复项把“已设置的临时属性”覆盖掉
   const mergedByUid = new Map<
@@ -2532,20 +2577,4 @@ function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
     .map((action) => action.name);
 
   return result;
-}
-
-function getFieldPathAndIndex(changedValues: Record<string, any>, fieldName: string) {
-  const fieldPath = fieldName.split('.');
-  // 因为是子表单的值，所以是一个数组
-  const fieldValue = _.get(changedValues, fieldPath) || [];
-
-  return fieldValue
-    .map((item, index) => {
-      if (!item) return null;
-      return {
-        index,
-        value: item,
-      };
-    })
-    .filter(Boolean);
 }

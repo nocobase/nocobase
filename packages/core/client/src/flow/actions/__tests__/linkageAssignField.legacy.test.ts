@@ -380,4 +380,91 @@ describe('linkage assign actions - legacy params', () => {
 
     expect(addFormValuePatch).toHaveBeenCalledTimes(1);
   });
+
+  it('linkageAssignField should evaluate RunJS value before assign', async () => {
+    const fieldModel: any = { uid: 'f-runjs-assign', fieldPath: 'a.b' };
+    const runjs = vi.fn(async () => ({ success: true, value: 'from-runjs' }));
+    const ctx: any = {
+      model: { subModels: { grid: { subModels: { items: [fieldModel] } } } },
+      engine: { getModel: vi.fn(() => ({ fieldPath: 'a.b' })) },
+      app: { jsonLogic: { apply: vi.fn() } },
+      runjs,
+    };
+    const setProps = vi.fn();
+
+    await linkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-runjs-assign',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'assign',
+          condition: { logic: '$and', items: [] },
+          value: { code: 'return 1;', version: 'v1' },
+        },
+      ],
+      setProps,
+    });
+
+    expect(runjs).toHaveBeenCalledTimes(1);
+    expect(setProps).toHaveBeenCalledWith(fieldModel, { value: 'from-runjs' });
+  });
+
+  it('linkageAssignField should skip assign when RunJS evaluation fails', async () => {
+    const fieldModel: any = { uid: 'f-runjs-fail', fieldPath: 'a.b' };
+    const runjs = vi.fn(async () => ({ success: false }));
+    const ctx: any = {
+      model: { subModels: { grid: { subModels: { items: [fieldModel] } } } },
+      engine: { getModel: vi.fn(() => ({ fieldPath: 'a.b' })) },
+      app: { jsonLogic: { apply: vi.fn() } },
+      runjs,
+    };
+    const setProps = vi.fn();
+
+    await linkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-runjs-fail',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'assign',
+          condition: { logic: '$and', items: [] },
+          value: { code: 'throw new Error("x")', version: 'v1' },
+        },
+      ],
+      setProps,
+    });
+
+    expect(runjs).toHaveBeenCalledTimes(1);
+    expect(setProps).not.toHaveBeenCalled();
+  });
+
+  it('setFieldsDefaultValue should evaluate RunJS value before apply', async () => {
+    const fieldModel: any = { uid: 'f-runjs-default', fieldPath: 'a.b' };
+    const runjs = vi.fn(async () => ({ success: true, value: 123 }));
+    const ctx: any = {
+      model: { subModels: { grid: { subModels: { items: [fieldModel] } } } },
+      engine: { getModel: vi.fn(() => ({ fieldPath: 'a.b' })) },
+      app: { jsonLogic: { apply: vi.fn() } },
+      runjs,
+    };
+    const setProps = vi.fn();
+
+    await setFieldsDefaultValue.handler(ctx, {
+      value: [
+        {
+          key: 'r-runjs-default',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: { code: 'return 123;', version: 'v1' },
+        },
+      ],
+      setProps,
+    });
+
+    expect(runjs).toHaveBeenCalledTimes(1);
+    expect(setProps).toHaveBeenCalledWith(fieldModel, { initialValue: 123 });
+  });
 });
