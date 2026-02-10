@@ -148,6 +148,17 @@ const providerDescriptions: Record<string, string> = {
   ollama: 'Local models',
 };
 
+const providerSortOrder: string[] = [
+  'google-genai',
+  'openai',
+  'anthropic',
+  'deepseek',
+  'dashscope',
+  'kimi',
+  'openai-completions',
+  'ollama',
+];
+
 const ProviderDisplay: React.FC = () => {
   const field = useField<Field>();
   const providers = useLLMProviders();
@@ -161,7 +172,14 @@ export const ProviderSelect: React.FC = () => {
   const providers = useLLMProviders();
   const t = useT();
 
-  const options = providers.map((item) => {
+  const sortedProviders = [...providers].sort((a, b) => {
+    const ai = providerSortOrder.indexOf(a.value);
+    const bi = providerSortOrder.indexOf(b.value);
+    // Unlisted providers sort to the end
+    return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
+  });
+
+  const options = sortedProviders.map((item) => {
     const descKey = providerDescriptions[item.value];
     const description = descKey ? t(descKey) : '';
     const extraCapabilities = item.supportedModel?.filter((m: string) => m !== 'LLM');
