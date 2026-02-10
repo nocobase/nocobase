@@ -32,12 +32,18 @@ export class MissingKeyHandler {
       if (!this.context.flowSettingsEnabled) {
         return;
       }
-      if (ns !== MissingKeyHandler.fallbackNS) {
-        this.removeClientFallback(key);
-      }
-      if (this.isFallbackClient(ns, key)) {
+
+      if (!ns?.startsWith('lm-')) {
         return;
       }
+
+      // if (ns !== MissingKeyHandler.fallbackNS) {
+      //   this.removeClientFallback(key);
+      // }
+      // if (this.isFallbackClient(ns, key)) {
+      //   return;
+      // }
+
       const uniqueKey = `${ns}:${key}`;
       if (!key || this.sentMissingKeys.has(uniqueKey)) {
         return;
@@ -63,12 +69,6 @@ export class MissingKeyHandler {
       i18n.off('missingKey', this.missingKeyHandler);
       this.missingKeyHandler = undefined;
     }
-  }
-
-  private shouldSaveKey(key: string): boolean {
-    // ignore keys that match the pattern {{t(...)}}
-    const ignorePattern = /^\{\{\s*t\(.*\)\s*\}\}$/;
-    return !ignorePattern.test(key);
   }
 
   private isFallbackClient(ns: string, key: string): boolean {

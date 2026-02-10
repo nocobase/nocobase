@@ -135,13 +135,16 @@ const missing = async (ctx: Context, next: Next) => {
 
   const currentRoles = ctx.state.currentRoles || [];
   if (!currentRoles.includes('root')) {
-    const role = await ctx.db.getRepository('roles').findOne({
+    const roles = await ctx.db.getRepository('roles').find({
       filter: {
         name: currentRoles,
-        allowConfigure: true,
       },
     });
-    if (!role) {
+    const hasUiSnippet = roles.some((role) => {
+      const snippets = (role.get('snippets') as string[]) || [];
+      return snippets.includes('ui.*');
+    });
+    if (!hasUiSnippet) {
       ctx.throw(403, 'No permission');
     }
   }
