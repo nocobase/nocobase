@@ -402,10 +402,6 @@ export default defineConfig({
               title: 'ctx.exit()',
               link: '/examples/flow-context/exit',
             },
-            {
-              title: 'ctx.customRepository',
-              link: '/examples/flow-context/custom-repository',
-            },
           ],
         },
         {
