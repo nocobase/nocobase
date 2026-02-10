@@ -1260,7 +1260,6 @@ describe('FormValueRuntime (form assign rules)', () => {
     const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
     blockCtx.defineProperty('collection', { value: rootCollection });
     blockModel.context = blockCtx;
-
     runtime.handleFormValuesChange(
       { users: [{ name: '' }, { name: '', __is_new__: true }] },
       formStub.getFieldsValue(),

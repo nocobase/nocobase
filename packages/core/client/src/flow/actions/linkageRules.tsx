@@ -813,19 +813,13 @@ type ArrayFieldComponentProps = {
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
 const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
 
-const getAclActionName = (model: any): string | undefined => {
-  const name = model?.getAclActionName?.() ?? model?.context?.actionName;
-  return typeof name === 'string' ? name : undefined;
-};
-
 const FieldAssignRulesActionComponent: React.FC<
   ArrayFieldComponentProps & {
     legacy: typeof LEGACY_ASSIGN_RULE | typeof LEGACY_DEFAULT_RULE;
     fixedMode?: 'assign' | 'default';
-    enforceAssignOnUpdate?: boolean;
   }
 > = (props) => {
-  const { value, onChange, legacy, fixedMode, enforceAssignOnUpdate } = props;
+  const { value, onChange, legacy, fixedMode } = props;
   const ctx = useFlowContext();
 
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
@@ -838,23 +832,15 @@ const FieldAssignRulesActionComponent: React.FC<
     });
   }, [ctx.model, t]);
 
-  const isUpdateForm = getAclActionName(ctx.model) === 'update';
-  const shouldForceAssign = !!enforceAssignOnUpdate && isUpdateForm;
-  const effectiveFixedMode = shouldForceAssign ? 'assign' : fixedMode;
-
   const normalized = normalizeAssignRuleItemsFromLinkageParams(value, legacy, createLegacyTargetPathResolver(ctx));
-
-  const effectiveValue = shouldForceAssign
-    ? normalized.map((it): FieldAssignRuleItem => ({ ...it, mode: 'assign' }))
-    : normalized;
 
   const handleChange = React.useCallback(
     (next: FieldAssignRuleItem[]) => {
       if (typeof onChange !== 'function') return;
       if (!Array.isArray(next)) return onChange(next);
-      return onChange(shouldForceAssign ? next.map((it) => ({ ...it, mode: 'assign' })) : next);
+      return onChange(next);
     },
-    [onChange, shouldForceAssign],
+    [onChange],
   );
 
   return (
@@ -862,15 +848,15 @@ const FieldAssignRulesActionComponent: React.FC<
       t={t}
       fieldOptions={fieldOptions}
       rootCollection={getCollectionFromModel(ctx.model)}
-      value={effectiveValue}
+      value={normalized}
       onChange={handleChange}
-      fixedMode={effectiveFixedMode}
+      fixedMode={fixedMode}
     />
   );
 };
 
 const LinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (props) => {
-  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_ASSIGN_RULE} enforceAssignOnUpdate />;
+  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_ASSIGN_RULE} />;
 };
 
 const SubFormLinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (props) => {
@@ -929,9 +915,7 @@ export const linkageAssignField = defineAction({
           continue;
         }
 
-        const actionName = (ctx.model as any)?.getAclActionName?.() ?? (ctx.model as any)?.context?.actionName;
-        const isEditForm = actionName === 'update';
-        const mode = isEditForm ? 'assign' : it?.mode === 'default' ? 'default' : 'assign';
+        const mode = it?.mode === 'default' ? 'default' : 'assign';
         if (fieldModel) {
           if (mode === 'default') {
             setProps(fieldModel as FlowModel, { initialValue: finalValue });

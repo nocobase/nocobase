@@ -39,6 +39,36 @@ describe('linkage assign actions - legacy params', () => {
     expect(setProps).toHaveBeenCalledWith(fieldModel, { initialValue: 123 });
   });
 
+  it('linkageAssignField should keep default mode behavior in update form', () => {
+    const fieldModel: any = { uid: 'f-update-default', fieldPath: 'a.b' };
+    const ctx: any = {
+      model: {
+        getAclActionName: vi.fn(() => 'update'),
+        subModels: { grid: { subModels: { items: [fieldModel] } } },
+      },
+      engine: { getModel: vi.fn(() => ({ fieldPath: 'a.b' })) },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+
+    linkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-default-update',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: 'default-in-update',
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(fieldModel, { initialValue: 'default-in-update' });
+    expect(setProps).not.toHaveBeenCalledWith(fieldModel, { value: 'default-in-update' });
+  });
+
   it('subFormLinkageAssignField should apply legacy object params at runtime', () => {
     const forkModel: any = {
       uid: 'f1',
