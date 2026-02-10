@@ -22,7 +22,7 @@ import {
   WRITES_IDX_MAP,
 } from '@langchain/langgraph-checkpoint';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import { FindOptions, Op } from '@nocobase/database';
+import { FindOptions, Op, WhereOptions } from '@nocobase/database';
 
 export class SequelizeCollectionSaver extends BaseCheckpointSaver {
   constructor(
@@ -60,14 +60,30 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
       return undefined;
     }
     const { threadId, checkpointNs, checkpointId, parentCheckpointId } = checkpointRow;
-    const [checkpointBlobs, checkpointWrites] = await Promise.all([
-      this.getCheckpointBlobs([threadId]),
-      this.getCheckpointWrites([threadId]),
-    ]);
-    checkpointRow.channelValues = Object.entries(checkpointRow.checkpoint.channel_versions ?? {})
-      .map(([channel, version]) => checkpointBlobs[`${threadId}:${checkpointNs}:${channel}:${version}`])
-      .filter((x) => x?.length)
-      .flatMap((x) => [...x]);
+
+    checkpointRow.channelValues = [];
+    for (const [channel, version] of Object.entries(checkpointRow.checkpoint.channel_versions ?? {})) {
+      const blob = (
+        await this.checkpointBlobsModel.findOne({
+          where: {
+            threadId,
+            checkpointNs,
+            channel,
+            version: String(version),
+          },
+        })
+      )?.toJSON();
+      if (!blob) {
+        continue;
+      }
+      checkpointRow.channelValues.push([
+        new TextEncoder().encode(blob.channel),
+        new TextEncoder().encode(blob.type),
+        blob.blob ? Uint8Array.from(blob.blob) : null,
+      ]);
+    }
+
+    const checkpointWrites = await this.getCheckpointWrites([threadId], checkpointNs, checkpointId);
     checkpointRow.pendingWrites = checkpointWrites[`${threadId}:${checkpointNs}:${checkpointId}`];
 
     if (checkpointRow.checkpoint.v < 4 && checkpointRow.parentCheckpointId != null) {
@@ -534,19 +550,28 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
 
   private async getCheckpointWrites(
     threadIds: string[],
+    checkpointNs?: string,
+    checkpointId?: string,
   ): Promise<Record<string, [Uint8Array, Uint8Array, Uint8Array, Uint8Array][]>> {
     if (!threadIds?.length) {
       return {};
     }
+    const where: WhereOptions = {
+      threadId:
+        threadIds.length === 1
+          ? threadIds[0]
+          : {
+              [Op.in]: threadIds,
+            },
+    };
+    if (checkpointNs) {
+      where['checkpointNs'] = checkpointNs;
+    }
+    if (checkpointId) {
+      where['checkpointId'] = checkpointId;
+    }
     const writes = await this.checkpointWritesModel.findAll({
-      where: {
-        threadId:
-          threadIds.length === 1
-            ? threadIds[0]
-            : {
-                [Op.in]: threadIds,
-              },
-      },
+      where,
     });
 
     const result: Record<

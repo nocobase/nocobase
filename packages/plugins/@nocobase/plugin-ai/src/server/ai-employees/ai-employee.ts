@@ -397,7 +397,7 @@ export class AIEmployee {
               }
             }
 
-            if (chunk.tool_call_chunks) {
+            if (chunk.tool_call_chunks?.length) {
               this.protocol.toolCallChunks(chunk.tool_call_chunks);
             }
 
