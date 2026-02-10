@@ -22,9 +22,6 @@ const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
-
-    const actionName = ctx.model?.getAclActionName?.() ?? ctx.model?.context?.actionName;
-    const isEditForm = actionName === 'update';
     const canEdit = typeof props.onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
@@ -47,17 +44,15 @@ const FormAssignRulesUI = observer(
 
     const normalizedValue = React.useMemo(() => {
       const base = Array.isArray(props.value) ? props.value : [];
-      // 编辑表单仅支持“赋值”模式（不允许“默认值”模式）
-      return isEditForm ? base.map((it): FieldAssignRuleItem => ({ ...it, mode: 'assign' })) : base;
-    }, [isEditForm, props.value]);
+      return base;
+    }, [props.value]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
-        const merged = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-        return isEditForm ? merged.map((it): FieldAssignRuleItem => ({ ...it, mode: 'assign' })) : merged;
+        return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
       }
       return normalizedValue;
-    }, [canEdit, hasInitializedMerge, isEditForm, legacyDefaults, normalizedValue, props.value]);
+    }, [canEdit, hasInitializedMerge, legacyDefaults, normalizedValue, props.value]);
 
     const handleChange = React.useCallback(
       (next: FieldAssignRuleItem[]) => {
@@ -74,13 +69,13 @@ const FormAssignRulesUI = observer(
       if (!canEdit) return;
 
       const merged = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-      const nextValue = isEditForm ? merged.map((it): FieldAssignRuleItem => ({ ...it, mode: 'assign' })) : merged;
+      const nextValue = merged;
 
       if (!isEqual(props.value || [], nextValue || [])) {
         props.onChange?.(nextValue);
       }
       markInitialized();
-    }, [canEdit, isEditForm, legacyDefaults, markInitialized, props.onChange, props.value]);
+    }, [canEdit, legacyDefaults, markInitialized, props.onChange, props.value]);
 
     return (
       <FieldAssignRulesEditor
@@ -90,7 +85,6 @@ const FormAssignRulesUI = observer(
         value={value}
         onChange={handleChange}
         showValueEditorWhenNoField
-        fixedMode={isEditForm ? 'assign' : undefined}
       />
     );
   },

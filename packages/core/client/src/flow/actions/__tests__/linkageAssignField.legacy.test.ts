@@ -115,4 +115,239 @@ describe('linkage assign actions - legacy params', () => {
       }),
     );
   });
+
+  it('subFormLinkageAssignField should use default mode for new item in update form', () => {
+    const formItemModel: any = {
+      uid: 'f-default-new',
+      fieldPath: 'a.b',
+      getStepParams: vi.fn(() => ({ fieldPath: 'a.b' })),
+      getFork: vi.fn(() => undefined),
+      createFork: vi.fn(),
+    };
+    const ctx: any = {
+      model: {
+        getAclActionName: vi.fn(() => 'update'),
+        context: {},
+        subModels: { grid: { subModels: { items: [formItemModel] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => formItemModel),
+      },
+      item: {
+        __is_new__: true,
+      },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-default-new',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: 'new-default',
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(formItemModel, { initialValue: 'new-default' });
+    expect(setProps).not.toHaveBeenCalledWith(formItemModel, { value: 'new-default' });
+  });
+
+  it('subFormLinkageAssignField should skip default mode for existing item in update form', () => {
+    const formItemModel: any = {
+      uid: 'f-default-existing',
+      fieldPath: 'a.b',
+      getStepParams: vi.fn(() => ({ fieldPath: 'a.b' })),
+      getFork: vi.fn(() => undefined),
+      createFork: vi.fn(),
+    };
+    const ctx: any = {
+      model: {
+        getAclActionName: vi.fn(() => 'update'),
+        context: {},
+        subModels: { grid: { subModels: { items: [formItemModel] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => formItemModel),
+      },
+      item: {
+        __is_new__: false,
+      },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+    const addFormValuePatch = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-default-existing',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: 'should-skip',
+        },
+      ],
+      setProps,
+      addFormValuePatch,
+    });
+
+    expect(setProps).not.toHaveBeenCalled();
+    expect(addFormValuePatch).not.toHaveBeenCalled();
+  });
+
+  it('subFormLinkageAssignField should treat to-one item as existing when __is_new__ is not true in update form', () => {
+    const formItemModel: any = {
+      uid: 'f-default-to-one',
+      fieldPath: 'a.b',
+      getStepParams: vi.fn(() => ({ fieldPath: 'a.b' })),
+      getFork: vi.fn(() => undefined),
+      createFork: vi.fn(),
+    };
+    const ctx: any = {
+      model: {
+        getAclActionName: vi.fn(() => 'update'),
+        context: {},
+        subModels: { grid: { subModels: { items: [formItemModel] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => formItemModel),
+      },
+      // 对一子表单未显式标记 __is_new__=true
+      item: {},
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-default-to-one',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: 'to-one-default',
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).not.toHaveBeenCalled();
+  });
+
+  it('subFormLinkageAssignField should keep assign mode behavior in update form', () => {
+    const formItemModel: any = {
+      uid: 'f-assign-update',
+      fieldPath: 'a.b',
+      getStepParams: vi.fn(() => ({ fieldPath: 'a.b' })),
+      getFork: vi.fn(() => undefined),
+      createFork: vi.fn(),
+    };
+    const ctx: any = {
+      model: {
+        getAclActionName: vi.fn(() => 'update'),
+        context: {},
+        subModels: { grid: { subModels: { items: [formItemModel] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => formItemModel),
+      },
+      item: {
+        __is_new__: false,
+      },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-assign-update',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'assign',
+          condition: { logic: '$and', items: [] },
+          value: 'assign-value',
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(formItemModel, { value: 'assign-value' });
+  });
+
+  it('subFormLinkageAssignField should skip default patch for explicit property path after user clear', () => {
+    const ctx: any = {
+      model: {
+        uid: 'sub-form-explicit-path',
+        getAclActionName: vi.fn(() => 'create'),
+        context: {},
+        parent: {
+          getStepParams: (flowKey: string, stepKey: string) => {
+            if (flowKey === 'fieldSettings' && stepKey === 'init') {
+              return { fieldPath: 'M2M.M2M' };
+            }
+            return {};
+          },
+        },
+        subModels: { grid: { subModels: { items: [] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => null),
+      },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const addFormValuePatch = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-default-path-1',
+          enable: true,
+          targetPath: 'Name',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: 'default-1',
+        },
+      ],
+      addFormValuePatch,
+      setProps: vi.fn(),
+    });
+
+    expect(addFormValuePatch).toHaveBeenCalledTimes(1);
+    expect(addFormValuePatch).toHaveBeenNthCalledWith(1, {
+      path: 'M2M.M2M.Name',
+      value: 'default-1',
+      whenEmpty: true,
+    });
+
+    ctx.inputArgs = {
+      source: 'user',
+      changedPaths: [['M2M', 'M2M', 'Name']],
+    };
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-default-path-2',
+          enable: true,
+          targetPath: 'Name',
+          mode: 'default',
+          condition: { logic: '$and', items: [] },
+          value: 'default-2',
+        },
+      ],
+      addFormValuePatch,
+      setProps: vi.fn(),
+    });
+
+    expect(addFormValuePatch).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1112,7 +1112,7 @@ export class RuleEngine {
     const { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
 
     // Check if rule should be skipped
-    if (!this.shouldRunRule(rule, targetNamePath, targetKey)) {
+    if (!this.shouldRunRule(rule, targetNamePath, targetKey, baseCtx)) {
       clearDeps(state);
       disposeBinding();
       return;
@@ -1245,10 +1245,41 @@ export class RuleEngine {
     return { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding };
   }
 
-  private shouldRunRule(rule: RuntimeRule, targetNamePath: NamePath | null, targetKey: string | null): boolean {
+  private shouldApplyDefaultRuleInCurrentState(baseCtx: any): boolean {
+    const actionName = this.options.getActionName?.();
+    if (actionName !== 'update') {
+      return true;
+    }
+
+    // 编辑态默认值规则：
+    // - 顶层编辑表单：不应用默认值
+    // - 子表单：仅对“新增行/新增对象”（__is_new__ = true）应用默认值
+    let item: any;
+    try {
+      item = baseCtx?.item;
+    } catch {
+      item = undefined;
+    }
+
+    if (!item || typeof item !== 'object') {
+      return false;
+    }
+
+    return item.__is_new__ === true;
+  }
+
+  private shouldRunRule(
+    rule: RuntimeRule,
+    targetNamePath: NamePath | null,
+    targetKey: string | null,
+    baseCtx: any,
+  ): boolean {
     if (!rule.getEnabled()) return false;
     if (!targetNamePath || !targetKey) return false;
-    if (rule.source === 'default' && this.options.findExplicitHit(targetKey)) return false;
+    if (rule.source === 'default') {
+      if (!this.shouldApplyDefaultRuleInCurrentState(baseCtx)) return false;
+      if (this.options.findExplicitHit(targetKey)) return false;
+    }
     return true;
   }
 

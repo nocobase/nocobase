@@ -47,7 +47,7 @@ import {
   getCollectionFromModel,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
-import { parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
+import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -874,7 +874,7 @@ const LinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (props) 
 };
 
 const SubFormLinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (props) => {
-  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_ASSIGN_RULE} enforceAssignOnUpdate />;
+  return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_ASSIGN_RULE} />;
 };
 
 const SetFieldsDefaultValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {
@@ -974,6 +974,86 @@ export const subFormLinkageAssignField = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
+      const getExplicitPathKeyStore = () => {
+        const model = ctx.model as any;
+        if (!(model?.__subFormLinkageExplicitPathKeys instanceof Set)) {
+          model.__subFormLinkageExplicitPathKeys = new Set<string>();
+        }
+        return model.__subFormLinkageExplicitPathKeys as Set<string>;
+      };
+
+      const resolvePathKey = (path: string): string | null => {
+        const namePath = resolveDynamicNamePath(path, (ctx.model as any)?.context?.fieldIndex);
+        if (!Array.isArray(namePath) || !namePath.length) return null;
+        const normalized = namePath.filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+          string | number
+        >;
+        if (!normalized.length) return null;
+        return namePathToPathKey(normalized);
+      };
+
+      const markExplicitPathKeysFromInputArgs = () => {
+        const inputArgs = (ctx as any)?.inputArgs as any;
+        if (!inputArgs || inputArgs.source !== 'user') return;
+
+        const changedPaths = Array.isArray(inputArgs.changedPaths) ? inputArgs.changedPaths : [];
+        if (!changedPaths.length) return;
+
+        const explicitPathKeys = getExplicitPathKeyStore();
+        for (const rawPath of changedPaths) {
+          let normalized: Array<string | number> | null = null;
+
+          if (Array.isArray(rawPath)) {
+            const segs = rawPath.filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+              string | number
+            >;
+            normalized = segs.length ? segs : null;
+          } else if (typeof rawPath === 'string') {
+            const namePath = resolveDynamicNamePath(rawPath, (ctx.model as any)?.context?.fieldIndex);
+            if (Array.isArray(namePath) && namePath.length) {
+              const segs = namePath.filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+                string | number
+              >;
+              normalized = segs.length ? segs : null;
+            }
+          }
+
+          if (!normalized?.length) continue;
+          explicitPathKeys.add(namePathToPathKey(normalized));
+        }
+      };
+
+      const hasExplicitPathHit = (path: string): boolean => {
+        const explicitPathKeys = getExplicitPathKeyStore();
+        const targetPathKey = resolvePathKey(path);
+        if (!targetPathKey) return false;
+        if (explicitPathKeys.has(targetPathKey)) return true;
+
+        const targetNamePath = resolveDynamicNamePath(path, (ctx.model as any)?.context?.fieldIndex);
+        if (!Array.isArray(targetNamePath) || !targetNamePath.length) return false;
+
+        const prefix: Array<string | number> = [];
+        for (let i = 0; i < targetNamePath.length; i++) {
+          const seg = targetNamePath[i];
+          if (typeof seg !== 'string' && typeof seg !== 'number') continue;
+
+          prefix.push(seg);
+          const key = namePathToPathKey(prefix);
+          if (!explicitPathKeys.has(key)) continue;
+
+          const nextSeg = targetNamePath[i + 1];
+          if (typeof nextSeg === 'number') {
+            // ignore array container explicit hit (e.g. explicit `users` shouldn't block `users[0].name` defaults)
+            continue;
+          }
+          return true;
+        }
+
+        return false;
+      };
+
+      markExplicitPathKeysFromInputArgs();
+
       const resolveTargetFieldModel = (fieldUid: string) => {
         const formItemModel = ctx.engine.getModel(fieldUid);
         if (!formItemModel) return null;
@@ -1026,6 +1106,14 @@ export const subFormLinkageAssignField = defineAction({
           continue;
         }
 
+        const mode = it?.mode === 'default' ? 'default' : 'assign';
+        const actionName = (ctx.model as any)?.getAclActionName?.() ?? (ctx.model as any)?.context?.actionName;
+        const isEditForm = actionName === 'update';
+        const isNewItem = (ctx as any)?.item?.__is_new__ === true;
+        if (mode === 'default' && isEditForm && !isNewItem) {
+          continue;
+        }
+
         const top = targetPath.split('.')[0];
         const collectionField =
           (itemModel as any)?.collectionField ??
@@ -1040,11 +1128,10 @@ export const subFormLinkageAssignField = defineAction({
           continue;
         }
 
-        const actionName = (ctx.model as any)?.getAclActionName?.() ?? (ctx.model as any)?.context?.actionName;
-        const isEditForm = actionName === 'update';
-        const mode = isEditForm ? 'assign' : it?.mode === 'default' ? 'default' : 'assign';
-
         if (!fieldUid) {
+          if (mode === 'default' && hasExplicitPathHit(targetPath)) {
+            continue;
+          }
           if (typeof addFormValuePatch === 'function') {
             addFormValuePatch({ path: targetPath, value: finalValue, whenEmpty: mode === 'default' });
           }
@@ -2292,12 +2379,25 @@ export const subFormFieldLinkageRules = defineAction({
       return;
     }
 
+    const createScopedFlowContext = (model: FlowModel) => {
+      const flowContext = new FlowRuntimeContext(model, ctx.flowKey);
+      const inputArgs = (ctx as any)?.inputArgs;
+      if (inputArgs && typeof inputArgs === 'object') {
+        flowContext.defineProperty('inputArgs', {
+          value: {
+            ...inputArgs,
+          },
+        });
+      }
+      return flowContext;
+    };
+
     // 适配对一子表单的场景
     if (ctx.model instanceof SubFormFieldModel) {
       if (grid.hidden) {
         return;
       }
-      const flowContext = new FlowRuntimeContext(grid, ctx.flowKey);
+      const flowContext = createScopedFlowContext(grid);
       try {
         const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
         await commonLinkageRulesHandler(flowContext, resolved);
@@ -2315,7 +2415,7 @@ export const subFormFieldLinkageRules = defineAction({
           if (forkModel.hidden) {
             return;
           }
-          const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
+          const flowContext = createScopedFlowContext(forkModel);
           try {
             const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(flowContext, params);
             await commonLinkageRulesHandler(flowContext, resolved);

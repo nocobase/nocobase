@@ -547,6 +547,53 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['a'])).toBe('user');
   });
 
+  it('skips mode=default form assignment in update form', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-update-skip-default',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-update-skip-default',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-update-skip-default' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['a'])).toBeUndefined();
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['a'])).toBeUndefined();
+  });
+
   it('linkage assignment takes precedence over mode=assign form assignment', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
@@ -1083,7 +1130,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['users', 0, 'display'])).toBe('A');
   });
 
-  it('applies default assign rules in update mode for to-many row even if list container became explicit', async () => {
+  it('skips default assign rules in update mode for existing to-many row even if list container became explicit', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({ users: [{ name: '' }, { name: '' }] });
@@ -1125,7 +1172,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     masterCtx.defineProperty('model', { value: masterModel });
     masterModel.context = masterCtx;
 
-    const createRowModel = (forkId: string) => {
+    const createRowModel = (forkId: string, rowIndex: number, rowIsNew: boolean) => {
       const rowModel: any = {
         uid: 'users.name',
         isFork: true,
@@ -1141,13 +1188,136 @@ describe('FormValueRuntime (form assign rules)', () => {
       const rowCtx = createFieldContext(runtime);
       rowCtx.defineProperty('blockModel', { value: blockModel });
       rowCtx.defineProperty('fieldIndex', { value: [forkId] });
+      rowCtx.defineProperty('item', {
+        get: () => {
+          const row = formStub.getFieldValue(['users', rowIndex]);
+          const list = formStub.getFieldValue(['users']);
+          return {
+            index: rowIndex,
+            length: Array.isArray(list) ? list.length : undefined,
+            __is_new__: rowIsNew,
+            __is_stored__: !rowIsNew,
+            value: row,
+          };
+        },
+        cache: false,
+      });
       rowCtx.defineProperty('model', { value: rowModel });
       rowModel.context = rowCtx;
       return rowModel;
     };
 
-    const row0 = createRowModel('users:0');
-    const row1 = createRowModel('users:1');
+    const row0 = createRowModel('users:0', 0, false);
+    const row1 = createRowModel('users:1', 1, false);
+    masterModel.forks = new Set([row0, row1]);
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (cb: any) => {
+          cb(masterModel);
+        },
+      },
+    });
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'users.name',
+        mode: 'default',
+        condition: {
+          logic: '$and',
+          items: [{ path: '{{ ctx.item.index }}', operator: '$eq', value: 1 }],
+        },
+        value: 'Z',
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['users', 1, 'name'])).toBe('');
+    expect(formStub.getFieldValue(['users', 0, 'name'])).toBe('');
+  });
+
+  it('applies default assign rules for newly added to-many row in update mode', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ users: [{ name: '' }, { name: '', __is_new__: true }] });
+
+    const blockModel: any = {
+      uid: 'form-assign-default-update-new-row',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userRowCollection: any = { getField: () => null };
+    const usersField: any = { type: 'hasMany', isAssociationField: () => true, targetCollection: userRowCollection };
+    const rootCollection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: rootCollection });
+    blockModel.context = blockCtx;
+
+    runtime.handleFormValuesChange(
+      { users: [{ name: '' }, { name: '', __is_new__: true }] },
+      formStub.getFieldsValue(),
+    );
+
+    const masterModel: any = {
+      uid: 'users.name',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'users.name' };
+        }
+        return undefined;
+      },
+    };
+    const masterCtx = createFieldContext(runtime);
+    masterCtx.defineProperty('blockModel', { value: blockModel });
+    masterCtx.defineProperty('model', { value: masterModel });
+    masterModel.context = masterCtx;
+
+    const createRowModel = (forkId: string, rowIndex: number, rowIsNew: boolean) => {
+      const rowModel: any = {
+        uid: 'users.name',
+        isFork: true,
+        forkId,
+        subModels: { field: {} },
+        getStepParams(flowKey: string, stepKey: string) {
+          if (flowKey === 'fieldSettings' && stepKey === 'init') {
+            return { fieldPath: 'users.name' };
+          }
+          return undefined;
+        },
+      };
+      const rowCtx = createFieldContext(runtime);
+      rowCtx.defineProperty('blockModel', { value: blockModel });
+      rowCtx.defineProperty('fieldIndex', { value: [forkId] });
+      rowCtx.defineProperty('item', {
+        get: () => {
+          const row = formStub.getFieldValue(['users', rowIndex]);
+          const list = formStub.getFieldValue(['users']);
+          return {
+            index: rowIndex,
+            length: Array.isArray(list) ? list.length : undefined,
+            __is_new__: rowIsNew,
+            __is_stored__: !rowIsNew,
+            value: row,
+          };
+        },
+        cache: false,
+      });
+      rowCtx.defineProperty('model', { value: rowModel });
+      rowModel.context = rowCtx;
+      return rowModel;
+    };
+
+    const row0 = createRowModel('users:0', 0, false);
+    const row1 = createRowModel('users:1', 1, true);
     masterModel.forks = new Set([row0, row1]);
 
     blockCtx.defineProperty('engine', {
