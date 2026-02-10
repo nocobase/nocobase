@@ -205,7 +205,7 @@ export interface PropertyOptions {
   // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
   resolveOnServer?: boolean | ((subPath: string) => boolean);
   // 优化：当需要服务端解析但本属性在 buildVariablesParams 返回空时，是否跳过调用服务端。
-  // - 典型场景：formValues / currentObject 仅在“已选关联值”存在时才需要服务端；否则没有必要请求。
+  // - 典型场景：formValues / item 仅在“已选关联值”存在时才需要服务端；否则没有必要请求。
   // - 默认 false：保持兼容，其他变量即使没有 contextParams 也可选择调用服务端。
   serverOnlyWhenContextParams?: boolean;
 }

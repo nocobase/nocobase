@@ -62,7 +62,9 @@ export class BlockGridModel extends GridModel {
   renderAddSubModelButton() {
     return (
       <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={this.subModelBaseClasses}>
-        <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add block')}</FlowSettingsButton>
+        <FlowSettingsButton icon={<PlusOutlined />} data-flow-add-block>
+          {this.context.t('Add block')}
+        </FlowSettingsButton>
       </AddSubModelButton>
     );
   }
@@ -70,10 +72,11 @@ export class BlockGridModel extends GridModel {
   render() {
     return (
       <div
+        className="nb-block-grid"
         style={
           this.context.disableBlockGridPadding
             ? null
-            : { padding: this.context.isMobileLayout ? 8 : this.context.themeToken.marginBlock }
+            : { padding: this.context.isMobileLayout ? 8 : this.context.themeToken.marginBlock, paddingBottom: 0 }
         }
       >
         {super.render()}

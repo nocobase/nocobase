@@ -65,6 +65,30 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
       </AddSubModelButton>
     );
   }
+
+  render() {
+    const height = this.props?.height;
+    const heightModel = this.props?.heightModel;
+    const token = this.context.themeToken;
+    const content = super.render();
+    if (heightModel === 'defaultHeight') {
+      return content;
+    }
+    return (
+      <div
+        style={{
+          height,
+          overflowY: 'auto',
+          marginLeft: `-${token.marginLG}px`,
+          marginRight: `-${token.marginLG}px`,
+          paddingLeft: `${token.marginLG}px`,
+          paddingRight: `${token.marginLG}px`,
+        }}
+      >
+        {content}
+      </div>
+    );
+  }
 }
 
 FormGridModel.registerFlow({

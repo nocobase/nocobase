@@ -108,6 +108,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
         columns={columns}
         components={components}
         isConfigMode={isConfigMode}
+        parentFieldIndex={this.context.fieldIndex}
+        parentItem={this.context.item}
         filterTargetKey={this.collection.filterTargetKey}
       />
     );

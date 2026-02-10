@@ -23,6 +23,7 @@ export const useStyles = genStyleHook('nb-schema-toolbar', (token) => {
       border: '2px solid var(--colorBorderSettingsHover)',
       background: 'var(--colorBgSettingsHover)',
       pointerEvents: 'none',
+      transitionDelay: '0.1s',
       '&.nb-in-template': {
         background: 'var(--colorTemplateBgSettingsHover)',
       },

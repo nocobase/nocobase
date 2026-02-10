@@ -23,12 +23,12 @@ import {
   tExpr,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
-import _ from 'lodash';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
 import { dispatchEventDeep } from '../../../utils';
+import { useDetailsGridHeight } from './utils';
 
 export class DetailsBlockModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -141,16 +141,17 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const { heightMode, height } = this.decoratorProps;
     return (
-      <>
-        <DndProvider>
-          <div
-            style={{
-              textAlign: 'right',
-              lineHeight: '0px',
-              padding: isConfigMode && this.context.themeToken.padding,
-            }}
-          >
+      <DetailsBlockContent
+        model={this}
+        gridModel={this.subModels.grid}
+        isConfigMode={isConfigMode}
+        heightMode={heightMode}
+        height={height}
+        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
+        actions={
+          <DndProvider>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 if (action.hidden && !isConfigMode) {
@@ -174,16 +175,89 @@ export class DetailsBlockModel extends CollectionBlockModel<{
               })}
               {this.renderConfigureActions()}
             </Space>
-          </div>
-        </DndProvider>
-        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormComponent>
-        {this.renderPagination()}
-      </>
+          </DndProvider>
+        }
+      />
     );
   }
 }
+
+const DetailsBlockContent = ({
+  model,
+  gridModel,
+  isConfigMode,
+  heightMode,
+  height,
+  layoutProps,
+  actions,
+}: {
+  model: DetailsBlockModel;
+  gridModel: DetailsGridModel;
+  isConfigMode: boolean;
+  heightMode?: string;
+  height?: number;
+  layoutProps?: any;
+  actions?: React.ReactNode;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const paginationRef = useRef<HTMLDivElement>(null);
+  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const gridHeight = useDetailsGridHeight({
+    heightMode,
+    containerRef,
+    actionsRef,
+    paginationRef,
+    deps: [height],
+  });
+
+  useEffect(() => {
+    if (!gridModel) return;
+    const nextHeight = isFixedHeight ? gridHeight : undefined;
+    if (gridModel.props?.height === nextHeight && gridModel.props?.heightMode === heightMode) return;
+    gridModel.setProps({ height: nextHeight, heightMode });
+  }, [gridModel, gridHeight, isFixedHeight, heightMode]);
+
+  const formStyle = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }
+    : undefined;
+  const containerStyle: any = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        flex: 1,
+      }
+    : undefined;
+
+  return (
+    <FormComponent model={model} layoutProps={layoutProps} style={formStyle}>
+      <div ref={containerRef} style={containerStyle}>
+        <div
+          ref={actionsRef}
+          style={{
+            textAlign: 'right',
+            lineHeight: '0px',
+            paddingBottom: isConfigMode && model.context.themeToken.padding,
+          }}
+        >
+          {actions}
+        </div>
+        <FlowModelRenderer
+          key={`${gridModel?.uid || 'details-grid'}:${isConfigMode ? 'design' : 'runtime'}`}
+          model={gridModel}
+          showFlowSettings={false}
+        />
+        <div ref={paginationRef}>{model.renderPagination()}</div>
+      </div>
+    </FormComponent>
+  );
+};
 
 DetailsBlockModel.registerFlow({
   key: 'detailsSettings',
