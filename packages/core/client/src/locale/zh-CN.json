@@ -149,6 +149,8 @@
   "Assign  data scope for the template": "Assign  data scope for the template",
   "Assign field values": "字段赋值",
   "Assign value": "赋值",
+  "A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).": "预填值，可修改，仅用于新增，不影响已有数据（含空值）。",
+  "A system-set value. Read-only.": "系统固定值，只读不可改",
   "Assignment mode": "赋值方式",
   "Associate": "关联",
   "Field values": "字段值",

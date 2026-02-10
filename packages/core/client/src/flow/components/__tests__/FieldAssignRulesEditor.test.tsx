@@ -10,7 +10,7 @@
 import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../FieldAssignRulesEditor';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
@@ -139,6 +139,79 @@ describe('FieldAssignRulesEditor', () => {
 
     expect(container.querySelector('.ant-collapse')).toBeNull();
     expect(container.textContent).toContain('No data');
+  });
+
+  it('renders assignment mode as radios and supports mode switching', async () => {
+    const onChange = vi.fn();
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'title',
+        mode: 'assign',
+      },
+    ];
+
+    const { container } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          onChange={onChange}
+          showCondition={false}
+          showEnable={false}
+        />,
+      ),
+    );
+
+    expect(screen.getByLabelText('Default value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Fixed value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Fixed value')).toBeChecked();
+    expect(container.querySelector('.ant-select')).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
+
+    await userEvent.click(screen.getByLabelText('Default value'));
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    expect(lastCall?.[0]?.mode).toBe('default');
+  });
+
+  it('shows assignment mode tooltips for each option', async () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'title',
+        mode: 'assign',
+      },
+    ];
+
+    const { container } = render(
+      wrap(<FieldAssignRulesEditor t={t} fieldOptions={[]} value={value} showCondition={false} showEnable={false} />),
+    );
+
+    const questionIcons = Array.from(container.querySelectorAll('.anticon-question-circle'));
+    expect(questionIcons).toHaveLength(2);
+
+    await userEvent.hover(questionIcons[0] as Element);
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    await userEvent.unhover(questionIcons[0] as Element);
+
+    await userEvent.hover(questionIcons[1] as Element);
+    await waitFor(() => {
+      expect(screen.getByText('A system-set value. Read-only.')).toBeInTheDocument();
+    });
   });
 
   it('merges extra item tree into base item while keeping order', () => {

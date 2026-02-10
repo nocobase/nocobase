@@ -7,10 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import type { FilterGroupType } from '@nocobase/utils/client';
-import { Button, Cascader, Collapse, Empty, Select, Space, Switch, Tooltip } from 'antd';
+import { Button, Cascader, Collapse, Empty, Radio, Space, Switch, Tooltip } from 'antd';
 import type { CascaderProps, CollapseProps } from 'antd';
 import React from 'react';
 import { ConditionBuilder } from './ConditionBuilder';
@@ -249,6 +255,37 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     if (fixedMode) return fixedMode;
     return item?.mode === 'default' ? 'default' : 'assign';
   };
+
+  const renderAssignModeLabel = React.useCallback(
+    (mode: AssignMode) => {
+      const modeText = mode === 'default' ? t('Default value') : t('Fixed value');
+      const modeHelpText =
+        mode === 'default'
+          ? t(
+              'A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).',
+            )
+          : t('A system-set value. Read-only.');
+
+      const preventModeToggle = (e: React.MouseEvent<HTMLElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+
+      return (
+        <Space size={4}>
+          <span>{modeText}</span>
+          <Tooltip title={modeHelpText}>
+            <QuestionCircleOutlined
+              style={{ cursor: 'help', opacity: 0.65, fontSize: 12 }}
+              onMouseDown={preventModeToggle}
+              onClick={preventModeToggle}
+            />
+          </Tooltip>
+        </Space>
+      );
+    },
+    [t],
+  );
 
   const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
     const raw = String(targetPath || '');
@@ -543,15 +580,16 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
           {!fixedMode && (
             <div>
               <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Assignment mode')}</div>
-              <Select
+              <Radio.Group
                 value={mode}
                 style={{ width: '100%' }}
-                options={[
-                  { label: t('Default value'), value: 'default' },
-                  { label: t('Fixed value'), value: 'assign' },
-                ]}
-                onChange={(nextMode) => patchItem(index, { mode: nextMode })}
-              />
+                onChange={(event) => patchItem(index, { mode: event.target.value as AssignMode })}
+              >
+                <Space size={16}>
+                  <Radio value="default">{renderAssignModeLabel('default')}</Radio>
+                  <Radio value="assign">{renderAssignModeLabel('assign')}</Radio>
+                </Space>
+              </Radio.Group>
             </div>
           )}
 

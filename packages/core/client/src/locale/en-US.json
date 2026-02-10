@@ -149,6 +149,8 @@
   "Assign  data scope for the template": "Assign  data scope for the template",
   "Assign field values": "Assign field values",
   "Assign value": "Assign value",
+  "A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).": "A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).",
+  "A system-set value. Read-only.": "A system-set value. Read-only.",
   "Assignment mode": "Assignment mode",
   "Associate": "Associate",
   "Field values": "Field values",
