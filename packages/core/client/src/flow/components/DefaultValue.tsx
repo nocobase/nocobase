@@ -42,6 +42,29 @@ interface Props {
   flags?: Record<string, any>;
 }
 
+const snapshotOptions = (input: any): any[] | undefined => {
+  if (!input) return undefined;
+  let normalized: any[] | undefined;
+  if (Array.isArray(input)) {
+    normalized = input;
+  } else if (typeof input === 'object' && typeof input?.[Symbol.iterator] === 'function') {
+    try {
+      normalized = Array.from(input as Iterable<any>);
+    } catch (error) {
+      normalized = undefined;
+    }
+  } else if (typeof input === 'object') {
+    const numericKeys = Object.keys(input)
+      .filter((key) => /^\d+$/.test(key))
+      .sort((a, b) => Number(a) - Number(b));
+    if (numericKeys.length) {
+      normalized = numericKeys.map((key) => input[key]);
+    }
+  }
+  if (!normalized?.length) return undefined;
+  return normalized.map((item) => (item && typeof item === 'object' ? { ...item } : item));
+};
+
 function createTempFieldClass(Base: any) {
   return class Temp extends Base {
     async onDispatchEventStart(eventName: string) {
@@ -54,7 +77,7 @@ function createTempFieldClass(Base: any) {
         `${initParams.dataSourceKey}.${initParams.collectionName}.${initParams.fieldPath}`;
       const collectionFieldFromManager =
         collectionFieldKey && this.context?.dataSourceManager?.getCollectionField?.(collectionFieldKey);
-      const fallbackCollectionField = this._originalModel?.collectionField;
+      const fallbackCollectionField = this._originalModel?.collectionField || this._fallbackCollectionField;
       if (collectionFieldFromManager || fallbackCollectionField)
         this.context.defineProperty('collectionField', {
           get: () => collectionFieldFromManager || fallbackCollectionField,
@@ -62,7 +85,10 @@ function createTempFieldClass(Base: any) {
     }
     async onDispatchEventEnd(eventName: string) {
       if (eventName !== 'beforeRender') return;
-      const originalProps = this._originalModel?.props || {};
+      const originalProps = {
+        ...(this._originalPropsFallback || {}),
+        ...(this._originalModel?.props || {}),
+      };
       const collectionField = this.context?.collectionField;
       const nextProps: Record<string, any> = {};
       if (originalProps?.fieldNames) {
@@ -70,6 +96,13 @@ function createTempFieldClass(Base: any) {
       }
       if (typeof originalProps?.allowMultiple !== 'undefined') {
         nextProps.allowMultiple = originalProps.allowMultiple;
+      }
+      const currentOptions = snapshotOptions(this.props?.options);
+      const hasCurrentOptions = !!currentOptions?.length;
+      const originalOptions = snapshotOptions(originalProps?.options);
+      const fallbackOptions = originalOptions?.length ? originalOptions : this._originalOptionsFallback;
+      if (!hasCurrentOptions && Array.isArray(fallbackOptions) && fallbackOptions.length > 0) {
+        nextProps.options = fallbackOptions.map((item) => (item && typeof item === 'object' ? { ...item } : item));
       }
       const inferMultipleFromCollectionField = () => {
         const relationType = collectionField?.type;
@@ -317,13 +350,16 @@ export const DefaultValue = connect((props: Props) => {
     const BoundClass = editableBinding
       ? (model?.context?.engine?.getModelClass?.(editableBinding.modelName) as any)
       : null;
+    const PreferredClass =
+      typeof PreferredClassFromOrigin === 'function' ? (PreferredClassFromOrigin as any) : (null as any);
     // 当来源是筛选字段（类名以 FilterFieldModel 结尾）时优先采用来源类，否则采用可编辑绑定类
     const originIsFilterField =
       typeof (PreferredClassFromOrigin as any)?.name === 'string' &&
       /FilterFieldModel$/.test((PreferredClassFromOrigin as any).name);
-    const BaseClass = originIsFilterField
-      ? PreferredClassFromOrigin
-      : BoundClass || (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || FallbackClass;
+    const shouldPreferOriginClass = originIsFilterField || Boolean((host as any)?.customFieldModelInstance);
+    const BaseClass = shouldPreferOriginClass
+      ? PreferredClass || BoundClass || FallbackClass
+      : BoundClass || PreferredClass || FallbackClass;
     const TempFieldClass = createTempFieldClass(BaseClass);
     const fieldSub = {
       use: TempFieldClass,
@@ -344,6 +380,12 @@ export const DefaultValue = connect((props: Props) => {
     const tempFieldModel = created.subModels?.fields?.[0];
     if (tempFieldModel) {
       tempFieldModel._originalModel = origin;
+      tempFieldModel._originalPropsFallback = host?.customFieldProps;
+      tempFieldModel._fallbackCollectionField = (host as any)?.context?.collectionField;
+      tempFieldModel._originalOptionsFallback =
+        snapshotOptions((origin as any)?.getDataSource?.()) ||
+        snapshotOptions((origin as any)?.props?.options) ||
+        snapshotOptions(host?.customFieldProps?.options);
     }
     if (init?.dataSourceKey && init?.collectionName) {
       const dataSourceManager = model.context.dataSourceManager;
