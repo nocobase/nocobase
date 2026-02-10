@@ -16,6 +16,9 @@ import type { CollectionOptions } from './Collection';
 export const collectionTransform = (collection: CollectionOptions, app: Application) => {
   const { rawTitle, title, fields = [], ...rest } = collection;
   const t = (key: string, options?: any) => {
+    if (collection.disableTranslation) {
+      return key;
+    }
     if (app.context?.t) {
       return app.context.t(key, options);
     }

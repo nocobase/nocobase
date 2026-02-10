@@ -11,6 +11,7 @@ import { ISchema } from '@formily/react';
 
 const collection = {
   name: 'localization',
+  disableTranslation: true,
   fields: [
     {
       interface: 'input',
