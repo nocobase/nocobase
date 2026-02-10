@@ -18,6 +18,15 @@ import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } fro
 import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
 import { SourceCascader } from '../SourceCascader';
 
+const validateRecordSelectRequired = (value: any, _rule: any, ctx: any) => {
+  if (ctx?.form?.values?.fieldModel !== 'FilterFormCustomRecordSelectFieldModel') {
+    return;
+  }
+  if (value === undefined || value === null || value === '') {
+    return 'The field value is required';
+  }
+};
+
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   customFieldModelInstance = null;
   customFieldProps = null;
@@ -242,6 +251,20 @@ FilterFormCustomFieldModel.registerFlow({
           type: 'object',
           title: tExpr('Component properties'),
           'x-component': FieldComponentProps,
+          properties: {
+            recordSelectTargetCollection: {
+              type: 'string',
+              'x-validator': validateRecordSelectRequired,
+            },
+            recordSelectTitleField: {
+              type: 'string',
+              'x-validator': validateRecordSelectRequired,
+            },
+            recordSelectValueField: {
+              type: 'string',
+              'x-validator': validateRecordSelectRequired,
+            },
+          },
           'x-reactions': [
             {
               dependencies: ['fieldModel', 'source'],

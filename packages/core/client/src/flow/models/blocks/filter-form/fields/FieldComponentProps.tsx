@@ -50,6 +50,27 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     }
     field.setValue(value);
   };
+  const getSubFieldMessages = (subFieldKey: string) => {
+    const subFieldPath = `${field.path.toString()}.${subFieldKey}`;
+    const subField = field.form?.query?.(subFieldPath)?.take?.() as any;
+    const errors = Array.isArray(subField?.errors) ? subField.errors : [];
+    return errors
+      .flatMap((item: any) => {
+        if (!item) return [];
+        if (Array.isArray(item.messages)) return item.messages;
+        if (item.messages) return [item.messages];
+        return [];
+      })
+      .filter(Boolean);
+  };
+  const getSubFieldFeedbackProps = (subFieldKey: string) => {
+    const messages = getSubFieldMessages(subFieldKey);
+    if (!messages.length) return {};
+    return {
+      feedbackStatus: 'error' as const,
+      feedbackText: messages.join(', '),
+    };
+  };
 
   useEffect(() => {
     const sourceValue = source.length ? source : propsValue?.source || [];
@@ -386,7 +407,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
             />
           </FormItem>
         )}
-        <FormItem label={t('Target collection')} asterisk>
+        <FormItem label={t('Target collection')} asterisk {...getSubFieldFeedbackProps(RECORD_SELECT_COLLECTION_KEY)}>
           <Select
             allowClear
             showSearch
@@ -403,7 +424,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
             }}
           />
         </FormItem>
-        <FormItem label={t('Title field')} asterisk>
+        <FormItem label={t('Title field')} asterisk {...getSubFieldFeedbackProps(RECORD_SELECT_TITLE_FIELD_KEY)}>
           <Select
             allowClear
             showSearch
@@ -417,7 +438,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
         <div style={{ color: 'var(--colorTextDescription)', marginTop: -8, marginBottom: 8 }}>
           {t('Used for display in the dropdown and selected tags.')}
         </div>
-        <FormItem label={t('Value field')} asterisk>
+        <FormItem label={t('Value field')} asterisk {...getSubFieldFeedbackProps(RECORD_SELECT_VALUE_FIELD_KEY)}>
           <Select
             allowClear
             showSearch
