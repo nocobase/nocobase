@@ -388,8 +388,10 @@ FilterFormItemModel.registerFlow({
     },
     initialValue: {
       title: tExpr('Default value'),
-      // 默认值已统一到筛选表单级“默认值”配置，此处仅保留旧配置兼容读取（隐藏入口）
-      hideInSettings: true,
+      // 默认值已统一到筛选表单级“默认值”配置，此处仅保留旧配置兼容读取（禁用入口）
+      disabledInSettings: true,
+      disabledReasonInSettings: (ctx) =>
+        `${ctx.t('This setting has been moved to')}: ${ctx.t('Form block settings')} > ${ctx.t('Field values')}`,
       uiSchema: (ctx) => {
         const baseFlags = ctx?.model?.context?.flags || {};
         const flags = { ...baseFlags, isInSetDefaultValueDialog: true };

@@ -34,7 +34,13 @@ export { isInheritedFrom } from './inheritance';
 export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema, resolveUiMode, shouldHideStepInSettings } from './schema-utils';
+export {
+  compileUiSchema,
+  resolveStepUiSchema,
+  resolveStepDisabledInSettings,
+  resolveUiMode,
+  shouldHideStepInSettings,
+} from './schema-utils';
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
