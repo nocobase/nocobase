@@ -245,7 +245,7 @@ FormAssociationItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.title });
+        ctx.model.setProps({ label: params.title ? ctx.t(params.title, { ns: 'lm-flow-engine' }) : undefined });
       },
     },
     aclCheck: {

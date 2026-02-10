@@ -291,7 +291,7 @@ FilterFormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        ctx.model.setProps({ label: params.label ? ctx.t(params.label, { ns: 'lm-flow-engine' }) : undefined });
       },
     },
     // aclCheck: {
