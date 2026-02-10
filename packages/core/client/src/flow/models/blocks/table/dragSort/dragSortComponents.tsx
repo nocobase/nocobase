@@ -15,6 +15,14 @@ import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 
+type DragSortRowContextValue = {
+  attributes?: Record<string, unknown>;
+  listeners?: Record<string, unknown>;
+  setActivatorNodeRef?: (node: HTMLElement | null) => void;
+};
+
+const DragSortRowContext = React.createContext<DragSortRowContextValue | null>(null);
+
 const sortHandleClass = css`
   display: inline-flex;
   align-items: center;
@@ -25,13 +33,17 @@ const sortHandleClass = css`
 `;
 
 export const SortHandle: React.FC<{ id: string | number }> = (props) => {
-  const { id, ...otherProps } = props;
-  const { listeners, setNodeRef } = useSortable({
-    id,
-  });
+  const { id: _id, ...otherProps } = props;
+  const dragSortContext = React.useContext(DragSortRowContext);
   // return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
   return (
-    <span ref={setNodeRef} {...otherProps} {...listeners} className={classNames(sortHandleClass)}>
+    <span
+      ref={dragSortContext?.setActivatorNodeRef}
+      {...dragSortContext?.attributes}
+      {...dragSortContext?.listeners}
+      {...otherProps}
+      className={classNames(sortHandleClass)}
+    >
       <MenuOutlined />
     </span>
   );
@@ -40,7 +52,7 @@ export const SortHandle: React.FC<{ id: string | number }> = (props) => {
 export const SortableRow: React.FC<any> = (props) => {
   const { token }: any = theme.useToken();
   const id = props['data-row-key']?.toString();
-  const { setNodeRef, active, over } = useSortable({
+  const { setNodeRef, setActivatorNodeRef, attributes, listeners, active, over } = useSortable({
     id,
   });
   const { rowIndex, ...others } = props;
@@ -65,15 +77,17 @@ export const SortableRow: React.FC<any> = (props) => {
     (active?.data.current?.sortable.index ?? -1) > rowIndex ? classObj.topActiveClass : classObj.bottomActiveClass;
 
   const row = (
-    <tr
-      ref={(node) => {
-        if (active?.id !== id) {
-          setNodeRef(node);
-        }
-      }}
-      {...others}
-      className={classNames(props.className, { [className]: active && isOver })}
-    />
+    <DragSortRowContext.Provider value={{ listeners, setActivatorNodeRef }}>
+      <tr
+        ref={(node) => {
+          if (active?.id !== id) {
+            setNodeRef(node);
+          }
+        }}
+        {...others}
+        className={classNames(props.className, { [className]: active && isOver })}
+      />
+    </DragSortRowContext.Provider>
   );
 
   return row;
