@@ -36,6 +36,10 @@ type DirectoryChildren = Map<
 const DOCS_STORAGE_DIR = path.resolve(process.cwd(), 'storage/ai/docs');
 const REFERENCE_START = '<!-- docs:references:start -->';
 const REFERENCE_END = '<!-- docs:references:end -->';
+const SPLIT_REFERENCE_START = '<!-- docs:splits:start -->';
+const SPLIT_REFERENCE_END = '<!-- docs:splits:end -->';
+const SPLIT_MAX_LENGTH = 5000;
+const SPLIT_MAX_CODE_BLOCKS = 3;
 
 interface DocEntryMeta {
   absolutePath: string;
@@ -59,6 +63,47 @@ interface ModuleGroup {
   entries: DocEntryMeta[];
   directoryChildren: DirectoryChildren;
   docMap: Map<string, DocEntryMeta>;
+}
+
+interface ModuleMeta {
+  module?: string;
+  description?: string;
+  source?: string;
+}
+
+type ModuleMetaEntry = ModuleMeta & {
+  module: string;
+  description?: string;
+  source?: string;
+};
+
+function normalizeMetaEntries(meta: ModuleMeta | ModuleMeta[] | null, fallbackModule: string) {
+  if (Array.isArray(meta)) {
+    return meta
+      .filter((item) => item && typeof item.module === 'string')
+      .map((item) => ({
+        module: item.module.trim(),
+        description: typeof item.description === 'string' ? item.description.trim() : '',
+        source: typeof item.source === 'string' ? item.source.trim() : '',
+      }))
+      .filter((item) => item.module);
+  }
+  if (meta && typeof meta.module === 'string') {
+    return [
+      {
+        module: meta.module.trim() || fallbackModule,
+        description: typeof meta.description === 'string' ? meta.description.trim() : '',
+        source: typeof meta.source === 'string' ? meta.source.trim() : '',
+      },
+    ];
+  }
+  return [
+    {
+      module: fallbackModule,
+      description: '',
+      source: '',
+    },
+  ];
 }
 
 async function resolvePkgs(pkg?: string | string[]) {
@@ -104,6 +149,22 @@ function buildDirectoryChildren(files: string[], docsDir: string): DirectoryChil
   return map;
 }
 
+async function resolveSourcePath(source: string, metaFile: string) {
+  if (!source) return '';
+  if (path.isAbsolute(source)) {
+    return (await fs.pathExists(source)) ? source : '';
+  }
+  const fromRepo = path.resolve(process.cwd(), source);
+  if (await fs.pathExists(fromRepo)) {
+    return fromRepo;
+  }
+  const fromMeta = path.resolve(path.dirname(metaFile), source);
+  if (await fs.pathExists(fromMeta)) {
+    return fromMeta;
+  }
+  return '';
+}
+
 async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> {
   const packageJsonPath = require.resolve(`${packageName}/package.json`);
   const packageDir = path.dirname(packageJsonPath);
@@ -118,99 +179,130 @@ async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> 
     return [];
   }
 
-  const moduleMetaFiles = await fg(['*/meta.json'], {
-    cwd: docsDir,
-    onlyFiles: true,
-    absolute: true,
-  });
-
   const rootMetaPath = path.join(docsDir, 'meta.json');
-  const moduleMetaPaths = moduleMetaFiles.slice();
+  let metaEntries: ModuleMetaEntry[] = [];
   if (await fs.pathExists(rootMetaPath)) {
-    moduleMetaPaths.unshift(rootMetaPath);
+    try {
+      const rootMeta = (await fs.readJson(rootMetaPath)) as ModuleMeta | ModuleMeta[];
+      metaEntries = normalizeMetaEntries(rootMeta, path.basename(docsDir));
+    } catch {
+      metaEntries = [];
+    }
   }
 
-  if (!moduleMetaPaths.length) {
+  const moduleMetaFiles =
+    metaEntries.length === 0
+      ? await fg(['*/meta.json'], {
+          cwd: docsDir,
+          onlyFiles: true,
+          absolute: true,
+        })
+      : [];
+
+  if (!metaEntries.length && !moduleMetaFiles.length) {
     return [];
   }
 
-  moduleMetaPaths.sort();
-  const moduleRoots = moduleMetaPaths.map((metaPath) => path.dirname(metaPath));
+  moduleMetaFiles.sort();
+  const moduleRoots = moduleMetaFiles.map((metaPath) => path.dirname(metaPath));
 
   const groups: ModuleGroup[] = [];
-  for (const metaFile of moduleMetaPaths) {
+  const entriesToProcess =
+    metaEntries.length > 0
+      ? metaEntries.map((entry) => ({ metaFile: rootMetaPath, entry }))
+      : moduleMetaFiles.map((metaFile) => ({ metaFile, entry: undefined as ModuleMetaEntry | undefined }));
+
+  for (const item of entriesToProcess) {
+    const metaFile = item.metaFile;
     const moduleRoot = path.dirname(metaFile);
     const moduleDirName = path.basename(moduleRoot);
-    let moduleName = moduleDirName;
-    let description = '';
-    try {
-      const meta = await fs.readJson(metaFile);
-      if (meta?.module && typeof meta.module === 'string') {
-        moduleName = meta.module.trim() || moduleDirName;
+    let perFileEntries: ModuleMetaEntry[] = [];
+
+    if (item.entry) {
+      perFileEntries = [item.entry];
+    } else {
+      try {
+        const meta = (await fs.readJson(metaFile)) as ModuleMeta | ModuleMeta[];
+        perFileEntries = normalizeMetaEntries(meta, moduleDirName);
+      } catch {
+        perFileEntries = normalizeMetaEntries(null, moduleDirName);
       }
-      if (meta?.description && typeof meta.description === 'string') {
-        description = meta.description.trim();
-      }
-    } catch {
-      moduleName = moduleDirName;
-      description = '';
     }
 
-    const ignore: string[] = [];
-    if (moduleRoot === docsDir) {
-      for (const otherRoot of moduleRoots) {
-        if (otherRoot === moduleRoot) continue;
-        const rel = path.relative(moduleRoot, otherRoot).split(path.sep).join('/');
-        if (rel && !rel.startsWith('..')) {
-          ignore.push(`${rel}/**`);
+    for (const metaEntry of perFileEntries) {
+      const moduleName = metaEntry.module || moduleDirName;
+      const description = metaEntry.description || '';
+      const source = metaEntry.source || '';
+      const defaultModuleRoot = path.join(docsDir, moduleName);
+
+      let effectiveModuleRoot = defaultModuleRoot;
+      if (source && preferSrc) {
+        const resolvedSource = await resolveSourcePath(source, metaFile);
+        if (resolvedSource) {
+          effectiveModuleRoot = resolvedSource;
         }
       }
+
+      if (!(await fs.pathExists(effectiveModuleRoot))) {
+        continue;
+      }
+
+      const ignore: string[] = [];
+      if (moduleRoot === docsDir && effectiveModuleRoot === moduleRoot) {
+        for (const otherRoot of moduleRoots) {
+          if (otherRoot === moduleRoot) continue;
+          const rel = path.relative(moduleRoot, otherRoot).split(path.sep).join('/');
+          if (rel && !rel.startsWith('..')) {
+            ignore.push(`${rel}/**`);
+          }
+        }
+      }
+
+      const files = await fg(['**/*.{md,mdx}'], {
+        cwd: effectiveModuleRoot,
+        onlyFiles: true,
+        absolute: true,
+        ignore,
+      });
+
+      if (!files.length) {
+        continue;
+      }
+
+      files.sort();
+
+      const directoryChildren = buildDirectoryChildren(files, effectiveModuleRoot);
+      const docEntries: DocEntryMeta[] = await Promise.all(
+        files.map(async (file) => {
+          const relativePath = path.relative(effectiveModuleRoot, file);
+          const normalizedRelativePath = relativePath.split(path.sep).join('/');
+          const canonicalPath = path.posix.join(moduleName, normalizedRelativePath);
+          const content = await fs.readFile(file, 'utf8');
+          const meta = extractDocMetadata(content, file);
+          return {
+            absolutePath: file,
+            relativePath,
+            canonicalPath,
+            content,
+            moduleName,
+            moduleRoot,
+            packageName,
+            ...meta,
+          };
+        }),
+      );
+
+      const docMap = new Map<string, DocEntryMeta>(docEntries.map((entry) => [entry.absolutePath, entry]));
+      groups.push({
+        moduleName,
+        description,
+        moduleRoot,
+        packageName,
+        entries: docEntries,
+        directoryChildren,
+        docMap,
+      });
     }
-
-    const files = await fg(['**/*.md'], {
-      cwd: moduleRoot,
-      onlyFiles: true,
-      absolute: true,
-      ignore,
-    });
-
-    if (!files.length) {
-      continue;
-    }
-
-    files.sort();
-
-    const directoryChildren = buildDirectoryChildren(files, moduleRoot);
-    const docEntries: DocEntryMeta[] = await Promise.all(
-      files.map(async (file) => {
-        const relativePath = path.relative(moduleRoot, file);
-        const normalizedRelativePath = relativePath.split(path.sep).join('/');
-        const canonicalPath = path.posix.join(moduleName, normalizedRelativePath);
-        const content = await fs.readFile(file, 'utf8');
-        const meta = extractDocMetadata(content, file);
-        return {
-          absolutePath: file,
-          relativePath,
-          canonicalPath,
-          content,
-          moduleName,
-          moduleRoot,
-          packageName,
-          ...meta,
-        };
-      }),
-    );
-
-    const docMap = new Map<string, DocEntryMeta>(docEntries.map((entry) => [entry.absolutePath, entry]));
-    groups.push({
-      moduleName,
-      description,
-      moduleRoot,
-      packageName,
-      entries: docEntries,
-      directoryChildren,
-      docMap,
-    });
   }
 
   return groups;
@@ -261,7 +353,7 @@ async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<st
     const fileMap: Record<number, string> = {};
     let currentId = 1;
     let indexedDocs = 0;
-    const markdownExt = new Set(['.md']);
+    const markdownExt = new Set(['.md', '.mdx']);
     const storagePathMap = new Map<string, DocEntryMeta>();
     const moduleConflicts: string[] = [];
 
@@ -288,7 +380,19 @@ async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<st
         storagePathMap.set(storageDocPath, entry);
 
         await fs.ensureDir(path.dirname(storageDocPath));
-        let processedContent = entry.content;
+        let processedContent = rewriteRelativeLinks(entry.content, entry);
+
+        const { splits } = splitMarkdownIfNeeded(processedContent, entry);
+        const splitRefs = splits.map((split, index) => {
+          const splitRelativePath = entry.relativePath.replace(/\.mdx?$/i, '') + split.suffix;
+          const splitCanonicalPath = path.posix.join(entry.moduleName, splitRelativePath.split(path.sep).join('/'));
+          return {
+            index,
+            splitRelativePath,
+            splitCanonicalPath,
+            ...split,
+          };
+        });
 
         if (entry.isIndex) {
           processedContent = applyReferencesToIndex(
@@ -297,26 +401,54 @@ async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<st
             group.directoryChildren,
             group.docMap,
           );
-        } else if (!entry.hasFrontMatter) {
+        }
+
+        if (splitRefs.length) {
+          processedContent = applySplitReferences(
+            processedContent,
+            splitRefs.map((split) => ({
+              pathRef: split.splitCanonicalPath,
+              title: split.title,
+              description: split.description,
+            })),
+          );
+        }
+
+        if (!entry.hasFrontMatter) {
           processedContent = injectFrontMatter(processedContent, entry);
         }
 
         await fs.writeFile(storageDocPath, processedContent, 'utf8');
 
+        for (const split of splitRefs) {
+          const splitStoragePath = path.join(docsOutputDir, split.splitRelativePath);
+          if (storagePathMap.has(splitStoragePath)) {
+            moduleConflicts.push(`Duplicate split path "${split.splitRelativePath}" in ${entry.packageName}`);
+            continue;
+          }
+          storagePathMap.set(splitStoragePath, entry);
+          await fs.ensureDir(path.dirname(splitStoragePath));
+          let splitContent = split.content;
+          splitContent = injectFrontMatter(splitContent, {
+            title: split.title,
+            description: split.description,
+          });
+          await fs.writeFile(splitStoragePath, splitContent, 'utf8');
+        }
+
         const ext = path.extname(entry.absolutePath).toLowerCase();
         if (!markdownExt.has(ext)) {
           continue;
         }
-        if (entry.isIndex) {
-          const content = processedContent.trim();
-          if (!content) {
-            continue;
-          }
-          const docId = currentId++;
-          await index.addAsync(docId, processedContent);
-          fileMap[docId] = entry.canonicalPath;
-          indexedDocs++;
+
+        const content = processedContent.trim();
+        if (!content) {
+          continue;
         }
+        const docId = currentId++;
+        await index.addAsync(docId, processedContent);
+        fileMap[docId] = entry.canonicalPath;
+        indexedDocs++;
       }
     }
 
@@ -424,6 +556,224 @@ function injectFrontMatter(content: string, meta: { title: string; description: 
   const frontMatter = `${fmLines.join('\n')}\n`;
   const separator = trimmed.startsWith('\n') ? '' : '\n';
   return `${frontMatter}${separator}${trimmed}`;
+}
+
+function splitFrontMatter(content: string) {
+  const normalized = content.replace(/\r\n/g, '\n');
+  if (!normalized.startsWith('---\n')) {
+    return { frontMatter: '', body: normalized, hasFrontMatter: false };
+  }
+  const closingIndex = normalized.indexOf('\n---', 4);
+  if (closingIndex === -1) {
+    return { frontMatter: '', body: normalized, hasFrontMatter: false };
+  }
+  const closingLineEnd = normalized.indexOf('\n', closingIndex + 4);
+  const bodyStart = closingLineEnd === -1 ? normalized.length : closingLineEnd + 1;
+  return {
+    frontMatter: normalized.slice(0, bodyStart),
+    body: normalized.slice(bodyStart),
+    hasFrontMatter: true,
+  };
+}
+
+function getPrimaryHeading(body: string) {
+  const match = body.match(/^#\s+(.+)$/m);
+  return match?.[1]?.trim() || '';
+}
+
+function countCodeBlocks(content: string) {
+  return (content.match(/```[\s\S]*?```/g) || []).length;
+}
+
+function normalizeHeadingText(text: string) {
+  return text.replace(/^#+\s+/, '').trim();
+}
+
+function splitByHeadings(body: string) {
+  const lines = body.split('\n');
+  const sections: Array<{ level: number; heading: string; content: string[] }> = [];
+  let current: { level: number; heading: string; content: string[] } | null = null;
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{2,3})\s+(.+)$/);
+    if (headingMatch) {
+      if (current) {
+        sections.push(current);
+      }
+      current = {
+        level: headingMatch[1].length,
+        heading: normalizeHeadingText(headingMatch[0]),
+        content: [],
+      };
+      continue;
+    }
+    if (current) {
+      current.content.push(line);
+    }
+  }
+
+  if (current) {
+    sections.push(current);
+  }
+
+  return sections.filter((section) => section.content.join('\n').trim().length > 0);
+}
+
+function splitExamples(body: string) {
+  const codeRegex = /```[\s\S]*?```/g;
+  const headingRegex = /^(#{2,3})\s+(.+)$/gm;
+  const headings: Array<{ index: number; level: number; text: string }> = [];
+  for (const match of body.matchAll(headingRegex)) {
+    headings.push({
+      index: match.index ?? 0,
+      level: match[1].length,
+      text: normalizeHeadingText(match[0]),
+    });
+  }
+
+  const examples: Array<{ heading: string; content: string }> = [];
+  for (const match of body.matchAll(codeRegex)) {
+    const code = match[0];
+    const index = match.index ?? 0;
+    const heading = headings.filter((item) => item.index < index).slice(-1)[0]?.text || '';
+    examples.push({ heading, content: code });
+  }
+
+  return examples;
+}
+
+function splitMarkdownIfNeeded(content: string, entry: DocEntryMeta) {
+  const { body } = splitFrontMatter(content);
+  const hasTypeDefinition = /##\s+(Type definition|Type definition \(simplified\)|类型定义)/i.test(body);
+  if (hasTypeDefinition) {
+    return { splits: [] as Array<{ suffix: string; title: string; description: string; content: string }> };
+  }
+  const bodyLength = body.trim().length;
+  const codeBlocks = countCodeBlocks(body);
+  const shouldSplitByLength = bodyLength > SPLIT_MAX_LENGTH;
+  const shouldSplitByExamples = codeBlocks > SPLIT_MAX_CODE_BLOCKS;
+  if (!shouldSplitByLength && !shouldSplitByExamples) {
+    return { splits: [] as Array<{ suffix: string; title: string; description: string; content: string }> };
+  }
+
+  const h1 = getPrimaryHeading(body) || entry.title;
+  const splits: Array<{ suffix: string; title: string; description: string; content: string }> = [];
+
+  if (shouldSplitByLength) {
+    const sections = splitByHeadings(body);
+    sections.forEach((section, index) => {
+      const headingLine = `${'#'.repeat(section.level)} ${section.heading}`;
+      const sectionBody = section.content.join('\n').trim();
+      const chunkContent = `# ${h1}\n\n${headingLine}\n${sectionBody}\n`;
+      const title = section.heading || `${h1} Chunk ${index + 1}`;
+      splits.push({
+        suffix: `__chunk-${index + 1}.md`,
+        title,
+        description: `Extracted section from ${entry.title}`,
+        content: chunkContent,
+      });
+    });
+  }
+
+  if (shouldSplitByExamples) {
+    const examples = splitExamples(body);
+    examples.forEach((example, index) => {
+      const headingLine = example.heading ? `## ${example.heading}\n\n` : '';
+      const exampleContent = `# ${h1}\n\n${headingLine}${example.content}\n`;
+      const title = example.heading ? `${example.heading} Example` : `${h1} Example ${index + 1}`;
+      splits.push({
+        suffix: `__example-${index + 1}.md`,
+        title,
+        description: `Extracted example from ${entry.title}`,
+        content: exampleContent,
+      });
+    });
+  }
+
+  return { splits };
+}
+
+function applySplitReferences(content: string, splits: Array<{ pathRef: string; title: string; description: string }>) {
+  if (!splits.length) return content;
+  const refLines = splits.map((split) => referenceLine(split.title, split.description, split.pathRef));
+  const baseContent = stripSplitReferenceBlock(content).trimEnd();
+  const block = `${SPLIT_REFERENCE_START}\n\n## Extracted references\n\n${refLines.join(
+    '\n',
+  )}\n\n${SPLIT_REFERENCE_END}`;
+  if (!baseContent) {
+    return `${block}\n`;
+  }
+  return `${baseContent}\n\n${block}\n`;
+}
+
+function stripSplitReferenceBlock(content: string) {
+  const start = content.indexOf(SPLIT_REFERENCE_START);
+  if (start === -1) return content;
+  const end = content.indexOf(SPLIT_REFERENCE_END, start + SPLIT_REFERENCE_START.length);
+  if (end === -1) return content;
+  const before = content.slice(0, start).trimEnd();
+  const after = content.slice(end + SPLIT_REFERENCE_END.length).trimStart();
+  if (!before) return after;
+  if (!after) return `${before}\n`;
+  return `${before}\n\n${after}`;
+}
+
+function rewriteRelativeLinks(content: string, entry: DocEntryMeta) {
+  const { body, frontMatter, hasFrontMatter } = splitFrontMatter(content);
+  const segments: Array<{ type: 'code' | 'text'; content: string }> = [];
+  const codeRegex = /```[\s\S]*?```/g;
+  let lastIndex = 0;
+  for (const match of body.matchAll(codeRegex)) {
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      segments.push({ type: 'text', content: body.slice(lastIndex, index) });
+    }
+    segments.push({ type: 'code', content: match[0] });
+    lastIndex = index + match[0].length;
+  }
+  if (lastIndex < body.length) {
+    segments.push({ type: 'text', content: body.slice(lastIndex) });
+  }
+
+  const dir = path.posix.dirname(entry.relativePath.split(path.sep).join('/'));
+
+  const rewritten = segments
+    .map((segment) => {
+      if (segment.type === 'code') return segment.content;
+      return segment.content.replace(/(!?)\[[^\]]+]\(([^)]+)\)/g, (match, bang, link) => {
+        if (bang) return match;
+        const trimmed = link.trim();
+        if (
+          trimmed.startsWith('http://') ||
+          trimmed.startsWith('https://') ||
+          trimmed.startsWith('/') ||
+          trimmed.startsWith('#') ||
+          trimmed.startsWith('mailto:') ||
+          trimmed.startsWith('tel:')
+        ) {
+          return match;
+        }
+
+        const hashIndex = trimmed.indexOf('#');
+        const hash = hashIndex >= 0 ? trimmed.slice(hashIndex) : '';
+        const beforeHash = hashIndex >= 0 ? trimmed.slice(0, hashIndex) : trimmed;
+        const queryIndex = beforeHash.indexOf('?');
+        const query = queryIndex >= 0 ? beforeHash.slice(queryIndex) : '';
+        const pathPart = queryIndex >= 0 ? beforeHash.slice(0, queryIndex) : beforeHash;
+
+        const resolved = path.posix.normalize(path.posix.join(dir, pathPart));
+        const normalized = resolved.startsWith('.') ? resolved.replace(/^(\.\.\/?)+/, '') : resolved;
+        const absolutePath = path.posix.join('/', entry.moduleName, normalized);
+        const nextLink = `${absolutePath}${query}${hash}`;
+        return match.replace(link, nextLink);
+      });
+    })
+    .join('');
+
+  if (!hasFrontMatter) {
+    return rewritten;
+  }
+  return `${frontMatter}${rewritten}`;
 }
 
 function applyReferencesToIndex(

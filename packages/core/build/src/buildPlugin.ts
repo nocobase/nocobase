@@ -147,6 +147,98 @@ function appendAiFiles(cwd: string, files: string[]) {
   return Array.from(new Set([...files, ...aiFiles]));
 }
 
+type AiMetaEntry = {
+  module: string;
+  description?: string;
+  source?: string;
+};
+
+function normalizeAiMetaEntries(meta: any, fallbackModule: string): AiMetaEntry[] {
+  if (Array.isArray(meta)) {
+    return meta
+      .filter((item) => item && typeof item.module === 'string')
+      .map((item) => ({
+        module: item.module.trim(),
+        description: typeof item.description === 'string' ? item.description.trim() : '',
+        source: typeof item.source === 'string' ? item.source.trim() : '',
+      }))
+      .filter((item) => item.module);
+  }
+  if (meta && typeof meta.module === 'string') {
+    return [
+      {
+        module: meta.module.trim() || fallbackModule,
+        description: typeof meta.description === 'string' ? meta.description.trim() : '',
+        source: typeof meta.source === 'string' ? meta.source.trim() : '',
+      },
+    ];
+  }
+  return [
+    {
+      module: fallbackModule,
+      description: '',
+      source: '',
+    },
+  ];
+}
+
+async function copyAiDocSources(cwd: string, log: PkgLog) {
+  const metaFiles = fg.globSync(['src/ai/docs/**/meta.json'], { cwd, absolute: true });
+  if (!metaFiles.length) return;
+
+  const rootMetaMap = new Map<string, { module: string; description?: string }>();
+
+  for (const metaFile of metaFiles) {
+    let entries: AiMetaEntry[] = [];
+    try {
+      const meta = await fs.readJson(metaFile);
+      const fallbackModule = path.basename(path.dirname(metaFile));
+      entries = normalizeAiMetaEntries(meta, fallbackModule);
+    } catch (error) {
+      log('failed to read ai docs meta.json', metaFile, error);
+      continue;
+    }
+
+    for (const entry of entries) {
+      const source = entry.source?.trim();
+      if (!source) continue;
+
+      const absoluteSource = path.isAbsolute(source) ? source : path.resolve(process.cwd(), source);
+      const fallbackSource = path.isAbsolute(source) ? '' : path.resolve(cwd, source);
+      const resolvedSource = (await fs.pathExists(absoluteSource))
+        ? absoluteSource
+        : fallbackSource && (await fs.pathExists(fallbackSource))
+          ? fallbackSource
+          : '';
+
+      if (!resolvedSource) {
+        log('ai docs source not found', source, metaFile);
+        continue;
+      }
+
+      const targetRoot = path.join(cwd, target_dir, 'ai', 'docs', entry.module);
+
+      await fs.remove(targetRoot);
+      await fs.ensureDir(targetRoot);
+      await fs.copy(resolvedSource, targetRoot, {
+        overwrite: true,
+        filter: (src) => path.basename(src) !== '_meta.json',
+      });
+
+      rootMetaMap.set(entry.module, {
+        module: entry.module,
+        description: entry.description ?? '',
+      });
+    }
+  }
+
+  if (rootMetaMap.size) {
+    const rootMetaPath = path.join(cwd, target_dir, 'ai', 'docs', 'meta.json');
+    await fs.ensureDir(path.dirname(rootMetaPath));
+    await fs.writeJSON(rootMetaPath, Array.from(rootMetaMap.values()), { spaces: 2 });
+  }
+}
+
 export function deleteServerFiles(cwd: string, log: PkgLog) {
   log('delete server files');
   const files = fg.globSync(['*'], {
@@ -314,6 +406,8 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
     }),
   );
 
+  await copyAiDocSources(cwd, log);
+
   await buildServerDeps(cwd, serverFiles, log);
 }
 
@@ -367,6 +461,8 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       },
     }),
   );
+
+  await copyAiDocSources(cwd, log);
 
   const entryFile = path.join(cwd, 'src/server/index.ts');
   if (!fs.existsSync(entryFile)) {

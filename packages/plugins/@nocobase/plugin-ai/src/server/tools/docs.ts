@@ -273,7 +273,9 @@ export function createReadDocEntryTool(): ToolsOptions {
         path: z
           .string()
           .min(1, 'path is required')
-          .describe('Canonical path like runjs/context/router/index.md. No wildcards, relative segments, or globbing.'),
+          .describe(
+            'Canonical path like runjs/context/router/index.md or /runjs/context/router/index.md. No wildcards, relative segments, or globbing.',
+          ),
       }),
     },
     invoke: async (ctx, args) => {
@@ -379,10 +381,10 @@ function normalizeDocInput(input: string) {
   }
 
   value = value.replace(/\\/g, '/');
+  value = value.replace(/^\/+/, '');
   if (value.startsWith('storage/ai/docs/')) {
     value = value.slice('storage/ai/docs/'.length);
   }
-  value = value.replace(/^\/+/, '');
   if (!value) {
     throw new Error('Path is required.');
   }
