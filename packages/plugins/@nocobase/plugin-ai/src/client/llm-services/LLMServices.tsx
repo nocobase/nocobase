@@ -31,7 +31,7 @@ const AutoOpenContext = createContext<{ autoOpen: boolean; setAutoOpen: (v: bool
   autoOpen: false,
   setAutoOpen: () => {},
 });
-import { Button, App, Tag, theme, Select, Space, Switch } from 'antd';
+import { Button, App, theme, Select, Switch } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
@@ -137,13 +137,13 @@ const useEditActionProps = () => {
     },
   };
 };
-const providerHints: Record<string, string> = {
-  anthropic: 'Claude',
+const providerDescriptions: Record<string, string> = {
   'google-genai': 'Gemini',
   openai: 'GPT',
-  'openai-completions': 'GPT (Completions, Legacy)',
-  dashscope: 'Qwen',
+  'openai-completions': 'Recommended for third-party OpenAI-compatible APIs (OpenRouter, Groq, Together AI, etc.)',
+  anthropic: 'Claude',
   deepseek: 'DeepSeek',
+  dashscope: 'Qwen (Tongyi)',
   kimi: 'Kimi',
   ollama: 'Local models',
 };
@@ -159,33 +159,25 @@ export const ProviderSelect: React.FC = () => {
   const { token } = theme.useToken();
   const field = useField<Field>();
   const providers = useLLMProviders();
+  const t = useT();
 
   const options = providers.map((item) => {
-    const hint = providerHints[item.value];
+    const descKey = providerDescriptions[item.value];
+    const description = descKey ? t(descKey) : '';
+    const extraCapabilities = item.supportedModel?.filter((m: string) => m !== 'LLM');
+    const capabilities = extraCapabilities?.length ? extraCapabilities.join(', ') : '';
+    const subtitle = [description, capabilities].filter(Boolean).join(' · ');
     return {
       value: item.value,
       label: (
-        <Space direction="vertical" size={0} style={{ width: '100%' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>{item.label}</span>
-            <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{hint}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {item.supportedModel.map((model: string) => (
-              <Tag
-                key={model}
-                style={{
-                  color: token.colorTextTertiary,
-                  backgroundColor: token.colorFillTertiary,
-                  borderColor: token.colorBorderSecondary,
-                  fontSize: token.fontSizeSM,
-                }}
-              >
-                {model}
-              </Tag>
-            ))}
-          </div>
-        </Space>
+        <div>
+          <div style={{ fontWeight: 500 }}>{item.label}</div>
+          {subtitle && (
+            <div style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary, lineHeight: 1.4 }}>
+              {subtitle}
+            </div>
+          )}
+        </div>
       ),
       selectedLabel: item.label,
     };

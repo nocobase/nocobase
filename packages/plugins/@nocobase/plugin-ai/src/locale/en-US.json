@@ -123,6 +123,7 @@
   "Knowledge Base Prompt placeholder": "Knowledge Base Prompt placeholder",
   "KnowledgeBase": "Knowledge Base",
   "LLM service": "LLM service",
+  "LLM service not configured": "LLM service not configured",
   "LLM services": "LLM services",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
   "Limit": "Limit",

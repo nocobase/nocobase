@@ -29,7 +29,6 @@ export const useChatMessageActions = () => {
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
-  const modelOverride = useChatBoxStore.use.modelOverride();
 
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
@@ -294,6 +293,9 @@ export const useChatMessageActions = () => {
   }) => {
     if (!sendMsgs.length) return;
 
+    // Read modelOverride from store at call time to avoid stale closure
+    const modelOverride = useChatBoxStore.getState().modelOverride;
+
     // [AI_DEBUG] request
     aiDebugLogger.log(
       sessionId || 'pending',
@@ -408,6 +410,9 @@ export const useChatMessageActions = () => {
       },
     ]);
 
+    // Read modelOverride from store at call time to avoid stale closure
+    const modelOverride = useChatBoxStore.getState().modelOverride;
+
     const controller = new AbortController();
     setAbortController(controller);
     try {
@@ -472,6 +477,8 @@ export const useChatMessageActions = () => {
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
+      // Read modelOverride from store at call time to avoid stale closure
+      const modelOverride = useChatBoxStore.getState().modelOverride;
       const controller = new AbortController();
       setAbortController(controller);
       try {

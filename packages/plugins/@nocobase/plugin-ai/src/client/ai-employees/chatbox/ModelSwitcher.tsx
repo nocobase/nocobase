@@ -10,34 +10,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dropdown, Spin, Typography, App } from 'antd';
 import { PlusOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons';
-import { useApp } from '@nocobase/client';
+import { useAPIClient, useApp } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
 import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
 import { useLLMServicesRepository } from '../../llm-services/hooks/useLLMServicesRepository';
 
-// localStorage helpers
+// Storage key prefix for model preferences
 const STORAGE_KEY = 'ai_model_preference_';
-const saveToStorage = (username: string, value: string) => {
-  try {
-    localStorage.setItem(STORAGE_KEY + username, value);
-  } catch {
-    // Ignore localStorage errors
-  }
-};
-const loadFromStorage = (username: string) => {
-  try {
-    return localStorage.getItem(STORAGE_KEY + username);
-  } catch {
-    return null;
-  }
-};
 
 export const ModelSwitcher: React.FC = observer(
   () => {
     const t = useT();
     const app = useApp();
+    const api = useAPIClient();
     const { message } = App.useApp();
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -82,8 +69,13 @@ export const ModelSwitcher: React.FC = observer(
       // Skip if already set and valid
       if (modelOverride && isValid(modelOverride)) return;
 
-      // Try cache first
-      const cachedId = loadFromStorage(currentEmployee.username);
+      // Try cache first (use apiClient.storage per NocoBase convention)
+      let cachedId: string | null = null;
+      try {
+        cachedId = api.storage.getItem(STORAGE_KEY + currentEmployee.username);
+      } catch {
+        // Ignore storage errors
+      }
       let cachedModel = null;
       if (cachedId) {
         if (cachedId.includes(':')) {
@@ -102,7 +94,7 @@ export const ModelSwitcher: React.FC = observer(
 
       // Fall back to first model
       setModelOverride(allModels[0]);
-    }, [currentEmployee?.username, allModels]);
+    }, [currentEmployee?.username, allModels, modelOverride]);
 
     // Current selected model value
     const selectedModel = useMemo(() => {
@@ -133,7 +125,11 @@ export const ModelSwitcher: React.FC = observer(
         const newValue = { llmService: target.llmService, model: target.model };
         setModelOverride(newValue);
         if (currentEmployee) {
-          saveToStorage(currentEmployee.username, `${target.llmService}:${target.model}`);
+          try {
+            api.storage.setItem(STORAGE_KEY + currentEmployee.username, `${target.llmService}:${target.model}`);
+          } catch {
+            // Ignore storage errors
+          }
         }
       }
     };

@@ -124,6 +124,7 @@
   "Knowledge Base Prompt placeholder": "",
   "KnowledgeBase": "知识库",
   "LLM service": "LLM 服务",
+  "LLM service not configured": "LLM 服务未配置",
   "LLM services": "LLM 服务",
   "Label for task selection buttons when multiple tasks exist": "多个任务可选时，用于让用户选择任务的按钮标题",
   "Limit": "限制",
@@ -278,5 +279,8 @@
   "No LLM services enabled yet": "暂无已启用的 LLM 服务",
   "No model available": "无可用模型",
   "Please contact the administrator to configure models": "请联系管理员配置模型",
-    "Restrict task skills; leave blank to use all AI employee skills.": "限定任务技能；留空则使用全部AI员工技能。"
+    "Restrict task skills; leave blank to use all AI employee skills.": "限定任务技能；留空则使用全部AI员工技能。",
+  "Recommended for third-party OpenAI-compatible APIs (OpenRouter, Groq, Together AI, etc.)": "推荐第三方 OpenAI 兼容 API（OpenRouter、Groq、Together AI 等）",
+  "Qwen (Tongyi)": "Qwen（通义千问）",
+  "Local models": "本地模型"
 }
