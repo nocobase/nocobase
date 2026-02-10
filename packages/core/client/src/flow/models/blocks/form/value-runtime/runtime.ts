@@ -203,6 +203,7 @@ export class FormValueRuntime {
     }
 
     const changedPaths: NamePath[] = [];
+    const touchedChangedPathKeys = new Set<string>();
     let bumpedWriteSeq = false;
     for (const field of changedFields || []) {
       const name = field?.name;
@@ -221,12 +222,23 @@ export class FormValueRuntime {
       }
       _.set(this.valuesMirror, namePath, nextValue);
       changedPaths.push(namePath);
+      if (field?.touched === true) {
+        touchedChangedPathKeys.add(namePathToPathKey(namePath));
+      }
     }
 
     if (!changedPaths.length) return;
+
+    const suppressed = this.isSuppressed();
+    if (!suppressed && touchedChangedPathKeys.size) {
+      for (const key of touchedChangedPathKeys) {
+        this.markExplicit(key);
+      }
+    }
+
     this.bumpChangeTick();
 
-    if (this.isSuppressed()) {
+    if (suppressed) {
       return;
     }
 
@@ -256,7 +268,7 @@ export class FormValueRuntime {
       return;
     }
 
-    const changedPaths: NamePath[] =
+    const rawChangedPaths: NamePath[] =
       this.lastObservedChangedPaths && this.lastObservedChangedPaths.length
         ? this.lastObservedChangedPaths
         : Object.keys(changedValues || {}).map((k) => [k]);
@@ -269,10 +281,12 @@ export class FormValueRuntime {
 
     const snapshot = allValues && typeof allValues === 'object' ? allValues : this.getFormValuesSnapshot();
 
+    const explicitPaths = this.deriveExplicitPaths(rawChangedPaths, snapshot, this.valuesMirror);
+
     let hasMirrorChange = false;
     let bumpedWriteSeq = false;
     const actuallyChangedPaths: NamePath[] = [];
-    for (const p of changedPaths) {
+    for (const p of rawChangedPaths) {
       if (!p?.length) continue;
       const nextValue = _.get(snapshot, p);
       const prevValue = _.get(this.valuesMirror, p);
@@ -290,7 +304,7 @@ export class FormValueRuntime {
     }
 
     // 非 default 来源写入：需要使默认值永久失效（explicit）
-    for (const p of changedPaths) {
+    for (const p of explicitPaths) {
       this.markExplicit(namePathToPathKey(p));
     }
 
@@ -306,11 +320,110 @@ export class FormValueRuntime {
     this.emitFormValuesChange({
       source,
       txId,
-      changedPaths,
+      changedPaths: rawChangedPaths,
       changedValues,
       allValues: snapshot,
       allValuesSnapshot: snapshot,
     });
+  }
+
+  private deriveExplicitPaths(rawChangedPaths: NamePath[], snapshot: any, valuesMirrorBefore: any): NamePath[] {
+    const explicitPaths: NamePath[] = [];
+    const seen = new Set<string>();
+
+    for (const path of rawChangedPaths || []) {
+      if (!path?.length) continue;
+      const prevValue = _.get(valuesMirrorBefore, path as any);
+      const nextValue = _.get(snapshot, path as any);
+      this.collectExplicitDiffPaths(prevValue, nextValue, path, explicitPaths, seen);
+    }
+
+    return explicitPaths;
+  }
+
+  private collectExplicitDiffPaths(
+    prevValue: any,
+    nextValue: any,
+    basePath: NamePath,
+    explicitPaths: NamePath[],
+    seen: Set<string>,
+  ): number {
+    if (_.isEqual(prevValue, nextValue)) return 0;
+
+    const prevIsArray = Array.isArray(prevValue);
+    const nextIsArray = Array.isArray(nextValue);
+
+    if (prevIsArray || nextIsArray) {
+      if (prevIsArray && nextIsArray) {
+        const sharedLength = Math.min(prevValue.length, nextValue.length);
+        let nestedCount = 0;
+        for (let index = 0; index < sharedLength; index++) {
+          nestedCount += this.collectExplicitDiffPaths(
+            prevValue[index],
+            nextValue[index],
+            [...basePath, index],
+            explicitPaths,
+            seen,
+          );
+        }
+        return nestedCount;
+      }
+
+      return this.pushExplicitPath(basePath, explicitPaths, seen) ? 1 : 0;
+    }
+
+    const prevIsObject = this.isPlainObjectValue(prevValue);
+    const nextIsObject = this.isPlainObjectValue(nextValue);
+
+    if (prevIsObject || nextIsObject) {
+      if (prevIsObject && nextIsObject) {
+        const keys = new Set([...Object.keys(prevValue), ...Object.keys(nextValue)]);
+        let nestedCount = 0;
+        for (const key of keys) {
+          nestedCount += this.collectExplicitDiffPaths(
+            prevValue[key],
+            nextValue[key],
+            [...basePath, key],
+            explicitPaths,
+            seen,
+          );
+        }
+
+        if (nestedCount === 0 && this.isObjectCleared(prevValue, nextValue)) {
+          return this.pushExplicitPath(basePath, explicitPaths, seen) ? 1 : 0;
+        }
+
+        return nestedCount;
+      }
+
+      if (this.isObjectCleared(prevValue, nextValue)) {
+        return this.pushExplicitPath(basePath, explicitPaths, seen) ? 1 : 0;
+      }
+
+      return this.pushExplicitPath(basePath, explicitPaths, seen) ? 1 : 0;
+    }
+
+    return this.pushExplicitPath(basePath, explicitPaths, seen) ? 1 : 0;
+  }
+
+  private pushExplicitPath(path: NamePath, explicitPaths: NamePath[], seen: Set<string>): boolean {
+    if (!path?.length) return false;
+    const key = namePathToPathKey(path);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    explicitPaths.push([...path]);
+    return true;
+  }
+
+  private isPlainObjectValue(value: any): value is Record<string, any> {
+    return _.isPlainObject(value);
+  }
+
+  private isObjectCleared(prevValue: any, nextValue: any): boolean {
+    if (!this.isPlainObjectValue(prevValue)) return false;
+    if (nextValue == null) return true;
+    if (this.isPlainObjectValue(nextValue) && Object.keys(nextValue).length === 0) return true;
+    return false;
   }
 
   async setFormValues(callerCtx: any, patch: Patch, options?: SetOptions) {
