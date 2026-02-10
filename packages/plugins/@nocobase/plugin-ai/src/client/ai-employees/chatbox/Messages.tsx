@@ -53,6 +53,7 @@ export const Messages: React.FC = () => {
       ref={containerRef}
       style={{
         margin: '16px 0',
+        padding: '0 16px',
         overflow: 'auto',
         position: 'relative',
       }}
