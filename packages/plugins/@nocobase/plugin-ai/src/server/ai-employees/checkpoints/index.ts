@@ -22,7 +22,7 @@ import {
   WRITES_IDX_MAP,
 } from '@langchain/langgraph-checkpoint';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import { FindOptions, Op, WhereOptions } from '@nocobase/database';
+import { FindOptions, Op } from '@nocobase/database';
 
 export class SequelizeCollectionSaver extends BaseCheckpointSaver {
   constructor(
@@ -556,7 +556,7 @@ export class SequelizeCollectionSaver extends BaseCheckpointSaver {
     if (!threadIds?.length) {
       return {};
     }
-    const where: WhereOptions = {
+    const where = {
       threadId:
         threadIds.length === 1
           ? threadIds[0]
