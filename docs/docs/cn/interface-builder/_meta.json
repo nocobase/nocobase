@@ -131,6 +131,11 @@
           },
           {
             "type": "custom-link",
+            "label": "区块高度",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
             "label": "表单草稿",
             "link": "/interface-builder/form-drafts"
           }
@@ -381,6 +386,11 @@
             "type": "custom-link",
             "label": "编辑",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "复制",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
