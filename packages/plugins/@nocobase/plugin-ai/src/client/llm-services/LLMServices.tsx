@@ -31,7 +31,7 @@ const AutoOpenContext = createContext<{ autoOpen: boolean; setAutoOpen: (v: bool
   autoOpen: false,
   setAutoOpen: () => {},
 });
-import { Button, App, theme, Select, Switch } from 'antd';
+import { Button, App, theme, Select, Switch, Tag } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
@@ -182,19 +182,47 @@ export const ProviderSelect: React.FC = () => {
   const options = sortedProviders.map((item) => {
     const descKey = providerDescriptions[item.value];
     const description = descKey ? t(descKey) : '';
-    const extraCapabilities = item.supportedModel?.filter((m: string) => m !== 'LLM');
-    const capabilities = extraCapabilities?.length ? extraCapabilities.join(', ') : '';
-    const subtitle = [description, capabilities].filter(Boolean).join(' · ');
+    const supported = item.supportedModel || [];
+    const capabilities = [
+      supported.includes('LLM') ? 'LLM' : null,
+      supported.includes('EMBEDDING') ? 'EMBEDDING' : null,
+    ].filter(Boolean) as string[];
     return {
       value: item.value,
       label: (
         <div>
           <div style={{ fontWeight: 500 }}>{item.label}</div>
-          {subtitle && (
-            <div style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary, lineHeight: 1.4 }}>
-              {subtitle}
-            </div>
-          )}
+          <div
+            style={{
+              fontSize: token.fontSizeSM,
+              color: token.colorTextTertiary,
+              lineHeight: 1.4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: token.marginXS,
+            }}
+          >
+            <span>{description}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: token.marginXXS, flexWrap: 'wrap' }}>
+              {capabilities.map((capability) => (
+                <Tag
+                  key={capability}
+                  bordered={false}
+                  color="default"
+                  style={{
+                    marginInlineEnd: 0,
+                    paddingInline: 6,
+                    lineHeight: '18px',
+                    height: 18,
+                    fontSize: 11,
+                  }}
+                >
+                  {capability}
+                </Tag>
+              ))}
+            </span>
+          </div>
         </div>
       ),
       selectedLabel: item.label,
