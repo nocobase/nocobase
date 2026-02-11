@@ -313,6 +313,26 @@ export function defineBaseContextMeta() {
         detail: '(options: RequestOptions) => Promise<any>',
         completion: { insertText: `await ctx.request({ url: '', method: 'get', params: {} })` },
       },
+      getModel: {
+        description:
+          'Get a model instance by uid. By default, it searches across the current view stack and returns the first matched model.',
+        detail: '(uid: string, searchInPreviousEngines?: boolean) => FlowModel | undefined',
+        completion: { insertText: `ctx.getModel('block-uid-xxx')` },
+        params: [
+          {
+            name: 'uid',
+            type: 'string',
+            description: 'Target model uid.',
+          },
+          {
+            name: 'searchInPreviousEngines',
+            type: 'boolean',
+            description: 'Whether to search in parent engines (default: false).',
+          },
+        ],
+        returns: { type: 'FlowModel | undefined' },
+        examples: ["const model = ctx.getModel('block-uid-xxx');"],
+      },
       t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {{name}}", { name: "World" })`',
       initResource: {
         description:
@@ -724,6 +744,26 @@ export function defineBaseContextMeta() {
           description: '使用 APIClient 实例发起一个 HTTP 请求。参数：(options: RequestOptions) => Promise<any>',
           detail: '(options: RequestOptions) => Promise<any>',
           completion: { insertText: `await ctx.request({ url: '', method: 'get', params: {} })` },
+        },
+        getModel: {
+          description: '根据 uid 获取模型实例。默认会跨当前视图栈查找，并返回第一个命中的模型。',
+          detail: '(uid: string, searchInPreviousEngines?: boolean) => FlowModel | undefined',
+          completion: { insertText: `ctx.getModel('block-uid-xxx')` },
+          params: [
+            {
+              name: 'uid',
+              type: 'string',
+              description: '目标模型 uid。',
+            },
+            {
+              name: 'searchInPreviousEngines',
+              type: 'boolean',
+              optional: true,
+              description: '是否在之前的引擎中搜索模型，默认为 false。',
+            },
+          ],
+          returns: { type: 'FlowModel | undefined' },
+          examples: ["const model = ctx.getModel('block-uid-xxx');"],
         },
         t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {{name}}", { name: "世界" })`',
         initResource: {
