@@ -8,7 +8,7 @@
  */
 
 import { CreateFormModel, BlockSceneEnum } from '@nocobase/client';
-import React from 'react';
+
 import { tExpr } from '@nocobase/flow-engine';
 
 export class BulkEditFormModel extends CreateFormModel {

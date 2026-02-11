@@ -55,13 +55,7 @@ export class BulkEditFormItemModel extends FormItemModel {
         // useModel: 'BulkEditFormItemModel',
         createModelOptions: () => {
           const options = child.createModelOptions();
-          const field = options?.subModels?.field;
-          const fieldWarp = {
-            use: 'BulkEditFieldModel',
-            subModels: {
-              field,
-            },
-          };
+
           return {
             ...options,
             // subModels: {

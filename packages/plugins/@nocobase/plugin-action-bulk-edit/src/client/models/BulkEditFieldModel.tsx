@@ -48,9 +48,7 @@ const BulkEditField = (props) => {
       formItemModel?.setProps({ required: false, rules: [] });
     }
     const fieldValue = toFormFieldValue({ [val]: value });
-    // onChange?.(fieldVlaue);
-    form.setFieldValue(formItemModel.props.name, fieldValue);
-    // form.clearErrors(formItemModel.props.name);
+    form.setFieldValue(formItemModel.props.name, fieldVlaue);
   };
 
   const valueChangeHandler = (val) => {
@@ -142,7 +140,7 @@ const isBulkEditContext = (ctx: any) => {
     return true;
   }
   const grandParent = parent?.parent as any;
-  return grandParent?.constructor?.name === 'BulkEditFormItemModel';
+  return grandParent instanceof BulkEditFormItemModel;
 };
 
 const isBulkEditScene = (ctx: any) => {
