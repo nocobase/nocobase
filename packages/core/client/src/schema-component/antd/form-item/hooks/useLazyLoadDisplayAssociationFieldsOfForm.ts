@@ -9,7 +9,7 @@
 
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { untracked } from '@formily/reactive';
+import { toJS, untracked } from '@formily/reactive';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
@@ -102,13 +102,18 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       .parseVariable(variableString, formVariable, { appends })
       .then(({ value }) => {
         nextTick(() => {
-          const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+          const result = normalizeDisplayAssociationFieldValue(
+            transformVariableValue(value, { targetCollectionField: collectionFieldRef.current }),
+          );
+          const currentComparableValue = normalizeDisplayAssociationFieldValue(
+            transformVariableValue(field.value, { targetCollectionField: collectionFieldRef.current }),
+          );
           if (result == null) {
             if (field.value != null) {
               field.value = null;
             }
           } else {
-            if (_.isEqual(field.value, result)) {
+            if (_.isEqual(currentComparableValue, result)) {
               return;
             }
             field.setValue(result);
@@ -127,6 +132,45 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;
+
+function normalizeDisplayAssociationFieldValue(value: any) {
+  return untracked(() => {
+    const plainValue = toJS(value);
+    return removeCircularReferences(plainValue);
+  });
+}
+
+function removeCircularReferences(value: any, seen = new WeakMap<object, any>()) {
+  if (value == null || typeof value !== 'object') {
+    return value;
+  }
+
+  if (!Array.isArray(value) && !_.isPlainObject(value)) {
+    return value;
+  }
+
+  if (seen.has(value)) {
+    return undefined;
+  }
+
+  const result = Array.isArray(value) ? [] : {};
+  seen.set(value, result);
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      result[index] = removeCircularReferences(item, seen);
+    });
+    return result;
+  }
+
+  Object.keys(value).forEach((key) => {
+    const normalized = removeCircularReferences(value[key], seen);
+    if (normalized !== undefined) {
+      result[key] = normalized;
+    }
+  });
+  return result;
+}
 
 /**
  * 数据是否已被预加载
