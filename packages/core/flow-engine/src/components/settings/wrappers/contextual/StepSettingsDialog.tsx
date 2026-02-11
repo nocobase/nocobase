@@ -14,15 +14,9 @@ import { Button, Space } from 'antd';
 import React, { useEffect } from 'react';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { StepSettingsDialogProps } from '../../../../types';
-import {
-  compileUiSchema,
-  FlowCancelSaveException,
-  FlowExitException,
-  getT,
-  resolveDefaultParams,
-  resolveStepUiSchema,
-} from '../../../../utils';
+import { compileUiSchema, FlowExitException, getT, resolveDefaultParams, resolveStepUiSchema } from '../../../../utils';
 import { observer } from '../../../../reactive';
+import { FlowCancelSaveException } from '../../../../utils/exceptions';
 
 const SchemaField = createSchemaField();
 
