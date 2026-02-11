@@ -14,7 +14,7 @@ import { css } from '@emotion/css';
 import _ from 'lodash';
 import { BulkEditFormItemValueType } from './types';
 import { lang } from '../locale';
-
+import { ParamObject, StepParams } from '@nocobase/flow-engine';
 
 function toFormFieldValue(value: any) {
   if (BulkEditFormItemValueType.Clear in value) {
@@ -185,7 +185,6 @@ RecordSelectFieldModel.registerAction({
     const original = (titleField as any).hideInSettings;
     return typeof original === 'function' ? await original(ctx) : !!original;
   },
-
 });
 
 const selectSettingsFlow = RecordSelectFieldModel.globalFlowRegistry?.getFlow?.('selectSettings');
