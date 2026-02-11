@@ -639,13 +639,8 @@ SubTableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        if (params.title && params.title === ctx.model.collectionField?.title) {
-          ctx.model.setProps({ title: params.title });
-        } else {
-          ctx.model.setProps({
-            title: ctx.t(params.title, { ns: 'lm-flow-engine' }) || ctx.fieldPath.split('.').pop(),
-          });
-        }
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.model.collectionField?.title };
+        ctx.model.setProps({ title: ctx.t(params.title, options) || ctx.fieldPath.split('.').pop() });
       },
     },
     tooltip: {

@@ -209,11 +209,8 @@ DetailsItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        if (params.title && params.title === ctx.collectionField?.title) {
-          ctx.model.setProps({ label: params.title });
-        } else {
-          ctx.model.setProps({ label: ctx.t(params.title, { ns: 'lm-flow-engine' }) });
-        }
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.collectionField?.title };
+        ctx.model.setProps({ label: ctx.t(params.title, options) });
       },
     },
     aclCheck: {

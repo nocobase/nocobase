@@ -33,6 +33,10 @@ export class FlowI18n {
       return keyOrTemplate;
     }
 
+    if (options?.compareWith && keyOrTemplate === options.compareWith) {
+      return keyOrTemplate;
+    }
+
     // 检查翻译结果是否包含模板语法，如果有则进行模板编译
     if (this.isTemplate(keyOrTemplate)) {
       return this.compileTemplate(keyOrTemplate);

@@ -200,11 +200,8 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        if (params.label && params.label === ctx.collectionField?.title) {
-          ctx.model.setProps({ label: params.label });
-        } else {
-          ctx.model.setProps({ label: ctx.t(params.label, { ns: 'lm-flow-engine' }) });
-        }
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.collectionField?.title };
+        ctx.model.setProps({ label: ctx.t(params.label, options) });
       },
     },
     aclCheck: {
