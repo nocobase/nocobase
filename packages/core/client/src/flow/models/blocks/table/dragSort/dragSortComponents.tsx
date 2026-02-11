@@ -54,7 +54,7 @@ export const SortableRow: React.FC<any> = (props) => {
     id,
   });
   const { rowIndex, ...others } = props;
-  const isOver = over?.id == id;
+  const isOver = over?.id === id;
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
     return {
