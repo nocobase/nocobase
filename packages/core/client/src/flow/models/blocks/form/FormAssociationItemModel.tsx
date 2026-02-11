@@ -73,7 +73,7 @@ function buildAssociationRefreshKey(
 }
 
 const AssociationItem = (props) => {
-  const prefix = props.underSubForm ? 'ctx.currentObject' : 'ctx.formValues';
+  const prefix = props.underSubForm ? 'ctx.item.value' : 'ctx.formValues';
   const path = `{{${prefix}.${props.fieldPath}}}`;
   const { data, loading, error } = useJsonTemplateResolver(path, [path, props.refreshKey]);
   if (loading) return <div>Loading...</div>;

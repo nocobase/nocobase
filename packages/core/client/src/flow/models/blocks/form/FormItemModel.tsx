@@ -115,6 +115,11 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
+            if (this.context.currentObject) {
+              fork.context.defineProperty('currentObject', {
+                get: () => this.context.currentObject,
+              });
+            }
             const itemOptions = this.context.getPropertyOptions('item');
             if (this.context.item) {
               const { value: _value, ...rest } = (itemOptions || {}) as any;

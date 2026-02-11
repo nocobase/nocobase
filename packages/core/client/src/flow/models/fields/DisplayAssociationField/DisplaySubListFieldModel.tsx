@@ -52,6 +52,9 @@ const ArrayNester = ({ name, value = [] }: any) => {
           fork.context.defineProperty('record', {
             get: () => record,
           });
+          fork.context.defineProperty('currentObject', {
+            get: () => item,
+          });
           fork.context.defineProperty('item', {
             get: () => ({
               index,
