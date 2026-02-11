@@ -8,11 +8,11 @@
  */
 
 import { ChildPageTabModel, BlockGridModel, SkeletonFallback } from '@nocobase/client';
-import { PlusOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
-import { BlockSceneEnum, DataBlockModel } from '@nocobase/client';
+import { BlockSceneEnum } from '@nocobase/client';
 
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(

@@ -9,7 +9,7 @@
 
 import { FormGridModel } from '@nocobase/client';
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 
 export class BulkEditFormGridModel extends FormGridModel {

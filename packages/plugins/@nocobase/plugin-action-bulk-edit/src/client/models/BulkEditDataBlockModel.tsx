@@ -17,7 +17,7 @@ BulkEditDataBlockModel.define({
   label: tExpr('Data blocks'),
   async children(ctx) {
     const children = await buildSubModelItems(DataBlockModel)(ctx);
-    const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
+    const { scene } = ctx.view.inputArgs;
     return children.filter((item) => {
       if (item.useModel === 'BulkEditFormModel') {
         return true;
@@ -38,7 +38,7 @@ BulkEditBlockModel.define({
   label: tExpr('Data blocks'),
   async children(ctx) {
     const children = await buildSubModelItems(BlockModel)(ctx);
-    // const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
+
     return children.filter((item) => {
       return item.useModel === 'MarkdownBlockModel';
     });
