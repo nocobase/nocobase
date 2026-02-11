@@ -231,10 +231,11 @@ export const ModelSwitcher: React.FC = observer(
         <span
           style={{
             color: hasModels ? 'rgba(0, 0, 0, 0.88)' : '#ff4d4f',
+            display: 'inline-block',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            maxWidth: 160,
+            maxWidth: 88,
           }}
         >
           {hasModels ? selectedLabel : t('No model available')}
