@@ -535,6 +535,69 @@ describe('FilterForm custom field record select', () => {
     expect(customRecordSelect.resource.removeFilterGroup).toHaveBeenCalledWith('__filter_form_value_options__');
   });
 
+  it('syncValueOptions always queries by primary key', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'users',
+      titleField: 'name',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'bigInt', interface: 'number', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+
+    const model = engine.createModel<FilterFormCustomFieldModel>({
+      uid: 'custom-sync-primary-key',
+      use: 'FilterFormCustomFieldModel',
+    });
+
+    model.setStepParams('formItemSettings', 'fieldSettings', {
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+      title: 'Users',
+      name: 'users',
+      operator: '$in',
+      fieldModelProps: {
+        recordSelectDataSourceKey: 'main',
+        recordSelectTargetCollection: 'users',
+        recordSelectTitleField: 'name',
+        recordSelectValueField: 'name',
+        valueMode: 'value',
+        allowMultiple: true,
+        multiple: true,
+      },
+    });
+
+    await model.applyFlow('formItemSettings');
+
+    const customRecordSelect = model.customFieldModelInstance as any;
+    customRecordSelect.setProps({
+      value: [
+        { id: 1, name: 'Super Admin' },
+        { id: 2, name: 'user1' },
+      ],
+      options: [{ id: 1, name: 'Super Admin' }],
+    });
+    customRecordSelect.resource = {
+      addFilterGroup: vi.fn(),
+      refresh: vi.fn(async () => {}),
+      getData: vi.fn(() => [
+        { id: 1, name: 'Super Admin' },
+        { id: 2, name: 'user1' },
+      ]),
+      removeFilterGroup: vi.fn(),
+    };
+
+    await customRecordSelect.applyFlow('syncValueOptions');
+
+    expect(customRecordSelect.resource.addFilterGroup).toHaveBeenCalledWith('__filter_form_value_options__', {
+      'id.$eq': 2,
+    });
+  });
+
   it('normalizes record objects to primary keys in value mode', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ FilterFormCustomRecordSelectFieldModel });

@@ -27,18 +27,78 @@ import { ActionWithoutPermission } from '../../../base/ActionModel';
 
 const FILTER_FORM_VALUE_OPTIONS_GROUP = '__filter_form_value_options__';
 
-const normalizeValueKeys = (value: any, valueKey: string, isMultiple: boolean) => {
-  const toPrimitive = (item: any) => {
+const isValidPrimaryKeyValue = (value: any, fieldType?: string) => {
+  if (value === undefined || value === null || value === '') return false;
+  if (typeof value === 'number' || typeof value === 'bigint') return true;
+  if (typeof value !== 'string') return false;
+  if (!fieldType) return true;
+  return /(int|big)/i.test(fieldType) ? /^-?\d+$/.test(value) : true;
+};
+
+const resolveAsPrimaryKey = (value: any, fieldType?: string) => {
+  if (typeof value === 'number' || typeof value === 'bigint') {
+    return value;
+  }
+  if (typeof value === 'string' && /(int|big)/i.test(fieldType || '') && /^-?\d+$/.test(value)) {
+    return value;
+  }
+  return undefined;
+};
+
+const normalizePrimaryKeys = (
+  value: any,
+  options: AssociationOption[],
+  primaryKey: string,
+  valueKey: string,
+  isMultiple: boolean,
+  primaryFieldType?: string,
+) => {
+  const optionValueToPrimaryKey = new Map<any, any>();
+  options.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const optionValue = item?.[valueKey];
+    const optionPrimaryKey = item?.[primaryKey];
+    if (
+      optionValue !== undefined &&
+      optionValue !== null &&
+      optionPrimaryKey !== undefined &&
+      optionPrimaryKey !== null
+    ) {
+      optionValueToPrimaryKey.set(optionValue, optionPrimaryKey);
+    }
+  });
+
+  const toPrimaryKey = (item: any) => {
     if (item == null) return undefined;
     if (typeof item === 'object') {
-      return item?.[valueKey] ?? item?.value;
+      const objectPrimaryKey = item?.[primaryKey];
+      if (objectPrimaryKey !== undefined && objectPrimaryKey !== null) {
+        return objectPrimaryKey;
+      }
+      const fallbackValue = item?.[valueKey] ?? item?.value;
+      if (valueKey === primaryKey) {
+        return fallbackValue;
+      }
+      const mappedPrimaryKey = optionValueToPrimaryKey.get(fallbackValue);
+      if (mappedPrimaryKey !== undefined && mappedPrimaryKey !== null) {
+        return mappedPrimaryKey;
+      }
+      return resolveAsPrimaryKey(fallbackValue, primaryFieldType);
     }
-    return item;
+    if (valueKey === primaryKey) {
+      return item;
+    }
+    const mappedPrimaryKey = optionValueToPrimaryKey.get(item);
+    if (mappedPrimaryKey !== undefined && mappedPrimaryKey !== null) {
+      return mappedPrimaryKey;
+    }
+    return resolveAsPrimaryKey(item, primaryFieldType);
   };
+
   const list = isMultiple ? (Array.isArray(value) ? value : [value]) : [value];
   return list
-    .map((item) => toPrimitive(item))
-    .filter((item): item is string | number => item !== undefined && item !== null && item !== '');
+    .map((item) => toPrimaryKey(item))
+    .filter((item): item is string | number => isValidPrimaryKeyValue(item, primaryFieldType));
 };
 
 const mergeOptionsByValue = (
@@ -255,15 +315,24 @@ export class FilterFormCustomRecordSelectFieldModel extends RecordSelectFieldMod
     const valueMode = this.props?.valueMode || 'record';
     if (valueMode !== 'value') return null;
     const fieldNames = this.props?.fieldNames || {};
+    const primaryKey = this.context.collectionField?.targetCollection?.filterTargetKey || 'id';
     const valueKey = fieldNames?.value || 'id';
     const isMultiple = Boolean(this.props?.multiple && this.props?.allowMultiple);
-    const selectedValueKeys = normalizeValueKeys(this.props?.value, valueKey, isMultiple);
-    if (!selectedValueKeys.length) return null;
     const currentOptions = resolveOptions(this.props?.options, this.props?.value, isMultiple);
-    const existingKeys = new Set(currentOptions.map((item) => item?.[valueKey]).filter((item) => item != null));
+    const primaryFieldType = this.context.collectionField?.targetCollection?.getField?.(primaryKey)?.type;
+    const selectedValueKeys = normalizePrimaryKeys(
+      this.props?.value,
+      currentOptions,
+      primaryKey,
+      valueKey,
+      isMultiple,
+      primaryFieldType,
+    );
+    if (!selectedValueKeys.length) return null;
+    const existingKeys = new Set(currentOptions.map((item) => item?.[primaryKey]).filter((item) => item != null));
     const unresolvedKeys = selectedValueKeys.filter((item) => !existingKeys.has(item));
     if (!unresolvedKeys.length) return null;
-    return `${valueKey}::${unresolvedKeys.slice().sort().join(',')}`;
+    return `${primaryKey}::${unresolvedKeys.slice().sort().join(',')}`;
   }
 
   private ensureValueOptionsSynced() {
@@ -328,13 +397,21 @@ FilterFormCustomRecordSelectFieldModel.registerFlow({
         const valueMode = ctx.model.props?.valueMode || 'record';
         if (valueMode !== 'value') return;
         const fieldNames = ctx.model.props?.fieldNames || {};
+        const primaryKey = ctx.model.context.collectionField?.targetCollection?.filterTargetKey || 'id';
         const valueKey = fieldNames?.value || 'id';
         const isMultiple = Boolean(ctx.model.props?.multiple && ctx.model.props?.allowMultiple);
-        const selectedValueKeys = normalizeValueKeys(ctx.model.props?.value, valueKey, isMultiple);
-        if (!selectedValueKeys.length) return;
-
         const currentOptions = resolveOptions(ctx.model.props?.options, ctx.model.props?.value, isMultiple);
-        const existingKeys = new Set(currentOptions.map((item) => item?.[valueKey]).filter((item) => item != null));
+        const primaryFieldType = ctx.model.context.collectionField?.targetCollection?.getField?.(primaryKey)?.type;
+        const selectedValueKeys = normalizePrimaryKeys(
+          ctx.model.props?.value,
+          currentOptions,
+          primaryKey,
+          valueKey,
+          isMultiple,
+          primaryFieldType,
+        );
+        if (!selectedValueKeys.length) return;
+        const existingKeys = new Set(currentOptions.map((item) => item?.[primaryKey]).filter((item) => item != null));
         const unresolvedKeys = selectedValueKeys.filter((item) => !existingKeys.has(item));
         if (!unresolvedKeys.length) return;
 
@@ -345,18 +422,18 @@ FilterFormCustomRecordSelectFieldModel.registerFlow({
 
         const filter =
           unresolvedKeys.length === 1
-            ? { [`${valueKey}.$eq`]: unresolvedKeys[0] }
-            : { [`${valueKey}.$in`]: unresolvedKeys };
+            ? { [`${primaryKey}.$eq`]: unresolvedKeys[0] }
+            : { [`${primaryKey}.$in`]: unresolvedKeys };
 
         try {
           resource.addFilterGroup(FILTER_FORM_VALUE_OPTIONS_GROUP, filter);
           await resource.refresh();
           const fetched = resource.getData?.() || [];
           if (!Array.isArray(fetched) || !fetched.length) return;
-          const mergedOptions = mergeOptionsByValue(currentOptions, fetched, valueKey);
+          const mergedOptions = mergeOptionsByValue(currentOptions, fetched, primaryKey);
           const hasChanged =
             mergedOptions.length !== currentOptions.length ||
-            mergedOptions.some((item, index) => item?.[valueKey] !== currentOptions?.[index]?.[valueKey]);
+            mergedOptions.some((item, index) => item?.[primaryKey] !== currentOptions?.[index]?.[primaryKey]);
           if (!hasChanged) return;
           ctx.model.setDataSource(mergedOptions);
         } finally {
