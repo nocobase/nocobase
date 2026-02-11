@@ -354,7 +354,7 @@ TableColumnModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -364,8 +364,8 @@ TableColumnModel.registerFlow({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
-        const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title || ctx.fieldPath);
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.model.collectionField?.title };
+        ctx.model.setProps({ title: ctx.t(params.title, options) || ctx.fieldPath });
       },
     },
 
@@ -378,7 +378,7 @@ TableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
+        ctx.model.setProps('tooltip', ctx.t(params.tooltip, { ns: 'lm-flow-engine' }));
       },
     },
     width: {

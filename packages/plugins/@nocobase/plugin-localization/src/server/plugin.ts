@@ -23,7 +23,7 @@ export class PluginLocalizationServer extends Plugin {
   resources: Resources;
   sourceManager = new SourceManager();
 
-  addNewTexts = async (texts: { text: string; module: string }[], options?: any) => {
+  addNewTexts = async (texts: { text: string; module: string }[], options?: { transaction?: any; locale?: string }) => {
     texts = await this.resources.filterExists(texts, options?.transaction);
     await this.db
       .getModel('localizationTexts')
@@ -36,7 +36,7 @@ export class PluginLocalizationServer extends Plugin {
           transaction: options?.transaction,
         },
       )
-      .then((newTexts) => {
+      .then(async (newTexts) => {
         this.resources.updateCacheTexts(newTexts, options?.transaction);
         this.sendSyncMessage(
           {
@@ -45,6 +45,18 @@ export class PluginLocalizationServer extends Plugin {
           },
           { transaction: options?.transaction },
         );
+        if (options?.locale && newTexts?.length) {
+          await this.db.getModel('localizationTranslations').bulkCreate(
+            newTexts.map((text) => ({
+              locale: options.locale,
+              translation: text.get('text'),
+              textId: text.get('id'),
+            })),
+            {
+              transaction: options?.transaction,
+            },
+          );
+        }
       })
       .catch((err) => {
         this.log.error(err);

@@ -18,6 +18,7 @@ import { DefaultSettingsIcon } from '../DefaultSettingsIcon';
 
 // ---- Mock antd to capture Dropdown menu props ----
 const dropdownMenus: any[] = [];
+const mockColorTextTertiary = '#8c8c8c';
 vi.mock('antd', async (importOriginal) => {
   const messageApi = {
     success: vi.fn(),
@@ -72,6 +73,7 @@ vi.mock('antd', async (importOriginal) => {
   const Alert = (props: any) => React.createElement('div', { role: 'alert' }, props.message ?? 'Alert');
   const Button = (props: any) => React.createElement('button', props, props.children ?? 'Button');
   const Result = (props: any) => React.createElement('div', null, props.children ?? 'Result');
+  const Tooltip = ({ children }: any) => React.createElement('span', null, children);
 
   // Keep other components from original mock/default
   return {
@@ -90,9 +92,39 @@ vi.mock('antd', async (importOriginal) => {
     Alert,
     Button,
     Result,
-    theme: { useToken: () => ({}) },
+    Tooltip,
+    theme: { useToken: () => ({ token: { colorTextTertiary: mockColorTextTertiary } }) },
   };
 });
+
+const findElement = (node: any, predicate: (element: React.ReactElement) => boolean): React.ReactElement | null => {
+  if (!node) return null;
+
+  if (React.isValidElement(node)) {
+    if (predicate(node)) {
+      return node;
+    }
+
+    const children = React.Children.toArray(node.props?.children);
+    for (const child of children) {
+      const matched = findElement(child, predicate);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const matched = findElement(child, predicate);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+
+  return null;
+};
 
 describe('DefaultSettingsIcon - only static flows are shown', () => {
   beforeEach(() => {
@@ -239,6 +271,67 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       const items = (menu?.items || []) as any[];
       expect(items.some((it) => String(it.key || '') === 'flowB:useAction')).toBe(true);
     });
+  });
+
+  it('keeps disabled legacy step visible with tooltip and blocks click', async () => {
+    class TestFlowModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-disabled', flowEngine: engine });
+    const openSpy = vi.spyOn(model, 'openFlowSettings').mockResolvedValue(undefined as any);
+    const disabledReason = 'This setting has been moved to: Form block settings > Field values';
+
+    TestFlowModel.registerFlow({
+      key: 'flowDisabled',
+      title: 'Flow Disabled',
+      steps: {
+        legacyDefault: {
+          title: 'Default value',
+          disabledInSettings: true,
+          disabledReasonInSettings: disabledReason,
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(App as any, null, React.createElement(DefaultSettingsIcon as any, { model })),
+      ),
+    );
+
+    let disabledItem: any;
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      disabledItem = items.find((it) => String(it.key || '') === 'flowDisabled:legacyDefault');
+      expect(disabledItem).toBeTruthy();
+      expect(disabledItem.disabled).toBe(true);
+    });
+
+    const resolvedLabel =
+      React.isValidElement(disabledItem.label) && typeof disabledItem.label.type === 'function'
+        ? (disabledItem.label.type as any)(disabledItem.label.props)
+        : disabledItem.label;
+
+    const tooltipElement = findElement(
+      resolvedLabel,
+      (element) =>
+        Object.prototype.hasOwnProperty.call(element.props || {}, 'title') && element.props.title === disabledReason,
+    );
+    expect(tooltipElement).toBeTruthy();
+
+    const iconElement = React.isValidElement(tooltipElement) ? tooltipElement.props.children : null;
+    expect(React.isValidElement(iconElement)).toBe(true);
+    expect((iconElement as any).props?.style?.color).toBe(mockColorTextTertiary);
+
+    const menu = (globalThis as any).__lastDropdownMenu;
+    await act(async () => {
+      menu.onClick?.({ key: 'flowDisabled:legacyDefault' });
+    });
+
+    expect(openSpy).not.toHaveBeenCalled();
   });
 
   it('clicking a step item opens flow settings with correct args', async () => {

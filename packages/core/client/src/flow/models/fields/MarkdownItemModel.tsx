@@ -22,10 +22,10 @@ const MarkdownRenderer = ({ ctx, raw, record }) => {
     const run = async () => {
       try {
         // Liquid 渲染
-        const liquid = await ctx.liquid.renderWithFullContext(ctx.t(raw), ctx);
+        const liquid = await ctx.liquid.renderWithFullContext(raw, ctx);
 
         // Markdown 渲染
-        const md = await ctx.markdown.render(ctx.t(liquid), {
+        const md = await ctx.markdown.render(liquid, {
           textOnly: false,
         });
 
