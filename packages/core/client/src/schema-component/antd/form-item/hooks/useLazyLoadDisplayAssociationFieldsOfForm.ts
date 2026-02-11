@@ -142,22 +142,22 @@ function normalizeDisplayAssociationFieldValue(value: any) {
 
 /**
  * Remove circular references from an object while preserving shared references.
- * 
+ *
  * This function distinguishes between:
  * - Circular references: Objects that reference themselves in the recursion path (removed)
  * - Shared references: Objects that appear multiple times but aren't circular (preserved)
- * 
+ *
  * @param value - The value to process
  * @param seen - WeakMap cache of processed objects
  * @param path - WeakSet tracking current recursion path
  * @returns The processed value with circular references removed
- * 
+ *
  * @example
  * // Shared reference (preserved)
  * const shared = { name: "shared" };
  * removeCircularReferences({ a: shared, b: shared });
  * // Returns: { a: { name: "shared" }, b: { name: "shared" } }
- * 
+ *
  * @example
  * // Circular reference (removed)
  * const circular = { name: "circular" };
@@ -165,16 +165,12 @@ function normalizeDisplayAssociationFieldValue(value: any) {
  * removeCircularReferences(circular);
  * // Returns: { name: "circular" }
  */
-export function removeCircularReferences(
-  value: any,
-  seen = new WeakMap<object, any>(),
-  path = new WeakSet<object>(),
-) {
+export function removeCircularReferences(value: any, seen = new WeakMap<object, any>(), path = new WeakSet<object>()) {
   if (value == null || typeof value !== 'object') {
     return value;
   }
 
-  if (!Array.isArray(value) && !_.isPlainObject(value)) {
+  if (!Array.isArray(value) && (!_.isPlainObject(value) || Object.getPrototypeOf(value) === null)) {
     return value;
   }
 
