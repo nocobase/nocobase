@@ -58,7 +58,11 @@ type TableBlockModelStructure = {
 const TableIndex = (props) => {
   const { index, ...otherProps } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
+    <div
+      className={classNames('nb-table-index')}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+      {...otherProps}
+    >
       {index}
     </div>
   );
@@ -68,7 +72,7 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding-right: 0px;
   .nb-table-index {
     opacity: 0;
@@ -388,19 +392,19 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           [rowSelectCheckboxWrapperNoIndexClass]: !this.props.showIndex,
         })}
       >
+        {showDragHandle && (
+          <SortHandle
+            id={rowKeyString}
+            style={{
+              position: 'absolute',
+              left: -24,
+              top: '50%',
+              justifyContent: 'center',
+              transform: 'translateY(-50%)',
+            }}
+          />
+        )}
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-          {showDragHandle && (
-            <SortHandle
-              id={rowKeyString}
-              style={{
-                position: 'absolute',
-                left: -16,
-                top: '50%',
-                justifyContent: 'center',
-                transform: 'translateY(-50%)',
-              }}
-            />
-          )}
           {this.props.showIndex && <TableIndex index={index} />}
         </div>
 
@@ -913,7 +917,7 @@ const HighPerformanceTable = React.memo(
           ? css`
               .ant-table-thead > tr > th.ant-table-selection-column,
               .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding-left: 24px !important;
+                padding-left: 32px !important;
               }
             `
           : undefined;
