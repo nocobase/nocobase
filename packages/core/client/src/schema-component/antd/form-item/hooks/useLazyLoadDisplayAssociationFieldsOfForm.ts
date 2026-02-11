@@ -140,7 +140,7 @@ function normalizeDisplayAssociationFieldValue(value: any) {
   });
 }
 
-function removeCircularReferences(value: any, seen = new WeakMap<object, any>()) {
+function removeCircularReferences(value: any, seen = new WeakSet<object>(), path = new WeakSet<object>()) {
   if (value == null || typeof value !== 'object') {
     return value;
   }
@@ -149,26 +149,49 @@ function removeCircularReferences(value: any, seen = new WeakMap<object, any>())
     return value;
   }
 
-  if (seen.has(value)) {
+  // Check if this object is in the current recursion path (true circular reference)
+  if (path.has(value)) {
     return undefined;
   }
 
-  const result = Array.isArray(value) ? [] : {};
-  seen.set(value, result);
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      result[index] = removeCircularReferences(item, seen);
-    });
+  // If we've seen this object before but it's not in the current path,
+  // it's a shared reference, not a circular one - preserve it by making a shallow copy
+  if (seen.has(value)) {
+    const result = Array.isArray(value) ? [] : {};
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        result[index] = item;
+      });
+    } else {
+      Object.keys(value).forEach((key) => {
+        result[key] = value[key];
+      });
+    }
     return result;
   }
 
-  Object.keys(value).forEach((key) => {
-    const normalized = removeCircularReferences(value[key], seen);
-    if (normalized !== undefined) {
-      result[key] = normalized;
-    }
-  });
+  // Mark as seen and add to current path
+  seen.add(value);
+  path.add(value);
+
+  const result = Array.isArray(value) ? [] : {};
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      result[index] = removeCircularReferences(item, seen, path);
+    });
+  } else {
+    Object.keys(value).forEach((key) => {
+      const normalized = removeCircularReferences(value[key], seen, path);
+      if (normalized !== undefined) {
+        result[key] = normalized;
+      }
+    });
+  }
+
+  // Remove from current path as we exit this recursion level
+  path.delete(value);
+
   return result;
 }
 
