@@ -119,10 +119,16 @@ export class BuiltInManager {
     const updates = this.builtInEmployees.filter((x) => existedUsername.includes(x.username));
     if (updates.length) {
       this.plugin.log.info('update built-in employees');
+      const existedMap = new Map<string, any>(existed.map((it) => [it.username, it.toJSON()]));
       for (const { username, description, skillSettings } of updates) {
+        let { skills } = existedMap.get(username)?.skillSettings ?? { skills: [] };
+        skills = skills.filter((s) => s.name?.startsWith('workflowCaller-'));
+        const mergedSkills = new Set([...skills, ...skillSettings.skills]);
         await aiEmployeesRepo.update({
           values: {
-            skillSettings,
+            skillSettings: {
+              skills: [...mergedSkills],
+            },
             builtIn: true,
           },
           filter: {
