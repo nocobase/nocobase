@@ -45,13 +45,25 @@ export const SuggestionsOptions: React.FC<
   const btnProps = (option: string): ButtonProps =>
     toolCall.selectedSuggestion === option || selected === option ? selectedBtnProps : defaultBtnProps;
 
+  const optionsInArgs: unknown = toolCall.args?.options ?? [];
+  let options = [];
+  if (typeof optionsInArgs === 'string') {
+    try {
+      options = JSON.parse(optionsInArgs);
+    } catch (e) {
+      console.log(`fail to convert args from tool call ${toolCall.name}`, toolCall.args);
+    }
+  } else {
+    options = optionsInArgs as string[];
+  }
+
   return generating ? (
     <Space>
       <Spin indicator={<LoadingOutlined spin />} size="small" /> {t('Generating...')}
     </Space>
   ) : (
     <Flex align="flex-start" gap="middle" wrap={true}>
-      {toolCall.args?.options?.map((option, index) => (
+      {options.map((option, index) => (
         <Button
           key={index}
           disabled={toolCall.invokeStatus !== 'interrupted' || disabled}

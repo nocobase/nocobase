@@ -19,6 +19,7 @@ export interface ChatToolCallActions {
   updateToolCallInvokeStatus: (messageId: string, toolCallId: string, invokeStatus: string) => void;
   isAllWaiting: (messageId: string) => boolean;
   isInterrupted: (messageId: string, toolCallId: string) => boolean;
+  getInvokeStatus: (messageId: string, toolCallId: string) => string;
 }
 const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
   toolCalls: {},
@@ -52,6 +53,11 @@ const store = create<ChatToolCallState & ChatToolCallActions>((set, get) => ({
     const list = get().toolCalls[messageId] ?? [];
     const toolCall = list.find((x) => x.id === toolCallId);
     return toolCall?.invokeStatus === 'interrupted';
+  },
+  getInvokeStatus: (messageId: string, toolCallId: string) => {
+    const list = get().toolCalls[messageId] ?? [];
+    const toolCall = list.find((x) => x.id === toolCallId);
+    return toolCall?.invokeStatus;
   },
 }));
 

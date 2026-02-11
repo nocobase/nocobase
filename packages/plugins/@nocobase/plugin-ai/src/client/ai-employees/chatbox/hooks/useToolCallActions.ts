@@ -20,6 +20,7 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
   const sessionId = useChatConversationsStore.use.currentConversation();
   const aiEmployee = useChatBoxStore.use.currentEmployee();
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
+  const getInvokeStatus = useChatToolCallStore.use.getInvokeStatus();
   const isAllWaiting = useChatToolCallStore.use.isAllWaiting();
   const isInterrupted = useChatToolCallStore.use.isInterrupted();
   const { resumeToolCall } = useChatMessageActions();
@@ -29,6 +30,12 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
 
   const updateUserDecision = async (toolCallId: string, userDecision: UserDecision) => {
     if (!isInterrupted(messageId, toolCallId)) {
+      const invokeStatus = getInvokeStatus(messageId, toolCallId);
+      console.warn('tool call invokeStatus is not interrupted', {
+        messageId,
+        toolCallId,
+        invokeStatus,
+      });
       return;
     }
 
