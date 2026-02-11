@@ -18,7 +18,7 @@ export async function submitHandler(ctx, params) {
   const viewUid = ctx.view.inputArgs?.viewUid;
   const bulkEditActionModel = ctx.engine.getModel(viewUid, true);
   const collectionModel = bulkEditActionModel?.parent;
-  const editModeParams = bulkEditActionModel.getStepParams('bulkEditSettings', 'editMode') || {};
+  const editModeParams = bulkEditActionModel?.getStepParams('bulkEditSettings', 'editMode') || {};
   const updateMode = editModeParams?.value || 'selected';
 
   const updateData: {
@@ -47,9 +47,13 @@ export async function submitHandler(ctx, params) {
     updateData.filter = collectionModel?.resource.getFilter();
   }
 
-  // console.log('bulkEdit params.requestConfig', params.requestConfig, updateData);
 
-  const collection = collectionModel.context.collection;
+  const collection = collectionModel?.context?.collection;
+  if (!collection) {
+    ctx.message.error?.(ctx.t('Collection not found'));
+    ctx.exit?.();
+    return;
+  }
   if (updateData.filter) {
     await ctx.api
       .resource(collection.name, null, {
@@ -65,32 +69,4 @@ export async function submitHandler(ctx, params) {
   }
   ctx.message.success(ctx.t('Saved successfully'));
 
-  // if (resource instanceof SingleRecordResource) {
-  //   if (blockModel instanceof BulkEditFormModel) {
-  //     const currentFilterByTk = resource.getMeta('currentFilterByTk');
-  //     if (!currentFilterByTk) {
-  //       resource.isNewRecord = true; // 设置为新记录
-  //     } else {
-  //       resource.setFilterByTk(currentFilterByTk);
-  //     }
-  //   }
-  //   const data: any = await resource.save(values, params.requestConfig);
-  //   if (blockModel instanceof BulkEditFormModel) {
-  //     resource.isNewRecord = false;
-  //     await resource.refresh();
-  //   } else {
-  //     blockModel.form.resetFields();
-  //     blockModel.emitter.emit('onFieldReset');
-  //     if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
-  //       ctx.view.inputArgs.onChange(data?.data);
-  //     }
-  //   }
-  // } else if (resource instanceof MultiRecordResource) {
-  //   const currentFilterByTk = resource.getMeta('currentFilterByTk');
-  //   if (!currentFilterByTk) {
-  //     ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
-  //     return;
-  //   }
-  //   await resource.update(currentFilterByTk, values, params.requestConfig);
-  // }
 }

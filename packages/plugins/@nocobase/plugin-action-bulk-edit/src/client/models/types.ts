@@ -11,5 +11,5 @@ export enum BulkEditFormItemValueType {
   RemainsTheSame = 1,
   ChangedTo,
   Clear,
-  AddAttach,
+
 }

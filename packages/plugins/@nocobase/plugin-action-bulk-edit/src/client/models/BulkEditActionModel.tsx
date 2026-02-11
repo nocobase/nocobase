@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel, ActionSceneEnum, PopupActionModel, PopupCollectionActionModel } from '@nocobase/client';
+import { ActionSceneEnum, PopupActionModel } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { NAMESPACE, lang } from '../locale';
@@ -67,8 +67,6 @@ BulkEditActionModel.registerFlow({
         value: 'selected',
       },
     },
-    // openModal: {
-    //   async handler(ctx) { },
-    // },
+
   },
 });

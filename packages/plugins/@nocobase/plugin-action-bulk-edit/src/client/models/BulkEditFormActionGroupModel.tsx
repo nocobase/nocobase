@@ -7,13 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormActionGroupModel, ActionGroupModel } from '@nocobase/client';
-// import { AIEmployeeActionModel } from '@nocobase/plugin-ai/client';
+import { ActionGroupModel } from '@nocobase/client';
 import { BulkEditFormSubmitActionModel } from './BulkEditFormSubmitActionModel';
 
 export class BulkEditFormActionGroupModel extends ActionGroupModel {}
 
 BulkEditFormActionGroupModel.registerActionModels({
-  // AIEmployeeActionModel,
   BulkEditFormSubmitActionModel,
 });

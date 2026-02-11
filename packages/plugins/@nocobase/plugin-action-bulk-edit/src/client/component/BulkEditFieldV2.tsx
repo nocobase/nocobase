@@ -8,7 +8,7 @@
  */
 
 import { Select, Space } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { css } from '@emotion/css';
 import _ from 'lodash';
 import { BulkEditFormItemValueType } from '../models/types';

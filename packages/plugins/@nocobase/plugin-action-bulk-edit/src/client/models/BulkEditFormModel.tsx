@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CreateFormModel, EditFormModel, FormBlockModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
+import { CreateFormModel, BlockSceneEnum } from '@nocobase/client';
 import React from 'react';
 import { tExpr } from '@nocobase/flow-engine';
 

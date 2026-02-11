@@ -10,7 +10,7 @@
 import React from 'react';
 import { FormItemModel, FieldModel } from '@nocobase/client';
 import _ from 'lodash';
-import { bulkEditTitleField } from './bulkEditTitleField';
+
 import { BulkEditFieldV2 } from '../component/BulkEditFieldV2';
 import { tExpr, FieldModelRenderer, FormItem } from '@nocobase/flow-engine';
 

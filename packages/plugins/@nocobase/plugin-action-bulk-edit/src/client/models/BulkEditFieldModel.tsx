@@ -14,7 +14,7 @@ import { css } from '@emotion/css';
 import _ from 'lodash';
 import { BulkEditFormItemValueType } from './types';
 import { lang } from '../locale';
-import { ParamObject, StepParams } from '@nocobase/flow-engine';
+
 
 function toFormFieldValue(value: any) {
   if (BulkEditFormItemValueType.Clear in value) {
@@ -47,9 +47,9 @@ const BulkEditField = (props) => {
     } else {
       formItemModel?.setProps({ required: false, rules: [] });
     }
-    const fieldVlaue = toFormFieldValue({ [val]: value });
+    const fieldValue = toFormFieldValue({ [val]: value });
     // onChange?.(fieldVlaue);
-    form.setFieldValue(formItemModel.props.name, fieldVlaue);
+    form.setFieldValue(formItemModel.props.name, fieldValue);
     // form.clearErrors(formItemModel.props.name);
   };
 
@@ -126,7 +126,7 @@ export class BulkEditFieldModel extends FieldModel {
 
   public render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const t = (s) => s;
+
     return (
       <BulkEditField formItemModel={this.parent} bulkEditFieldModel={this} fieldModel={fieldModel} {...this.props} />
     );
@@ -185,28 +185,7 @@ RecordSelectFieldModel.registerAction({
     const original = (titleField as any).hideInSettings;
     return typeof original === 'function' ? await original(ctx) : !!original;
   },
-  // async beforeParamsSave(ctx: any, params: any, previousParams: any) {
-  //   if (isBulkEditContext(ctx)) {
-  //     return;
-  //   }
-  //   const original = (titleField as any).beforeParamsSave;
-  //   if (typeof original === 'function') {
-  //     return original(ctx, params, previousParams);
-  //   }
-  // },
-  // async handler(ctx: any, params: any) {
-  //   if (isBulkEditContext(ctx)) {
-  //     const existing = getBulkEditFieldNames(ctx);
-  //     if (existing?.label && existing?.value) {
-  //       ctx.model.setProps({ fieldNames: existing });
-  //       return;
-  //     }
-  //   }
-  //   const original = (titleField as any).handler;
-  //   if (typeof original === 'function') {
-  //     return original(ctx, params);
-  //   }
-  // },
+
 });
 
 const selectSettingsFlow = RecordSelectFieldModel.globalFlowRegistry?.getFlow?.('selectSettings');
