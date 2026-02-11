@@ -9,7 +9,14 @@
 
 import React from 'react';
 import { cloneDeep, debounce, isEqual } from 'lodash';
-import { CollectionField, FieldModelRenderer, FlowModelContext, FormItem, tExpr } from '@nocobase/flow-engine';
+import {
+  CollectionField,
+  FieldModelRenderer,
+  FlowCancelSaveException,
+  FlowModelContext,
+  FormItem,
+  tExpr,
+} from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
 import { FieldComponentProps } from './FieldComponentProps';
 import { FieldModelSelect } from '../FieldModelSelect';
@@ -25,6 +32,49 @@ const validateRecordSelectRequired = (value: any, _rule: any, ctx: any) => {
   if (value === undefined || value === null || value === '') {
     return 'The field value is required';
   }
+};
+
+const normalizeRecordSelectSettings = (settings: Record<string, any> = {}) => {
+  const allowMultiple = settings?.allowMultiple === undefined ? true : Boolean(settings?.allowMultiple);
+  const multiple = settings?.multiple === undefined ? allowMultiple : Boolean(settings?.multiple);
+  return {
+    recordSelectDataSourceKey: settings?.recordSelectDataSourceKey || 'main',
+    recordSelectTargetCollection: settings?.recordSelectTargetCollection,
+    recordSelectTitleField: settings?.recordSelectTitleField,
+    recordSelectValueField: settings?.recordSelectValueField,
+    valueMode: settings?.valueMode || 'value',
+    allowMultiple,
+    multiple,
+  };
+};
+
+const hasRecordSelectSettingsChanged = (
+  prevSettings: Record<string, any> = {},
+  nextSettings: Record<string, any> = {},
+) => {
+  const prev = normalizeRecordSelectSettings(prevSettings);
+  const next = normalizeRecordSelectSettings(nextSettings);
+  return (
+    prev.recordSelectDataSourceKey !== next.recordSelectDataSourceKey ||
+    prev.recordSelectTargetCollection !== next.recordSelectTargetCollection ||
+    prev.recordSelectTitleField !== next.recordSelectTitleField ||
+    prev.recordSelectValueField !== next.recordSelectValueField ||
+    prev.valueMode !== next.valueMode ||
+    prev.allowMultiple !== next.allowMultiple ||
+    prev.multiple !== next.multiple
+  );
+};
+
+const confirmClearDefaultValue = async (ctx: any) => {
+  if (typeof ctx?.modal?.confirm !== 'function') {
+    return true;
+  }
+  return !!(await ctx.modal.confirm({
+    title: ctx.t('Confirm settings change'),
+    content: ctx.t('Changing Record select settings will clear the default value. Continue?'),
+    okText: ctx.t('Confirm'),
+    cancelText: ctx.t('Cancel'),
+  }));
 };
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
@@ -316,8 +366,42 @@ FilterFormCustomFieldModel.registerFlow({
           name: `f_${uid().slice(0, 4)}`,
         };
       },
+      async beforeParamsSave(ctx, params, previousParams) {
+        const { fieldModel, fieldModelProps = {}, operator } = params;
+        const hasExistingFieldModel = Boolean(ctx.model.customFieldModelInstance);
+        const previousFieldModel = previousParams?.fieldModel ?? ctx.model.customFieldModelInstance?.use;
+        const previousFieldModelProps = previousParams?.fieldModelProps || ctx.model.customFieldProps || {};
+        const previousOperator = previousParams?.operator ?? ctx.model.operator;
+
+        const initialValueParams = ctx.model.getStepParams('formItemSettings', 'initialValue') || {};
+        const hasDefaultValue =
+          typeof initialValueParams?.defaultValue !== 'undefined' ||
+          typeof ctx.model.props?.initialValue !== 'undefined';
+
+        const fieldModelChanged = hasExistingFieldModel && previousFieldModel !== fieldModel;
+        const operatorChanged = hasExistingFieldModel && previousOperator !== operator;
+        const recordSelectSettingsChanged =
+          hasExistingFieldModel &&
+          fieldModel === 'FilterFormCustomRecordSelectFieldModel' &&
+          previousFieldModel === 'FilterFormCustomRecordSelectFieldModel' &&
+          hasRecordSelectSettingsChanged(previousFieldModelProps, fieldModelProps);
+
+        if (hasDefaultValue && (fieldModelChanged || operatorChanged || recordSelectSettingsChanged)) {
+          const confirmed = await confirmClearDefaultValue(ctx);
+          if (!confirmed) {
+            throw new FlowCancelSaveException();
+          }
+          await ctx.model.setStepParams('formItemSettings', 'initialValue', {
+            ...initialValueParams,
+            defaultValue: undefined,
+          });
+          ctx.model.setProps({ initialValue: undefined });
+        }
+      },
+
       handler(ctx, params) {
         const { fieldModel, fieldModelProps = {}, title, name, source = [], operator } = params;
+
         ctx.model.setProps({
           label: title,
           name: name,
