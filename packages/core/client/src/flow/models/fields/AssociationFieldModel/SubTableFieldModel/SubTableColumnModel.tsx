@@ -263,6 +263,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
           const namePath = fieldPath.pop();
 
           const fork: any = action.createFork({}, `${id}`);
+          fork.context.defineProperty('currentObject', { get: () => record });
           if (rowFork) {
             fork.context.defineProperty('item', {
               get: () => rowFork.context.item,

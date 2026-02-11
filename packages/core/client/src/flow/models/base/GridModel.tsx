@@ -704,6 +704,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   // 切换关联字段（Select）时会出现取值永远不更新的问题。
                   // 同时需要透传 resolveOnServer/meta 等配置，避免关联字段子路径失去后端解析能力。
                   const recordOptions = this.context.getPropertyOptions?.('record');
+                  const currentObjectOptions = this.context.getPropertyOptions?.('currentObject');
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -722,6 +723,13 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                             meta: recordOptions?.meta,
                             resolveOnServer: recordOptions?.resolveOnServer,
                             serverOnlyWhenContextParams: recordOptions?.serverOnlyWhenContextParams,
+                          });
+                          fork.context.defineProperty('currentObject', {
+                            get: () => this.context.currentObject,
+                            cache: false,
+                            // meta: currentObjectOptions?.meta,
+                            resolveOnServer: currentObjectOptions?.resolveOnServer,
+                            serverOnlyWhenContextParams: currentObjectOptions?.serverOnlyWhenContextParams,
                           });
                           const { value: _value, ...rest } = (itemOptions || {}) as any;
                           fork.context.defineProperty('item', {
