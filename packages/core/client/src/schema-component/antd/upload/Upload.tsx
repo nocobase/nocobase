@@ -450,7 +450,12 @@ export function AttachmentList(props) {
   const onDelete = useCallback(
     (file) => {
       if (multiple) {
-        onChange(value.filter((item) => item.id !== file.id));
+        const result = value.filter((item) => item.id !== file.id);
+        if (result.length === 0) {
+          onChange(null);
+        } else {
+          onChange(result);
+        }
       } else {
         onChange(null);
       }
