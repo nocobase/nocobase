@@ -640,8 +640,12 @@ describe('FilterForm custom field record select', () => {
     });
 
     const confirm = vi.fn(async () => true);
+    const setFieldValue = vi.fn();
     model.context.defineProperty('modal', {
       value: { confirm },
+    });
+    model.context.defineProperty('form', {
+      value: { setFieldValue },
     });
 
     model.setStepParams('formItemSettings', 'initialValue', {
@@ -684,12 +688,15 @@ describe('FilterForm custom field record select', () => {
     };
 
     const step = model.getFlow('formItemSettings')?.steps?.fieldSettings as any;
+    model.setStepParams('formItemSettings', 'fieldSettings', nextFieldSettings);
     await step.beforeParamsSave(model.context, nextFieldSettings, previousFieldSettings);
     await step.handler(model.context, nextFieldSettings);
 
     expect(confirm).toHaveBeenCalledTimes(1);
+    expect(model.getStepParams('formItemSettings', 'fieldSettings')).toMatchObject(nextFieldSettings);
     expect(model.getStepParams('formItemSettings', 'initialValue')?.defaultValue).toBeUndefined();
     expect(model.props.initialValue).toBeUndefined();
+    expect(setFieldValue).toHaveBeenCalledWith('users', undefined);
   });
 
   it('keeps default value when cancelling record select settings change', async () => {
@@ -757,11 +764,13 @@ describe('FilterForm custom field record select', () => {
     };
 
     const step = model.getFlow('formItemSettings')?.steps?.fieldSettings as any;
+    model.setStepParams('formItemSettings', 'fieldSettings', nextFieldSettings);
     await expect(step.beforeParamsSave(model.context, nextFieldSettings, previousFieldSettings)).rejects.toBeInstanceOf(
       FlowCancelSaveException,
     );
 
     expect(confirm).toHaveBeenCalledTimes(1);
+    expect(model.getStepParams('formItemSettings', 'fieldSettings')).toMatchObject(previousFieldSettings);
     expect(model.getStepParams('formItemSettings', 'initialValue')?.defaultValue).toEqual(['Super Admin']);
     expect(model.props.initialValue).toEqual(['Super Admin']);
     expect(model.customFieldProps?.recordSelectTitleField).toBe('name');

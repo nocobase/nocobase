@@ -387,15 +387,25 @@ FilterFormCustomFieldModel.registerFlow({
           hasRecordSelectSettingsChanged(previousFieldModelProps, fieldModelProps);
 
         if (hasDefaultValue && (fieldModelChanged || operatorChanged || recordSelectSettingsChanged)) {
+          // FlowSettings 保存顺序里会先 setStepParams 再进入 beforeParamsSave。
+          // 这里先回滚，避免确认弹窗未操作时新配置已提前生效。
+          if (previousParams && Object.keys(previousParams).length > 0) {
+            ctx.model.setStepParams('formItemSettings', 'fieldSettings', previousParams);
+          }
+
           const confirmed = await confirmClearDefaultValue(ctx);
           if (!confirmed) {
             throw new FlowCancelSaveException();
           }
+
+          // 用户确认后恢复待保存配置，继续后续保存流程。
+          ctx.model.setStepParams('formItemSettings', 'fieldSettings', params);
           await ctx.model.setStepParams('formItemSettings', 'initialValue', {
             ...initialValueParams,
             defaultValue: undefined,
           });
           ctx.model.setProps({ initialValue: undefined });
+          ctx.model.context.form?.setFieldValue?.(params?.name || ctx.model.props?.name, undefined);
         }
       },
 
