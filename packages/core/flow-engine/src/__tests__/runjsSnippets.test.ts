@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getSnippetBody, listSnippetsForContext, registerRunJSSnippet } from '../runjs-context/snippets';
 
 describe('RunJS Snippets', () => {
@@ -22,7 +22,7 @@ describe('RunJS Snippets', () => {
     it('should return snippet body for global/api-request', async () => {
       const body = await getSnippetBody('global/api-request');
       expect(body).toBeTruthy();
-      expect(body).toContain('ctx.api.request');
+      expect(body).toContain('ctx.request');
     });
 
     it('should throw error for non-existent snippet', async () => {

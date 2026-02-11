@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { RunJSContextRegistry, getRunJSDocFor } from '..';
-import { setupRunJSContexts } from '../runjs-context/setup';
 import { FlowContext } from '../flowContext';
+import { setupRunJSContexts } from '../runjs-context/setup';
 
 describe('Specific RunJSContext implementations', () => {
   beforeAll(async () => {
@@ -87,12 +87,9 @@ describe('Specific RunJSContext implementations', () => {
       expect(doc?.properties?.antd).toBeTruthy();
     });
 
-    it('should have ctx.api.request / ctx.auth.locale / ctx.viewer.drawer in doc', () => {
+    it('should have ctx.auth.locale / ctx.viewer.drawer in doc', () => {
       const ctx: any = { model: { constructor: { name: 'JSBlockModel' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-
-      expect(doc?.properties?.api?.properties?.request).toBeTruthy();
-      expect(doc?.properties?.api?.properties?.request?.completion?.insertText).toContain('ctx.api.request');
 
       expect(doc?.properties?.auth?.properties?.locale).toBeTruthy();
       expect(doc?.properties?.viewer?.properties?.drawer).toBeTruthy();
