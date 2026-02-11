@@ -140,7 +140,11 @@ function normalizeDisplayAssociationFieldValue(value: any) {
   });
 }
 
-function removeCircularReferences(value: any, seen = new WeakSet<object>(), path = new WeakSet<object>()) {
+function removeCircularReferences(
+  value: any,
+  seen = new WeakMap<object, any>(),
+  path = new WeakSet<object>(),
+) {
   if (value == null || typeof value !== 'object') {
     return value;
   }
@@ -155,26 +159,15 @@ function removeCircularReferences(value: any, seen = new WeakSet<object>(), path
   }
 
   // If we've seen this object before but it's not in the current path,
-  // it's a shared reference, not a circular one - preserve it by making a shallow copy
+  // it's a shared reference - return the already-processed (cleaned) version
   if (seen.has(value)) {
-    const result = Array.isArray(value) ? [] : {};
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => {
-        result[index] = item;
-      });
-    } else {
-      Object.keys(value).forEach((key) => {
-        result[key] = value[key];
-      });
-    }
-    return result;
+    return seen.get(value);
   }
 
-  // Mark as seen and add to current path
-  seen.add(value);
-  path.add(value);
-
+  // Mark as seen with a placeholder and add to current path
   const result = Array.isArray(value) ? [] : {};
+  seen.set(value, result);
+  path.add(value);
 
   if (Array.isArray(value)) {
     value.forEach((item, index) => {
