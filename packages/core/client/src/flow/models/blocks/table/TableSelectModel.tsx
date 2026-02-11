@@ -19,20 +19,29 @@ export class TableSelectModel extends TableBlockModel {
     super.onInit(options);
     const collectionField = this.context.view.inputArgs.collectionField || {};
     const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
+    const sourceId = this.context.view.inputArgs.sourceId;
     if (isOToAny) {
-      this.resource.addFilterGroup(`${this.uid}-${collectionField.name}`, {
-        [collectionField.foreignKey]: {
-          $is: null,
-        },
-      });
+      const foreignKey = collectionField.foreignKey;
+      const filterGroupKey = `${this.uid}-${collectionField.name}`;
+      if (foreignKey) {
+        if (sourceId != null) {
+          this.resource.addFilterGroup(filterGroupKey, {
+            $or: [{ [foreignKey]: { $is: null } }, { [foreignKey]: { $eq: sourceId } }],
+          });
+        } else {
+          this.resource.addFilterGroup(filterGroupKey, {
+            [foreignKey]: {
+              $is: null,
+            },
+          });
+        }
+      }
     }
 
     Object.assign(this.rowSelectionProps, this.context.view.inputArgs.rowSelectionProps || {});
-  }
 
-  async onMount() {
-    super.onMount();
-    const selectData = this.rowSelectionProps.defaultSelectedRows();
+    const getSelectedRows = this.rowSelectionProps?.defaultSelectedRows;
+    const selectData = typeof getSelectedRows === 'function' ? getSelectedRows() : getSelectedRows;
     const data = (selectData && castArray(selectData)) || [];
     const filterKeys = data
       .map((v) => {
@@ -42,9 +51,6 @@ export class TableSelectModel extends TableBlockModel {
     this.resource.addFilterGroup(`${this.uid}-select`, {
       [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
     });
-    if (!this.hidden) {
-      await this.resource.refresh();
-    }
   }
 }
 

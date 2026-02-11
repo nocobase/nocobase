@@ -21,7 +21,7 @@ export const titleField = defineAction({
       .filter((field) => isTitleField(dataSourceManager, field.options))
       .map((field) => ({
         value: field.name,
-        label: ctx.t(field.options.uiSchema?.title) || field.name,
+        label: field?.title,
       }));
     return {
       type: 'select',

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.46](https://github.com/nocobase/nocobase/compare/v1.9.45...v1.9.46) - 2026-02-10
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix field component options not refreshed in real time when association field switches pattern ([#8611](https://github.com/nocobase/nocobase/pull/8611)) by @katherinehhh
+
+- **[Data visualization: ECharts]** Fix ECharts spelling error by @heziqiang
+
+- **[Workflow: Approval]**
+  - Fix the issue where values missing from detail popup of "My application" by @mytharcher
+
+  - Fix error thrown when execute on before save mode by @mytharcher
+
+## [v1.9.45](https://github.com/nocobase/nocobase/compare/v1.9.44...v1.9.45) - 2026-02-09
+
+### 🐛 Bug Fixes
+
+- **[Field component: mask]** Fix an issue where the mask field settings popup could not load all user roles correctly. by @gchust
+
+- **[Workflow: Approval]** Fix incorrect id to load detail record by @mytharcher
+
 ## [v1.9.44](https://github.com/nocobase/nocobase/compare/v1.9.43...v1.9.44) - 2026-02-08
 
 ### 🎉 New Features

@@ -46,7 +46,7 @@ const buildCascaderOptions = (ctx, fields: any[], prefix = '', selectedPaths: st
   return fields
     .map((field) => {
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
-      const label = ctx.t(field.title || field.uiSchema?.title) || field.name;
+      const label = field.title || field.name;
       const fullLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
       const isLeaf = !field.target;
 

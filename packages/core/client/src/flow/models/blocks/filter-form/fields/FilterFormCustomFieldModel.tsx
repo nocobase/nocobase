@@ -24,6 +24,7 @@ import { FieldOperatorSelect } from '../FieldOperatorSelect';
 import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } from '../customFieldOperators';
 import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
 import { SourceCascader } from '../SourceCascader';
+import { normalizeFilterValueByOperator } from '../valueNormalization';
 
 const validateRecordSelectRequired = (value: any, _rule: any, ctx: any) => {
   if (ctx?.form?.values?.fieldModel !== 'FilterFormCustomRecordSelectFieldModel') {
@@ -164,14 +165,15 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
       ? this.customFieldModelInstance.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
     const operatorMeta = this.getCurrentOperatorMeta();
+    const normalizedValue = normalizeFilterValueByOperator(this.operator, rawValue);
     if (operatorMeta?.noValue) {
       const options = operatorMeta?.schema?.['x-component-props']?.options;
       if (Array.isArray(options)) {
-        return rawValue;
+        return normalizedValue;
       }
       return true;
     }
-    return rawValue;
+    return normalizedValue;
   }
 
   private getCurrentOperatorMeta() {

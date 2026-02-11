@@ -8,7 +8,13 @@
  */
 
 import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
-import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  FlowModelRenderer,
+  resolveRunJSObjectValues,
+  tExpr,
+  useFlowEngine,
+  useFlowSettingsContext,
+} from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import React, { useEffect, useRef } from 'react';
 import { NAMESPACE } from './locale';
@@ -172,7 +178,15 @@ BulkUpdateActionModel.registerFlow({
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
 
-        const assignedValues = params?.assignedValues || {};
+        let assignedValues: Record<string, any> = {};
+        try {
+          assignedValues = await resolveRunJSObjectValues(ctx, params?.assignedValues);
+        } catch (error) {
+          console.error('[BulkUpdateAction] RunJS execution failed', error);
+          ctx.message.error(ctx.t('RunJS execution failed'));
+          return;
+        }
+
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
           return;
@@ -186,7 +200,6 @@ BulkUpdateActionModel.registerFlow({
         const mode = updateModeParams?.value || 'selected';
         if (mode === 'selected') {
           const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
-          console.log(ctx.blockModel?.resource?.getSelectedRows?.());
           if (!rows.length) {
             ctx.message.error(ctx.t('Please select the records to be updated'));
             return;

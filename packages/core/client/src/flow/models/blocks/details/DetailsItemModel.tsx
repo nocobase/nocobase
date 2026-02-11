@@ -120,6 +120,8 @@ export class DetailsItemModel extends DisplayItemModel<{
     const idx = this.context.fieldIndex;
     const record = this.context.record;
     const currentObject = this.context.currentObject;
+    const item = this.context.item;
+    const itemOptions = this.context.getPropertyOptions('item');
 
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
@@ -135,6 +137,12 @@ export class DetailsItemModel extends DisplayItemModel<{
             });
             fork.context.defineProperty('currentObject', {
               get: () => currentObject,
+              cache: false,
+            });
+            const { value: _value, ...rest } = (itemOptions || {}) as any;
+            fork.context.defineProperty('item', {
+              ...rest,
+              get: () => item,
               cache: false,
             });
             if (this.context.pattern) {
@@ -194,7 +202,7 @@ DetailsItemModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -206,7 +214,8 @@ DetailsItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.title });
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.collectionField?.title };
+        ctx.model.setProps({ label: ctx.t(params.title, options) });
       },
     },
     aclCheck: {
@@ -230,7 +239,7 @@ DetailsItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -242,7 +251,9 @@ DetailsItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ extra: params.description });
+        ctx.model.setProps({
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
+        });
       },
     },
     model: {

@@ -20,8 +20,8 @@ import {
 import { Space, InputNumber, Cascader } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client';
-import React from 'react';
 import { useField, observer } from '@formily/react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MapBlockComponent } from './MapBlockComponent';
 import { NAMESPACE } from '../locale';
 
@@ -119,72 +119,159 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   renderComponent() {
-    const isConfigMode = !!this.context.flowSettingsEnabled;
-
-    return (
-      <div>
-        <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <Space>
-              {this.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position === 'left') {
-                  return (
-                    <FlowModelRenderer
-                      key={action.uid}
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                    />
-                  );
-                }
-
-                return null;
-              })}
-              {/* 占位 */}
-              <span></span>
-            </Space>
-            <Space wrap>
-              {this.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                // @ts-ignore
-                if (action.props.position !== 'left') {
-                  return (
-                    <Droppable model={action} key={action.uid}>
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                }
-
-                return null;
-              })}
-              {this.renderConfigureAction()}
-            </Space>
-          </div>
-        </DndProvider>
-        <MapBlockComponent
-          {...this.props}
-          fields={this.collection.getFields()}
-          name={this.collection.name}
-          primaryKey={this.collection.filterTargetKey}
-          setSelectedRecordKeys={this.setSelectedRecordKeys.bind(this)}
-          dataSource={this.resource.getData()}
-        />
-      </div>
-    );
+    const { heightMode, height } = this.decoratorProps;
+    return <MapBlockContent model={this} heightMode={heightMode} height={height} />;
   }
 }
+
+const getOuterHeight = (element?: HTMLElement | null) => {
+  if (!element) return 0;
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = parseFloat(style.marginTop) || 0;
+  const marginBottom = parseFloat(style.marginBottom) || 0;
+  return rect.height + marginTop + marginBottom;
+};
+
+const useMapHeight = ({
+  heightMode,
+  containerRef,
+  actionsRef,
+  deps = [],
+}: {
+  heightMode?: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  actionsRef: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+}) => {
+  const [mapHeight, setMapHeight] = useState<number>();
+  const calcMapHeight = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setMapHeight((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const containerHeight = container.getBoundingClientRect().height;
+    if (!containerHeight) return;
+    const actionsHeight = getOuterHeight(actionsRef.current);
+    const nextHeight = Math.max(0, Math.floor(containerHeight - actionsHeight));
+    setMapHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [heightMode, containerRef, actionsRef]);
+
+  useLayoutEffect(() => {
+    calcMapHeight();
+  }, [calcMapHeight, ...deps]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
+    const container = containerRef.current;
+    const actions = actionsRef.current;
+    const observer = new ResizeObserver(() => calcMapHeight());
+    observer.observe(container);
+    if (actions) observer.observe(actions);
+    return () => observer.disconnect();
+  }, [calcMapHeight, containerRef, actionsRef, ...deps]);
+
+  return mapHeight;
+};
+
+const MapBlockContent = observer(
+  ({ model, heightMode, height }: { model: MapBlockModel; heightMode?: string; height?: number }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const actionsRef = useRef<HTMLDivElement>(null);
+    const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+    const mapHeight = useMapHeight({
+      heightMode,
+      containerRef,
+      actionsRef,
+      deps: [height],
+    });
+    const mapStyle = useMemo(() => {
+      if (mapHeight == null) return undefined;
+      return { height: mapHeight, overflow: 'auto' };
+    }, [mapHeight]);
+    const containerStyle: any = isFixedHeight
+      ? {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          height: '100%',
+        }
+      : undefined;
+    const isConfigMode = !!model.context.flowSettingsEnabled;
+
+    return (
+      <div ref={containerRef} style={containerStyle}>
+        <div ref={actionsRef}>
+          <DndProvider>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}
+            >
+              <Space>
+                {model.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
+                      <FlowModelRenderer
+                        key={action.uid}
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+                {/* 占位 */}
+                <span></span>
+              </Space>
+              <Space wrap>
+                {model.mapSubModels('actions', (action) => {
+                  if (action.hidden && !isConfigMode) {
+                    return;
+                  }
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <FlowModelRenderer
+                          model={action}
+                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                          extraToolbarItems={[
+                            {
+                              key: 'drag-handler',
+                              component: DragHandler,
+                              sort: 1,
+                            },
+                          ]}
+                        />
+                      </Droppable>
+                    );
+                  }
+
+                  return null;
+                })}
+                {model.renderConfigureAction()}
+              </Space>
+            </div>
+          </DndProvider>
+        </div>
+        <div className="nb-map-content" style={mapStyle}>
+          <MapBlockComponent
+            {...model.props}
+            fields={model.collection.getFields()}
+            name={model.collection.name}
+            primaryKey={model.collection.filterTargetKey}
+            setSelectedRecordKeys={model.setSelectedRecordKeys.bind(model)}
+            dataSource={model.resource.getData()}
+            height={mapHeight ? mapHeight - 5 : null}
+          />
+        </div>
+      </div>
+    );
+  },
+);
 
 const getCollectionFieldsOptions = (
   collectionName: string,
