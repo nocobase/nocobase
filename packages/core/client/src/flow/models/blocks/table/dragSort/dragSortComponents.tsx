@@ -56,7 +56,7 @@ export const SortableRow: React.FC<any> = (props) => {
   const { rowIndex, ...others } = props;
   const isOver = over?.id === id;
   const classObj = useMemo(() => {
-    const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
+    const borderColor = new TinyColor(token.colorPrimary).setAlpha(0.6).toHex8String();
     return {
       topActiveClass: css`
         & > td {
@@ -69,7 +69,7 @@ export const SortableRow: React.FC<any> = (props) => {
         }
       `,
     };
-  }, [token.colorSettings]);
+  }, [token.colorPrimary]);
 
   const className =
     (active?.data.current?.sortable.index ?? -1) > rowIndex ? classObj.topActiveClass : classObj.bottomActiveClass;
