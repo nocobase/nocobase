@@ -74,7 +74,7 @@ export const useChatMessageActions = () => {
             if (toolCalls?.length) {
               for (const tc of toolCalls) {
                 if (tc.willInterrupt) {
-                  updateToolCallInvokeStatus(msg.messageId, tc.id, tc.invokeStatus);
+                  updateToolCallInvokeStatus(msg.content.messageId, tc.id, tc.invokeStatus);
                 }
                 if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
                   const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
