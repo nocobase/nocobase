@@ -78,9 +78,7 @@ export const SortableRow: React.FC<any> = (props) => {
     <DragSortRowContext.Provider value={{ listeners, setActivatorNodeRef }}>
       <tr
         ref={(node) => {
-          if (active?.id !== id) {
-            setNodeRef(node);
-          }
+          setNodeRef(node);
         }}
         {...others}
         className={classNames(props.className, { [className]: active && isOver })}
