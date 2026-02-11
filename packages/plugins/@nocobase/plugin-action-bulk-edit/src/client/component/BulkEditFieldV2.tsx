@@ -10,7 +10,6 @@
 import { Select, Space } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { css } from '@emotion/css';
-import _ from 'lodash';
 import { BulkEditFormItemValueType } from '../models/types';
 import { lang } from '../locale';
 

@@ -28,7 +28,7 @@ BulkEditFormModel.define({
   label: tExpr('Form'),
   children: false,
   createModelOptions: async (ctx, extra) => {
-    const { associationName, collectionName, dataSourceKey } = ctx.view?.inputArgs || {};
+    const { collectionName, dataSourceKey } = ctx.view?.inputArgs || {};
     return {
       use: 'BulkEditFormModel',
       subModels: {

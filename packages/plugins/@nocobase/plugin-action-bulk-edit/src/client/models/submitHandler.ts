@@ -10,7 +10,6 @@ import type { FormBlockModel } from '@nocobase/client';
 import { lang } from '../locale';
 
 export async function submitHandler(ctx, params) {
-  const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
 
   await blockModel.form.validateFields();

@@ -11,6 +11,7 @@ import { FormGridModel } from '@nocobase/client';
 import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
+import { tExpr } from '@nocobase/flow-engine';
 
 export class BulkEditFormGridModel extends FormGridModel {
   // 显示字段的设置项
@@ -34,5 +35,5 @@ export class BulkEditFormGridModel extends FormGridModel {
   }
 }
 BulkEditFormGridModel.define({
-  label: 'Bulk Edit Form Grid',
+  label: tExpr('Bulk Edit Form Grid'),
 });
