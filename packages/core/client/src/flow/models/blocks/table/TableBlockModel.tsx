@@ -108,6 +108,12 @@ const rowSelectCheckboxCheckedClassHover = css`
   }
 `;
 
+const rowSelectCheckboxWrapperNoIndexClass = css`
+  .nb-origin-node {
+    display: block;
+  }
+`;
+
 const highlightedRowClass = css`
   & td {
     background-color: #e6f7ff !important;
@@ -379,6 +385,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         aria-label={`table-index-${index}`}
         className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
           [rowSelectCheckboxWrapperClassHover]: true,
+          [rowSelectCheckboxWrapperNoIndexClass]: !this.props.showIndex,
         })}
       >
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
@@ -387,7 +394,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
               id={rowKeyString}
               style={{
                 position: 'absolute',
-                left: -12,
+                left: -16,
                 top: '50%',
                 justifyContent: 'center',
                 transform: 'translateY(-50%)',
@@ -906,7 +913,7 @@ const HighPerformanceTable = React.memo(
           ? css`
               .ant-table-thead > tr > th.ant-table-selection-column,
               .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding-left: 20px !important;
+                padding-left: 24px !important;
               }
             `
           : undefined;
