@@ -126,7 +126,7 @@ const ToolCallRow: React.FC<{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '6px 12px',
+          padding: '6px 12px 0',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -183,7 +183,7 @@ export const DefaultToolCard: React.FC<{
     !toolCalls.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
 
   return (
-    <Flex vertical gap={8}>
+    <Flex vertical>
       {toolCalls.map((toolCall) => (
         <ToolCallRow key={toolCall.id} toolCall={toolCall} toolsMap={toolsMap} />
       ))}

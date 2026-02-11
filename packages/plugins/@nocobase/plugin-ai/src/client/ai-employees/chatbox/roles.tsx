@@ -24,7 +24,7 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
     styles: {
       content: {
         maxWidth: '80%',
-        margin: '0 8px 0 0',
+        margin: '0 8px 8px 0',
       },
     },
     variant: 'borderless',
@@ -71,7 +71,7 @@ export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   styles: {
     content: {
       width: '95%',
-      margin: '8px 16px 0',
+      margin: '8px 16px',
       marginInlineEnd: 16,
       minHeight: 0,
     },
