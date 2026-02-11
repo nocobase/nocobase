@@ -87,6 +87,8 @@ export function useDragSortBodyWrapper(
             })
             .catch((error) => {
               console.error('Move failed:', error);
+              // Show a user-facing error message if the message system is available
+              (model as any)?.ctx?.message?.error?.(error?.message || 'Move failed');
             });
         }
       };
