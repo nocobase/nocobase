@@ -141,6 +141,12 @@ if (baseEditItemSettingsFlow) {
   const { key, steps, ...rest } = data as any;
   // 过滤掉不需要的配置项，但保留 titleField 以便我们可以替换它
   const { initialValue, required, validation, pattern, ...filteredSteps } = (steps || {}) as Record<string, any>;
+  if (filteredSteps?.model) {
+    filteredSteps.model = {
+      ...filteredSteps.model,
+      use: 'bulkEditFieldComponent',
+    };
+  }
   // 替换 titleField 为我们的 bulkEditTitleField
   // if (filteredSteps?.titleField) {
   //   filteredSteps.titleField = {

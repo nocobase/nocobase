@@ -145,6 +145,11 @@ const isBulkEditContext = (ctx: any) => {
   return grandParent?.constructor?.name === 'BulkEditFormItemModel';
 };
 
+const isBulkEditScene = (ctx: any) => {
+  const blockModel = ctx?.blockModel || ctx?.model?.context?.blockModel || ctx?.model?.parent?.context?.blockModel;
+  return !!blockModel?.constructor?._isScene?.('bulkEditForm');
+};
+
 const getBulkEditFieldNames = (ctx: any) => {
   const own = ctx?.model?.props?.fieldNames;
   if (own?.label && own?.value) {
@@ -203,3 +208,20 @@ RecordSelectFieldModel.registerAction({
   //   }
   // },
 });
+
+const selectSettingsFlow = RecordSelectFieldModel.globalFlowRegistry?.getFlow?.('selectSettings');
+const quickCreateStep = selectSettingsFlow?.getStep?.('quickCreate');
+if (quickCreateStep) {
+  const existing = quickCreateStep.serialize();
+  const originalHide = existing.hideInSettings;
+  if (!(originalHide as any)?.__bulkEditWrapped) {
+    const wrappedHide = (ctx: any) => {
+      if (isBulkEditContext(ctx) || isBulkEditScene(ctx)) {
+        return true;
+      }
+      return typeof originalHide === 'function' ? originalHide(ctx) : !!originalHide;
+    };
+    (wrappedHide as any).__bulkEditWrapped = true;
+    quickCreateStep.setOptions({ hideInSettings: wrappedHide });
+  }
+}
