@@ -9,7 +9,7 @@
 
 import { tExpr } from '@nocobase/flow-engine';
 import type { TableBlockModel } from '../TableBlockModel';
-import { convertFieldsToOptions, getFirstSortField, getSortFields } from './dragSortUtils';
+import { convertFieldsToOptions, getSortFields } from './dragSortUtils';
 
 export const dragSortSettings = {
   title: tExpr('Enable drag and drop sorting'),
@@ -21,20 +21,8 @@ export const dragSortSettings = {
     const model = ctx.model as TableBlockModel;
     model.setProps('dragSort', params.dragSort);
 
-    // 如果启用拖拽排序，自动查找并设置 sort 字段
-    // if (params.dragSort) {
-    //   const collection = model.collection;
-    //   const sortField = getFirstSortField(collection);
-
-    //   if (sortField) {
-    //     // 自动设置 dragSortBy 参数
-    //     model.setStepParams('tableSettings', 'dragSortBy', {
-    //       dragSortBy: sortField.name,
-    //     });
-    //     model.setProps('dragSortBy', sortField.name);
-    //     model.resource.setSort([sortField.name]);
-    //   }
-    // }
+    // Note: automatic configuration of the drag sort field has been removed;
+    // users now configure `dragSortBy` explicitly via `dragSortBySettings`.
   },
 };
 

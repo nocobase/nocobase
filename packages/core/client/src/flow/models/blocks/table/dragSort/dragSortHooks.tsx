@@ -10,7 +10,7 @@
 import { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
 import { DndProvider } from '@nocobase/flow-engine';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { TableBlockModel } from '../TableBlockModel';
 import { getRowKey } from '../utils';
 import { SortableRow } from './dragSortComponents';
@@ -79,7 +79,7 @@ export function useDragSortBodyWrapper(
               params: {
                 sourceId: getRowKey(from, model.collection.filterTargetKey),
                 targetId: getRowKey(to, model.collection.filterTargetKey),
-                sortField: model.props.dragSort && model.props.dragSortBy,
+                sortField: model.props.dragSort ? model.props.dragSortBy : undefined,
               },
             })
             .then(() => {
