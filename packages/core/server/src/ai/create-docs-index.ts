@@ -382,8 +382,8 @@ async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<st
         await fs.ensureDir(path.dirname(storageDocPath));
         let processedContent = rewriteRelativeLinks(entry.content, entry);
 
-        const { splits } = splitMarkdownIfNeeded(processedContent, entry);
-        const splitRefs = splits.map((split, index) => {
+        const splitResult = splitMarkdownIfNeeded(processedContent, entry);
+        const splitRefs = splitResult.splits.map((split, index) => {
           const splitRelativePath = entry.relativePath.replace(/\.mdx?$/i, '') + split.suffix;
           const splitCanonicalPath = path.posix.join(entry.moduleName, splitRelativePath.split(path.sep).join('/'));
           return {
@@ -393,6 +393,8 @@ async function buildDocsIndexForPackages(packageNames: string[]): Promise<Map<st
             ...split,
           };
         });
+
+        processedContent = splitResult.content;
 
         if (entry.isIndex) {
           processedContent = applyReferencesToIndex(
@@ -622,44 +624,125 @@ function splitByHeadings(body: string) {
 function splitExamples(body: string) {
   const codeRegex = /```[\s\S]*?```/g;
   const headingRegex = /^(#{2,3})\s+(.+)$/gm;
-  const headings: Array<{ index: number; level: number; text: string }> = [];
+  const headings: Array<{ index: number; level: number; text: string; key: string }> = [];
   for (const match of body.matchAll(headingRegex)) {
+    const raw = normalizeHeadingText(match[0]);
+    const key = raw.toLowerCase();
     headings.push({
       index: match.index ?? 0,
       level: match[1].length,
-      text: normalizeHeadingText(match[0]),
+      text: raw,
+      key,
     });
   }
 
   const examples: Array<{ heading: string; content: string }> = [];
-  for (const match of body.matchAll(codeRegex)) {
+  const excludeKeys = new Set([
+    'type definition',
+    'type definition (simplified)',
+    'parameters',
+    'return value',
+    '类型定义',
+    '参数',
+    '返回值',
+  ]);
+  const codeMatches = Array.from(body.matchAll(codeRegex));
+  const exampleCodeRanges: Array<{ start: number; end: number }> = [];
+  const exampleSectionRanges: Array<{ start: number; end: number }> = [];
+
+  for (const match of codeMatches) {
     const code = match[0];
     const index = match.index ?? 0;
-    const heading = headings.filter((item) => item.index < index).slice(-1)[0]?.text || '';
+    const priorHeadings = headings.filter((item) => item.index < index);
+    const currentH2 = priorHeadings.filter((item) => item.level === 2).slice(-1)[0];
+    const currentH3 = priorHeadings.filter((item) => item.level === 3).slice(-1)[0];
+    const h2Key = currentH2?.key || '';
+    const h3Key = currentH3?.key || '';
+
+    if (excludeKeys.has(h2Key) || excludeKeys.has(h3Key)) {
+      continue;
+    }
+
+    const heading = currentH3?.text || currentH2?.text || '';
     examples.push({ heading, content: code });
+    exampleCodeRanges.push({ start: index, end: index + code.length });
+    if (currentH3 || currentH2) {
+      const anchor = currentH3 || currentH2;
+      const nextHeadingIndex =
+        headings.filter((item) => item.index > anchor.index && item.level <= anchor.level).slice(0, 1)[0]?.index ??
+        body.length;
+      exampleSectionRanges.push({ start: anchor.index, end: nextHeadingIndex });
+    }
   }
 
-  return examples;
+  let cleanedBody = body;
+  if (exampleSectionRanges.length) {
+    const ranges = exampleSectionRanges
+      .sort((a, b) => a.start - b.start)
+      .filter((range, index, list) => index === 0 || range.start >= list[index - 1].end);
+    let result = '';
+    let last = 0;
+    for (const range of ranges) {
+      result += body.slice(last, range.start);
+      last = range.end;
+    }
+    result += body.slice(last);
+    cleanedBody = result;
+  } else if (exampleCodeRanges.length) {
+    const ranges = exampleCodeRanges
+      .sort((a, b) => a.start - b.start)
+      .filter((range, index, list) => index === 0 || range.start >= list[index - 1].end);
+    let result = '';
+    let last = 0;
+    for (const range of ranges) {
+      result += body.slice(last, range.start);
+      last = range.end;
+    }
+    result += body.slice(last);
+    cleanedBody = result;
+  }
+
+  return { examples, cleanedBody };
 }
 
 function splitMarkdownIfNeeded(content: string, entry: DocEntryMeta) {
-  const { body } = splitFrontMatter(content);
-  const hasTypeDefinition = /##\s+(Type definition|Type definition \(simplified\)|类型定义)/i.test(body);
-  if (hasTypeDefinition) {
-    return { splits: [] as Array<{ suffix: string; title: string; description: string; content: string }> };
-  }
+  const { body, frontMatter, hasFrontMatter } = splitFrontMatter(content);
   const bodyLength = body.trim().length;
   const codeBlocks = countCodeBlocks(body);
   const shouldSplitByLength = bodyLength > SPLIT_MAX_LENGTH;
   const shouldSplitByExamples = codeBlocks > SPLIT_MAX_CODE_BLOCKS;
   if (!shouldSplitByLength && !shouldSplitByExamples) {
-    return { splits: [] as Array<{ suffix: string; title: string; description: string; content: string }> };
+    return {
+      splits: [] as Array<{ suffix: string; title: string; description: string; content: string }>,
+      content,
+    };
   }
 
   const h1 = getPrimaryHeading(body) || entry.title;
   const splits: Array<{ suffix: string; title: string; description: string; content: string }> = [];
+  let nextBody = body;
+  let didSplitByExamples = false;
 
-  if (shouldSplitByLength) {
+  if (shouldSplitByExamples) {
+    const { examples, cleanedBody } = splitExamples(body);
+    if (examples.length) {
+      didSplitByExamples = true;
+      nextBody = cleanedBody;
+      examples.forEach((example, index) => {
+        const headingLine = example.heading ? `## ${example.heading}\n\n` : '';
+        const exampleContent = `# ${h1}\n\n${headingLine}${example.content}\n`;
+        const title = example.heading ? `${example.heading} Example` : `${h1} Example ${index + 1}`;
+        splits.push({
+          suffix: `__example-${index + 1}.md`,
+          title,
+          description: `Extracted example from ${entry.title}`,
+          content: exampleContent,
+        });
+      });
+    }
+  }
+
+  if (shouldSplitByLength && !didSplitByExamples) {
     const sections = splitByHeadings(body);
     sections.forEach((section, index) => {
       const headingLine = `${'#'.repeat(section.level)} ${section.heading}`;
@@ -675,22 +758,8 @@ function splitMarkdownIfNeeded(content: string, entry: DocEntryMeta) {
     });
   }
 
-  if (shouldSplitByExamples) {
-    const examples = splitExamples(body);
-    examples.forEach((example, index) => {
-      const headingLine = example.heading ? `## ${example.heading}\n\n` : '';
-      const exampleContent = `# ${h1}\n\n${headingLine}${example.content}\n`;
-      const title = example.heading ? `${example.heading} Example` : `${h1} Example ${index + 1}`;
-      splits.push({
-        suffix: `__example-${index + 1}.md`,
-        title,
-        description: `Extracted example from ${entry.title}`,
-        content: exampleContent,
-      });
-    });
-  }
-
-  return { splits };
+  const rebuilt = hasFrontMatter ? `${frontMatter}${nextBody}` : nextBody;
+  return { splits, content: rebuilt };
 }
 
 function applySplitReferences(content: string, splits: Array<{ pathRef: string; title: string; description: string }>) {
