@@ -105,14 +105,14 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
           const result = normalizeDisplayAssociationFieldValue(
             transformVariableValue(value, { targetCollectionField: collectionFieldRef.current }),
           );
-          const currentComparableValue = normalizeDisplayAssociationFieldValue(
-            transformVariableValue(field.value, { targetCollectionField: collectionFieldRef.current }),
-          );
           if (result == null) {
             if (field.value != null) {
               field.value = null;
             }
           } else {
+            const currentComparableValue = normalizeDisplayAssociationFieldValue(
+              transformVariableValue(field.value, { targetCollectionField: collectionFieldRef.current }),
+            );
             if (_.isEqual(currentComparableValue, result)) {
               return;
             }
