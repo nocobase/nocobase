@@ -317,6 +317,14 @@ export const DefaultValue = connect((props: Props) => {
   const tempRoot = useMemo(() => {
     const host = model;
     const origin = host?.customFieldModelInstance || host?.subModels?.field;
+    const originProps = (origin?.props || {}) as Record<string, any>;
+    const hostCustomFieldProps = (host?.customFieldProps || {}) as Record<string, any>;
+    const { value: _originValue, defaultValue: _originDefaultValue, ...originPropsWithoutValue } = originProps;
+    const {
+      value: _customValue,
+      defaultValue: _customDefaultValue,
+      ...hostCustomFieldPropsWithoutValue
+    } = hostCustomFieldProps;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
     // 解析 collectionField（优先使用原字段上的引用；必要时从 dataSourceManager 回落）
     let collectionField = origin?.collectionField as any;
@@ -371,7 +379,13 @@ export const DefaultValue = connect((props: Props) => {
         ...(origin?.stepParams || {}),
         ...(init ? { fieldSettings: { init } } : {}),
       },
-      props: { disabled: false, allowClear: true, ...(origin?.props || {}), ...host?.customFieldProps },
+      // 默认值编辑器不应继承原字段当前值，否则会把“筛选表单实时值”误显示为“默认值”。
+      props: {
+        disabled: false,
+        allowClear: true,
+        ...originPropsWithoutValue,
+        ...hostCustomFieldPropsWithoutValue,
+      },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',

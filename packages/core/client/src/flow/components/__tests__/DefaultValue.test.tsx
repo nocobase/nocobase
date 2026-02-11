@@ -885,6 +885,73 @@ describe('DefaultValue component', () => {
     expect(callArg).toEqual(['A', 'C']);
   });
 
+  it('default editor should not inherit runtime value from original field props', async () => {
+    const onChange = vi.fn();
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+      }
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: {
+        name: 'user',
+        value: undefined,
+        onChange,
+        metaTree: simpleMetaTree,
+      },
+      subModels: {
+        field: {
+          use: 'RecordSelectFieldModel',
+          props: {
+            value: [1, 2],
+            defaultValue: [1, 2],
+            fieldNames: { label: 'name', value: 'id' },
+            options: [
+              { id: 1, name: 'Super Admin', value: 1, label: 'Super Admin' },
+              { id: 2, name: 'user1', value: 2, label: 'user1' },
+            ],
+          },
+        },
+      },
+    });
+
+    host.context.defineProperty('collectionField', {
+      value: {
+        interface: 'm2m',
+        type: 'belongsToMany',
+        fieldNames: { label: 'name', value: 'id' },
+        isAssociationField: () => true,
+        targetCollection: {
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+
+    // 默认值弹窗在默认值为空时，不应使用原字段运行时值作为初始值
+    expect(fieldModel.props?.value).toBeUndefined();
+    expect(fieldModel.props?.defaultValue).toBeUndefined();
+  });
+
   it('richText constant editor: supports typing (host.setProps mirror not required)', async () => {
     const onChange = vi.fn();
     const origCreate = engine.createModel.bind(engine);
