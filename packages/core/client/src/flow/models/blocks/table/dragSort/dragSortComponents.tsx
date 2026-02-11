@@ -47,12 +47,7 @@ export const SortHandle: React.FC<{ id: string | number; style?: React.CSSProper
   );
 };
 
-interface SortableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
-  'data-row-key'?: string | number;
-  rowIndex: number;
-}
-
-export const SortableRow: React.FC<SortableRowProps> = (props) => {
+export const SortableRow = (props) => {
   const { token }: any = theme.useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, setActivatorNodeRef, attributes, listeners, active, over } = useSortable({
