@@ -34,8 +34,10 @@ FilterFormResetActionModel.registerFlow({
 
         // 等待表单值被清空
         setTimeout(() => {
-          fieldModels.forEach((fieldModel) => {
-            fieldModel.doReset();
+          void blockModel.applyFormDefaultValues?.({ force: true }).finally(() => {
+            fieldModels.forEach((fieldModel) => {
+              fieldModel.doReset();
+            });
           });
         });
       },

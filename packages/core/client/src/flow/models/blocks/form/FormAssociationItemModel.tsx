@@ -245,7 +245,7 @@ FormAssociationItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.title });
+        ctx.model.setProps({ label: ctx.t(params.title, { ns: 'lm-flow-engine' }) });
       },
     },
     aclCheck: {
@@ -269,7 +269,7 @@ FormAssociationItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -281,7 +281,9 @@ FormAssociationItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ extra: params.description });
+        ctx.model.setProps({
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
+        });
       },
     },
     model: {

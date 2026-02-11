@@ -19,9 +19,11 @@ import { Empty } from 'antd';
 import _, { debounce } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
+import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { FilterManager } from '../filter-manager';
+import { normalizeFilterValueByOperator } from './valueNormalization';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
@@ -199,16 +201,21 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const fieldValue = this.subModels.field.getFilterValue
-      ? this.subModels.field.getFilterValue()
+    const fieldModel = this.subModels.field as FieldModel & { getFilterValue?: () => any };
+    const fieldValue = fieldModel.getFilterValue
+      ? fieldModel.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
 
     let rawValue = fieldValue;
 
     if (!this.mounted) {
-      rawValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+      if (_.isEmpty(fieldValue)) {
+        rawValue = this.getDefaultValue();
+      }
     }
 
+    const operator = getDefaultOperator(this);
+    rawValue = this.normalizeAssociationFilterValue(rawValue, fieldModel);
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
       const options = operatorMeta?.schema?.['x-component-props']?.options;
@@ -218,7 +225,30 @@ export class FilterFormItemModel extends FilterableItemModel<{
       return true;
     }
 
-    return rawValue;
+    return normalizeFilterValueByOperator(operator, rawValue);
+  }
+
+  normalizeAssociationFilterValue(value: any, fieldModel: FieldModel) {
+    if (value === null || typeof value === 'undefined') {
+      return value;
+    }
+    const collectionField = (fieldModel as any)?.context?.collectionField;
+    const isAssociation =
+      typeof collectionField?.isAssociationField === 'function'
+        ? collectionField.isAssociationField()
+        : !!collectionField?.target;
+    if (!isAssociation) {
+      return value;
+    }
+    const valueKey = collectionField?.targetKey || collectionField?.targetCollection?.filterTargetKey || 'id';
+    if (Array.isArray(value)) {
+      if (value.length === 0) return value;
+      return value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
+    }
+    if (typeof value === 'object') {
+      return (value as any)?.[valueKey];
+    }
+    return value;
   }
 
   getDefaultValue() {
@@ -279,7 +309,7 @@ FilterFormItemModel.registerFlow({
               const originTitle = model.collectionField?.title || ctx.filterField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -291,7 +321,11 @@ FilterFormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        if (params.label && params.label === ctx.collectionField?.title) {
+          ctx.model.setProps({ label: params.label });
+        } else {
+          ctx.model.setProps({ label: ctx.t(params.label, { ns: 'lm-flow-engine' }) });
+        }
       },
     },
     // aclCheck: {
@@ -302,10 +336,16 @@ FilterFormItemModel.registerFlow({
         const collectionField = ctx.model.collectionField;
         if (collectionField?.getComponentProps) {
           const componentProps = collectionField.getComponentProps();
-          const { rules, required, ...restProps } = componentProps || {};
+          const fieldModel = ctx.model.subModels?.field;
+          const shouldIgnoreMultiple = fieldModel instanceof RecordSelectFieldModel;
+          const { rules, required, multiple, allowMultiple, maxCount, ...restProps } = componentProps || {};
 
           // 筛选表单不继承字段的后端校验
-          ctx.model.setProps({ ...restProps, rules: undefined, required: undefined });
+          ctx.model.setProps({
+            ...(shouldIgnoreMultiple ? restProps : { ...restProps, multiple, allowMultiple, maxCount }),
+            rules: undefined,
+            required: undefined,
+          });
         }
         ctx.model.setProps({
           name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
@@ -335,7 +375,7 @@ FilterFormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -347,11 +387,17 @@ FilterFormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ extra: params.description });
+        ctx.model.setProps({
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
+        });
       },
     },
     initialValue: {
       title: tExpr('Default value'),
+      // 默认值已统一到筛选表单级“默认值”配置，此处仅保留旧配置兼容读取（禁用入口）
+      disabledInSettings: true,
+      disabledReasonInSettings: (ctx) =>
+        `${ctx.t('This setting has been moved to')}: ${ctx.t('Form block settings')} > ${ctx.t('Field values')}`,
       uiSchema: (ctx) => {
         const baseFlags = ctx?.model?.context?.flags || {};
         const flags = { ...baseFlags, isInSetDefaultValueDialog: true };

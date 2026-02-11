@@ -24,6 +24,17 @@ const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
 const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr'];
 
+const langMap = {
+  en: 'en-US',
+  cn: 'zh-CN',
+  ja: 'ja-JP',
+  ko: 'ko-KR',
+  es: 'es-ES',
+  pt: 'pt-PT',
+  de: 'de-DE',
+  fr: 'fr-FR',
+};
+
 function sitemap(): RspressPlugin {
   const routes = new Set<string>();
 
@@ -67,11 +78,12 @@ function sitemap(): RspressPlugin {
           for (const language of indexLanguages) {
             if (language === 'en') {
               links.push(
-                `    <xhtml:link rel="alternate" hreflang="en" href="${baseDomain}${routePath}" />`,
+                `    <xhtml:link rel="alternate" hreflang="en-US" href="${baseDomain}${routePath}" />`,
               );
             } else {
+              const hreflang = langMap[language as keyof typeof langMap];
               links.push(
-                `    <xhtml:link rel="alternate" hreflang="${language}" href="${baseDomain}/${language}${routePath}" />`,
+                `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${baseDomain}/${language}${routePath}" />`,
               );
             }
           }
@@ -120,9 +132,10 @@ export default defineConfig({
       const links = [];
       links.push(...indexLanguages.map(language => {
         if (language === 'en') {
-          return `<link rel="alternate" hreflang="en" href="https://v2.docs.nocobase.com${route.routePath}" />`;
+          return `<link rel="alternate" hreflang="en-US" href="https://v2.docs.nocobase.com${route.routePath}" />`;
         }
-        return `<link rel="alternate" hreflang="${language}" href="https://v2.docs.nocobase.com/${language}${route.routePath}" />`
+        const hreflang = langMap[language as keyof typeof langMap];
+        return `<link rel="alternate" hreflang="${hreflang}" href="https://v2.docs.nocobase.com/${language}${route.routePath}" />`
       }));
       links.push(`<link rel="alternate" hreflang="x-default" href="https://v2.docs.nocobase.com${route.routePath}" />`);
       return links.join('\n');

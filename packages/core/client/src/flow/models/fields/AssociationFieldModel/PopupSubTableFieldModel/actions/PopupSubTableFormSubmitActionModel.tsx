@@ -10,6 +10,7 @@
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionGroupModel, ActionModel } from '../../../../base';
+import { omitHiddenModelValuesFromSubmit } from '../../../../blocks/form/submitValues';
 
 function matchPath(paths: string[], key: string) {
   return paths.find((p) => p === key || p.endsWith(`.${key}`)) ?? key;
@@ -43,8 +44,8 @@ PopupSubTableFormSubmitActionModel.registerFlow({
           try {
             await ctx.form.validateFields();
             const confirmed = await ctx.modal.confirm({
-              title: ctx.t(params.title),
-              content: ctx.t(params.content),
+              title: ctx.t(params.title, { ns: 'lm-flow-engine' }),
+              content: ctx.t(params.content, { ns: 'lm-flow-engine' }),
               okText: ctx.t('Confirm'),
               cancelText: ctx.t('Cancel'),
             });
@@ -70,7 +71,8 @@ PopupSubTableFormSubmitActionModel.registerFlow({
         const prefixPath = matchPath(parentUpdateAssociations, associationName);
         try {
           await blockModel.form.validateFields();
-          const values = blockModel.form.getFieldsValue(true);
+          const rawValues = blockModel.form.getFieldsValue(true);
+          const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
           subTableModel.dispatchEvent('updateRow', {
             updatedRecord: values,
           });

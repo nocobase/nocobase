@@ -389,7 +389,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   registerApp({ appModel, mainApp, hook }: { appModel: AppModel; mainApp?: Application; hook?: boolean }) {
     const appName = appModel.name;
-    const appOptions = appModel.options || {};
+    const appOptions = lodash.cloneDeep(appModel.options || {});
     if (this.aesEncryptor && appOptions?.encryptedDbPassword) {
       try {
         _.set(appOptions, 'database.password', this.aesEncryptor.decryptSync(appOptions.database.password));

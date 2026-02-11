@@ -22,7 +22,7 @@ import { Pagination, Space } from 'antd';
 import { isEqual } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
-import { FormBlockModel, FormComponent } from './FormBlockModel';
+import { FormBlockContent, FormBlockModel } from './FormBlockModel';
 import { submitHandler } from './submitHandler';
 import { dispatchEventDeep } from '../../../utils';
 
@@ -87,49 +87,59 @@ export class EditFormModel extends FormBlockModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const { heightMode, height } = this.decoratorProps;
+    const footer =
+      this.isMultiRecordResource() && this.resource.getMeta('count') > 1 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: 16,
+          }}
+        >
+          <Pagination
+            simple
+            pageSize={1}
+            showSizeChanger={false}
+            defaultCurrent={(this.resource as MultiRecordResource).getPage()}
+            total={(this.resource as MultiRecordResource).getTotalPage()}
+            onChange={this.handlePageChange}
+            style={{ display: 'inline-block' }}
+          />
+        </div>
+      ) : null;
 
     return (
-      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        <DndProvider>
-          <Space wrap>
-            {this.mapSubModels('actions', (action) => {
-              if (action.hidden && !isConfigMode) {
-                return;
-              }
-              return (
-                <Droppable model={action} key={action.uid}>
-                  <MemoFlowModelRenderer
-                    key={action.uid}
-                    model={action}
-                    showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
-                    extraToolbarItems={this.actionExtraToolbarItems}
-                  />
-                </Droppable>
-              );
-            })}
-            {this.renderConfigureActions()}
-          </Space>
-        </DndProvider>
-        {this.isMultiRecordResource() && this.resource.getMeta('count') > 1 && (
-          <div
-            style={{
-              textAlign: 'center',
-              marginTop: 16,
-            }}
-          >
-            <Pagination
-              simple
-              pageSize={1}
-              showSizeChanger={false}
-              defaultCurrent={(this.resource as MultiRecordResource).getPage()}
-              total={(this.resource as MultiRecordResource).getTotalPage()}
-              onChange={this.handlePageChange}
-              style={{ display: 'inline-block' }}
-            />
-          </div>
-        )}
-      </FormComponent>
+      <FormBlockContent
+        model={this}
+        gridModel={this.subModels.grid}
+        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
+        heightMode={heightMode}
+        height={height}
+        grid={<FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />}
+        actions={
+          <DndProvider>
+            <Space wrap>
+              {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
+                return (
+                  <Droppable model={action} key={action.uid}>
+                    <MemoFlowModelRenderer
+                      key={action.uid}
+                      model={action}
+                      showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
+                      extraToolbarItems={this.actionExtraToolbarItems}
+                    />
+                  </Droppable>
+                );
+              })}
+              {this.renderConfigureActions()}
+            </Space>
+          </DndProvider>
+        }
+        footer={footer}
+      />
     );
   }
 }
