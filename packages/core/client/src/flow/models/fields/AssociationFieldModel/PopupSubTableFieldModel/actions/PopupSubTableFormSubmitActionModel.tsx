@@ -44,8 +44,8 @@ PopupSubTableFormSubmitActionModel.registerFlow({
           try {
             await ctx.form.validateFields();
             const confirmed = await ctx.modal.confirm({
-              title: ctx.t(params.title),
-              content: ctx.t(params.content),
+              title: ctx.t(params.title, { ns: 'lm-flow-engine' }),
+              content: ctx.t(params.content, { ns: 'lm-flow-engine' }),
               okText: ctx.t('Confirm'),
               cancelText: ctx.t('Cancel'),
             });

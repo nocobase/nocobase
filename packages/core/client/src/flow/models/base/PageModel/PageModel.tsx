@@ -400,10 +400,10 @@ PageModel.registerFlow({
       async handler(ctx, params) {
         ctx.model.setProps('displayTitle', params.displayTitle);
         if (ctx.model.context.closable) {
-          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
+          ctx.model.setProps('title', ctx.t(params.title, { ns: 'lm-desktop-routes' }));
         } else {
           const routeTitle = (ctx.model.context as any)?.currentRoute?.title;
-          ctx.model.setProps('title', ctx.t(params.title || routeTitle));
+          ctx.model.setProps('title', ctx.t(params.title || routeTitle, { ns: 'lm-desktop-routes' }));
         }
         ctx.model.setProps('enableTabs', params.enableTabs);
 

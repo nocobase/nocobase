@@ -188,7 +188,7 @@ FormItemModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -200,7 +200,8 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label || ctx.collectionField?.title });
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.collectionField?.title };
+        ctx.model.setProps({ label: ctx.t(params.label, options) });
       },
     },
     aclCheck: {
@@ -305,7 +306,7 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -320,7 +321,9 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ extra: params.description });
+        ctx.model.setProps({
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
+        });
       },
     },
     initialValue: {

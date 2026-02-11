@@ -70,28 +70,38 @@ const useUpdateTranslationAction = () => {
 const useDestroyTranslationAction = () => {
   const { refresh } = useResourceActionContext();
   const api = useAPIClient();
-  const { translationId: filterByTk } = useRecord();
+  const { translationId } = useRecord();
   return {
     async run() {
-      if (!filterByTk) {
+      if (!translationId) {
         return;
       }
-      await api.resource('localizationTranslations').destroy({ filterByTk });
+      await api.resource('localizationTranslations').destroy({ filterByTk: translationId });
       refresh();
     },
   };
 };
 
 const useBulkDestroyTranslationAction = () => {
-  const { state, setState, refresh } = useResourceActionContext();
+  const { state, setState, refresh, data } = useResourceActionContext();
   const api = useAPIClient();
   const { t } = useLocalTranslation();
   return {
     async run() {
-      if (!state?.selectedRowKeys?.length) {
+      const selectedRowKeys = state?.selectedRowKeys || [];
+      if (!selectedRowKeys.length) {
         return message.error(t('Please select the records you want to delete'));
       }
-      await api.resource('localizationTranslations').destroy({ filterByTk: state?.selectedRowKeys });
+      const rows = (data?.data?.rows || data?.data || data?.rows || []) as any[];
+      const selectedKeySet = new Set(selectedRowKeys.map((key) => String(key)));
+      const translationIds = rows
+        .filter((row) => selectedKeySet.has(String(row.id)))
+        .map((row) => row.translationId)
+        .filter(Boolean);
+      if (!translationIds.length) {
+        return message.error(t('Please select the records you want to delete'));
+      }
+      await api.resource('localizationTranslations').destroy({ filterByTk: translationIds });
       setState?.({ selectedRowKeys: [] });
       refresh();
     },
@@ -291,7 +301,10 @@ const Filter = () => {
 
 const ModuleTitle = () => {
   const { t } = useLocalTranslation();
-  const { moduleTitle } = useRecord();
+  const { moduleTitle, module } = useRecord();
+  if (!moduleTitle) {
+    return <Tag>{module}</Tag>;
+  }
   return <Tag>{Schema.compile(moduleTitle, { t })}</Tag>;
 };
 

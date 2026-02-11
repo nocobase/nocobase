@@ -57,7 +57,7 @@ CollectionSelectorFieldModel.registerFlow({
             .concat(childCollections)
             .map((item) => {
               return {
-                label: ctx.t(item.title) || item.name,
+                label: item.title || item.name,
                 value: item.name || item.value,
               };
             });
@@ -66,7 +66,7 @@ CollectionSelectorFieldModel.registerFlow({
           });
         } else {
           const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
-          const defaultOptions = ctx.model.context.collectionField.uiSchema.enum || [];
+          const defaultOptions = ctx.model.context.collectionField.enum || [];
           const options = collections
             .filter((item: any) => !item.options.hidden)
             .filter((v) => {
@@ -76,7 +76,7 @@ CollectionSelectorFieldModel.registerFlow({
               return true;
             })
             .map((item: any) => ({
-              label: ctx.t(item.title) || item.name,
+              label: item.title || item.name,
               value: item.name || item.value,
               color: item.category?.color,
             }));
