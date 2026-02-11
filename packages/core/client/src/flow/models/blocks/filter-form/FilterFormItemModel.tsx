@@ -16,7 +16,7 @@ import {
   FormItem,
 } from '@nocobase/flow-engine';
 import { Empty } from 'antd';
-import _, { debounce } from 'lodash';
+import _, { cloneDeep, debounce, isEqual } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
@@ -379,6 +379,8 @@ export class FilterFormItemModel extends FilterableItemModel<{
   mounted = false;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
+  private lastAutoTriggerValue: any;
+  private autoTriggerInitialized = false;
 
   get defaultTargetUid(): string {
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
@@ -469,7 +471,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
 
   getValueProps(value) {
     if (this.context.blockModel.autoTriggerFilter) {
-      this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+      if (!this.autoTriggerInitialized) {
+        this.autoTriggerInitialized = true;
+        this.lastAutoTriggerValue = cloneDeep(value);
+      } else if (!isEqual(this.lastAutoTriggerValue, value)) {
+        this.lastAutoTriggerValue = cloneDeep(value);
+        this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+      }
     }
 
     return {

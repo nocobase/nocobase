@@ -469,4 +469,89 @@ describe('FilterForm custom field record select', () => {
 
     expect(customRecordSelect?.props?.fieldNames?.label).toBe('id');
   });
+
+  it('hydrates options for id defaults in value mode', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'users',
+      titleField: 'name',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+
+    const model = engine.createModel<FilterFormCustomFieldModel>({
+      uid: 'custom-hydrate-options',
+      use: 'FilterFormCustomFieldModel',
+    });
+
+    model.setStepParams('formItemSettings', 'fieldSettings', {
+      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
+      title: 'Users',
+      name: 'users',
+      operator: '$in',
+      fieldModelProps: {
+        recordSelectDataSourceKey: 'main',
+        recordSelectTargetCollection: 'users',
+        recordSelectTitleField: 'name',
+        recordSelectValueField: 'id',
+        valueMode: 'value',
+        allowMultiple: true,
+        multiple: true,
+      },
+    });
+
+    await model.applyFlow('formItemSettings');
+
+    const customRecordSelect = model.customFieldModelInstance as any;
+    customRecordSelect.setProps({
+      value: [2, 3],
+      options: [],
+    });
+    customRecordSelect.resource = {
+      addFilterGroup: vi.fn(),
+      refresh: vi.fn(async () => {}),
+      getData: vi.fn(() => [
+        { id: 2, name: 'User 2' },
+        { id: 3, name: 'User 3' },
+      ]),
+      removeFilterGroup: vi.fn(),
+    };
+
+    await customRecordSelect.applyFlow('syncValueOptions');
+
+    expect(customRecordSelect?.props?.options).toEqual([
+      { id: 2, name: 'User 2' },
+      { id: 3, name: 'User 3' },
+    ]);
+    expect(customRecordSelect.resource.addFilterGroup).toHaveBeenCalledWith('__filter_form_value_options__', {
+      'id.$in': [2, 3],
+    });
+    expect(customRecordSelect.resource.removeFilterGroup).toHaveBeenCalledWith('__filter_form_value_options__');
+  });
+
+  it('normalizes record objects to primary keys in value mode', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FilterFormCustomRecordSelectFieldModel });
+
+    const model = engine.createModel<any>({
+      uid: 'custom-value-mode-normalize',
+      use: 'FilterFormCustomRecordSelectFieldModel',
+      props: {
+        valueMode: 'value',
+        fieldNames: { label: 'name', value: 'id' },
+        value: [
+          { id: 2, name: 'User 2' },
+          { id: 3, name: 'User 3' },
+        ],
+      },
+    });
+
+    expect(model.getFilterValue()).toEqual([2, 3]);
+  });
 });

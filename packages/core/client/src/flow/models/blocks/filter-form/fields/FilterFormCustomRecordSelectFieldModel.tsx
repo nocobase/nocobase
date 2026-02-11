@@ -25,6 +25,37 @@ import { MobileLazySelect } from '../../../fields/mobile-components/MobileLazySe
 import { BlockSceneEnum } from '../../../base';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
 
+const FILTER_FORM_VALUE_OPTIONS_GROUP = '__filter_form_value_options__';
+
+const normalizeValueKeys = (value: any, valueKey: string, isMultiple: boolean) => {
+  const toPrimitive = (item: any) => {
+    if (item == null) return undefined;
+    if (typeof item === 'object') {
+      return item?.[valueKey] ?? item?.value;
+    }
+    return item;
+  };
+  const list = isMultiple ? (Array.isArray(value) ? value : [value]) : [value];
+  return list
+    .map((item) => toPrimitive(item))
+    .filter((item): item is string | number => item !== undefined && item !== null && item !== '');
+};
+
+const mergeOptionsByValue = (
+  current: AssociationOption[] = [],
+  incoming: AssociationOption[] = [],
+  valueKey: string,
+) => {
+  const optionMap = new Map<any, AssociationOption>();
+  [...current, ...incoming].forEach((item) => {
+    const key = item?.[valueKey];
+    if (key !== undefined && key !== null) {
+      optionMap.set(key, item);
+    }
+  });
+  return Array.from(optionMap.values());
+};
+
 const useFieldPermissionMessage = (model, allowEdit) => {
   const collectionField = model?.context?.collectionField;
   const collection = collectionField?.collection;
@@ -216,10 +247,65 @@ const FilterFormLazySelect = (props: Readonly<LazySelectProps>) => {
 };
 
 export class FilterFormCustomRecordSelectFieldModel extends RecordSelectFieldModel {
+  private valueOptionsSyncKey: string | null = null;
+  private valueOptionsSyncedKey: string | null = null;
+  private valueOptionsSyncTask: Promise<void> | null = null;
+
+  private buildValueOptionsSyncKey() {
+    const valueMode = this.props?.valueMode || 'record';
+    if (valueMode !== 'value') return null;
+    const fieldNames = this.props?.fieldNames || {};
+    const valueKey = fieldNames?.value || 'id';
+    const isMultiple = Boolean(this.props?.multiple && this.props?.allowMultiple);
+    const selectedValueKeys = normalizeValueKeys(this.props?.value, valueKey, isMultiple);
+    if (!selectedValueKeys.length) return null;
+    const currentOptions = resolveOptions(this.props?.options, this.props?.value, isMultiple);
+    const existingKeys = new Set(currentOptions.map((item) => item?.[valueKey]).filter((item) => item != null));
+    const unresolvedKeys = selectedValueKeys.filter((item) => !existingKeys.has(item));
+    if (!unresolvedKeys.length) return null;
+    return `${valueKey}::${unresolvedKeys.slice().sort().join(',')}`;
+  }
+
+  private ensureValueOptionsSynced() {
+    const syncKey = this.buildValueOptionsSyncKey();
+    if (!syncKey) return;
+    if (syncKey === this.valueOptionsSyncedKey) return;
+    if (this.valueOptionsSyncTask && this.valueOptionsSyncKey === syncKey) return;
+
+    this.valueOptionsSyncKey = syncKey;
+    this.valueOptionsSyncTask = this.applyFlow('syncValueOptions')
+      .then(() => {
+        this.valueOptionsSyncedKey = syncKey;
+      })
+      .finally(() => {
+        if (this.valueOptionsSyncKey === syncKey) {
+          this.valueOptionsSyncTask = null;
+        }
+      });
+  }
+
+  async onDispatchEventStart(eventName: string) {
+    if (eventName !== 'beforeRender') return;
+    this.ensureValueOptionsSynced();
+  }
+
   getFilterValue() {
     const valueMode = this.props.valueMode || 'record';
     if (valueMode === 'value') {
-      return this.props.value;
+      const valueKey = this.props?.fieldNames?.value || 'id';
+      const normalize = (item: any) => {
+        if (item == null) return item;
+        if (typeof item === 'object') {
+          return item?.[valueKey] ?? item?.value;
+        }
+        return item;
+      };
+      if (Array.isArray(this.props.value)) {
+        return this.props.value
+          .map((item) => normalize(item))
+          .filter((item) => item !== undefined && item !== null && item !== '');
+      }
+      return normalize(this.props.value);
     }
     return super.getFilterValue();
   }
@@ -232,6 +318,54 @@ export class FilterFormCustomRecordSelectFieldModel extends RecordSelectFieldMod
     return <FilterFormLazySelect {...(this.props as LazySelectProps)} />;
   }
 }
+
+FilterFormCustomRecordSelectFieldModel.registerFlow({
+  key: 'syncValueOptions',
+  sort: 780,
+  steps: {
+    syncByValue: {
+      async handler(ctx) {
+        const valueMode = ctx.model.props?.valueMode || 'record';
+        if (valueMode !== 'value') return;
+        const fieldNames = ctx.model.props?.fieldNames || {};
+        const valueKey = fieldNames?.value || 'id';
+        const isMultiple = Boolean(ctx.model.props?.multiple && ctx.model.props?.allowMultiple);
+        const selectedValueKeys = normalizeValueKeys(ctx.model.props?.value, valueKey, isMultiple);
+        if (!selectedValueKeys.length) return;
+
+        const currentOptions = resolveOptions(ctx.model.props?.options, ctx.model.props?.value, isMultiple);
+        const existingKeys = new Set(currentOptions.map((item) => item?.[valueKey]).filter((item) => item != null));
+        const unresolvedKeys = selectedValueKeys.filter((item) => !existingKeys.has(item));
+        if (!unresolvedKeys.length) return;
+
+        const resource = ctx.model.resource;
+        if (!resource || typeof resource?.addFilterGroup !== 'function' || typeof resource?.refresh !== 'function') {
+          return;
+        }
+
+        const filter =
+          unresolvedKeys.length === 1
+            ? { [`${valueKey}.$eq`]: unresolvedKeys[0] }
+            : { [`${valueKey}.$in`]: unresolvedKeys };
+
+        try {
+          resource.addFilterGroup(FILTER_FORM_VALUE_OPTIONS_GROUP, filter);
+          await resource.refresh();
+          const fetched = resource.getData?.() || [];
+          if (!Array.isArray(fetched) || !fetched.length) return;
+          const mergedOptions = mergeOptionsByValue(currentOptions, fetched, valueKey);
+          const hasChanged =
+            mergedOptions.length !== currentOptions.length ||
+            mergedOptions.some((item, index) => item?.[valueKey] !== currentOptions?.[index]?.[valueKey]);
+          if (!hasChanged) return;
+          ctx.model.setDataSource(mergedOptions);
+        } finally {
+          resource.removeFilterGroup?.(FILTER_FORM_VALUE_OPTIONS_GROUP);
+        }
+      },
+    },
+  },
+});
 
 FilterFormCustomRecordSelectFieldModel.registerFlow({
   key: 'selectSettings',

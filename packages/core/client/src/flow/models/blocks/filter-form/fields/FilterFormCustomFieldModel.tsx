@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { debounce } from 'lodash';
+import { cloneDeep, debounce, isEqual } from 'lodash';
 import { CollectionField, FieldModelRenderer, FlowModelContext, FormItem, tExpr } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
 import { FieldComponentProps } from './FieldComponentProps';
@@ -34,6 +34,8 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   operator: string;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
+  private lastAutoTriggerValue: any;
+  private autoTriggerInitialized = false;
 
   /**
    * Resolve or build collection field context for RecordSelect custom fields.
@@ -108,7 +110,9 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
    * @returns
    */
   getFilterValue() {
-    const rawValue = this.context.form?.getFieldValue(this.props.name);
+    const rawValue = this.customFieldModelInstance?.getFilterValue
+      ? this.customFieldModelInstance.getFilterValue()
+      : this.context.form?.getFieldValue(this.props.name);
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
       const options = operatorMeta?.schema?.['x-component-props']?.options;
@@ -149,7 +153,13 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
 
   getValueProps(value) {
     if (this.context.blockModel.autoTriggerFilter) {
-      this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+      if (!this.autoTriggerInitialized) {
+        this.autoTriggerInitialized = true;
+        this.lastAutoTriggerValue = cloneDeep(value);
+      } else if (!isEqual(this.lastAutoTriggerValue, value)) {
+        this.lastAutoTriggerValue = cloneDeep(value);
+        this.debouncedDoFilter(); // 仅在值变化时触发筛选，避免渲染导致重复请求
+      }
     }
 
     return {
