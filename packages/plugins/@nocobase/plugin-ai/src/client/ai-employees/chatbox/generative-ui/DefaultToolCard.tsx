@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button, Tooltip, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
@@ -23,8 +23,19 @@ import {
 import { ToolCall, ToolsEntry, toToolsMap, useToken, lazy } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { css, keyframes } from '@emotion/css';
 
 const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
+
+const loadingTextShimmer = keyframes`
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+`;
 
 const CallButton: React.FC<{
   messageId: string;
@@ -100,10 +111,17 @@ const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) =
 const ToolCallRow: React.FC<{
   toolCall: ToolCall;
   toolsMap: Map<string, ToolsEntry>;
-}> = ({ toolCall, toolsMap }) => {
+  generating: boolean;
+  defaultExpanded?: boolean;
+}> = ({ toolCall, toolsMap, generating, defaultExpanded }) => {
   const t = useT();
   const { token } = useToken();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!!defaultExpanded);
+  useEffect(() => {
+    if (defaultExpanded) {
+      setExpanded(true);
+    }
+  }, [defaultExpanded]);
 
   let args = toolCall.args;
   try {
@@ -118,6 +136,18 @@ const ToolCallRow: React.FC<{
   const description = toolsEntry?.introduction?.about
     ? Schema.compile(toolsEntry?.introduction?.about, { t })
     : toolCall.name;
+
+  const titleLoadingClass = css({
+    backgroundImage: `linear-gradient(90deg, ${token.colorTextTertiary} 0%, ${token.colorText} 45%, ${token.colorTextTertiary} 100%)`,
+    backgroundSize: '160% 100%',
+    WebkitBackgroundClip: 'text',
+    color: 'transparent',
+    opacity: 0.98,
+    animation: `${loadingTextShimmer} 1.6s linear infinite`,
+    willChange: 'background-position',
+  });
+
+  const showLoadingTitle = generating && toolCall.invokeStatus !== 'done' && toolCall.invokeStatus !== 'confirmed';
 
   return (
     <div>
@@ -140,7 +170,7 @@ const ToolCallRow: React.FC<{
         <Flex align="center" gap={8}>
           <InvokeStatus toolCall={toolCall} />
           <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorTextSecondary }}>
-            {title}
+            <span className={showLoadingTitle ? titleLoadingClass : undefined}>{title}</span>
             {toolsEntry?.introduction?.about && (
               <>
                 {' '}
@@ -176,16 +206,33 @@ export const DefaultToolCard: React.FC<{
   toolCalls: ToolCall[];
 }> = ({ messageId, tools, toolCalls }) => {
   const toolsMap = toToolsMap(tools);
+  const messages = useChatMessagesStore.use.messages();
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const generating = responseLoading && messages[messages.length - 1]?.content?.messageId === messageId;
+  const hasAutoExpanded = useRef(false);
 
   const showCallButton =
     messageId &&
     !toolCalls.every((tool) => tool.auto) &&
-    !toolCalls.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
+    !toolCalls.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed' || !tool.invokeStatus);
+  const shouldAutoExpand = showCallButton && !hasAutoExpanded.current;
+
+  useEffect(() => {
+    if (showCallButton) {
+      hasAutoExpanded.current = true;
+    }
+  }, [showCallButton]);
 
   return (
     <Flex vertical>
       {toolCalls.map((toolCall) => (
-        <ToolCallRow key={toolCall.id} toolCall={toolCall} toolsMap={toolsMap} />
+        <ToolCallRow
+          key={toolCall.id}
+          toolCall={toolCall}
+          toolsMap={toolsMap}
+          generating={generating}
+          defaultExpanded={shouldAutoExpand}
+        />
       ))}
       {showCallButton && <CallButton messageId={messageId} toolCalls={toolCalls} />}
     </Flex>
