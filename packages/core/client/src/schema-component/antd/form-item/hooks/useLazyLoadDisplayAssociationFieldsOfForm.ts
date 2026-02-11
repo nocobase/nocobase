@@ -140,7 +140,36 @@ function normalizeDisplayAssociationFieldValue(value: any) {
   });
 }
 
-function removeCircularReferences(value: any, seen = new WeakMap<object, any>()) {
+/**
+ * Remove circular references from an object while preserving shared references.
+ * 
+ * This function distinguishes between:
+ * - Circular references: Objects that reference themselves in the recursion path (removed)
+ * - Shared references: Objects that appear multiple times but aren't circular (preserved)
+ * 
+ * @param value - The value to process
+ * @param seen - WeakMap cache of processed objects
+ * @param path - WeakSet tracking current recursion path
+ * @returns The processed value with circular references removed
+ * 
+ * @example
+ * // Shared reference (preserved)
+ * const shared = { name: "shared" };
+ * removeCircularReferences({ a: shared, b: shared });
+ * // Returns: { a: { name: "shared" }, b: { name: "shared" } }
+ * 
+ * @example
+ * // Circular reference (removed)
+ * const circular = { name: "circular" };
+ * circular.self = circular;
+ * removeCircularReferences(circular);
+ * // Returns: { name: "circular" }
+ */
+export function removeCircularReferences(
+  value: any,
+  seen = new WeakMap<object, any>(),
+  path = new WeakSet<object>(),
+) {
   if (value == null || typeof value !== 'object') {
     return value;
   }
@@ -149,26 +178,38 @@ function removeCircularReferences(value: any, seen = new WeakMap<object, any>())
     return value;
   }
 
-  if (seen.has(value)) {
+  // Check if this object is in the current recursion path (true circular reference)
+  if (path.has(value)) {
     return undefined;
   }
 
+  // If we've seen this object before but it's not in the current path,
+  // it's a shared reference - return the already-processed (cleaned) version
+  if (seen.has(value)) {
+    return seen.get(value);
+  }
+
+  // Mark as seen with a placeholder and add to current path
   const result = Array.isArray(value) ? [] : {};
   seen.set(value, result);
+  path.add(value);
 
   if (Array.isArray(value)) {
     value.forEach((item, index) => {
-      result[index] = removeCircularReferences(item, seen);
+      result[index] = removeCircularReferences(item, seen, path);
     });
-    return result;
+  } else {
+    Object.keys(value).forEach((key) => {
+      const normalized = removeCircularReferences(value[key], seen, path);
+      if (normalized !== undefined) {
+        result[key] = normalized;
+      }
+    });
   }
 
-  Object.keys(value).forEach((key) => {
-    const normalized = removeCircularReferences(value[key], seen);
-    if (normalized !== undefined) {
-      result[key] = normalized;
-    }
-  });
+  // Remove from current path as we exit this recursion level
+  path.delete(value);
+
   return result;
 }
 
