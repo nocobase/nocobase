@@ -119,6 +119,7 @@ export class DetailsItemModel extends DisplayItemModel<{
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
     const record = this.context.record;
+    const currentObject = this.context.currentObject;
     const item = this.context.item;
     const itemOptions = this.context.getPropertyOptions('item');
 
@@ -132,6 +133,10 @@ export class DetailsItemModel extends DisplayItemModel<{
             });
             fork.context.defineProperty('record', {
               get: () => record,
+              cache: false,
+            });
+            fork.context.defineProperty('currentObject', {
+              get: () => currentObject,
               cache: false,
             });
             const { value: _value, ...rest } = (itemOptions || {}) as any;

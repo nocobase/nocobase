@@ -93,6 +93,19 @@ export const ObjectNester = (props) => {
       cache: false,
     });
   }, [grid, model]);
+  useEffect(() => {
+    const currentObjectOptions = model?.context?.getPropertyOptions?.('currentObject');
+    if (!currentObjectOptions) {
+      return;
+    }
+    grid.context.defineProperty('currentObject', {
+      get: () => model?.context?.currentObject,
+      cache: false,
+      // meta: currentObjectOptions?.meta,
+      resolveOnServer: currentObjectOptions?.resolveOnServer,
+      serverOnlyWhenContextParams: currentObjectOptions?.serverOnlyWhenContextParams,
+    });
+  }, [grid, model]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -135,6 +148,15 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         parentCollectionAccessor: () => this.context.collectionField?.collection,
         parentAccessors,
       }),
+    });
+
+    const currentObjectOptions = this.context.getPropertyOptions?.('currentObject');
+    this.context.defineProperty('currentObject', {
+      get: () => this.context.form.getFieldValue(this.props.name),
+      cache: false,
+      // meta: currentObjectOptions?.meta,
+      resolveOnServer: currentObjectOptions?.resolveOnServer,
+      serverOnlyWhenContextParams: currentObjectOptions?.serverOnlyWhenContextParams,
     });
   }
   onMount() {
@@ -272,6 +294,14 @@ const ArrayNester = ({
                     parentAccessors,
                   }),
                 });
+                const rowCurrentObjectOptions = currentFork.context.getPropertyOptions?.('currentObject');
+                currentFork.context.defineProperty('currentObject', {
+                  get: () => currentFork.context.form.getFieldValue([name, fieldName]) || {},
+                  cache: false,
+                  // meta: rowCurrentObjectOptions?.meta,
+                  resolveOnServer: rowCurrentObjectOptions?.resolveOnServer,
+                  serverOnlyWhenContextParams: rowCurrentObjectOptions?.serverOnlyWhenContextParams,
+                });
 
                 const rowValue = value?.[index];
                 const removable =
@@ -367,6 +397,14 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
         parentCollectionAccessor: () => this.context.collectionField?.collection,
         parentAccessors,
       }),
+    });
+
+    const listCurrentObjectOptions = this.context.getPropertyOptions?.('currentObject');
+    this.context.defineProperty('currentObject', {
+      value: null,
+      // meta: listCurrentObjectOptions?.meta,
+      resolveOnServer: listCurrentObjectOptions?.resolveOnServer,
+      serverOnlyWhenContextParams: listCurrentObjectOptions?.serverOnlyWhenContextParams,
     });
 
     this.onSelectExitRecordClick = () => {
