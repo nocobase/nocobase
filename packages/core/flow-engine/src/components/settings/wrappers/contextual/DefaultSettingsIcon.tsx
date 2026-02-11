@@ -261,7 +261,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     return () => {
       mounted = false;
     };
-  }, [model, menuLevels, t, refreshTick, visible, message]);
+  }, [model, menuLevels, t, refreshTick, visible]);
 
   // 统一的复制 UID 方法
   const copyUidToClipboard = useCallback(

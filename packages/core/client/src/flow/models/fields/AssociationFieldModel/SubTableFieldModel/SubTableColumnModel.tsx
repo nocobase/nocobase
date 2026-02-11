@@ -627,7 +627,7 @@ SubTableColumnModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -639,8 +639,8 @@ SubTableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title || ctx.fieldPath.split('.').pop());
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.model.collectionField?.title };
+        ctx.model.setProps({ title: ctx.t(params.title, options) || ctx.fieldPath.split('.').pop() });
       },
     },
     tooltip: {
@@ -652,7 +652,7 @@ SubTableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
+        ctx.model.setProps('tooltip', ctx.t(params.tooltip, { ns: 'lm-flow-engine' }));
       },
     },
     width: {

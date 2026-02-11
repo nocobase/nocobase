@@ -309,7 +309,7 @@ FilterFormItemModel.registerFlow({
               const originTitle = model.collectionField?.title || ctx.filterField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -321,7 +321,11 @@ FilterFormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        if (params.label && params.label === ctx.collectionField?.title) {
+          ctx.model.setProps({ label: params.label });
+        } else {
+          ctx.model.setProps({ label: ctx.t(params.label, { ns: 'lm-flow-engine' }) });
+        }
       },
     },
     // aclCheck: {
@@ -371,7 +375,7 @@ FilterFormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -383,7 +387,9 @@ FilterFormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ extra: params.description });
+        ctx.model.setProps({
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
+        });
       },
     },
     initialValue: {

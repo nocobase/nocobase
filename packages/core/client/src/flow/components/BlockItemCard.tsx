@@ -10,7 +10,6 @@
 import { Card, CardProps, theme } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 import { DisplayMarkdown } from '../internal/components/Markdown/DisplayMarkdown';
 import { useFlowContext } from '@nocobase/flow-engine';
 
@@ -167,10 +166,10 @@ export const BlockItemCard = React.forwardRef(
     const height = useBlockHeight({ ...(props as any), cardRef });
     const title = (blockTitle || description) && (
       <div>
-        <span> {t(blockTitle as any, { ns: NAMESPACE_UI_SCHEMA })}</span>
+        <span> {blockTitle}</span>
         {description && (
           <DisplayMarkdown
-            value={t(description, { ns: NAMESPACE_UI_SCHEMA })}
+            value={description}
             style={{
               overflowWrap: 'break-word',
               whiteSpace: 'normal',
