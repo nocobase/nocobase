@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import type { FormBlockModel } from '@nocobase/client';
+import { lang } from '../locale';
 
 export async function submitHandler(ctx, params) {
   const resource = ctx.resource;
@@ -38,7 +39,7 @@ export async function submitHandler(ctx, params) {
     const filterKey = ctx.collection?.filterTargetKey || pk || 'id';
     const ids = rows.map((r) => ctx.collection.getFilterByTK(r)).filter((v) => v != null);
     if (!ids?.length) {
-      ctx.message.error(ctx.t('Please select the records to be updated'));
+      ctx.message.error(lang('Please select the records to be edited'));
       ctx.exit();
       return;
     }
@@ -46,7 +47,6 @@ export async function submitHandler(ctx, params) {
   } else {
     updateData.filter = collectionModel?.resource.getFilter();
   }
-
 
   const collection = collectionModel?.context?.collection;
   if (!collection) {
@@ -68,5 +68,4 @@ export async function submitHandler(ctx, params) {
       .update({ values: updateData.values, forceUpdate: true, ...params.requestConfig?.params });
   }
   ctx.message.success(ctx.t('Saved successfully'));
-
 }

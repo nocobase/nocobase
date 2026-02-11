@@ -34,8 +34,8 @@ export const BulkEditFieldV2 = (props) => {
 
   const typeChangeHandler = (val) => {
     setType(val);
-    const fieldVlaue = toFormFieldValue({ [val]: value });
-    form.setFieldValue(formItemModel.props.name, fieldVlaue);
+    const fieldValue = toFormFieldValue({ [val]: value });
+    form.setFieldValue(formItemModel.props.name, fieldValue);
     if (val === BulkEditFormItemValueType.ChangedTo) {
       const fieldUse = formItemModel?.subModels?.field?.use;
       if (fieldUse === 'CheckboxFieldModel') {

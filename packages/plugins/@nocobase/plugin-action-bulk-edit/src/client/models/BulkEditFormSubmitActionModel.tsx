@@ -12,6 +12,8 @@ import { ButtonProps } from 'antd';
 import { tExpr } from '@nocobase/flow-engine';
 import { submitHandler } from './submitHandler';
 import { BulkEditFormModel } from './BulkEditFormModel';
+import { lang } from '../locale';
+
 export class BulkEditFormSubmitActionModel extends FormSubmitActionModel {
   defaultProps: ButtonProps & { withScheduleSend?: boolean } = {
     title: tExpr('Submit'),
@@ -46,7 +48,7 @@ BulkEditFormSubmitActionModel.registerFlow({
         if (updateMode === 'selected') {
           const rows = collectionModel?.resource?.getSelectedRows?.() || [];
           if (!rows?.length) {
-            ctx.message.error(ctx.t('Please select the records to be updated'));
+            ctx.message.error(lang('Please select the records to be edited'));
             ctx.exit();
             return;
           }

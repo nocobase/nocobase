@@ -15,6 +15,7 @@ import _ from 'lodash';
 import { BulkEditFormItemValueType } from './types';
 import { lang } from '../locale';
 import { ParamObject, StepParams } from '@nocobase/flow-engine';
+import { BulkEditFormItemModel } from './BulkEditFormItemModel';
 
 function toFormFieldValue(value: any) {
   if (BulkEditFormItemValueType.Clear in value) {
@@ -48,7 +49,7 @@ const BulkEditField = (props) => {
       formItemModel?.setProps({ required: false, rules: [] });
     }
     const fieldValue = toFormFieldValue({ [val]: value });
-    form.setFieldValue(formItemModel.props.name, fieldVlaue);
+    form.setFieldValue(formItemModel.props.name, fieldValue);
   };
 
   const valueChangeHandler = (val) => {
