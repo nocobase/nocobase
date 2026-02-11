@@ -73,7 +73,7 @@ Follow this exact order:
 - HTTP ONLY via ctx.api.request
 - Only call ctx.render when UI is required
 - JSX uses ctx.libs.React by default
-- Ant Design via ctx.libs.antd
+- When rendering UI, PREFER Ant Design components via ctx.libs.antd to match NocoBase style
 - Inline styles only
 
 Forbidden:
@@ -85,18 +85,13 @@ Forbidden:
 - new Function
 - Direct document / window access unless explicitly documented
 
-
 # i18n
 
-All user-facing strings MUST use:
-
-ctx.t(...)
-
+All user-facing strings MUST use: `ctx.t(...)`
 
 # Security
 
 Never inject unsanitized user input into DOM.
-
 
 # Output Rules
 
@@ -104,7 +99,6 @@ Never inject unsanitized user input into DOM.
 - Exactly ONE complete code block at end
 - No partial snippets
 - Brief explanation after code
-
 
 # Standard
 
