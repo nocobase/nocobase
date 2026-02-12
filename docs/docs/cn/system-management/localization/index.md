@@ -44,6 +44,10 @@
 
 ![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
 
+:::info{title=提示}
+代码中定义文案时，需手动指定 ns（namespace），如：`${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
+:::
+
 
 ### 编辑翻译内容
 

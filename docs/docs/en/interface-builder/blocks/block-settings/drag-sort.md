@@ -34,7 +34,6 @@ When enabling drag-and-drop sorting in a table, select the sorting field.
 
 ## Sorting rules
 
-### Move between ungrouped (or same-group) items
 
 Assume the current order is:
 

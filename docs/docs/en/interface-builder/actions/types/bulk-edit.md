@@ -42,7 +42,7 @@ Bulk edit is designed for flexible batch data updates. After clicking the bulk e
 
 2. Choose an edit mode for each field and enter the values to submit.
 
-![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_07_17_AM.png)
+![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_10_33_AM.png)
 
 :::info{title=Available edit modes}
 * Remains the same: keep the field unchanged

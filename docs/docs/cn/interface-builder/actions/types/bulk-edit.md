@@ -42,7 +42,7 @@ pkg: "@nocobase/plugin-action-bulk-edit"
 
 2. 为字段选择编辑模式并填写要提交的值。
 
-![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_07_17_AM.png)
+![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_10_33_AM.png)
 
 :::info{title=可选编辑模式}
 * 不更新：该字段保持不变
