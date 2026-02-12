@@ -22,7 +22,7 @@ export {
 export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
-export { FlowExitException } from './exceptions';
+export { FlowCancelSaveException, FlowExitException } from './exceptions';
 
 // 流程定义相关
 export { defineAction } from './flow-definitions';
