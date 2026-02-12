@@ -23,6 +23,7 @@ import type { FlowModel } from './models';
 import { ParamObject, StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
+  FlowCancelSaveException,
   FlowExitException,
   getT,
   resolveDefaultParams,
@@ -903,6 +904,9 @@ export class FlowSettings {
               console.error('FlowSettings.open: onSaved callback error', cbErr);
             }
           } catch (err) {
+            if (err instanceof FlowCancelSaveException) {
+              return;
+            }
             if (err instanceof FlowExitException) {
               currentView.close();
               return;

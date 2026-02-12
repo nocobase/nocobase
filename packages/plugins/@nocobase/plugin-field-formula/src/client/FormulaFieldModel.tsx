@@ -9,7 +9,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
-import { EditableItemModel, DisplayItemModel, FilterableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, DisplayItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Form } from 'antd';
 import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
@@ -167,6 +167,30 @@ export class FormulaFieldModel extends FieldModel {
     );
   }
 }
+
+FormulaFieldModel.registerFlow({
+  key: 'formulaNumberSettings',
+  sort: 500,
+  title: tExpr('Number settings'),
+  steps: {
+    format: {
+      title: tExpr('Number format'),
+      use: 'numberFormat',
+      hideInSettings(ctx) {
+        const dataType = ctx?.collectionField?.dataType;
+        return !['double', 'bigInt', 'integer', 'number', 'decimal'].includes(dataType);
+      },
+    },
+    dateFormat: {
+      use: 'dateDisplayFormat',
+      title: tExpr('Date display format'),
+      hideInSettings(ctx) {
+        const dataType = ctx?.collectionField?.dataType;
+        return dataType !== 'date';
+      },
+    },
+  },
+});
 
 EditableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], { isDefault: true });
 

@@ -51,13 +51,14 @@ export function buildOpenerUids(ctx: FlowRuntimeContext, inputArgs: Record<strin
 
 export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'options' | 'value' | 'onChange'> {
   fieldNames: AssociationFieldNames;
-  value?: AssociationOption | AssociationOption[];
+  value?: AssociationOption | AssociationOption[] | string | string[] | number | number[];
   multiple?: boolean;
   allowMultiple?: boolean;
   // 在特定场景（如默认值弹窗）下，多选点击选项后保持下拉展开
   keepDropdownOpenOnSelect?: boolean;
   options?: AssociationOption[];
-  onChange: (option: AssociationOption | AssociationOption[]) => void;
+  valueMode?: 'record' | 'value';
+  onChange: (option: AssociationOption | AssociationOption[] | string | string[] | number | number[]) => void;
   onDropdownVisibleChange?: (open: boolean) => void;
   onPopupScroll?: SelectProps<any>['onPopupScroll'];
   onSearch?: SelectProps<any>['onSearch'];
@@ -102,35 +103,65 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
 }
 
 export function toSelectValue(
-  record: AssociationOption | AssociationOption[] | undefined,
+  record: AssociationOption | AssociationOption[] | string | string[] | number | number[] | undefined,
   fieldNames: AssociationFieldNames,
   multiple = false,
+  valueMode: 'record' | 'value' = 'record',
+  options: AssociationOption[] = [],
 ) {
   if (!record) return multiple ? [] : undefined;
 
   const { value: valueKey } = fieldNames || {};
 
+  const isAssociationOption = (item: unknown): item is AssociationOption => typeof item === 'object' && item !== null;
+
   const convert = (item: AssociationOption) => {
-    if (typeof item !== 'object' || item === null || item === undefined) return undefined;
+    if (!isAssociationOption(item)) return undefined;
     return {
       label: <LabelByField option={item} fieldNames={fieldNames} />,
       value: item[valueKey],
     };
   };
 
+  if (valueMode === 'value') {
+    const toValue = (item: AssociationOption | string | number) => {
+      if (typeof item === 'object' && item !== null) {
+        return convert(item);
+      }
+      const matchedOption = options.find((option) => option?.[valueKey] === item);
+      if (matchedOption) {
+        return convert(matchedOption);
+      }
+      // Handle string or number values
+      return {
+        label: item,
+        value: item,
+      };
+    };
+    if (multiple) {
+      if (!Array.isArray(record)) return [];
+      return record.map((item) => toValue(item)).filter(Boolean);
+    }
+    if (Array.isArray(record)) {
+      return toValue(record[0]);
+    }
+    return toValue(record as AssociationOption);
+  }
+
   if (multiple) {
     if (!Array.isArray(record)) return [];
-    return record.map(convert).filter(Boolean);
+    return record.filter(isAssociationOption).map(convert).filter(Boolean);
   }
-  if (Array.isArray(record) && !multiple) {
-    return convert(record[0]);
+  if (Array.isArray(record)) {
+    const first = record[0];
+    return isAssociationOption(first) ? convert(first) : undefined;
   }
-  return convert(record as AssociationOption);
+  return isAssociationOption(record) ? convert(record) : undefined;
 }
 
 export function resolveOptions(
   options: AssociationOption[] | undefined,
-  value: AssociationOption | AssociationOption[] | undefined,
+  value: AssociationOption | AssociationOption[] | string | string[] | number | number[] | undefined,
   isMultiple: boolean,
 ) {
   if (options?.length) {
@@ -141,7 +172,7 @@ export function resolveOptions(
 
   if (isMultiple) {
     if (Array.isArray(value)) {
-      return value.filter(Boolean) as AssociationOption[];
+      return value.filter((item) => typeof item === 'object' && item !== null) as AssociationOption[];
     }
     return [];
   }

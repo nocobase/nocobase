@@ -462,6 +462,9 @@ const paginationState = {
   hasMore: true,
 };
 
+const getSearchGroupKey = (labelFieldName: string) => `__search__${labelFieldName}`;
+const getAssociationGroupKey = (foreignKey: string) => `__assoc__${foreignKey}`;
+
 // 事件绑定
 RecordSelectFieldModel.registerFlow({
   key: 'eventSettings',
@@ -470,6 +473,7 @@ RecordSelectFieldModel.registerFlow({
     bindEvent: {
       handler(ctx, params) {
         const labelFieldName = ctx.model.props.fieldNames.label;
+        const searchGroupKey = getSearchGroupKey(labelFieldName);
 
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
@@ -478,7 +482,7 @@ RecordSelectFieldModel.registerFlow({
               form: ctx.model.context.form,
             });
           } else {
-            ctx.model.resource.removeFilterGroup(labelFieldName);
+            ctx.model.resource.removeFilterGroup(searchGroupKey);
             paginationState.page = 1;
           }
         };
@@ -589,10 +593,10 @@ async function originalHandler(ctx, params) {
     const resource = ctx.model.resource;
     const key = `${labelFieldName}.${operator}`;
     if (searchText === '') {
-      resource.removeFilterGroup(labelFieldName);
+      resource.removeFilterGroup(getSearchGroupKey(labelFieldName));
     } else {
       resource.setPage(1);
-      resource.addFilterGroup(labelFieldName, {
+      resource.addFilterGroup(getSearchGroupKey(labelFieldName), {
         [key]: searchText,
       });
     }
@@ -656,7 +660,7 @@ RecordSelectFieldModel.registerFlow({
         }
 
         if (orFilters.length > 0) {
-          resource.addFilterGroup(foreignKey, { $or: orFilters });
+          resource.addFilterGroup(getAssociationGroupKey(foreignKey), { $or: orFilters });
         }
         ctx.model.resource = resource;
       },

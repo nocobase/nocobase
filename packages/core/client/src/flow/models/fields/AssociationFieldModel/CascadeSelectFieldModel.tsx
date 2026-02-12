@@ -217,7 +217,7 @@ const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fi
         </SortableContext>
       </DndContext>
       <Button type="dashed" style={{ width: '100%' }} onClick={handleAdd}>
-        {t('Add new')}
+        {t('Select record')}
       </Button>
     </div>
   );

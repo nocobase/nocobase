@@ -42,27 +42,38 @@ function getValueKey(fieldNames: LazySelectProps['fieldNames']) {
   return fieldNames?.value ?? 'value';
 }
 
-const deriveRecordsFromValue = _.memoize(
-  (value: LazySelectProps['value'], valueKey: string, optionMap: Map<any, AssociationOption>, isMultiple: boolean) => {
-    if (isMultiple) {
-      if (Array.isArray(value)) {
-        return (value.filter(Boolean) as AssociationOption[]).map((item) => {
-          const key = item?.[valueKey];
-          return optionMap.get(key) ?? item;
-        });
-      }
-      return [];
+function deriveRecordsFromValue(
+  value: LazySelectProps['value'],
+  valueKey: string,
+  optionMap: Map<any, AssociationOption>,
+  isMultiple: boolean,
+  valueMode: LazySelectProps['valueMode'] = 'record',
+) {
+  if (isMultiple) {
+    if (Array.isArray(value)) {
+      return (value.filter(Boolean) as any[]).map((item) => {
+        if (valueMode === 'value') {
+          return optionMap.get(item) ?? { [valueKey]: item };
+        }
+        const key = item?.[valueKey];
+        return optionMap.get(key) ?? item;
+      });
     }
-
-    if (value && typeof value === 'object') {
-      const key = (value as AssociationOption)[valueKey];
-      const resolved = optionMap.get(key) ?? (value as AssociationOption);
-      return resolved ? [resolved] : [];
-    }
-
     return [];
-  },
-);
+  }
+
+  if (valueMode === 'value' && (typeof value === 'string' || typeof value === 'number')) {
+    return [optionMap.get(value) ?? { [valueKey]: value }].filter(Boolean);
+  }
+
+  if (value && typeof value === 'object') {
+    const key = (value as AssociationOption)[valueKey];
+    const resolved = optionMap.get(key) ?? (value as AssociationOption);
+    return resolved ? [resolved] : [];
+  }
+
+  return [];
+}
 
 export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   const {
@@ -78,6 +89,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
     disabled,
     dropdownStyle,
     loading = false,
+    valueMode = 'record',
     ...restProps
   } = props;
   const ctx = useFlowModelContext();
@@ -94,15 +106,19 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   }, [realOptions, valueKey]);
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() =>
-    deriveRecordsFromValue(value, valueKey, optionMap, isMultiple),
+
+  const derivedRecords = useMemo(
+    () => deriveRecordsFromValue(value, valueKey, optionMap, isMultiple, valueMode),
+    [value, valueKey, optionMap, isMultiple, valueMode],
   );
+
+  const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() => derivedRecords);
 
   useEffect(() => {
     if (visible) {
-      setSelectedRecords(deriveRecordsFromValue(value, valueKey, optionMap, isMultiple));
+      setSelectedRecords(derivedRecords);
     }
-  }, [isMultiple, optionMap, value, valueKey, visible]);
+  }, [derivedRecords, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -138,9 +154,21 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   }, [onDropdownVisibleChange]);
 
   const handleConfirm = useCallback(() => {
+    if (valueMode === 'value') {
+      if (isMultiple) {
+        const values = selectedRecords
+          .map((item) => item?.[valueKey])
+          .filter((item) => item !== undefined && item !== null);
+        onChange(values as any);
+      } else {
+        onChange(selectedRecords?.[0]?.[valueKey]);
+      }
+      handleClose();
+      return;
+    }
     onChange(selectedRecords);
     handleClose();
-  }, [handleClose, onChange, selectedRecords]);
+  }, [handleClose, isMultiple, onChange, selectedRecords, valueKey, valueMode]);
 
   const handleListChange = useCallback(
     (vals: (string | number)[]) => {
@@ -164,11 +192,15 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
       const selectedId = vals[0];
       const record = optionMap.get(selectedId);
       if (record) {
-        onChange(record);
+        if (valueMode === 'value') {
+          onChange(record?.[valueKey]);
+        } else {
+          onChange(record);
+        }
       }
       handleClose();
     },
-    [handleClose, isMultiple, onChange, optionMap, valueKey],
+    [handleClose, isMultiple, onChange, optionMap, valueKey, valueMode],
   );
 
   const handleScroll = useCallback(
@@ -213,12 +245,22 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
         dropdownStyle={buildDropdownStyle(dropdownStyle)}
         fieldNames={fieldNames}
         options={realOptions}
-        value={toSelectValue(value, fieldNames, isMultiple)}
+        value={toSelectValue(value, fieldNames, isMultiple, valueMode, realOptions)}
         mode={isMultiple ? 'multiple' : undefined}
         open={false}
         onClick={handleOpen}
         onKeyDown={handleKeyDown}
         onChange={(nextValue, option) => {
+          if (valueMode === 'value') {
+            if (Array.isArray(option)) {
+              onChange(
+                option.map((item) => item?.[valueKey] ?? item?.value).filter((item) => item !== undefined) as any,
+              );
+              return;
+            }
+            onChange((option as AssociationOption)?.[valueKey] ?? (option as any)?.value);
+            return;
+          }
           onChange(option);
         }}
         loading={loading}

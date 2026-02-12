@@ -164,15 +164,31 @@ export function SubTableField(props) {
         scroll={{ x: 'max-content' }}
         pagination={pagination}
         locale={{
-          emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
+          emptyText: (
+            <span>
+              {disabled
+                ? t('No data')
+                : allowAddNew && allowSelectExistingRecord
+                  ? t('Please add or select record')
+                  : allowAddNew
+                    ? t('Please add record')
+                    : allowSelectExistingRecord
+                      ? t('Please select record')
+                      : t('No data')}
+            </span>
+          ),
         }}
         components={components || {}}
         className={css`
-          .ant-table-footer {
-            background-color: transparent;
-          }
           .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
             display: inline;
+          }
+          .ant-table-footer {
+            padding: 0;
+            button {
+              margin-top: 4px !important;
+              margin-bottom: 4px;
+            }
           }
         `}
         footer={() => (

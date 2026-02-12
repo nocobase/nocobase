@@ -11,3 +11,4 @@ export * from './FilterFormFieldModel';
 export * from './FilterFormRecordSelectFieldModel';
 export * from './date-time';
 export * from './FilterFormCustomFieldModel';
+export * from './FilterFormCustomRecordSelectFieldModel';

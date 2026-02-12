@@ -9,6 +9,7 @@
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { lockdownSes } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
@@ -477,6 +478,16 @@ export class Gateway extends EventEmitter {
     // NOTE: to avoid listener number warning (default to 10)
     // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
     mainApp.setMaxListeners(50);
+
+    // Delay SES lockdown until the app has finished starting to avoid breaking late-loaded modules.
+    mainApp.once('afterStart', () => {
+      lockdownSes({
+        consoleTaming: 'unsafe',
+        errorTaming: 'unsafe',
+        overrideTaming: 'moderate',
+        stackFiltering: 'verbose',
+      });
+    });
 
     let runArgs: any = [process.argv, { throwError: true, from: 'node' }];
 

@@ -8,14 +8,25 @@
  */
 
 import React from 'react';
-import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
-import { tExpr, FieldModelRenderer, FormItem } from '@nocobase/flow-engine';
-import { FieldComponentProps } from './FieldComponentProps';
-import { debounce } from 'lodash';
-import { SourceCascader } from '../SourceCascader';
-import { FieldModelSelect } from '../FieldModelSelect';
+import { cloneDeep, debounce, isEqual } from 'lodash';
+import { CollectionField, FieldModelRenderer, FlowModelContext, FormItem, tExpr } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
+import { FieldComponentProps } from './FieldComponentProps';
+import { FieldModelSelect } from '../FieldModelSelect';
+import { FieldOperatorSelect } from '../FieldOperatorSelect';
+import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } from '../customFieldOperators';
+import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
+import { SourceCascader } from '../SourceCascader';
 import { normalizeFilterValueByOperator } from '../valueNormalization';
+
+const validateRecordSelectRequired = (value: any, _rule: any, ctx: any) => {
+  if (ctx?.form?.values?.fieldModel !== 'FilterFormCustomRecordSelectFieldModel') {
+    return;
+  }
+  if (value === undefined || value === null || value === '') {
+    return ctx?.t?.('The field value is required') || 'The field value is required';
+  }
+};
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   customFieldModelInstance = null;
@@ -24,6 +35,52 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   operator: string;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
+  private lastAutoTriggerValue: any;
+  private autoTriggerInitialized = false;
+
+  /**
+   * Resolve or build collection field context for RecordSelect custom fields.
+   *
+   * When user creates a custom RecordSelect field, there is no real collection field.
+   * We build a lightweight CollectionField with target metadata so downstream
+   * flows can render select settings and load remote options.
+   *
+   * @param ctx - Flow context for current model
+   * @param props - Field model props from settings
+   * @returns CollectionField instance or undefined when not applicable
+   */
+  buildRecordSelectCollectionField(ctx: FlowModelContext, props: Record<string, any>) {
+    const dataSourceKey = props?.recordSelectDataSourceKey || 'main';
+    const targetCollectionName = props?.recordSelectTargetCollection;
+    if (!targetCollectionName) return;
+
+    const dataSource = ctx.dataSourceManager?.getDataSource?.(dataSourceKey);
+    const targetCollection = dataSource?.getCollection?.(targetCollectionName);
+    if (!dataSource || !targetCollection) return;
+
+    const titleFieldName =
+      props?.recordSelectTitleField ||
+      targetCollection.titleCollectionField?.name ||
+      targetCollection.titleCollectionField?.options?.name;
+    const valueFieldName = props?.recordSelectValueField || targetCollection.filterTargetKey || 'id';
+
+    const collectionField = new CollectionField({
+      name: props?.name || 'recordSelect',
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: targetCollectionName,
+      dataSourceKey,
+      uiSchema: {
+        'x-component': 'Select',
+      },
+      fieldNames: {
+        label: titleFieldName,
+        value: valueFieldName,
+      },
+    });
+    collectionField.setCollection(targetCollection);
+    return collectionField;
+  }
 
   get defaultTargetUid(): string {
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
@@ -54,8 +111,35 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
    * @returns
    */
   getFilterValue() {
-    const rawValue = this.context.form?.getFieldValue(this.props.name);
-    return normalizeFilterValueByOperator(this.operator, rawValue);
+    const rawValue = this.customFieldModelInstance?.getFilterValue
+      ? this.customFieldModelInstance.getFilterValue()
+      : this.context.form?.getFieldValue(this.props.name);
+    const operatorMeta = this.getCurrentOperatorMeta();
+    const normalizedValue = normalizeFilterValueByOperator(this.operator, rawValue);
+    if (operatorMeta?.noValue) {
+      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      if (Array.isArray(options)) {
+        return normalizedValue;
+      }
+      return true;
+    }
+    return normalizedValue;
+  }
+
+  private getCurrentOperatorMeta() {
+    const fieldSettings = this.getStepParams('formItemSettings', 'fieldSettings') || {};
+    const fieldModel = fieldSettings.fieldModel;
+    const source = fieldSettings.source || [];
+    const fieldModelProps = this.customFieldProps || fieldSettings.fieldModelProps || {};
+    const operatorList = resolveCustomFieldOperatorList({
+      flowEngine: this.flowEngine,
+      fieldModel,
+      source,
+      fieldModelProps,
+    });
+    const operator = this.operator || fieldSettings.operator;
+    if (!operator) return null;
+    return operatorList.find((item) => item.value === operator) || null;
   }
 
   /**
@@ -71,7 +155,13 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
 
   getValueProps(value) {
     if (this.context.blockModel.autoTriggerFilter) {
-      this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+      if (!this.autoTriggerInitialized) {
+        this.autoTriggerInitialized = true;
+        this.lastAutoTriggerValue = cloneDeep(value);
+      } else if (!isEqual(this.lastAutoTriggerValue, value)) {
+        this.lastAutoTriggerValue = cloneDeep(value);
+        this.debouncedDoFilter(); // 仅在值变化时触发筛选，避免渲染导致重复请求
+      }
     }
 
     return {
@@ -134,21 +224,24 @@ FilterFormCustomFieldModel.registerFlow({
         },
         fieldModel: {
           type: 'string',
-          title: tExpr('Field model'),
+          title: tExpr('Field type'),
           'x-component': FieldModelSelect,
           'x-decorator': 'FormItem',
           required: true,
           enum: [
-            { label: 'Input', value: 'InputFieldModel' },
-            { label: 'Number', value: 'NumberFieldModel' },
-            { label: 'Date', value: 'DateTimeFilterFieldModel' },
-            { label: 'Select', value: 'SelectFieldModel' },
-            { label: 'Radio group', value: 'RadioGroupFieldModel' },
-            { label: 'Checkbox group', value: 'CheckboxGroupFieldModel' },
-            { label: 'Record select', value: 'RecordSelectFieldModel' },
+            { label: tExpr('Input'), value: 'InputFieldModel' },
+            { label: tExpr('Number'), value: 'NumberFieldModel' },
+            { label: tExpr('Date'), value: 'DateTimeFilterFieldModel' },
+            { label: tExpr('Select'), value: 'SelectFieldModel' },
+            { label: tExpr('Radio group'), value: 'RadioGroupFieldModel' },
+            { label: tExpr('Checkbox group'), value: 'CheckboxGroupFieldModel' },
+            { label: tExpr('Record select'), value: 'FilterFormCustomRecordSelectFieldModel' },
           ],
           'x-component-props': {
             placeholder: tExpr('Please select'),
+            valueMap: {
+              RecordSelectFieldModel: 'FilterFormCustomRecordSelectFieldModel',
+            },
           },
           'x-reactions': [
             {
@@ -157,6 +250,9 @@ FilterFormCustomFieldModel.registerFlow({
                 state: {
                   componentProps: {
                     source: '{{$deps[0]}}',
+                    valueMap: {
+                      RecordSelectFieldModel: 'FilterFormCustomRecordSelectFieldModel',
+                    },
                   },
                 },
               },
@@ -167,6 +263,20 @@ FilterFormCustomFieldModel.registerFlow({
           type: 'object',
           title: tExpr('Component properties'),
           'x-component': FieldComponentProps,
+          properties: {
+            recordSelectTargetCollection: {
+              type: 'string',
+              'x-validator': validateRecordSelectRequired,
+            },
+            recordSelectTitleField: {
+              type: 'string',
+              'x-validator': validateRecordSelectRequired,
+            },
+            recordSelectValueField: {
+              type: 'string',
+              'x-validator': validateRecordSelectRequired,
+            },
+          },
           'x-reactions': [
             {
               dependencies: ['fieldModel', 'source'],
@@ -181,6 +291,27 @@ FilterFormCustomFieldModel.registerFlow({
             },
           ],
         },
+        operator: {
+          type: 'string',
+          title: tExpr('Operator'),
+          'x-component': FieldOperatorSelect,
+          'x-decorator': 'FormItem',
+          required: true,
+          'x-reactions': [
+            {
+              dependencies: ['fieldModel', 'source', 'fieldModelProps'],
+              fulfill: {
+                state: {
+                  componentProps: {
+                    fieldModel: '{{$deps[0]}}',
+                    source: '{{$deps[1]}}',
+                    fieldModelProps: '{{$deps[2] || {}}}',
+                  },
+                },
+              },
+            },
+          ],
+        },
       },
       defaultParams(ctx) {
         return {
@@ -188,46 +319,93 @@ FilterFormCustomFieldModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const { fieldModel, fieldModelProps = {}, title, name } = params;
+        const { fieldModel, fieldModelProps = {}, title, name, source = [], operator } = params;
+
         ctx.model.setProps({
           label: title,
           name: name,
         });
 
+        let resolvedFieldModelProps = fieldModelProps;
+        let recordSelectCollectionField;
+        if (fieldModel === 'FilterFormCustomRecordSelectFieldModel') {
+          const allowMultiple =
+            fieldModelProps?.allowMultiple === undefined ? true : Boolean(fieldModelProps?.allowMultiple);
+          const multiple = fieldModelProps?.multiple === undefined ? allowMultiple : Boolean(fieldModelProps?.multiple);
+          resolvedFieldModelProps = {
+            ...fieldModelProps,
+            allowMultiple,
+            multiple,
+            valueMode: fieldModelProps?.valueMode || 'value',
+          };
+
+          recordSelectCollectionField = ctx.model.buildRecordSelectCollectionField(ctx, {
+            ...resolvedFieldModelProps,
+            name,
+          });
+          if (recordSelectCollectionField) {
+            const labelField =
+              fieldModelProps?.recordSelectTitleField || recordSelectCollectionField.targetCollectionTitleFieldName;
+            const valueField =
+              fieldModelProps?.recordSelectValueField ||
+              recordSelectCollectionField.targetCollection?.filterTargetKey ||
+              'id';
+            if (labelField && valueField) {
+              resolvedFieldModelProps = {
+                ...resolvedFieldModelProps,
+                fieldNames: {
+                  label: labelField,
+                  value: valueField,
+                },
+              };
+            }
+          }
+        }
+
         if (!ctx.model.customFieldModelInstance) {
           ctx.model.customFieldModelInstance = ctx.model.flowEngine.createModel({
             use: fieldModel,
-            props: { allowClear: true, ...fieldModelProps },
+            props: { allowClear: true, ...resolvedFieldModelProps },
           });
         } else {
-          ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...fieldModelProps });
+          ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...resolvedFieldModelProps });
+        }
+        if (fieldModel === 'FilterFormCustomRecordSelectFieldModel') {
+          const titleFieldParam =
+            resolvedFieldModelProps?.recordSelectTitleField || resolvedFieldModelProps?.fieldNames?.label;
+          if (titleFieldParam) {
+            ctx.model.customFieldModelInstance.setStepParams('selectSettings', 'fieldNames', {
+              label: titleFieldParam,
+            });
+          }
+        }
+        if (recordSelectCollectionField) {
+          ctx.model.customFieldModelInstance.context.defineProperty('collectionField', {
+            value: recordSelectCollectionField,
+          });
         }
 
-        if (fieldModel === 'DateTimeFilterFieldModel' && fieldModelProps.isRange) {
-          ctx.model.operator = '$dateBetween';
-        } else {
-          ctx.model.operator = undefined;
-        }
+        const operatorList = resolveCustomFieldOperatorList({
+          flowEngine: ctx.model.flowEngine,
+          fieldModel,
+          source,
+          fieldModelProps: resolvedFieldModelProps,
+        });
+        const operatorIsValid = !!operatorList.find((item) => item.value === operator);
+        ctx.model.operator =
+          (operatorIsValid ? operator : undefined) ||
+          resolveDefaultCustomFieldOperator({
+            flowEngine: ctx.model.flowEngine,
+            fieldModel,
+            source,
+            fieldModelProps: resolvedFieldModelProps,
+          });
 
-        ctx.model.customFieldProps = fieldModelProps;
+        ctx.model.customFieldProps = resolvedFieldModelProps;
       },
     },
     connectFields: {
       use: 'connectFields',
-    },
-    initialValue: {
-      title: tExpr('Default value'),
-      uiSchema: (ctx) => {
-        return {
-          defaultValue: {
-            'x-component': 'DefaultValue',
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ initialValue: params.defaultValue });
-      },
     },
   },
 });
