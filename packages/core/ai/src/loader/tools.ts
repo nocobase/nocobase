@@ -55,9 +55,9 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
       grouped.get(key).push(fd);
     }
 
-    this.toolsDescriptors = await Promise.all(
-      Array.from(grouped.entries())
-        .map(async ([name, fds]) => {
+    this.toolsDescriptors = (
+      await Promise.all(
+        Array.from(grouped.entries()).map(async ([name, fds]) => {
           const tsFile = fds.find((fd) => fd.extname === '.ts' || fd.extname === '.js');
           const descFile = fds.find((fd) => fd.basename === 'description.md');
           const entry: ToolsDescriptor = { name, tsFile, descFile };
@@ -88,9 +88,9 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
             }
           }
           return entry;
-        })
-        .filter((t) => t != null),
-    );
+        }),
+      )
+    ).filter((t) => t != null);
   }
 
   protected async register(): Promise<void> {
