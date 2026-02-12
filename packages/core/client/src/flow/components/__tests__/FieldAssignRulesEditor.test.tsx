@@ -469,7 +469,7 @@ describe('FieldAssignRulesEditor', () => {
 
     const value: FieldAssignRuleItem[] = [{ key: 'rule-title', enable: true, targetPath: 'title', mode: 'assign' }];
 
-    const { container } = render(
+    render(
       wrap(
         <FieldAssignRulesEditor
           t={t}
