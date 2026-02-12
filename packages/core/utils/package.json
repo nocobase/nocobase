@@ -16,7 +16,8 @@
     "handlebars": "^4.7.8",
     "liquidjs": "^10.23.0",
     "multer": "^1.4.5-lts.2",
-    "object-path": "^0.11.8"
+    "object-path": "^0.11.8",
+    "ses": "^1.14.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }
