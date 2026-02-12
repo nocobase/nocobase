@@ -110,6 +110,10 @@ export type SendOptions = {
   editingMessageId?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
+  modelOverride?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
 
 export type ResendOptions = {

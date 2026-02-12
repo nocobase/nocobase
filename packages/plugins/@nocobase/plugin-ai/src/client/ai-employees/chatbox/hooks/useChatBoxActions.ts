@@ -19,10 +19,13 @@ import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
-import { useApp } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
+import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
+import { getAllModels, isSameModelOverride, resolveModelOverride } from '../model-override';
 
 export const useChatBoxActions = () => {
-  const app = useApp();
+  const api = useAPIClient();
+  const llmServicesRepository = useLLMServicesRepository();
   const t = useT();
 
   const open = useChatBoxStore.use.open();
@@ -85,6 +88,20 @@ export const useChatBoxActions = () => {
     }
   };
 
+  const ensureModelOverride = useCallback(
+    async (aiEmployee: AIEmployee) => {
+      await llmServicesRepository.load();
+      const allModels = getAllModels(llmServicesRepository.services);
+      const currentOverride = useChatBoxStore.getState().modelOverride;
+      const resolvedOverride = resolveModelOverride(api, aiEmployee.username, allModels, currentOverride);
+      if (!isSameModelOverride(currentOverride, resolvedOverride)) {
+        setModelOverride(resolvedOverride);
+      }
+      return resolvedOverride;
+    },
+    [api, llmServicesRepository, setModelOverride],
+  );
+
   const startNewConversation = useCallback(() => {
     const greetingMsg = {
       key: uid(),
@@ -137,6 +154,7 @@ export const useChatBoxActions = () => {
         setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
+      const modelOverride = await ensureModelOverride(aiEmployee);
       senderRef.current?.focus();
       const msgs: Message[] = [
         {
@@ -182,6 +200,7 @@ export const useChatBoxActions = () => {
             workContext,
             skillSettings,
             webSearch: true,
+            modelOverride,
           });
         }
         return;
@@ -195,7 +214,7 @@ export const useChatBoxActions = () => {
       });
       setMessages(msgs);
     },
-    [open, currentConversation],
+    [open, currentConversation, ensureModelOverride],
   );
 
   return {

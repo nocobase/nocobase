@@ -288,13 +288,14 @@ export const useChatMessageActions = () => {
     onConversationCreate,
     skillSettings,
     webSearch,
+    modelOverride: inputModelOverride,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;
 
     // Read modelOverride from store at call time to avoid stale closure
-    const modelOverride = useChatBoxStore.getState().modelOverride;
+    const modelOverride = inputModelOverride ?? useChatBoxStore.getState().modelOverride;
 
     // [AI_DEBUG] request
     aiDebugLogger.log(

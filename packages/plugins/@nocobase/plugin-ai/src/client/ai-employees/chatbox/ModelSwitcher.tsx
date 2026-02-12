@@ -16,9 +16,12 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
 import { useLLMServicesRepository } from '../../llm-services/hooks/useLLMServicesRepository';
-
-// Storage key prefix for model preferences
-const STORAGE_KEY = 'ai_model_preference_';
+import {
+  isSameModelOverride,
+  isValidModelOverride,
+  MODEL_PREFERENCE_STORAGE_KEY,
+  resolveModelOverride,
+} from './model-override';
 
 export const ModelSwitcher: React.FC = observer(
   () => {
@@ -28,6 +31,7 @@ export const ModelSwitcher: React.FC = observer(
     const { message } = App.useApp();
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
+    const currentEmployeeUsername = currentEmployee?.username;
     const modelOverride = useChatBoxStore.use.modelOverride();
     const setModelOverride = useChatBoxStore.use.setModelOverride();
 
@@ -44,8 +48,7 @@ export const ModelSwitcher: React.FC = observer(
     const llmServices = repo.services;
     const loading = repo.loading;
 
-    // Flatten all models into a single list for lookup/validation
-    const allModels = useMemo(
+    const allModelsWithLabel = useMemo(
       () =>
         llmServices.flatMap((s) =>
           s.enabledModels.map((m) => ({
@@ -57,48 +60,25 @@ export const ModelSwitcher: React.FC = observer(
         ),
       [llmServices],
     );
-
-    // Check if a model is valid
-    const isValid = (v: { llmService: string; model: string } | null) =>
-      v && allModels.some((m) => m.llmService === v.llmService && m.model === v.model);
+    const allModels = useMemo(
+      () => allModelsWithLabel.map(({ llmService, model }) => ({ llmService, model })),
+      [allModelsWithLabel],
+    );
 
     // Initialize: cache >> first model
     useEffect(() => {
-      if (!currentEmployee || !allModels.length) return;
+      if (!currentEmployeeUsername || !allModels.length) return;
 
-      // Skip if already set and valid
-      if (modelOverride && isValid(modelOverride)) return;
-
-      // Try cache first (use apiClient.storage per NocoBase convention)
-      let cachedId: string | null = null;
-      try {
-        cachedId = api.storage.getItem(STORAGE_KEY + currentEmployee.username);
-      } catch {
-        // Ignore storage errors
-      }
-      let cachedModel = null;
-      if (cachedId) {
-        if (cachedId.includes(':')) {
-          const [cachedService, cachedModelId] = cachedId.split(':');
-          cachedModel = allModels.find((m) => m.llmService === cachedService && m.model === cachedModelId) || null;
-        } else {
-          // Backward compatibility: old format stored only model id
-          cachedModel = allModels.find((m) => m.model === cachedId) || null;
-        }
-      }
-
-      if (cachedModel) {
-        setModelOverride({ llmService: cachedModel.llmService, model: cachedModel.model });
+      const resolved = resolveModelOverride(api, currentEmployeeUsername, allModels, modelOverride);
+      if (isSameModelOverride(resolved, modelOverride)) {
         return;
       }
-
-      // Fall back to first model
-      setModelOverride(allModels[0]);
-    }, [currentEmployee?.username, allModels, modelOverride]);
+      setModelOverride(resolved);
+    }, [api, currentEmployeeUsername, allModels, modelOverride, setModelOverride]);
 
     // Current selected model value
     const selectedModel = useMemo(() => {
-      if (modelOverride && isValid(modelOverride)) {
+      if (isValidModelOverride(modelOverride, allModels)) {
         return modelOverride;
       }
       if (allModels.length) {
@@ -110,23 +90,26 @@ export const ModelSwitcher: React.FC = observer(
     // Current display label
     const selectedLabel = useMemo(() => {
       if (selectedModel) {
-        const found = allModels.find(
+        const found = allModelsWithLabel.find(
           (m) => m.llmService === selectedModel.llmService && m.model === selectedModel.model,
         );
         return found?.label || selectedModel.model;
       }
       return undefined;
-    }, [selectedModel, allModels]);
+    }, [selectedModel, allModelsWithLabel]);
 
     // Handle selection
     const handleSelect = (llmService: string, modelValue: string) => {
-      const target = allModels.find((m) => m.llmService === llmService && m.value === modelValue);
+      const target = allModelsWithLabel.find((m) => m.llmService === llmService && m.value === modelValue);
       if (target) {
         const newValue = { llmService: target.llmService, model: target.model };
         setModelOverride(newValue);
         if (currentEmployee) {
           try {
-            api.storage.setItem(STORAGE_KEY + currentEmployee.username, `${target.llmService}:${target.model}`);
+            api.storage.setItem(
+              MODEL_PREFERENCE_STORAGE_KEY + currentEmployee.username,
+              `${target.llmService}:${target.model}`,
+            );
           } catch {
             // Ignore storage errors
           }
