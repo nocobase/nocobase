@@ -92,6 +92,56 @@ function normalizeDateVariableExactValue(
   return rawValue;
 }
 
+type DateVariableComponentProps = {
+  picker: string;
+  showTime: boolean;
+  timeFormat: string;
+  format: string;
+  useIsoForExact: boolean;
+};
+
+const DEFAULT_DATE_VARIABLE_COMPONENT_PROPS: DateVariableComponentProps = {
+  picker: 'date',
+  showTime: false,
+  timeFormat: 'HH:mm:ss',
+  format: 'YYYY-MM-DD',
+  useIsoForExact: false,
+};
+
+function getFieldInterface(field: any): string {
+  return typeof field?.interface === 'string' ? field.interface : '';
+}
+
+function getFieldComponentProps(field: any): Record<string, any> {
+  return (
+    (typeof field?.getComponentProps === 'function' ? field.getComponentProps() : null) ||
+    field?.uiSchema?.['x-component-props'] ||
+    {}
+  );
+}
+
+function normalizeDateVariableOutput(rawValue: any, options: DateVariableComponentProps): any {
+  if (rawValue === null || isRunJSValue(rawValue)) {
+    return rawValue;
+  }
+
+  if (typeof rawValue === 'string' && isVariableExpression(rawValue) && !isCtxDateExpression(rawValue)) {
+    return rawValue;
+  }
+
+  if (rawValue === '' || typeof rawValue === 'undefined') {
+    return '';
+  }
+
+  const normalized = normalizeDateVariableExactValue(rawValue, {
+    useIsoForExact: options.useIsoForExact,
+    format: options.format || 'YYYY-MM-DD HH:mm:ss',
+  });
+
+  const serialized = serializeCtxDateValue(normalized);
+  return serialized || normalized;
+}
+
 interface Props {
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
   targetPath: string;
@@ -375,12 +425,19 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   }, [flowCtx.model, itemModel, resolveNestedAssociationField, targetPath]);
 
   const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
+  const itemCollectionField = (resolved?.itemModel as any)?.context?.collectionField;
+
+  const sourceInterface = React.useMemo(() => {
+    return getFieldInterface(cf) || getFieldInterface(itemCollectionField);
+  }, [cf, itemCollectionField]);
+
+  const sourceCollectionField = (cf as any) || itemCollectionField;
 
   const isArrayValueField = React.useMemo(() => {
     if (isToManyAssociationField(cf)) return true;
 
     // 部分字段组件（如 Cascader / CascadeSelectList）期望 array 值；若 uiSchema 明确声明为 array，则视为 array 值字段
-    const fieldInterface = typeof (cf as any)?.interface === 'string' ? ((cf as any).interface as string) : undefined;
+    const fieldInterface = getFieldInterface(cf);
     if (fieldInterface === 'multipleSelect' || fieldInterface === 'checkboxGroup') return true;
 
     const schemaType = cf?.uiSchema?.type;
@@ -390,14 +447,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   }, [cf]);
 
   const isDateLikeField = React.useMemo(() => {
-    const interfaces = [
-      typeof (cf as any)?.interface === 'string' ? ((cf as any).interface as string) : '',
-      typeof (resolved?.itemModel as any)?.context?.collectionField?.interface === 'string'
-        ? ((resolved as any).itemModel.context.collectionField.interface as string) || ''
-        : '',
-    ].filter(Boolean);
-
-    if (interfaces.some((iface) => DATE_FIELD_INTERFACES.has(iface))) {
+    if (sourceInterface && DATE_FIELD_INTERFACES.has(sourceInterface)) {
       return true;
     }
 
@@ -406,28 +456,16 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       (typeof targetPath === 'string' ? targetPath.split('.').filter(Boolean).slice(-1)[0] : '');
 
     return leaf === 'createdAt' || leaf === 'updatedAt';
-  }, [cf, fieldName, resolved, targetPath]);
+  }, [fieldName, sourceInterface, targetPath]);
 
   const useDateVariableConstant = enableDateVariableAsConstant && isDateLikeField;
 
   const dateVariableComponentProps = React.useMemo(() => {
     if (!useDateVariableConstant) {
-      return {} as Record<string, any>;
+      return DEFAULT_DATE_VARIABLE_COMPONENT_PROPS;
     }
 
-    const sourceCollectionField = (cf as any) || (resolved?.itemModel as any)?.context?.collectionField;
-    const sourceInterface =
-      (typeof sourceCollectionField?.interface === 'string' ? sourceCollectionField.interface : '') ||
-      (typeof (resolved?.itemModel as any)?.context?.collectionField?.interface === 'string'
-        ? (resolved as any).itemModel.context.collectionField.interface
-        : '');
-
-    const componentProps =
-      (typeof sourceCollectionField?.getComponentProps === 'function'
-        ? sourceCollectionField.getComponentProps()
-        : null) ||
-      sourceCollectionField?.uiSchema?.['x-component-props'] ||
-      {};
+    const componentProps = getFieldComponentProps(sourceCollectionField);
 
     const picker = typeof componentProps?.picker === 'string' ? componentProps.picker : 'date';
     const inferredShowTime = ['datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(
@@ -460,10 +498,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       format,
       useIsoForExact: showTime && TZ_AWARE_DATE_INTERFACES.has(sourceInterface),
     };
-  }, [cf, resolved, useDateVariableConstant]);
+  }, [sourceCollectionField, sourceInterface, useDateVariableConstant]);
 
   const dateVariableDisplayProps = React.useMemo(() => {
-    const { useIsoForExact: _useIsoForExact, ...rest } = dateVariableComponentProps as any;
+    const { useIsoForExact, ...rest } = dateVariableComponentProps;
     return rest;
   }, [dateVariableComponentProps]);
 
@@ -699,26 +737,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   const DateVariableConstantEditor = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => {
       const wrapperStyle = pickStyle(inputProps?.style);
-      const parsedValue = React.useMemo(() => {
-        const raw = inputProps?.value;
-        if (isCtxDateExpression(raw)) {
-          const parsed = parseCtxDateExpression(raw);
-          return typeof parsed === 'undefined' ? undefined : parsed;
-        }
-        return raw;
-      }, [inputProps?.value]);
-
-      const handleChange = React.useCallback(
-        (nextValue: any) => {
-          if (typeof nextValue === 'undefined') {
-            inputProps?.onChange?.('');
-            return;
-          }
-
-          inputProps?.onChange?.(nextValue);
-        },
-        [inputProps],
-      );
+      const raw = inputProps?.value;
+      const parsed = isCtxDateExpression(raw) ? parseCtxDateExpression(raw) : raw;
+      const parsedValue = typeof parsed === 'undefined' ? undefined : parsed;
 
       return (
         <DateFilterDynamicComponent
@@ -727,7 +748,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           includeNow
           isRange={Array.isArray(parsedValue)}
           value={parsedValue}
-          onChange={handleChange}
+          onChange={(nextValue) => inputProps?.onChange?.(typeof nextValue === 'undefined' ? '' : nextValue)}
           style={withFullWidthStyle(wrapperStyle)}
         />
       );
@@ -750,6 +771,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return C;
   }, [flowCtx]);
 
+  const ConstantEditor = useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
+
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
     return async () => {
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
@@ -762,21 +785,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           name: 'constant',
           type: 'string',
           paths: ['constant'],
-          render: useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor,
+          render: ConstantEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
         ...mergedBase,
       ];
     };
-  }, [
-    flowCtx,
-    ConstantValueEditor,
-    DateVariableConstantEditor,
-    NullComponent,
-    RunJSComponent,
-    useDateVariableConstant,
-  ]);
+  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent]);
 
   const displayValue = React.useMemo(() => {
     if (!useDateVariableConstant) {
@@ -798,33 +814,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         return;
       }
 
-      if (nextValue === null || isRunJSValue(nextValue)) {
-        onChange(nextValue);
-        return;
-      }
-
-      if (typeof nextValue === 'string' && isVariableExpression(nextValue) && !isCtxDateExpression(nextValue)) {
-        onChange(nextValue);
-        return;
-      }
-
-      if (nextValue === '' || typeof nextValue === 'undefined') {
-        onChange('');
-        return;
-      }
-
-      const normalizedNextValue = normalizeDateVariableExactValue(nextValue, {
-        useIsoForExact: !!(dateVariableComponentProps as any)?.useIsoForExact,
-        format: (dateVariableComponentProps as any)?.format || 'YYYY-MM-DD HH:mm:ss',
-      });
-
-      const serialized = serializeCtxDateValue(normalizedNextValue);
-      if (serialized) {
-        onChange(serialized);
-        return;
-      }
-
-      onChange(normalizedNextValue);
+      onChange(normalizeDateVariableOutput(nextValue, dateVariableComponentProps));
     },
     [dateVariableComponentProps, onChange, useDateVariableConstant],
   );
@@ -844,8 +834,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       converters={{
         renderInputComponent: (meta) => {
           const firstPath = meta?.paths?.[0];
-          if (firstPath === 'constant')
-            return useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
+          if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
           if (firstPath === 'runjs') return RunJSComponent;
           return null;
