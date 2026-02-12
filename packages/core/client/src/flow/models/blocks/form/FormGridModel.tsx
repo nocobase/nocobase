@@ -83,6 +83,7 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
           marginRight: `-${token.marginLG}px`,
           paddingLeft: `${token.marginLG}px`,
           paddingRight: `${token.marginLG}px`,
+          paddingTop: 5,
         }}
       >
         {content}
