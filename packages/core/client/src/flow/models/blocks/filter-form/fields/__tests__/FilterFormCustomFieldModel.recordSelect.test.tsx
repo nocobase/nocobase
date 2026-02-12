@@ -14,7 +14,6 @@ import { createForm } from '@formily/core';
 import { Field, FormProvider } from '@formily/react';
 import { fireEvent, render, waitFor } from '@nocobase/test/client';
 import {
-  FlowCancelSaveException,
   FilterableItemModel,
   FlowEngine,
   FlowEngineProvider,
@@ -619,160 +618,16 @@ describe('FilterForm custom field record select', () => {
     expect(model.getFilterValue()).toEqual([2, 3]);
   });
 
-  it('clears default value after confirming record select settings change', async () => {
+  it('does not expose default value step in custom field settings', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
 
-    const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
-      name: 'users',
-      titleField: 'name',
-      filterTargetKey: 'id',
-      fields: [
-        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
-        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
-      ],
-    });
-
     const model = engine.createModel<FilterFormCustomFieldModel>({
-      uid: 'custom-confirm-clear-default',
+      uid: 'custom-without-default-value-step',
       use: 'FilterFormCustomFieldModel',
     });
 
-    const confirm = vi.fn(async () => true);
-    const setFieldValue = vi.fn();
-    model.context.defineProperty('modal', {
-      value: { confirm },
-    });
-    model.context.defineProperty('form', {
-      value: { setFieldValue },
-    });
-
-    model.setStepParams('formItemSettings', 'initialValue', {
-      defaultValue: ['Super Admin'],
-    });
-    model.setProps({ initialValue: ['Super Admin'] });
-
-    const previousFieldSettings = {
-      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
-      title: 'Users',
-      name: 'users',
-      operator: '$in',
-      fieldModelProps: {
-        recordSelectDataSourceKey: 'main',
-        recordSelectTargetCollection: 'users',
-        recordSelectTitleField: 'name',
-        recordSelectValueField: 'name',
-        valueMode: 'value',
-        allowMultiple: true,
-        multiple: true,
-      },
-    };
-    model.setStepParams('formItemSettings', 'fieldSettings', previousFieldSettings);
-    await model.applyFlow('formItemSettings');
-
-    const nextFieldSettings = {
-      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
-      title: 'Users',
-      name: 'users',
-      operator: '$in',
-      fieldModelProps: {
-        recordSelectDataSourceKey: 'main',
-        recordSelectTargetCollection: 'users',
-        recordSelectTitleField: 'id',
-        recordSelectValueField: 'id',
-        valueMode: 'value',
-        allowMultiple: true,
-        multiple: true,
-      },
-    };
-
-    const step = model.getFlow('formItemSettings')?.steps?.fieldSettings as any;
-    model.setStepParams('formItemSettings', 'fieldSettings', nextFieldSettings);
-    await step.beforeParamsSave(model.context, nextFieldSettings, previousFieldSettings);
-    await step.handler(model.context, nextFieldSettings);
-
-    expect(confirm).toHaveBeenCalledTimes(1);
-    expect(model.getStepParams('formItemSettings', 'fieldSettings')).toMatchObject(nextFieldSettings);
-    expect(model.getStepParams('formItemSettings', 'initialValue')?.defaultValue).toBeUndefined();
-    expect(model.props.initialValue).toBeUndefined();
-    expect(setFieldValue).toHaveBeenCalledWith('users', undefined);
-  });
-
-  it('keeps default value when cancelling record select settings change', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ FilterFormCustomFieldModel, FilterFormCustomRecordSelectFieldModel });
-
-    const ds = engine.dataSourceManager.getDataSource('main');
-    ds.addCollection({
-      name: 'users',
-      titleField: 'name',
-      filterTargetKey: 'id',
-      fields: [
-        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
-        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
-      ],
-    });
-
-    const model = engine.createModel<FilterFormCustomFieldModel>({
-      uid: 'custom-confirm-cancel-default',
-      use: 'FilterFormCustomFieldModel',
-    });
-
-    const confirm = vi.fn(async () => false);
-    model.context.defineProperty('modal', {
-      value: { confirm },
-    });
-
-    model.setStepParams('formItemSettings', 'initialValue', {
-      defaultValue: ['Super Admin'],
-    });
-    model.setProps({ initialValue: ['Super Admin'] });
-
-    const previousFieldSettings = {
-      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
-      title: 'Users',
-      name: 'users',
-      operator: '$in',
-      fieldModelProps: {
-        recordSelectDataSourceKey: 'main',
-        recordSelectTargetCollection: 'users',
-        recordSelectTitleField: 'name',
-        recordSelectValueField: 'name',
-        valueMode: 'value',
-        allowMultiple: true,
-        multiple: true,
-      },
-    };
-    model.setStepParams('formItemSettings', 'fieldSettings', previousFieldSettings);
-    await model.applyFlow('formItemSettings');
-
-    const nextFieldSettings = {
-      fieldModel: 'FilterFormCustomRecordSelectFieldModel',
-      title: 'Users',
-      name: 'users',
-      operator: '$in',
-      fieldModelProps: {
-        recordSelectDataSourceKey: 'main',
-        recordSelectTargetCollection: 'users',
-        recordSelectTitleField: 'id',
-        recordSelectValueField: 'id',
-        valueMode: 'value',
-        allowMultiple: true,
-        multiple: true,
-      },
-    };
-
-    const step = model.getFlow('formItemSettings')?.steps?.fieldSettings as any;
-    model.setStepParams('formItemSettings', 'fieldSettings', nextFieldSettings);
-    await expect(step.beforeParamsSave(model.context, nextFieldSettings, previousFieldSettings)).rejects.toBeInstanceOf(
-      FlowCancelSaveException,
-    );
-
-    expect(confirm).toHaveBeenCalledTimes(1);
-    expect(model.getStepParams('formItemSettings', 'fieldSettings')).toMatchObject(previousFieldSettings);
-    expect(model.getStepParams('formItemSettings', 'initialValue')?.defaultValue).toEqual(['Super Admin']);
-    expect(model.props.initialValue).toEqual(['Super Admin']);
-    expect(model.customFieldProps?.recordSelectTitleField).toBe('name');
+    const initialValueStep = model.getFlow('formItemSettings')?.steps?.initialValue;
+    expect(initialValueStep).toBeUndefined();
   });
 });
