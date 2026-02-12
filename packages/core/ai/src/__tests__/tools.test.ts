@@ -14,7 +14,7 @@ import { AIManager } from '../ai-manager';
 import { ToolsManager } from '../tools-manager';
 
 describe('Tools loader test cases', () => {
-  const basePath = path.resolve(__dirname, 'resource', 'ai');
+  const basePath = path.join(process.cwd(), 'packages/core/ai/src/__tests__/resource/ai');
   let app: MockServer;
   let aiManager: AIManager;
   let toolsManager: ToolsManager;
