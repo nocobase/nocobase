@@ -223,7 +223,7 @@ SubTableFieldModel.registerFlow({
       title: tExpr('Enable select action'),
       uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       defaultParams: {
-        allowSelectExistingRecord: false,
+        allowSelectExistingRecord: true,
       },
       handler(ctx, params) {
         ctx.model.setProps({
