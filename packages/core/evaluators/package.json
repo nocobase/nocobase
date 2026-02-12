@@ -8,7 +8,8 @@
   "dependencies": {
     "@formulajs/formulajs": "4.4.9",
     "@nocobase/utils": "1.9.46",
-    "mathjs": "^15.1.0"
+    "mathjs": "^15.1.0",
+    "ses": "^1.14.0"
   },
   "repository": {
     "type": "git",
