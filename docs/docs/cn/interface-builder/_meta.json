@@ -217,8 +217,13 @@
           },
           {
             "type": "custom-link",
-            "label": "子表格",
+            "label": "子表格（行内编辑）",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "子表格（弹窗编辑）",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
