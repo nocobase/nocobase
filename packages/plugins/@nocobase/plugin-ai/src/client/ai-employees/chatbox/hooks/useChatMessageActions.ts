@@ -20,15 +20,19 @@ import { useChatBoxStore } from '../stores/chat-box';
 import { parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
+import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
+import { ensureModelOverride } from '../model-override';
 
 export const useChatMessageActions = () => {
   const app = useApp();
   const t = useT();
   const api = useAPIClient();
   const plugin = usePlugin('ai') as PluginAIClient;
+  const llmServicesRepository = useLLMServicesRepository();
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
+  const setModelOverride = useChatBoxStore.use.setModelOverride();
 
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
@@ -45,6 +49,24 @@ export const useChatMessageActions = () => {
   const currentWebSearch = useChatConversationsStore.use.webSearch();
 
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
+
+  const ensureModelOverrideFromStore = useCallback(
+    async (username?: string) => {
+      const state = useChatBoxStore.getState();
+      const targetUsername = username || state.currentEmployee?.username;
+      if (!targetUsername) {
+        return state.modelOverride;
+      }
+      return ensureModelOverride({
+        api,
+        llmServicesRepository,
+        username: targetUsername,
+        currentOverride: state.modelOverride,
+        onResolved: setModelOverride,
+      });
+    },
+    [api, llmServicesRepository, setModelOverride],
+  );
 
   const messagesService = useRequest<{
     data: Message[];
@@ -411,8 +433,12 @@ export const useChatMessageActions = () => {
       },
     ]);
 
-    // Read modelOverride from store at call time to avoid stale closure
-    const modelOverride = useChatBoxStore.getState().modelOverride;
+    // Read modelOverride from store at call time to avoid stale closure.
+    // If not ready yet, resolve it through shared model-override rules.
+    let modelOverride = useChatBoxStore.getState().modelOverride;
+    if (!modelOverride) {
+      modelOverride = await ensureModelOverrideFromStore(aiEmployee?.username);
+    }
 
     const controller = new AbortController();
     setAbortController(controller);
@@ -478,8 +504,12 @@ export const useChatMessageActions = () => {
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
-      // Read modelOverride from store at call time to avoid stale closure
-      const modelOverride = useChatBoxStore.getState().modelOverride;
+      // Read modelOverride from store at call time to avoid stale closure.
+      // If not ready yet, resolve it through shared model-override rules.
+      let modelOverride = useChatBoxStore.getState().modelOverride;
+      if (!modelOverride) {
+        modelOverride = await ensureModelOverrideFromStore(aiEmployee?.username);
+      }
       const controller = new AbortController();
       setAbortController(controller);
       try {
@@ -509,7 +539,7 @@ export const useChatMessageActions = () => {
         setAbortController(null);
       }
     },
-    [],
+    [currentWebSearch, ensureModelOverrideFromStore],
   );
 
   const loadMoreMessages = useCallback(async () => {

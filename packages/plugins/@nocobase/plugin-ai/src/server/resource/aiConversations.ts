@@ -388,16 +388,6 @@ export default {
           return next();
         }
 
-        // Save modelOverride to conversation.options for later use in resendMessages/callTool
-        if (modelOverride) {
-          const options = conversation.options ?? {};
-          options['modelOverride'] = modelOverride;
-          await ctx.db.getRepository('aiConversations').update({
-            filter: { sessionId },
-            values: { options },
-          });
-        }
-
         const legacy = conversation.thread === 0;
 
         const aiEmployee = new AIEmployee(
@@ -439,7 +429,7 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, webSearch } = ctx.action.params.values || {};
+      const { sessionId, webSearch, modelOverride } = ctx.action.params.values || {};
       let { messageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
@@ -507,7 +497,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           webSearch,
-          conversation.options?.modelOverride,
+          modelOverride,
         );
         await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
       } catch (err) {
@@ -672,7 +662,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           webSearch,
-          conversation.options?.modelOverride,
+          modelOverride,
         );
 
         const userDecisions = await aiEmployee.getUserDecisions(messageId);

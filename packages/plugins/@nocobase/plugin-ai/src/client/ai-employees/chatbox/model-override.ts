@@ -8,6 +8,7 @@
  */
 
 import { LLMServiceItem } from '../../llm-services/LLMServicesRepository';
+import type { LLMServicesRepository } from '../../llm-services/LLMServicesRepository';
 import { ModelOverride } from './stores/chat-box';
 
 export const MODEL_PREFERENCE_STORAGE_KEY = 'ai_model_preference_';
@@ -56,4 +57,26 @@ export const resolveModelOverride = (
     }
   }
   return allModels[0] || null;
+};
+
+export const ensureModelOverride = async ({
+  api,
+  llmServicesRepository,
+  username,
+  currentOverride,
+  onResolved,
+}: {
+  api: any;
+  llmServicesRepository: LLMServicesRepository;
+  username: string;
+  currentOverride?: ModelOverride | null;
+  onResolved?: (override: ModelOverride | null) => void;
+}): Promise<ModelOverride | null> => {
+  await llmServicesRepository.load();
+  const allModels = getAllModels(llmServicesRepository.services);
+  const resolvedOverride = resolveModelOverride(api, username, allModels, currentOverride);
+  if (!isSameModelOverride(currentOverride, resolvedOverride)) {
+    onResolved?.(resolvedOverride);
+  }
+  return resolvedOverride;
 };
