@@ -51,3 +51,4 @@ export {
 } from './linkageRules';
 export { displayFieldComponent } from './displayFieldComponent';
 export * from './overflowMode';
+export * from './numberFormat';
