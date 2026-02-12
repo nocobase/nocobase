@@ -24,7 +24,7 @@ const validateRecordSelectRequired = (value: any, _rule: any, ctx: any) => {
     return;
   }
   if (value === undefined || value === null || value === '') {
-    return 'The field value is required';
+    return ctx?.t?.('The field value is required') || 'The field value is required';
   }
 };
 
