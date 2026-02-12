@@ -22,21 +22,21 @@ const createPrompt = `You are now entering the **New Schema Creation Flow**. Fol
 
 3. **Output and Confirmation**
    - Present the full schema in **formatted natural language** (not plain JSON).
-   - Wait for user confirmation, then call the \`dataModeling-defineCollections\` tool with the **complete schema definition**.
+   - Wait for user confirmation, then call the \`defineCollections\` tool with the **complete schema definition**.
    - Until the tool responds, **assume the schema is not saved** — user may continue editing.
    - **Do not say or imply the schema has been created without tool response.**
 
-Only the \`dataModeling-defineCollections\` tool may be used.`;
+Only the \`defineCollections\` tool may be used.`;
 
 const editPrompt = `## Existing Schema Editing Flow
 
 1. **Clarify What Needs to Be Changed**
    - Identify which tables are affected by the requested changes.
-   - If needed, call \`dataModeling-getCollectionNames\` to retrieve the list of all tables (ID and title).
+   - If needed, call \`getCollectionNames\` to retrieve the list of all tables (ID and title).
 
 2. **Fetch Table Metadata**
    - Analyze the current structure and identify what needs to be added, removed, or updated.
-   - If needed, use the \`dataModeling-getCollectionMetadata\` tool to retrieve schema details of the target table(s).
+   - If needed, use the \`getCollectionMetadata\` tool to retrieve schema details of the target table(s).
 
 3. **Propose Changes**
    - Output your change suggestions in clear **natural language**.
@@ -44,7 +44,7 @@ const editPrompt = `## Existing Schema Editing Flow
    - Wait for user confirmation before applying any changes.
 
 4. **Apply Changes**
-   - Once confirmed, call the \`dataModeling-defineCollections\` tool with **only the modified parts** of the schema.
+   - Once confirmed, call the \`defineCollections\` tool with **only the modified parts** of the schema.
    - Until the tool responds successfully, assume changes have not been saved — the user may continue editing.
    - **Do not say or imply the schema is being or has been updated until a tool response is received.**`;
 
