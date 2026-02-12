@@ -1,10 +1,18 @@
 # ctx.importAsync()
 
-按 URL 动态加载 **ESM 模块**或 **CSS**，适用于 JS 区块、JS 字段、JS 操作等场景。需要第三方 ESM 库时使用 `ctx.importAsync()`，UMD/AMD 库使用 `ctx.requireAsync()`；传入 `.css` 地址会加载并注入样式。
+按 URL 动态加载 **ESM 模块**或 **CSS**，适用于 RunJS 各场景。需要第三方 ESM 库时使用 `ctx.importAsync()`，UMD/AMD 库使用 `ctx.requireAsync()`；传入 `.css` 地址会加载并注入样式。
+
+## 适用场景
+
+| 场景 | 说明 |
+|------|------|
+| **JSBlock** | 动态加载 Vue、ECharts、Tabulator 等 ESM 库实现自定义图表、表格、看板等 |
+| **JSField / JSItem / JSColumn** | 加载轻量 ESM 工具库（如 dayjs 插件）辅助渲染 |
+| **事件流 / 操作事件** | 按需加载依赖后再执行逻辑 |
 
 ## 类型定义
 
-```typescript
+```ts
 importAsync<T = any>(url: string): Promise<T>;
 ```
 
@@ -12,16 +20,17 @@ importAsync<T = any>(url: string): Promise<T>;
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `url` | string | ESM 模块或 CSS 地址。支持简写 `<包名>@<版本>` 或带子路径 `<包名>@<版本>/<文件路径>`（如 `vue@3.4.0`、`dayjs@1/plugin/relativeTime.js`），会按配置拼接 CDN 前缀；也支持完整 URL。传入 `.css` 时会加载并注入样式。 |
+| `url` | `string` | ESM 模块或 CSS 地址。支持简写 `<包名>@<版本>` 或带子路径 `<包名>@<版本>/<文件路径>`（如 `vue@3.4.0`、`dayjs@1/plugin/relativeTime.js`），会按配置拼接 CDN 前缀；也支持完整 URL。传入 `.css` 时会加载并注入样式。依赖 React 的库可加 `?deps=react@18.2.0,react-dom@18.2.0` 确保与页面共用同一 React 实例。 |
 
 ## 返回值
 
 - 解析后的模块命名空间对象（Promise 解析值）。
 
-## 说明
+## URL 格式说明
 
 - **ESM 与 CSS**：除 ESM 模块外，也支持加载 CSS（传入 `.css` URL，加载后注入页面）。
 - **简写格式**：未配置时使用 **https://esm.sh** 作为 CDN 前缀。例如 `vue@3.4.0` 实际请求 `https://esm.sh/vue@3.4.0`。
+- **?deps**：依赖 React 的库（如 `@dnd-kit/core`、`react-big-calendar`）需加 `?deps=react@18.2.0,react-dom@18.2.0`，避免与页面 React 实例冲突导致 Invalid hook call。
 - **自建 CDN**：可通过环境变量指定内网或自建服务：
   - **ESM_CDN_BASE_URL**：ESM CDN 基础地址（默认 `https://esm.sh`）
   - **ESM_CDN_SUFFIX**：可选后缀（如 jsDelivr 的 `/+esm`）
@@ -238,10 +247,8 @@ function App() {
   );
 }
 
-// 2. 创建容器并挂载 React
-const rootEl = document.createElement('div');
-ctx.render(rootEl);
-createRoot(rootEl).render(React.createElement(App));
+// 2. 渲染
+ctx.render(<App />);
 ```
 
 这个示例只依赖 `@dnd-kit/core`，通过拖拽一个 Box 到指定区域触发提示，演示了在 RunJS 中结合 `ctx.importAsync` + React 实现最简单的拖拽交互。
@@ -468,3 +475,14 @@ const board = {
 // 4. Mount the board
 ctx.render(<Board initialBoard={board} />);
 ```
+
+## 注意事项
+
+- 依赖外部网络或 CDN，内网环境需配置 **ESM_CDN_BASE_URL** 指向自建服务。
+- 库同时提供 ESM 与 UMD 时，优先用 `ctx.importAsync()` 获得更好的模块语义。
+- 依赖 React 的库务必加 `?deps=react@18.2.0,react-dom@18.2.0`，版本需与页面 React 一致，否则可能报 Invalid hook call。
+
+## 相关
+
+- [ctx.requireAsync()](./require-async.md)：加载 UMD/AMD 或挂到全局的脚本，适合 ECharts、FullCalendar 等 UMD 库
+- [ctx.render()](./render.md)：渲染内容到容器
