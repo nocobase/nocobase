@@ -1,0 +1,145 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { defineAction, tExpr } from '@nocobase/flow-engine';
+import { useForm } from '@formily/react';
+import { Select } from 'antd';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+
+const UnitConversion = () => {
+  const form = useForm();
+  const { unitConversionType } = form.values;
+  const { t } = useTranslation();
+  return (
+    <Select
+      defaultValue={unitConversionType || '*'}
+      style={{ width: 160 }}
+      onChange={(value) => {
+        form.setValuesIn('unitConversionType', value);
+      }}
+    >
+      <Select.Option value="*">{t('Multiply by')}</Select.Option>
+      <Select.Option value="/">{t('Divide by')}</Select.Option>
+    </Select>
+  );
+};
+
+export const numberFormat = defineAction({
+  title: tExpr('Number format'),
+  name: 'numberFormat',
+  uiSchema: (ctx) => {
+    return {
+      formatStyle: {
+        type: 'string',
+        enum: [
+          {
+            value: 'normal',
+            label: tExpr('Normal'),
+          },
+          {
+            value: 'scientifix',
+            label: tExpr('Scientifix notation'),
+          },
+        ],
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        title: "{{t('Style')}}",
+      },
+      unitConversion: {
+        type: 'number',
+        'x-decorator': 'FormItem',
+        'x-component': 'NumberPicker',
+        title: "{{t('Unit conversion')}}",
+        'x-component-props': {
+          style: { width: '100%' },
+          addonBefore: <UnitConversion />,
+        },
+      },
+      separator: {
+        type: 'string',
+        enum: [
+          {
+            value: '0,0.00',
+            label: '100,000.00',
+          },
+          {
+            value: '0.0,00',
+            label: '100.000,00',
+          },
+          {
+            value: '0 0,00',
+            label: '100 000.00',
+          },
+          {
+            value: '0.00',
+            label: '100000.00',
+          },
+        ],
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        title: "{{t('Separator')}}",
+      },
+      numberStep: {
+        type: 'string',
+        title: '{{t("Precision")}}',
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        enum: [
+          { value: '1', label: '1' },
+          { value: '0.1', label: '1.0' },
+          { value: '0.01', label: '1.00' },
+          { value: '0.001', label: '1.000' },
+          { value: '0.0001', label: '1.0000' },
+          { value: '0.00001', label: '1.00000' },
+          { value: '0.000001', label: '1.000000' },
+          { value: '0.0000001', label: '1.0000000' },
+          { value: '0.00000001', label: '1.00000000' },
+        ],
+      },
+      addonBefore: {
+        type: 'string',
+        title: '{{t("Prefix")}}',
+        'x-component': 'Input',
+        'x-decorator': 'FormItem',
+      },
+      addonAfter: {
+        type: 'string',
+        title: '{{t("Suffix")}}',
+        'x-component': 'Input',
+        'x-decorator': 'FormItem',
+      },
+    };
+  },
+  defaultParams: (ctx) => {
+    const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
+      ctx.collectionField.getComponentProps();
+    return {
+      formatStyle: formatStyle || 'normal',
+      unitConversion,
+      unitConversionType,
+      separator: separator || '0,0.00',
+      numberStep: step || '1',
+      addonBefore,
+      addonAfter,
+    };
+  },
+  handler(ctx, params) {
+    const { formatStyle, unitConversion, unitConversionType, separator, numberStep, addonBefore, addonAfter } = params;
+    ctx.model.setProps({
+      formatStyle: formatStyle,
+      unitConversion,
+      unitConversionType,
+      separator: separator,
+      numberStep,
+      addonBefore,
+      addonAfter,
+    });
+  },
+});
