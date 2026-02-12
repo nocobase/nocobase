@@ -121,6 +121,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Drag-and-drop Sorting",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "Block Deletion",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -446,6 +451,11 @@
             "type": "custom-link",
             "label": "Bulk Update",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bulk Edit",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "add-child",

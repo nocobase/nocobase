@@ -6,7 +6,7 @@ pkg: "@nocobase/plugin-action-bulk-edit"
 
 ## 介绍
 
-批量编辑操作适用于灵活性要求较高的批量数据处理场景。用户点击批量编辑按钮后，在弹窗中配置批量编辑表单，为字段指定不同的赋值逻辑。
+批量编辑适用于需要灵活批量更新数据的场景。点击批量编辑按钮后，在弹窗中配置批量编辑表单，并为字段设置不同的更新策略。
 
 ![](https://static-docs.nocobase.com/Orders-02-12-2026_07_13_AM.png)
 
@@ -18,32 +18,37 @@ pkg: "@nocobase/plugin-action-bulk-edit"
 
 ## 使用指南
 
-1. 添加批量编辑按钮
+### 批量编辑表单配置
 
-2. 设置批量编辑的数据：选中/所有，默认为选中。
+1. 添加批量编辑按钮。
+
+2. 设置批量编辑的范围：选中/所有，默认为选中。
 
 ![](https://static-docs.nocobase.com/Orders-02-12-2026_07_14_AM.png)
 
-3. 添加批量编辑表单
+3. 添加批量编辑表单。
 
 ![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_07_14_AM.png)
 
-4. 添加需要编辑的字段与提交按钮
+4. 配置需要编辑的字段并添加提交按钮。
 
 ![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_07_15_AM%20(1).png)
 
 ![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_07_15_AM.png)
 
-5. 字段选择编辑模式
+### 表单提交
+
+1. 勾选需要编辑的行数据。
+
+2. 为字段选择编辑模式并填写要提交的值。
 
 ![](https://static-docs.nocobase.com/Bulk-edit-02-12-2026_07_17_AM.png)
 
 :::info{title=可选编辑模式}
-* 不更新：当前字段数据不作变更
-* 修改为：当前数据更新为提交的数据
-* 清空：清空当前字段的数据
+* 不更新：该字段保持不变
+* 修改为：将该字段更新为提交的值
+* 清空：清空该字段的数据
 
 :::
 
-
-6. 提交表单
+3. 提交表单。
