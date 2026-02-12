@@ -38,7 +38,7 @@ describe('lintAndTestJS Tool', () => {
       action: {
         params: {
           values: {
-            toolCallResults: [{ id: 'other-id', result: { success: true } }],
+            toolCallResults: [{ id: 'other-id', result: { status: 'success', content: { success: true } } }],
           },
         },
       },
@@ -59,8 +59,11 @@ describe('lintAndTestJS Tool', () => {
               {
                 id: 'test-id',
                 result: {
-                  success: true,
-                  message: 'RunJS preview succeeded: no issues found.',
+                  status: 'success',
+                  content: {
+                    success: true,
+                    message: 'RunJS preview succeeded: no issues found.',
+                  },
                 },
               },
             ],
@@ -84,8 +87,11 @@ describe('lintAndTestJS Tool', () => {
               {
                 id: 'test-id',
                 result: {
-                  success: false,
-                  message: 'RunJS preview failed: 2 issues (lint 1 / runtime 1)',
+                  status: 'error',
+                  content: {
+                    success: false,
+                    message: 'RunJS preview failed: 2 issues (lint 1 / runtime 1)',
+                  },
                 },
               },
             ],
