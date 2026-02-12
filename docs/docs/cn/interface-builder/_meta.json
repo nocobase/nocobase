@@ -121,6 +121,11 @@
           },
           {
             "type": "custom-link",
+            "label": "拖拽排序",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "区块删除",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -143,7 +148,6 @@
       }
     ]
   },
-
   {
     "type": "custom-link",
     "label": "字段",
@@ -456,6 +460,11 @@
             "type": "custom-link",
             "label": "批量更新",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "批量编辑",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
