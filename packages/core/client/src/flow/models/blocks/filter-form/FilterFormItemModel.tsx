@@ -108,7 +108,12 @@ const buildFilterFormFieldItem = ({
   if (!binding) {
     return;
   }
-  const fieldModel = binding.modelName;
+  const isAssociation =
+    typeof field?.isAssociationField === 'function' ? field.isAssociationField() : Boolean(field?.target);
+  const fieldModel =
+    isAssociation && ctxWithFlags.engine?.getModelClass?.('FilterFormRecordSelectFieldModel')
+      ? 'FilterFormRecordSelectFieldModel'
+      : binding.modelName;
   const label = field.title || field.name;
   const displayLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
   return {
