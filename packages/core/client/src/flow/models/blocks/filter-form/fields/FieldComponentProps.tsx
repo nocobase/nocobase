@@ -464,7 +464,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
               });
             }}
           >
-            {t('Allow multiple')}
+            {t('Allow multiple selection')}
           </Checkbox>
         </FormItem>
       </>
