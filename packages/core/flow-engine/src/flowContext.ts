@@ -2088,6 +2088,15 @@ export class FlowRunJSContext extends FlowContext {
       },
     );
   }
+
+  exit() {
+    throw new FlowExitException(this.flowKey, this.model?.uid || 'runjs');
+  }
+
+  exitAll() {
+    throw new FlowExitAllException(this.flowKey, this.model?.uid || 'runjs');
+  }
+
   static define(meta: RunJSDocMeta, options?: { locale?: string }) {
     const locale = options?.locale;
     if (locale) {
