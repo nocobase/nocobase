@@ -398,6 +398,8 @@ export default {
           });
         }
 
+        const legacy = conversation.thread === 0;
+
         const aiEmployee = new AIEmployee(
           ctx,
           employee,
@@ -406,6 +408,7 @@ export default {
           conversation.options?.skillSettings,
           webSearch,
           modelOverride,
+          legacy,
         );
         await aiEmployee.cancelToolCall();
         if (shouldStream) {

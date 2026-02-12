@@ -47,6 +47,7 @@ export class AIEmployee {
   private systemMessage: string;
   private webSearch?: boolean;
   private modelOverride?: ModelOverride;
+  private legacy?: boolean;
   private protocol: ChatStreamProtocol;
 
   constructor(
@@ -57,6 +58,7 @@ export class AIEmployee {
     skillSettings?: Record<string, any>,
     webSearch?: boolean,
     modelOverride?: ModelOverride,
+    legacy?: boolean,
   ) {
     this.employee = employee;
     this.ctx = ctx;
@@ -67,6 +69,7 @@ export class AIEmployee {
     this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
     this.skillSettings = skillSettings;
     this.modelOverride = modelOverride;
+    this.legacy = legacy;
 
     const locale = this.ctx.getCurrentLocale();
     const builtInManager = this.plugin.builtInManager;
@@ -90,7 +93,7 @@ export class AIEmployee {
   private async initSession({ messageId, provider, model, providerName }) {
     const tools = await this.getAIEmployeeTools();
 
-    if (!messageId) {
+    if (!messageId && this.legacy !== true) {
       return {
         historyMessages: [],
         tools,
