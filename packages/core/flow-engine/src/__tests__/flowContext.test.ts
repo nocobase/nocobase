@@ -1222,6 +1222,22 @@ describe('getPropertyMetaTree with deep delegate meta', () => {
 });
 
 describe('FlowContext resolveOnServer selective server resolution', () => {
+  it('resolves ctx.date expressions on client context', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate({
+      today: '{{ ctx.date.preset.today }}',
+      next12: '{{ ctx.date.relative.next.day.n12 }}',
+      now: '{{ ctx.date.preset.now }}',
+    });
+
+    expect(typeof out.today).toBe('string');
+    expect(out.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(typeof out.next12).toBe('string');
+    expect(out.next12).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(typeof out.now).toBe('string');
+    expect(out.now.length).toBeGreaterThan(0);
+  });
+
   it('does not call server by default (no resolveOnServer set)', async () => {
     const engine = new FlowEngine();
     const api = { request: vi.fn() } as any;

@@ -69,6 +69,8 @@ export interface FieldAssignRulesEditorProps {
     item: FieldAssignRuleItem,
     index: number,
   ) => Partial<React.ComponentProps<typeof FieldAssignValueInput>>;
+  /** 在日期字段下启用“日期变量替换 Constant 位”。 */
+  enableDateVariableAsConstant?: boolean;
 }
 
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
@@ -84,6 +86,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     showEnable = true,
     showValueEditorWhenNoField = false,
     getValueInputProps,
+    enableDateVariableAsConstant = false,
   } = props;
 
   const value = Array.isArray(rawValue) ? rawValue : [];
@@ -573,6 +576,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 onChange={(v) => patchItem(index, { value: v })}
                 extraMetaTree={extraMetaTree}
                 {...(getValueInputProps?.(item, index) || {})}
+                enableDateVariableAsConstant={enableDateVariableAsConstant}
               />
             </div>
           )}

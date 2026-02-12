@@ -85,6 +85,7 @@ const FormAssignRulesUI = observer(
         value={value}
         onChange={handleChange}
         showValueEditorWhenNoField
+        enableDateVariableAsConstant
       />
     );
   },

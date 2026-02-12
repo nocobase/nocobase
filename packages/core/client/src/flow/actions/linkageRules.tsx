@@ -905,6 +905,7 @@ const FieldAssignRulesActionComponent: React.FC<
       value={normalized}
       onChange={handleChange}
       fixedMode={fixedMode}
+      enableDateVariableAsConstant
     />
   );
 };
