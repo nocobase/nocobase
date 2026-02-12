@@ -771,6 +771,207 @@ describe('DefaultValue component', () => {
   });
 
   // ------------------ Filter-form focused cases ------------------
+  it('custom record select default editor should sync title field and multiple from original model', async () => {
+    // 模拟 to-one 关系下 selectSettings 会回退为单选 + 默认 title 字段
+    RecordSelectFieldModel.registerFlow({
+      key: 'selectSettings',
+      manual: false,
+      steps: {
+        fieldNames: {
+          handler(ctx) {
+            const fromCf = ctx.model.collectionField?.fieldNames || { label: 'nickname', value: 'id' };
+            ctx.model.setProps({
+              fieldNames: fromCf,
+            });
+          },
+        },
+        allowMultiple: {
+          handler(ctx) {
+            ctx.model.setProps({
+              allowMultiple: false,
+              multiple: false,
+            });
+          },
+        },
+      },
+    });
+
+    const onChange = vi.fn();
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+      }
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'user', value: undefined, onChange, metaTree: simpleMetaTree },
+      subModels: { field: { use: 'InputFieldModel' } },
+    });
+
+    const originalOptions = [
+      { id: 1, nickname: 'Super Admin', value: 1, label: 'Super Admin' },
+      { id: 2, nickname: 'user1', value: 2, label: 'user1' },
+    ];
+    const originalRecordSelect = engine.createModel<RecordSelectFieldModel>({
+      use: 'RecordSelectFieldModel',
+      props: {
+        fieldNames: { label: 'id', value: 'id' },
+        allowMultiple: true,
+        multiple: true,
+      },
+    });
+    originalRecordSelect.context.defineProperty('collectionField', {
+      value: {
+        target: 'users',
+        dataSourceKey: 'main',
+        foreignKey: 'userId',
+        interface: 'm2o',
+        type: 'belongsTo',
+        fieldNames: { label: 'nickname', value: 'id' },
+        isAssociationField: () => true,
+        targetCollection: {
+          filterTargetKey: 'id',
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+    originalRecordSelect.setDataSource(originalOptions);
+
+    (host as any).customFieldModelInstance = originalRecordSelect;
+    // 模拟自定义字段保存值里缺少运行态 fieldNames/multiple（历史回归场景）
+    (host as any).customFieldProps = {
+      recordSelectTargetCollection: 'users',
+      recordSelectTitleField: 'id',
+      recordSelectValueField: 'id',
+    };
+    host.context.defineProperty('collectionField', {
+      value: {
+        interface: 'm2o',
+        type: 'belongsTo',
+        fieldNames: { label: 'nickname', value: 'id' },
+        isAssociationField: () => true,
+        targetCollection: {
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const tempField = capturedTempRoot.subModels.fields[0];
+
+    await waitFor(() => {
+      expect(tempField.props?.fieldNames?.label).toBe('id');
+      expect(tempField.props?.allowMultiple).toBe(true);
+      expect(tempField.props?.multiple).toBe(true);
+      expect(tempField.props?.options?.length).toBe(2);
+      expect(tempField.props?.options?.[0]?.nickname).toBe('Super Admin');
+    });
+  });
+
+  it('custom record select default editor should sync multiple from customFieldProps fallback', async () => {
+    // 模拟 to-one 关系下 selectSettings 会回退为单选 + 默认 title 字段
+    RecordSelectFieldModel.registerFlow({
+      key: 'selectSettings',
+      manual: false,
+      steps: {
+        fieldNames: {
+          handler(ctx) {
+            const fromCf = ctx.model.collectionField?.fieldNames || { label: 'nickname', value: 'id' };
+            ctx.model.setProps({
+              fieldNames: fromCf,
+            });
+          },
+        },
+        allowMultiple: {
+          handler(ctx) {
+            ctx.model.setProps({
+              allowMultiple: false,
+              multiple: false,
+            });
+          },
+        },
+      },
+    });
+
+    const onChange = vi.fn();
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+      }
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'user', value: undefined, onChange, metaTree: simpleMetaTree },
+      subModels: { field: { use: 'InputFieldModel' } },
+    });
+
+    // 不提供 customFieldModelInstance，模拟只存在持久化 props 的场景
+    (host as any).customFieldProps = {
+      fieldNames: { label: 'id', value: 'id' },
+      allowMultiple: true,
+      multiple: true,
+      recordSelectTargetCollection: 'users',
+      recordSelectTitleField: 'id',
+      recordSelectValueField: 'id',
+    };
+    host.context.defineProperty('collectionField', {
+      value: {
+        target: 'users',
+        dataSourceKey: 'main',
+        foreignKey: 'userId',
+        interface: 'm2o',
+        type: 'belongsTo',
+        fieldNames: { label: 'nickname', value: 'id' },
+        isAssociationField: () => true,
+        targetCollection: {
+          filterTargetKey: 'id',
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const tempField = capturedTempRoot.subModels.fields[0];
+
+    await waitFor(() => {
+      expect(tempField.props?.fieldNames?.label).toBe('id');
+      expect(tempField.props?.allowMultiple).toBe(true);
+      expect(tempField.props?.multiple).toBe(true);
+    });
+  });
+
   it('date-like editor: propagates object value changes', async () => {
     const onChange = vi.fn();
     // 捕获临时字段
@@ -977,6 +1178,73 @@ describe('DefaultValue component', () => {
     expect(onChange).toHaveBeenCalled();
     const callArg = (onChange as any).mock.calls.pop()?.[0];
     expect(callArg).toEqual(['A', 'C']);
+  });
+
+  it('default editor should not inherit runtime value from original field props', async () => {
+    const onChange = vi.fn();
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+      }
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: {
+        name: 'user',
+        value: undefined,
+        onChange,
+        metaTree: simpleMetaTree,
+      },
+      subModels: {
+        field: {
+          use: 'RecordSelectFieldModel',
+          props: {
+            value: [1, 2],
+            defaultValue: [1, 2],
+            fieldNames: { label: 'name', value: 'id' },
+            options: [
+              { id: 1, name: 'Super Admin', value: 1, label: 'Super Admin' },
+              { id: 2, name: 'user1', value: 2, label: 'user1' },
+            ],
+          },
+        },
+      },
+    });
+
+    host.context.defineProperty('collectionField', {
+      value: {
+        interface: 'm2m',
+        type: 'belongsToMany',
+        fieldNames: { label: 'name', value: 'id' },
+        isAssociationField: () => true,
+        targetCollection: {
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+
+    // 默认值弹窗在默认值为空时，不应使用原字段运行时值作为初始值
+    expect(fieldModel.props?.value).toBeUndefined();
+    expect(fieldModel.props?.defaultValue).toBeUndefined();
   });
 
   it('richText constant editor: supports typing (host.setProps mirror not required)', async () => {
