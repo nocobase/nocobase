@@ -156,6 +156,11 @@ interface Props {
   operatorMetaList?: Array<any>;
   /** 可选：当字段已存在于表单时，优先复用表单字段的模型（用于筛选表单默认值等场景） */
   preferFormItemFieldModel?: boolean;
+  /** 可选：关系字段显示映射覆盖（用于值编辑器内预览 title field） */
+  associationFieldNamesOverride?: {
+    label?: string;
+    value?: string;
+  };
   /**
    * 在日期字段场景下，用日期变量编辑器替换 Constant 位。
    * 默认 false，保持历史行为。
@@ -291,6 +296,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   operator,
   operatorMetaList,
   preferFormItemFieldModel,
+  associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
@@ -588,6 +594,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const fm = created?.subModels?.fields?.[0];
     const multiple = isToManyAssociationField(cf);
     const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
+    const overrideLabel =
+      typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label
+        ? associationFieldNamesOverride.label
+        : undefined;
+    if (overrideLabel && typeof fm?.setStepParams === 'function') {
+      fm.setStepParams('selectSettings', 'fieldNames', { label: overrideLabel });
+    }
     fm?.setProps?.({
       disabled: false,
       readPretty: false,
@@ -614,14 +627,32 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!modePropExists && nextMode) {
       fm?.setProps?.({ mode: nextMode });
     }
-    if (!fm?.props?.fieldNames && cf?.targetCollection) {
+    if (cf?.targetCollection) {
       const targetCol = cf.targetCollection;
-      const valueKey = cf?.targetKey || targetCol?.filterTargetKey || 'id';
-      const labelKey =
+      const prevFieldNames = (fm?.props?.fieldNames as { label?: unknown; value?: unknown } | undefined) || {};
+      const valueKey =
+        (typeof associationFieldNamesOverride?.value === 'string' && associationFieldNamesOverride.value) ||
+        (typeof prevFieldNames?.value === 'string' && prevFieldNames.value) ||
+        cf?.targetKey ||
+        targetCol?.filterTargetKey ||
+        'id';
+      const inheritedLabel =
+        typeof prevFieldNames?.label === 'string' && prevFieldNames.label ? prevFieldNames.label : undefined;
+      const collectionTitleField =
         typeof (targetCol as { titleField?: unknown } | null | undefined)?.titleField === 'string'
           ? (targetCol as { titleField?: string }).titleField
           : undefined;
-      fm?.setProps?.({ fieldNames: { label: labelKey, value: valueKey } });
+      const labelKey =
+        (typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label) ||
+        inheritedLabel ||
+        collectionTitleField;
+      fm?.setProps?.({
+        fieldNames: {
+          ...prevFieldNames,
+          ...(labelKey ? { label: labelKey } : {}),
+          value: valueKey,
+        },
+      });
     }
 
     setTempRoot(created);
@@ -641,6 +672,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     cf,
     itemModel,
     preferFormItemFieldModel,
+    associationFieldNamesOverride?.label,
+    associationFieldNamesOverride?.value,
   ]);
 
   // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。

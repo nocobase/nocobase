@@ -82,8 +82,13 @@ DividerItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
+        let label = params.label;
+        if (label && label !== ctx.t('Text')) {
+          label = ctx.t(label, { ns: 'lm-flow-engine' });
+        }
         ctx.model.setProps({
           ...params,
+          label,
         });
       },
     },
