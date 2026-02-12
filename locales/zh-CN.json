@@ -2699,6 +2699,20 @@
     "The last step cannot be deleted": "最后一个步骤不可以删除",
     "Whether to delete this step": "是否删除这个步骤？"
   },
+  "@nocobase/plugin-ui-templates": {
+    "Block UID": "区块 UID",
+    "Block UID is already set and cannot be modified": "当前已经指定区块UID，不允许修改",
+    "Copy": "复制",
+    "Other blocks": "其他区块",
+    "Please configure target block": "请先配置目标区块",
+    "Reference": "引用",
+    "Reference block": "引用区块",
+    "Reference mode": "引用模式",
+    "Reference settings": "引用区块配置",
+    "Some configurations using uid may need to be reconfigured": "部分使用uid的配置可能需要重新配置",
+    "Target UID": "Target UID",
+    "Target block is invalid": "目标区块无效"
+  },
   "@nocobase/plugin-block-template": {
     "Add new": "新增",
     "Are you sure you want to convert this template block to a normal block?": "您确定要将此模板区块转换为普通区块吗？",
