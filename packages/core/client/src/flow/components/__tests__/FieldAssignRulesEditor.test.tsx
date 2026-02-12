@@ -15,14 +15,16 @@ import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../FieldAssignRulesEditor';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 
-const mockFieldAssignValueInput = vi.fn((props: any) => (
-  <div
-    data-testid="mock-value-input"
-    data-extra={Array.isArray(props?.extraMetaTree) ? 'yes' : 'no'}
-    data-assoc-label={String(props?.associationFieldNamesOverride?.label || '')}
-    data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
-  />
-));
+const { mockFieldAssignValueInput } = vi.hoisted(() => ({
+  mockFieldAssignValueInput: vi.fn((props: any) => (
+    <div
+      data-testid="mock-value-input"
+      data-extra={Array.isArray(props?.extraMetaTree) ? 'yes' : 'no'}
+      data-assoc-label={String(props?.associationFieldNamesOverride?.label || '')}
+      data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
+    />
+  )),
+}));
 
 vi.mock('../FieldAssignValueInput', async () => {
   const actual = await vi.importActual<typeof import('../FieldAssignValueInput')>('../FieldAssignValueInput');
