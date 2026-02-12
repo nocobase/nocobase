@@ -231,6 +231,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         'x-component': 'Input',
                         required: true,
                       },
+                      path: {
+                        type: 'string',
+                        title: '{{t("Path")}}',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                        description: '{{t("URL path for the page. Should be unique and URL-friendly (e.g., my-custom-page)")}}',
+                      },
                       icon: {
                         type: 'string',
                         title: '{{t("Icon")}}',
@@ -577,7 +584,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`;
+                    // Use custom path if available, fallback to schemaUid
+                    const pathValue = recordData.path ? recordData.path : recordData.schemaUid;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${pathValue}`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -589,11 +598,14 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.tabs && data?.data) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${getSchemaUidByRouteId(
+                    // For tabs, we need to get the parent route's path/schemUid
+                    const parentData = data.data.find(item => item.id === recordData.parentId);
+                    const parentPathValue = parentData?.path ? parentData?.path : getSchemaUidByRouteId(
                       recordData.parentId,
                       data.data,
                       isMobile,
-                    )}/tabs/${recordData.schemaUid}`;
+                    );
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${parentPathValue}/tabs/${recordData.schemaUid}`;
                     recordData._path = path;
 
                     return (
@@ -705,6 +717,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                   },
                                 }
                               : undefined,
+                          },
+                          path: {
+                            type: 'string',
+                            title: '{{t("Path")}}',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Input',
+                            description: '{{t("URL path for the page. Should be unique and URL-friendly (e.g., my-custom-page)")}}',
                           },
                           // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
                           [isMobile ? 'url' : 'href']: {
@@ -994,6 +1013,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                   },
                                 }
                               : undefined,
+                          },
+                          path: {
+                            type: 'string',
+                            title: '{{t("Path")}}',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Input',
+                            description: '{{t("URL path for the page. Should be unique and URL-friendly (e.g., my-custom-page)")}}',
                           },
                           // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
                           [isMobile ? 'url' : 'href']: {
