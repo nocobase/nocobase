@@ -10,16 +10,10 @@
 import { defineAction, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { isEqual } from 'lodash';
 import React from 'react';
-import { message } from 'antd';
-import { useAPIClient, useDataSourceManager } from '@nocobase/client';
-import {
-  FieldAssignRulesEditor,
-  type FieldAssignRuleItem,
-  type SyncAssociationTitleFieldParams,
-} from '../components/FieldAssignRulesEditor';
+import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
+import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import { findFormItemModelByFieldPath, getCollectionFromModel } from '../internal/utils/modelUtils';
-import { isTitleUsableField, syncCollectionTitleField } from '../internal/utils/titleFieldQuickSync';
 import {
   collectLegacyDefaultValueRulesFromFilterFormModel,
   mergeAssignRulesWithLegacyDefaults,
@@ -30,9 +24,8 @@ import { operators } from '../../collection-manager';
 const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const ctx = useFlowContext();
-    const api = useAPIClient();
-    const dataSourceManager = useDataSourceManager();
     const t = ctx.model.translate.bind(ctx.model);
+    const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
     const canEdit = typeof props.onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
@@ -101,32 +94,6 @@ const FilterFormDefaultValuesUI = observer(
       markInitialized();
     }, [canEdit, legacyDefaults, markInitialized, props.onChange, props.value]);
 
-    const isTitleFieldCandidate = React.useCallback(
-      (field: any) => {
-        return isTitleUsableField(dataSourceManager, field);
-      },
-      [dataSourceManager],
-    );
-
-    const handleSyncAssociationTitleField = React.useCallback(
-      async ({ targetCollection, titleField }: SyncAssociationTitleFieldParams) => {
-        try {
-          await syncCollectionTitleField({
-            api,
-            dataSourceManager,
-            targetCollection,
-            titleField,
-          });
-          message.success(t('Saved successfully'));
-        } catch (error: any) {
-          const msg = error?.message ? String(error.message) : t('Save failed');
-          message.error(msg);
-          throw error;
-        }
-      },
-      [api, dataSourceManager, t],
-    );
-
     return (
       <FieldAssignRulesEditor
         t={t}
@@ -139,7 +106,7 @@ const FilterFormDefaultValuesUI = observer(
         showValueEditorWhenNoField
         getValueInputProps={getValueInputProps}
         isTitleFieldCandidate={isTitleFieldCandidate}
-        onSyncAssociationTitleField={handleSyncAssociationTitleField}
+        onSyncAssociationTitleField={onSyncAssociationTitleField}
       />
     );
   },

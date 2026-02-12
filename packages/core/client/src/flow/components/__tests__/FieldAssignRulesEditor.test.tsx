@@ -216,6 +216,43 @@ describe('FieldAssignRulesEditor', () => {
     expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'nickname', value: 'id' });
   });
 
+  it('falls back to current title field when persisted valueTitleField is stale', async () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const onSyncAssociationTitleField = vi.fn().mockResolvedValue(undefined);
+
+    const staleValue: FieldAssignRuleItem[] = [
+      {
+        ...value[0],
+        valueTitleField: 'deletedField',
+      },
+    ];
+
+    const { container } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={staleValue}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+          onSyncAssociationTitleField={onSyncAssociationTitleField}
+        />,
+      ),
+    );
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'name', value: 'id' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Advanced' }));
+    const syncButtons = Array.from(container.querySelectorAll('button[aria-label="Sync title field"]'));
+    expect(syncButtons.length).toBeGreaterThan(0);
+    expect((syncButtons[0] as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(syncButtons[0] as HTMLElement);
+
+    expect(onSyncAssociationTitleField).not.toHaveBeenCalled();
+  });
+
   it('clears rule-level valueTitleField when sync succeeds', async () => {
     const { rootCollection, value } = createAssociationFixture();
     const onChange = vi.fn();

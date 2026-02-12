@@ -130,7 +130,11 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
     toSafeDisplayLabel(option?.label) ??
     toSafeDisplayLabel(option?.[fieldNames.value]);
   const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
-  fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleCollectionField.getComponentProps() });
+  const titleFieldComponentProps =
+    titleCollectionField && typeof titleCollectionField.getComponentProps === 'function'
+      ? titleCollectionField.getComponentProps()
+      : {};
+  fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleFieldComponentProps });
   const hasLabelValue = labelValue !== null && typeof labelValue !== 'undefined' && labelValue !== '';
   return (
     <span style={{ pointerEvents: 'none' }} key={key}>

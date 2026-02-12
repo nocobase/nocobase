@@ -26,7 +26,7 @@ import {
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
-import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select, message } from 'antd';
+import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import {
   DeleteOutlined,
   ArrowUpOutlined,
@@ -40,9 +40,9 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
-import type { FieldAssignRuleItem, SyncAssociationTitleFieldParams } from '../components/FieldAssignRulesEditor';
+import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
-import { useAPIClient, useDataSourceManager } from '@nocobase/client';
+import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import _ from 'lodash';
 import { SubFormFieldModel, SubFormListFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
@@ -52,7 +52,6 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
-import { isTitleUsableField, syncCollectionTitleField } from '../internal/utils/titleFieldQuickSync';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -877,10 +876,9 @@ const FieldAssignRulesActionComponent: React.FC<
 > = (props) => {
   const { value, onChange, legacy, fixedMode } = props;
   const ctx = useFlowContext();
-  const api = useAPIClient();
-  const dataSourceManager = useDataSourceManager();
 
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+  const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
 
   const fieldOptions = React.useMemo(() => {
     return collectFieldAssignCascaderOptions({
@@ -895,36 +893,9 @@ const FieldAssignRulesActionComponent: React.FC<
   const handleChange = React.useCallback(
     (next: FieldAssignRuleItem[]) => {
       if (typeof onChange !== 'function') return;
-      if (!Array.isArray(next)) return onChange(next);
-      return onChange(next);
+      onChange(next);
     },
     [onChange],
-  );
-
-  const isTitleFieldCandidate = React.useCallback(
-    (field: any) => {
-      return isTitleUsableField(dataSourceManager, field);
-    },
-    [dataSourceManager],
-  );
-
-  const handleSyncAssociationTitleField = React.useCallback(
-    async ({ targetCollection, titleField }: SyncAssociationTitleFieldParams) => {
-      try {
-        await syncCollectionTitleField({
-          api,
-          dataSourceManager,
-          targetCollection,
-          titleField,
-        });
-        message.success(t('Saved successfully'));
-      } catch (error: any) {
-        const msg = error?.message ? String(error.message) : t('Save failed');
-        message.error(msg);
-        throw error;
-      }
-    },
-    [api, dataSourceManager, t],
   );
 
   return (
@@ -936,7 +907,7 @@ const FieldAssignRulesActionComponent: React.FC<
       onChange={handleChange}
       fixedMode={fixedMode}
       isTitleFieldCandidate={isTitleFieldCandidate}
-      onSyncAssociationTitleField={handleSyncAssociationTitleField}
+      onSyncAssociationTitleField={onSyncAssociationTitleField}
     />
   );
 };

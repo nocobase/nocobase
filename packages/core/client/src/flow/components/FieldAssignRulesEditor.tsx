@@ -704,11 +704,18 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     const ruleKey = getRuleKey(item, index);
     const associationQuickContext = resolveAssociationFieldQuickContext(item.targetPath);
     const draftTitleField = titleFieldDraftMap[ruleKey];
-    const previewTitleField =
+    const rawPreviewTitleField =
       (typeof draftTitleField === 'string' && draftTitleField) ||
       (typeof item?.valueTitleField === 'string' && item.valueTitleField) ||
       associationQuickContext?.currentTitleField ||
       undefined;
+    const isPreviewTitleFieldValid =
+      !rawPreviewTitleField ||
+      !associationQuickContext ||
+      !!associationQuickContext.candidates.some((option) => option.value === rawPreviewTitleField);
+    const previewTitleField = isPreviewTitleFieldValid
+      ? rawPreviewTitleField
+      : associationQuickContext?.currentTitleField || undefined;
     const hasQuickSync = !!associationQuickContext;
     const hasCandidate = !!associationQuickContext?.candidates?.length;
     const isSyncing = syncingRuleKey === ruleKey;
@@ -716,6 +723,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       !!onSyncAssociationTitleField &&
       hasQuickSync &&
       hasCandidate &&
+      isPreviewTitleFieldValid &&
       !!previewTitleField &&
       previewTitleField !== associationQuickContext?.currentTitleField &&
       !isSyncing;
@@ -767,6 +775,12 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
               if (!associationQuickContext || !previewTitleField || typeof onSyncAssociationTitleField !== 'function') {
                 return;
               }
+              const isValidSelection = associationQuickContext.candidates.some(
+                (option) => option.value === previewTitleField,
+              );
+              if (!isValidSelection) {
+                return;
+              }
               setSyncingRuleKey(ruleKey);
               try {
                 await onSyncAssociationTitleField({
@@ -785,7 +799,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 });
                 patchItem(index, { valueTitleField: undefined });
               } catch (error) {
-                // 同步失败时保留当前规则级覆盖，保证“不全局同步也可生效”的体验
+                console.warn('[FieldAssignRulesEditor] Failed to sync title field', error);
               } finally {
                 setSyncingRuleKey((prev) => (prev === ruleKey ? null : prev));
               }
