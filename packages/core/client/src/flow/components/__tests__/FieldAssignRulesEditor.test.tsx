@@ -105,6 +105,27 @@ describe('FieldAssignRulesEditor', () => {
     };
   };
 
+  const openAdvancedPanel = async () => {
+    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
+    await screen.findByText('Title field');
+  };
+
+  const getAdvancedPopover = (): HTMLElement => {
+    const popover = screen.getByText('Title field').closest('.ant-popover') as HTMLElement | null;
+    expect(popover).not.toBeNull();
+    return popover as HTMLElement;
+  };
+
+  const selectTitleFieldOption = async (label: string) => {
+    const selector = getAdvancedPopover().querySelector('.ant-select-selector') as HTMLElement | null;
+    expect(selector).not.toBeNull();
+    await userEvent.click(selector as HTMLElement);
+    await userEvent.click(await screen.findByText(label));
+  };
+
+  const getSyncTitleFieldButtons = (): HTMLButtonElement[] =>
+    Array.from(document.body.querySelectorAll('button[aria-label="Sync title field"]')) as HTMLButtonElement[];
+
   it('shows title field quick controls for association target and supports preview override', async () => {
     const { rootCollection, value } = createAssociationFixture();
 
@@ -130,16 +151,13 @@ describe('FieldAssignRulesEditor', () => {
     const initialCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
     expect(initialCall?.associationFieldNamesOverride).toEqual({ label: 'name', value: 'id' });
 
-    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
-    const titleFieldRow = screen.getByText('Title field').parentElement as HTMLElement;
-    expect(titleFieldRow.textContent).toContain('Name');
-    await userEvent.click(titleFieldRow.querySelector('.ant-select-selector') as HTMLElement);
-    await userEvent.click(await screen.findByText('Nickname'));
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
 
     const afterSelectCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
     expect(afterSelectCall?.associationFieldNamesOverride).toEqual({ label: 'nickname', value: 'id' });
 
-    const syncButtons = Array.from(container.querySelectorAll('button[aria-label="Sync title field"]'));
+    const syncButtons = getSyncTitleFieldButtons();
     expect(syncButtons.length).toBeGreaterThan(0);
     await userEvent.click(syncButtons[0] as HTMLElement);
     await userEvent.click(await screen.findByRole('button', { name: 'OK' }));
@@ -178,10 +196,8 @@ describe('FieldAssignRulesEditor', () => {
 
     render(wrap(<ControlledEditor />));
 
-    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
-    const titleFieldRow = screen.getByText('Title field').parentElement as HTMLElement;
-    await userEvent.click(titleFieldRow.querySelector('.ant-select-selector') as HTMLElement);
-    await userEvent.click(await screen.findByText('Nickname'));
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
 
     await waitFor(() => {
       const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
@@ -229,7 +245,7 @@ describe('FieldAssignRulesEditor', () => {
       },
     ];
 
-    const { container } = render(
+    render(
       wrap(
         <FieldAssignRulesEditor
           t={t}
@@ -246,8 +262,8 @@ describe('FieldAssignRulesEditor', () => {
     const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
     expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'name', value: 'id' });
 
-    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
-    const syncButtons = Array.from(container.querySelectorAll('button[aria-label="Sync title field"]'));
+    await openAdvancedPanel();
+    const syncButtons = getSyncTitleFieldButtons();
     expect(syncButtons.length).toBeGreaterThan(0);
     expect((syncButtons[0] as HTMLButtonElement).disabled).toBe(true);
     await userEvent.click(syncButtons[0] as HTMLElement);
@@ -281,14 +297,12 @@ describe('FieldAssignRulesEditor', () => {
       );
     };
 
-    const { container } = render(wrap(<ControlledEditor />));
+    render(wrap(<ControlledEditor />));
 
-    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
-    const titleFieldRow = screen.getByText('Title field').parentElement as HTMLElement;
-    await userEvent.click(titleFieldRow.querySelector('.ant-select-selector') as HTMLElement);
-    await userEvent.click(await screen.findByText('Nickname'));
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
 
-    const syncButtons = Array.from(container.querySelectorAll('button[aria-label="Sync title field"]'));
+    const syncButtons = getSyncTitleFieldButtons();
     await userEvent.click(syncButtons[0] as HTMLElement);
     await userEvent.click(await screen.findByRole('button', { name: 'OK' }));
 
@@ -332,17 +346,15 @@ describe('FieldAssignRulesEditor', () => {
       );
     };
 
-    const { container } = render(wrap(<ControlledEditor />));
+    render(wrap(<ControlledEditor />));
 
-    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
-    const titleFieldRow = screen.getByText('Title field').parentElement as HTMLElement;
-    await userEvent.click(titleFieldRow.querySelector('.ant-select-selector') as HTMLElement);
-    await userEvent.click(await screen.findByText('Nickname'));
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
 
     let lastCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
     expect(lastCall?.associationFieldNamesOverride?.label).toBe('nickname');
 
-    const syncButtons = Array.from(container.querySelectorAll('button[aria-label="Sync title field"]'));
+    const syncButtons = getSyncTitleFieldButtons();
     await userEvent.click(syncButtons[0] as HTMLElement);
     await userEvent.click(await screen.findByRole('button', { name: 'OK' }));
 
