@@ -60,6 +60,7 @@ export type PreviewRunJSResult = {
 export const MAX_MESSAGE_CHARS = 4000;
 const PREVIEW_TIMEOUT_MS = 5000;
 const MAX_STACK_CHARS = 1600;
+const MAX_STACK_FRAMES = 1;
 
 const JS_PARSER = javascript({ jsx: true }).language.parser;
 
@@ -82,11 +83,69 @@ function safeToString(value: any): string {
   }
 }
 
+function shortenMiddle(text: string, maxChars: number): string {
+  const src = String(text || '');
+  if (src.length <= maxChars) return src;
+  if (maxChars <= 3) return src.slice(0, maxChars);
+  const head = Math.floor((maxChars - 3) / 2);
+  const tail = maxChars - 3 - head;
+  return `${src.slice(0, head)}...${src.slice(-tail)}`;
+}
+
+function shortenStackUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname || '';
+    const fileName = pathname.split('/').filter(Boolean).pop() || pathname || 'bundle.js';
+    return `${parsed.origin}/.../${shortenMiddle(fileName, 80)}`;
+  } catch {
+    return shortenMiddle(url, 120);
+  }
+}
+
+function normalizeStackLine(line: string): string {
+  let out = String(line || '').trimEnd();
+  out = out.replace(/https?:\/\/[^\s)]+/g, (m) => shortenStackUrl(m));
+  for (let i = 0; i < 4; i++) {
+    const next = out.replace(/eval at [^()]*\(/g, 'eval(');
+    if (next === out) break;
+    out = next;
+  }
+  out = out.replace(/\(\s*eval\s*\(/g, '(eval(');
+  out = out.replace(/\s+/g, ' ').trim();
+  return out;
+}
+
+function simplifyStack(raw: string, maxFrames = MAX_STACK_FRAMES): string {
+  const lines = String(raw || '')
+    .split('\n')
+    .map((line) => normalizeStackLine(line))
+    .filter((line) => !!line);
+
+  if (!lines.length) return '';
+
+  const head = lines[0];
+  const frameLines = lines.slice(1);
+  const dedupedFrames: string[] = [];
+  for (const frame of frameLines) {
+    if (!frame) continue;
+    if (dedupedFrames.length > 0 && dedupedFrames[dedupedFrames.length - 1] === frame) continue;
+    dedupedFrames.push(frame);
+  }
+
+  const visible = dedupedFrames.slice(0, Math.max(0, maxFrames));
+  const omitted = Math.max(0, dedupedFrames.length - visible.length);
+  const output = [head, ...visible];
+  if (omitted > 0) output.push(`... (${omitted} frames omitted)`);
+  return output.join('\n');
+}
+
 function safeStack(err: any, maxChars = MAX_STACK_CHARS): string | undefined {
   const raw = err?.stack ? String(err.stack) : '';
   if (!raw) return undefined;
-  if (raw.length <= maxChars) return raw;
-  return `${raw.slice(0, Math.max(0, maxChars - 16))}\n... (stack truncated)`;
+  const simplified = simplifyStack(raw);
+  if (simplified.length <= maxChars) return simplified;
+  return `${simplified.slice(0, Math.max(0, maxChars - 16))}\n... (stack truncated)`;
 }
 
 function createIgnoredPosChecker(code: string): (pos: number) => boolean {
@@ -140,6 +199,25 @@ function sortIssuesStable(issues: RunJSIssue[]): RunJSIssue[] {
     if (ca !== cb) return ca - cb;
     return String(a.ruleId || '').localeCompare(String(b.ruleId || ''));
   });
+}
+
+function sortLogsStable(logs: RunJSLog[]): RunJSLog[] {
+  const priority: Record<RunJSLog['level'], number> = {
+    error: 0,
+    warn: 1,
+    info: 2,
+    log: 3,
+  };
+
+  return logs
+    .map((log, index) => ({ log, index }))
+    .sort((a, b) => {
+      const pa = priority[a.log.level] ?? Number.MAX_SAFE_INTEGER;
+      const pb = priority[b.log.level] ?? Number.MAX_SAFE_INTEGER;
+      if (pa !== pb) return pa - pb;
+      return a.index - b.index;
+    })
+    .map((item) => item.log);
 }
 
 function collectLezerSyntaxIssues(code: string): RunJSIssue[] {
@@ -737,20 +815,43 @@ function buildPreviewMessage(
   const { issues, logs, execution } = result;
   const lintIssues = issues.filter((i) => i.type === 'lint');
   const runtimeIssues = issues.filter((i) => i.type === 'runtime');
+  const sortedLogs = sortLogsStable(logs);
   const keyRuntime = pickKeyRuntimeIssue(runtimeIssues);
 
   const lines: string[] = [];
   const total = issues.length;
   const lintCount = lintIssues.length;
   const runtimeCount = runtimeIssues.length;
-  const logsCount = logs.length;
+  const logsCount = sortedLogs.length;
+
+  const pushLogsSection = (list: RunJSLog[]) => {
+    if (!list.length) return;
+    lines.push('Key logs:');
+    list.forEach((l) => {
+      lines.push(`[${l.level}] ${clampText(l.message, options.maxLogChars)}`);
+    });
+    if (sortedLogs.length > list.length) {
+      lines.push(`... ${sortedLogs.length - list.length} more logs not shown`);
+    }
+  };
 
   if (total === 0) {
-    lines.push(`RunJS preview succeeded: no issues found. Logs: ${logsCount}.`);
+    const hasAlertLogs = sortedLogs.some((log) => log.level === 'warn' || log.level === 'error');
+    lines.push(
+      hasAlertLogs
+        ? `RunJS preview completed with warning/error logs: no diagnostic issues found. Logs: ${logsCount}.`
+        : `RunJS preview succeeded: no issues found. Logs: ${logsCount}.`,
+    );
     lines.push(formatExecution(execution));
+    const pickedLogs = sortedLogs.slice(0, Math.max(0, options.maxLogs));
+    if (pickedLogs.length) {
+      lines.push('');
+      pushLogsSection(pickedLogs);
+    }
+    const message = lines.join('\n').trimEnd();
     return {
-      message: clampText(lines.join('\n'), options.maxChars),
-      truncated: lines.join('\n').length > options.maxChars,
+      message: clampText(message, options.maxChars),
+      truncated: message.length > options.maxChars,
     };
   }
 
@@ -787,22 +888,9 @@ function buildPreviewMessage(
   pushIssueSection('Static issues', lintIssues);
   pushIssueSection('Runtime issues', runtimeOrdered);
 
-  const selectLogs = (): RunJSLog[] => {
-    const prioritized = logs.filter((l) => l.level === 'error' || l.level === 'warn');
-    const rest = logs.filter((l) => l.level !== 'error' && l.level !== 'warn');
-    const merged = [...prioritized, ...rest];
-    return merged.slice(0, Math.max(0, options.maxLogs));
-  };
-
-  const pickedLogs = selectLogs();
+  const pickedLogs = sortedLogs.slice(0, Math.max(0, options.maxLogs));
   if (pickedLogs.length) {
-    lines.push('Key logs:');
-    pickedLogs.forEach((l) => {
-      lines.push(`[${l.level}] ${clampText(l.message, options.maxLogChars)}`);
-    });
-    if (logs.length > pickedLogs.length) {
-      lines.push(`... ${logs.length - pickedLogs.length} more logs not shown`);
-    }
+    pushLogsSection(pickedLogs);
   }
 
   const message = lines.join('\n').trimEnd();
