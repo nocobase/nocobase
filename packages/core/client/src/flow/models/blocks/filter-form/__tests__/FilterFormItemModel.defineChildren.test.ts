@@ -13,7 +13,7 @@ import { FlowEngine } from '@nocobase/flow-engine';
 import { CollectionBlockModel } from '../../../base';
 import { InputFieldModel } from '../../../fields/InputFieldModel';
 import { NumberFieldModel } from '../../../fields/NumberFieldModel';
-import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel/RecordSelectFieldModel';
+import { FilterFormRecordSelectFieldModel } from '../fields/FilterFormRecordSelectFieldModel';
 import { FilterFormItemModel } from '../FilterFormItemModel';
 
 class DummyResource {
@@ -40,7 +40,7 @@ describe('FilterFormItemModel defineChildren association fields', () => {
       DummyCollectionBlockModel,
       InputFieldModel,
       NumberFieldModel,
-      RecordSelectFieldModel,
+      FilterFormRecordSelectFieldModel,
     });
 
     const ds = engine.dataSourceManager.getDataSource('main');

@@ -49,7 +49,9 @@ describe('FilterFormItemModel getFilterValue', () => {
         },
       },
       getDefaultValue: vi.fn(() => defaultValue),
+      getStepParams: vi.fn(() => undefined),
       getCurrentOperatorMeta: vi.fn(() => null),
+      normalizeAssociationFilterValue: FilterFormItemModel.prototype.normalizeAssociationFilterValue,
     };
   };
 
