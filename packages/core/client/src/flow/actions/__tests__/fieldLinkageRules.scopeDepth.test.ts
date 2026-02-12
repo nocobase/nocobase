@@ -148,6 +148,131 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     });
   });
 
+  it('keeps valueTitleField when splitting row-scoped assign rules', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const linkageAssignHandler = vi.fn((actionCtx: any, { value, addFormValuePatch }: any) => {
+      expect(actionCtx.linkageScopeDepth).toBe(0);
+      expect(Array.isArray(value)).toBe(true);
+      expect(value[0]).toMatchObject({
+        targetPath: 'users.name',
+        valueTitleField: 'nickname',
+      });
+      addFormValuePatch({ path: 'users.name', value: 'from-row-title-field' });
+    });
+
+    const engine = new FlowEngine();
+    const rowFork = new FlowModel({ uid: 'row-fork-title-field', flowEngine: engine }) as any;
+    rowFork.context.defineProperty('fieldIndex', {
+      value: ['users:0'],
+    });
+    rowFork.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    rowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    rowFork.subModels = { items: [] };
+    rowFork.getAction = vi.fn((name: string) => {
+      if (name === 'linkageAssignField') {
+        return {
+          handler: linkageAssignHandler,
+        };
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-grid-title-field',
+      forks: new Set([rowFork]),
+    };
+
+    const gridModel: any = {
+      uid: 'grid-model-title-field',
+      context: {
+        blockModel: {
+          collection: {
+            getField: (name: string) => (name === 'users' ? usersField : null),
+          },
+        },
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageAssignField') {
+          return {
+            handler: linkageAssignHandler,
+          };
+        }
+      }),
+      __allModels: [],
+    };
+
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb(masterModel);
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-row-title-field',
+        changedPaths: [['users', 0, 'name']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-title-field',
+          title: 'rule-title-field',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  {
+                    key: 'r1',
+                    enable: true,
+                    targetPath: 'users.name',
+                    mode: 'assign',
+                    value: 'from-row-title-field',
+                    valueTitleField: 'nickname',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(linkageAssignHandler).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [
+        {
+          path: ['users', 0, 'name'],
+          value: 'from-row-title-field',
+        },
+      ],
+      expect.objectContaining({
+        linkageTxId: 'tx-row-title-field',
+      }),
+    );
+  });
+
   it('prefers inherited linkageTxId over current event txId', async () => {
     const setFormValues = vi.fn(async () => undefined);
     const linkageAssignHandler = vi.fn((actionCtx: any, { addFormValuePatch }: any) => {
