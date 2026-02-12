@@ -171,7 +171,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
 
     const missing = list
       .filter((it) => isPlainObject(it))
-      .filter((it) => it[valueKey] != null && it[labelKey] == null && it.label == null) as AssociationOption[];
+      .filter((it) => it[valueKey] != null && it[labelKey] == null) as AssociationOption[];
     if (!missing.length) return;
 
     const namePath = model?.props?.name ?? model?.context?.fieldPathArray;

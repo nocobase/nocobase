@@ -12,6 +12,7 @@ import { isEqual } from 'lodash';
 import React from 'react';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
+import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import { findFormItemModelByFieldPath, getCollectionFromModel } from '../internal/utils/modelUtils';
 import {
   collectLegacyDefaultValueRulesFromFilterFormModel,
@@ -24,6 +25,7 @@ const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
+    const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
     const canEdit = typeof props.onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
@@ -103,6 +105,8 @@ const FilterFormDefaultValuesUI = observer(
         showCondition={false}
         showValueEditorWhenNoField
         getValueInputProps={getValueInputProps}
+        isTitleFieldCandidate={isTitleFieldCandidate}
+        onSyncAssociationTitleField={onSyncAssociationTitleField}
       />
     );
   },
