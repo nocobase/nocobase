@@ -7,119 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { List, Button, Dropdown, Tooltip, Card, Popover, Space, Switch, Flex } from 'antd';
-import { InfoCircleOutlined, PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { List, Button, Dropdown, Tooltip, Space, Segmented, Flex, Collapse, Switch } from 'antd';
+import { PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { SchemaComponent, useAPIClient, useRequest, useToken } from '@nocobase/client';
+import { SchemaComponent, useCollectionRecordData, useToken, useTools } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { Field } from '@formily/core';
-import { Tool } from '../types';
-
-const ToolInfo: React.FC<{
-  title: string;
-  description: string;
-  schema?: any;
-}> = ({ title, description, schema }) => {
-  const t = useT();
-  const { token } = useToken();
-  return (
-    <Card
-      size="small"
-      style={{
-        minWidth: '300px',
-        maxWidth: '400px',
-      }}
-      title={
-        <>
-          <div
-            style={{
-              marginTop: '4px',
-            }}
-          >
-            {Schema.compile(title, { t })}
-          </div>
-          <div
-            style={{
-              color: token.colorTextSecondary,
-              fontSize: token.fontSizeSM,
-              fontWeight: 400,
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {Schema.compile(description, { t })}
-          </div>
-        </>
-      }
-    >
-      <>
-        <div
-          style={{
-            fontWeight: token.fontWeightStrong,
-          }}
-        >
-          {t('Parameters')}
-        </div>
-        <List
-          itemLayout="vertical"
-          dataSource={Object.entries(schema?.properties || {})}
-          size="small"
-          renderItem={([name, option]: [
-            string,
-            {
-              name: string;
-              type: string;
-              title?: string;
-              description?: string;
-            },
-          ]) => {
-            return (
-              <List.Item key={name}>
-                <div>
-                  <span
-                    style={{
-                      fontWeight: token.fontWeightStrong,
-                    }}
-                  >
-                    {option.title || name}
-                  </span>
-                  <span
-                    style={{
-                      color: token.colorTextSecondary,
-                      fontSize: token.fontSizeSM,
-                      marginLeft: '4px',
-                    }}
-                  >
-                    {option.type}
-                  </span>
-                  {schema.required?.includes(name) && (
-                    <span
-                      style={{
-                        color: token.colorError,
-                        fontSize: token.fontSizeSM,
-                        marginLeft: '4px',
-                      }}
-                    >
-                      {t('Required')}
-                    </span>
-                  )}
-                </div>
-                <div
-                  style={{
-                    color: token.colorTextSecondary,
-                    fontSize: token.fontSizeSM,
-                  }}
-                >
-                  {option.description}
-                </div>
-              </List.Item>
-            );
-          }}
-        />
-      </>
-    </Card>
-  );
-};
 
 export const SkillsListItem: React.FC<{
   name: string;
@@ -163,13 +57,9 @@ export const Skills: React.FC = () => {
   const t = useT();
   const { token } = useToken();
   const field = useField<Field>();
-  const api = useAPIClient();
-  const { data, loading } = useRequest<Tool[]>(() =>
-    api
-      .resource('aiTools')
-      .list()
-      .then((res) => res?.data?.data),
-  );
+  const { tools = [], loading } = useTools();
+  const record = useCollectionRecordData();
+  const isBuiltIn = record?.builtIn;
 
   const handleAdd = (name: string) => {
     const skills = [...(field.value || [])];
@@ -179,142 +69,299 @@ export const Skills: React.FC = () => {
     field.value = skills;
   };
 
-  const items =
-    data?.map((item) => {
-      const result: any = {
-        key: item.group.groupName,
-      };
-      const itemProps = {
-        title: item.group.title ?? '',
-        description: item.group.description ?? '',
-        name: item.group.groupName,
-        isRoot: true,
-      };
-      if (item.tools) {
+  const selectedSkills = [...(field.value ?? [])];
+  const selectedNames = new Set(selectedSkills.map((item: { name: string }) => item.name));
+
+  const customAddItems =
+    tools
+      ?.filter((item) => item.scope === 'CUSTOM' && !selectedNames.has(item.definition.name))
+      .map((item) => {
+        const result: any = {
+          key: item.definition.name,
+        };
+        const itemProps = {
+          title: item.introduction.title ?? '',
+          description: item.introduction.about ?? '',
+          name: item.definition.name,
+          isRoot: true,
+        };
         result.label = <SkillsListItem {...itemProps} />;
-        result.children = item.tools.map((child) => {
-          return {
-            key: child.name,
-            label: <SkillsListItem {...child} />,
-            onClick: () => handleAdd(child.name),
-          };
-        });
-      } else {
-        result.label = <SkillsListItem {...itemProps} />;
-        result.onClick = () => {};
-      }
-      return result;
-    }) || [];
+        result.onClick = () => handleAdd(item.definition.name);
+        return result;
+      }) || [];
+
+  const toolsByName = new Map(tools.map((tool) => [tool.definition.name, tool]));
+  const generalTools = tools.filter((tool) => tool.scope === 'GENERAL');
+  const specifiedSkills = selectedSkills.filter((item) => {
+    const tool = toolsByName.get(item.name);
+    return tool && tool.scope !== 'GENERAL' && tool.scope !== 'CUSTOM';
+  });
+  const customSkills = selectedSkills.filter((item) => {
+    const tool = toolsByName.get(item.name);
+    return tool && tool.scope === 'CUSTOM';
+  });
+
+  const permissionOptions = [
+    { label: t('Ask'), value: 'ASK' },
+    { label: t('Allow'), value: 'ALLOW' },
+  ];
+
+  const getPermissionValue = (tool: any, item?: { autoCall?: boolean }) => {
+    if (tool.scope === 'CUSTOM') {
+      return item?.autoCall ? 'ALLOW' : 'ASK';
+    }
+    return tool.defaultPermission === 'ALLOW' ? 'ALLOW' : 'ASK';
+  };
+
+  const [customActiveKeys, setCustomActiveKeys] = useState<string[]>(
+    isBuiltIn && customSkills.length === 0 ? [] : ['custom-skills'],
+  );
+  const previousCustomLength = useRef(customSkills.length);
+
+  useEffect(() => {
+    const wasEmpty = previousCustomLength.current === 0;
+    if (isBuiltIn && customSkills.length === 0) {
+      setCustomActiveKeys([]);
+    } else if (wasEmpty && customSkills.length > 0) {
+      setCustomActiveKeys(['custom-skills']);
+    }
+    previousCustomLength.current = customSkills.length;
+  }, [customSkills.length, isBuiltIn]);
+
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          width: '100%',
-          margin: '8px 0 16px 0',
-        }}
-      >
-        <Dropdown
-          menu={{
-            items,
-          }}
-          placement="bottomRight"
-        >
-          <Button type="primary" icon={<PlusOutlined />}>
-            {t('Add skill')}
-            <Tooltip title={t('Tools available for LLM function calling')}>
-              <QuestionCircleOutlined
-                style={{
-                  marginLeft: '4px',
-                }}
-              />
-            </Tooltip>
-          </Button>
-        </Dropdown>
-      </div>
       {!loading && (
-        <List
-          itemLayout="vertical"
-          bordered
-          dataSource={field.value || []}
-          renderItem={(item: { name: string; autoCall?: boolean }) => {
-            const tools = data?.flatMap((x) => x.tools) ?? [];
-            const tool = tools.find((tool) => tool.name === item.name);
-            if (!tool) {
-              return null;
-            }
-            return (
-              <List.Item
-                key={tool.name}
-                extra={
-                  <Flex vertical={true} justify="end">
-                    <Space>
-                      <div
-                        style={{
-                          fontSize: token.fontSizeSM,
-                        }}
-                      >
-                        {t('Auto usage')}
-                        <Switch
-                          style={{
-                            marginLeft: '4px',
-                            marginRight: '8px',
-                          }}
-                          size="small"
-                          checked={item.autoCall}
-                          onChange={(checked) => {
-                            const updated = (field.value || []).map((s: { name: string; autoCall?: boolean }) =>
-                              s.name === item.name ? { ...s, autoCall: checked } : s,
-                            );
-                            field.value = updated;
-                          }}
-                        />
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <div>
+            <Collapse
+              ghost
+              size="small"
+              defaultActiveKey={[]}
+              items={[
+                {
+                  key: 'general-skills',
+                  label: (
+                    <div>
+                      <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
+                        {t('General skills')}
                       </div>
-                      <Popover
-                        content={<ToolInfo {...tool} />}
-                        placement="bottom"
-                        arrow={false}
-                        styles={{
-                          body: {
-                            padding: 0,
-                            marginRight: '8px',
-                          },
-                        }}
-                      >
-                        <InfoCircleOutlined />
-                      </Popover>
-                      <Button
-                        icon={<DeleteOutlined />}
-                        variant="link"
-                        color="default"
-                        onClick={() => {
-                          const skills = [...(field.value || [])];
-                          const index = skills.findIndex((s) => s.name === tool.name);
-                          if (index !== -1) {
-                            skills.splice(index, 1);
-                            field.value = skills;
+                      <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+                        {t('Shared by all AI employees. Read-only.')}
+                      </div>
+                    </div>
+                  ),
+                  children: (
+                    <List
+                      itemLayout="vertical"
+                      size="small"
+                      dataSource={generalTools}
+                      renderItem={(tool: any) => {
+                        return (
+                          <List.Item
+                            key={tool.definition.name}
+                            extra={
+                              <Flex vertical={true} justify="end">
+                                <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>
+                                  {t('Permission')}
+                                  <Segmented
+                                    style={{ marginLeft: '8px' }}
+                                    size="small"
+                                    options={permissionOptions}
+                                    value={getPermissionValue(tool)}
+                                    disabled
+                                  />
+                                </div>
+                              </Flex>
+                            }
+                          >
+                            <div style={{ fontSize: token.fontSizeSM }}>
+                              {Schema.compile(tool.introduction.title, { t })}
+                            </div>
+                            <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+                              {Schema.compile(tool.introduction.about, { t })}
+                            </div>
+                          </List.Item>
+                        );
+                      }}
+                    />
+                  ),
+                },
+              ]}
+            />
+          </div>
+          {isBuiltIn && specifiedSkills.length > 0 && (
+            <div>
+              <Collapse
+                ghost
+                size="small"
+                items={[
+                  {
+                    key: 'specific-skills',
+                    label: (
+                      <div>
+                        <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
+                          {t('Employee-specific skills')}
+                        </div>
+                        <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+                          {t('Only available to this AI employee. Read-only.')}
+                        </div>
+                      </div>
+                    ),
+                    children: (
+                      <List
+                        itemLayout="vertical"
+                        size="small"
+                        dataSource={specifiedSkills}
+                        renderItem={(item: { name: string; autoCall?: boolean }) => {
+                          const tool = toolsByName.get(item.name);
+                          if (!tool) {
+                            return null;
                           }
+                          return (
+                            <List.Item
+                              key={tool.definition.name}
+                              extra={
+                                <Flex vertical={true} justify="end">
+                                  <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>
+                                    {t('Permission')}
+                                    <Segmented
+                                      style={{ marginLeft: '8px' }}
+                                      size="small"
+                                      options={permissionOptions}
+                                      value={getPermissionValue(tool, item)}
+                                      disabled
+                                    />
+                                  </div>
+                                </Flex>
+                              }
+                            >
+                              <div style={{ fontSize: token.fontSizeSM }}>
+                                {Schema.compile(tool.introduction.title, { t })}
+                              </div>
+                              <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+                                {Schema.compile(tool.introduction.about, { t })}
+                              </div>
+                            </List.Item>
+                          );
                         }}
                       />
-                    </Space>
-                  </Flex>
-                }
-              >
-                <div>{Schema.compile(tool.title, { t })}</div>
-                <div
-                  style={{
-                    color: token.colorTextSecondary,
-                    fontSize: token.fontSizeSM,
-                  }}
-                >
-                  {Schema.compile(tool.description, { t })}
-                </div>
-              </List.Item>
-            );
-          }}
-        />
+                    ),
+                  },
+                ]}
+                defaultActiveKey={['specific-skills']}
+              />
+            </div>
+          )}
+          <div>
+            <Collapse
+              ghost
+              size="small"
+              activeKey={customActiveKeys}
+              onChange={(keys) => {
+                const nextKeys = Array.isArray(keys) ? keys : [keys].filter(Boolean);
+                setCustomActiveKeys(nextKeys as string[]);
+              }}
+              items={[
+                {
+                  key: 'custom-skills',
+                  label: (
+                    <div>
+                      <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
+                        {t('Custom skills')}
+                      </div>
+                      <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+                        {t('Created via workflow. You can add/remove and set default permissions.')}
+                      </div>
+                    </div>
+                  ),
+                  extra: (
+                    <div
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      onKeyDown={(event) => {
+                        event.stopPropagation();
+                      }}
+                    >
+                      <Dropdown
+                        menu={{
+                          items: customAddItems,
+                        }}
+                        placement="bottomRight"
+                        disabled={customAddItems.length === 0}
+                      >
+                        <Button type="primary" icon={<PlusOutlined />}>
+                          {t('Add skill')}
+                          {/* <Tooltip title={t('Tools available for LLM function calling')}> */}
+                          {/*   <QuestionCircleOutlined style={{ marginLeft: '4px' }} /> */}
+                          {/* </Tooltip> */}
+                        </Button>
+                      </Dropdown>
+                    </div>
+                  ),
+                  children: (
+                    <List
+                      itemLayout="vertical"
+                      bordered
+                      dataSource={customSkills}
+                      renderItem={(item: { name: string; autoCall?: boolean }) => {
+                        const tool = toolsByName.get(item.name);
+                        if (!tool) {
+                          return null;
+                        }
+                        return (
+                          <List.Item
+                            key={tool.definition.name}
+                            extra={
+                              <Flex vertical={true} justify="end">
+                                <Space>
+                                  <div style={{ fontSize: token.fontSizeSM }}>
+                                    {t('Permission')}
+                                    <Segmented
+                                      style={{ marginLeft: '8px', marginRight: '8px' }}
+                                      size="small"
+                                      options={permissionOptions}
+                                      value={getPermissionValue(tool, item)}
+                                      onChange={(value) => {
+                                        const updated = (field.value || []).map(
+                                          (s: { name: string; autoCall?: boolean }) =>
+                                            s.name === item.name ? { ...s, autoCall: value === 'ALLOW' } : s,
+                                        );
+                                        field.value = updated;
+                                      }}
+                                    />
+                                  </div>
+                                  <Button
+                                    icon={<DeleteOutlined />}
+                                    variant="link"
+                                    color="default"
+                                    onClick={() => {
+                                      const skills = [...(field.value || [])];
+                                      const index = skills.findIndex((s) => s.name === tool.definition.name);
+                                      if (index !== -1) {
+                                        skills.splice(index, 1);
+                                        field.value = skills;
+                                      }
+                                    }}
+                                  />
+                                </Space>
+                              </Flex>
+                            }
+                          >
+                            <div>{Schema.compile(tool.introduction.title, { t })}</div>
+                            <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+                              {Schema.compile(tool.introduction.about, { t })}
+                            </div>
+                          </List.Item>
+                        );
+                      }}
+                    />
+                  ),
+                },
+              ]}
+            />
+          </div>
+        </Space>
       )}
     </>
   );
@@ -335,7 +382,6 @@ export const SkillSettings: React.FC = () => {
                 type: 'array',
                 'x-component': 'Skills',
                 'x-decorator': 'FormItem',
-                description: t('Auto skill description'),
               },
             },
           },

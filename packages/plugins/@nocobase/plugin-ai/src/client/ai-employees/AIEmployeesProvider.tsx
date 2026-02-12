@@ -14,13 +14,15 @@ import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
 import { AISelection } from './AISelection';
 import { ContextAwareTooltip } from './ContextAwareTooltip';
 import { AISelectionControl } from './AISelectionControl';
-import { CurrentUserContext } from '@nocobase/client';
+import { CurrentUserContext, ToolsProvider, useApp } from '@nocobase/client';
 
 export const AIEmployeesProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const currentUserCtx = useContext(CurrentUserContext);
+  const app = useApp();
+  const { toolsManager } = app.aiManager;
 
+  const currentUserCtx = useContext(CurrentUserContext);
   if (!currentUserCtx?.data?.data) {
     return <>{props.children}</>;
   }
@@ -28,10 +30,12 @@ export const AIEmployeesProvider: React.FC<{
   return (
     <AISelectionProvider>
       <AISettingsProvider>
-        <ChatBoxLayout>{props.children}</ChatBoxLayout>
-        {/* <ContextAwareTooltip /> */}
-        <AISelection />
-        <AISelectionControl />
+        <ToolsProvider toolsManager={toolsManager}>
+          <ChatBoxLayout>{props.children}</ChatBoxLayout>
+          {/* <ContextAwareTooltip /> */}
+          <AISelection />
+          <AISelectionControl />
+        </ToolsProvider>
       </AISettingsProvider>
     </AISelectionProvider>
   );

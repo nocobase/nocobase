@@ -36,6 +36,7 @@ export type AIToolCall = {
   name: string;
   type: string;
   args: unknown;
+  [key: string]: any;
 };
 
 export type AIMessageMetadata = {
@@ -50,4 +51,28 @@ export type AIMessageMetadata = {
   interrupted?: boolean;
 
   [key: string]: unknown;
+};
+
+export type AIToolMessage = {
+  id: string;
+  sessionId: string;
+  messageId: string;
+  toolCallId: string;
+  status: 'success' | 'error';
+  content: string;
+  invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
+  invokeStartTime: Date;
+  invokeEndTime: Date;
+  toolName: string;
+  auto: boolean;
+  execution: 'backend' | 'frontend';
+};
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: any;
+  };
 };

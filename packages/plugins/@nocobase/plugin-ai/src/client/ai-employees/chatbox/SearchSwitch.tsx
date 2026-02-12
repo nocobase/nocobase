@@ -7,26 +7,51 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button, Tooltip } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
-import { useChatConversationOptions } from './hooks/useChatConversationOptions';
+import { observer } from '@nocobase/flow-engine';
+import { useChatConversationsStore } from './stores/chat-conversations';
+import { useChatBoxStore } from './stores/chat-box';
+import { useLLMServicesRepository } from '../../llm-services/hooks/useLLMServicesRepository';
 import { useT } from '../../locale';
 
-export const SearchSwitch: React.FC = () => {
-  const t = useT();
-  const { loading, webSearch, updateWebSearch } = useChatConversationOptions();
-  const switchChecked = () => {
-    updateWebSearch(!webSearch);
-  };
+export const SearchSwitch: React.FC = observer(
+  () => {
+    const t = useT();
+    const webSearch = useChatConversationsStore.use.webSearch();
+    const setWebSearch = useChatConversationsStore.use.setWebSearch();
+    const modelOverride = useChatBoxStore.use.modelOverride();
+    const repo = useLLMServicesRepository();
 
-  return webSearch ? (
-    <Tooltip title={t('Disable search')} arrow={false}>
-      <Button color="primary" variant="filled" icon={<GlobalOutlined />} onClick={switchChecked} loading={loading} />
-    </Tooltip>
-  ) : (
-    <Tooltip title={t('Enable search')} arrow={false}>
-      <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} loading={loading} />
-    </Tooltip>
-  );
-};
+    const currentService = modelOverride
+      ? repo.services.find((s) => s.llmService === modelOverride.llmService)
+      : undefined;
+    const supportWebSearch = currentService?.supportWebSearch ?? false;
+
+    useEffect(() => {
+      if (!supportWebSearch && webSearch) {
+        setWebSearch(false);
+      }
+    }, [supportWebSearch, webSearch, setWebSearch]);
+
+    if (!supportWebSearch) {
+      return null;
+    }
+
+    const switchChecked = () => {
+      setWebSearch(!webSearch);
+    };
+
+    return webSearch ? (
+      <Tooltip title={t('Disable search')} arrow={false}>
+        <Button color="primary" variant="filled" icon={<GlobalOutlined />} onClick={switchChecked} />
+      </Tooltip>
+    ) : (
+      <Tooltip title={t('Enable search')} arrow={false}>
+        <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} />
+      </Tooltip>
+    );
+  },
+  { displayName: 'SearchSwitch' },
+);

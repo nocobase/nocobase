@@ -59,6 +59,31 @@ describe('useCodeRunner (beforeRender)', () => {
     expect(result.current.running).toBe(false);
   });
 
+  it('captures ctx.logger output into logs panel', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'm-logger' });
+    model.registerFlow('jsSettings', {
+      steps: {
+        runJs: {
+          useRawParams: true,
+          async handler(ctx) {
+            const code = ctx?.inputArgs?.preview?.code || '';
+            return ctx.runjs(code, undefined, { preprocessTemplates: true });
+          },
+        },
+      },
+    });
+
+    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'));
+
+    await act(async () => {
+      await result.current.run('ctx.logger.info("hello-logger"); return 1');
+    });
+
+    expect(result.current.logs.some((l) => l.level === 'info' && l.msg.includes('hello-logger'))).toBe(true);
+  });
+
   it('logs error message on failure', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ DummyJsAutoModel });

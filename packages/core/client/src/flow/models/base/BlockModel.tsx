@@ -15,7 +15,15 @@ import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 import { BlockPlaceholder, BlockDeletePlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
-export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | 'subForm'| 'bulkEditForm' | BlockSceneType[];
+export type BlockSceneType =
+  | 'new'
+  | 'filter'
+  | 'one'
+  | 'many'
+  | 'select'
+  | 'subForm'
+  | 'bulkEditForm'
+  | BlockSceneType[];
 
 export const BlockSceneEnum = {
   new: 'new' as BlockSceneType,
@@ -68,6 +76,9 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   onInit(options: any): void {
     super.onInit(options);
+    this.context.defineProperty('blockModel', {
+      value: this,
+    });
     this.context.defineMethod('getModelClassName', (className: string) => {
       return this.getModelClassName(className);
     });

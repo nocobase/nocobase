@@ -54,6 +54,7 @@ import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
 import { RouteRepository } from './RouteRepository';
+import { AIManager } from '../ai';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -113,6 +114,7 @@ interface Variable {
 export class Application {
   public eventBus = new EventTarget();
 
+  public aiManager: AIManager;
   public providers: ComponentAndProps[] = [];
   public router: RouterManager;
   public scopes: Record<string, any> = {};
@@ -236,6 +238,7 @@ export class Application {
     });
     this.initListeners();
     this.jsonLogic = getOperators();
+    this.aiManager = new AIManager(this);
   }
 
   private initListeners() {

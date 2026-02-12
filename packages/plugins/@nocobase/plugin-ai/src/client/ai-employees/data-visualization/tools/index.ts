@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
-import { ToolOptions } from '../../../manager/ai-manager';
+import { DEFAULT_DATA_SOURCE_KEY, ToolsOptions } from '@nocobase/client';
 
 type VizModel = {
   getStepParams?: (flowKey: string, stepKey: string) => any;
@@ -19,8 +18,7 @@ type VizModel = {
   };
 };
 
-export const vizSwitchModesTool: [string, string, ToolOptions] = [
-  'viz',
+export const vizSwitchModesTool: [string, ToolsOptions] = [
   'switchModes',
   {
     invoke: async (app, params: { uid: string }) => {
@@ -55,8 +53,7 @@ export const vizSwitchModesTool: [string, string, ToolOptions] = [
   },
 ];
 
-export const vizRunQueryTool: [string, string, ToolOptions] = [
-  'viz',
+export const vizRunQueryTool: [string, ToolsOptions] = [
   'runQuery',
   {
     invoke: async (app, params: { uid: string; limit?: number }) => {

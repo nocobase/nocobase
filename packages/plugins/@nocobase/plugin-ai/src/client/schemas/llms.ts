@@ -21,35 +21,86 @@ export const createLLMSchema = {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("Provider") }}',
-          'x-component': 'Select',
-          enum: '{{ providers }}',
-          'x-pattern': 'readPretty',
-        },
-        name: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          title: '{{ t("UID") }}',
-          'x-component': 'Input',
-          'x-pattern': 'readPretty',
+          'x-component': 'ProviderSelect',
+          required: true,
         },
         title: {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("Title") }}',
           'x-component': 'Input',
+          'x-reactions': {
+            dependencies: ['provider'],
+            when: '{{!$self.modified}}',
+            fulfill: {
+              state: {
+                value: '{{$getProviderLabel($deps[0])}}',
+              },
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
         options: {
           type: 'object',
           'x-component': 'Settings',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
-        testFlight: {
-          type: 'void',
-          'x-component': 'LLMTestFlight',
+        'options.baseURL': {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Base URL") }}',
+          'x-component': 'Input',
+          'x-component-props': {
+            placeholder: '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
+          },
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
+        },
+        enabledModels: {
+          type: 'object',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Enabled Models") }}',
+          'x-component': 'EnabledModelsSelect',
+          'x-reactions': {
+            dependencies: ['provider'],
+            fulfill: {
+              schema: {
+                'x-visible': '{{!!$deps[0]}}',
+              },
+            },
+          },
         },
         footer: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
           properties: {
+            testFlight: {
+              type: 'void',
+              'x-component': 'LLMTestFlight',
+              'x-reactions': {
+                dependencies: ['provider'],
+                fulfill: {
+                  schema: {
+                    'x-visible': '{{!!$deps[0]}}',
+                  },
+                },
+              },
+            },
             cancel: {
               title: '{{ t("Cancel") }}',
               'x-component': 'Action',
@@ -84,6 +135,9 @@ export const llmsSchema = {
       'x-decorator-props': {
         collection: 'llmServices',
         action: 'list',
+        rowKey: 'name',
+        dragSort: true,
+        dragSortBy: 'sort',
       },
       properties: {
         actions: {
@@ -95,15 +149,6 @@ export const llmsSchema = {
             },
           },
           properties: {
-            filter: {
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'useFilterActionProps',
-              title: "{{t('Filter')}}",
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
-              'x-align': 'left',
-            },
             refresh: {
               title: "{{t('Refresh')}}",
               'x-component': 'Action',
@@ -183,6 +228,17 @@ export const llmsSchema = {
             },
             column4: {
               type: 'void',
+              title: '{{ t("Enabled") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                enabled: {
+                  type: 'boolean',
+                  'x-component': 'EnabledSwitch',
+                },
+              },
+            },
+            column5: {
+              type: 'void',
               title: '{{ t("Actions") }}',
               'x-decorator': 'TableV2.Column.ActionBar',
               'x-component': 'TableV2.Column',
@@ -210,6 +266,12 @@ export const llmsSchema = {
                           'x-decorator': 'FormV2',
                           'x-use-decorator-props': 'useEditFormProps',
                           properties: {
+                            provider: {
+                              type: 'string',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Provider") }}',
+                              'x-component': 'ProviderDisplay',
+                            },
                             title: {
                               type: 'string',
                               'x-decorator': 'FormItem',
@@ -220,14 +282,30 @@ export const llmsSchema = {
                               type: 'object',
                               'x-component': 'Settings',
                             },
-                            testFlight: {
-                              type: 'void',
-                              'x-component': 'LLMTestFlight',
+                            'options.baseURL': {
+                              type: 'string',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Base URL") }}',
+                              'x-component': 'Input',
+                              'x-component-props': {
+                                placeholder:
+                                  '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
+                              },
+                            },
+                            enabledModels: {
+                              type: 'object',
+                              'x-decorator': 'FormItem',
+                              title: '{{ t("Enabled Models") }}',
+                              'x-component': 'EnabledModelsSelect',
                             },
                             footer: {
                               type: 'void',
                               'x-component': 'Action.Drawer.Footer',
                               properties: {
+                                testFlight: {
+                                  type: 'void',
+                                  'x-component': 'LLMTestFlight',
+                                },
                                 cancel: {
                                   title: '{{ t("Cancel") }}',
                                   'x-component': 'Action',

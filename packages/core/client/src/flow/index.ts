@@ -19,6 +19,7 @@ import * as filterFormActions from './models/blocks/filter-manager/flow-actions'
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
 import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
+import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -59,6 +60,21 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.context.defineProperty('liquid', {
       get: () => liquidInstance,
     });
+
+    this.flowEngine.context.defineMethod(
+      'previewRunJS',
+      async function (this: any, code: string): Promise<PreviewRunJSResult> {
+        const mod = await import('./components/code-editor/runjsDiagnostics');
+        return await mod.previewRunJS(String(code ?? ''), this);
+      },
+      {
+        description: 'Preview/diagnose a RunJS snippet (lint + sandbox execution).',
+        detail: '(code: string) => Promise<{ success: boolean; message: string }>',
+        params: [{ name: 'code', type: 'string', description: 'RunJS code to preview.' }],
+        returns: { type: 'Promise<PreviewRunJSResult>', description: 'Preview result.' },
+        completion: { insertText: "await ctx.previewRunJS('console.log(1)')" },
+      },
+    );
   }
 }
 
@@ -76,4 +92,3 @@ export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
 
 export { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
-// test

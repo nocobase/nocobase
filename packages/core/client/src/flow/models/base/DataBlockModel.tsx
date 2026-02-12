@@ -32,7 +32,10 @@ DataBlockModel.define({
       if (scene === 'new' || (collectionName && !filterByTk)) {
         return M['_isScene']?.('new');
       }
-      return !M['_isScene'] || (!M['_isScene']?.('select') && !M['_isScene']?.('subForm') && !M['_isScene']?.('bulkEditForm'));
+      return (
+        !M['_isScene'] ||
+        (!M['_isScene']?.('select') && !M['_isScene']?.('subForm') && !M['_isScene']?.('bulkEditForm'))
+      );
     });
   },
 });

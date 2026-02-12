@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { RunJSContextRegistry, getRunJSDocFor } from '..';
-import { setupRunJSContexts } from '../runjs-context/setup';
 import { FlowContext } from '../flowContext';
+import { setupRunJSContexts } from '../runjs-context/setup';
 
 describe('Specific RunJSContext implementations', () => {
   beforeAll(async () => {
@@ -34,7 +34,8 @@ describe('Specific RunJSContext implementations', () => {
       const ctx: any = { model: { constructor: { name: 'JSColumnModel' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.properties?.record).toBeTruthy();
-      expect(doc?.properties?.record).toContain('row record');
+      const recordDoc: any = doc?.properties?.record;
+      expect(String(recordDoc?.description ?? recordDoc ?? '')).toContain('row record');
     });
 
     it('should have recordIndex property in doc', () => {
@@ -84,6 +85,14 @@ describe('Specific RunJSContext implementations', () => {
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.properties?.React).toBeTruthy();
       expect(doc?.properties?.antd).toBeTruthy();
+    });
+
+    it('should have ctx.auth.locale / ctx.viewer.drawer in doc', () => {
+      const ctx: any = { model: { constructor: { name: 'JSBlockModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+
+      expect(doc?.properties?.auth?.properties?.locale).toBeTruthy();
+      expect(doc?.properties?.viewer?.properties?.drawer).toBeTruthy();
     });
 
     it('should have element property', () => {
@@ -212,6 +221,28 @@ describe('Specific RunJSContext implementations', () => {
       (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.label).toMatch(/表单 JS 字段项/);
+    });
+  });
+
+  describe('JSEditableFieldRunJSContext', () => {
+    it('should be registered for JSEditableFieldModel', () => {
+      const ctor = RunJSContextRegistry['resolve']('v1' as any, 'JSEditableFieldModel');
+      expect(ctor).toBeTruthy();
+    });
+
+    it('should have getValue/setValue methods in doc', () => {
+      const ctx: any = { model: { constructor: { name: 'JSEditableFieldModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.methods?.getValue).toBeTruthy();
+      expect(doc?.methods?.setValue).toBeTruthy();
+    });
+
+    it('should support zh-CN locale', () => {
+      const ctx = new FlowContext();
+      (ctx as any).defineProperty('model', { value: { constructor: { name: 'JSEditableFieldModel' } } });
+      (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.label).toMatch(/可编辑字段/);
     });
   });
 });

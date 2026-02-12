@@ -57,6 +57,45 @@ describe('code-editor linter', () => {
     expect(diags.length).toBe(0);
   });
 
+  it('warns for suspicious short ctx method call', () => {
+    const code = `ctx.fw();`;
+    const diags = computeDiagnosticsFromText(code);
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('ctx.fw'))).toBe(true);
+  });
+
+  it('warns for unknown ctx method call when known ctx roots are provided', () => {
+    const code = `ctx.foobar();`;
+    const diags = computeDiagnosticsFromText(code, { knownCtxMemberRoots: ['t', 'setValue', 'getValue'] });
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('ctx.foobar'))).toBe(true);
+  });
+
+  it('warns for unknown ctx member access when known ctx roots are provided', () => {
+    const code = `const x = ctx.foobar;`;
+    const diags = computeDiagnosticsFromText(code, { knownCtxMemberRoots: ['t', 'setValue', 'getValue'] });
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('ctx.foobar'))).toBe(true);
+  });
+
+  it('does not warn for known ctx method call when known ctx roots are provided', () => {
+    const code = `ctx.t("x"); ctx.setValue?.("y");`;
+    const diags = computeDiagnosticsFromText(code, { knownCtxMemberRoots: ['t', 'setValue'] });
+    expect(diags.some((d) => d.message.includes('Possible undefined ctx method call'))).toBe(false);
+  });
+
+  it('does not warn for known ctx member access when known ctx roots are provided', () => {
+    const code = `const t = ctx.t; const setValue = ctx.setValue; const logger = ctx.logger;`;
+    const diags = computeDiagnosticsFromText(code, { knownCtxMemberRoots: ['t', 'setValue'] });
+    expect(diags.some((d) => d.message.includes('Possible unknown ctx member access'))).toBe(false);
+  });
+
+  it('still shows unknown ctx warnings even when syntax error exists', () => {
+    const code = `ctx.foobar();\nconst a = ;\n(1+2)();\nconst x = ctx.bar;\n`;
+    const diags = computeDiagnosticsFromText(code, { knownCtxMemberRoots: ['t', 'setValue'] });
+    expect(diags.some((d) => d.severity === 'error' && /Syntax error:/.test(d.message))).toBe(true);
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('ctx.foobar'))).toBe(true);
+    expect(diags.some((d) => d.severity === 'warning' && d.message.includes('ctx.bar'))).toBe(true);
+    expect(diags.some((d) => d.severity === 'warning' && d.message === 'This expression is not callable.')).toBe(true);
+  });
+
   it('does not warn for allowed global Blob', () => {
     const code = `const b = new Blob(['x']);\nb.size;`;
     const diags = computeDiagnosticsFromText(code);

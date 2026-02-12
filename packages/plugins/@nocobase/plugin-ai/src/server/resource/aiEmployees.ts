@@ -34,26 +34,9 @@ export const list = async (ctx: Context, next: Next) => {
   await next();
 };
 
-export const create = async (ctx: Context, next: Next) => {
-  const { skillSettings } = ctx.action.params.values ?? {};
-  const skills = skillSettings.skills ?? [];
-  skills.push(
-    {
-      name: 'dataSource-dataSourceCounting',
-      autoCall: true,
-    },
-    {
-      name: 'dataSource-dataSourceQuery',
-      autoCall: true,
-    },
-  );
-  skillSettings.skills = _.uniqBy(skills, 'name');
-
-  await actions.create(ctx as Context, next);
-};
-
 export const listByUser = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const tools = await plugin.ai.toolsManager.listTools({ scope: 'GENERAL' });
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
   const sequelize = ctx.db.sequelize;
@@ -107,23 +90,14 @@ export const listByUser = async (ctx: Context, next: Next) => {
     }
   });
 
-  const llmServiceNameSet = new Set(
-    rows.filter((row) => row.modelSettings?.llmService).map((row) => row.modelSettings?.llmService),
-  );
-  const llmProviders = llmServiceNameSet.size
-    ? await ctx.db.getRepository('llmServices').find({
-        filter: {
-          name: {
-            $in: Array.from(llmServiceNameSet),
-          },
-        },
-      })
-    : [];
-  const llmProviderMap = new Map(llmProviders.map((provider) => [provider.name, provider]));
-
   ctx.body = rows.map((row) => {
-    const llmServiceName: string = row.modelSettings.llmService;
-    const llmProvider = (llmProviderMap.get(llmServiceName) as any)?.provider ?? '';
+    const skillSettings: { skills: { name: string; auto: boolean }[] } = row.skillSettings ?? { skills: [] };
+    for (const tool of tools) {
+      skillSettings.skills.push({
+        name: tool.definition.name,
+        auto: tool.defaultPermission === 'ALLOW',
+      });
+    }
     return {
       username: row.username,
       nickname: row.nickname,
@@ -134,11 +108,8 @@ export const listByUser = async (ctx: Context, next: Next) => {
       userConfig: {
         prompt: row.userConfigs?.[0]?.prompt,
       },
-      skillSettings: row.skillSettings,
+      skillSettings,
       builtIn: row.builtIn,
-      webSearch: row.modelSettings?.builtIn?.webSearch ?? false,
-      llmProvider,
-      toolsConflict: llmProvider === 'google-genai',
     };
   });
   await next();

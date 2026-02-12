@@ -14,8 +14,7 @@ import { LeftOutlined, UserOutlined } from '@ant-design/icons';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ContextItem, Message } from '../types';
-import ReactMarkdown from 'react-markdown';
-import { Code } from '../chatbox/markdown/Code';
+import { CodeBasic } from '../chatbox/markdown/Code';
 import { avatars } from '../avatars';
 import { Typography } from 'antd';
 import { useT } from '../../locale';
@@ -153,13 +152,7 @@ const CodeHistoryListItem: React.FC<{ message: Message; workContext: ContextItem
           margin-bottom: -1em;
         `}
       >
-        <ReactMarkdown
-          components={{
-            code: (props) => <Code {...props} />,
-          }}
-        >
-          {'```' + content.language + '\n' + content.code + '\n```'}
-        </ReactMarkdown>
+        <CodeBasic className={`language-${content.language}`}>{content.code}</CodeBasic>
       </div>
     </Flex>
   );

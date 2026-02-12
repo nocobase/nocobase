@@ -148,14 +148,10 @@ export function defineBaseContextMeta() {
       },
       // TODO: context meta
       resource: {
-        description: 'FlowResource instance for accessing and manipulating data.',
+        description:
+          'The current FlowResource instance in this context, used to access and manipulate data. In most block/popup scenarios it is pre-bound by the runtime (no need to call ctx.initResource). In contexts like plain JS blocks where no resource is bound, you can call ctx.initResource(type) first and then use ctx.resource.',
         detail: 'FlowResource',
-        examples: [
-          "ctx.useResource('MultiRecordResource');",
-          "ctx.resource.setResourceName('users');",
-          'await ctx.resource.refresh();',
-          'const rows = ctx.resource.getData();',
-        ],
+        examples: ['await ctx.resource.refresh();'],
         properties: {
           // FlowResource
           getData: {
@@ -222,29 +218,6 @@ export function defineBaseContextMeta() {
           roleName: 'Current role name.',
           token: 'Current API token.',
           user: 'Current user info object (if available).',
-        },
-      },
-      api: {
-        description: 'APIClient instance for making HTTP requests.',
-        detail: 'APIClient',
-        properties: {
-          request: {
-            description:
-              'Make an HTTP request using the APIClient instance. Parameters: (options: RequestOptions) => Promise<any>.',
-            detail: 'Promise<any>',
-            completion: {
-              insertText: `await ctx.api.request({ url: '', method: 'get', params: {} })`,
-            },
-          },
-          auth: {
-            description: 'Authentication info bound to the API client (token/role/locale).',
-            detail: 'APIClient.auth',
-            properties: {
-              token: 'Current API token.',
-              role: 'Current role name.',
-              locale: 'Current locale code.',
-            },
-          },
         },
       },
       viewer: {
@@ -334,13 +307,46 @@ export function defineBaseContextMeta() {
       },
     },
     methods: {
-      t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {{name}}", { name: "World" })`',
-      useResource: {
+      request: {
         description:
-          'Define ctx.resource as a FlowResource instance by class name. Common values: "MultiRecordResource", "SingleRecordResource", "SQLResource".',
-        detail: '(className) => void',
-        completion: { insertText: "ctx.useResource('MultiRecordResource')" },
-        examples: ["ctx.useResource('MultiRecordResource'); ctx.resource.setResourceName('users');"],
+          'Make an HTTP request using the APIClient instance. Parameters: (options: RequestOptions) => Promise<any>.',
+        detail: '(options: RequestOptions) => Promise<any>',
+        completion: { insertText: `await ctx.request({ url: '', method: 'get', params: {} })` },
+      },
+      getModel: {
+        description:
+          'Get a model instance by uid. By default, it searches across the current view stack and returns the first matched model.',
+        detail: '(uid: string, searchInPreviousEngines?: boolean) => FlowModel | undefined',
+        completion: { insertText: `ctx.getModel('block-uid-xxx')` },
+        params: [
+          {
+            name: 'uid',
+            type: 'string',
+            description: 'Target model uid.',
+          },
+          {
+            name: 'searchInPreviousEngines',
+            type: 'boolean',
+            description: 'Whether to search in parent engines (default: false).',
+          },
+        ],
+        returns: { type: 'FlowModel | undefined' },
+        examples: ["const model = ctx.getModel('block-uid-xxx');"],
+      },
+      t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {{name}}", { name: "World" })`',
+      initResource: {
+        description:
+          'Initialize ctx.resource as a FlowResource instance by class name. Common values: "MultiRecordResource", "SingleRecordResource", "SQLResource".',
+        detail: '(resourceType: ResourceType) => void',
+        completion: { insertText: "ctx.initResource('MultiRecordResource')" },
+        examples: ["ctx.initResource('MultiRecordResource'); ctx.resource.setResourceName('users');"],
+      },
+      makeResource: {
+        description:
+          'Create a new resource instance without binding it to ctx.resource. Useful when you need multiple independent or temporary resources. Common values: "MultiRecordResource", "SingleRecordResource", "SQLResource".',
+        detail: '(resourceType) => FlowResource',
+        completion: { insertText: "const resource = ctx.makeResource('SingleRecordResource')" },
+        examples: ["const resource = ctx.makeResource('SingleRecordResource'); resource.setResourceName('users');"],
       },
       render: {
         description:
@@ -351,17 +357,9 @@ export function defineBaseContextMeta() {
         },
       },
       requireAsync:
-        'Asynchronously load external libraries from URL. Parameters: (url: string) => Promise<any>. Example: `const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
+        'Load UMD/AMD/global scripts or CSS asynchronously from URL. Accepts shorthand like "echarts@5/dist/echarts.min.js" (resolved via ESM CDN with ?raw) or full URLs, and returns a Promise of the loaded library.',
       importAsync:
-        'Dynamically import ESM module by URL. Parameters: (url: string) => Promise<Module>. Example: `const mod = await ctx.importAsync("https://cdn.jsdelivr.net/npm/lit-html@2/+esm")`',
-      loadCSS: {
-        description: 'Load a CSS file by URL (browser only).',
-        detail: '(url: string) => Promise<void>',
-        completion: { insertText: "await ctx.loadCSS('https://example.com/style.css')" },
-        params: [{ name: 'url', type: 'string', description: 'CSS URL.' }],
-        returns: { type: 'Promise<void>' },
-        examples: ["await ctx.loadCSS('https://example.com/style.css');"],
-      },
+        'Dynamically import ESM modules or CSS by URL. Accepts shorthand like "vue@3.4.0" or "dayjs@1/plugin/relativeTime.js" (resolved via configured ESM CDN) or full URLs, and returns a Promise of the module namespace.',
       getVar: {
         description: 'Resolve a ctx expression value by path string (expression starts with "ctx.").',
         detail: '(path: string) => Promise<any>',
@@ -583,14 +581,10 @@ export function defineBaseContextMeta() {
           },
         },
         resource: {
-          description: '数据资源（FlowResource）。多数场景需要先调用 ctx.useResource(...) 创建 ctx.resource。',
+          description:
+            '当前上下文中的 resource 实例（FlowResource），用于访问和操作数据。多数区块、弹窗等场景下运行环境会预先绑定 resource（无需手动调用 ctx.initResource）。对于 JS Block 等默认没有 resource 的场景，可通过 ctx.initResource(type) 初始化一个，再通过 ctx.resource 使用。',
           detail: 'FlowResource',
-          examples: [
-            "ctx.useResource('MultiRecordResource');",
-            "ctx.resource.setResourceName('users');",
-            'await ctx.resource.refresh();',
-            'const rows = ctx.resource.getData();',
-          ],
+          examples: ['await ctx.resource.refresh();'],
           properties: {
             getData: {
               description: '获取资源当前数据。',
@@ -653,28 +647,6 @@ export function defineBaseContextMeta() {
             roleName: '当前角色名。',
             token: '当前 API token。',
             user: '当前用户信息对象（若可用）。',
-          },
-        },
-        api: {
-          description: '用于发起 HTTP 请求的 APIClient 实例',
-          detail: 'APIClient',
-          properties: {
-            request: {
-              description: '通过 ctx.api.request 发起 HTTP 请求，入参为 RequestOptions，返回 Promise。',
-              detail: 'Promise<any>',
-              completion: {
-                insertText: `await ctx.api.request({ url: '', method: 'get', params: {} })`,
-              },
-            },
-            auth: {
-              description: 'APIClient 上的认证信息（token/role/locale）。',
-              detail: 'APIClient.auth',
-              properties: {
-                token: '当前 API token。',
-                role: '当前角色名。',
-                locale: '当前 locale。',
-              },
-            },
           },
         },
         viewer: {
@@ -768,13 +740,45 @@ export function defineBaseContextMeta() {
         },
       },
       methods: {
+        request: {
+          description: '使用 APIClient 实例发起一个 HTTP 请求。参数：(options: RequestOptions) => Promise<any>',
+          detail: '(options: RequestOptions) => Promise<any>',
+          completion: { insertText: `await ctx.request({ url: '', method: 'get', params: {} })` },
+        },
+        getModel: {
+          description: '根据 uid 获取模型实例。默认会跨当前视图栈查找，并返回第一个命中的模型。',
+          detail: '(uid: string, searchInPreviousEngines?: boolean) => FlowModel | undefined',
+          completion: { insertText: `ctx.getModel('block-uid-xxx')` },
+          params: [
+            {
+              name: 'uid',
+              type: 'string',
+              description: '目标模型 uid。',
+            },
+            {
+              name: 'searchInPreviousEngines',
+              type: 'boolean',
+              optional: true,
+              description: '是否在之前的引擎中搜索模型，默认为 false。',
+            },
+          ],
+          returns: { type: 'FlowModel | undefined' },
+          examples: ["const model = ctx.getModel('block-uid-xxx');"],
+        },
         t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {{name}}", { name: "世界" })`',
-        useResource: {
+        initResource: {
           description:
-            '通过资源类名创建 ctx.resource。常用值："MultiRecordResource"、"SingleRecordResource"、"SQLResource"。',
-          detail: '(className) => void',
-          completion: { insertText: "ctx.useResource('MultiRecordResource')" },
-          examples: ["ctx.useResource('MultiRecordResource'); ctx.resource.setResourceName('users');"],
+            '初始化当前上下文的资源：若尚未存在 ctx.resource，则按资源类名创建并绑定；若已存在则直接复用。常用值："MultiRecordResource"、"SingleRecordResource"、"SQLResource"。',
+          detail: '(resourceType: ResourceType) => void',
+          completion: { insertText: "ctx.initResource('MultiRecordResource')" },
+          examples: ["ctx.initResource('MultiRecordResource'); ctx.resource.setResourceName('users');"],
+        },
+        makeResource: {
+          description:
+            '创建一个新的资源实例，不会自动绑定到 ctx.resource。适合需要多个独立资源或临时资源的场景。常用值："MultiRecordResource"、"SingleRecordResource"、"SQLResource"。',
+          detail: '(resourceType) => FlowResource',
+          completion: { insertText: "const resource = ctx.makeResource('SingleRecordResource')" },
+          examples: ["const resource = ctx.makeResource('SingleRecordResource'); resource.setResourceName('users');"],
         },
         render: {
           description:
@@ -785,17 +789,9 @@ export function defineBaseContextMeta() {
           },
         },
         requireAsync:
-          '按 URL 异步加载外部库。参数：(url: string) => Promise<any>。示例：`const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
+          '按 URL 异步加载 UMD/AMD 或挂到全局的脚本，也可加载 CSS。支持简写路径（如 "echarts@5/dist/echarts.min.js"，会经由 ESM CDN 加 ?raw 获取原始文件）和完整 URL，返回加载后的库对象或样式注入结果。',
         importAsync:
-          '按 URL 动态导入 ESM 模块（开发/生产均可用）。参数：(url: string) => Promise<Module>。示例：`const mod = await ctx.importAsync("https://cdn.jsdelivr.net/npm/lit-html@2/+esm")`',
-        loadCSS: {
-          description: '按 URL 加载 CSS（仅浏览器环境）。',
-          detail: '(url: string) => Promise<void>',
-          completion: { insertText: "await ctx.loadCSS('https://example.com/style.css')" },
-          params: [{ name: 'url', type: 'string', description: 'CSS 地址。' }],
-          returns: { type: 'Promise<void>' },
-          examples: ["await ctx.loadCSS('https://example.com/style.css');"],
-        },
+          '按 URL 动态加载 ESM 模块或 CSS。支持简写（如 "vue@3.4.0"、"dayjs@1/plugin/relativeTime.js"，会按配置拼接 ESM CDN 前缀）和完整 URL，返回模块命名空间或样式注入结果。',
         getVar: {
           description: '通过表达式路径字符串获取 ctx 的运行时值（以 "ctx." 开头）。',
           detail: '(path: string) => Promise<any>',

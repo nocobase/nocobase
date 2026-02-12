@@ -112,9 +112,7 @@ export const AddContextButton: React.FC<{
         zIndex: 2000,
       }}
     >
-      <Button variant="dashed" color="default" size="small" icon={<AppstoreAddOutlined />} disabled={disabled}>
-        {t('Add work context')}
-      </Button>
+      <Button type="text" icon={<AppstoreAddOutlined />} disabled={disabled} />
     </Dropdown>
   );
 };

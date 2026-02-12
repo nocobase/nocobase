@@ -24,14 +24,11 @@ import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import {
-  dataModelingIntentRouter,
-  defineCollections,
-  formFiller,
-  getCollectionMetadata,
-  getCollectionNames,
-  getDataSources,
   getWorkflowCallers,
-  chartGenerator,
+  createDocsSearchTool,
+  createReadDocEntryTool,
+  loadDocsIndexes,
+  describeDocModules,
 } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
@@ -43,9 +40,7 @@ import { AIContextDatasourceManager } from './manager/ai-context-datasource-mana
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
-import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
-import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
-import { suggestions } from './tools/suggestions';
+import { kimiProviderOptions } from './llm-providers/kimi';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -79,6 +74,7 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
+    await loadDocsIndexes();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
@@ -92,105 +88,28 @@ export class PluginAIServer extends Plugin {
   }
 
   registerLLMProviders() {
-    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
-    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
-    this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
+    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
-    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
   }
 
   registerTools() {
-    const toolManager = this.aiManager.toolManager;
-    const frontendGroupName = 'frontend';
-    const dataModelingGroupName = 'dataModeling';
-    const workflowGroupName = 'workflowCaller';
-    const codeEditorGroupName = 'codeEditor';
-    const dataSourceGroupName = 'dataSource';
-    toolManager.registerToolGroup({
-      groupName: frontendGroupName,
-      title: '{{t("Frontend")}}',
-      description: '{{t("Frontend actions")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: dataModelingGroupName,
-      title: '{{t("Data modeling")}}',
-      description: '{{t("Data modeling tools")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: workflowGroupName,
-      title: '{{t("Workflow caller")}}',
-      description: '{{t("Use workflow as a tool")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: codeEditorGroupName,
-      title: '{{t("CodeEditor")}}',
-      description: '{{t("CodeEditor actions")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: dataSourceGroupName,
-      title: '{{t("DataSource")}}',
-      description: '{{t("Data source query")}}',
-    });
+    const toolsManager = this.ai.toolsManager;
 
-    this.aiManager.toolManager.registerTools([
-      {
-        groupName: frontendGroupName,
-        tool: formFiller,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: dataModelingIntentRouter,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: getDataSources,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: getCollectionNames,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: getCollectionMetadata,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: defineCollections,
-      },
-      {
-        groupName: dataModelingGroupName,
-        tool: suggestions,
-      },
-      {
-        tool: chartGenerator,
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: listCodeSnippet,
-      },
-      {
-        groupName: codeEditorGroupName,
-        tool: getCodeSnippet,
-      },
-      {
-        groupName: dataSourceGroupName,
-        tool: dataSourceCounting,
-      },
-      {
-        groupName: dataSourceGroupName,
-        tool: dataSourceQuery,
-      },
+    const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
+
+    toolsManager.registerTools([
+      createDocsSearchTool({ description: docsModulesDescription }),
+      createReadDocEntryTool(),
     ]);
 
-    toolManager.registerDynamicTool({
-      groupName: workflowGroupName,
-      getTools: async () => {
-        return await getWorkflowCallers(this);
-      },
-    });
+    toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
   }
 
   defineResources() {
@@ -237,6 +156,7 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
+    this.app.acl.allow('ai', 'listAllEnabledModels', 'loggedIn');
 
     this.app.acl.allow('aiEmployees', 'listByUser', 'loggedIn');
     this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');

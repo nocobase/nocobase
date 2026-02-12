@@ -15,6 +15,8 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxStore } from './stores/chat-box';
 import _ from 'lodash';
 import { SearchSwitch } from './SearchSwitch';
+import { ModelSwitcher } from './ModelSwitcher';
+import { AIEmployeeSwitcher } from './AIEmployeeSwitch';
 
 export const SenderFooter: React.FC<{
   components: any;
@@ -22,7 +24,7 @@ export const SenderFooter: React.FC<{
 }> = ({ components, handleSubmit }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
 
   const loading = useChatMessagesStore.use.responseLoading();
   const addContextItems = useChatMessagesStore.use.addContextItems();
@@ -52,18 +54,19 @@ export const SenderFooter: React.FC<{
 
   return (
     <Flex justify="space-between" align="center">
-      <Flex gap="small" align="center">
+      <Flex gap="middle" align="center">
         <AddContextButton
           onAdd={addContextItems}
           onRemove={removeContextItem}
           disabled={!currentEmployee}
           ignore={(key) => key === 'flow-model.variable'}
         />
-        <Divider type="vertical" />
         <Upload />
-        {currentEmployee?.webSearch && <SearchSwitch />}
+        <SearchSwitch />
+        <AIEmployeeSwitcher />
+        <ModelSwitcher />
       </Flex>
-      <Flex align="center">
+      <Flex align="center" gap="middle">
         {loading ? (
           <LoadingButton type="default" />
         ) : (

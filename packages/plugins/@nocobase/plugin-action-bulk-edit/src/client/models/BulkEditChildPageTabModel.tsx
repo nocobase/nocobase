@@ -51,7 +51,6 @@ export class BulkEditBlockGridModel extends BlockGridModel {
   }
 
   get subModelBaseClasses() {
-
     return ['BulkEditDataBlockModel', 'BulkEditBlockModel'];
   }
 }

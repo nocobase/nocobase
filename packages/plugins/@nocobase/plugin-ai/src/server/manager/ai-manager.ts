@@ -23,6 +23,7 @@ export type LLMProviderMeta = {
   models?: Partial<Record<SupportedModel, string[]>>;
   provider: new (opts: LLMProviderOptions) => LLMProvider;
   embedding?: new (opts: EmbeddingProviderOptions) => EmbeddingProvider;
+  supportWebSearch?: boolean;
 };
 
 export enum SupportedModel {
@@ -41,10 +42,11 @@ export class AIManager {
 
   listLLMProviders() {
     const providers = this.llmProviders.entries();
-    return Array.from(providers).map(([name, { title, supportedModel }]) => ({
+    return Array.from(providers).map(([name, { title, supportedModel, supportWebSearch }]) => ({
       name,
       title,
       supportedModel: supportedModel ?? [SupportedModel.LLM],
+      supportWebSearch: supportWebSearch ?? false,
     }));
   }
 

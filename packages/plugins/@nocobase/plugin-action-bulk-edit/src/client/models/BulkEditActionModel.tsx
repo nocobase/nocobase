@@ -67,6 +67,5 @@ BulkEditActionModel.registerFlow({
         value: 'selected',
       },
     },
-
   },
 });

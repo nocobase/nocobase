@@ -20,5 +20,13 @@ export default defineCollection({
         storage: 'local',
       },
     },
+    {
+      type: 'string',
+      name: 'defaultLLMService',
+    },
+    {
+      type: 'string',
+      name: 'defaultModel',
+    },
   ],
 });

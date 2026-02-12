@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { FlowContext } from '../flowContext';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { createJSRunnerWithVersion, getRunJSDocFor } from '..';
+import { FlowContext } from '../flowContext';
 import { setupRunJSContexts } from '../runjs-context/setup';
 
 describe('RunJS Context Runtime Behavior', () => {
@@ -224,7 +224,7 @@ describe('RunJS Context Runtime Behavior', () => {
         // Base properties from FlowRunJSContext
         expect(doc?.properties?.logger).toBeTruthy();
         expect(doc?.properties?.message).toBeTruthy();
-        expect(doc?.properties?.api).toBeTruthy();
+        expect(doc?.methods?.request).toBeTruthy();
         expect(doc?.methods?.t).toBeTruthy();
         expect(doc?.methods?.requireAsync).toBeTruthy();
       }

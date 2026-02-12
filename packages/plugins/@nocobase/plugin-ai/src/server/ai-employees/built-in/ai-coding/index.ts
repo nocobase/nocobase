@@ -16,31 +16,51 @@ export default {
   skillSettings: {
     skills: [
       {
-        name: 'dataModeling-getDataSources',
+        name: 'getDataSources',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionNames',
+        name: 'getCollectionNames',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionMetadata',
+        name: 'getCollectionMetadata',
         autoCall: true,
       },
       {
-        name: 'codeEditor-listCodeSnippet',
+        name: 'listCodeSnippet',
         autoCall: true,
       },
       {
-        name: 'codeEditor-getCodeSnippet',
+        name: 'getCodeSnippet',
         autoCall: true,
       },
       {
-        name: 'dataSource-dataSourceCounting',
+        name: 'getContextApis',
         autoCall: true,
       },
       {
-        name: 'dataSource-dataSourceQuery',
+        name: 'getContextEnvs',
+        autoCall: true,
+      },
+      {
+        name: 'getContextVars',
+        autoCall: true,
+      },
+      {
+        name: 'lintAndTestJS',
+        autoCall: true,
+      },
+      {
+        name: 'searchFieldMetadata',
+        autoCall: true,
+      },
+      {
+        name: 'searchDocs',
+        autoCall: true,
+      },
+      {
+        name: 'readDocEntry',
         autoCall: true,
       },
     ],

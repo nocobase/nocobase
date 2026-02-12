@@ -35,6 +35,10 @@ export class Plugin<T = any> {
     return this.app.flowEngine;
   }
 
+  get ai() {
+    return this.app.aiManager;
+  }
+
   get pm() {
     return this.app.pm;
   }

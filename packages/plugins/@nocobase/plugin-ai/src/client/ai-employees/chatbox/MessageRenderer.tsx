@@ -12,12 +12,10 @@ import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from '
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { usePlugin, useToken } from '@nocobase/client';
-import { Markdown } from './markdown/Markdown';
+import { lazy, usePlugin, useToken } from '@nocobase/client';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
-import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
 import { ToolCard } from './generative-ui/ToolCard';
 import { useChatConversationsStore } from './stores/chat-conversations';
@@ -26,6 +24,8 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
+
+const { Markdown } = lazy(() => import('./markdown/Markdown'), 'Markdown');
 
 const { Link } = Typography;
 
@@ -41,7 +41,7 @@ const MessageWrapper = React.forwardRef<
   return (
     <div ref={ref} {...props} onMouseEnter={() => setShowFooter(true)} onMouseLeave={() => setShowFooter(false)}>
       {children}
-      {footer && <div style={{ marginTop: '4px', opacity: showFooter ? 1 : 0 }}>{footer}</div>}
+      {footer && <div style={{ marginTop: '4px', display: showFooter ? 'flex' : 'none' }}>{footer}</div>}
     </div>
   );
 });
@@ -57,11 +57,10 @@ const AITextMessageRenderer: React.FC<{
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 16,
         }}
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? <ToolCard tools={msg.tool_calls} messageId={msg.messageId} /> : null}
+        {msg.tool_calls?.length ? <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} /> : null}
       </div>
     );
   }
@@ -74,7 +73,14 @@ const AIMessageRenderer: React.FC<{
 }> = ({ msg }) => {
   switch (msg.type) {
     case 'greeting':
-      return <Bubble content={msg.content} />;
+      return (
+        <Bubble
+          content={msg.content}
+          style={{
+            marginBottom: '8px',
+          }}
+        />
+      );
     default:
       return (
         <Bubble
@@ -270,11 +276,14 @@ export const UserMessage: React.FC<{
       {items?.length ? (
         <div
           style={{
-            marginBottom: '4px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 4,
           }}
         >
           {items.map((item) => (
-            <Attachment file={item} key={item.filename} />
+            <Attachments.FileCard key={item.uid} item={item} />
           ))}
         </div>
       ) : null}
@@ -305,30 +314,43 @@ export const ErrorMessage: React.FC<{
 
   const { resendMessages } = useChatMessageActions();
 
+  const showAlert = msg.content !== 'GraphRecursionError';
+  useEffect(() => {
+    if (msg.content === 'GraphRecursionError') {
+      resendMessages({
+        sessionId: currentConversation,
+        aiEmployee: currentEmployee,
+        important: msg.content,
+      });
+    }
+  }, [msg]);
+
   return (
-    <Alert
-      message={<>{msg.content} </>}
-      action={
-        <Button
-          onClick={() => {
-            let messageId: string;
-            const prev = messages[messages.length - 2];
-            if (prev && prev.role !== 'user') {
-              messageId = prev.key as string;
-            }
-            resendMessages({
-              sessionId: currentConversation,
-              messageId,
-              aiEmployee: currentEmployee,
-            });
-          }}
-          icon={<ReloadOutlined />}
-          type="text"
-        />
-      }
-      type="warning"
-      showIcon
-    />
+    showAlert && (
+      <Alert
+        message={<>{msg.content} </>}
+        action={
+          <Button
+            onClick={() => {
+              let messageId: string;
+              const prev = messages[messages.length - 2];
+              if (prev && prev.role !== 'user') {
+                messageId = prev.key as string;
+              }
+              resendMessages({
+                sessionId: currentConversation,
+                messageId,
+                aiEmployee: currentEmployee,
+              });
+            }}
+            icon={<ReloadOutlined />}
+            type="text"
+          />
+        }
+        type="warning"
+        showIcon
+      />
+    )
   );
 });
 

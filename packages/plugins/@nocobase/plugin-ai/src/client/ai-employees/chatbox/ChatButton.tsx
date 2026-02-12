@@ -18,7 +18,7 @@ import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
-import { useChatConversationOptions } from './hooks/useChatConversationOptions';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -31,10 +31,11 @@ export const ChatButton: React.FC = observer(() => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const { resetDefaultWebSearch } = useChatConversationOptions();
+  const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
   const items = useMemo(() => {
     return aiEmployees
@@ -45,7 +46,7 @@ export const ChatButton: React.FC = observer(() => {
           <AIEmployeeListItem
             aiEmployee={employee}
             onClick={() => {
-              resetDefaultWebSearch();
+              setWebSearch(true);
               setOpen(true);
               switchAIEmployee(employee);
             }}
@@ -65,11 +66,15 @@ export const ChatButton: React.FC = observer(() => {
         menu={{ items }}
         placement="topRight"
         trigger={['hover']}
-        align={{ offset: [-36, -12] }}
+        align={{ offset: [-16, -6] }}
         open={dropdownOpen}
         onOpenChange={(nextOpen) => setDropdownOpen(nextOpen)}
       >
         <div
+          onClick={() => {
+            setDropdownOpen(false);
+            setOpen(true);
+          }}
           className={css`
             z-index: 1050;
             position: fixed;
@@ -80,6 +85,7 @@ export const ChatButton: React.FC = observer(() => {
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
 
             opacity: 0.7;
             background: rgba(255, 255, 255);
