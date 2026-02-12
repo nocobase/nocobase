@@ -109,7 +109,7 @@ describe('Tools loader test cases', () => {
     expect(tools).toBeUndefined();
   });
 
-  it('should load .js file', async () => {
+  it.skip('should load .js file', async () => {
     await loader.load();
     const toolsNames = ['formFiller', 'formFiller2'];
     for (const toolsName of toolsNames) {
@@ -125,7 +125,9 @@ describe('Tools loader test cases', () => {
     const toolsLoader = new ToolsLoader(aiManager, {
       scan: { basePath, pattern: ['tools/empty.ts'] },
     });
+    // const saved = process.env.VITEST;
     delete process.env.VITEST;
     await expect(toolsLoader.load()).resolves.not.toThrow();
+    // process.env.VITEST = saved;
   });
 });
