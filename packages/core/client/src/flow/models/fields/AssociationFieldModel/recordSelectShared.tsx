@@ -77,6 +77,40 @@ export interface LabelByFieldProps {
   fieldNames: AssociationFieldNames;
 }
 
+function toSafeDisplayLabel(value: unknown): string | number | boolean | undefined {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => {
+        if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
+          return item;
+        }
+        if (item && typeof item === 'object') {
+          const nested = (item as Record<string, unknown>).label ?? (item as Record<string, unknown>).name;
+          if (typeof nested === 'string' || typeof nested === 'number' || typeof nested === 'boolean') {
+            return nested;
+          }
+        }
+        return undefined;
+      })
+      .filter((item): item is string | number | boolean => item !== undefined);
+
+    return parts.length ? parts.map(String).join(', ') : undefined;
+  }
+
+  if (value && typeof value === 'object') {
+    const nested = (value as Record<string, unknown>).label ?? (value as Record<string, unknown>).name;
+    if (typeof nested === 'string' || typeof nested === 'number' || typeof nested === 'boolean') {
+      return nested;
+    }
+  }
+
+  return undefined;
+}
+
 export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
@@ -91,12 +125,16 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
     cache: false,
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => fieldModel.context.collection),
   });
-  const labelValue = option?.[fieldNames.label] || option.label;
+  const labelValue =
+    toSafeDisplayLabel(option?.[fieldNames.label]) ??
+    toSafeDisplayLabel(option?.label) ??
+    toSafeDisplayLabel(option?.[fieldNames.value]);
   const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
   fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleCollectionField.getComponentProps() });
+  const hasLabelValue = labelValue !== null && typeof labelValue !== 'undefined' && labelValue !== '';
   return (
     <span style={{ pointerEvents: 'none' }} key={key}>
-      {labelValue ? fieldModel.render() : 'N/A'}
+      {hasLabelValue ? fieldModel.render() : 'N/A'}
     </span>
   );
 }

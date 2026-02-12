@@ -64,6 +64,8 @@ export type FormAssignRuleItem = {
   enable?: boolean;
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
   targetPath?: string;
+  /** 规则级 title field 覆盖（仅当前规则生效，不影响 collection 全局） */
+  valueTitleField?: string;
   mode?: AssignMode;
   condition?: any;
   value?: any;
