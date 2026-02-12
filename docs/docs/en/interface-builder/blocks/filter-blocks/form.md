@@ -64,7 +64,7 @@ In addition to selecting fields from collections, you can also create form field
 
 ![20251031173833](https://static-docs.nocobase.com/20251031173833.png)
 
-2. Fill in the field title, select "Select" as the field model, and configure the options.
+2. Fill in the field title, select "Select" in "Field type", and configure the options.
 
 ![20251031174857_rec_](https://static-docs.nocobase.com/20251031174857_rec_.gif)
 
@@ -77,15 +77,15 @@ In addition to selecting fields from collections, you can also create form field
 ![20251031182235_rec_](https://static-docs.nocobase.com/20251031182235_rec_.gif)
 
 
-Currently supported field models:
+Currently supported field types:
 
-- Input: Single-line text input
-- Number: Numeric input
-- Date: Date picker
-- Select: Dropdown (can be configured for single or multiple selection)
-- Radio group: Radio buttons
-- Checkbox group: Checkboxes
-- Record select: Relationship record picker for filtering related data
+- Input
+- Number
+- Date
+- Select
+- Radio group
+- Checkbox group
+- Record select
 
 #### Record select (custom relationship field)
 
@@ -93,33 +93,21 @@ Currently supported field models:
 
 Configuration options:
 
-- **Target collection**: The collection to load selectable records from.
-- **Title field**: The field used as display text in the dropdown and selected tags (for example, name or title).
-- **Value field**: The field used as the actual submitted filter value, usually the primary key (for example, `id`).
-- **Multiple**: Whether multiple selections are allowed.
-- **Operator**: Defines how the filter condition is matched (see Operator below).
+- **Target collection**: Specifies which collection to load selectable records from.
+- **Title field**: Used as display text in the dropdown options and selected tags (such as name or title).
+- **Value field**: Used as the actual submitted filter value, usually a primary key field (such as `id`).
+- **Allow multiple**: When enabled, users can select multiple records at once.
+- **Operator**: Defines how filter conditions are matched (see "Operator" below).
 
 Recommended setup:
 
-1. Use a readable field for `Title field` (such as name), instead of raw IDs.
-2. Use a primary key for `Value field` to keep filtering stable and unique.
-3. For single-select scenarios, usually disable `Multiple`; for multi-select scenarios, enable `Multiple` and choose a matching `Operator`.
+1. Choose a readable field for `Title field` (such as "Name"), instead of raw IDs.
+2. Prefer a primary key field for `Value field` to ensure stable and unique filtering.
+3. In single-select scenarios, usually disable `Allow multiple`. In multi-select scenarios, enable `Allow multiple` and use an appropriate `Operator`.
 
 #### Operator
 
-`Operator` defines the matching rule between the filter form value and the connected target field value.
-
-Common options:
-
-- **Equals / Not equals**: Common for single-value matching.
-- **Contains / Not contains**: Common for text or collection-style matching.
-- **In / Not in**: Common for multi-value matching (for example, selecting multiple customers and matching any of them).
-
-Selection tips:
-
-1. For single-select fields, prefer `Equals`.
-2. For multi-select fields, prefer `In`.
-3. If the result looks incorrect, first check whether `Multiple` and `Operator` are aligned, then verify the `Connect fields` mapping.
+`Operator` defines the matching relationship between the filter form field value and the target block field value.
 
 ### Collapse
 
