@@ -121,7 +121,7 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   }
 
   if (typeof value === 'string') {
-    if (!timezone || /(\+|-)\d\d:\d\d$/.test(value)) {
+    if (!timezone || /(?:Z|[+-]\d\d:\d\d)$/i.test(value)) {
       return value;
     }
     return value + timezone;
@@ -131,6 +131,35 @@ const dateValueWrapper = (value: any, timezone?: string) => {
     return value.toISOString();
   }
 };
+
+const DYNAMIC_DATE_VAR_PATTERN = /^(next|last)(\d+)(Day|Days|Week|Weeks|Month|Months|Year|Years)$/;
+
+function resolveDynamicDateVar(key: string, vars: Record<string, any>) {
+  const [root, path] = splitPathToTwoParts(key);
+  if (!root || !path) return null;
+  if (root !== '$nDate' && root !== '$date') return null;
+
+  const dateVarsRoot = vars?.[root];
+  if (!dateVarsRoot || typeof dateVarsRoot !== 'object') return null;
+  if (path.includes('.')) return null;
+
+  const match = path.match(DYNAMIC_DATE_VAR_PATTERN);
+  if (!match) return null;
+
+  const direction = match[1] as 'next' | 'last';
+  const number = Number(match[2]);
+  if (!Number.isFinite(number) || number < 1) return null;
+
+  const unitRaw = match[3].toLowerCase();
+  const offset = direction === 'next' ? number : -number;
+
+  if (unitRaw === 'day' || unitRaw === 'days') {
+    return toDays(offset);
+  }
+
+  const unit = unitRaw.startsWith('week') ? 'week' : unitRaw.startsWith('month') ? 'month' : 'year';
+  return toUnit(unit, offset);
+}
 
 export type ParseFilterOptions = {
   vars?: Record<string, any>;
@@ -179,7 +208,13 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const match = re.exec(value);
         if (match) {
           const key = match[1].trim();
-          const val = getValuesByPath(vars, key, null);
+          let val = getValuesByPath(vars, key, null);
+          if (val === null) {
+            const dynamic = resolveDynamicDateVar(key, vars);
+            if (dynamic) {
+              val = dynamic;
+            }
+          }
           const field = getField?.(path);
           value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
         }

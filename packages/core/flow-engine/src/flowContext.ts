@@ -43,6 +43,12 @@ import {
   resolveExpressions,
   resolveModuleUrl,
 } from './utils';
+import {
+  isDateVariableExpression,
+  mapDateVariableServerValue,
+  parseDateVariableExpression,
+  resolveDateVariableFrontendValue,
+} from './utils/dateVariable';
 import { FlowExitAllException } from './utils/exceptions';
 import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
@@ -1158,12 +1164,97 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return this.resolveJsonTemplate(template);
     });
     this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+      const dateMarkerMap = new Map<string, any>();
+      let dateMarkerSeq = 0;
+      const createDateMarker = (value: any) => {
+        const marker = `__NB_CTX_DATE_MARKER_${dateMarkerSeq++}__`;
+        dateMarkerMap.set(marker, value);
+        return marker;
+      };
+
+      const resolveDateExpression = (expr: string) => {
+        const parsed = parseDateVariableExpression(expr);
+        if (!parsed) return undefined;
+        return parsed.server ? mapDateVariableServerValue(parsed) : resolveDateVariableFrontendValue(parsed);
+      };
+
+      const preprocessDateExpressions = (input: any): any => {
+        if (typeof input === 'string') {
+          if (!input.includes('{{') || !input.includes('ctx.date.')) return input;
+
+          // 单表达式场景直接替换为 marker，避免后续 resolveExpressions 二次解析。
+          if (isDateVariableExpression(input)) {
+            const resolved = resolveDateExpression(input);
+            if (typeof resolved === 'undefined') return input;
+            return createDateMarker(resolved);
+          }
+
+          // 混合模板字符串：仅替换日期表达式片段，其他表达式保持原样。
+          return input.replace(/\{\{\s*[^{}]+?\s*\}\}/g, (segment) => {
+            if (!isDateVariableExpression(segment)) return segment;
+            const resolved = resolveDateExpression(segment);
+            if (typeof resolved === 'undefined') return segment;
+            return createDateMarker(resolved);
+          });
+        }
+
+        if (Array.isArray(input)) {
+          return input.map((item) => preprocessDateExpressions(item));
+        }
+
+        if (input && typeof input === 'object') {
+          const out: any = Array.isArray(input) ? [] : {};
+          for (const [key, val] of Object.entries(input)) {
+            out[key] = preprocessDateExpressions(val);
+          }
+          return out;
+        }
+
+        return input;
+      };
+
+      const restoreDateMarkers = (input: any): any => {
+        if (!dateMarkerMap.size) return input;
+
+        if (typeof input === 'string') {
+          if (dateMarkerMap.has(input)) {
+            return dateMarkerMap.get(input);
+          }
+
+          let output = input;
+          for (const [marker, markerValue] of dateMarkerMap.entries()) {
+            if (!output.includes(marker)) continue;
+            const replacement =
+              markerValue == null ? '' : typeof markerValue === 'string' ? markerValue : JSON.stringify(markerValue);
+            output = output.split(marker).join(replacement);
+          }
+          return output;
+        }
+
+        if (Array.isArray(input)) {
+          return input.map((item) => restoreDateMarkers(item));
+        }
+
+        if (input && typeof input === 'object') {
+          const out: any = Array.isArray(input) ? [] : {};
+          for (const [key, val] of Object.entries(input)) {
+            out[key] = restoreDateMarkers(val);
+          }
+          return out;
+        }
+
+        return input;
+      };
+
+      const preprocessedTemplate = preprocessDateExpressions(template);
+
       // 提取模板使用到的变量及其子路径
-      const used = extractUsedVariablePaths(template);
+      const used = extractUsedVariablePaths(preprocessedTemplate);
       const usedVarNames = Object.keys(used || {});
       if (!usedVarNames.length) {
         // 模板未包含任何 ctx.* 变量，直接前端解析
-        return resolveExpressions(template, this);
+        const resolved = await resolveExpressions(preprocessedTemplate, this);
+        return restoreDateMarkers(resolved);
       }
 
       // 分流：根据 resolveOnServer 标记与子路径判断哪些交给后端
@@ -1187,7 +1278,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }
 
       const needServer = Object.keys(serverVarPaths).length > 0;
-      let serverResolved = template;
+      let serverResolved = preprocessedTemplate;
       if (needServer) {
         const inferRecordRefWithMeta = (ctx: any): RecordRef | undefined => {
           const ref = inferRecordRef(ctx as any);
@@ -1311,24 +1402,26 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           const allOptional =
             keys.length > 0 && keys.every((k) => this.getPropertyOptions(k)?.serverOnlyWhenContextParams);
           if (allOptional) {
-            return resolveExpressions(template, this);
+            const resolved = await resolveExpressions(preprocessedTemplate, this);
+            return restoreDateMarkers(resolved);
           }
         }
 
         if (this.api) {
           try {
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
-              template,
+              template: preprocessedTemplate,
               contextParams: autoContextParams || {},
             });
           } catch (e) {
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
-            serverResolved = template;
+            serverResolved = preprocessedTemplate;
           }
         }
       }
 
-      return resolveExpressions(serverResolved, this);
+      const resolved = await resolveExpressions(serverResolved, this);
+      return restoreDateMarkers(resolved);
     });
 
     // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
@@ -1415,6 +1508,24 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         },
       ),
     });
+    // 2.0 日期变量入口（协议由 ctx.date.* 路径表达式驱动）
+    this.defineProperty('date', {
+      cache: false,
+      get: () => ({}),
+      resolveOnServer: false,
+      meta: Object.assign(
+        () => ({
+          type: 'object',
+          title: this.t('Date variables'),
+          sort: 960,
+        }),
+        {
+          title: escapeT('Date variables'),
+          sort: 960,
+          hasChildren: false,
+        },
+      ),
+    });
     this.defineProperty('logger', {
       get: () => {
         return this.engine.logger.child({ module: 'flow-engine' });
@@ -1493,57 +1604,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return this.engine.getEvents();
     });
 
-    // // Date variables (for variable selector meta tree)
-    // this.defineProperty('date', {
-    //   get: () => {
-    //     const vars = getDateVars() as Record<string, any>;
-    //     // align with client options: add dayBeforeYesterday
-    //     vars.dayBeforeYesterday = toUnit('day', -2);
-    //     const now = new Date().toISOString();
-    //     const out: Record<string, any> = {};
-    //     for (const [k, v] of Object.entries(vars)) {
-    //       try {
-    //         out[k] = typeof v === 'function' ? v({ now }) : v;
-    //       } catch (e) {
-    //         // ignore
-    //       }
-    //     }
-    //     return out;
-    //   },
-    //   meta: () => {
-    //     const title = this.t('Date variables');
-    //     const mk = (t: string) => ({ type: 'any', title: this.t(t) });
-    //     return {
-    //       type: 'object',
-    //       title,
-    //       properties: {
-    //         now: mk('Current time'),
-    //         dayBeforeYesterday: mk('Day before yesterday'),
-    //         yesterday: mk('Yesterday'),
-    //         today: mk('Today'),
-    //         tomorrow: mk('Tomorrow'),
-    //         lastIsoWeek: mk('Last week'),
-    //         thisIsoWeek: mk('This week'),
-    //         nextIsoWeek: mk('Next week'),
-    //         lastMonth: mk('Last month'),
-    //         thisMonth: mk('This month'),
-    //         nextMonth: mk('Next month'),
-    //         lastQuarter: mk('Last quarter'),
-    //         thisQuarter: mk('This quarter'),
-    //         nextQuarter: mk('Next quarter'),
-    //         lastYear: mk('Last year'),
-    //         thisYear: mk('This year'),
-    //         nextYear: mk('Next year'),
-    //         last7Days: mk('Last 7 days'),
-    //         next7Days: mk('Next 7 days'),
-    //         last30Days: mk('Last 30 days'),
-    //         next30Days: mk('Next 30 days'),
-    //         last90Days: mk('Last 90 days'),
-    //         next90Days: mk('Next 90 days'),
-    //       },
-    //     } as PropertyMeta;
-    //   },
-    // });
     this.defineMethod(
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {

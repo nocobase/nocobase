@@ -249,6 +249,76 @@ describe('parseFilter', () => {
     ).toEqual({ a: { $dateOn: '2023-01-01+08:00' } });
   });
 
+  test('$nDate.next14Days (dynamic)', async () => {
+    await expectParseFilter(
+      {
+        'a.$dateOn': '{{$nDate.next14Days}}',
+      },
+      {
+        now: '2023-03-28T16:00:00.000Z',
+        timezone: '+00:00',
+        vars: {
+          $nDate: getDateVars(),
+        },
+      },
+    ).toEqual({ a: { $dateOn: ['2023-03-29', '2023-04-12', '[)', '+00:00'] } });
+  });
+
+  test('$nDate.next3Years / last2Months / next4Weeks (dynamic)', async () => {
+    await expectParseFilter(
+      {
+        'a.$dateOn': '{{$nDate.next3Years}}',
+        'b.$dateOn': '{{$nDate.last2Months}}',
+        'c.$dateOn': '{{$nDate.next4Weeks}}',
+      },
+      {
+        now: '2022-12-31T16:00:00.000Z',
+        timezone: '+08:00',
+        vars: {
+          $nDate: getDateVars(),
+        },
+      },
+    ).toEqual({
+      a: { $dateOn: '2026+08:00' },
+      b: { $dateOn: '2022-11+08:00' },
+      c: { $dateOn: '2023w05+08:00' },
+    });
+  });
+  test('$nDate.next1Year (dynamic singular)', async () => {
+    await expectParseFilter(
+      {
+        'a.$dateOn': '{{$nDate.next1Year}}',
+      },
+      {
+        now: '2022-12-31T16:00:00.000Z',
+        timezone: '+08:00',
+        vars: {
+          $nDate: getDateVars(),
+        },
+      },
+    ).toEqual({
+      a: { $dateOn: '2024+08:00' },
+    });
+  });
+
+  test('$nDate.now should keep ISO Z without appending timezone', async () => {
+    await expectParseFilter(
+      {
+        'a.$dateOn': '{{$nDate.now}}',
+      },
+      {
+        timezone: '+08:00',
+        vars: {
+          $nDate: {
+            now: () => '2026-02-11T12:34:56.000Z',
+          },
+        },
+      },
+    ).toEqual({
+      a: { $dateOn: '2026-02-11T12:34:56.000Z' },
+    });
+  });
+
   test('$user', async () => {
     await expectParseFilter(
       {

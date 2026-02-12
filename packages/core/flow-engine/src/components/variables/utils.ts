@@ -7,16 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
-import { isVariableExpression } from '../../utils';
+import { buildDateVariableExpression, isDateVariableExpression, isVariableExpression } from '../../utils';
 
 export const parseValueToPath = (value: string): string[] | undefined => {
   if (typeof value !== 'string') return undefined;
 
   const trimmed = value.trim();
+  if (isDateVariableExpression(trimmed)) {
+    return ['date'];
+  }
   const variableRegex = /^\{\{\s*ctx(?:\.(.+?))?\s*\}\}$/;
   const match = trimmed.match(variableRegex);
 
@@ -31,6 +32,9 @@ export const parseValueToPath = (value: string): string[] | undefined => {
 export const formatPathToValue = (item: MetaTreeNode): string => {
   const path = item?.paths || [];
   if (path.length === 0) return '{{ ctx }}';
+  if (path[0] === 'date' && path.length === 1) {
+    return buildDateVariableExpression({ kind: 'preset', preset: 'today' });
+  }
   return `{{ ctx.${path.join('.')} }}`;
 };
 
@@ -161,7 +165,8 @@ export const preloadContextSelectorPath = async (
 };
 
 export const isVariableValue = (value: any): boolean => {
-  return isVariableExpression(value);
+  if (!isVariableExpression(value)) return false;
+  return !isDateVariableExpression(value);
 };
 
 export const createDefaultConverters = (): Converters => {

@@ -11,6 +11,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import {
+  buildDateVariableExpression,
+  isDateVariableExpression,
   VariableInput,
   type MetaTreeNode,
   type Converters,
@@ -23,6 +25,7 @@ import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
 import { lazy } from '../../../lazy-helper';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
+import { DateVariablePathAdapter } from '../date-variable/DateVariablePathAdapter';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
@@ -252,28 +255,39 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
   }, [ctx, model, extraMetaTree]);
 
   // 右侧 converters：常量/空值特殊处理；变量沿用默认（表达式）
+  const DateVariableServerComponent = useMemo(() => {
+    return function DateVariableServerInput(inputProps: any) {
+      return <DateVariablePathAdapter {...inputProps} forceServerSuffix />;
+    };
+  }, []);
+
   const rightSideConverters = useMemo<Converters>(() => {
     return {
       renderInputComponent: (metaNode) => {
         const firstPathSegment = metaNode?.paths?.[0];
+        if (firstPathSegment === 'date') return DateVariableServerComponent;
         if (firstPathSegment === 'constant') return staticInputRenderer;
         if (firstPathSegment === 'null') return NullComponent;
         return null;
       },
       resolveValueFromPath: (metaNode) => {
         const firstPathSegment = metaNode?.paths?.[0];
+        if (firstPathSegment === 'date') {
+          return buildDateVariableExpression({ kind: 'preset', preset: 'today', server: true });
+        }
         if (firstPathSegment === 'constant') return '';
         if (firstPathSegment === 'null') return null;
         return undefined;
       },
       resolvePathFromValue: (val) => {
         if (val === null) return ['null'];
+        if (isDateVariableExpression(val)) return ['date'];
         const parsed = parseValueToPath(val as any);
         if (parsed) return parsed;
         return ['constant'];
       },
     };
-  }, [NullComponent, staticInputRenderer]);
+  }, [DateVariableServerComponent, NullComponent, staticInputRenderer]);
 
   const handleLeftPathChange = useCallback(
     (variableValue: string, metaNode?: MetaTreeNode) => {

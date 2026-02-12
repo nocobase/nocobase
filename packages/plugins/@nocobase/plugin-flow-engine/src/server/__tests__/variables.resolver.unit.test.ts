@@ -100,14 +100,12 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.t).toBe('undefined');
   });
 
-  it('resolves date variables (shape existence)', async () => {
+  it('keeps ctx.date.* placeholders unresolved after removing legacy context', async () => {
     const { req } = makeCtx(1);
     const tpl = { today: '{{ ctx.date.today }}', thisMonth: '{{ ctx.date.thisMonth }}' } as any;
     const out = await resolveJsonTemplate(tpl, req);
-    expect(typeof out.today).toBe('string');
-    expect(out.today.length).toBeGreaterThan(0);
-    expect(typeof out.thisMonth).toBe('string');
-    expect(out.thisMonth.length).toBeGreaterThan(0);
+    expect(out.today).toBe('{{ ctx.date.today }}');
+    expect(out.thisMonth).toBe('{{ ctx.date.thisMonth }}');
   });
 
   it('supports custom ctx methods attached via registry', async () => {

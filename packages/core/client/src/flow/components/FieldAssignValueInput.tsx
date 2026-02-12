@@ -10,7 +10,9 @@
 import React from 'react';
 import { Input } from 'antd';
 import {
+  buildDateVariableExpression,
   FlowModelRenderer,
+  isDateVariableExpression,
   VariableInput,
   tExpr,
   isVariableExpression,
@@ -32,6 +34,7 @@ import { RunJSValueEditor } from './RunJSValueEditor';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
+import { DateVariablePathAdapter } from './date-variable/DateVariablePathAdapter';
 
 interface Props {
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
@@ -567,6 +570,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return C;
   }, [flowCtx]);
 
+  const DateVariableComponent = React.useMemo(() => {
+    return function DateVariableInput(inputProps: any) {
+      return <DateVariablePathAdapter {...inputProps} />;
+    };
+  }, []);
+
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
     return async () => {
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
@@ -603,6 +612,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       converters={{
         renderInputComponent: (meta) => {
           const firstPath = meta?.paths?.[0];
+          if (firstPath === 'date') return DateVariableComponent;
           if (firstPath === 'constant') return ConstantValueEditor;
           if (firstPath === 'null') return NullComponent;
           if (firstPath === 'runjs') return RunJSComponent;
@@ -610,6 +620,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
+          if (firstPath === 'date') return buildDateVariableExpression({ kind: 'preset', preset: 'today' });
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
           if (firstPath === 'runjs') return { code: '', version: 'v1' };
@@ -618,6 +629,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
           if (isRunJSValue(currentValue)) return ['runjs'];
+          if (isDateVariableExpression(currentValue)) return ['date'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}

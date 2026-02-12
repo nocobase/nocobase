@@ -22,6 +22,7 @@ const getOptions = (t) => [
   },
   { value: 'past', label: t('Past') },
   { value: 'next', label: t('Next') },
+  { value: 'now', label: t('Current time') },
   { value: 'today', label: t('Today') },
   { value: 'yesterday', label: t('Yesterday') },
   { value: 'tomorrow', label: t('Tomorrow') },

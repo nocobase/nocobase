@@ -14,6 +14,8 @@ import { createForm, onFieldValueChange } from '@formily/core';
 import type { Form, GeneralField, Field } from '@formily/core';
 import type { ISchema } from '@formily/json-schema';
 import {
+  buildDateVariableExpression,
+  isDateVariableExpression,
   VariableInput,
   type MetaTreeNode,
   type Converters,
@@ -30,6 +32,7 @@ import { lazy } from '../../../lazy-helper';
 import { enumToOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
+import { DateVariablePathAdapter } from '../date-variable/DateVariablePathAdapter';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
@@ -590,29 +593,40 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // - 变量模式：返回 null 让 VariableInput 渲染 VariableTag
     // - 常量模式/空值：根据所选根节点返回对应输入组件
     // - 路径/值互相解析，保证从值恢复时可定位到 constant/null
+    const DateVariableServerComponent = useMemo(() => {
+      return function DateVariableServerInput(inputProps: any) {
+        return <DateVariablePathAdapter {...inputProps} forceServerSuffix />;
+      };
+    }, []);
+
     const rightConverters = useMemo<Converters>(() => {
       return {
         renderInputComponent: (meta) => {
           const first = meta?.paths?.[0];
+          if (first === 'date') return DateVariableServerComponent;
           if (first === 'constant') return staticInputRenderer;
           if (first === 'null') return NullComponent;
           return null;
         },
         resolveValueFromPath: (meta) => {
           const first = meta?.paths?.[0];
+          if (first === 'date') {
+            return buildDateVariableExpression({ kind: 'preset', preset: 'today', server: true });
+          }
           if (first === 'constant') return '';
           if (first === 'null') return null;
           return undefined; // 交给默认逻辑格式化变量表达式
         },
         resolvePathFromValue: (val) => {
           if (val === null) return ['null'];
+          if (isDateVariableExpression(val)) return ['date'];
           // 变量表达式：使用内置解析；其他静态值走 constant
           const parsed = typeof val === 'string' ? parseValueToPath(val) : undefined;
           if (parsed) return parsed;
           return ['constant'];
         },
       };
-    }, [NullComponent, staticInputRenderer]);
+    }, [DateVariableServerComponent, NullComponent, staticInputRenderer]);
 
     // 为 2.0 左侧字段选择器追加“接口 filterable.children”定义（如 chinaRegion 的“省市区名称”子项），
     // 以恢复 1.0 左侧子菜单的能力。

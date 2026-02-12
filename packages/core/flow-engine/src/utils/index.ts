@@ -62,6 +62,19 @@ export {
 
 // Context 工具
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
+export {
+  DATE_VARIABLE_ROOT,
+  buildDateVariableExpression,
+  isDateVariableExpression,
+  mapDateVariableServerValue,
+  parseDateVariableExpression,
+  resolveDateVariableFrontendValue,
+  type DatePresetType,
+  type DateRelativeDirection,
+  type DateRelativeUnit,
+  type DateVariableBuildInput,
+  type DateVariableParsed,
+} from './dateVariable';
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';

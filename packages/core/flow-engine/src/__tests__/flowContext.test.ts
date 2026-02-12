@@ -9,8 +9,10 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContext, FlowRuntimeContext } from '../flowContext';
+import dayjs from 'dayjs';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
+import { buildDateVariableExpression } from '../utils/dateVariable';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -1437,6 +1439,70 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const tpl = { a: '{{ ctx.foo.a }}', u: '{{ ctx.user.id }}' } as any;
     await (engine.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('FlowContext date variable protocol (ctx.date.*)', () => {
+  it('resolves preset expressions on frontend when .server is absent', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.preset.today }}');
+    expect(typeof out).toBe('string');
+    expect(out).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+  it('resolves preset now expression on frontend when .server is absent', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.preset.now }}');
+    expect(typeof out).toBe('string');
+    expect(out).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+  it('maps preset now expression to $nDate.now when .server suffix is present', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.preset.now.server }}');
+    expect(out).toBe('{{$nDate.now}}');
+  });
+
+  it('resolves relative next/day/n12 on frontend as target date string', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.relative.next.day.n12 }}');
+    expect(out).toBe(dayjs().add(12, 'day').format('YYYY-MM-DD'));
+    expect(String(out)).not.toContain(',');
+  });
+
+  it('maps preset expressions to $nDate when .server suffix is present', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.preset.today.server }}');
+    expect(out).toBe('{{$nDate.today}}');
+  });
+
+  it('maps relative expressions to $nDate variables when .server suffix is present', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.relative.past.day.n7.server }}');
+    expect(out).toBe('{{$nDate.last7Days}}');
+  });
+
+  it('maps relative next/day/n7 to {{$nDate.next7Days}} when .server suffix is present', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.relative.next.day.n7.server }}');
+    expect(out).toBe('{{$nDate.next7Days}}');
+  });
+
+  it('maps exact range expressions to decoded values when .server is present', async () => {
+    const engine = new FlowEngine();
+    const expr = buildDateVariableExpression({
+      kind: 'exact',
+      mode: 'range',
+      picker: 'date',
+      value: ['2026-02-01', '2026-02-11'],
+      server: true,
+    });
+    const out = await (engine.context as any).resolveJsonTemplate(expr);
+    expect(out).toEqual(['2026-02-01', '2026-02-11']);
+  });
+
+  it('does not treat legacy ctx.date.today as valid 2.0 path', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate('{{ ctx.date.today }}');
+    expect(out).toBeUndefined();
   });
 });
 

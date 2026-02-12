@@ -100,6 +100,85 @@ describe('VariableInput', () => {
     );
   });
 
+  it('should render custom date component for ctx.date expression instead of VariableTag', async () => {
+    const flowContext = createTestFlowContext();
+    flowContext.defineProperty('date', {
+      value: {},
+      meta: { title: 'Date', type: 'object' },
+    });
+    const DateInput = (props: any) => (
+      <input
+        data-testid="date-variable-input"
+        value={props?.value ?? ''}
+        onChange={(e) => props?.onChange?.(e?.target?.value)}
+      />
+    );
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.date.preset.today }}"
+          converters={{
+            renderInputComponent: (meta) => {
+              if (meta?.paths?.[0] === 'date') return DateInput;
+              return null;
+            },
+          }}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('date-variable-input')).toBeInTheDocument();
+        expect(document.querySelector('.ant-tag')).not.toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it('should use date default expression when selecting date root node', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+    flowContext.defineProperty('date', {
+      value: {},
+      meta: { title: 'Date', type: 'object' },
+    });
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    fireEvent.click(selectorButton);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Date')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    fireEvent.click(screen.getByText('Date'));
+
+    await waitFor(
+      () => {
+        expect(onChange).toHaveBeenCalledWith(
+          '{{ ctx.date.preset.today }}',
+          expect.objectContaining({
+            name: 'date',
+            title: 'Date',
+            paths: ['date'],
+          }),
+        );
+      },
+      { timeout: 3000 },
+    );
+  });
+
   it('should render FlowContextSelector button', async () => {
     const flowContext = createTestFlowContext();
     render(
