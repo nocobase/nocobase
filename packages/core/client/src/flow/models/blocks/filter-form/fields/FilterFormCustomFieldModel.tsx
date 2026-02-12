@@ -224,7 +224,7 @@ FilterFormCustomFieldModel.registerFlow({
         },
         fieldModel: {
           type: 'string',
-          title: tExpr('Field model'),
+          title: tExpr('Field type'),
           'x-component': FieldModelSelect,
           'x-decorator': 'FormItem',
           required: true,
