@@ -63,7 +63,7 @@ export const ToolCard: React.FC<{
     }
     const task = async () => {
       for (const toolCall of toolCalls) {
-        if (toolCall.invokeStatus === 'interrupted' && toolCall.defaultPermission === 'ALLOW') {
+        if (toolCall.invokeStatus === 'interrupted' && toolCall.auto === true) {
           const decision = getDecisionActions(toolCall);
           await decision.approve();
         }

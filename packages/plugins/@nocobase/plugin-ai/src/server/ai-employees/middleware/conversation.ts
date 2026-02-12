@@ -74,7 +74,7 @@ export const conversationMiddleware = (
       toolCall.invokeEndTime = invokeEndTime;
       toolCall.auto = auto;
       toolCall.execution = execution;
-      toolCall.willInterrupt = tools?.execution === 'frontend' || auto === false;
+      toolCall.willInterrupt = aiEmployee.shouldInterruptToolCall(tools);
       toolCall.defaultPermission = tools?.defaultPermission;
     }
   };

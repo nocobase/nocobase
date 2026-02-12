@@ -434,22 +434,26 @@ export class AIEmployee {
             toolCalls = chunks.body?.toolCalls ?? [];
             this.protocol.toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
+            const toolsMap = await this.getToolsMap();
+            const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
             this.protocol.toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
                 name: chunks.body?.toolCall?.name,
-                willInterrupt: chunks.body?.toolCall?.willInterrupt,
+                willInterrupt,
               },
               invokeStatus: 'pending',
             });
           } else if (chunks.action === 'afterToolCall') {
+            const toolsMap = await this.getToolsMap();
+            const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
             this.protocol.toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
                 name: chunks.body?.toolCall?.name,
-                willInterrupt: chunks.body?.toolCall?.willInterrupt,
+                willInterrupt,
               },
               invokeStatus: 'done',
               status: chunks.body?.toolCallResult?.status,
@@ -470,7 +474,7 @@ export class AIEmployee {
                     messageId,
                     id: metadata.toolCallId,
                     name: metadata.toolName,
-                    willInterrupt: tools?.execution === 'frontend' || toolCallResult?.auto === false,
+                    willInterrupt: this.shouldInterruptToolCall(tools),
                   },
                   invokeStatus: 'confirmed',
                   status: toolCallResult?.status,
@@ -726,20 +730,25 @@ If information is missing, clearly state it in the summary.</Important>`;
     const nowTime = new Date();
     const toolMap = await this.getToolsMap();
     return await this.aiToolMessagesRepo.create({
-      values: toolCalls.map((toolCall) => ({
-        id: this.plugin.snowflake.generate(),
-        sessionId: this.sessionId,
-        messageId: messageId,
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        status: toolMap.has(toolCall.name) ? null : 'error',
-        content: toolMap.has(toolCall.name) ? null : `Tool ${toolCall.name} not found`,
-        invokeStatus: toolMap.has(toolCall.name) ? 'init' : 'done',
-        invokeStartTime: toolMap.has(toolCall.name) ? null : nowTime,
-        invokeEndTime: toolMap.has(toolCall.name) ? null : nowTime,
-        auto: toolMap.has(toolCall.name) ? toolMap.get(toolCall.name)?.defaultPermission === 'ALLOW' : null,
-        execution: toolMap.get(toolCall.name)?.execution ?? 'backend',
-      })),
+      values: toolCalls.map((toolCall) => {
+        const toolsExisted = toolMap.has(toolCall.name);
+        const tools = toolMap.get(toolCall.name);
+        const auto = this.isAutoCall(tools);
+        return {
+          id: this.plugin.snowflake.generate(),
+          sessionId: this.sessionId,
+          messageId: messageId,
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+          status: toolsExisted ? null : 'error',
+          content: toolsExisted ? null : `Tool ${toolCall.name} not found`,
+          invokeStatus: toolsExisted ? 'init' : 'done',
+          invokeStartTime: toolsExisted ? null : nowTime,
+          invokeEndTime: toolsExisted ? null : nowTime,
+          auto,
+          execution: tools?.execution ?? 'backend',
+        };
+      }),
       transaction,
     });
   }
@@ -981,7 +990,20 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   shouldInterruptToolCall(tools: ToolsEntry): boolean {
-    return tools.execution === 'frontend' || tools.defaultPermission === 'ASK';
+    return tools?.execution === 'frontend' || !this.isAutoCall(tools);
+  }
+
+  isAutoCall(tools: ToolsEntry): boolean {
+    if (!tools) {
+      return false;
+    }
+    const isAutoCall = tools.defaultPermission === 'ALLOW';
+    if (tools.scope !== 'CUSTOM') {
+      return isAutoCall;
+    }
+    const skills = this.employee.skillSettings?.skills ?? [];
+    const presetTools = skills.find((s) => s.name === tools.definition.name);
+    return presetTools ? presetTools.autoCall : isAutoCall;
   }
 
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
