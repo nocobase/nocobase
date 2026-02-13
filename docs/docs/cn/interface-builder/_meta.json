@@ -101,6 +101,11 @@
           },
           {
             "type": "custom-link",
+            "label": "数据加载方式",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "布局",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
