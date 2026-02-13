@@ -435,6 +435,48 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(api.request).toHaveBeenCalledTimes(1);
   });
 
+  it('configured toMany dot aggregation path uses local value and skips server', async () => {
+    const model = await setupFormModel();
+
+    const api = {
+      request: vi.fn(async () => {
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({
+      assignees: [
+        { id: 3, name: 'A' },
+        { id: 5, name: 'B' },
+      ],
+    });
+    mockFormGridEnabledFields(model, ['assignees']);
+
+    const tpl = { names: '{{ ctx.formValues.assignees.name }}' } as any;
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ names: ['A', 'B'] });
+    expect(api.request).toHaveBeenCalledTimes(0);
+
+    const names = await (model.context as any).getVar('ctx.formValues.assignees.name');
+    expect(names).toEqual(['A', 'B']);
+    expect(api.request).toHaveBeenCalledTimes(0);
+  });
+
   it('unconfigured field: new record returns undefined and does not call server', async () => {
     const model = await setupFormModel();
 

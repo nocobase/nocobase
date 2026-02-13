@@ -18,6 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
+import { getValuesByPath } from '@nocobase/shared';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
@@ -306,6 +307,18 @@ export class FormBlockModel<
           const topValue = this.form?.getFieldValue?.(top);
           if (topValue == null) return false;
           if (Array.isArray(topValue) && topValue.length === 0) return false;
+
+          // 本地优先：支持对多关系的 dot 聚合路径（例如 assignees.name）。
+          // lodash.get 对数组聚合路径会返回 undefined（如 _.get({ assignees:[{name:'A'}] }, 'assignees.name')），
+          // 因而这里先用 getValuesByPath 做一次前端可解析性检查，命中则直接前端解析。
+          const formValuesSnapshot = runtime.getFormValuesSnapshot();
+          if (formValuesSnapshot && typeof formValuesSnapshot === 'object') {
+            const localResolved = getValuesByPath(formValuesSnapshot as Record<string, any>, subPath);
+            if (typeof localResolved !== 'undefined') {
+              return false;
+            }
+          }
+
           // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
           const assocResolver = createAssociationSubpathResolver(
             () => this.collection,
