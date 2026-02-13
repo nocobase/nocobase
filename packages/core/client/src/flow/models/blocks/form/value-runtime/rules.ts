@@ -1224,7 +1224,15 @@ export class RuleEngine {
     }
   }
 
-  private normalizeUnixTimestampDateString(value: string): string {
+  private isTzAwareTargetInterface(targetInterface: unknown): boolean {
+    if (typeof targetInterface !== 'string') {
+      return false;
+    }
+
+    return ['datetime', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(targetInterface);
+  }
+
+  private normalizeDateOnlyToStartOfDayIso(value: string): string {
     const raw = String(value || '').trim();
     if (!raw) return value;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return value;
@@ -1236,16 +1244,16 @@ export class RuleEngine {
 
   private normalizeResolvedValueForTarget(baseCtx: any, resolved: any): any {
     const targetInterface = baseCtx?.model?.context?.collectionField?.interface;
-    if (targetInterface !== 'unixTimestamp') {
+    if (!this.isTzAwareTargetInterface(targetInterface)) {
       return resolved;
     }
 
     if (typeof resolved === 'string') {
-      return this.normalizeUnixTimestampDateString(resolved);
+      return this.normalizeDateOnlyToStartOfDayIso(resolved);
     }
 
     if (Array.isArray(resolved)) {
-      return resolved.map((item) => (typeof item === 'string' ? this.normalizeUnixTimestampDateString(item) : item));
+      return resolved.map((item) => (typeof item === 'string' ? this.normalizeDateOnlyToStartOfDayIso(item) : item));
     }
 
     return resolved;
