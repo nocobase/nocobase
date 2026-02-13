@@ -42,48 +42,104 @@ const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'crea
 
 const TZ_AWARE_DATE_INTERFACES = new Set(['datetime', 'createdAt', 'updatedAt', 'unixTimestamp']);
 
-function toIsoStringByFormat(value: string, format: string): string {
+const DATE_ONLY_OUTPUT_FORMAT = 'YYYY-MM-DD';
+const DATETIME_NO_TZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+
+export type DateVariableExactNormalizeMode = 'none' | 'date' | 'datetimeNoTz' | 'iso';
+
+function parseDateByFormat(value: string, format: string): dayjs.Dayjs | null {
   const raw = String(value || '').trim();
-  if (!raw) return value;
+  if (!raw) return null;
 
   const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(raw);
   if (hasTimezone) {
     const parsed = dayjs(raw);
-    return parsed.isValid() ? parsed.toISOString() : value;
+    if (parsed.isValid()) {
+      return parsed;
+    }
   }
 
-  const strict = format ? dayjs(raw, format, true) : null;
-  if (strict?.isValid()) {
-    return strict.toISOString();
+  if (format) {
+    const strict = dayjs(raw, format, true);
+    if (strict.isValid()) {
+      return strict;
+    }
+
+    const loose = dayjs(raw, format);
+    if (loose.isValid()) {
+      return loose;
+    }
   }
 
   const fallback = dayjs(raw);
   if (fallback.isValid()) {
-    return fallback.toISOString();
+    return fallback;
   }
 
-  return value;
+  return null;
 }
 
-function normalizeDateVariableExactValue(
+function normalizeExactDateString(
+  value: string,
+  options: {
+    format: string;
+    showTime: boolean;
+    exactNormalizeMode: DateVariableExactNormalizeMode;
+  },
+): string {
+  const parsed = parseDateByFormat(value, options.format);
+  if (!parsed?.isValid()) {
+    return value;
+  }
+
+  switch (options.exactNormalizeMode) {
+    case 'date':
+      return parsed.format(DATE_ONLY_OUTPUT_FORMAT);
+    case 'datetimeNoTz':
+      return parsed.format(options.showTime ? DATETIME_NO_TZ_OUTPUT_FORMAT : DATE_ONLY_OUTPUT_FORMAT);
+    case 'iso':
+      return parsed.toISOString();
+    default:
+      return value;
+  }
+}
+
+function getDateVariableExactNormalizeMode(fieldInterface: string): DateVariableExactNormalizeMode {
+  if (fieldInterface === 'date') {
+    return 'date';
+  }
+
+  if (fieldInterface === 'datetimeNoTz') {
+    return 'datetimeNoTz';
+  }
+
+  if (TZ_AWARE_DATE_INTERFACES.has(fieldInterface)) {
+    return 'iso';
+  }
+
+  return 'none';
+}
+
+export function normalizeDateVariableExactValue(
   rawValue: any,
   options: {
-    useIsoForExact: boolean;
+    exactNormalizeMode: DateVariableExactNormalizeMode;
     format: string;
+    showTime: boolean;
   },
 ): any {
-  if (!options.useIsoForExact) {
+  if (options.exactNormalizeMode === 'none') {
     return rawValue;
   }
 
   if (typeof rawValue === 'string') {
-    return toIsoStringByFormat(rawValue, options.format);
+    return normalizeExactDateString(rawValue, options);
   }
 
   if (Array.isArray(rawValue)) {
     return rawValue.map((item) => {
       if (typeof item === 'string') {
-        return toIsoStringByFormat(item, options.format);
+        return normalizeExactDateString(item, options);
       }
       return item;
     });
@@ -97,7 +153,7 @@ type DateVariableComponentProps = {
   showTime: boolean;
   timeFormat: string;
   format: string;
-  useIsoForExact: boolean;
+  exactNormalizeMode: DateVariableExactNormalizeMode;
 };
 
 const DEFAULT_DATE_VARIABLE_COMPONENT_PROPS: DateVariableComponentProps = {
@@ -105,7 +161,7 @@ const DEFAULT_DATE_VARIABLE_COMPONENT_PROPS: DateVariableComponentProps = {
   showTime: false,
   timeFormat: 'HH:mm:ss',
   format: 'YYYY-MM-DD',
-  useIsoForExact: false,
+  exactNormalizeMode: 'none',
 };
 
 function getFieldInterface(field: any): string {
@@ -134,8 +190,9 @@ function normalizeDateVariableOutput(rawValue: any, options: DateVariableCompone
   }
 
   const normalized = normalizeDateVariableExactValue(rawValue, {
-    useIsoForExact: options.useIsoForExact,
+    exactNormalizeMode: options.exactNormalizeMode,
     format: options.format || 'YYYY-MM-DD HH:mm:ss',
+    showTime: options.showTime,
   });
 
   const serialized = serializeCtxDateValue(normalized);
@@ -502,12 +559,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       showTime,
       timeFormat,
       format,
-      useIsoForExact: showTime && TZ_AWARE_DATE_INTERFACES.has(sourceInterface),
+      exactNormalizeMode: getDateVariableExactNormalizeMode(sourceInterface),
     };
   }, [sourceCollectionField, sourceInterface, useDateVariableConstant]);
 
   const dateVariableDisplayProps = React.useMemo(() => {
-    const { useIsoForExact, ...rest } = dateVariableComponentProps;
+    const { exactNormalizeMode, ...rest } = dateVariableComponentProps;
     return rest;
   }, [dateVariableComponentProps]);
 
