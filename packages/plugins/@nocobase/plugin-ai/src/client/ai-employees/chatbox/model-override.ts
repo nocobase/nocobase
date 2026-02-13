@@ -9,11 +9,11 @@
 
 import { LLMServiceItem } from '../../llm-services/LLMServicesRepository';
 import type { LLMServicesRepository } from '../../llm-services/LLMServicesRepository';
-import { ModelOverride } from './stores/chat-box';
+import { ModelRef } from './stores/chat-box';
 
 export const MODEL_PREFERENCE_STORAGE_KEY = 'ai_model_preference_';
 
-export const getAllModels = (services: LLMServiceItem[]): ModelOverride[] =>
+export const getAllModels = (services: LLMServiceItem[]): ModelRef[] =>
   services.flatMap((service) =>
     service.enabledModels.map((model) => ({
       llmService: service.llmService,
@@ -21,17 +21,17 @@ export const getAllModels = (services: LLMServiceItem[]): ModelOverride[] =>
     })),
   );
 
-export const isValidModelOverride = (value: ModelOverride | null | undefined, allModels: ModelOverride[]) =>
+export const isValidModelOverride = (value: ModelRef | null | undefined, allModels: ModelRef[]) =>
   !!value && allModels.some((item) => item.llmService === value.llmService && item.model === value.model);
 
-export const isSameModelOverride = (a?: ModelOverride | null, b?: ModelOverride | null) =>
+export const isSameModelOverride = (a?: ModelRef | null, b?: ModelRef | null) =>
   a?.llmService === b?.llmService && a?.model === b?.model;
 
 export const resolveModelOverride = (
   api: any,
   username: string,
-  allModels: ModelOverride[],
-  currentOverride?: ModelOverride | null,
+  allModels: ModelRef[],
+  currentOverride?: ModelRef | null,
 ) => {
   if (isValidModelOverride(currentOverride, allModels)) {
     return currentOverride;
@@ -69,9 +69,9 @@ export const ensureModelOverride = async ({
   api: any;
   llmServicesRepository: LLMServicesRepository;
   username: string;
-  currentOverride?: ModelOverride | null;
-  onResolved?: (override: ModelOverride | null) => void;
-}): Promise<ModelOverride | null> => {
+  currentOverride?: ModelRef | null;
+  onResolved?: (override: ModelRef | null) => void;
+}): Promise<ModelRef | null> => {
   await llmServicesRepository.load();
   const allModels = getAllModels(llmServicesRepository.services);
   const resolvedOverride = resolveModelOverride(api, username, allModels, currentOverride);

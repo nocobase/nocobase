@@ -32,7 +32,7 @@ export const useChatMessageActions = () => {
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
-  const setModelOverride = useChatBoxStore.use.setModelOverride();
+  const setModel = useChatBoxStore.use.setModel();
 
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
@@ -55,17 +55,17 @@ export const useChatMessageActions = () => {
       const state = useChatBoxStore.getState();
       const targetUsername = username || state.currentEmployee?.username;
       if (!targetUsername) {
-        return state.modelOverride;
+        return state.model;
       }
       return ensureModelOverride({
         api,
         llmServicesRepository,
         username: targetUsername,
-        currentOverride: state.modelOverride,
-        onResolved: setModelOverride,
+        currentOverride: state.model,
+        onResolved: setModel,
       });
     },
-    [api, llmServicesRepository, setModelOverride],
+    [api, llmServicesRepository, setModel],
   );
 
   const messagesService = useRequest<{
@@ -310,14 +310,14 @@ export const useChatMessageActions = () => {
     onConversationCreate,
     skillSettings,
     webSearch,
-    modelOverride: inputModelOverride,
+    model: inputModel,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;
 
-    // Read modelOverride from store at call time to avoid stale closure
-    const modelOverride = inputModelOverride ?? useChatBoxStore.getState().modelOverride;
+    // Read model from store at call time to avoid stale closure
+    const model = inputModel ?? useChatBoxStore.getState().model;
 
     // [AI_DEBUG] request
     aiDebugLogger.log(
@@ -326,7 +326,7 @@ export const useChatMessageActions = () => {
       {
         action: 'sendMessages',
         employeeId: aiEmployee?.username,
-        model: modelOverride?.model,
+        model: model?.model,
         messagesCount: sendMsgs.length,
         hasAttachments: attachments?.length > 0,
         hasContext: workContext?.length > 0,
@@ -391,7 +391,8 @@ export const useChatMessageActions = () => {
           messages: msgs,
           systemMessage,
           editingMessageId,
-          modelOverride,
+          skillSettings,
+          model,
           webSearch,
         },
         responseType: 'stream',
@@ -433,11 +434,11 @@ export const useChatMessageActions = () => {
       },
     ]);
 
-    // Read modelOverride from store at call time to avoid stale closure.
+    // Read model from store at call time to avoid stale closure.
     // If not ready yet, resolve it through shared model-override rules.
-    let modelOverride = useChatBoxStore.getState().modelOverride;
-    if (!modelOverride) {
-      modelOverride = await ensureModelOverrideFromStore(aiEmployee?.username);
+    let model = useChatBoxStore.getState().model;
+    if (!model) {
+      model = await ensureModelOverrideFromStore(aiEmployee?.username);
     }
 
     const controller = new AbortController();
@@ -447,7 +448,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId, modelOverride, important, webSearch: currentWebSearch },
+        data: { sessionId, messageId, model, important, webSearch: currentWebSearch },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -504,11 +505,11 @@ export const useChatMessageActions = () => {
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
-      // Read modelOverride from store at call time to avoid stale closure.
+      // Read model from store at call time to avoid stale closure.
       // If not ready yet, resolve it through shared model-override rules.
-      let modelOverride = useChatBoxStore.getState().modelOverride;
-      if (!modelOverride) {
-        modelOverride = await ensureModelOverrideFromStore(aiEmployee?.username);
+      let model = useChatBoxStore.getState().model;
+      if (!model) {
+        model = await ensureModelOverrideFromStore(aiEmployee?.username);
       }
       const controller = new AbortController();
       setAbortController(controller);
@@ -517,7 +518,7 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:resumeToolCall',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults, modelOverride, webSearch: currentWebSearch },
+          data: { sessionId, messageId, toolCallIds, toolCallResults, model, webSearch: currentWebSearch },
           responseType: 'stream',
           adapter: 'fetch',
           signal: controller?.signal,

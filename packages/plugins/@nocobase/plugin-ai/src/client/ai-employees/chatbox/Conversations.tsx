@@ -136,7 +136,7 @@ export const Conversations: React.FC = memo(() => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
-  const setModelOverride = useChatBoxStore.use.setModelOverride();
+  const setModel = useChatBoxStore.use.setModel();
   const expanded = useChatBoxStore.use.expanded();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -209,7 +209,7 @@ export const Conversations: React.FC = memo(() => {
     setCurrentEmployee(aiEmployeesMap[conversation?.aiEmployee?.username]);
     setMessages([]);
     clear();
-    setModelOverride(null);
+    setModel(null);
     messagesService.run(sessionId);
     if (!expanded) {
       setShowConversations(false);

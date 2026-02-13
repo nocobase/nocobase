@@ -171,12 +171,17 @@ const aiResource: ResourceOptions = {
           }
 
           const providerMeta = plugin.aiManager.llmProviders.get(service.provider);
+          const P = providerMeta.provider;
+          const p = new P({ app: ctx.app });
+          const isToolConflict = p.isToolConflict();
           return {
             llmService: service.name,
             llmServiceTitle: service.title,
             provider: service.provider,
+            providerTitle: providerMeta?.title,
             enabledModels,
             supportWebSearch: providerMeta?.supportWebSearch ?? false,
+            isToolConflict,
           };
         })
         .filter(Boolean);

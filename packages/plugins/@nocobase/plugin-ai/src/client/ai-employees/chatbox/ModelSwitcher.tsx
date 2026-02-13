@@ -15,7 +15,7 @@ import { observer } from '@nocobase/flow-engine';
 import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
-import { useLLMServicesRepository } from '../../llm-services/hooks/useLLMServicesRepository';
+import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
 import {
   isSameModelOverride,
   isValidModelOverride,
@@ -32,60 +32,36 @@ export const ModelSwitcher: React.FC = observer(
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
     const currentEmployeeUsername = currentEmployee?.username;
-    const modelOverride = useChatBoxStore.use.modelOverride();
-    const setModelOverride = useChatBoxStore.use.setModelOverride();
+    const model = useChatBoxStore.use.model();
+    const setModel = useChatBoxStore.use.setModel();
 
     const hasConfigPermission = app.pluginSettingsManager.has('ai.llm-services');
 
     const [addModalOpen, setAddModalOpen] = useState(false);
 
-    const repo = useLLMServicesRepository();
-
-    useEffect(() => {
-      repo.load();
-    }, [repo]);
-
-    const llmServices = repo.services;
-    const loading = repo.loading;
-
-    const allModelsWithLabel = useMemo(
-      () =>
-        llmServices.flatMap((s) =>
-          s.enabledModels.map((m) => ({
-            llmService: s.llmService,
-            model: m.value,
-            label: m.label,
-            value: m.value,
-          })),
-        ),
-      [llmServices],
-    );
-    const allModels = useMemo(
-      () => allModelsWithLabel.map(({ llmService, model }) => ({ llmService, model })),
-      [allModelsWithLabel],
-    );
+    const { repo, services: llmServices, loading, allModelsWithLabel, allModels } = useLLMServiceCatalog();
 
     // Initialize: cache >> first model
     useEffect(() => {
       if (!currentEmployeeUsername || !allModels.length) return;
 
-      const resolved = resolveModelOverride(api, currentEmployeeUsername, allModels, modelOverride);
-      if (isSameModelOverride(resolved, modelOverride)) {
+      const resolved = resolveModelOverride(api, currentEmployeeUsername, allModels, model);
+      if (isSameModelOverride(resolved, model)) {
         return;
       }
-      setModelOverride(resolved);
-    }, [api, currentEmployeeUsername, allModels, modelOverride, setModelOverride]);
+      setModel(resolved);
+    }, [api, currentEmployeeUsername, allModels, model, setModel]);
 
     // Current selected model value
     const selectedModel = useMemo(() => {
-      if (isValidModelOverride(modelOverride, allModels)) {
-        return modelOverride;
+      if (isValidModelOverride(model, allModels)) {
+        return model;
       }
       if (allModels.length) {
         return { llmService: allModels[0].llmService, model: allModels[0].model };
       }
       return undefined;
-    }, [modelOverride, allModels]);
+    }, [model, allModels]);
 
     // Current display label
     const selectedLabel = useMemo(() => {
@@ -103,7 +79,7 @@ export const ModelSwitcher: React.FC = observer(
       const target = allModelsWithLabel.find((m) => m.llmService === llmService && m.value === modelValue);
       if (target) {
         const newValue = { llmService: target.llmService, model: target.model };
-        setModelOverride(newValue);
+        setModel(newValue);
         if (currentEmployee) {
           try {
             api.storage.setItem(

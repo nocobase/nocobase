@@ -195,15 +195,8 @@ export abstract class LLMProvider {
     return [];
   }
 
-  protected isToolConflict(): boolean {
-    return true;
-  }
-
-  getBuiltInTools(checkConflict: boolean) {
-    if (this.isToolConflict() && checkConflict) {
-      return [];
-    }
-    return this.builtInTools();
+  isToolConflict(): boolean {
+    return false;
   }
 
   resolveTools(toolDefinitions: any[]): any[] {

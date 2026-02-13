@@ -31,7 +31,7 @@ import { Command } from '@langchain/langgraph';
 import { concat } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
 
-export interface ModelOverride {
+export interface ModelRef {
   llmService: string;
   model: string;
 }
@@ -46,7 +46,7 @@ export class AIEmployee {
   private ctx: Context;
   private systemMessage: string;
   private webSearch?: boolean;
-  private modelOverride?: ModelOverride;
+  private model?: ModelRef;
   private legacy?: boolean;
   private protocol: ChatStreamProtocol;
 
@@ -57,7 +57,7 @@ export class AIEmployee {
     systemMessage?: string,
     skillSettings?: Record<string, any>,
     webSearch?: boolean,
-    modelOverride?: ModelOverride,
+    model?: ModelRef,
     legacy?: boolean,
   ) {
     this.employee = employee;
@@ -68,7 +68,7 @@ export class AIEmployee {
     this.systemMessage = systemMessage;
     this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
     this.skillSettings = skillSettings;
-    this.modelOverride = modelOverride;
+    this.model = model;
     this.legacy = legacy;
 
     const locale = this.ctx.getCurrentLocale();
@@ -225,15 +225,15 @@ export class AIEmployee {
 
   // === LLM/provider setup ===
   async getLLMService() {
-    // modelOverride is required - it's set by the frontend ModelSwitcher
-    if (!this.modelOverride?.llmService || !this.modelOverride?.model) {
+    // model is required - it's set by the frontend ModelSwitcher
+    if (!this.model?.llmService || !this.model?.model) {
       throw new Error('LLM service not configured');
     }
 
-    const llmServiceName = this.modelOverride.llmService;
-    const model = this.modelOverride.model;
+    const llmServiceName = this.model.llmService;
+    const model = this.model.model;
 
-    // Build model options from modelOverride
+    // Build model options from model
     const modelOptions: Record<string, any> = {
       llmService: llmServiceName,
       model,

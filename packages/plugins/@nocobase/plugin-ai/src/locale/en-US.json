@@ -6,6 +6,11 @@
   "AI integration": "AI integration",
   "AI is searching": "{{ nickname }} is searching...",
   "AI is thinking": "{{ nickname }} is thinking...",
+  "Use all AI employee skills": "Use all AI employee skills",
+  "Restrict task skills": "Restrict task skills",
+  "Use default model": "Use default model",
+  "Search disables tools": "The current model does not support tool calls when web search is enabled, which may affect task results",
+  "Web search not supported": "The current model does not support calling the web search tool",
   "About me": "About me",
   "About me placeholder": "Define the AI employee’s role, guide its work, and instruct it complete user-assigned tasks. This will be part of the prompt of this AI employee.",
   "Reset to default": "Reset to default",
@@ -276,5 +281,4 @@
   "No LLM services enabled yet": "No LLM services enabled yet",
   "No model available": "No model available",
   "Please contact the administrator to configure models": "Please contact the administrator to configure models",
-  "Restrict task skills; leave blank to use all AI employee skills.": "Restrict task skills; leave blank to use all AI employee skills."
 }
