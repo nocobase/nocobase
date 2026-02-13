@@ -12,6 +12,13 @@
   "homepage": "https://docs.nocobase.com/handbook/action-import",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-import",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-import",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",

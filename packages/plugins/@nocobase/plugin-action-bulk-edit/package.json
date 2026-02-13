@@ -17,6 +17,13 @@
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },
+  "nocobase": {
+    "supportedVersions": [  
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Actions"
