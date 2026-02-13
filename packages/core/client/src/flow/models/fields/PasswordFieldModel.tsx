@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from 'antd';
 import React from 'react';
 import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
+import { Password } from '../../../schema-component/antd/password';
 import { FieldModel } from '../base';
 
 export class PasswordFieldModel extends FieldModel {
   render() {
-    return <Input.Password {...this.props} />;
+    return <Password {...this.props} />;
   }
 }
 
