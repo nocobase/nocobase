@@ -36,6 +36,19 @@
 不同模块可能存在相同的原文词条，需要分别进行翻译。
 :::
 
+### 自动创建词条
+
+页面编辑时，各区块中的自定义文案将自动创建对应词条，并同步生成当前语言的翻译内容。
+
+![](https://static-docs.nocobase.com/Localization-02-12-2026_08_39_AM.png)
+
+![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
+
+:::info{title=提示}
+代码中定义文案时，需手动指定 ns（namespace），如：`${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
+:::
+
+
 ### 编辑翻译内容
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>

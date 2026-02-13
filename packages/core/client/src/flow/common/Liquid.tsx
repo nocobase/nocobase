@@ -114,6 +114,18 @@ export class LiquidEngine extends Liquid {
       if (typeof template === 'number') {
         template = String(template);
       }
+      template = template.replace(
+        /\{\{\s*t\s*\(\s*(['"])([\s\S]*?)\1\s*(?:,\s*\{\s*ns\s*:\s*(['"])([\s\S]*?)\3\s*\}\s*)?\)\s*\}\}/g,
+        (raw, _q, key, _q2, ns) => {
+          try {
+            const translated = ns ? ctx.t(key, { ns }) : ctx.t(key);
+            if (translated == null) return '';
+            return /[{][{%]/.test(translated) ? `{% raw %}${translated}{% endraw %}` : translated;
+          } catch {
+            return raw;
+          }
+        },
+      );
       // 1️⃣ 提取模板变量
       const vars = await this.fullVariables(template);
 
@@ -130,8 +142,7 @@ export class LiquidEngine extends Liquid {
       // 5️⃣ 渲染模板
       return await this.render(template, { ctx: resolvedCtx });
     } catch (err) {
-      console.error('[Liquid] renderWithFullContext 错误:', err);
-      return `<pre style="color:red;">Liquid 渲染错误：${err.message}</pre>`;
+      return template;
     }
   }
 }
