@@ -36,6 +36,20 @@ After synchronization, the system will list all translatable entries for the cur
 Different modules may have the same original text entries, which need to be translated separately.
 :::
 
+### Automatically Create Translation Entries
+
+When editing a page, custom text within each block will automatically generate the corresponding i18n entry and simultaneously create the translation for the current language.
+
+![](https://static-docs.nocobase.com/Localization-02-12-2026_08_39_AM.png)
+
+![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
+
+:::info{title=提示}
+When defining text in code, you need to manually specify the ns (namespace), for example:
+`${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
+:::
+
+
 ### Editing Translation Content
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
