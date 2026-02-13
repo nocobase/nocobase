@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { Input } from 'antd';
+import { css } from '@emotion/css';
+import { Divider, Input, InputNumber, Select, Space, theme } from 'antd';
 import { dayjs } from '@nocobase/utils/client';
 import {
   FlowModelRenderer,
@@ -36,7 +37,7 @@ import { RunJSValueEditor } from './RunJSValueEditor';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
-import { DateFilterDynamicComponent } from '../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent';
+import { FieldAssignExactDatePicker } from './FieldAssignExactDatePicker';
 
 const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
 
@@ -46,6 +47,61 @@ const DATE_ONLY_OUTPUT_FORMAT = 'YYYY-MM-DD';
 const DATETIME_NO_TZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 export type DateVariableExactNormalizeMode = 'none' | 'date' | 'datetimeNoTz' | 'iso';
+
+const DATE_DYNAMIC_OPTION_KEYS = [
+  'exact',
+  'past',
+  'next',
+  'today',
+  'yesterday',
+  'tomorrow',
+  'thisWeek',
+  'lastWeek',
+  'nextWeek',
+  'thisMonth',
+  'lastMonth',
+  'nextMonth',
+  'thisQuarter',
+  'lastQuarter',
+  'nextQuarter',
+  'thisYear',
+  'lastYear',
+  'nextYear',
+] as const;
+
+const DATE_DYNAMIC_OPTION_LABELS: Record<(typeof DATE_DYNAMIC_OPTION_KEYS)[number], string> = {
+  exact: 'Exact day',
+  past: 'Past',
+  next: 'Next',
+  today: 'Today',
+  yesterday: 'Yesterday',
+  tomorrow: 'Tomorrow',
+  thisWeek: 'This Week',
+  lastWeek: 'Last Week',
+  nextWeek: 'Next Week',
+  thisMonth: 'This Month',
+  lastMonth: 'Last Month',
+  nextMonth: 'Next Month',
+  thisQuarter: 'This Quarter',
+  lastQuarter: 'Last Quarter',
+  nextQuarter: 'Next Quarter',
+  thisYear: 'This Year',
+  lastYear: 'Last Year',
+  nextYear: 'Next Year',
+};
+
+function buildDateDynamicOptions(t?: (key: string) => string, includeNow = false) {
+  const options = DATE_DYNAMIC_OPTION_KEYS.map((key) => ({
+    value: key,
+    label: t?.(DATE_DYNAMIC_OPTION_LABELS[key]) ?? DATE_DYNAMIC_OPTION_LABELS[key],
+  }));
+
+  if (includeNow) {
+    options.splice(3, 0, { value: 'now', label: t?.('Now') ?? 'Now' });
+  }
+
+  return options;
+}
 
 function parseDateByFormat(value: string, format: string): dayjs.Dayjs | null {
   const raw = String(value || '').trim();
@@ -64,11 +120,6 @@ function parseDateByFormat(value: string, format: string): dayjs.Dayjs | null {
     if (strict.isValid()) {
       return strict;
     }
-
-    const loose = dayjs(raw, format);
-    if (loose.isValid()) {
-      return loose;
-    }
   }
 
   const fallback = dayjs(raw);
@@ -76,18 +127,42 @@ function parseDateByFormat(value: string, format: string): dayjs.Dayjs | null {
     return fallback;
   }
 
+  if (format) {
+    const loose = dayjs(raw, format);
+    if (loose.isValid()) {
+      return loose;
+    }
+  }
+
   return null;
 }
 
-function normalizeExactDateString(
-  value: string,
+function parseDateFromRawValue(value: unknown, format: string): dayjs.Dayjs | null {
+  if (dayjs.isDayjs(value)) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    const parsedDate = dayjs(value);
+    return parsedDate.isValid() ? parsedDate : null;
+  }
+
+  if (typeof value === 'string') {
+    return parseDateByFormat(value, format);
+  }
+
+  return null;
+}
+
+function normalizeExactDateValue(
+  value: unknown,
   options: {
     format: string;
     showTime: boolean;
     exactNormalizeMode: DateVariableExactNormalizeMode;
   },
-): string {
-  const parsed = parseDateByFormat(value, options.format);
+): unknown {
+  const parsed = parseDateFromRawValue(value, options.format);
   if (!parsed?.isValid()) {
     return value;
   }
@@ -102,6 +177,32 @@ function normalizeExactDateString(
     default:
       return value;
   }
+}
+
+function toExactPickerSingleValue(rawValue: unknown, format: string): dayjs.Dayjs | null {
+  const parsed = parseDateFromRawValue(rawValue, format);
+  return parsed?.isValid() ? parsed : null;
+}
+
+function toExactPickerRangeValue(rawValue: unknown, format: string): [dayjs.Dayjs, dayjs.Dayjs] | null {
+  if (!Array.isArray(rawValue)) return null;
+  const left = toExactPickerSingleValue(rawValue[0], format);
+  const right = toExactPickerSingleValue(rawValue[1], format);
+  if (!left || !right) return null;
+  return [left, right];
+}
+
+export function toExactPickerDisplayValue(
+  rawValue: unknown,
+  options: {
+    format: string;
+    isRange: boolean;
+  },
+): dayjs.Dayjs | [dayjs.Dayjs, dayjs.Dayjs] | null {
+  if (options.isRange) {
+    return toExactPickerRangeValue(rawValue, options.format);
+  }
+  return toExactPickerSingleValue(rawValue, options.format);
 }
 
 function getDateVariableExactNormalizeMode(fieldInterface: string): DateVariableExactNormalizeMode {
@@ -133,13 +234,17 @@ export function normalizeDateVariableExactValue(
   }
 
   if (typeof rawValue === 'string') {
-    return normalizeExactDateString(rawValue, options);
+    return normalizeExactDateValue(rawValue, options);
+  }
+
+  if (dayjs.isDayjs(rawValue) || rawValue instanceof Date) {
+    return normalizeExactDateValue(rawValue, options);
   }
 
   if (Array.isArray(rawValue)) {
     return rawValue.map((item) => {
-      if (typeof item === 'string') {
-        return normalizeExactDateString(item, options);
+      if (typeof item === 'string' || dayjs.isDayjs(item) || item instanceof Date) {
+        return normalizeExactDateValue(item, options);
       }
       return item;
     });
@@ -176,7 +281,7 @@ function getFieldComponentProps(field: any): Record<string, any> {
   );
 }
 
-function normalizeDateVariableOutput(rawValue: any, options: DateVariableComponentProps): any {
+export function normalizeDateVariableOutput(rawValue: any, options: DateVariableComponentProps): any {
   if (rawValue === null || isRunJSValue(rawValue)) {
     return rawValue;
   }
@@ -568,6 +673,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return rest;
   }, [dateVariableComponentProps]);
 
+  const dateVariableDisplayPropsRef = React.useRef(dateVariableDisplayProps);
+  dateVariableDisplayPropsRef.current = dateVariableDisplayProps;
+
+  const dateVariableTranslateRef = React.useRef(flowCtx.t);
+  dateVariableTranslateRef.current = flowCtx.t;
+
   const coerceEmptyValueForRenderer = React.useCallback(
     (v: any) => {
       let out = v;
@@ -830,22 +941,151 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       const raw = inputProps?.value;
       const parsed = isCtxDateExpression(raw) ? parseCtxDateExpression(raw) : raw;
       const parsedValue = typeof parsed === 'undefined' ? undefined : parsed;
+      const { token } = theme.useToken();
+      const [open, setOpen] = React.useState(false);
+      const t = dateVariableTranslateRef.current;
+      const datePickerProps = dateVariableDisplayPropsRef.current;
+      const options = React.useMemo(() => buildDateDynamicOptions(t, true), [t]);
+
+      const dynamicType =
+        parsedValue && typeof parsedValue === 'object' && !Array.isArray(parsedValue)
+          ? (parsedValue as any)?.type
+          : undefined;
+      const selectedType = typeof dynamicType === 'string' && dynamicType ? dynamicType : 'exact';
+      const isRange = Array.isArray(parsedValue);
+      const exactSingleValue = toExactPickerDisplayValue(parsedValue, {
+        format: datePickerProps.format,
+        isRange: false,
+      });
+      const exactRangeValue = toExactPickerDisplayValue(parsedValue, {
+        format: datePickerProps.format,
+        isRange: true,
+      });
+
+      const handleSelect = (val: string) => {
+        setOpen(false);
+        if (val === 'exact') {
+          inputProps?.onChange?.('');
+          return;
+        }
+        const next: any = { type: val };
+        if (val === 'past' || val === 'next') {
+          next.number = 1;
+          next.unit = 'day';
+        }
+        inputProps?.onChange?.(next);
+      };
+
+      const handleExactSingleChange = (nextValue: any) => {
+        inputProps?.onChange?.(nextValue || '');
+      };
+
+      const handleExactRangeChange = (nextValue: any) => {
+        inputProps?.onChange?.(nextValue || '');
+      };
+
+      const dropdownRender = () => {
+        const firstPart = options.slice(0, 3);
+        const secondPart = options.slice(3);
+        const optionStyle = css`
+          padding: 3px 10px;
+          cursor: pointer;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          &:hover {
+            background-color: ${token.colorFillSecondary};
+          }
+        `;
+        return (
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            {firstPart.map((opt) => (
+              <div key={opt.value} role="option" onClick={() => handleSelect(opt.value)} className={optionStyle}>
+                {opt.label}
+              </div>
+            ))}
+            <Divider style={{ margin: '4px 0' }} />
+            {secondPart.map((opt) => (
+              <div
+                key={opt.value}
+                role="option"
+                className={optionStyle}
+                onClick={() => handleSelect(opt.value)}
+                title={opt.label}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        );
+      };
 
       return (
-        <DateFilterDynamicComponent
-          {...dateVariableDisplayProps}
-          {...inputProps}
-          includeNow
-          isRange={Array.isArray(parsedValue)}
-          value={parsedValue}
-          onChange={(nextValue) => inputProps?.onChange?.(typeof nextValue === 'undefined' ? '' : nextValue)}
-          style={withFullWidthStyle(wrapperStyle)}
-        />
+        <Space.Compact style={withFullWidthStyle(wrapperStyle)}>
+          <Select
+            options={options}
+            open={open}
+            onDropdownVisibleChange={setOpen}
+            allowClear={false}
+            style={{
+              width: '100%',
+              minWidth: 100,
+              maxWidth: ['past', 'next', 'exact', undefined].includes(dynamicType) ? 100 : null,
+            }}
+            value={selectedType}
+            onChange={handleSelect}
+            dropdownRender={dropdownRender}
+          />
+          {['past', 'next'].includes(selectedType) && [
+            <InputNumber
+              key="number"
+              style={{ flex: 1 }}
+              value={(parsedValue as any)?.number}
+              onChange={(nextNumber) => {
+                inputProps?.onChange?.({
+                  ...(parsedValue as any),
+                  type: selectedType,
+                  number: nextNumber,
+                  unit: (parsedValue as any)?.unit || 'day',
+                });
+              }}
+            />,
+            <Select
+              key="unit"
+              value={(parsedValue as any)?.unit}
+              style={{ minWidth: 130, maxWidth: 140 }}
+              onChange={(nextUnit) => {
+                inputProps?.onChange?.({
+                  ...(parsedValue as any),
+                  type: selectedType,
+                  unit: nextUnit,
+                  number: (parsedValue as any)?.number || 1,
+                });
+              }}
+              options={[
+                { value: 'day', label: t?.('Day') ?? 'Day' },
+                { value: 'week', label: t?.('Calendar week') ?? 'Calendar week' },
+                { value: 'month', label: t?.('Calendar Month') ?? 'Calendar Month' },
+                { value: 'year', label: t?.('Calendar Year') ?? 'Calendar Year' },
+              ]}
+              popupMatchSelectWidth
+            />,
+          ]}
+          {(selectedType === 'exact' || !selectedType) && (
+            <FieldAssignExactDatePicker
+              {...datePickerProps}
+              isRange={isRange}
+              value={isRange ? exactRangeValue : exactSingleValue}
+              onChange={isRange ? handleExactRangeChange : handleExactSingleChange}
+              style={{ flex: 1 }}
+            />
+          )}
+        </Space.Compact>
       );
     };
 
     return C;
-  }, [dateVariableDisplayProps]);
+  }, []);
 
   const NullComponent = React.useMemo(() => {
     const N: React.FC = () => (
