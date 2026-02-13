@@ -461,4 +461,79 @@ describe('objectVariable utilities', () => {
     expect(resolved).toEqual({ x: 'T1' });
     expect((ctx as any).api.request).not.toHaveBeenCalled();
   });
+
+  it('local-first: toMany dot-only association subpath uses local value and skips server', async () => {
+    const { engine, collection } = setupEngineWithCollections();
+    const obj = {
+      tags: [
+        { id: 1, name: 'A' },
+        { id: 2, name: 'B' },
+      ],
+    };
+    const ctx = engine.context as any;
+
+    (ctx as any).api = { request: vi.fn() };
+
+    const metaFactory = createAssociationAwareObjectMetaFactory(
+      () => collection,
+      'Current object',
+      () => obj,
+    );
+
+    ctx.defineProperty('obj', {
+      get: () => obj,
+      cache: false,
+      meta: metaFactory,
+      resolveOnServer: createAssociationSubpathResolver(
+        () => collection,
+        () => obj,
+      ),
+      serverOnlyWhenContextParams: true,
+    });
+
+    const template = { x: '{{ ctx.obj.tags.name }}' } as any;
+    const resolved = await (ctx as any).resolveJsonTemplate(template);
+    expect(resolved).toEqual({ x: ['A', 'B'] });
+    expect((ctx as any).api.request).not.toHaveBeenCalled();
+  });
+
+  it('toMany dot-only association subpath falls back to server when local unresolved', async () => {
+    const { engine, collection } = setupEngineWithCollections();
+    const obj = { tags: [{ id: 1 }, { id: 2 }] };
+    const ctx = engine.context as any;
+
+    const calls: any[] = [];
+    (ctx as any).api = {
+      request: vi.fn(async ({ url, data, method }) => {
+        calls.push({ url, data, method });
+        const batch = (data?.values?.batch as any[]) || [];
+        const results = batch.map((it) => ({ id: it.id, data: it.template }));
+        return { data: { data: { results } } };
+      }),
+    };
+
+    const metaFactory = createAssociationAwareObjectMetaFactory(
+      () => collection,
+      'Current object',
+      () => obj,
+    );
+
+    ctx.defineProperty('obj', {
+      get: () => obj,
+      cache: false,
+      meta: metaFactory,
+      resolveOnServer: createAssociationSubpathResolver(
+        () => collection,
+        () => obj,
+      ),
+      serverOnlyWhenContextParams: true,
+    });
+
+    const template = { x: '{{ ctx.obj.tags.name }}' } as any;
+    await (ctx as any).resolveJsonTemplate(template);
+
+    const call = calls.find((c) => c.url === 'variables:resolve');
+    expect(call).toBeTruthy();
+    expect((ctx as any).api.request).toHaveBeenCalled();
+  });
 });
