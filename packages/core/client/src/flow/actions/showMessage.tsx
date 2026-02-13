@@ -12,6 +12,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import { Radio, Input, InputNumber } from 'antd';
 import type { RadioChangeEvent } from 'antd/es/radio';
 import React from 'react';
+import { uid } from '@nocobase/utils/client';
 
 type MessageType = 'success' | 'error' | 'info' | 'warning' | 'loading';
 
@@ -126,7 +127,7 @@ export const showMessage = defineAction({
       return;
     }
 
-    const messageKey = `flow-message-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const messageKey = `flow-message-${uid()}`;
     const contentNode =
       normalizedDuration === 0 ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
