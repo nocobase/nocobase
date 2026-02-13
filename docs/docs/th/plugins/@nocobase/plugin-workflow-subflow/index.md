@@ -1,18 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: ซับโฟลว์"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  ใช้สำหรับเรียกเวิร์กโฟลว์อื่น ๆ ภายในเวิร์กโฟลว์เดียวกัน โดยสามารถใช้ตัวแปรของเวิร์กโฟลว์ปัจจุบันเป็นอินพุตสำหรับซับโฟลว์ และใช้เอาต์พุตจากซับโฟลว์เป็นตัวแปรของเวิร์กโฟลว์ปัจจุบันได้
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: ซับโฟลว์
+# Workflow: Subflow

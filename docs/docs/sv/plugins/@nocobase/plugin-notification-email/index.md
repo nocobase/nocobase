@@ -1,15 +1,12 @@
 ---
-displayName: "Meddelande: E-post"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Används för att skicka e-postmeddelanden via e-postkanalen, med inbyggd SMTP-transport.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Meddelande: E-post
+# Notification: Email

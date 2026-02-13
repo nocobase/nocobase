@@ -1,14 +1,12 @@
 ---
-displayName: "توثيق API"
+displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
-  مولّد وثائق OpenAPI لواجهة برمجة تطبيقات NocoBase عبر بروتوكول HTTP.
+  An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# توثيق API
+# API documentation

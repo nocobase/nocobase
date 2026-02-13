@@ -1,14 +1,12 @@
 ---
-displayName: "워크플로우: 알림 노드"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  워크플로우에서 다양한 알림을 보낼 수 있습니다.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 워크플로우: 알림 노드
+# Workflow: notification node

@@ -1,14 +1,12 @@
 ---
-displayName: "Редактор тем"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Налаштовуйте кольори, розміри та інші параметри інтерфейсу користувача, зберігайте результат як тему та перемикайтеся між кількома темами.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Редактор тем
+# Theme editor

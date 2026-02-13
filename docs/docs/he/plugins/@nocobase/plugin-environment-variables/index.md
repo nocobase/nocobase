@@ -1,14 +1,12 @@
 ---
-displayName: "משתנים וסודות"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  ניהול מרכזי של משתני סביבה וסודות, המשמשים לאחסון נתונים רגישים, שימוש חוזר בנתוני תצורה, הפרדה בין סביבות מרובות ועוד.
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# משתנים וסודות
+# Variables and secrets

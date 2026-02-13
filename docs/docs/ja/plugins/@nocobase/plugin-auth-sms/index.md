@@ -1,14 +1,12 @@
 ---
-displayName: "認証：SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  SMS認証コードを使って本人確認を行う機能です
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# 認証：SMS
+# Auth: SMS

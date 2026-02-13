@@ -1,14 +1,12 @@
 ---
-displayName: "Bidang Koleksi: Formula"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Memungkinkan konfigurasi dan penyimpanan hasil perhitungan antara nilai-nilai dari beberapa bidang dalam satu catatan yang sama, dengan dukungan untuk mesin Math.js dan fungsi formula Excel.
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Bidang Koleksi: Formula
+# Collection field: Formula

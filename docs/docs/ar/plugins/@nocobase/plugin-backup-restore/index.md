@@ -1,18 +1,15 @@
 ---
-displayName: "النسخ الاحتياطي للتطبيق واستعادته (مهمل)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  لنسخ التطبيقات احتياطيًا واستعادتها، ويمكن استخدامه في سيناريوهات مثل تكرار التطبيقات، ترحيلها، وترقيتها.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
-deprecated: صحيح
+deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
+# App backup & restore (deprecated)
 
-# النسخ الاحتياطي للتطبيق واستعادته (مهمل)
-
-> ملاحظة: هذه الإضافة مهملة (deprecated).
+> Note: This plugin is deprecated.

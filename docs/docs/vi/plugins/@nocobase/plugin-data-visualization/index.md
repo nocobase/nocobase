@@ -1,14 +1,12 @@
 ---
-displayName: "Trực quan hóa dữ liệu"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  Cung cấp tính năng trực quan hóa dữ liệu, bao gồm khối biểu đồ và khối lọc biểu đồ. Plugin này hỗ trợ hơn mười loại biểu đồ khác nhau như biểu đồ đường, biểu đồ vùng, biểu đồ cột, v.v. Bạn cũng có thể mở rộng thêm các loại biểu đồ khác.
+  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trực quan hóa dữ liệu
+# Data visualization

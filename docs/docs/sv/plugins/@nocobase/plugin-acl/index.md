@@ -1,15 +1,15 @@
 ---
-displayName: "Åtkomstkontroll"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Åtkomstkontroll baserad på roller, resurser och åtgärder, som ger exakt kontroll över behörigheter för gränssnittskonfiguration, datahantering, menyåtkomst och plugin-funktioner.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Åtkomstkontroll
+# Access control

@@ -1,14 +1,12 @@
 ---
-displayName: "Flux de travail : CC"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Fournit une fonctionnalité de CC (copie carbone) dans les flux de travail pour envoyer des approbations, ou tout autre type d'information, à des utilisateurs spécifiques.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Flux de travail : CC
+# Workflow: CC

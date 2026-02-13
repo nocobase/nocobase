@@ -1,14 +1,12 @@
 ---
-displayName: "Bản địa hóa"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Cho phép quản lý các tài nguyên bản địa hóa của ứng dụng.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Bản địa hóa
+# Localization

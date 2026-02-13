@@ -1,18 +1,15 @@
 ---
-displayName: "Pembatasan IP"
+displayName: "IP restriction"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Kontrol akses sistem dengan mengonfigurasi daftar hitam (blacklist) dan daftar putih (whitelist) IP untuk memastikan keamanan.
+  Control system access by configuring IP blacklists and whitelists to ensure security.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Pembatasan IP
+# IP restriction

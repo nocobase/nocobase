@@ -1,16 +1,12 @@
 ---
-displayName: "บล็อก: รายการ"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  แสดงข้อมูลในรูปแบบรายการ พร้อมรองรับการแบ่งหน้าครับ/ค่ะ
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# บล็อก: รายการ
+# Block: List

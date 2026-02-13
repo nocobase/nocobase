@@ -1,14 +1,12 @@
 ---
-displayName: "Alur Kerja: Node Permintaan HTTP"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Memungkinkan pengiriman permintaan HTTP ke layanan HTTP mana pun untuk interaksi data dalam alur kerja.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Permintaan HTTP
+# Workflow: HTTP request node

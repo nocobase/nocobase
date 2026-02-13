@@ -1,14 +1,12 @@
 ---
-displayName: "Calendario"
+displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Proporciona una plantilla de colección de calendario y un bloque para gestionar datos de fecha, que se utiliza habitualmente para información relacionada con fechas y horas, como eventos, citas, tareas, etc.
+  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Calendario
+# Calendar

@@ -1,14 +1,12 @@
 ---
-displayName: "حقل المجموعة: التقسيمات الإدارية الصينية"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  يوفر بيانات ونوع حقل للتقسيمات الإدارية الصينية.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# حقل المجموعة: التقسيمات الإدارية الصينية
+# Collection field: administrative divisions of China

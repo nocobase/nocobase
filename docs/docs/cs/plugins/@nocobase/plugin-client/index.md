@@ -1,14 +1,12 @@
 ---
-displayName: "WEB klient"
+displayName: "WEB client"
 packageName: '@nocobase/plugin-client'
 description: |
-  Poskytuje klientské rozhraní pro NocoBase server.
+  Provides a client interface for the NocoBase server
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# WEB klient
+# WEB client

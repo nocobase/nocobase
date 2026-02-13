@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: Węzeł ręczny"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Służy do obsługi przepływów pracy, w których część decyzji wymaga ręcznej interwencji.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Węzeł ręczny
+# Workflow: Manual node

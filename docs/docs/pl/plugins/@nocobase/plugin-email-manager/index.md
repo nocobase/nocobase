@@ -1,18 +1,15 @@
 ---
-displayName: "Menedżer poczty e-mail"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Połącz NocoBase z firmowymi kontami e-mail, takimi jak Gmail i Outlook, aby odbierać i wysyłać wiadomości e-mail bezpośrednio z NocoBase, podobnie jak w innych systemach CRM.
+  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 3
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Menedżer poczty e-mail
+# Email manager

@@ -1,16 +1,12 @@
 ---
-displayName: "التحقق"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  إدارة التحقق من هوية المستخدم، تتضمن الرسائل النصية القصيرة (SMS) ومصادقة TOTP، وهي قابلة للتوسيع.
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-
-# التحقق
+# Verification

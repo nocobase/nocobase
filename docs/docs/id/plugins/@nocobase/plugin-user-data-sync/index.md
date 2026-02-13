@@ -1,14 +1,12 @@
 ---
-displayName: "Sinkronisasi Data Pengguna"
+displayName: "User data synchronization"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  Mendaftarkan dan mengelola sumber sinkronisasi data pengguna yang dapat diperluas, dengan API HTTP disediakan secara default. Mendukung sinkronisasi data ke sumber daya seperti pengguna dan departemen.
+  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Sinkronisasi Data Pengguna
+# User data synchronization

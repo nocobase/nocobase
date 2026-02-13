@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: Cyklický uzel"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Slouží k opakovanému zpracování dílčího procesu pro každou hodnotu v poli, případně k opakování dílčího procesu s pevně daným počtem opakování.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Cyklický uzel
+# Workflow: Loop node

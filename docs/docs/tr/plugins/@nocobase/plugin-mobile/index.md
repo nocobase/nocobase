@@ -1,14 +1,12 @@
 ---
-displayName: "Mobil (kullanımdan kaldırıldı)"
+displayName: "Mobile (deprecated)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Mobil sayfaları yapılandırma yeteneği sağlar.
+  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Mobil (kullanımdan kaldırıldı)
+# Mobile (deprecated)

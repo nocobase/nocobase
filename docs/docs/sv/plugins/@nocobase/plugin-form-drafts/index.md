@@ -1,18 +1,14 @@
 ---
-displayName: "Formulärutkast"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Gör det möjligt att spara utkast när ni fyller i formulär, och sedan fortsätta redigera och skicka in dem.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Formulärutkast
+# Form drafts

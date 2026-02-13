@@ -1,15 +1,12 @@
 ---
-displayName: "إعدادات النظام"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  يُستخدم لضبط عنوان النظام، والشعار، واللغة، إلخ.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# إعدادات النظام
+# System settings

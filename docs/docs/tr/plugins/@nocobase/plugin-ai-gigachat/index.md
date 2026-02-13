@@ -1,16 +1,14 @@
 ---
-displayName: "Yapay Zeka LLM: GigaChat"
+displayName: "AI LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:
   - 2.x
 description: |
-  GigaChat LLM hizmetiyle entegrasyonu destekler.
+  Support integration with GigaChat LLM service.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Yapay Zeka LLM: GigaChat
+# AI LLM: GigaChat

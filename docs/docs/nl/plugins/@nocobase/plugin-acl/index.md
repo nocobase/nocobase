@@ -1,14 +1,15 @@
 ---
-displayName: "Toegangsbeheer"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Met toegangsbeheer, gebaseerd op rollen, resources en acties, kunt u nauwkeurig de machtigingen voor interfaceconfiguratie, gegevensbewerkingen, menutoegang en plugins beheren.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Toegangsbeheer
+# Access control

@@ -1,18 +1,15 @@
 ---
-displayName: "Друк за шаблоном"
+displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Дозволяє користувачам друкувати шаблони безпосередньо в застосунку NocoBase.
+  It supports users in printing templates within the NocoBase application.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Друк за шаблоном
+# Template print

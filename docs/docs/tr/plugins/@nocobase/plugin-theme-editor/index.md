@@ -1,14 +1,12 @@
 ---
-displayName: "Tema düzenleyici"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Kullanıcı arayüzü (UI) renklerini, boyutlarını vb. özelleştirin ve sonucu bir tema olarak kaydedin; böylece birden fazla tema arasında geçiş yapabilirsiniz.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Tema düzenleyici
+# Theme editor

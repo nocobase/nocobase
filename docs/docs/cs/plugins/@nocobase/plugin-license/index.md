@@ -1,16 +1,12 @@
 ---
-displayName: "Nastavení licence"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  Nastavení ID instance a licenčního klíče
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Nastavení licence
+# License settings

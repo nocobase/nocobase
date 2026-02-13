@@ -1,18 +1,15 @@
 ---
-displayName: "ปรับแต่งแบรนด์"
+displayName: "Custom brand"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  ปรับแต่งชื่อแบรนด์และข้อมูลอื่น ๆ ที่เกี่ยวข้องกับแบรนด์ได้
+  Customize the brand name and more brand-related information.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ปรับแต่งแบรนด์
+# Custom brand

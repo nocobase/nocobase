@@ -1,14 +1,12 @@
 ---
-displayName: "Робочий процес: Вузол HTTP запиту"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Дозволяє надсилати HTTP-запити до будь-якого HTTP-сервісу для взаємодії з даними в робочому процесі.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Робочий процес: Вузол HTTP запиту
+# Workflow: HTTP request node

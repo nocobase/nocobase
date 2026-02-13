@@ -1,15 +1,12 @@
 ---
-displayName: "سير العمل: مجموعة أدوات الاختبار"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
-
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# سير العمل: مجموعة أدوات الاختبار
+# Workflow: test kit

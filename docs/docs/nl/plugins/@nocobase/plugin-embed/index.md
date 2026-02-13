@@ -1,17 +1,14 @@
 ---
-displayName: "NocoBase Inbedden"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Bed NocoBase in een extern systeem of op een webpagina in, zodat het een integraal onderdeel wordt van dat systeem of die pagina.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# NocoBase Inbedden
+# Embed NocoBase

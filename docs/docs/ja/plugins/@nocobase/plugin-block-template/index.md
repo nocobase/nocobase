@@ -1,17 +1,15 @@
 ---
-displayName: "ブロック：テンプレート（非推奨）"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  ページで再利用するためのブロックテンプレートを作成・管理します
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ブロック：テンプレート（非推奨）
+# Block: template (deprecated)
 
-> 注意：このプラグインは非推奨です
+> Note: This plugin is deprecated.

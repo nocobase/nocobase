@@ -1,17 +1,15 @@
 ---
-displayName: "Denetim günlükleri (kullanımdan kaldırıldı)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Bu eklenti kullanımdan kaldırılmıştır. Lütfen kullanmayın. Gelecekte yeni bir denetim günlükleri eklentisi olacaktır.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Denetim günlükleri (kullanımdan kaldırıldı)
+# Audit logs (deprecated)
 
-> Not: Bu eklenti kullanımdan kaldırılmıştır.
+> Note: This plugin is deprecated.

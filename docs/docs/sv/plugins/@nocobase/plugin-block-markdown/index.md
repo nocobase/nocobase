@@ -1,15 +1,12 @@
 ---
-displayName: "Markdown-block"
+displayName: "Block: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
-  Tillhandahåller ett Markdown-block.
+  Provide Markdown block
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Markdown-block
+# Block: Markdown

@@ -1,16 +1,12 @@
 ---
-displayName: "ऑपरेशन: प्रिंट"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  ब्राउज़र के प्रिंट फ़ंक्शन का उपयोग करके एकल डेटा को प्रिंट करता है।
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# ऑपरेशन: प्रिंट
+# Action: Print

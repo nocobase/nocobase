@@ -1,18 +1,15 @@
 ---
-displayName: "תהליך עבודה: טריגר Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  קבלת קריאות HTTP ממערכות חיצוניות והפעלת אירועים. מתאים לדחיפת נתונים והתראות אירועים המופעלות על ידי מערכות צד שלישי, כגון קריאות חוזרות של תשלומים והודעות.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: טריגר Webhook
+# Workflow: Webhook

@@ -1,14 +1,15 @@
 ---
-displayName: "Trường bộ sưu tập: Mã nguồn"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Dùng để chỉnh sửa và tô sáng cú pháp mã nguồn, hỗ trợ các ngôn ngữ như Java, JavaScript, Python, SQL và nhiều ngôn ngữ khác.
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Mã nguồn
+# Collection field: Code

@@ -1,18 +1,15 @@
 ---
-displayName: 'תהליך עבודה: אירוע לפני פעולה'
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  מופעל לפני ביצוע בקשה המופעלת באמצעות כפתור פעולה או API, לדוגמה, לפני הוספה, עדכון או מחיקת נתונים. הוא מתאים לאימות נתונים וקבלת החלטות לוגיות לפני הפעולה, וניתן לחסום את הבקשה באמצעות צומת 'סיום תהליך".
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: אירוע לפני פעולה
+# Workflow: Pre-action event

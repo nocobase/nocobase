@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  Potężne narzędzie BPM, które stanowi podstawę automatyzacji procesów biznesowych i umożliwia dowolne rozszerzanie o kolejne wyzwalacze i węzły.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy
+# Workflow

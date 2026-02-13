@@ -1,18 +1,15 @@
 ---
-displayName: "Дія: Експорт записів Pro"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Розширює можливості експорту даних завдяки асинхронному експорту для обробки великих обсягів. Підтримує експорт вкладень.
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Дія: Експорт записів Pro
+# Action: Export records Pro

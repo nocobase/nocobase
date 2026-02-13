@@ -1,16 +1,12 @@
 ---
-displayName: "Pracovní postup: SQL uzel"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Umožňuje provádět SQL příkazy v rámci pracovního postupu.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Pracovní postup: SQL uzel
+# Workflow: SQL node

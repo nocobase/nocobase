@@ -1,20 +1,15 @@
 ---
-displayName: "वर्कफ़्लो: पूर्व-कार्यवाही घटना"
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  यह एक्शन बटन या API के माध्यम से शुरू की गई रिक्वेस्ट के निष्पादन से पहले ट्रिगर होती है, जैसे डेटा जोड़ने, अपडेट करने या हटाने से पहले। यह ऑपरेशन से पहले डेटा सत्यापन और लॉजिक निर्णय के लिए उपयुक्त है, और 'प्रक्रिया समाप्त करें' (End process) नोड का उपयोग करके रिक्वेस्ट को रोका जा सकता है।
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# वर्कफ़्लो: पूर्व-कार्यवाही घटना
+# Workflow: Pre-action event

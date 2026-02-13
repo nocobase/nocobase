@@ -1,17 +1,15 @@
 ---
-displayName: "Kopia zapasowa i przywracanie aplikacji (przestarzałe)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Tworzenie kopii zapasowych i przywracanie aplikacji, co może być przydatne w scenariuszach takich jak replikacja, migracja i aktualizacja aplikacji.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Kopia zapasowa i przywracanie aplikacji (przestarzałe)
+# App backup & restore (deprecated)
 
-> Uwaga: Ta wtyczka jest przestarzała.
+> Note: This plugin is deprecated.

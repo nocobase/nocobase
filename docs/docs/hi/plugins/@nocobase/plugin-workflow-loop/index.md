@@ -1,16 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: लूप नोड"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  इसका उपयोग किसी ऐरे (array) में प्रत्येक मान के लिए उप-प्रक्रिया को दोहराने के लिए किया जाता है, और इसे निश्चित संख्या में उप-प्रक्रिया को दोहराने के लिए भी इस्तेमाल किया जा सकता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# वर्कफ़्लो: लूप नोड
+# Workflow: Loop node

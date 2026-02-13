@@ -1,14 +1,12 @@
 ---
-displayName: "Openbare formulieren"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Deel openbare formulieren extern om informatie te verzamelen van anonieme gebruikers.
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Openbare formulieren
+# Public forms

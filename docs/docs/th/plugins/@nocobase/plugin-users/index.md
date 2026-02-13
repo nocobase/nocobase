@@ -1,14 +1,12 @@
 ---
-displayName: "ผู้ใช้งาน"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  มีโมเดลผู้ใช้งานพื้นฐาน พร้อมทั้งฟิลด์สำหรับผู้สร้างและผู้แก้ไขล่าสุด
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ผู้ใช้งาน
+# Users

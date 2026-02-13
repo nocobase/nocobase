@@ -1,16 +1,12 @@
 ---
-displayName: "Workflow: Schleifen-Knoten"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Wird verwendet, um einen Unterprozess für jeden Wert in einem Array auszuführen, oder um einen Unterprozess eine feste Anzahl von Malen zu wiederholen.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-
-
-# Workflow: Schleifen-Knoten
+# Workflow: Loop node

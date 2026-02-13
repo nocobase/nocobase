@@ -1,14 +1,15 @@
 ---
-displayName: "액션: 레코드 복제"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  레코드를 복제하는 액션입니다. 폼으로 복제하여 편집 후 제출하거나, 바로 복제하여 새 레코드를 생성할 수 있습니다.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 액션: 레코드 복제
+# Action: Duplicate record

@@ -1,14 +1,12 @@
 ---
-displayName: "إشعار: بريد إلكتروني"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  يُستخدم لإرسال الإشعارات عبر البريد الإلكتروني، ويدعم حاليًا طريقة نقل SMTP.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# إشعار: بريد إلكتروني
+# Notification: Email

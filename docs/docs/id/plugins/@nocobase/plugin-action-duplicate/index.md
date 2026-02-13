@@ -1,14 +1,15 @@
 ---
-displayName: "Aksi: Duplikasi Catatan"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Menduplikasi sebuah catatan. Anda dapat menduplikasinya ke dalam formulir untuk diedit sebelum disimpan, atau langsung menduplikasinya untuk membuat catatan baru.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Duplikasi Catatan
+# Action: Duplicate record

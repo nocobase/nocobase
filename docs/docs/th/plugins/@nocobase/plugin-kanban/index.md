@@ -1,14 +1,12 @@
 ---
-displayName: "บล็อก: คัมบัง"
+displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |
-  มีบล็อกคัมบังให้ใช้งาน
+  Provides kanban block.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# บล็อก: คัมบัง
+# Block: Kanban

@@ -1,15 +1,15 @@
 ---
-displayName: "Рабочий процесс: Утверждение"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Запускается при подаче запроса на утверждение через кнопку действия или API. Предназначен для процессов утверждения, содержит эксклюзивный узел утверждения и блок для управления документами и отслеживания хода их обработки.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Утверждение
+# Workflow: Approval

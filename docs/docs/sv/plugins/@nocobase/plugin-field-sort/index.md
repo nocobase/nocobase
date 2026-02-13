@@ -1,15 +1,12 @@
 ---
-displayName: "Samlingsfält: Sortering"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Används för att sortera data i en samling.
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Samlingsfält: Sortering
+# Collection field: Sort

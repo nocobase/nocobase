@@ -1,14 +1,12 @@
 ---
-displayName: "הגדרות רישיון"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  הגדרות מזהה מופע (Instance ID) ומפתח רישיון
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# הגדרות רישיון
+# License settings

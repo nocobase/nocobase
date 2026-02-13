@@ -1,14 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: प्रतिक्रिया संदेश"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  फॉर्म इवेंट और अनुरोध इंटरसेप्शन वर्कफ़्लो में क्लाइंट को प्रतिक्रिया संदेश तैयार करने और दिखाने के लिए इसका उपयोग किया जाता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Used for assemble response message and showing to client in form event and request interception workflows.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: प्रतिक्रिया संदेश
+# Workflow: Response message

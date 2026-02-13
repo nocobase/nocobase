@@ -1,14 +1,12 @@
 ---
-displayName: "Tài liệu API"
+displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
-  Trình tạo tài liệu OpenAPI cho API HTTP của NocoBase.
+  An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Tài liệu API
+# API documentation

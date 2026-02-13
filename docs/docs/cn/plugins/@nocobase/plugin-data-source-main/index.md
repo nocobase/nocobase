@@ -6,6 +6,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 数据源：主数据库

@@ -1,16 +1,12 @@
 ---
-displayName: "Uživatelé"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  Poskytuje základní uživatelský model a pole pro „vytvořil“ a „naposledy aktualizoval“.
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Uživatelé
+# Users

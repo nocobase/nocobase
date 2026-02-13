@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: Manuální uzel"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Slouží pro pracovní postupy, kde jsou některá rozhodnutí řízena ručně uživateli.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Manuální uzel
+# Workflow: Manual node

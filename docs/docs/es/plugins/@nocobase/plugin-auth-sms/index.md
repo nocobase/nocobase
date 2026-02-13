@@ -1,14 +1,12 @@
 ---
-displayName: "Autenticación: SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  Permite autenticar su identidad mediante un código de verificación por SMS.
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Autenticación: SMS
+# Auth: SMS

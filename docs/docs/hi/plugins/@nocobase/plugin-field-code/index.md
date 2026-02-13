@@ -1,14 +1,15 @@
 ---
-displayName: "संग्रह फ़ील्ड: कोड"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  कोड को संपादित करने और हाइलाइट करने के लिए उपयोग किया जाता है। यह जावा, जावास्क्रिप्ट, पायथन, एसक्यूएल और अन्य भाषाओं का समर्थन करता है।
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: कोड
+# Collection field: Code

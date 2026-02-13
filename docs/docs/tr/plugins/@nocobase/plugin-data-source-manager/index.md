@@ -1,14 +1,12 @@
 ---
-displayName: "Veri Kaynağı Yönetimi"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Yerleşik Master veritabanı, harici veritabanları, API'ler vb. dahil olmak üzere veri kaynaklarını yönetin.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Veri Kaynağı Yönetimi
+# Data source manager

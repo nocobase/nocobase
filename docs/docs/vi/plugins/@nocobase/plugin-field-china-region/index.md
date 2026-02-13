@@ -1,14 +1,12 @@
 ---
-displayName: "Trường bộ sưu tập: Phân cấp hành chính Trung Quốc"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Cung cấp dữ liệu và kiểu trường cho phân cấp hành chính Trung Quốc.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Phân cấp hành chính Trung Quốc
+# Collection field: administrative divisions of China

@@ -1,15 +1,12 @@
 ---
-displayName: "ワークフロー：CC"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
----
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
-  ワークフローでCC（カーボンコピー）機能を提供し、承認やその他の情報を特定のユーザーにCC送信できるようにします
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
+---
 
-# ワークフロー：CC
+# Workflow: CC

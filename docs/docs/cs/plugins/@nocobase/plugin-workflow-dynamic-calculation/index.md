@@ -1,16 +1,15 @@
 ---
-displayName: "Pracovní postup: Uzel pro dynamický výpočet"
+displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  Slouží k provádění dynamických výpočtů na základě datových řádků v pracovním postupu.
+  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
+# Workflow: Dynamic calculation node
 
-
-# Pracovní postup: Uzel pro dynamický výpočet
+> Note: This plugin is deprecated.

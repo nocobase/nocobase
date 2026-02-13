@@ -1,14 +1,12 @@
 ---
-displayName: "Gegevensbronbeheer"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Beheer gegevensbronnen, waaronder de ingebouwde Master-database, externe databases en API's.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Gegevensbronbeheer
+# Data source manager

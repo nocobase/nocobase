@@ -1,14 +1,12 @@
 ---
-displayName: "API ドキュメント"
+displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
-  NocoBase HTTP API の OpenAPI ドキュメントジェネレーターです
+  An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# API ドキュメント
+# API documentation

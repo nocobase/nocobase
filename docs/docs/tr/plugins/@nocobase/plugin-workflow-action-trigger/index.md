@@ -1,14 +1,12 @@
 ---
-displayName: 'İş Akışı: İşlem Sonrası Olay'
+displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  Bir işlem düğmesi veya API aracılığıyla başlatılan bir isteğin tamamlanmasının ardından tetiklenir. Örneğin, veri ekleme, güncelleme, silme veya 'iş akışına gönderme" gibi işlemlerden sonra. İşlemler tamamlandıktan sonra veri işleme, bildirim gönderme vb. için uygundur.
+  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: İşlem Sonrası Olay
+# Workflow: Post-action event

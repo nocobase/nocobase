@@ -1,17 +1,15 @@
 ---
-displayName: "Grafy (zastaralé)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  Tento plugin je zastaralý. Místo něj prosím použijte plugin pro vizualizaci dat.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Grafy (zastaralé)
+# Charts (deprecated)
 
-> Poznámka: Tento plugin je zastaralý.
+> Note: This plugin is deprecated.

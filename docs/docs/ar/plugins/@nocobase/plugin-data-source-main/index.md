@@ -1,15 +1,12 @@
 ---
-displayName: "مصدر البيانات: الرئيسي"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  قاعدة البيانات الرئيسية لـ NocoBase، تدعم قواعد البيانات العلائقية مثل PostgreSQL و MySQL و MariaDB وغيرها.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# مصدر البيانات: الرئيسي
+# Data source: Main

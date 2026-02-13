@@ -1,14 +1,12 @@
 ---
-displayName: "Cài đặt giấy phép"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  Cài đặt ID phiên bản và khóa giấy phép
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Cài đặt giấy phép
+# License settings

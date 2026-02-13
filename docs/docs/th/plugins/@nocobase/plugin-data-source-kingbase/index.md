@@ -1,15 +1,15 @@
 ---
-displayName: "แหล่งข้อมูล: KingbaseES"
+displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  ใช้ฐานข้อมูล KingbaseES เป็นแหล่งข้อมูล สามารถใช้เป็นฐานข้อมูลหลัก หรือเป็นฐานข้อมูลภายนอกก็ได้
+  Using the KingbaseES database as a data source, it can serve as the main database or as an external database.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แหล่งข้อมูล: KingbaseES
+# Data source: KingbaseES

@@ -1,14 +1,12 @@
 ---
-displayName: 'वर्कफ़्लो: ऑपरेशन के बाद की घटना'
+displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  किसी एक्शन बटन या API के माध्यम से शुरू किए गए अनुरोध के पूरा होने के बाद ट्रिगर होता है, जैसे डेटा जोड़ने, अपडेट करने, हटाने, या 'वर्कफ़्लो में सबमिट करें" के बाद। यह कार्यवाही पूरी होने के बाद डेटा प्रोसेसिंग, सूचनाएं भेजने आदि के लिए उपयुक्त है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: ऑपरेशन के बाद की घटना
+# Workflow: Post-action event

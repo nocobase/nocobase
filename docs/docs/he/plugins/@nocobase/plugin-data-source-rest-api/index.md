@@ -1,18 +1,15 @@
 ---
-displayName: "מקור נתונים: REST API"
+displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  השתמשו במקורות נתונים חיצוניים מסוג REST API.
+  Use external REST API data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 1
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מקור נתונים: REST API
+# Data source: REST API

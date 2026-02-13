@@ -1,19 +1,14 @@
 ---
-displayName: "ฝัง NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  ฝัง NocoBase ลงในระบบหรือหน้าเว็บภายนอก เพื่อให้ NocoBase เป็นส่วนหนึ่งของระบบหรือหน้าเว็บนั้นๆ ครับ/ค่ะ
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# ฝัง NocoBase
+# Embed NocoBase

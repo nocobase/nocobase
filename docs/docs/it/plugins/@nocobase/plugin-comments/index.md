@@ -1,18 +1,15 @@
 ---
-displayName: "Commenti"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Fornisce un modello di collezione e un blocco per i commenti, consentendo di aggiungere la funzionalità di commento a qualsiasi collezione.
+  Provides comment collection template and block to add commenting functionality for any collection.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+points: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Commenti
+# Comments

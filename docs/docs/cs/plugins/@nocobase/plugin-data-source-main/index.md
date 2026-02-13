@@ -1,14 +1,12 @@
 ---
-displayName: "Zdroj dat: Hlavní"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  Hlavní databáze NocoBase, podporuje relační databáze jako jsou PostgreSQL, MySQL, MariaDB a další.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Zdroj dat: Hlavní
+# Data source: Main

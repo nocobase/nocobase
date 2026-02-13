@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: węzeł powiadomień"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Umożliwia wysyłanie różnego rodzaju powiadomień w ramach przepływu pracy.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: węzeł powiadomień
+# Workflow: notification node

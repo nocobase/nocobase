@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: HTTP-verzoekknooppunt"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Verstuur HTTP-verzoeken naar elke HTTP-service voor gegevensuitwisseling binnen een workflow.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: HTTP-verzoekknooppunt
+# Workflow: HTTP request node

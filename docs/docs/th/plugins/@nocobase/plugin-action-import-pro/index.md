@@ -1,18 +1,15 @@
 ---
-displayName: "การดำเนินการ: นำเข้ารายการโปร"
+displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  เพิ่มประสิทธิภาพความสามารถในการนำเข้าข้อมูล รองรับการนำเข้าแบบอะซิงโครนัสสำหรับข้อมูลปริมาณมาก รวมถึงคุณสมบัติสำหรับการจดจำการประมวลผลข้อมูล การอัปเดตข้อมูล และการทริกเกอร์เวิร์กโฟลว์
+  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การดำเนินการ: นำเข้ารายการโปร
+# Action: Import records Pro

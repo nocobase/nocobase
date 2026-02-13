@@ -1,17 +1,14 @@
 ---
-displayName: "Đa không gian"
+displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Triển khai nhiều không gian dữ liệu độc lập trong một phiên bản ứng dụng duy nhất thông qua cơ chế cách ly logic.
+  Implements multiple independent data spaces within a single application instance through logical isolation.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Đa không gian
+# Multi-space

@@ -1,14 +1,12 @@
 ---
-displayName: "התראה: הודעה פנימית"
+displayName: "Notification: In-app message"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |
-  התוסף מאפשר למשתמשים לקבל התראות והודעות בזמן אמת בתוך אפליקציית NocoBase.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: לא נכון
+  It supports users in receiving real-time message notifications within the NocoBase application.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# התראה: הודעה פנימית
+# Notification: In-app message

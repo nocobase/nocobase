@@ -1,16 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: SQL नोड"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  इसका उपयोग वर्कफ़्लो में डेटाबेस पर कोई भी SQL स्टेटमेंट चलाने के लिए किया जा सकता है।
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# वर्कफ़्लो: SQL नोड
+# Workflow: SQL node

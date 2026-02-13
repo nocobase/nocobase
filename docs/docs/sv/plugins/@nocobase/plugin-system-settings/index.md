@@ -1,16 +1,12 @@
 ---
-displayName: "Systeminställningar"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Används för att justera systemets titel, logotyp, språk med mera.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-
-# Systeminställningar
+# System settings

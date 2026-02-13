@@ -1,15 +1,15 @@
 ---
-displayName: "Samlingsfält: Kod"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  För kodredigering och syntaxmarkering, med stöd för språk som Java, JavaScript, Python, SQL med flera.
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Samlingsfält: Kod
+# Collection field: Code

@@ -1,17 +1,14 @@
 ---
-displayName: "Blok: Formularz wieloetapowy"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Dzieli formularz zawierający wiele pól na kilka etapów, aby ułatwić użytkownikom jego wypełnianie.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Blok: Formularz wieloetapowy
+# Block: Multi-step form

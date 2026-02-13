@@ -1,5 +1,5 @@
 ---
-displayName: "Collectie delen tussen meerdere apps"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,12 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
+# Multi-app share collection
 
-# Collectie delen tussen meerdere apps
-
-> Let op: Deze plugin is afgeschreven (deprecated).
+> Note: This plugin is deprecated.

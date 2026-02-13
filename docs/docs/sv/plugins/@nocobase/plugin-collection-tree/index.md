@@ -1,15 +1,12 @@
 ---
-displayName: "Samling: Träd"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Tillhandahåller en mall för träd-samlingar.
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Samling: Träd
+# Collection: Tree

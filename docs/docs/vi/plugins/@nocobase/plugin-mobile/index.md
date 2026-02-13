@@ -1,14 +1,12 @@
 ---
-displayName: "Di động (đã ngừng hỗ trợ)"
+displayName: "Mobile (deprecated)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Cung cấp khả năng cấu hình các trang dành cho thiết bị di động.
+  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Di động (đã ngừng hỗ trợ)
+# Mobile (deprecated)

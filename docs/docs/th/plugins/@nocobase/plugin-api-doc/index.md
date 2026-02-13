@@ -1,14 +1,12 @@
 ---
-displayName: "เอกสาร API"
+displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
-  เครื่องมือสร้างเอกสาร OpenAPI สำหรับ NocoBase HTTP API
+  An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เอกสาร API
+# API documentation

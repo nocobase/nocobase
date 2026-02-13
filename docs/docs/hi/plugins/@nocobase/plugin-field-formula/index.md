@@ -1,14 +1,12 @@
 ---
-displayName: "संग्रह फ़ील्ड: फ़ॉर्मूला"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  आप एक ही रिकॉर्ड के कई फ़ील्ड मानों के बीच गणना के परिणामों को कॉन्फ़िगर और संग्रहीत कर सकते हैं, जो Math.js और Excel फ़ॉर्मूला फ़ंक्शन दोनों को सपोर्ट करता है।
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: फ़ॉर्मूला
+# Collection field: Formula

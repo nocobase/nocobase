@@ -1,17 +1,14 @@
 ---
-displayName: "다중 앱"
+displayName: "Multi-app"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
-  하나의 부모 앱 내에서 여러 독립적인 하위 앱 인스턴스를 생성하고, 관리하며, 실행합니다.
+  Creates, manages, and runs multiple independent sub-application instances within a parent application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 다중 앱
+# Multi-app

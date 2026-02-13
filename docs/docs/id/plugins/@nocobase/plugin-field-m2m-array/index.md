@@ -1,14 +1,12 @@
 ---
-displayName: "Bidang Koleksi: Banyak ke Banyak (array)"
+displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  Mendukung pembuatan relasi banyak ke banyak dengan menyimpan array kunci unik dari tabel target.
+  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Bidang Koleksi: Banyak ke Banyak (array)
+# Collection field: Many to many (array)

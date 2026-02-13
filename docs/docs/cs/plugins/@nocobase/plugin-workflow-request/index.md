@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: Uzel HTTP požadavku"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Umožňuje v pracovním postupu odesílat HTTP požadavky na libovolnou HTTP službu pro interakci s daty.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Uzel HTTP požadavku
+# Workflow: HTTP request node

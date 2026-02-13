@@ -1,18 +1,15 @@
 ---
-displayName: "Block: mall (föråldrad)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Skapa och hantera blockmallar för återanvändning på sidor.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+# Block: template (deprecated)
 
-# Block: mall (föråldrad)
-
-> Observera: Detta plugin är föråldrat.
+> Note: This plugin is deprecated.

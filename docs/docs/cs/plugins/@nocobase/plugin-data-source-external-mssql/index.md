@@ -1,18 +1,15 @@
 ---
-displayName: "Zdroj dat: Externí SQL Server"
+displayName: "Data source: External SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Použijte externí databáze SQL Server jako zdroje dat.
+  Use external SQL Server databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Zdroj dat: Externí SQL Server
+# Data source: External SQL Server

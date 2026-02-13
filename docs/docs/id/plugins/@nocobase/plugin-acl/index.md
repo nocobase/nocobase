@@ -1,14 +1,15 @@
 ---
-displayName: "Kontrol Akses"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Kontrol akses berdasarkan peran, sumber daya, dan tindakan, yang dapat secara tepat mengelola izin konfigurasi antarmuka, izin operasi data, izin akses menu, dan izin plugin.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kontrol Akses
+# Access control

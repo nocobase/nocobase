@@ -1,14 +1,12 @@
 ---
-displayName: "Localização"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Permite gerenciar os recursos de localização do aplicativo.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Localização
+# Localization

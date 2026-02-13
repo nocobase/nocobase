@@ -1,14 +1,12 @@
 ---
-displayName: "Поле коллекции: Автоматическая нумерация"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Автоматически генерирует коды на основе настроенных правил, поддерживая комбинации дат, чисел и текста.
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Поле коллекции: Автоматическая нумерация
+# Collection field: Sequence

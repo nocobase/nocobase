@@ -1,14 +1,12 @@
 ---
-displayName: "Dateimanager"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Bietet Dateispeicherdienste und stellt eine Dateisammlungsvorlage sowie ein Anhangsfeld bereit.
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Dateimanager
+# File manager

@@ -1,14 +1,12 @@
 ---
-displayName: "WEB İstemcisi"
+displayName: "WEB client"
 packageName: '@nocobase/plugin-client'
 description: |
-  NocoBase sunucusu için bir istemci arayüzü sağlar.
+  Provides a client interface for the NocoBase server
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# WEB İstemcisi
+# WEB client

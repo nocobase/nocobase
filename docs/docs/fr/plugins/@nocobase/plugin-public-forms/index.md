@@ -1,14 +1,12 @@
 ---
-displayName: "Formulaires publics"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Partagez des formulaires publics en externe pour collecter des informations auprès d'utilisateurs anonymes.
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Formulaires publics
+# Public forms

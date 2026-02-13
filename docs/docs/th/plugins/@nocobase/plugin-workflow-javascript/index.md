@@ -1,18 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: โหนด JavaScript"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  รันโค้ด JavaScript ในสภาพแวดล้อม Node.js ที่แยกออกมา
+  Execute a piece of JavaScript in an isolated Node.js environment.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: โหนด JavaScript
+# Workflow: JavaScript

@@ -1,14 +1,12 @@
 ---
-displayName: "Nhân viên AI"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
 description: |
-  Tạo các nhân viên AI với nhiều kỹ năng khác nhau để hợp tác với con người, xây dựng hệ thống và xử lý các hoạt động kinh doanh.
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Nhân viên AI
+# AI employees

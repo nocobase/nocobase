@@ -1,14 +1,12 @@
 ---
-displayName: "Trường bộ sưu tập: Sắp xếp"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Dùng để sắp xếp dữ liệu trong một bộ sưu tập.
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Sắp xếp
+# Collection field: Sort

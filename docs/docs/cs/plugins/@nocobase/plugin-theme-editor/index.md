@@ -1,14 +1,12 @@
 ---
-displayName: "Editor témat"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Přizpůsobte barvy, velikosti a další prvky uživatelského rozhraní a uložte výsledek jako téma, mezi kterými můžete přepínat.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Editor témat
+# Theme editor

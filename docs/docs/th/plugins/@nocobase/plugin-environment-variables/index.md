@@ -1,14 +1,12 @@
 ---
-displayName: "ตัวแปรและคีย์"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  การจัดการตัวแปรสภาพแวดล้อมและคีย์แบบรวมศูนย์ ใช้สำหรับจัดเก็บข้อมูลที่ละเอียดอ่อน การนำข้อมูลการกำหนดค่ากลับมาใช้ใหม่ การแยกสภาพแวดล้อมหลายแบบ และอื่นๆ
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวแปรและคีย์
+# Variables and secrets

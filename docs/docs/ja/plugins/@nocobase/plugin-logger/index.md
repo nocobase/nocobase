@@ -1,14 +1,12 @@
 ---
-displayName: "ロガー"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  サーバーサイドのログで、主にAPIリクエストログやシステム実行ログが含まれます。ログファイルのパッケージ化やダウンロードにも対応しています
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ロガー
+# Logger

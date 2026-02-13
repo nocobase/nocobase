@@ -1,14 +1,12 @@
 ---
-displayName: "बहु-ऐप प्रबंधक (अप्रचलित)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  बहु-ऐप एप्लिकेशन को प्रोसेस-शेयरिंग तरीके से चलाता है, जो केवल परीक्षण और डेमो वातावरण के लिए उपयुक्त है। इसे उत्पादन वातावरण में उपयोग न करें।
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# बहु-ऐप प्रबंधक (अप्रचलित)
+# Multi-app manager (deprecated)

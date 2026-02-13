@@ -2,13 +2,11 @@
 displayName: "Block: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
-  Stellt einen Markdown-Block bereit.
+  Provide Markdown block
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
 # Block: Markdown

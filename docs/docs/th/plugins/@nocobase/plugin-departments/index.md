@@ -1,14 +1,12 @@
 ---
-displayName: "แผนก"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  ช่วยให้คุณจัดระเบียบผู้ใช้ตามแผนก กำหนดความสัมพันธ์แบบลำดับชั้นระหว่างแผนก ผูกบทบาทเพื่อควบคุมสิทธิ์การเข้าถึง และยังสามารถใช้แผนกเป็นตัวแปรในเวิร์กโฟลว์และนิพจน์ได้อีกด้วย
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แผนก
+# Departments

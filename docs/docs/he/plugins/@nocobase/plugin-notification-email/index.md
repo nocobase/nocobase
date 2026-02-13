@@ -1,14 +1,12 @@
 ---
-displayName: "התראה: דוא\\\"ל"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  משמש לשליחת התראות באמצעות דוא"ל, עם תמיכה מובנית ב-SMTP.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# התראה: דוא"ל
+# Notification: Email

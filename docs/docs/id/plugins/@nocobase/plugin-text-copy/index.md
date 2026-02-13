@@ -1,14 +1,12 @@
 ---
-displayName: "Salin Teks"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Tambahkan tombol salin ke bidang teks
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Salin Teks
+# Text copy

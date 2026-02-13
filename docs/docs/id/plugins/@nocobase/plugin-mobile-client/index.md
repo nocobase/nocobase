@@ -1,17 +1,15 @@
 ---
-displayName: "Klien Seluler (Tidak Digunakan Lagi)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Menyediakan kemampuan untuk mengonfigurasi halaman seluler.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Klien Seluler (Tidak Digunakan Lagi)
+# Mobile client(Deprecated)
 
-> Catatan: Plugin ini tidak digunakan lagi.
+> Note: This plugin is deprecated.

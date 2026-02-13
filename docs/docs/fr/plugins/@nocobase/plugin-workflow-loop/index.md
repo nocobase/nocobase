@@ -1,16 +1,12 @@
 ---
-displayName: "Flux de travail : Nœud de boucle"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Permet de répéter le traitement d'un sous-flux de travail pour chaque valeur d'un tableau, ou de répéter un sous-flux de travail un nombre fixe de fois.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-
-
-# Flux de travail : Nœud de boucle
+# Workflow: Loop node

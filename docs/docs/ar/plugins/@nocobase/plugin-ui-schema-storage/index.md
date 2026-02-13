@@ -1,15 +1,12 @@
 ---
-displayName: "تخزين مخطط الواجهة الرسومية"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  توفر خدمة مركزية لتخزين مخطط الواجهة الرسومية.
+  Provides centralized UI schema storage service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# تخزين مخطط الواجهة الرسومية
+# UI schema storage

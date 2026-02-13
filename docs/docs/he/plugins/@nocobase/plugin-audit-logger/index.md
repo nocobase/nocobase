@@ -1,18 +1,15 @@
 ---
-displayName: "יומני ביקורת"
+displayName: "Audit logs"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  עוקב ומתעד פעילויות משתמשים ופעולות משאבים ברחבי המערכת.
+  Track and document user activities and resource actions across the system
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# יומני ביקורת
+# Audit logs

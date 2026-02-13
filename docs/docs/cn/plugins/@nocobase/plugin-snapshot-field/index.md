@@ -7,6 +7,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # 数据表字段：关系快照

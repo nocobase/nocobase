@@ -1,14 +1,12 @@
 ---
-displayName: 'المستخدمون'
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  توفر نموذج المستخدم الأساسي، بالإضافة إلى حقلي 'تم الإنشاء بواسطة" و "آخر تحديث بواسطة".
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# المستخدمون
+# Users

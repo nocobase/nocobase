@@ -1,17 +1,12 @@
 ---
-displayName: "Luồng công việc: Ánh xạ biến JSON"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  Dùng để ánh xạ bất kỳ dữ liệu JSON nào thành các biến có cấu trúc, để các nút tiếp theo sử dụng.
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Ánh xạ biến JSON
+# Workflow: JSON variable mapping

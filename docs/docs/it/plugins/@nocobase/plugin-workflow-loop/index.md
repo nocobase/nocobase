@@ -1,14 +1,12 @@
 ---
-displayName: "Flusso di lavoro: Nodo Loop"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Permette di elaborare ripetutamente un sotto-processo per ciascun valore di un array, oppure di ripetere un sotto-processo per un numero fisso di volte.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Flusso di lavoro: Nodo Loop
+# Workflow: Loop node

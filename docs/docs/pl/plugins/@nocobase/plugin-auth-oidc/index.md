@@ -1,18 +1,15 @@
 ---
-displayName: "Uwierzytelnianie: OIDC"
+displayName: "Auth: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Uwierzytelnianie za pomocą protokołu OIDC (OpenID Connect).
+  OIDC (OpenID Connect) authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Uwierzytelnianie: OIDC
+# Auth: OIDC

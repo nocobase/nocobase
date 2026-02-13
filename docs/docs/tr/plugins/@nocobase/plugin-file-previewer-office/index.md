@@ -1,14 +1,12 @@
 ---
-displayName: "Office Dosya Önizleyici"
+displayName: "Office File Previewer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  Microsoft'un çevrimiçi önizleme hizmeti aracılığıyla Office dosyalarını önizlemek için bir eklenti.
+  A plugin for previewing office files via Microsoft live preview service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Office Dosya Önizleyici
+# Office File Previewer

@@ -1,14 +1,12 @@
 ---
-displayName: "Lokalizace"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Umožňuje spravovat lokalizační zdroje aplikace.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Lokalizace
+# Localization

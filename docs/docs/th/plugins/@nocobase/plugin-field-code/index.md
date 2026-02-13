@@ -1,14 +1,15 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: โค้ด"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  สำหรับแก้ไขโค้ดและเน้นข้อความ (highlight) รองรับภาษาต่างๆ เช่น Java, JavaScript, Python, SQL และอื่นๆ
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟิลด์คอลเลกชัน: โค้ด
+# Collection field: Code

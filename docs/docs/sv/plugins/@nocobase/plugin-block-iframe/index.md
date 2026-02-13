@@ -2,14 +2,11 @@
 displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  Skapa ett iframe-block på sidan för att bädda in och visa externa webbsidor eller innehåll.
+  Create an iframe block on the page to embed and display external web pages or content.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
-
 
 # Block: iframe

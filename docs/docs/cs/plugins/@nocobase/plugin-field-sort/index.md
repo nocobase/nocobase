@@ -1,14 +1,12 @@
 ---
-displayName: "Pole kolekce: Řazení"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Slouží k řazení dat v kolekci.
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pole kolekce: Řazení
+# Collection field: Sort

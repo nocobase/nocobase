@@ -1,14 +1,12 @@
 ---
-displayName: "Authenticatie"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  Beheer van gebruikersauthenticatie, inclusief wachtwoord, sms en ondersteuning voor Single Sign-On (SSO) protocollen, met uitbreidingsmogelijkheden.
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Authenticatie
+# Authentication

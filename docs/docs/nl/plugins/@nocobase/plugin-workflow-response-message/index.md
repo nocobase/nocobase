@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: Antwoordbericht"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Wordt gebruikt om antwoordberichten samen te stellen en weer te geven aan de client binnen workflows voor formuliergebeurtenissen en verzoekonderschepping.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: Antwoordbericht
+# Workflow: Response message

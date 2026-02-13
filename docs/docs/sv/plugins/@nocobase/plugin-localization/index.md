@@ -1,15 +1,12 @@
 ---
-displayName: "Lokalisering"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Stöder hantering av applikationens lokaliseringsresurser.
-isFree: sant
-builtIn: sant
-defaultEnabled: falskt
+  Allows to manage localization resources of the application.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Lokalisering
+# Localization

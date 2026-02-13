@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /*
- * Generate plugin docs for CN and EN based on package.json metadata in
+ * Generate plugin docs for all locales based on package.json metadata in
  * packages/plugins/@nocobase and packages/pro-plugins/@nocobase.
  *
- * - CN output:   docs/docs/cn/plugins/@nocobase/<plugin>/index.md
- * - EN output:   docs/docs/en/plugins/@nocobase/<plugin>/index.md
+ * Output: <lang>/plugins/@nocobase/<plugin>/index.md
  *
  * Rules:
- * - displayName:   package.json.displayName (EN) / displayName.zh-CN (CN) fallback to package name
- * - description:   package.json.description (EN) / description.zh-CN (CN)
+ * - CN: displayName.zh-CN, description.zh-CN (fallback to EN)
+ * - All others (ar, cs, de, en, es, fr, he, hi, id, it, ja, ko, nl, pl, pt, ru, sv, th, tr, uk, vi): displayName, description (EN)
  * - supportedVersions: ["2.x"] (default)
  * - isFree:        true for community plugins; false for pro-plugins
  * - defaultInstalled: false by default (do not guess)
@@ -22,8 +21,31 @@ const ROOT = path.resolve(__dirname, '..');
 const COMMUNITY_DIR = path.join(ROOT, 'packages', 'plugins', '@nocobase');
 const PRO_DIR = path.join(ROOT, 'packages', 'pro-plugins', '@nocobase');
 
-const OUT_CN_ROOT = path.join(ROOT, 'docs', 'docs', 'cn', 'plugins');
-const OUT_EN_ROOT = path.join(ROOT, 'docs', 'docs', 'en', 'plugins');
+const DOCS_ROOT = path.join(ROOT, 'docs', 'docs');
+const LOCALES = [
+  'ar',
+  'cn',
+  'cs',
+  'de',
+  'en',
+  'es',
+  'fr',
+  'he',
+  'hi',
+  'id',
+  'it',
+  'ja',
+  'ko',
+  'nl',
+  'pl',
+  'pt',
+  'ru',
+  'sv',
+  'th',
+  'tr',
+  'uk',
+  'vi',
+];
 
 // Load preset deprecated list (optional)
 const PRESET_PKG = path.join(ROOT, 'packages', 'presets', 'nocobase', 'package.json');
@@ -65,6 +87,9 @@ function toFrontmatter({
   points,
   editionLevel,
 }) {
+  if (isFree) {
+    editionLevel = 0;
+  }
   const lines = [
     '---',
     `displayName: "${yamlEscape(displayName)}"`,
@@ -115,26 +140,17 @@ function generateForPlugin(dir, { isPro }) {
   if (!pkgJson['displayName']) {
     const pluginNameToDelete = packageName.split('/')[1];
     const targetBaseDel = path.join('@nocobase', pluginNameToDelete);
-    const cnFileDel = path.join(OUT_CN_ROOT, targetBaseDel, 'index.md');
-    const enFileDel = path.join(OUT_EN_ROOT, targetBaseDel, 'index.md');
-    if (fs.existsSync(cnFileDel)) {
-      try {
-        fs.unlinkSync(cnFileDel);
-        // eslint-disable-next-line no-console
-        console.log('Deleted', cnFileDel);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Failed to delete', cnFileDel, e.message);
-      }
-    }
-    if (fs.existsSync(enFileDel)) {
-      try {
-        fs.unlinkSync(enFileDel);
-        // eslint-disable-next-line no-console
-        console.log('Deleted', enFileDel);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Failed to delete', enFileDel, e.message);
+    for (const lang of LOCALES) {
+      const fileDel = path.join(DOCS_ROOT, lang, 'plugins', targetBaseDel, 'index.md');
+      if (fs.existsSync(fileDel)) {
+        try {
+          fs.unlinkSync(fileDel);
+          // eslint-disable-next-line no-console
+          console.log('Deleted', fileDel);
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn('Failed to delete', fileDel, e.message);
+        }
       }
     }
     // eslint-disable-next-line no-console
@@ -159,19 +175,16 @@ function generateForPlugin(dir, { isPro }) {
 
   const targetBase = path.join('@nocobase', pluginName);
 
-  const outCnDir = path.join(OUT_CN_ROOT, targetBase);
-  const outEnDir = path.join(OUT_EN_ROOT, targetBase);
-  ensureDir(outCnDir);
-  ensureDir(outEnDir);
+  for (const lang of LOCALES) {
+    const outDir = path.join(DOCS_ROOT, lang, 'plugins', targetBase);
+    ensureDir(outDir);
+    const outFile = path.join(outDir, 'index.md');
 
-  const cnFile = path.join(outCnDir, 'index.md');
-  const enFile = path.join(outEnDir, 'index.md');
-
-  {
-    const contentCN = toFrontmatter({
-      displayName: displayNameCN,
+    const useCN = lang === 'cn';
+    const content = toFrontmatter({
+      displayName: useCN ? displayNameCN : displayNameEN,
       packageName,
-      description: descriptionCN,
+      description: useCN ? descriptionCN : descriptionEN,
       isFree,
       builtIn,
       defaultEnabled,
@@ -180,27 +193,9 @@ function generateForPlugin(dir, { isPro }) {
       points,
       editionLevel,
     });
-    fs.writeFileSync(cnFile, contentCN, 'utf8');
+    fs.writeFileSync(outFile, content, 'utf8');
     // eslint-disable-next-line no-console
-    console.log('Written', cnFile);
-  }
-
-  {
-    const contentEN = toFrontmatter({
-      displayName: displayNameEN,
-      packageName,
-      description: descriptionEN,
-      isFree,
-      builtIn,
-      defaultEnabled,
-      deprecated,
-      supportedVersions,
-      points,
-      editionLevel,
-    });
-    fs.writeFileSync(enFile, contentEN, 'utf8');
-    // eslint-disable-next-line no-console
-    console.log('Written', enFile);
+    console.log('Written', outFile);
   }
 }
 

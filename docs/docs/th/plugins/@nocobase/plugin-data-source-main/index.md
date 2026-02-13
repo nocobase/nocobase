@@ -1,14 +1,12 @@
 ---
-displayName: "แหล่งข้อมูล: ฐานข้อมูลหลัก"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  ฐานข้อมูลหลักของ NocoBase รองรับฐานข้อมูลเชิงสัมพันธ์ เช่น PostgreSQL, MySQL, MariaDB และอื่นๆ
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แหล่งข้อมูล: ฐานข้อมูลหลัก
+# Data source: Main

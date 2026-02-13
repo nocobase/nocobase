@@ -1,17 +1,15 @@
 ---
-displayName: "Pencadangan & Pemulihan Aplikasi (Usang)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Mencadangkan dan memulihkan aplikasi, dapat digunakan untuk skenario seperti replikasi, migrasi, dan peningkatan aplikasi.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Pencadangan & Pemulihan Aplikasi (Usang)
+# App backup & restore (deprecated)
 
-> Catatan: Plugin ini sudah usang.
+> Note: This plugin is deprecated.

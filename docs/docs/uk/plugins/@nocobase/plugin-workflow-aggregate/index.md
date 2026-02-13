@@ -1,14 +1,12 @@
 ---
-displayName: "Робочий процес: Вузол агрегації"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Використовується для агрегації даних у базі даних в рамках робочого процесу, наприклад: підрахунок кількості, сума, середнє значення тощо.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Робочий процес: Вузол агрегації
+# Workflow: Aggregate node

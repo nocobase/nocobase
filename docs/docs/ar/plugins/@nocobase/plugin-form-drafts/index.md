@@ -1,17 +1,14 @@
 ---
-displayName: "مسودات النماذج"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  تتيح للمستخدمين حفظ مسودات النماذج أثناء تعبئتها، ومتابعة التعديل والإرسال لاحقًا.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# مسودات النماذج
+# Form drafts

@@ -1,18 +1,15 @@
 ---
-displayName: "Impressão de Modelo"
+displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permite que os usuários imprimam modelos dentro do aplicativo NocoBase.
+  It supports users in printing templates within the NocoBase application.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Impressão de Modelo
+# Template print

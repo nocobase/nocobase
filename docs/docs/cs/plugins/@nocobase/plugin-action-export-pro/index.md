@@ -1,18 +1,15 @@
 ---
-displayName: "Akce: Export záznamů Pro"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Rozšiřuje možnosti exportu dat. Umožňuje asynchronní export pro zpracování velkých objemů dat a podporuje export příloh.
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Akce: Export záznamů Pro
+# Action: Export records Pro

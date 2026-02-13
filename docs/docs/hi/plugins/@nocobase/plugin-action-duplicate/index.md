@@ -1,14 +1,15 @@
 ---
-displayName: "ऑपरेशन: रिकॉर्ड डुप्लीकेट करें"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  आप किसी रिकॉर्ड को डुप्लीकेट कर सकते हैं। आप इसे किसी फ़ॉर्म में डुप्लीकेट करके सबमिट करने से पहले संपादित कर सकते हैं, या फिर सीधे डुप्लीकेट करके एक नया रिकॉर्ड बना सकते हैं।
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ऑपरेशन: रिकॉर्ड डुप्लीकेट करें
+# Action: Duplicate record

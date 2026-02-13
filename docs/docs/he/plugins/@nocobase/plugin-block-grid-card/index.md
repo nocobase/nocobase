@@ -1,14 +1,12 @@
 ---
-displayName: "בלוק: כרטיס רשת"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  מציג נתונים ברשימת רשת, עם תמיכה בחלוקה לעמודים.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# בלוק: כרטיס רשת
+# Block: GridCard

@@ -1,15 +1,12 @@
 ---
-displayName: "Block: Åtgärdspanel"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Hantera och visa olika åtgärder centralt, vilket gör det enkelt för användare att snabbt utföra uppgifter. Stöder utbyggbarhet, och de nuvarande åtgärdstyperna inkluderar popup-fönster, länkar, skanning och anpassade förfrågningar.
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Block: Åtgärdspanel
+# Block: Action panel

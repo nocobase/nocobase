@@ -1,18 +1,15 @@
 ---
-displayName: "Przepływ pracy: Podprzepływ"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Służy do wywoływania innych przepływów pracy w ramach jednego przepływu pracy. Może Pan/Pani użyć zmiennych bieżącego przepływu pracy jako danych wejściowych podprzepływu oraz wykorzystać dane wyjściowe podprzepływu jako zmienne bieżącego przepływu pracy.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Podprzepływ
+# Workflow: Subflow

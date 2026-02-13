@@ -1,15 +1,12 @@
 ---
-displayName: "Förhandsgranskning av Office-filer"
+displayName: "Office File Previewer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  Ett plugin för att förhandsgranska Office-filer via Microsofts online-tjänst.
+  A plugin for previewing office files via Microsoft live preview service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Förhandsgranskning av Office-filer
+# Office File Previewer

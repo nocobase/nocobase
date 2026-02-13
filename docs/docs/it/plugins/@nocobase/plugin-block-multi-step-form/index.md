@@ -1,17 +1,14 @@
 ---
-displayName: "Blocco: Modulo a più passaggi"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Divide un modulo con molti campi in più passaggi per alleggerire il carico dell'utente.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Blocco: Modulo a più passaggi
+# Block: Multi-step form

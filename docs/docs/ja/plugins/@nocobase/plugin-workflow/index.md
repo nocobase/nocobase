@@ -1,14 +1,12 @@
 ---
-displayName: "ワークフロー"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  ビジネス自動化の基盤をサポートする強力なBPMツールで、トリガーやノードを自由に拡張できます
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ワークフロー
+# Workflow

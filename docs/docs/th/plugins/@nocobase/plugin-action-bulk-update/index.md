@@ -1,14 +1,15 @@
 ---
-displayName: "แอคชัน: อัปเดตแบบกลุ่ม"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  อัปเดตข้อมูลทั้งหมดหรือข้อมูลที่เลือกแบบกลุ่ม
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แอคชัน: อัปเดตแบบกลุ่ม
+# Action: Batch update

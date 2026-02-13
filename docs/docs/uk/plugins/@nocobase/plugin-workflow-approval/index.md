@@ -1,15 +1,15 @@
 ---
-displayName: "Робочий процес: Схвалення"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Запускається, коли запит на схвалення ініціюється за допомогою кнопки дії або API. Призначений для процесу схвалення, має ексклюзивний вузол схвалення та блок для керування документами та відстеження процесу обробки.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Робочий процес: Схвалення
+# Workflow: Approval

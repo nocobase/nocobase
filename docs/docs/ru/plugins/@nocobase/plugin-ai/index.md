@@ -1,14 +1,12 @@
 ---
-displayName: "AI сотрудники"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
 description: |
-  Создавайте AI-сотрудников с различными навыками для совместной работы с людьми, создания систем и обработки бизнес-операций.
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# AI сотрудники
+# AI employees

@@ -1,14 +1,12 @@
 ---
-displayName: "Bidang Koleksi: Pembagian Wilayah Administratif Tiongkok"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Menyediakan data dan tipe bidang untuk pembagian wilayah administratif Tiongkok.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Bidang Koleksi: Pembagian Wilayah Administratif Tiongkok
+# Collection field: administrative divisions of China

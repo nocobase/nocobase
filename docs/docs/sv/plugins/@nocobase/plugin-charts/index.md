@@ -1,18 +1,15 @@
 ---
-displayName: "Diagram (föråldrad)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  Detta plugin har utgått. Använd pluginet för datavisualisering istället.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+# Charts (deprecated)
 
-# Diagram (föråldrad)
-
-> Observera: Detta plugin är föråldrat.
+> Note: This plugin is deprecated.

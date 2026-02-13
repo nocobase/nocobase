@@ -1,19 +1,15 @@
 ---
-displayName: "HTTP-förfrågningskryptering"
+displayName: "HTTP request encryption"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Krypterar förfrågningsparametrar (Query Parameters) innan en HTTP-förfrågan skickas.
+  Encrypts request parameters (Query Parameters) before sending an HTTP request.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# HTTP-förfrågningskryptering
+# HTTP request encryption

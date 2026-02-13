@@ -1,18 +1,15 @@
 ---
-displayName: "Адаптер Redis для публикации/подписки"
+displayName: "Redis pub sub adapter"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Используется для обработки сообщений публикации/подписки (pub/sub) с помощью Redis.
+  Used for hanlding pub/sub messages with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Адаптер Redis для публикации/подписки
+# Redis pub sub adapter

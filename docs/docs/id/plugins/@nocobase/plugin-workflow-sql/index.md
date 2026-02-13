@@ -1,14 +1,12 @@
 ---
-displayName: "Alur Kerja: Node SQL"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Dapat digunakan untuk mengeksekusi pernyataan SQL arbitrer pada basis data dalam alur kerja.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node SQL
+# Workflow: SQL node

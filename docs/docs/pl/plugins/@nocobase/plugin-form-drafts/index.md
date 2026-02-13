@@ -1,17 +1,14 @@
 ---
-displayName: "Wersje robocze formularzy"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Umożliwia zapisywanie wersji roboczych formularzy podczas ich wypełniania, co pozwala na późniejszą edycję i przesłanie.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Wersje robocze formularzy
+# Form drafts

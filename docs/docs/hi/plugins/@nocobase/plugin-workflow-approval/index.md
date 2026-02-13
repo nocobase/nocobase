@@ -1,15 +1,15 @@
 ---
-displayName: "वर्कफ़्लो: अनुमोदन"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  यह तब ट्रिगर होता है जब किसी एक्शन बटन या API के माध्यम से कोई अनुमोदन अनुरोध शुरू किया जाता है। यह विशेष रूप से अनुमोदन प्रक्रिया के लिए डिज़ाइन किया गया है, जिसमें दस्तावेज़ों को प्रबंधित करने और प्रसंस्करण प्रक्रियाओं को ट्रैक करने के लिए विशेष अनुमोदन नोड और ब्लॉक शामिल हैं।
-isFree: नहीं
-builtIn: नहीं
-defaultEnabled: नहीं
-points: 8
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 2
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: अनुमोदन
+# Workflow: Approval

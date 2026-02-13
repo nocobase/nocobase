@@ -1,14 +1,12 @@
 ---
-displayName: "Pole kolekce: Automatické číslování"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Automaticky generuje kódy na základě nakonfigurovaných pravidel, s podporou kombinací dat, čísel a textu.
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pole kolekce: Automatické číslování
+# Collection field: Sequence

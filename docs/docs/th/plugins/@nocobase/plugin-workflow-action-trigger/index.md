@@ -1,14 +1,12 @@
 ---
-displayName: 'เวิร์กโฟลว์: เหตุการณ์หลังการดำเนินการ'
+displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  ทริกเกอร์เมื่อคำขอที่ถูกส่งผ่านปุ่มดำเนินการหรือ API เสร็จสิ้น เช่น การเพิ่ม, การอัปเดต, การลบข้อมูล หรือ 'การส่งไปยังเวิร์กโฟลว์" เหมาะสำหรับใช้ในการประมวลผลข้อมูล, การส่งการแจ้งเตือน ฯลฯ หลังจากดำเนินการเสร็จสิ้น
+  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: เหตุการณ์หลังการดำเนินการ
+# Workflow: Post-action event

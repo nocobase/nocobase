@@ -1,15 +1,12 @@
 ---
-displayName: "Block: Karta"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  Kartblocket stöder Gaode-karta och Google Maps. Du kan även utöka med fler karttyper.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Block: Karta
+# Block: Map

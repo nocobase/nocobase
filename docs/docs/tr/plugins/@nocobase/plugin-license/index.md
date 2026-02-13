@@ -1,16 +1,12 @@
 ---
-displayName: "Lisans Ayarları"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  Kurulum Kimliği ve lisans anahtarı ayarları
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-
-
-# Lisans Ayarları
+# License settings

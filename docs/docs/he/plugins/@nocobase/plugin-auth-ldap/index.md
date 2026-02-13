@@ -1,18 +1,15 @@
 ---
-displayName: "הזדהות: LDAP"
+displayName: "Auth: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  מאפשר הזדהות באמצעות פרוטוקול LDAP.
+  LDAP authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# הזדהות: LDAP
+# Auth: LDAP

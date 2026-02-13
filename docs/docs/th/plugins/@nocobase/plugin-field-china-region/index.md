@@ -1,16 +1,12 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: การแบ่งเขตการปกครองของจีน"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  จัดเตรียมข้อมูลและประเภทฟิลด์สำหรับการแบ่งเขตการปกครองของจีนครับ/ค่ะ
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# ฟิลด์คอลเลกชัน: การแบ่งเขตการปกครองของจีน
+# Collection field: administrative divisions of China

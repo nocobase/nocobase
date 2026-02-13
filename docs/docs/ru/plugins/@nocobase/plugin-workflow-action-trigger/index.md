@@ -1,14 +1,12 @@
 ---
-displayName: "Рабочий процесс: Событие после действия"
+displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  Срабатывает после завершения запроса, инициированного кнопкой действия или API, например, после добавления, обновления, удаления данных или «отправки в рабочий процесс». Подходит для обработки данных, отправки уведомлений и других операций после выполнения действия.
+  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Событие после действия
+# Workflow: Post-action event

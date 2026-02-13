@@ -1,15 +1,12 @@
 ---
-displayName: "Pengelola Tugas Asinkron"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  Mengelola dan memantau tugas asinkron seperti impor/ekspor data. Mendukung pelacakan progres tugas dan notifikasi.
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Pengelola Tugas Asinkron
+# Async task manager

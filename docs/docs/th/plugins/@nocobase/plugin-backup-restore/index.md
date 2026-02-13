@@ -1,17 +1,15 @@
 ---
-displayName: "การสำรองและกู้คืนแอปพลิเคชัน (เลิกใช้งานแล้ว)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  สำรองและกู้คืนแอปพลิเคชัน เพื่อใช้ในสถานการณ์ต่างๆ เช่น การทำสำเนาแอปพลิเคชัน, การย้ายข้อมูล, หรือการอัปเกรด
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การสำรองและกู้คืนแอปพลิเคชัน (เลิกใช้งานแล้ว)
+# App backup & restore (deprecated)
 
-> หมายเหตุ: ปลั๊กอินนี้เลิกใช้งานแล้ว (deprecated) ครับ/ค่ะ
+> Note: This plugin is deprecated.

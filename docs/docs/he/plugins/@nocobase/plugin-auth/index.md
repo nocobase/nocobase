@@ -1,14 +1,12 @@
 ---
-displayName: "אימות משתמשים"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  ניהול אימות משתמשים, כולל אימות באמצעות סיסמה, SMS, ותמיכה בפרוטוקולי Single Sign-On (SSO), עם יכולת הרחבה.
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# אימות משתמשים
+# Authentication

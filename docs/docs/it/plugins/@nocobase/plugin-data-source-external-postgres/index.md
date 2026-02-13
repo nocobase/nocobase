@@ -1,18 +1,15 @@
 ---
-displayName: "Fonte dati: PostgreSQL esterno"
+displayName: "Data source: External PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Utilizza database PostgreSQL esterni come fonti dati.
+  Use external PostgreSQL databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Fonte dati: PostgreSQL esterno
+# Data source: External PostgreSQL

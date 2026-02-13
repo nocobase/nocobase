@@ -1,14 +1,15 @@
 ---
-displayName: "एक्शन: रिकॉर्ड निर्यात करें"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  फ़िल्टर किए गए रिकॉर्ड को एक्सेल में निर्यात करें। आप यह कॉन्फ़िगर कर सकते हैं कि कौन से फ़ील्ड निर्यात करने हैं।
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# एक्शन: रिकॉर्ड निर्यात करें
+# Action: Export records

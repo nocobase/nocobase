@@ -1,14 +1,14 @@
 ---
-displayName: "アクション：カスタムリクエスト"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  任意のHTTPサービスにリクエストを送信し、コンテキストデータをターゲットサービスに送信できます
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# アクション：カスタムリクエスト
+# Action: Custom request

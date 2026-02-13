@@ -1,14 +1,15 @@
 ---
-displayName: "워크플로우: 동적 표현식 계산 노드"
+displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  워크플로우에서 데이터 행을 기반으로 동적 표현식을 계산하는 데 사용됩니다.
+  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 워크플로우: 동적 표현식 계산 노드
+# Workflow: Dynamic calculation node
+
+> Note: This plugin is deprecated.

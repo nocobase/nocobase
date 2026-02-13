@@ -1,17 +1,14 @@
 ---
-displayName: "كتلة: نموذج متعدد الخطوات"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  يقوم بتقسيم النموذج الذي يحتوي على العديد من الحقول إلى خطوات متعددة لتخفيف العبء على المستخدمين.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# كتلة: نموذج متعدد الخطوات
+# Block: Multi-step form

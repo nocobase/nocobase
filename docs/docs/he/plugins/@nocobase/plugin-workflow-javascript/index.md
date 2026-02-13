@@ -1,18 +1,15 @@
 ---
-displayName: "תהליך עבודה: JavaScript"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  מריץ קטע קוד JavaScript בסביבת Node.js מבודדת.
-isFree: לא
-builtIn: לא
-defaultEnabled: לא
-points: 4
+  Execute a piece of JavaScript in an isolated Node.js environment.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: JavaScript
+# Workflow: JavaScript

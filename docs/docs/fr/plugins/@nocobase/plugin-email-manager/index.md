@@ -1,18 +1,15 @@
 ---
-displayName: "Gestion des e-mails"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Connectez NocoBase à vos comptes de messagerie d'entreprise (Gmail, Outlook, etc.) pour envoyer et recevoir des e-mails directement depuis NocoBase, tout comme vous le feriez avec d'autres produits CRM.
+  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 3
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Gestion des e-mails
+# Email manager

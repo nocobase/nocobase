@@ -1,15 +1,15 @@
 ---
-displayName: "سير العمل: الموافقة"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  يتم تشغيله عند بدء طلب موافقة عبر زر إجراء أو واجهة برمجة تطبيقات (API). مصمم خصيصًا لعملية الموافقة، مع عقدة موافقة وكتلة حصرية لإدارة المستندات وتتبع سير المعالجة.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: الموافقة
+# Workflow: Approval

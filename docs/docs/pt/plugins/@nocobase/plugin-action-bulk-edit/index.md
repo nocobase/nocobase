@@ -1,14 +1,15 @@
 ---
-displayName: "Ação: Edição em Massa"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Edite em massa todos os registros ou apenas os registros selecionados.
+  Batch edit all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Ação: Edição em Massa
+# Action: Batch edit

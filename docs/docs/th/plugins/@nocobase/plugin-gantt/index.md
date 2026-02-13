@@ -1,14 +1,12 @@
 ---
-displayName: "บล็อก: แกนต์"
+displayName: "Block: Gantt"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  มีบล็อกแกนต์ให้ใช้งาน
+  Provides Gantt block.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# บล็อก: แกนต์
+# Block: Gantt

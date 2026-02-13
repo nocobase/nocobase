@@ -1,18 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: ตัวแปรที่กำหนดเอง"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  ใช้สำหรับสร้างตัวแปรที่กำหนดเอง หรือกำหนดค่าให้กับตัวแปรเหล่านั้นในเวิร์กโฟลว์ เพื่อบันทึกข้อมูลชั่วคราวในกระบวนการทำงาน
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: ตัวแปรที่กำหนดเอง
+# Workflow: Custom variable

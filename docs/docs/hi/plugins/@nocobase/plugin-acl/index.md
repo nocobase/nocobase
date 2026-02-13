@@ -1,14 +1,15 @@
 ---
-displayName: "अनुमति नियंत्रण"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  भूमिकाओं, संसाधनों और कार्यों पर आधारित अनुमति नियंत्रण, इंटरफ़ेस कॉन्फ़िगरेशन अनुमतियों, डेटा संचालन अनुमतियों, मेनू पहुँच अनुमतियों और प्लगइन अनुमतियों को सटीक रूप से नियंत्रित कर सकता है।
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# अनुमति नियंत्रण
+# Access control

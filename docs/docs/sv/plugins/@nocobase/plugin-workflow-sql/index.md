@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde: SQL-nod"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Används för att köra godtyckliga SQL-satser mot databasen direkt i ett arbetsflöde.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: SQL-nod
+# Workflow: SQL node

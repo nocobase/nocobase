@@ -1,14 +1,12 @@
 ---
-displayName: "บล็อก: แผงการดำเนินการ"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  จัดการและแสดงการดำเนินการต่างๆ แบบรวมศูนย์ ช่วยให้ผู้ใช้สามารถทำงานได้อย่างรวดเร็วและมีประสิทธิภาพ รองรับการขยายความสามารถ โดยประเภทการดำเนินการที่รองรับในปัจจุบัน ได้แก่ ป๊อปอัป, ลิงก์, การสแกน และคำขอที่กำหนดเอง
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# บล็อก: แผงการดำเนินการ
+# Block: Action panel

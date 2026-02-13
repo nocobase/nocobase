@@ -1,15 +1,12 @@
 ---
-displayName: "Asynkron uppgiftshanterare"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  Hantera och övervaka asynkrona uppgifter, som till exempel import och export av data. Stöder spårning av uppgiftsförlopp och aviseringar.
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Asynkron uppgiftshanterare
+# Async task manager

@@ -1,16 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: โหนดการประมวลผลด้วยตนเอง"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  ใช้สำหรับเวิร์กโฟลว์ที่ต้องการให้ผู้ใช้ตัดสินใจบางส่วน
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# เวิร์กโฟลว์: โหนดการประมวลผลด้วยตนเอง
+# Workflow: Manual node

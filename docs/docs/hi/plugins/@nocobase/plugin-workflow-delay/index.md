@@ -1,16 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: विलंब नोड"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  इसका उपयोग वर्कफ़्लो की समानांतर शाखाओं में अन्य शाखाओं के पूरा होने का इंतज़ार करने के लिए किया जा सकता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Could be used in workflow parallel branch for waiting other branches.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# वर्कफ़्लो: विलंब नोड
+# Workflow: Delay node

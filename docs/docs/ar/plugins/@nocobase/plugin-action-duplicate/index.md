@@ -1,15 +1,15 @@
 ---
-displayName: "إجراء: نسخ سجل"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  يتيح لك هذا الإجراء نسخ سجل. يمكنك نسخه إلى نموذج وتعديله قبل إرساله، أو يمكنك نسخه مباشرة لإنشاء سجل جديد.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# إجراء: نسخ سجل
+# Action: Duplicate record

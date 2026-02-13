@@ -1,14 +1,12 @@
 ---
-displayName: "データ可視化"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  データ可視化機能を提供します。チャートブロックとチャートフィルターブロックを含み、折れ線グラフ、エリアグラフ、棒グラフなど10種類以上のチャートをサポートしています。さらに多くのチャートタイプを拡張することも可能です
+  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# データ可視化
+# Data visualization

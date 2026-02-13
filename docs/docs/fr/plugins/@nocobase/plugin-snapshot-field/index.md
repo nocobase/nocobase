@@ -1,18 +1,15 @@
 ---
-displayName: "Champ de collection : Instantané"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  Lors de l'ajout d'un nouvel enregistrement, créez un instantané de ses données relationnelles et enregistrez-le dans l'enregistrement actuel. L'instantané ne sera pas mis à jour si les données relationnelles sont modifiées.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
+# Collection field: Snapshot
 
-# Champ de collection : Instantané
-
-> Note : Ce plugin est obsolète.
+> Note: This plugin is deprecated.

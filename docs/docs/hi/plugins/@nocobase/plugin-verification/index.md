@@ -1,16 +1,12 @@
 ---
-displayName: "सत्यापन"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  यह उपयोगकर्ता पहचान सत्यापन का प्रबंधन करता है, जिसमें एसएमएस (SMS), टीओटीपी (TOTP) ऑथेंटिकेटर शामिल हैं, और यह विस्तार योग्य है।
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# सत्यापन
+# Verification

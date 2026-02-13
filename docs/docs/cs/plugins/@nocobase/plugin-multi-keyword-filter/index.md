@@ -1,17 +1,14 @@
 ---
-displayName: "Víceklíčový filtr"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  Podporuje filtrování více klíčovými slovy pro běžná pole, s možností rychlého zadávání nebo hromadného importu klíčových slov z Excelu.
+  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Víceklíčový filtr
+# Multi-keyword filter

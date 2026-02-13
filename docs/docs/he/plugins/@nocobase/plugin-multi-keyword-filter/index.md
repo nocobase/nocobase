@@ -1,17 +1,14 @@
 ---
-displayName: "סינון מרובה מילות מפתח"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  תומך בסינון מרובה מילות מפתח עבור שדות נפוצים, עם אפשרויות להזנה מהירה או ייבוא מרוכז של מילות מפתח מ-Excel.
+  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# סינון מרובה מילות מפתח
+# Multi-keyword filter

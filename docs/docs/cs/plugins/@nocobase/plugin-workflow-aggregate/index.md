@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: Agregační uzel"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Slouží k provádění agregačních dotazů v databázi v rámci pracovního postupu, například: počítání, sčítání, průměrování atd.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Agregační uzel
+# Workflow: Aggregate node

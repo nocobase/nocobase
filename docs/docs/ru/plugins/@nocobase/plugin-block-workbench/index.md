@@ -1,15 +1,12 @@
 ---
-displayName: "Блок: Паненель операций"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Централизованно управляет и отображает различные операции, помогая пользователям быстро выполнять задачи. Поддерживает расширяемость; на данный момент доступны следующие типы операций: всплывающие окна, ссылки, сканирование и пользовательские запросы.
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-
-# Блок: Панель операций
+# Block: Action panel

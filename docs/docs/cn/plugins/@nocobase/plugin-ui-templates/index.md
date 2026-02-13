@@ -7,7 +7,8 @@ description: |
   提供区块模板和弹窗模板复用的能力。
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
 
 # UI 模板

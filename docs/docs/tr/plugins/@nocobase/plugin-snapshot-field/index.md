@@ -1,17 +1,15 @@
 ---
-displayName: "Koleksiyon alanı: Anlık Görüntü"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  Yeni bir kayıt eklerken, ilişkili kaydın bir anlık görüntüsünü oluşturur ve bu yeni kayda kaydeder. İlişkili kayıt güncellendiğinde, anlık görüntü güncellenmez.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Koleksiyon alanı: Anlık Görüntü
+# Collection field: Snapshot
 
-> Not: Bu eklenti kullanımdan kaldırılmıştır (deprecated).
+> Note: This plugin is deprecated.

@@ -1,14 +1,15 @@
 ---
-displayName: "Koleksiyon alanı: Kod"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Kod düzenleme ve vurgulama için kullanılır; Java, JavaScript, Python, SQL ve diğer dilleri destekler.
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Koleksiyon alanı: Kod
+# Collection field: Code

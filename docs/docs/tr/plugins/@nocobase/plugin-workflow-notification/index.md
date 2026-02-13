@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: Bildirim Düğümü"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  İş akışları içinde çeşitli bildirimler göndermek için kullanılabilir.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Bildirim Düğümü
+# Workflow: notification node

@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: Parallel knooppunt"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Kan worden gebruikt voor de parallelle uitvoering van vertakkingsprocessen in de workflow.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: Parallel knooppunt
+# Workflow: Parallel node

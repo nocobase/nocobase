@@ -1,18 +1,15 @@
 ---
-displayName: "İş Akışı: Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Harici sistemlerden HTTP çağrıları alır ve olayları tetikler. Üçüncü taraf sistemler tarafından başlatılan veri aktarımları ve olay bildirimleri (örneğin, ödeme geri bildirimleri, mesaj bildirimleri) için uygundur.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Webhook
+# Workflow: Webhook

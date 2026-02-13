@@ -1,15 +1,15 @@
 ---
-displayName: "Workflow: Genehmigung"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Wird ausgelöst, wenn eine Genehmigungsanfrage über einen Aktionsbutton oder eine API initiiert wird. Es ist speziell für Genehmigungsprozesse konzipiert und bietet exklusive Genehmigungsknoten und -blöcke zur Verwaltung von Dokumenten und zur Nachverfolgung des Bearbeitungsprozesses.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Workflow: Genehmigung
+# Workflow: Approval
