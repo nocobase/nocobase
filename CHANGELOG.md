@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.47](https://github.com/nocobase/nocobase/compare/v1.9.46...v1.9.47) - 2026-02-13
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix issue where cleared association attachment field is not saved after submit in edit form ([#8616](https://github.com/nocobase/nocobase/pull/8616)) by @katherinehhh
+
+- **[utils]** Fix security issue of `formula.js` evaluator engine ([#8416](https://github.com/nocobase/nocobase/pull/8416)) by @mytharcher
+
+- **[Workflow: Approval]** Fix the issue where approval data not showing in record detail popup if workflow mode is set to "Before save" by @mytharcher
+
 ## [v1.9.46](https://github.com/nocobase/nocobase/compare/v1.9.45...v1.9.46) - 2026-02-10
 
 ### 🐛 Bug Fixes

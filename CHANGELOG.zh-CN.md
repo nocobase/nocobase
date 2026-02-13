@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.47](https://github.com/nocobase/nocobase/compare/v1.9.46...v1.9.47) - 2026-02-13
+
+### 🐛 修复
+
+- **[client]** 修复编辑表单中关系附件字段清空后提交保存无效的问题 ([#8616](https://github.com/nocobase/nocobase/pull/8616)) by @katherinehhh
+
+- **[utils]** 修复 `formula.js` 表达式引擎的安全问题 ([#8416](https://github.com/nocobase/nocobase/pull/8416)) by @mytharcher
+
+- **[工作流：审批]** 修复“数据保存前”模式下，审批记录弹窗中审批数据的关系字段不展示的问题 by @mytharcher
+
 ## [v1.9.46](https://github.com/nocobase/nocobase/compare/v1.9.45...v1.9.46) - 2026-02-10
 
 ### 🐛 修复
