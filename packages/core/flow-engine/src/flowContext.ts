@@ -36,7 +36,6 @@ import {
   escapeT,
   extractPropertyPath,
   extractUsedVariablePaths,
-  FlowExitException,
   isCssFile,
   prepareRunJsCode,
   resolveDefaultParams,
@@ -1853,7 +1852,7 @@ export class FlowRuntimeContext<
   }
 
   exit() {
-    throw new FlowExitException(this.flowKey, this.model.uid);
+    throw new FlowExitAllException(this.flowKey, this.model.uid);
   }
 
   exitAll() {
@@ -2090,7 +2089,7 @@ export class FlowRunJSContext extends FlowContext {
   }
 
   exit() {
-    throw new FlowExitException(this.flowKey, this.model?.uid || 'runjs');
+    throw new FlowExitAllException(this.flowKey, this.model?.uid || 'runjs');
   }
 
   exitAll() {
