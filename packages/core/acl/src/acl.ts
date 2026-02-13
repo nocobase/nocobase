@@ -21,7 +21,7 @@ import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
-interface CanResult {
+export interface CanResult {
   role: string;
   resource: string;
   action: string;

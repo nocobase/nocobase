@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import assert from 'assert';
 import { Collection, createMockDatabase, Database, updateAssociations } from '@nocobase/database';
 
 describe('update associations', () => {

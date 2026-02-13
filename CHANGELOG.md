@@ -5,6 +5,118 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.47](https://github.com/nocobase/nocobase/compare/v1.9.46...v1.9.47) - 2026-02-13
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix issue where cleared association attachment field is not saved after submit in edit form ([#8616](https://github.com/nocobase/nocobase/pull/8616)) by @katherinehhh
+
+- **[utils]** Fix security issue of `formula.js` evaluator engine ([#8416](https://github.com/nocobase/nocobase/pull/8416)) by @mytharcher
+
+- **[Workflow: Approval]** Fix the issue where approval data not showing in record detail popup if workflow mode is set to "Before save" by @mytharcher
+
+## [v1.9.46](https://github.com/nocobase/nocobase/compare/v1.9.45...v1.9.46) - 2026-02-10
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix field component options not refreshed in real time when association field switches pattern ([#8611](https://github.com/nocobase/nocobase/pull/8611)) by @katherinehhh
+
+- **[Data visualization: ECharts]** Fix ECharts spelling error by @heziqiang
+
+- **[Workflow: Approval]**
+  - Fix the issue where values missing from detail popup of "My application" by @mytharcher
+
+  - Fix error thrown when execute on before save mode by @mytharcher
+
+## [v1.9.45](https://github.com/nocobase/nocobase/compare/v1.9.44...v1.9.45) - 2026-02-09
+
+### 🐛 Bug Fixes
+
+- **[Field component: mask]** Fix an issue where the mask field settings popup could not load all user roles correctly. by @gchust
+
+- **[Workflow: Approval]** Fix incorrect id to load detail record by @mytharcher
+
+## [v1.9.44](https://github.com/nocobase/nocobase/compare/v1.9.43...v1.9.44) - 2026-02-08
+
+### 🎉 New Features
+
+- **[Workflow: Approval]** Add ACL control for approval APIs by @mytharcher
+
+## [v1.9.43](https://github.com/nocobase/nocobase/compare/v1.9.42...v1.9.43) - 2026-02-06
+
+### 🎉 New Features
+
+- **[Auth: DingTalk]** Allows to bind user with `unionId` by @2013xile
+
+### 🚀 Improvements
+
+- **[Collection field: Markdown(Vditor)]** Added a configuration option to set the default edit mode in the component settings. ([#8408](https://github.com/nocobase/nocobase/pull/8408)) by @Cyx649312038
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** Fix the vulnerability of import action ([#8544](https://github.com/nocobase/nocobase/pull/8544)) by @mytharcher
+
+## [v1.9.42](https://github.com/nocobase/nocobase/compare/v1.9.41...v1.9.42) - 2026-02-02
+
+### 🚀 Improvements
+
+- **[Auth: DingTalk]** Use `userid` as the default key for user association, while preserving compatibility with existing authenticators that rely on mobile by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Approval]** Fix performance issue caused by JSON field in list loading (MySQL) by @mytharcher
+
+- **[WeCom]** Fix an issue where users cannot be auto-registered when mobile is missing by @2013xile
+
+## [v1.9.41](https://github.com/nocobase/nocobase/compare/v1.9.40...v1.9.41) - 2026-02-02
+
+### 🚀 Improvements
+
+- **[client]** Support disabling redundant default appends params for `ResourceActionProvider` ([#8527](https://github.com/nocobase/nocobase/pull/8527)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Add fault-tolerant for collection record select component, to avoid error thrown when collection deleted ([#8528](https://github.com/nocobase/nocobase/pull/8528)) by @mytharcher
+
+- **[File manager]** Secure file path for local storage, to avoid access path out of document root ([#8539](https://github.com/nocobase/nocobase/pull/8539)) by @mytharcher
+
+- **[Workflow: Subflow]** Fix route path of workflow link by @mytharcher
+
+## [v1.9.40](https://github.com/nocobase/nocobase/compare/v1.9.39...v1.9.40) - 2026-01-25
+
+### 🚀 Improvements
+
+- **[Office File Previewer]** Add more file types for previewing on Microsoft ([#8500](https://github.com/nocobase/nocobase/pull/8500)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - fix nanoid field not regenerated after form submit ([#8491](https://github.com/nocobase/nocobase/pull/8491)) by @katherinehhh
+
+  - Fix duplicate required validation message when clearing a cascade field ([#8476](https://github.com/nocobase/nocobase/pull/8476)) by @katherinehhh
+
+- **[database]**
+  - Fix errors when filtering with the `empty` operator after reloading a collection ([#8496](https://github.com/nocobase/nocobase/pull/8496)) by @2013xile
+
+  - fix: deep update nested associations ([#8492](https://github.com/nocobase/nocobase/pull/8492)) by @chenos
+
+- **[File manager]** Fix the issue where filename get from request body became unexpectedly decoded string ([#8481](https://github.com/nocobase/nocobase/pull/8481)) by @mytharcher
+
+- **[Data source: Main]** Fixed an issue where deleting records from a many-to-many association table block did not respect the association field `onDelete: 'restrict'` constraint ([#8493](https://github.com/nocobase/nocobase/pull/8493)) by @2013xile
+
+- **[Block: iframe]** Fix the error when adding aggregated variables to Iframe ([#8482](https://github.com/nocobase/nocobase/pull/8482)) by @zhangzhonghe
+
+- **[Workflow: Webhook]** Fix the issue where body data is missing when body parsing not configured by @mytharcher
+
+- **[Template print]** Fixed incorrect print button permission logic when roles were unioned. by @jiannx
+
+- **[Workflow: Approval]**
+  - Fix the issue where concurrency makes execution repeatedly resumed by @mytharcher
+
+  - Fix the issue where return an approval to previous node but returned to start by @mytharcher
+
+- **[Migration manager]** Fixed a potential process freeze caused by logging excessively large SQL statements included in migration error exceptions by @cgyrock
+
 ## [v1.9.39](https://github.com/nocobase/nocobase/compare/v1.9.38...v1.9.39) - 2026-01-21
 
 ### 🐛 Bug Fixes
