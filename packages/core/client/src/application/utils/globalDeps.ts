@@ -32,6 +32,7 @@ import axios from 'axios';
 import * as FileSaver from 'file-saver';
 import * as i18next from 'i18next';
 import lodash from 'lodash';
+import * as ses from 'ses';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
@@ -95,4 +96,5 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('ahooks', () => ahooks);
   requirejs.define('@emotion/css', () => emotionCss);
   requirejs.define('file-saver', () => FileSaver);
+  requirejs.define('ses', () => ses);
 }
