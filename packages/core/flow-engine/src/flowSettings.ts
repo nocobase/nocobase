@@ -32,6 +32,7 @@ import {
   setupRuntimeContextSteps,
   shouldHideStepInSettings,
 } from './utils';
+import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
 
@@ -907,7 +908,7 @@ export class FlowSettings {
             if (err instanceof FlowCancelSaveException) {
               return;
             }
-            if (err instanceof FlowExitException) {
+            if (err instanceof FlowExitException || err instanceof FlowExitAllException) {
               currentView.close();
               return;
             }

@@ -22,6 +22,7 @@ import {
   resolveStepUiSchema,
   FlowCancelSaveException,
 } from '../../../../utils';
+import { FlowExitAllException } from '../../../../utils/exceptions';
 import { observer } from '../../../../reactive';
 
 const SchemaField = createSchemaField();
@@ -213,7 +214,7 @@ const openStepSettingsDialog = async ({
                         if (error instanceof FlowCancelSaveException) {
                           return;
                         }
-                        if (error instanceof FlowExitException) {
+                        if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
                           currentDialog.close();
                           return;
                         }
