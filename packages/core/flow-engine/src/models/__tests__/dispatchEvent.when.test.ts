@@ -39,6 +39,45 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
     expect(calls).toEqual(['dynamic', 'static-a']);
   });
 
+  test('default (phase undefined): ctx.exitAll() stops static flows (beforeAllFlows regression)', async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+      },
+    });
+    M.registerFlow({
+      key: 'T',
+      on: { eventName: 'go' },
+      steps: {
+        t: { handler: async () => void calls.push('static-t') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go' },
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('dynamic');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['dynamic']);
+  });
+
   test("phase='afterAllFlows': instance flow runs after static flows", async () => {
     const engine = new FlowEngine();
     class M extends FlowModel {}
@@ -176,6 +215,165 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
 
     await model.dispatchEvent('go');
     expect(calls).toEqual(['static-a', 'dynamic', 'static-b']);
+  });
+
+  test("phase='beforeFlow': ctx.exitAll() stops anchor flow and subsequent flows", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+      },
+    });
+    M.registerFlow({
+      key: 'T',
+      on: { eventName: 'go' },
+      steps: {
+        t: { handler: async () => void calls.push('static-t') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'beforeFlow', flowKey: 'S' },
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('dynamic');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['dynamic']);
+  });
+
+  test("phase='beforeStep': ctx.exitAll() stops anchor step and subsequent flows", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+    M.registerFlow({
+      key: 'T',
+      on: { eventName: 'go' },
+      steps: {
+        t: { handler: async () => void calls.push('static-t') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'beforeStep', flowKey: 'S', stepKey: 'a' },
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('dynamic');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['dynamic']);
+  });
+
+  test("phase='afterStep': ctx.exitAll() stops subsequent steps and subsequent flows", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+    M.registerFlow({
+      key: 'T',
+      on: { eventName: 'go' },
+      steps: {
+        t: { handler: async () => void calls.push('static-t') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'afterStep', flowKey: 'S', stepKey: 'a' },
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('dynamic');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a', 'dynamic']);
+  });
+
+  test("phase='afterFlow': ctx.exitAll() stops subsequent flows", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+    M.registerFlow({
+      key: 'T',
+      on: { eventName: 'go' },
+      steps: {
+        t: { handler: async () => void calls.push('static-t') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'afterFlow', flowKey: 'S' },
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('dynamic');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a', 'static-b', 'dynamic']);
   });
 
   test("phase='beforeFlow' missing flow: falls back to afterAllFlows", async () => {

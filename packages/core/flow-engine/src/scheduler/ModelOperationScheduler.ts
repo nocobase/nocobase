@@ -10,6 +10,7 @@
 import { uid as genUid } from 'uid/secure';
 import type { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models/flowModel';
+import { FlowExitAllException } from '../utils/exceptions';
 
 type LifecycleType =
   | 'created'
@@ -273,6 +274,9 @@ export class ModelOperationScheduler {
       if (!model) return;
       await Promise.resolve(item.fn(model));
     } catch (err) {
+      if (err instanceof FlowExitAllException) {
+        throw err;
+      }
       this.engine.logger?.error?.(
         { err, id, fromUid: item.fromUid, toUid: item.toUid, when: item.options.when },
         'ModelOperationScheduler: operation execution failed',
