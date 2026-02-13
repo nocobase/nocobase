@@ -22,6 +22,7 @@ export const SearchSwitch: React.FC = observer(
     const t = useT();
     const webSearch = useChatConversationsStore.use.webSearch();
     const setWebSearch = useChatConversationsStore.use.setWebSearch();
+    const currentEmployee = useChatBoxStore.use.currentEmployee();
     const model = useChatBoxStore.use.model();
     const { services } = useLLMServiceCatalog();
 
@@ -41,6 +42,10 @@ export const SearchSwitch: React.FC = observer(
       }
       setWebSearch(!webSearch);
     };
+
+    if (!currentEmployee) {
+      return <Button type="text" icon={<GlobalOutlined />} disabled={true} />;
+    }
 
     const enabledTooltip = t('Disable search');
     const unsupportedTooltip = t('Web search not supported');
