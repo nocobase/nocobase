@@ -37,7 +37,7 @@ import { RunJSValueEditor } from './RunJSValueEditor';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
-import { FieldAssignExactDatePicker } from './FieldAssignExactDatePicker';
+import { FieldAssignExactDatePicker, type ExactDatePickerMode } from './FieldAssignExactDatePicker';
 
 const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
 
@@ -69,6 +69,8 @@ const DATE_DYNAMIC_OPTION_KEYS = [
   'nextYear',
 ] as const;
 
+type DateDynamicOptionValue = (typeof DATE_DYNAMIC_OPTION_KEYS)[number] | 'now';
+
 const DATE_DYNAMIC_OPTION_LABELS: Record<(typeof DATE_DYNAMIC_OPTION_KEYS)[number], string> = {
   exact: 'Exact day',
   past: 'Past',
@@ -91,7 +93,7 @@ const DATE_DYNAMIC_OPTION_LABELS: Record<(typeof DATE_DYNAMIC_OPTION_KEYS)[numbe
 };
 
 function buildDateDynamicOptions(t?: (key: string) => string, includeNow = false) {
-  const options = DATE_DYNAMIC_OPTION_KEYS.map((key) => ({
+  const options: Array<{ value: DateDynamicOptionValue; label: string }> = DATE_DYNAMIC_OPTION_KEYS.map((key) => ({
     value: key,
     label: t?.(DATE_DYNAMIC_OPTION_LABELS[key]) ?? DATE_DYNAMIC_OPTION_LABELS[key],
   }));
@@ -254,12 +256,20 @@ export function normalizeDateVariableExactValue(
 }
 
 type DateVariableComponentProps = {
-  picker: string;
+  picker: ExactDatePickerMode;
   showTime: boolean;
   timeFormat: string;
   format: string;
   exactNormalizeMode: DateVariableExactNormalizeMode;
 };
+
+function normalizeExactDatePickerMode(value: unknown): ExactDatePickerMode {
+  if (value === 'year' || value === 'quarter' || value === 'month' || value === 'date') {
+    return value;
+  }
+
+  return 'date';
+}
 
 const DEFAULT_DATE_VARIABLE_COMPONENT_PROPS: DateVariableComponentProps = {
   picker: 'date',
@@ -635,7 +645,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
     const componentProps = getFieldComponentProps(sourceCollectionField);
 
-    const picker = typeof componentProps?.picker === 'string' ? componentProps.picker : 'date';
+    const picker = normalizeExactDatePickerMode(componentProps?.picker);
     const inferredShowTime = ['datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(
       sourceInterface,
     );
