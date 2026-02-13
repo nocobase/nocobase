@@ -322,7 +322,6 @@ export default {
         messages,
         editingMessageId,
         model,
-        skillSettings,
         webSearch,
         stream = true,
       } = ctx.action.params.values || {};
@@ -396,7 +395,7 @@ export default {
           employee,
           sessionId,
           conversation.options?.systemMessage,
-          skillSettings ?? conversation.options?.skillSettings,
+          conversation.options?.skillSettings,
           webSearch,
           model,
           legacy,

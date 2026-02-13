@@ -21,7 +21,7 @@ import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
 import { useAPIClient } from '@nocobase/client';
 import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
-import { getAllModels, isSameModelOverride, isValidModelOverride, resolveModelOverride } from '../model-override';
+import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 
 export const useChatBoxActions = () => {
   const api = useAPIClient();
@@ -89,13 +89,13 @@ export const useChatBoxActions = () => {
     }
   };
 
-  const ensureModelOverride = useCallback(
+  const ensureModel = useCallback(
     async (aiEmployee: AIEmployee) => {
       await llmServicesRepository.load();
       const allModels = getAllModels(llmServicesRepository.services);
       const currentModel = useChatBoxStore.getState().model;
-      const resolvedModel = resolveModelOverride(api, aiEmployee.username, allModels, currentModel);
-      if (!isSameModelOverride(currentModel, resolvedModel)) {
+      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      if (!isSameModel(currentModel, resolvedModel)) {
         setModel(resolvedModel);
       }
       return resolvedModel;
@@ -103,20 +103,20 @@ export const useChatBoxActions = () => {
     [api, llmServicesRepository, setModel],
   );
 
-  const resolveTaskModelOverride = useCallback(
+  const resolveTaskModel = useCallback(
     async (aiEmployee: AIEmployee, taskModel?: { llmService: string; model: string } | null) => {
       await llmServicesRepository.load();
       const allModels = getAllModels(llmServicesRepository.services);
-      if (isValidModelOverride(taskModel, allModels)) {
+      if (isValidModel(taskModel, allModels)) {
         const currentModel = useChatBoxStore.getState().model;
-        if (!isSameModelOverride(currentModel, taskModel)) {
+        if (!isSameModel(currentModel, taskModel)) {
           setModel(taskModel);
         }
         return taskModel;
       }
       const currentModel = useChatBoxStore.getState().model;
-      const resolvedModel = resolveModelOverride(api, aiEmployee.username, allModels, currentModel);
-      if (!isSameModelOverride(currentModel, resolvedModel)) {
+      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      if (!isSameModel(currentModel, resolvedModel)) {
         setModel(resolvedModel);
       }
       return resolvedModel;
@@ -176,7 +176,7 @@ export const useChatBoxActions = () => {
         setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
-      await ensureModelOverride(aiEmployee);
+      await ensureModel(aiEmployee);
       senderRef.current?.focus();
       const msgs: Message[] = [
         {
@@ -204,7 +204,7 @@ export const useChatBoxActions = () => {
           webSearch,
           model: taskModel,
         } = await parseTask(task);
-        const resolvedModel = await resolveTaskModelOverride(aiEmployee, taskModel);
+        const resolvedModel = await resolveTaskModel(aiEmployee, taskModel);
         const service = llmServicesRepository.services.find((s) => s.llmService === resolvedModel?.llmService);
         const resolvedWebSearch =
           service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
@@ -249,7 +249,7 @@ export const useChatBoxActions = () => {
       });
       setMessages(msgs);
     },
-    [open, currentConversation, ensureModelOverride, llmServicesRepository, resolveTaskModelOverride, setWebSearch],
+    [open, currentConversation, ensureModel, llmServicesRepository, resolveTaskModel, setWebSearch],
   );
 
   return {

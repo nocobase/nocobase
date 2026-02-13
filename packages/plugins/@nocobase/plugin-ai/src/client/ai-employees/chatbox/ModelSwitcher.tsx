@@ -16,12 +16,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
 import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
-import {
-  isSameModelOverride,
-  isValidModelOverride,
-  MODEL_PREFERENCE_STORAGE_KEY,
-  resolveModelOverride,
-} from './model-override';
+import { isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from './model';
 
 export const ModelSwitcher: React.FC = observer(
   () => {
@@ -45,8 +40,8 @@ export const ModelSwitcher: React.FC = observer(
     useEffect(() => {
       if (!currentEmployeeUsername || !allModels.length) return;
 
-      const resolved = resolveModelOverride(api, currentEmployeeUsername, allModels, model);
-      if (isSameModelOverride(resolved, model)) {
+      const resolved = resolveModel(api, currentEmployeeUsername, allModels, model);
+      if (isSameModel(resolved, model)) {
         return;
       }
       setModel(resolved);
@@ -54,7 +49,7 @@ export const ModelSwitcher: React.FC = observer(
 
     // Current selected model value
     const selectedModel = useMemo(() => {
-      if (isValidModelOverride(model, allModels)) {
+      if (isValidModel(model, allModels)) {
         return model;
       }
       if (allModels.length) {

@@ -21,19 +21,14 @@ export const getAllModels = (services: LLMServiceItem[]): ModelRef[] =>
     })),
   );
 
-export const isValidModelOverride = (value: ModelRef | null | undefined, allModels: ModelRef[]) =>
+export const isValidModel = (value: ModelRef | null | undefined, allModels: ModelRef[]) =>
   !!value && allModels.some((item) => item.llmService === value.llmService && item.model === value.model);
 
-export const isSameModelOverride = (a?: ModelRef | null, b?: ModelRef | null) =>
+export const isSameModel = (a?: ModelRef | null, b?: ModelRef | null) =>
   a?.llmService === b?.llmService && a?.model === b?.model;
 
-export const resolveModelOverride = (
-  api: any,
-  username: string,
-  allModels: ModelRef[],
-  currentOverride?: ModelRef | null,
-) => {
-  if (isValidModelOverride(currentOverride, allModels)) {
+export const resolveModel = (api: any, username: string, allModels: ModelRef[], currentOverride?: ModelRef | null) => {
+  if (isValidModel(currentOverride, allModels)) {
     return currentOverride;
   }
   let cachedId: string | null = null;
@@ -59,7 +54,7 @@ export const resolveModelOverride = (
   return allModels[0] || null;
 };
 
-export const ensureModelOverride = async ({
+export const ensureModel = async ({
   api,
   llmServicesRepository,
   username,
@@ -74,8 +69,8 @@ export const ensureModelOverride = async ({
 }): Promise<ModelRef | null> => {
   await llmServicesRepository.load();
   const allModels = getAllModels(llmServicesRepository.services);
-  const resolvedOverride = resolveModelOverride(api, username, allModels, currentOverride);
-  if (!isSameModelOverride(currentOverride, resolvedOverride)) {
+  const resolvedOverride = resolveModel(api, username, allModels, currentOverride);
+  if (!isSameModel(currentOverride, resolvedOverride)) {
     onResolved?.(resolvedOverride);
   }
   return resolvedOverride;
