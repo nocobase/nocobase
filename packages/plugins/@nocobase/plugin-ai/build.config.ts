@@ -125,6 +125,10 @@ export default defineConfig({
   //   const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
   //   await writeIndexFiles(pkgPath);
   // },
+  beforeBuild: async () => {
+    const distPath = path.resolve(__dirname, 'dist');
+    await fs.remove(distPath);
+  },
 
   afterBuild: async (log) => {
     log('copying deps');
