@@ -40,6 +40,8 @@ const SPLIT_REFERENCE_START = '<!-- docs:splits:start -->';
 const SPLIT_REFERENCE_END = '<!-- docs:splits:end -->';
 const SPLIT_MAX_LENGTH = 5000;
 const SPLIT_MAX_CODE_BLOCKS = 3;
+const CREATE_INDEX_RETRY_MAX = 3;
+const CREATE_INDEX_RETRY_DELAY_MS = 200;
 
 interface DocEntryMeta {
   absolutePath: string;
@@ -163,6 +165,13 @@ async function resolveSourcePath(source: string, metaFile: string) {
     return fromMeta;
   }
   return '';
+}
+
+function errorToString(error: unknown) {
+  if (error instanceof Error) {
+    return error.stack || error.message;
+  }
+  return String(error);
 }
 
 async function collectModuleGroups(packageName: string): Promise<ModuleGroup[]> {
@@ -932,7 +941,26 @@ export async function createDocsIndex(app: Application, options: DocsIndexOption
     return;
   }
 
-  const results = await buildDocsIndexForPackages(packageNames);
+  let results: Map<string, BuildResult> | null = null;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < CREATE_INDEX_RETRY_MAX; attempt++) {
+    try {
+      results = await buildDocsIndexForPackages(packageNames);
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === CREATE_INDEX_RETRY_MAX - 1) {
+        break;
+      }
+      app.log.warn(`Docs index build failed, retrying (${attempt + 1}/${CREATE_INDEX_RETRY_MAX})`);
+      await new Promise((resolve) => setTimeout(resolve, CREATE_INDEX_RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  if (!results) {
+    const message = lastError ? errorToString(lastError) : 'Docs index build failed';
+    app.log.error(message);
+    return;
+  }
   if (!results.size) {
     app.log.info('No module docs found to index');
     return;
