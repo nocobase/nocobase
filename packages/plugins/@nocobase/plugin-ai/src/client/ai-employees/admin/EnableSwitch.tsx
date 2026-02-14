@@ -13,12 +13,14 @@ import { useField } from '@formily/react';
 import { Field } from '@formily/core';
 import { useCollectionRecordData, useDataBlockRequest, useDataBlockResource } from '@nocobase/client';
 import { useT } from '../../locale';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const EnableSwitch: React.FC = () => {
   const field = useField<Field>();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
+  const { refresh: refreshAIEmployees } = useAIEmployeesData();
   const { message } = App.useApp();
   const t = useT();
   const [loading, setLoading] = useState(false);
@@ -32,6 +34,7 @@ export const EnableSwitch: React.FC = () => {
       });
       message.success(t('Saved successfully'));
       refresh();
+      refreshAIEmployees();
     } catch (error) {
       message.error(t('Failed to update'));
     } finally {

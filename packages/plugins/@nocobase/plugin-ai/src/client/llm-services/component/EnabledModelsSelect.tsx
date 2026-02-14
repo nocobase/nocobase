@@ -112,6 +112,7 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
   // Use provider-specific formatModelLabel if available, otherwise default
   const providerOptions = provider ? plugin.aiManager.llmProviders.get(provider) : null;
   const labelFormatter = providerOptions?.formatModelLabel || formatModelLabel;
+  const hasRecommended = !!provider && getRecommendedModels(provider).length > 0;
 
   // Access deep properties to establish observer tracking
   const optionsKey = JSON.stringify(formOptions);
@@ -135,6 +136,17 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
     // Seed cache with initial models
     modelsCache.current[normalized.mode] = normalized.models;
   }, []);
+
+  // If there are no recommended models, default to provider mode.
+  useEffect(() => {
+    if (!provider) {
+      return;
+    }
+    if (!hasRecommended && config.mode === 'recommended') {
+      modelsCache.current.recommended = config.models;
+      updateFieldValue({ mode: 'provider', models: modelsCache.current.provider || [] });
+    }
+  }, [provider, hasRecommended, config.mode]);
 
   // Reset options when provider or options change so stale data is cleared
   const prevKeyRef = useRef<string>('');
@@ -226,17 +238,19 @@ export const EnabledModelsSelect: React.FC<any> = observer((props) => {
     <div style={{ width: '100%' }}>
       <Radio.Group value={config.mode} onChange={(e) => handleModeChange(e.target.value)} style={{ width: '100%' }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Radio value="recommended">{t('Recommended models')}</Radio>
-          {config.mode === 'recommended' && (
-            <Text type="secondary" style={{ paddingLeft: 24 }}>
-              {t('Use recommended models:')}
-              {provider &&
-                getRecommendedModels(provider).length > 0 &&
-                ' ' +
-                  getRecommendedModels(provider)
-                    .map((m) => m.label)
-                    .join(', ')}
-            </Text>
+          {hasRecommended && (
+            <>
+              <Radio value="recommended">{t('Recommended models')}</Radio>
+              {config.mode === 'recommended' && (
+                <Text type="secondary" style={{ paddingLeft: 24 }}>
+                  {t('Use recommended models:') +
+                    ' ' +
+                    getRecommendedModels(provider)
+                      .map((m) => m.label)
+                      .join(', ')}
+                </Text>
+              )}
+            </>
           )}
 
           <Radio value="provider">{t('Select models')}</Radio>
