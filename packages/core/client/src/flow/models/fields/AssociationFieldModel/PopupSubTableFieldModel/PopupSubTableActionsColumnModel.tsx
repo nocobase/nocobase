@@ -34,6 +34,9 @@ const Columns = observer<any>(({ record, model, index, _subTableModel }) => {
         wrap
         size={'middle'}
         className={css`
+          > div:empty {
+            display: none;
+          }
           button {
             padding: 0;
           }

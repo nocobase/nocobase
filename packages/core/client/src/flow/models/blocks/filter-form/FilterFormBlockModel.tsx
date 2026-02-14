@@ -86,7 +86,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
       if (fieldModels) {
         fieldModels.forEach((fieldModel) => {
-          fieldModel?.doFilter();
+          fieldModel?.doFilter?.();
         });
       }
     });
