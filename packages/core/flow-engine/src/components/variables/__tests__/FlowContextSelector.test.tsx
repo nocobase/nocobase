@@ -642,6 +642,33 @@ describe('FlowContextSelector', () => {
       });
     });
 
+    it('should handle non-array parsed path in inline input mode', async () => {
+      const flowContext = createTestFlowContext();
+      const customParseValueToPath = vi.fn().mockReturnValue('' as any);
+
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            value="invalid.path"
+            parseValueToPath={customParseValueToPath as any}
+          >
+            {null}
+          </FlowContextSelector>
+        </TestFlowContextWrapper>,
+      );
+
+      const inlineInput = await screen.findByRole('textbox');
+      expect(inlineInput).toBeInTheDocument();
+      expect((inlineInput as HTMLInputElement).value).toBe('');
+
+      fireEvent.focus(inlineInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('User')).toBeInTheDocument();
+      });
+    });
+
     it('should handle metaTree function returning non-array', async () => {
       const invalidMetaTree = vi.fn().mockResolvedValue(null);
       const flowContext = createTestFlowContext();

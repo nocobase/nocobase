@@ -40,6 +40,14 @@ type SelectedPathInfo = {
   meta?: ContextSelectorItem['meta'];
 };
 
+const normalizePath = (path: unknown): string[] | undefined => {
+  if (!Array.isArray(path)) {
+    return undefined;
+  }
+
+  return path.map((segment) => String(segment));
+};
+
 const formatPathSegmentTitle = (segment: string) => {
   return segment
     .split(/[_\s-]+/)
@@ -174,11 +182,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 触发 rc-cascader 重新构建 pathKeyEntities，避免二级节点未被索引导致的报错。
   const options = useMemo(() => {
     if (!resolvedMetaTree) return [];
+    const refreshSeq = updateFlag;
     const base = buildContextSelectorItems(resolvedMetaTree);
-    return translateOptions(base).filter((item) => {
+    const filtered = translateOptions(base).filter((item) => {
       if (!ignoreFieldNames || ignoreFieldNames.length === 0) return true;
       return !ignoreFieldNames.includes(item.meta?.name || '');
     });
+    return refreshSeq >= 0 ? filtered : [];
   }, [resolvedMetaTree, updateFlag, translateOptions, ignoreFieldNames]);
 
   const displayOptions = useMemo(() => {
@@ -237,7 +247,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   );
 
   const currentPath = useMemo(() => {
-    return customParseValueToPath(value);
+    return normalizePath(customParseValueToPath(value));
   }, [value, customParseValueToPath]);
 
   // 当 metaTree 为子层（如 getPropertyMetaTree('{{ ctx.collection }}') 返回的是 collection 的子节点）
@@ -254,6 +264,14 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     const fixed = needTrim ? currentPath.slice(1) : currentPath;
     return fixed;
   }, [currentPath, options]);
+
+  const cascaderValue = useMemo(() => {
+    if (tempSelectedPath.length > 0) {
+      return tempSelectedPath;
+    }
+
+    return Array.isArray(effectivePath) ? effectivePath : undefined;
+  }, [effectivePath, tempSelectedPath]);
 
   // 预加载：当存在有效路径时，按路径逐级加载 children，保证默认展开和选中路径可用
   const pathToPreload = useMemo(() => {
@@ -391,12 +409,12 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
         </>
       );
     },
-    [cascaderDropdownRender, children, flowCtx, isSearchEnabled, searchText],
+    [cascaderDropdownRender, cascaderSearchInputClassName, children, flowCtx, isSearchEnabled, searchText],
   );
 
   const inlinePlaceholder =
     typeof restCascaderProps.placeholder === 'string' ? restCascaderProps.placeholder : flowCtx.t('Search');
-  const hasSelectedPath = !!effectivePath?.length;
+  const hasSelectedPath = Array.isArray(effectivePath) && effectivePath.length > 0;
 
   const handleInlineInputFocus = useCallback(() => {
     if (open === undefined) {
@@ -424,13 +442,14 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     [hasSelectedPath, isDropdownVisible, onChange, open, selectedPathMeta],
   );
 
-  const inlineInputValue = isDropdownVisible ? searchText : selectedPathInfo.text || (effectivePath?.join(' / ') ?? '');
+  const inlinePathText = Array.isArray(effectivePath) ? effectivePath.join(' / ') : '';
+  const inlineInputValue = isDropdownVisible ? searchText : selectedPathInfo.text || inlinePathText;
 
   return (
     <Cascader
       {...restCascaderProps}
       options={displayOptions}
-      value={tempSelectedPath && tempSelectedPath.length > 0 ? tempSelectedPath : effectivePath}
+      value={cascaderValue}
       onChange={handleChange}
       loadData={handleLoadData}
       loading={loading}
