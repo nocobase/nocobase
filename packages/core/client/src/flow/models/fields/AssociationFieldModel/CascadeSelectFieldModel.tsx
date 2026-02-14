@@ -8,11 +8,10 @@
  */
 
 import { Cascader, Space, Button } from 'antd';
-import { last } from 'lodash';
 import { CollectionField, EditableItemModel, tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { debounce, castArray, omit } from 'lodash';
+import { debounce, castArray, omit, last, isEqual } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -20,6 +19,112 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } 
 import { CSS } from '@dnd-kit/utilities';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { transformNestedData } from '../ClickableFieldModel';
+
+type CascadeHydrateStatus = 'pending' | 'done';
+
+function isPlainRecord(value: unknown): value is Record<string, any> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeLabelKeys(labelKeyOrKeys?: string | string[]): string[] {
+  const list = Array.isArray(labelKeyOrKeys) ? labelKeyOrKeys : [labelKeyOrKeys];
+  return Array.from(new Set(list.filter((item): item is string => !!item && typeof item === 'string')));
+}
+
+function getRecordDisplayLabel(item: any, labelKeyOrKeys?: string | string[]): string | null {
+  if (!isPlainRecord(item)) return null;
+  const labelKeys = normalizeLabelKeys(labelKeyOrKeys);
+  for (const key of labelKeys) {
+    const value = item?.[key];
+    if (value != null && value !== '') {
+      return String(value);
+    }
+  }
+  return null;
+}
+
+function toCascadeTkKey(value: any): string | null {
+  if (value == null) return null;
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return null;
+    }
+  }
+  return String(value);
+}
+
+export function collectCascadeHydrationCandidate(options: {
+  value: any;
+  valueKey: string;
+  labelKey?: string;
+  labelKeys?: string[];
+  statusMap: Map<string, CascadeHydrateStatus>;
+}): { item: Record<string, any>; tk: any; tkKey: string } | null {
+  const { value, valueKey, labelKey, labelKeys, statusMap } = options;
+  const normalizedLabelKeys = normalizeLabelKeys(labelKeys?.length ? labelKeys : labelKey);
+  const item = isPlainRecord(value) ? value : null;
+  const tk = item?.[valueKey];
+  const activeTkKey = toCascadeTkKey(tk);
+
+  for (const key of Array.from(statusMap.keys())) {
+    if (!activeTkKey || key !== activeTkKey) {
+      statusMap.delete(key);
+    }
+  }
+
+  const itemLabel = getRecordDisplayLabel(item, normalizedLabelKeys);
+  if (!item || tk == null || itemLabel != null || !activeTkKey) {
+    return null;
+  }
+
+  const status = statusMap.get(activeTkKey);
+  if (status === 'pending' || status === 'done') {
+    return null;
+  }
+
+  statusMap.set(activeTkKey, 'pending');
+  return { item, tk, tkKey: activeTkKey };
+}
+
+export function markCascadeHydrationDone(
+  statusMap: Map<string, CascadeHydrateStatus>,
+  tkKey: string | null | undefined,
+) {
+  if (!tkKey) return;
+  statusMap.set(tkKey, 'done');
+}
+
+export function buildDisplayPathFromValue(value: any, labelKeyOrKeys: string | string[]): string[] {
+  const labelKeys = normalizeLabelKeys(labelKeyOrKeys);
+  return transformNestedData(value)
+    .map((item) => getRecordDisplayLabel(item, labelKeys))
+    .filter((label) => label != null && label !== '')
+    .map((label) => String(label));
+}
+
+export function findOptionPathByTk(options: any[], tk: any, valueKey: string): any[] {
+  if (!Array.isArray(options) || tk == null) return [];
+
+  const walk = (nodes: any[], parentPath: any[]): any[] => {
+    if (!Array.isArray(nodes) || !nodes.length) return [];
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue;
+      const currentPath = [...parentPath, node];
+      if (node[valueKey] === tk) {
+        return currentPath;
+      }
+      const found = walk(node.children, currentPath);
+      if (found.length) {
+        return found;
+      }
+    }
+    return [];
+  };
+
+  return walk(options, []);
+}
 
 function buildTree(data, idField = 'id', parentField = 'parentId') {
   const map = new Map();
@@ -137,7 +242,8 @@ const SortableItem: React.FC<{
           )}
           fieldNames={fieldNames}
           onChange={(value, item) => {
-            if (underDefaultValueConfig) {
+            const isTreeTemplate = others?.collectionField?.targetCollection?.template === 'tree';
+            if (underDefaultValueConfig || isTreeTemplate) {
               onChange(index, buildParentChain(item));
             } else {
               const val = last(item);
@@ -148,7 +254,8 @@ const SortableItem: React.FC<{
           disabled={disabled}
           showSearch
           defaultValue={transformNestedData(item).map((v) => {
-            return v['id'];
+            const valueKey = fieldNames?.value || 'id';
+            return v?.[valueKey];
           })}
           {...others}
           onDropdownVisibleChange={(visible) => {
@@ -271,6 +378,114 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
   const { onChange, onSearch, underDefaultValueConfig, fieldNames, options, disabled } = props;
   const initOptions = buildTree(transformNestedData(props.value));
   const popupClassName = `cascade-scroll-${props.name || props.id}`;
+  const labelKeys = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [fieldNames?.label, props?.collectionField?.targetCollection?.titleField, 'name', 'title', 'label'].filter(
+            (item): item is string => !!item,
+          ),
+        ),
+      ),
+    [fieldNames?.label, props?.collectionField?.targetCollection?.titleField],
+  );
+  const valueKey = fieldNames?.value || props?.collectionField?.targetCollection?.filterTargetKey || 'id';
+  const hydrateStatusRef = React.useRef<Map<string, CascadeHydrateStatus>>(new Map());
+
+  const valuePathFromValue = React.useMemo(
+    () =>
+      transformNestedData(props.value)
+        .map((item) => item?.[valueKey])
+        .filter((item) => item != null),
+    [props.value, valueKey],
+  );
+
+  const cascaderValue = React.useMemo(() => {
+    if (valuePathFromValue.length > 1) {
+      return valuePathFromValue;
+    }
+    const leafTk = valuePathFromValue[0];
+    if (leafTk == null) {
+      return valuePathFromValue;
+    }
+
+    const optionPath = findOptionPathByTk(options || [], leafTk, valueKey);
+    if (optionPath.length > 1) {
+      const pathValues = optionPath.map((item) => item?.[valueKey]).filter((item) => item != null);
+      if (pathValues.length > 1) {
+        return pathValues;
+      }
+    }
+    return valuePathFromValue;
+  }, [options, valueKey, valuePathFromValue]);
+
+  const displayPathFromValue = React.useMemo(
+    () => buildDisplayPathFromValue(props.value, labelKeys),
+    [props.value, labelKeys],
+  );
+
+  React.useEffect(() => {
+    const resource: MultiRecordResource | undefined = props.resource;
+    if (!resource || typeof resource.get !== 'function') return;
+
+    const candidate = collectCascadeHydrationCandidate({
+      value: props.value,
+      valueKey,
+      labelKeys,
+      statusMap: hydrateStatusRef.current,
+    });
+    if (!candidate) return;
+
+    void (async () => {
+      try {
+        const record = await resource.get(candidate.tk);
+        if (!isPlainRecord(record)) {
+          return;
+        }
+
+        const merged = {
+          ...(isPlainRecord(props.value) ? props.value : {}),
+          ...record,
+        };
+
+        const afterDisplayPath = buildDisplayPathFromValue(merged, labelKeys);
+        const hasLabel = afterDisplayPath.length > 0;
+
+        if (!hasLabel) {
+          return;
+        }
+
+        if (!isEqual(merged, props.value)) {
+          onChange?.(merged);
+        }
+      } catch {
+        // ignore hydration errors and keep current display fallback
+      } finally {
+        markCascadeHydrationDone(hydrateStatusRef.current, candidate.tkKey);
+      }
+    })();
+  }, [labelKeys, onChange, props.resource, props.value, valueKey]);
+
+  const renderDisplay = React.useCallback(
+    (labels: Array<string | number> = []) => {
+      const normalized = (labels || [])
+        .map((label) => (label == null ? '' : String(label)))
+        .filter((label) => label !== '');
+
+      if (displayPathFromValue.length) {
+        const looksLikeRawTk =
+          normalized.length === 1 && cascaderValue.length === 1 && normalized[0] === String(cascaderValue[0]);
+
+        if (!normalized.length || looksLikeRawTk) {
+          return displayPathFromValue.join(' / ');
+        }
+      }
+
+      return normalized.join(' / ');
+    },
+    [cascaderValue, displayPathFromValue],
+  );
+
   const bindScroll = () => {
     const popup = document.querySelector(`.${popupClassName}`);
     if (!popup) return;
@@ -322,17 +537,17 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
       fieldNames={fieldNames}
       showSearch={true}
       onSearch={(value) => onSearch(value)}
+      displayRender={renderDisplay}
       onChange={(value, item) => {
-        if (underDefaultValueConfig) {
+        const isTreeTemplate = props?.collectionField?.targetCollection?.template === 'tree';
+        if (underDefaultValueConfig || isTreeTemplate) {
           onChange(buildParentChain(item));
         } else {
           const val = last(item);
           onChange(val);
         }
       }}
-      defaultValue={transformNestedData(props.value).map((v) => {
-        return v[props.collectionField.collection.filterTargetKey];
-      })}
+      value={cascaderValue.length ? cascaderValue : undefined}
     />
   );
 };
@@ -343,6 +558,7 @@ export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
     return (
       <ToOneCascadeSelect
         {...this.props}
+        resource={this.resource}
         collectionField={this.collectionField}
         underDefaultValueConfig={this.use !== 'CascadeSelectFieldModel'}
       />
@@ -366,6 +582,7 @@ export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
         onChange={(value) => {
           this.props.onChange(value);
         }}
+        collectionField={this.collectionField}
         value={castArray(this.props.value).filter(Boolean)}
         underDefaultValueConfig={this.use !== 'CascadeSelectListFieldModel'}
       />
