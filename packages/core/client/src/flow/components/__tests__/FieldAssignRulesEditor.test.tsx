@@ -22,6 +22,7 @@ const { mockFieldAssignValueInput } = vi.hoisted(() => ({
       data-extra={Array.isArray(props?.extraMetaTree) ? 'yes' : 'no'}
       data-assoc-label={String(props?.associationFieldNamesOverride?.label || '')}
       data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
+      data-date-constant={props?.enableDateVariableAsConstant ? 'yes' : 'no'}
     />
   )),
 }));
@@ -728,5 +729,30 @@ describe('FieldAssignRulesEditor', () => {
 
     const merged = mergeItemMetaTreeForAssignValue(base, extra);
     expect(merged).toEqual(base);
+  });
+
+  it('passes enableDateVariableAsConstant to value input', () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'createdAt',
+        mode: 'assign',
+      },
+    ];
+
+    const { getByTestId } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          showCondition={false}
+          enableDateVariableAsConstant
+        />,
+      ),
+    );
+
+    expect(getByTestId('mock-value-input').getAttribute('data-date-constant')).toBe('yes');
   });
 });

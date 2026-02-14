@@ -10,6 +10,7 @@
 import { isObservable, reaction, toJS } from '@formily/reactive';
 import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { dayjs } from '@nocobase/utils/client';
 import { evaluateCondition } from './conditions';
 import { collectStaticDepsFromRunJSValue, collectStaticDepsFromTemplateValue, DepCollector, recordDep } from './deps';
 import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
@@ -1134,10 +1135,12 @@ export class RuleEngine {
     // Update dependencies
     this.commitRuleDeps(rule, state, collector);
 
+    const normalizedResolved = this.normalizeResolvedValueForTarget(baseCtx, resolved);
+
     // Apply default rule specific logic
     if (rule.source === 'default') {
       const shouldApply = this.checkDefaultRuleCanApply(
-        resolved,
+        normalizedResolved,
         targetNamePath!,
         targetKey!,
         clearDeps,
@@ -1184,7 +1187,7 @@ export class RuleEngine {
     // 若目标值本身无变化，则不应为了“初始化子表单对象/行”而产生额外写入
     // （典型场景：assign 规则解析为 undefined，但当前值也是 undefined）
     const currentValue = this.options.getFormValueAtPath(targetNamePath!);
-    const nextSnapshot = isObservable(resolved) ? toJS(resolved) : resolved;
+    const nextSnapshot = isObservable(normalizedResolved) ? toJS(normalizedResolved) : normalizedResolved;
     if (_.isEqual(currentValue, nextSnapshot)) {
       return;
     }
@@ -1200,13 +1203,13 @@ export class RuleEngine {
       if (modelForUi?.subModels?.field) {
         const modelTarget = this.getModelTargetNamePath(modelForUi);
         if (modelTarget && namePathToPathKey(modelTarget) === targetKey) {
-          modelForUi.setProps({ value: resolved });
+          modelForUi.setProps({ value: normalizedResolved });
         }
       }
     }
 
     const beforeWriteSeq = this.options.getWriteSeq();
-    const patches = [...initPatches, { path: targetNamePath, value: resolved }];
+    const patches = [...initPatches, { path: targetNamePath, value: normalizedResolved }];
     await this.options.setFormValues(evalCtx, patches, {
       source: rule.source,
       txId: this.currentRuleTxId || undefined,
@@ -1219,6 +1222,41 @@ export class RuleEngine {
         writeSeq: afterWriteSeq,
       });
     }
+  }
+
+  private isTzAwareTargetInterface(targetInterface: unknown): boolean {
+    if (typeof targetInterface !== 'string') {
+      return false;
+    }
+
+    return ['datetime', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(targetInterface);
+  }
+
+  private normalizeDateOnlyToStartOfDayIso(value: string): string {
+    const raw = String(value || '').trim();
+    if (!raw) return value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return value;
+
+    const parsed = dayjs(raw, 'YYYY-MM-DD', true);
+    if (!parsed.isValid()) return value;
+    return parsed.startOf('day').toISOString();
+  }
+
+  private normalizeResolvedValueForTarget(baseCtx: any, resolved: any): any {
+    const targetInterface = baseCtx?.model?.context?.collectionField?.interface;
+    if (!this.isTzAwareTargetInterface(targetInterface)) {
+      return resolved;
+    }
+
+    if (typeof resolved === 'string') {
+      return this.normalizeDateOnlyToStartOfDayIso(resolved);
+    }
+
+    if (Array.isArray(resolved)) {
+      return resolved.map((item) => (typeof item === 'string' ? this.normalizeDateOnlyToStartOfDayIso(item) : item));
+    }
+
+    return resolved;
   }
 
   private prepareRuleContext(rule: RuntimeRule) {

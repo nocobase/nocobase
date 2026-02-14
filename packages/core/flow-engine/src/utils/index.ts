@@ -65,6 +65,16 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
+export {
+  decodeBase64Url,
+  encodeBase64Url,
+  isCompleteCtxDatePath,
+  isCtxDatePathPrefix,
+  isCtxDateExpression,
+  parseCtxDateExpression,
+  resolveCtxDatePath,
+  serializeCtxDateValue,
+} from './dateVariable';
 
 // 安全全局对象（window/document）
 export {

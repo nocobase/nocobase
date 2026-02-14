@@ -36,8 +36,11 @@ import {
   escapeT,
   extractPropertyPath,
   extractUsedVariablePaths,
+  FlowExitException,
+  isCtxDatePathPrefix,
   isCssFile,
   prepareRunJsCode,
+  resolveCtxDatePath,
   resolveDefaultParams,
   resolveExpressions,
   resolveModuleUrl,
@@ -1427,6 +1430,32 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
+    this.defineProperty('date', {
+      get: () => {
+        const createBranch = (prefix: string[]) => {
+          return new Proxy(
+            {},
+            {
+              get: (_target, prop) => {
+                if (typeof prop !== 'string') return undefined;
+                const nextPath = [...prefix, prop];
+                if (!isCtxDatePathPrefix(nextPath)) {
+                  return undefined;
+                }
+                const resolved = resolveCtxDatePath(nextPath);
+                if (typeof resolved !== 'undefined') {
+                  return resolved;
+                }
+                return createBranch(nextPath);
+              },
+            },
+          );
+        };
+
+        return createBranch(['date']);
+      },
+      cache: false,
+    });
     this.defineMethod('loadCSS', async (href: string) => {
       const url = resolveModuleUrl(href);
       return new Promise((resolve, reject) => {
@@ -1492,57 +1521,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return this.engine.getEvents();
     });
 
-    // // Date variables (for variable selector meta tree)
-    // this.defineProperty('date', {
-    //   get: () => {
-    //     const vars = getDateVars() as Record<string, any>;
-    //     // align with client options: add dayBeforeYesterday
-    //     vars.dayBeforeYesterday = toUnit('day', -2);
-    //     const now = new Date().toISOString();
-    //     const out: Record<string, any> = {};
-    //     for (const [k, v] of Object.entries(vars)) {
-    //       try {
-    //         out[k] = typeof v === 'function' ? v({ now }) : v;
-    //       } catch (e) {
-    //         // ignore
-    //       }
-    //     }
-    //     return out;
-    //   },
-    //   meta: () => {
-    //     const title = this.t('Date variables');
-    //     const mk = (t: string) => ({ type: 'any', title: this.t(t) });
-    //     return {
-    //       type: 'object',
-    //       title,
-    //       properties: {
-    //         now: mk('Current time'),
-    //         dayBeforeYesterday: mk('Day before yesterday'),
-    //         yesterday: mk('Yesterday'),
-    //         today: mk('Today'),
-    //         tomorrow: mk('Tomorrow'),
-    //         lastIsoWeek: mk('Last week'),
-    //         thisIsoWeek: mk('This week'),
-    //         nextIsoWeek: mk('Next week'),
-    //         lastMonth: mk('Last month'),
-    //         thisMonth: mk('This month'),
-    //         nextMonth: mk('Next month'),
-    //         lastQuarter: mk('Last quarter'),
-    //         thisQuarter: mk('This quarter'),
-    //         nextQuarter: mk('Next quarter'),
-    //         lastYear: mk('Last year'),
-    //         thisYear: mk('This year'),
-    //         nextYear: mk('Next year'),
-    //         last7Days: mk('Last 7 days'),
-    //         next7Days: mk('Next 7 days'),
-    //         last30Days: mk('Last 30 days'),
-    //         next30Days: mk('Next 30 days'),
-    //         last90Days: mk('Last 90 days'),
-    //         next90Days: mk('Next 90 days'),
-    //       },
-    //     } as PropertyMeta;
-    //   },
-    // });
     this.defineMethod(
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
