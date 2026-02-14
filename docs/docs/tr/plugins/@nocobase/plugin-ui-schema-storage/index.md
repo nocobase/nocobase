@@ -1,14 +1,12 @@
 ---
-displayName: "UI şema depolama hizmeti"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  Merkezi bir UI şema depolama hizmeti sağlar.
+  Provides centralized UI schema storage service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# UI şema depolama hizmeti
+# UI schema storage

@@ -1,17 +1,15 @@
 ---
-displayName: "Резервне копіювання та відновлення застосунку (застарілий)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Резервне копіювання та відновлення застосунків для таких сценаріїв, як копіювання, міграція та оновлення застосунків.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Резервне копіювання та відновлення застосунку (застарілий)
+# App backup & restore (deprecated)
 
-> Зверніть увагу: Цей плагін застарів.
+> Note: This plugin is deprecated.

@@ -1,14 +1,12 @@
 ---
-displayName: "Сповіщення: Електронна пошта"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Використовується для надсилання сповіщень електронною поштою з вбудованим SMTP-транспортом.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Сповіщення: Електронна пошта
+# Notification: Email

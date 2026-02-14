@@ -1,14 +1,12 @@
 ---
-displayName: "Kimlik Doğrulama: SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  SMS doğrulama kodu ile kimlik doğrulaması yapın.
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Kimlik Doğrulama: SMS
+# Auth: SMS

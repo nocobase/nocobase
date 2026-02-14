@@ -1,14 +1,15 @@
 ---
-displayName: "Eylem: Kaydı Çoğalt"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Bir kaydı çoğaltır. Kaydı bir forma kopyalayıp kaydetmeden önce düzenleyebilir veya doğrudan çoğaltarak yeni bir kayıt oluşturabilirsiniz.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Eylem: Kaydı Çoğalt
+# Action: Duplicate record

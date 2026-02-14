@@ -1,14 +1,12 @@
 ---
-displayName: "Sammlungsfeld: Markdown(Vditor)"
+displayName: "Collection field: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |
-  Dient zum Speichern von Markdown und zur Darstellung mit dem Vditor-Editor. Es unterstützt gängige Markdown-Syntax wie Listen, Code, Zitate und mehr. Zudem können Sie Bilder, Audioaufnahmen und Ähnliches hochladen. Gleichzeitig ermöglicht es eine sofortige, WYSIWYG-Darstellung (What You See Is What You Get).
+  Used to store Markdown and render it using Vditor editor, supports common Markdown syntax such as list, code, quote, etc., and supports uploading images, recordings, etc.It also allows for instant rendering, where what you see is what you get.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Sammlungsfeld: Markdown(Vditor)
+# Collection field: Markdown(Vditor)

@@ -1,17 +1,14 @@
 ---
-displayName: "Встраивание NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Встраивает NocoBase во внешнюю систему или веб-страницу, интегрируя его как часть этой системы или страницы.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Встраивание NocoBase
+# Embed NocoBase

@@ -1,18 +1,15 @@
 ---
-displayName: "Pracovní postup: Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Přijímá HTTP volání z externích systémů a spouští události. Využijete jej pro datové push notifikace a oznámení událostí iniciované systémy třetích stran, jako jsou zpětná volání plateb nebo notifikace zpráv.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Webhook
+# Workflow: Webhook

@@ -1,16 +1,12 @@
 ---
-displayName: "Collection : Arbre"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Fournit un modèle de collection arborescente
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-
-
-# Collection : Arbre
+# Collection: Tree

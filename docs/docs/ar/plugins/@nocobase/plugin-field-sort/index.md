@@ -1,14 +1,12 @@
 ---
-displayName: "حقل المجموعة: الفرز"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  يُستخدم لفرز البيانات في مجموعة.
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# حقل المجموعة: الفرز
+# Collection field: Sort

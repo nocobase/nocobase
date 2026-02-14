@@ -1,14 +1,12 @@
 ---
-displayName: "העתקת טקסט"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  מוסיף כפתור העתקה לשדות טקסט.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: לא נכון
+  Add copy button to text fields
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# העתקת טקסט
+# Text copy

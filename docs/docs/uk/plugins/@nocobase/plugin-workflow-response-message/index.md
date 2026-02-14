@@ -1,16 +1,12 @@
 ---
-displayName: "Робочий процес: Повідомлення-відповідь"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Використовується для формування повідомлення-відповіді та відображення її клієнту в робочих процесах подій форми та перехоплення запитів.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Робочий процес: Повідомлення-відповідь
+# Workflow: Response message

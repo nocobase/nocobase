@@ -1,14 +1,12 @@
 ---
-displayName: "Edytor motywów"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Dostosuj kolory, rozmiary i inne elementy interfejsu użytkownika, a następnie zapisz wynik jako motyw, aby móc przełączać się między wieloma motywami.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Edytor motywów
+# Theme editor

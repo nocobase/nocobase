@@ -1,14 +1,12 @@
 ---
-displayName: "การยืนยันตัวตนผู้ใช้"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  การจัดการการยืนยันตัวตนผู้ใช้ ซึ่งครอบคลุมการยืนยันตัวตนด้วยรหัสผ่าน, SMS, และรองรับโปรโตคอล SSO ต่างๆ พร้อมความสามารถในการขยายเพิ่มเติมครับ
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การยืนยันตัวตนผู้ใช้
+# Authentication

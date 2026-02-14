@@ -1,18 +1,15 @@
 ---
-displayName: "E-mailbeheer"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Koppel NocoBase aan zakelijke e-mailaccounts zoals Gmail en Outlook, en verstuur en ontvang e-mails direct vanuit NocoBase, net zoals u gewend bent in andere CRM-producten.
+  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 3
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# E-mailbeheer
+# Email manager

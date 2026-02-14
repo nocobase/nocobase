@@ -1,15 +1,12 @@
 ---
-displayName: "المصادقة"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  إدارة مصادقة المستخدم، وتشمل مصادقة كلمة المرور الأساسية، ومصادقة الرسائل القصيرة (SMS)، ودعم بروتوكولات الدخول الموحد (SSO)، وهي قابلة للتوسيع.
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# المصادقة
+# Authentication

@@ -1,17 +1,15 @@
 ---
-displayName: "Pole kolekce: Snímek"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  Při přidávání dat vytvoří snímek souvisejících dat a uloží jej do aktuálních dat. Snímek se neaktualizuje, když se aktualizují související data.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pole kolekce: Snímek
+# Collection field: Snapshot
 
-> Poznámka: Tento plugin je zastaralý.
+> Note: This plugin is deprecated.

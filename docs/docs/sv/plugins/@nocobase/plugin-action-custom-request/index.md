@@ -1,15 +1,14 @@
 ---
-displayName: "Åtgärd: Anpassad förfrågan"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  Skickar en förfrågan till valfri HTTP-tjänst och stöder överföring av kontextdata till måltjänsten.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Åtgärd: Anpassad förfrågan
+# Action: Custom request

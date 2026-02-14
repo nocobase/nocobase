@@ -1,17 +1,14 @@
 ---
-displayName: "ตัวกรองหลายคีย์เวิร์ด"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  รองรับการกรองหลายคีย์เวิร์ดสำหรับฟิลด์ทั่วไป โดยสามารถป้อนข้อมูลได้อย่างรวดเร็ว หรือนำเข้าคีย์เวิร์ดจำนวนมากจาก Excel ได้ครับ
+  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวกรองหลายคีย์เวิร์ด
+# Multi-keyword filter

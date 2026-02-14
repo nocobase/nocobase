@@ -1,14 +1,12 @@
 ---
-displayName: "Quản lý thông báo"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Cung cấp dịch vụ quản lý tập trung, bao gồm cấu hình kênh, ghi nhật ký và các tính năng khác, hỗ trợ cấu hình nhiều kênh thông báo khác nhau như tin nhắn nội bộ và email.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Quản lý thông báo
+# Notification manager

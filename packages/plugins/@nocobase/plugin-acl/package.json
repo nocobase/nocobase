@@ -16,7 +16,12 @@
     "Users & permissions"
   ],
   "nocobase": {
-    "defaultEnabled": true
+    "defaultEnabled": true,
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",

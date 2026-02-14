@@ -1,14 +1,12 @@
 ---
-displayName: "Kullanıcı Veri Senkronizasyonu"
+displayName: "User data synchronization"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  Genişletilebilir kullanıcı verisi senkronizasyon kaynaklarını kaydetmenizi ve yönetmenizi sağlar. Varsayılan olarak HTTP API'si sunulur. Kullanıcılar ve departmanlar gibi kaynaklara veri senkronizasyonunu destekler.
+  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Kullanıcı Veri Senkronizasyonu
+# User data synchronization

@@ -1,14 +1,12 @@
 ---
-displayName: "Multi-App-Manager (veraltet)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  Mehrere Anwendungen werden im Prozess-Sharing-Modus ausgeführt und sind nur für Test- und Demo-Umgebungen geeignet. Bitte verwenden Sie dieses Plugin nicht in einer Produktionsumgebung.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Multi-App-Manager (veraltet)
+# Multi-app manager (deprecated)

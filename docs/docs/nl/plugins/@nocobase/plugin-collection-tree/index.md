@@ -1,14 +1,12 @@
 ---
-displayName: "Collectie: Boom"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Biedt een sjabloon voor boomstructuurcollecties
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Collectie: Boom
+# Collection: Tree

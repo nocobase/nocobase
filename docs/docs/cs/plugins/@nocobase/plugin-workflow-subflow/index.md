@@ -1,18 +1,15 @@
 ---
-displayName: "Pracovní postup: Podpostup"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Slouží k volání jiných pracovních postupů v rámci jednoho pracovního postupu. Můžete použít proměnné aktuálního pracovního postupu jako vstup pro podpostup a výstup z podpostupu pak využít jako proměnné v aktuálním pracovním postupu.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Podpostup
+# Workflow: Subflow

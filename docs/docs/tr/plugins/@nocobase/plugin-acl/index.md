@@ -1,14 +1,15 @@
 ---
-displayName: "Erişim Kontrolü"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Roller, kaynaklar ve eylemler temel alınarak, erişim kontrolü; arayüz yapılandırma izinlerini, veri işlem izinlerini, menü erişim izinlerini ve eklenti izinlerini hassas bir şekilde yönetmenizi sağlar.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Erişim Kontrolü
+# Access control

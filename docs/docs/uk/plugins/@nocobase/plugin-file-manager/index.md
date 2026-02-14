@@ -1,14 +1,12 @@
 ---
-displayName: "Менеджер файлів"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Надає послуги зберігання файлів, а також шаблон колекції файлів та поле вкладення.
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Менеджер файлів
+# File manager

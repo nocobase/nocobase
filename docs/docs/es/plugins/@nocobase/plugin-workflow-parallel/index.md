@@ -1,15 +1,12 @@
 ---
-displayName: "Flujo de trabajo: Nodo paralelo"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Se utiliza para ejecutar procesos de ramificación en paralelo dentro de un flujo de trabajo.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-
-# Flujo de trabajo: Nodo paralelo
+# Workflow: Parallel node

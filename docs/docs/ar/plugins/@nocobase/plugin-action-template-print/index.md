@@ -1,19 +1,15 @@
 ---
-displayName: "طباعة القوالب"
+displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-  يتيح للمستخدمين طباعة القوالب ضمن تطبيق NocoBase.
+  It supports users in printing templates within the NocoBase application.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
+---
 
-# طباعة القوالب
+# Template print

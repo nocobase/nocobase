@@ -1,14 +1,12 @@
 ---
-displayName: "संग्रह फ़ील्ड: अटैचमेंट (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  यह URL प्रारूप में अटैचमेंट का समर्थन करता है।
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: अटैचमेंट (URL)
+# Collection field: Attachment(URL)

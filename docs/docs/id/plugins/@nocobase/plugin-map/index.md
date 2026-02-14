@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: Peta"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  Blok Peta, mendukung peta Gaode dan Google Maps, Anda juga dapat memperluas jenis peta lainnya.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Peta
+# Block: Map

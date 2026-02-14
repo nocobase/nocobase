@@ -1,14 +1,12 @@
 ---
-displayName: "การจัดการแหล่งข้อมูล"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  จัดการแหล่งข้อมูล รวมถึงฐานข้อมูล Master ที่มาพร้อมระบบ, ฐานข้อมูลภายนอก และ API เป็นต้น
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การจัดการแหล่งข้อมูล
+# Data source manager

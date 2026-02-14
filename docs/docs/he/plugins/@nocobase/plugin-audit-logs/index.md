@@ -1,17 +1,15 @@
 ---
-displayName: "יומני ביקורת (מיושן)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  תוסף זה מיושן. אין להשתמש בו. בעתיד יפותח תוסף חדש ליומני ביקורת.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# יומני ביקורת (מיושן)
+# Audit logs (deprecated)
 
-> שימו לב: תוסף זה מיושן.
+> Note: This plugin is deprecated.

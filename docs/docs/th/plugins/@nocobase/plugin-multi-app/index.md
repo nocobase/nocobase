@@ -1,17 +1,14 @@
 ---
-displayName: "หลายแอป"
+displayName: "Multi-app"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
-  สร้าง จัดการ และรันอินสแตนซ์แอปพลิเคชันย่อยอิสระหลายตัวภายในแอปพลิเคชันหลัก
+  Creates, manages, and runs multiple independent sub-application instances within a parent application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# หลายแอป
+# Multi-app

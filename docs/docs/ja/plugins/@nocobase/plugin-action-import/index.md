@@ -1,14 +1,15 @@
 ---
-displayName: "アクション：レコードのインポート"
-packageName: '@nococase/plugin-action-import'
+displayName: "Action: Import records"
+packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Excelテンプレートを使用してデータをインポートします。どのフィールドをインポートするか設定でき、テンプレートは自動的に生成されます
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# アクション：レコードのインポート
+# Action: Import records

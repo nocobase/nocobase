@@ -1,14 +1,12 @@
 ---
-displayName: "ブロック：操作パネル"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  様々な操作を一元的に管理・表示し、ユーザーがタスクを素早く実行できるようにします。拡張機能をサポートしており、現在サポートされている操作タイプには、ポップアップ、リンク、スキャン、カスタムリクエストがあります
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ブロック：操作パネル
+# Block: Action panel

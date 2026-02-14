@@ -1,16 +1,14 @@
 ---
-displayName: "एआई एलएलएम: गीगाचैट"
+displayName: "AI LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:
   - 2.x
 description: |
-  गीगाचैट एलएलएम सेवा के साथ एकीकरण का समर्थन करता है।
+  Support integration with GigaChat LLM service.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# एआई एलएलएम: गीगाचैट
+# AI LLM: GigaChat

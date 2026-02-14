@@ -1,15 +1,12 @@
 ---
-displayName: "Filhanterare"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Tillhandahåller tjänster för fillagring, och erbjuder en samlingsmall för filer samt ett fält för bifogade filer.
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Filhanterare
+# File manager

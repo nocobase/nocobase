@@ -1,14 +1,12 @@
 ---
-displayName: "Bộ sưu tập: Cây"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Cung cấp mẫu bộ sưu tập dạng cây
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Bộ sưu tập: Cây
+# Collection: Tree

@@ -1,14 +1,12 @@
 ---
-displayName: "टेक्स्ट कॉपी"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  टेक्स्ट फ़ील्ड्स में कॉपी बटन जोड़ें
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# टेक्स्ट कॉपी
+# Text copy

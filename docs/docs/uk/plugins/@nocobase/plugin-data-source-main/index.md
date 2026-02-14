@@ -1,14 +1,12 @@
 ---
-displayName: "Джерело даних: Головна база даних"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  Головна база даних NocoBase, підтримує реляційні бази даних, такі як PostgreSQL, MySQL, MariaDB тощо.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Джерело даних: Головна база даних
+# Data source: Main

@@ -1,14 +1,15 @@
 ---
-displayName: "Aksi: Impor Catatan"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Mengimpor catatan menggunakan template Excel. Anda dapat mengonfigurasi bidang mana yang akan diimpor, dan template akan dibuat secara otomatis.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Impor Catatan
+# Action: Import records

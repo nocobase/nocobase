@@ -1,17 +1,15 @@
 ---
-displayName: "Auditní záznamy (zastaralé)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Tento plugin je zastaralý. Nepoužívejte jej, v budoucnu bude k dispozici nový plugin pro auditní záznamy.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Auditní záznamy (zastaralé)
+# Audit logs (deprecated)
 
-> Upozornění: Tento plugin je zastaralý (deprecated).
+> Note: This plugin is deprecated.

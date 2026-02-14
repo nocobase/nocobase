@@ -1,18 +1,15 @@
 ---
-displayName: "Робочий процес: вузол обчислення дати"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Використовується для виконання операцій з датами в робочих процесах, таких як додавання/віднімання, порівняння та форматування.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Робочий процес: вузол обчислення дати
+# Workflow: date calculation node

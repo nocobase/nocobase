@@ -1,14 +1,12 @@
 ---
-displayName: "संग्रह फ़ील्ड: Markdown(Vditor)"
+displayName: "Collection field: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |
-  यह Markdown को स्टोर करने और उसे Vditor एडिटर का उपयोग करके रेंडर करने के लिए उपयोग किया जाता है। यह सामान्य Markdown सिंटैक्स जैसे सूची, कोड, उद्धरण आदि को सपोर्ट करता है, और इमेज, रिकॉर्डिंग आदि अपलोड करने की सुविधा देता है। यह तत्काल रेंडरिंग (instant rendering) भी प्रदान करता है, जिससे आपको 'जो आप देखते हैं वही पाते हैं' (WYSIWYG) का अनुभव मिलता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Used to store Markdown and render it using Vditor editor, supports common Markdown syntax such as list, code, quote, etc., and supports uploading images, recordings, etc.It also allows for instant rendering, where what you see is what you get.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: Markdown(Vditor)
+# Collection field: Markdown(Vditor)

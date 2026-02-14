@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde: Parallell nod"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Används när grenprocesser behöver köras parallellt i ett arbetsflöde.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Parallell nod
+# Workflow: Parallel node

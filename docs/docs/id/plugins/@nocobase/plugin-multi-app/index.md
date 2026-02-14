@@ -4,14 +4,11 @@ packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
-  Membuat, mengelola, dan menjalankan beberapa instans sub-aplikasi independen dalam satu aplikasi induk.
+  Creates, manages, and runs multiple independent sub-application instances within a parent application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
 # Multi-app

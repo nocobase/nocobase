@@ -1,15 +1,15 @@
 ---
-displayName: "Åtgärd: Exportera poster"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Exportera filtrerade poster till Excel. Ni kan konfigurera vilka fält som ska exporteras.
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Åtgärd: Exportera poster
+# Action: Export records

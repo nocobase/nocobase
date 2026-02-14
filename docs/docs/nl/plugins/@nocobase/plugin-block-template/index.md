@@ -1,17 +1,15 @@
 ---
-displayName: "Blok: sjabloon (verouderd)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Maak en beheer bloksjablonen voor hergebruik op pagina's.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Blok: sjabloon (verouderd)
+# Block: template (deprecated)
 
-> Let op: Deze plugin is verouderd.
+> Note: This plugin is deprecated.

@@ -1,17 +1,12 @@
 ---
-displayName: "Flujo de trabajo: Mapeo de variables JSON"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  Permite mapear cualquier dato JSON a variables estructuradas para su uso en nodos posteriores.
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Flujo de trabajo: Mapeo de variables JSON
+# Workflow: JSON variable mapping

@@ -1,18 +1,15 @@
 ---
-displayName: "Pracovní postup: Událost vlastní akce"
+displayName: "Workflow: Custom action event"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Spustí se po kliknutí na tlačítko s vlastní akcí. Vhodné pro orchestraci vlastních operací s datovými řádky.
+  Triggers after click a custom action button.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Událost vlastní akce
+# Workflow: Custom action event

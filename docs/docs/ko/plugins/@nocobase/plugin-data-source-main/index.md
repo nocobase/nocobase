@@ -1,14 +1,12 @@
 ---
-displayName: "데이터 소스: 주 데이터베이스"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  NocoBase 주 데이터베이스는 PostgreSQL, MySQL, MariaDB 등 관계형 데이터베이스를 지원합니다.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 데이터 소스: 주 데이터베이스
+# Data source: Main

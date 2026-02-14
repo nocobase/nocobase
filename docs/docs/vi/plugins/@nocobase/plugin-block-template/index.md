@@ -1,18 +1,15 @@
 ---
-displayName: "Khối: Mẫu (đã ngừng hỗ trợ)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Tạo và quản lý các mẫu khối để tái sử dụng trên các trang.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Block: template (deprecated)
 
-# Khối: Mẫu (đã ngừng hỗ trợ)
-
-> Lưu ý: Plugin này đã ngừng hỗ trợ.
+> Note: This plugin is deprecated.

@@ -1,14 +1,12 @@
 ---
-displayName: "데이터 시각화"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  데이터 시각화 기능을 제공합니다. 차트 블록과 차트 필터 블록을 포함하며, 꺾은선형 차트, 영역형 차트, 막대형 차트 등 10가지 이상의 다양한 차트를 지원합니다. 또한, 더 많은 차트 유형을 확장할 수도 있습니다.
+  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 데이터 시각화
+# Data visualization

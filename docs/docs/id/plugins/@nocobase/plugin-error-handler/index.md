@@ -1,14 +1,12 @@
 ---
-displayName: "Penangan Kesalahan"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Menangani kesalahan dan pengecualian dalam aplikasi.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Penangan Kesalahan
+# Error handler

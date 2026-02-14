@@ -1,15 +1,12 @@
 ---
-displayName: "Khối: Bảng thao tác"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Quản lý và hiển thị tập trung các thao tác khác nhau, giúp người dùng thực hiện tác vụ nhanh chóng. Hỗ trợ mở rộng, hiện tại các loại thao tác được hỗ trợ bao gồm cửa sổ bật lên, liên kết, quét và yêu cầu tùy chỉnh.
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-
-# Khối: Bảng thao tác
+# Block: Action panel

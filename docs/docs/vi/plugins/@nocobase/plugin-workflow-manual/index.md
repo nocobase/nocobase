@@ -1,14 +1,12 @@
 ---
-displayName: "Luồng công việc: Nút xử lý thủ công"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Dùng cho các luồng công việc cần sự can thiệp thủ công để đưa ra các quyết định.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút xử lý thủ công
+# Workflow: Manual node

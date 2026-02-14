@@ -1,18 +1,15 @@
 ---
-displayName: "ويكوم"
+displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يوفر إمكانيات لتكامل ويكوم، بما في ذلك طرق المصادقة، وقناة الإشعارات، ومصدر البيانات لمزامنة بيانات المستخدمين.
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# ويكوم
+# WeCom

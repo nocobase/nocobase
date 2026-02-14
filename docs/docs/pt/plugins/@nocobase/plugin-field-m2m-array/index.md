@@ -1,14 +1,12 @@
 ---
-displayName: "Campo da coleção: Muitos para muitos (array)"
+displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  Permite criar relacionamentos de muitos para muitos entre duas coleções, armazenando um array de chaves únicas da coleção de destino.
+  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Campo da coleção: Muitos para muitos (array)
+# Collection field: Many to many (array)

@@ -1,14 +1,12 @@
 ---
-displayName: "การยืนยันตัวตน: API Keys"
+displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  อนุญาตให้ผู้ใช้เข้าถึง HTTP API ของแอปพลิเคชันโดยใช้ API key ได้ครับ
+  Allows users to use API key to access application's HTTP API
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การยืนยันตัวตน: API Keys
+# Auth: API keys

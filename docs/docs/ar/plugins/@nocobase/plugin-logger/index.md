@@ -1,15 +1,12 @@
 ---
-displayName: "السجلات"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  سجلات جانب الخادم، تتضمن بشكل أساسي سجلات طلبات الواجهة البرمجية (API) وسجلات تشغيل النظام، وتتيح تجميع ملفات السجل وتنزيلها.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# السجلات
+# Logger

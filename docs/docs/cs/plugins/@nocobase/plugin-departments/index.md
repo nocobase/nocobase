@@ -1,14 +1,12 @@
 ---
-displayName: "Oddělení"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  Uspořádejte uživatele podle oddělení, nastavte hierarchické vztahy, propojte role pro řízení oprávnění a podporujte použití oddělení jako proměnných v pracovních postupech a výrazech.
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Oddělení
+# Departments

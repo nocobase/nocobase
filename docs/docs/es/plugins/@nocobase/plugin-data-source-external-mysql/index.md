@@ -1,18 +1,15 @@
 ---
-displayName: "Fuente de datos: MySQL externo"
+displayName: "Data source: External MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Utilice bases de datos MySQL externas como fuentes de datos.
+  Use external MySQL databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Fuente de datos: MySQL externo
+# Data source: External MySQL

@@ -1,18 +1,15 @@
 ---
-displayName: "תהליך עבודה: צומת חישוב תאריך"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  משמש לביצוע חישובי תאריך בתהליכי עבודה, כגון פעולות מניפולציה, השוואה ועיצוב.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת חישוב תאריך
+# Workflow: date calculation node

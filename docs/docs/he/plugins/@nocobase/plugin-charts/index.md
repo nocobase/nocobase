@@ -1,17 +1,15 @@
 ---
-displayName: "תרשימים (הוצא משימוש)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  התוסף הוצא משימוש. אנא השתמשו בתוסף ויזואליזציית נתונים במקום זאת.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תרשימים (הוצא משימוש)
+# Charts (deprecated)
 
-> שימו לב: תוסף זה הוצא משימוש.
+> Note: This plugin is deprecated.

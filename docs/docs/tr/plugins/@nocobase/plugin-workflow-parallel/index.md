@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: Paralel Düğüm"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  İş akışında paralel olarak yürütülmesi gereken dallanmış süreçler için kullanılabilir.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Paralel Düğüm
+# Workflow: Parallel node

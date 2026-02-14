@@ -1,16 +1,12 @@
 ---
-displayName: "त्रुटि संसाधक"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  एप्लिकेशन में त्रुटियों और अपवादों को संभालता है।
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# त्रुटि संसाधक
+# Error handler

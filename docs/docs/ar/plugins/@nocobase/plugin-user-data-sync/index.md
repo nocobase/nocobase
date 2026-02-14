@@ -1,14 +1,12 @@
 ---
-displayName: "مزامنة بيانات المستخدم"
+displayName: "User data synchronization"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  تسجيل وإدارة مصادر مزامنة بيانات المستخدم القابلة للتوسيع، ويوفر واجهة برمجة تطبيقات HTTP (API) افتراضيًا. يدعم مزامنة البيانات مع موارد مثل المستخدمين والأقسام.
+  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# مزامنة بيانات المستخدم
+# User data synchronization

@@ -1,16 +1,12 @@
 ---
-displayName: "सूचना प्रबंधन"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  यह एक एकीकृत प्रबंधन सेवा प्रदान करता है, जिसमें चैनल कॉन्फ़िगरेशन, लॉगिंग और अन्य सुविधाएँ शामिल हैं। यह इन-ऐप संदेश और ईमेल सहित विभिन्न सूचना चैनलों के कॉन्फ़िगरेशन का समर्थन करता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# सूचना प्रबंधन
+# Notification manager

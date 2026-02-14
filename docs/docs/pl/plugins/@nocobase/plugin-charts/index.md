@@ -1,17 +1,15 @@
 ---
-displayName: "Wykresy (przestarzałe)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  Ta wtyczka została wycofana. Proszę użyć wtyczki do wizualizacji danych.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Wykresy (przestarzałe)
+# Charts (deprecated)
 
-> Uwaga: Ta wtyczka jest przestarzała.
+> Note: This plugin is deprecated.

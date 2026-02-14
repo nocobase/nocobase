@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  Výkonný BPM nástroj, který tvoří základ pro automatizaci byznysu a umožňuje libovolné rozšíření o další spouštěče a uzly.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup
+# Workflow

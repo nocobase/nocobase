@@ -1,14 +1,14 @@
 ---
-displayName: "Aksi: Permintaan Kustom"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  Mengirim permintaan ke layanan HTTP apa pun, mendukung pengiriman data konteks ke layanan target.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Permintaan Kustom
+# Action: Custom request

@@ -1,14 +1,12 @@
 ---
-displayName: "Sao chép văn bản"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Thêm nút sao chép vào các trường văn bản
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Sao chép văn bản
+# Text copy

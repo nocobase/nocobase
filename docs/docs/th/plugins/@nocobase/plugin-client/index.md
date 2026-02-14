@@ -1,14 +1,12 @@
 ---
-displayName: "WEB ไคลเอนต์"
+displayName: "WEB client"
 packageName: '@nocobase/plugin-client'
 description: |
-  เป็นส่วนติดต่อผู้ใช้สำหรับ NocoBase server
+  Provides a client interface for the NocoBase server
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# WEB ไคลเอนต์
+# WEB client

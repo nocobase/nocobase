@@ -1,18 +1,15 @@
 ---
-displayName: "แอคชัน: ส่งออกข้อมูล Pro"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  เพิ่มประสิทธิภาพความสามารถในการส่งออกข้อมูล ด้วยการส่งออกแบบอะซิงโครนัสที่รองรับข้อมูลปริมาณมาก และยังรองรับการส่งออกไฟล์แนบอีกด้วย
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แอคชัน: ส่งออกข้อมูล Pro
+# Action: Export records Pro

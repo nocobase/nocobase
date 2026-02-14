@@ -1,18 +1,15 @@
 ---
-displayName: "पासवर्ड नीति"
+displayName: "Password policy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  सभी उपयोगकर्ताओं के लिए पासवर्ड नियम और लॉगिन लॉकआउट नीति सेट करें।
+  Set the password rules and sign in lockout policy for all users
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# पासवर्ड नीति
+# Password policy

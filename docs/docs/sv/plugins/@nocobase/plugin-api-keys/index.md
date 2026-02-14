@@ -1,15 +1,12 @@
 ---
-displayName: "Autentisering: API-nycklar"
+displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  Tillåter användare att använda API-nycklar för att komma åt applikationens HTTP API.
+  Allows users to use API key to access application's HTTP API
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Autentisering: API-nycklar
+# Auth: API keys

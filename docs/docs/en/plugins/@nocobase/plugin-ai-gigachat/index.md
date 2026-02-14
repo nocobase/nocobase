@@ -8,6 +8,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # AI LLM: GigaChat

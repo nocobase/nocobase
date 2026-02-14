@@ -1,14 +1,12 @@
 ---
-displayName: "Veri kaynağı: Ana"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  NocoBase ana veritabanı; PostgreSQL, MySQL, MariaDB gibi ilişkisel veritabanlarını destekler.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Veri kaynağı: Ana
+# Data source: Main

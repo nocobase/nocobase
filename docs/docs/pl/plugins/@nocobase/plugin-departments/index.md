@@ -1,14 +1,12 @@
 ---
-displayName: "Działy"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  Organizuj użytkowników według działów, ustalaj relacje hierarchiczne, przypisuj role do kontroli uprawnień oraz używaj działów jako zmiennych w przepływach pracy i wyrażeniach.
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Działy
+# Departments

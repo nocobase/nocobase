@@ -1,14 +1,15 @@
 ---
-displayName: "Actie: Records importeren"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Importeer records met behulp van Excel-sjablonen. U kunt configureren welke velden u wilt importeren en sjablonen worden automatisch gegenereerd.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Actie: Records importeren
+# Action: Import records

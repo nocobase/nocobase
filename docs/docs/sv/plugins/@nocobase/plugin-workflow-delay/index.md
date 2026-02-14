@@ -1,16 +1,12 @@
 ---
-displayName: "Arbetsflöde: Fördröjningsnod"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Kan användas i parallella grenar i ett arbetsflöde för att vänta på att andra grenar ska slutföras.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-
-# Arbetsflöde: Fördröjningsnod
+# Workflow: Delay node

@@ -6,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
 
 # 工作流：动态表达式计算节点
+
+> 注意：本插件已废弃（deprecated）。

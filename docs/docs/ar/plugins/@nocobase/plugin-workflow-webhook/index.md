@@ -1,18 +1,15 @@
 ---
-displayName: "سير العمل: مشغّل Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يستقبل استدعاءات HTTP من الأنظمة الخارجية ويشغّل الأحداث. مناسب لعمليات دفع البيانات وإشعارات الأحداث التي تبدأها أنظمة الطرف الثالث، مثل استدعاءات الدفع وإشعارات الرسائل.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: مشغّل Webhook
+# Workflow: Webhook

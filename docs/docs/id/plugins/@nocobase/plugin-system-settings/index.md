@@ -1,14 +1,12 @@
 ---
-displayName: "Pengaturan Sistem"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Digunakan untuk menyesuaikan judul sistem, logo, bahasa, dan lain-lain.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Pengaturan Sistem
+# System settings

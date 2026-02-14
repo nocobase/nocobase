@@ -1,16 +1,12 @@
 ---
-displayName: "תיעוד API"
+displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
-  מחולל תיעוד OpenAPI עבור NocoBase HTTP API.
+  An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-
-
-# תיעוד API
+# API documentation

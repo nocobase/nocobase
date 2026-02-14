@@ -1,18 +1,15 @@
 ---
-displayName: "محول Redis للنشر والاشتراك"
+displayName: "Redis pub sub adapter"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يُستخدم لمعالجة رسائل النشر والاشتراك (pub/sub) لتطبيقات NocoBase بالاعتماد على Redis.
-isFree: لا
-builtIn: لا
-defaultEnabled: لا
+  Used for hanlding pub/sub messages with Redis.
+isFree: false
+builtIn: false
+defaultEnabled: false
 editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# محول Redis للنشر والاشتراك
+# Redis pub sub adapter

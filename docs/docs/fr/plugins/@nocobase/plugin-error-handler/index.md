@@ -1,16 +1,12 @@
 ---
-displayName: "Gestionnaire d\"erreurs"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Gère les erreurs et les exceptions au sein de l'application.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-
-
-# Gestionnaire d'erreurs
+# Error handler

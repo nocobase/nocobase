@@ -1,16 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: समानांतर नोड"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  इसका उपयोग वर्कफ़्लो में शाखा प्रक्रियाओं को समानांतर रूप से निष्पादित करने के लिए किया जा सकता है।
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# वर्कफ़्लो: समानांतर नोड
+# Workflow: Parallel node

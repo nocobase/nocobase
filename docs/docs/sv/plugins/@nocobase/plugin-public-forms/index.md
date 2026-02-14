@@ -1,15 +1,12 @@
 ---
-displayName: "Publika formulär"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Dela publika formulär externt för att samla in information från anonyma användare.
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Publika formulär
+# Public forms

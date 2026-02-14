@@ -1,15 +1,12 @@
 ---
-displayName: "Datakällshanterare"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Hantera datakällor, inklusive den inbyggda Master-databasen, externa databaser, API:er, med mera.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Datakällshanterare
+# Data source manager

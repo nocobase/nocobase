@@ -1,14 +1,15 @@
 ---
-displayName: "Azione: Modifica in blocco"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Consente di modificare in blocco tutti i record o solo quelli selezionati.
+  Batch edit all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Azione: Modifica in blocco
+# Action: Batch edit

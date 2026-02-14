@@ -1,18 +1,15 @@
 ---
-displayName: "سجلات التدقيق"
+displayName: "Audit logs"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  تتبع وتوثيق أنشطة المستخدمين وإجراءات الموارد عبر النظام.
+  Track and document user activities and resource actions across the system
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سجلات التدقيق
+# Audit logs

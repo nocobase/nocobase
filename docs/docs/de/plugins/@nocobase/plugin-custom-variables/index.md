@@ -1,17 +1,14 @@
 ---
-displayName: "Benutzerdefinierte Variablen"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Ermöglicht das Hinzufügen und Verwenden von benutzerdefinierten Variablen.
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Benutzerdefinierte Variablen
+# Custom variables

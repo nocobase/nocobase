@@ -1,14 +1,12 @@
 ---
-displayName: "Blocco: Griglia di Carte"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Visualizza i dati in un elenco a griglia, con supporto per la paginazione.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Blocco: Griglia di Carte
+# Block: GridCard

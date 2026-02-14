@@ -1,17 +1,15 @@
 ---
-displayName: "Veri görselleştirme: ECharts"
+displayName: "Data visualization: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  ECharts kullanarak veri görselleştirme imkanı sunar. Huni, radar ve daha birçok grafik türünü desteklerken, kullanıcı dostu görselleştirme yapılandırmaları sağlar.
+  Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Veri görselleştirme: ECharts
+# Data visualization: ECharts

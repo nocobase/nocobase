@@ -1,17 +1,15 @@
 ---
-displayName: "Blok: šablona (zastaralé)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Vytvářejte a spravujte šablony bloků pro opakované použití na stránkách.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Blok: šablona (zastaralé)
+# Block: template (deprecated)
 
-> Poznámka: Tento plugin je zastaralý.
+> Note: This plugin is deprecated.

@@ -1,14 +1,12 @@
 ---
-displayName: "डेटा स्रोत प्रबंधक"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  डेटा स्रोतों का प्रबंधन करें, जिसमें बिल्ट-इन मास्टर डेटाबेस, बाहरी डेटाबेस और API शामिल हैं।
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# डेटा स्रोत प्रबंधन
+# Data source manager

@@ -1,17 +1,15 @@
 ---
-displayName: "שדה אוסף: תמונת מצב"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  בעת הוספת רשומה חדשה, נוצרת תמונת מצב עבור הרשומה הקשורה אליה ונשמרת ברשומה החדשה. תמונת המצב אינה מתעדכנת כאשר הרשומה הקשורה מתעדכנת.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: תמונת מצב
+# Collection field: Snapshot
 
-> שימו לב: תוסף זה יצא משימוש.
+> Note: This plugin is deprecated.

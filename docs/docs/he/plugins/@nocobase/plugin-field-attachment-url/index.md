@@ -1,14 +1,12 @@
 ---
-displayName: "שדה אוסף: קובץ מצורף (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  תומך בקבצים מצורפים בפורמט URL.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: קובץ מצורף (URL)
+# Collection field: Attachment(URL)

@@ -1,17 +1,14 @@
 ---
-displayName: "Багатозастосунковість"
+displayName: "Multi-app"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
-  Створює, керує та запускає кілька незалежних екземплярів дочірніх застосунків в межах батьківського застосунку.
+  Creates, manages, and runs multiple independent sub-application instances within a parent application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Багатозастосунковість
+# Multi-app

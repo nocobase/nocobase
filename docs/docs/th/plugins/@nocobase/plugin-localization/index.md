@@ -1,14 +1,12 @@
 ---
-displayName: "การแปลภาษา"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  ช่วยให้สามารถจัดการทรัพยากรการแปลภาษาของแอปพลิเคชันได้ครับ/ค่ะ
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การแปลภาษา
+# Localization

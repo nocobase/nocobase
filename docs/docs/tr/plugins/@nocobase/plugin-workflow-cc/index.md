@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: CC"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  İş akışlarında, onayları veya diğer herhangi bir bilgiyi belirli kullanıcılara göndermek için bir CC (bilgi kopyası) özelliği sunar.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: CC
+# Workflow: CC

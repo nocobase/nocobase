@@ -1,18 +1,15 @@
 ---
-displayName: "Adapter kolejki Redis"
+displayName: "Redis queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Służy do obsługi kolejek wiadomości aplikacji, wykorzystując Redis.
+  Used for hanlding message queue with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Adapter kolejki Redis
+# Redis queue adapter

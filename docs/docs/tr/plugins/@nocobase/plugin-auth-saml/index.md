@@ -1,18 +1,15 @@
 ---
-displayName: "Kimlik Doğrulama: SAML 2.0"
+displayName: "Auth: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  SAML 2.0 protokolü aracılığıyla kimlik doğrulaması yapar.
+  SAML 2.0 authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Kimlik Doğrulama: SAML 2.0
+# Auth: SAML 2.0

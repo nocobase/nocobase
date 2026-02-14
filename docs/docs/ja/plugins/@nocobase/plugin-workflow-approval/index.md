@@ -1,15 +1,15 @@
 ---
-displayName: "ワークフロー：承認"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  操作ボタンまたはAPIを通じて承認申請が開始されたときにトリガーされます。承認プロセス専用で、申請書の管理や処理プロセスの追跡を行うための専用の承認ノードとブロックが用意されています
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ワークフロー：承認
+# Workflow: Approval

@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: Zpráva odpovědi"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Slouží k sestavení zprávy odpovědi a jejímu zobrazení klientovi v pracovních postupech událostí formuláře a zachycení požadavku.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Zpráva odpovědi
+# Workflow: Response message

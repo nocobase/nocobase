@@ -1,16 +1,12 @@
 ---
-displayName: "Hata İşleyici"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Uygulamanızdaki hata ve istisnaları yönetir.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-
-
-# Hata İşleyici
+# Error handler

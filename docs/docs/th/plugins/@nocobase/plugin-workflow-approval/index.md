@@ -1,15 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: การอนุมัติ"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  ปลั๊กอินนี้จะทำงานเมื่อมีการส่งคำขออนุมัติผ่านปุ่มแอคชัน หรือ API ซึ่งออกแบบมาโดยเฉพาะสำหรับกระบวนการอนุมัติ โดยมีโหนดการอนุมัติและบล็อกพิเศษสำหรับจัดการเอกสารและติดตามสถานะการดำเนินการ
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: การอนุมัติ
+# Workflow: Approval

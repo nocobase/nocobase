@@ -1,14 +1,12 @@
 ---
-displayName: "Manajemen Koleksi Visual"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  Alat yang mirip dengan diagram ER. Saat ini hanya mendukung database utama.
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Manajemen Koleksi Visual
+# Graph collection manager

@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: Manuel Düğüm"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Bazı kararların kullanıcılar tarafından alındığı iş akışları için kullanılabilir.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Manuel Düğüm
+# Workflow: Manual node

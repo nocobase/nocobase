@@ -1,17 +1,14 @@
 ---
-displayName: "טיוטות טפסים"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  מאפשר למשתמשים לשמור טיוטות טפסים במהלך מילוי, ולהמשיך לערוך ולהגיש אותן מאוחר יותר.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# טיוטות טפסים
+# Form drafts

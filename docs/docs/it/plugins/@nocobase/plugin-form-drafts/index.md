@@ -1,17 +1,14 @@
 ---
-displayName: "Bozze di modulo"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Consente agli utenti di salvare le bozze dei moduli e di continuare a modificarle in seguito.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Bozze di modulo
+# Form drafts

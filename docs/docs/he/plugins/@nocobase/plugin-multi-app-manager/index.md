@@ -1,14 +1,12 @@
 ---
-displayName: "מנהל ריבוי יישומים (הוצא משימוש)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  ריבוי יישומים מריץ יישומים באופן של שיתוף תהליכים, ומתאים רק לסביבות בדיקה והדגמה. אין להשתמש בו בסביבת ייצור.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מנהל ריבוי יישומים (הוצא משימוש)
+# Multi-app manager (deprecated)

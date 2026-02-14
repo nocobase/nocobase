@@ -1,15 +1,15 @@
 ---
-displayName: "Przepływ pracy: Zatwierdzanie"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Ten przepływ pracy uruchamia się, gdy wniosek o zatwierdzenie zostanie zainicjowany za pomocą przycisku akcji lub API. Jest on dedykowany procesom zatwierdzania i zawiera specjalne węzły zatwierdzania oraz bloki do zarządzania dokumentami i śledzenia ich przetwarzania.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Zatwierdzanie
+# Workflow: Approval

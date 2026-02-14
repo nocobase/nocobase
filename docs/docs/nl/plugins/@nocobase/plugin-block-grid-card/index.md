@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: Rasterkaart"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Toont gegevens in een rasterlijst met ondersteuning voor paginering.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Blok: Rasterkaart
+# Block: GridCard

@@ -1,14 +1,12 @@
 ---
-displayName: 'سير العمل: حدث ما بعد الإجراء'
+displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  يتم تشغيله بعد اكتمال طلب يتم بدؤه عبر زر إجراء أو واجهة برمجة تطبيقات (API)، مثل بعد إضافة البيانات أو تحديثها أو حذفها، أو بعد 'إرسال إلى سير العمل". وهو مناسب لمعالجة البيانات وإرسال الإشعارات وما إلى ذلك، بعد اكتمال الإجراءات.
+  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: حدث ما بعد الإجراء
+# Workflow: Post-action event

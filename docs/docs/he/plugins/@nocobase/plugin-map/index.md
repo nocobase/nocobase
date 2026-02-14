@@ -1,16 +1,12 @@
 ---
-displayName: "בלוק: מפה"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  בלוק המפה תומך במפות Gaode ובמפות Google, ותוכלו גם להרחיב אותו לתמיכה בסוגי מפות נוספים.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-
-
-# בלוק: מפה
+# Block: Map

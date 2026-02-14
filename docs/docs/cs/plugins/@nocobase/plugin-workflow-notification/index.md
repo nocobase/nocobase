@@ -1,16 +1,12 @@
 ---
-displayName: "Pracovní postup: notifikační uzel"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Lze použít k odesílání různých oznámení v pracovním postupu.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Pracovní postup: notifikační uzel
+# Workflow: notification node

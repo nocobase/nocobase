@@ -1,14 +1,12 @@
 ---
-displayName: "Синхронизация пользовательских данных"
+displayName: "User data synchronization"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  Регистрация и управление расширяемыми источниками синхронизации пользовательских данных, по умолчанию предоставляется HTTP API. Поддерживает синхронизацию данных с такими ресурсами, как пользователи и отделы.
+  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Синхронизация пользовательских данных
+# User data synchronization

@@ -1,14 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: ข้อความตอบกลับ"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  ใช้สำหรับประกอบข้อความตอบกลับและแสดงให้ไคลเอนต์เห็นในเวิร์กโฟลว์เหตุการณ์ฟอร์มและการดักจับคำขอ
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: ข้อความตอบกลับ
+# Workflow: Response message

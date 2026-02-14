@@ -1,18 +1,15 @@
 ---
-displayName: "Flujo de trabajo: Subflujo"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permite llamar a otros flujos de trabajo dentro de un flujo de trabajo. Puede usar las variables del flujo de trabajo actual como entrada para el subflujo y la salida del subflujo como variables para el flujo de trabajo actual.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Flujo de trabajo: Subflujo
+# Workflow: Subflow

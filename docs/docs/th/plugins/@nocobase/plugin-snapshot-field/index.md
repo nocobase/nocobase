@@ -1,17 +1,15 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: สแนปชอต"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  เมื่อเพิ่มข้อมูลใหม่ ระบบจะสร้างสแนปชอตของข้อมูลที่เกี่ยวข้องและบันทึกไว้ในข้อมูลปัจจุบัน สแนปชอตนี้จะไม่ได้รับการอัปเดตเมื่อข้อมูลที่เกี่ยวข้องมีการเปลี่ยนแปลง
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟิลด์คอลเลกชัน: สแนปชอต
+# Collection field: Snapshot
 
-> หมายเหตุ: ปลั๊กอินนี้เลิกใช้งานแล้ว
+> Note: This plugin is deprecated.

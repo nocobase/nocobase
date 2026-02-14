@@ -1,14 +1,12 @@
 ---
-displayName: "Správce oznámení"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Poskytuje jednotnou službu správy, která zahrnuje konfiguraci kanálů, protokolování a další funkce, a podporuje konfiguraci různých oznamovacích kanálů, včetně zpráv v aplikaci a e-mailu.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Správce oznámení
+# Notification manager

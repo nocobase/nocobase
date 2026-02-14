@@ -1,13 +1,12 @@
 ---
-displayName: "Engine pro pracovní postupy"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Engine pro pracovní postupy
+# Flow engine

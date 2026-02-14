@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: Lus-node"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Gebruikt om een subproces te herhalen voor elke waarde in een array, of om een subproces een vast aantal keren te herhalen.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: Lus-node
+# Workflow: Loop node

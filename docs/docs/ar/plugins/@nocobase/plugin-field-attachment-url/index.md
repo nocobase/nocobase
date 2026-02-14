@@ -1,14 +1,12 @@
 ---
-displayName: "حقل المجموعة: مرفق (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  يدعم المرفقات بصيغة URL.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# حقل المجموعة: مرفق (URL)
+# Collection field: Attachment(URL)

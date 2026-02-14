@@ -12,6 +12,13 @@
   "description.zh-CN": "复制一条记录，可以复制到表单中编辑后再提交，也可以直接复制并生成一条新记录。",
   "description.ru-RU": "Дублирование записи: можно скопировать запись в форму для редактирования перед сохранением или сразу создать новую запись-дубликат.",
   "license": "AGPL-3.0",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

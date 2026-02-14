@@ -1,17 +1,15 @@
 ---
-displayName: "ויזואליזציית נתונים: ECharts"
+displayName: "Data visualization: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  השתמשו ב-ECharts לוויזואליזציית נתונים. התוסף תומך בסוגי תרשימים נוספים כמו תרשים משפך, תרשים רדאר ועוד, ומציע הגדרות ויזואליזציה ידידותיות למשתמש.
+  Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# ויזואליזציית נתונים: ECharts
+# Data visualization: ECharts

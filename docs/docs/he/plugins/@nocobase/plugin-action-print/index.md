@@ -1,14 +1,12 @@
 ---
-displayName: "פעולה: הדפסה"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  קוראת לפונקציית ההדפסה של הדפדפן כדי להדפיס רשומה בודדת.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# פעולה: הדפסה
+# Action: Print

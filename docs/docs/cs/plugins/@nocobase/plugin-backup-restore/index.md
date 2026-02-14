@@ -1,17 +1,15 @@
 ---
-displayName: "Zálohování a obnova aplikace (zastaralé)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Umožňuje zálohovat a obnovovat aplikace pro scénáře, jako je replikace, migrace a aktualizace aplikací.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Zálohování a obnova aplikace (zastaralé)
+# App backup & restore (deprecated)
 
-> Poznámka: Tento plugin je zastaralý.
+> Note: This plugin is deprecated.

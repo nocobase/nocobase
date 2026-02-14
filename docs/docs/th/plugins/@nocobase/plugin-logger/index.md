@@ -1,14 +1,12 @@
 ---
-displayName: "บันทึก"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  บันทึกฝั่งเซิร์ฟเวอร์ ซึ่งส่วนใหญ่ประกอบด้วยบันทึกคำขอ API และบันทึกการทำงานของระบบ และรองรับการบีบอัดและดาวน์โหลดไฟล์บันทึก
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# บันทึก
+# Logger

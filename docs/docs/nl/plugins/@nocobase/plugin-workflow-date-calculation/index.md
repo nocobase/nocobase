@@ -1,18 +1,15 @@
 ---
-displayName: "Workflow: Datumcalculatieknooppunt"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Met dit knooppunt kunt u datums bewerken in workflows, zoals optellen, aftrekken, vergelijken of formatteren.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: Datumcalculatieknooppunt
+# Workflow: date calculation node

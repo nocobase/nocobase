@@ -1,18 +1,15 @@
 ---
-displayName: "Рабочий процесс: Подпроцесс"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Используется для вызова других рабочих процессов внутри одного рабочего процесса. Вы можете использовать переменные текущего рабочего процесса в качестве входных данных для подпроцесса, а также использовать выходные данные подпроцесса в качестве переменных текущего рабочего процесса.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Подпроцесс
+# Workflow: Subflow

@@ -1,18 +1,15 @@
 ---
-displayName: "Dostosowywanie marki"
+displayName: "Custom brand"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Umożliwia dostosowanie nazwy marki oraz innych informacji związanych z marką.
+  Customize the brand name and more brand-related information.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Dostosowywanie marki
+# Custom brand

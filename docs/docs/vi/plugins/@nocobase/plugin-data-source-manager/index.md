@@ -1,14 +1,12 @@
 ---
-displayName: "Quản lý nguồn dữ liệu"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Quản lý các nguồn dữ liệu, bao gồm cơ sở dữ liệu Master tích hợp sẵn, các cơ sở dữ liệu bên ngoài và API.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Quản lý nguồn dữ liệu
+# Data source manager

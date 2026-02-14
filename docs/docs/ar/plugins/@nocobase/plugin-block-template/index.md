@@ -1,18 +1,15 @@
 ---
-displayName: "الكتلة: القالب (مهمل)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  لإنشاء وإدارة قوالب الكتل لإعادة استخدامها في الصفحات.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
+# Block: template (deprecated)
 
-# الكتلة: القالب (مهمل)
-
-> ملاحظة: هذه الإضافة مهملة.
+> Note: This plugin is deprecated.

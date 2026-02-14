@@ -1,17 +1,14 @@
 ---
-displayName: "NocoBase\"i Gömme"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  NocoBase'i harici bir sisteme veya web sayfasına gömerek, onu o sistemin veya sayfanın bir parçası haline getirin.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# NocoBase'i Gömme
+# Embed NocoBase

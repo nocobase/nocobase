@@ -5,14 +5,11 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Empfängt HTTP-Aufrufe von externen Systemen und löst Ereignisse aus. Dies ist ideal für Daten-Pushes und Ereignisbenachrichtigungen, die von Drittsystemen initiiert werden, wie beispielsweise Zahlungs-Callbacks oder Nachrichtenbenachrichtigungen.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
 # Workflow: Webhook

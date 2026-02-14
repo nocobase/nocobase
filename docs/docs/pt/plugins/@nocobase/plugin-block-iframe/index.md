@@ -1,14 +1,12 @@
 ---
-displayName: "Bloco: iframe"
+displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  Crie um bloco iframe na página para incorporar e exibir páginas web ou conteúdo externo.
+  Create an iframe block on the page to embed and display external web pages or content.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Bloco: iframe
+# Block: iframe

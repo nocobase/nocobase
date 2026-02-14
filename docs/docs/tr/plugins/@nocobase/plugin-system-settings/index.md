@@ -1,14 +1,12 @@
 ---
-displayName: "Sistem Ayarları"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Sistemin başlığını, logosunu, dilini ve benzeri ayarlarını yapmak için kullanılır.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Sistem Ayarları
+# System settings

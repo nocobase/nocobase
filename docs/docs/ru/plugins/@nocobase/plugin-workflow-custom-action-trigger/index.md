@@ -1,18 +1,15 @@
 ---
-displayName: "Рабочий процесс: Событие пользовательского действия"
+displayName: "Workflow: Custom action event"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Запускается после нажатия кнопки, связанной с пользовательским действием. Подходит для организации пользовательских операций над строками данных.
+  Triggers after click a custom action button.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Событие пользовательского действия
+# Workflow: Custom action event

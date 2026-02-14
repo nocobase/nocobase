@@ -1,15 +1,12 @@
 ---
-displayName: "コレクションフィールド: 自動採番"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  設定されたルールに基づいてコードを自動生成します。日付、数字、テキストの組み合わせに対応しています
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-
-# コレクションフィールド: 自動採番
+# Collection field: Sequence

@@ -1,17 +1,14 @@
 ---
-displayName: "משתנים מותאמים אישית"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  מאפשר הוספה ושימוש במשתנים מותאמים אישית
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# משתנים מותאמים אישית
+# Custom variables

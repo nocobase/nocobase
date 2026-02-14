@@ -1,14 +1,12 @@
 ---
-displayName: "ब्लॉक: ग्रिड कार्ड"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  डेटा को ग्रिड सूची के रूप में प्रदर्शित करता है, जिसमें पेजिंग का समर्थन है।
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ब्लॉक: ग्रिड कार्ड
+# Block: GridCard

@@ -1,14 +1,12 @@
 ---
-displayName: "डेटा विज़ुअलाइज़ेशन"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  डेटा विज़ुअलाइज़ेशन की सुविधा प्रदान करता है, जिसमें चार्ट ब्लॉक और चार्ट फ़िल्टर ब्लॉक शामिल हैं। यह लाइन चार्ट, एरिया चार्ट, बार चार्ट, और एक दर्जन से अधिक प्रकार के चार्ट को सपोर्ट करता है। आप और भी चार्ट प्रकारों का विस्तार कर सकते हैं।
+  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# डेटा विज़ुअलाइज़ेशन
+# Data visualization

@@ -1,15 +1,12 @@
 ---
-displayName: "WEB-klient"
+displayName: "WEB client"
 packageName: '@nocobase/plugin-client'
 description: |
-  Tillhandahåller ett klientgränssnitt för NocoBase-servern
+  Provides a client interface for the NocoBase server
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# WEB-klient
+# WEB client

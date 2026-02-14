@@ -1,16 +1,15 @@
 ---
-displayName: "Ação: Duplicar registro"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Duplica um registro. Você pode duplicá-lo em um formulário para editar antes de salvar, ou pode duplicá-lo diretamente para gerar um novo registro.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-
-
-# Ação: Duplicar registro
+# Action: Duplicate record

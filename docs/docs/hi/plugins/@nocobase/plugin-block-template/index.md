@@ -1,17 +1,15 @@
 ---
-displayName: "ब्लॉक: टेम्पलेट (बंद कर दिया गया है)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  पेजों में दोबारा इस्तेमाल के लिए ब्लॉक टेम्पलेट बनाएँ और प्रबंधित करें।
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ब्लॉक: टेम्पलेट (बंद कर दिया गया है)
+# Block: template (deprecated)
 
-> ध्यान दें: यह प्लगइन अब उपयोग में नहीं है।
+> Note: This plugin is deprecated.

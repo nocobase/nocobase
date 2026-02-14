@@ -1,14 +1,15 @@
 ---
-displayName: "Sammlungsfeld: Code"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Für die Code-Bearbeitung und Syntaxhervorhebung, unterstützt Sprachen wie Java, JavaScript, Python, SQL und weitere.
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Sammlungsfeld: Code
+# Collection field: Code

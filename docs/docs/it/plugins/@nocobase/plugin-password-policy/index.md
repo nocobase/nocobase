@@ -1,18 +1,15 @@
 ---
-displayName: "Criteri password"
+displayName: "Password policy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Imposta le regole per le password e i criteri di blocco dell'accesso per tutti gli utenti.
+  Set the password rules and sign in lockout policy for all users
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Criteri password
+# Password policy

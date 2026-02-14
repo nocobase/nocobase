@@ -1,18 +1,15 @@
 ---
-displayName: "אימות: דינגטוק"
+displayName: "Auth: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  אימות באמצעות חשבון דינגטוק.
+  DingTalk authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# אימות: דינגטוק
+# Auth: DingTalk

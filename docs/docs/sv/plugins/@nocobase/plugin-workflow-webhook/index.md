@@ -1,19 +1,15 @@
 ---
-displayName: "Arbetsflöde: Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Tar emot HTTP-anrop från externa system och utlöser händelser. Lämplig för dataskick och händelsenotifikationer initierade av tredjepartssystem, till exempel betalningsåterkopplingar och meddelandenotifikationer.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Webhook
+# Workflow: Webhook

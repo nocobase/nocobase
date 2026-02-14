@@ -1,18 +1,15 @@
 ---
-displayName: "Fluxo de trabalho: Variável personalizada"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Usado para criar variáveis personalizadas ou atribuir valores a elas em fluxos de trabalho, a fim de salvar dados temporários no processo.
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Fluxo de trabalho: Variável personalizada
+# Workflow: Custom variable

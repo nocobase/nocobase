@@ -1,15 +1,15 @@
 ---
-displayName: "מקור נתונים: KingbaseES"
+displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  שימוש במסד הנתונים KingbaseES כמקור נתונים. יכול לשמש כמסד נתונים ראשי או כמסד נתונים חיצוני.
+  Using the KingbaseES database as a data source, it can serve as the main database or as an external database.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מקור נתונים: KingbaseES
+# Data source: KingbaseES

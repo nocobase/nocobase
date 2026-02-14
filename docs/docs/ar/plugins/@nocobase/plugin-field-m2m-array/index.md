@@ -1,14 +1,12 @@
 ---
-displayName: "حقل المجموعة: متعدد لمتعدد (مصفوفة)"
+displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  يتيح هذا الحقل إنشاء علاقات متعدد لمتعدد عن طريق تخزين مصفوفة من المفاتيح الفريدة للنموذج الهدف.
+  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# حقل المجموعة: متعدد لمتعدد (مصفوفة)
+# Collection field: Many to many (array)

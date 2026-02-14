@@ -1,16 +1,12 @@
 ---
-displayName: "Системні налаштування"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Використовується для налаштування заголовка системи, логотипу, мови тощо.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Системні налаштування
+# System settings

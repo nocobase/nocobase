@@ -1,14 +1,15 @@
 ---
-displayName: "एक्शन: रिकॉर्ड इम्पोर्ट करें"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Excel टेम्प्लेट का उपयोग करके रिकॉर्ड इम्पोर्ट करें। आप कॉन्फ़िगर कर सकते हैं कि कौन से फ़ील्ड इम्पोर्ट करने हैं, और टेम्प्लेट अपने आप जनरेट हो जाएँगे।
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# एक्शन: रिकॉर्ड इम्पोर्ट करें
+# Action: Import records

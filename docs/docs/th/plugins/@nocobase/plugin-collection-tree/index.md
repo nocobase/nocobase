@@ -1,14 +1,12 @@
 ---
-displayName: "คอลเลกชัน: ทรี"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  จัดเตรียมเทมเพลตคอลเลกชันแบบทรี
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# คอลเลกชัน: ทรี
+# Collection: Tree

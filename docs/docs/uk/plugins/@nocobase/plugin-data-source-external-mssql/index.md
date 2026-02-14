@@ -1,18 +1,15 @@
 ---
-displayName: "Джерело даних: Зовнішній SQL Server"
+displayName: "Data source: External SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Використовуйте зовнішні бази даних SQL Server як джерела даних.
+  Use external SQL Server databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Джерело даних: Зовнішній SQL Server
+# Data source: External SQL Server

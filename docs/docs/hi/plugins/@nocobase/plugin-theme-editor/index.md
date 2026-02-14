@@ -1,14 +1,12 @@
 ---
-displayName: "थीम एडिटर"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  UI के रंग, आकार आदि को अनुकूलित करें और परिणाम को एक थीम के रूप में सहेजें, ताकि आप कई थीमों के बीच स्विच कर सकें।
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# थीम एडिटर
+# Theme editor

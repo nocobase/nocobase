@@ -1,14 +1,14 @@
 ---
-displayName: "פעולה: בקשה מותאמת אישית"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  שליחת בקשה לכל שירות HTTP, עם תמיכה בשליחת נתוני הקשר (context data) לשירות היעד.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# פעולה: בקשה מותאמת אישית
+# Action: Custom request

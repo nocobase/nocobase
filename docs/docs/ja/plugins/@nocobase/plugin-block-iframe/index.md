@@ -1,16 +1,12 @@
 ---
-displayName: "ブロック：iframe"
+displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  ページ上にiframeを作成・管理し、外部のウェブページやコンテンツを埋め込み、表示できます
+  Create an iframe block on the page to embed and display external web pages or content.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-
-
-# ブロック：iframe
+# Block: iframe

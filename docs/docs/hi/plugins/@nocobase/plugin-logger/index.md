@@ -1,14 +1,12 @@
 ---
-displayName: "लॉगर"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  सर्वर-साइड लॉग, जिसमें मुख्य रूप से एपीआई अनुरोध लॉग और सिस्टम रनटाइम लॉग शामिल हैं, और लॉग फ़ाइलों को पैक और डाउनलोड करने की सुविधा देता है।
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# लॉगर
+# Logger

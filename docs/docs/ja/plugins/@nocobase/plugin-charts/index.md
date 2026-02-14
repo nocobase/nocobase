@@ -1,17 +1,15 @@
 ---
-displayName: "チャート（非推奨）"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  このプラグインは非推奨です。代わりにデータ可視化プラグインをご利用ください
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# チャート（非推奨）
+# Charts (deprecated)
 
-> 注意：このプラグインは非推奨です
+> Note: This plugin is deprecated.

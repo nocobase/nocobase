@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת שליחת מייל"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  מאפשר לשלוח דואר אלקטרוני בתוך תהליך עבודה.
+  Send email in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת שליחת מייל
+# Workflow: mailer node

@@ -1,14 +1,12 @@
 ---
-displayName: "Календар"
+displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Надає шаблон колекції та блок календаря для керування даними, пов'язаними з датами. Зазвичай використовується для інформації, що стосується дати/часу, такої як події, зустрічі, завдання тощо.
+  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Календар
+# Calendar

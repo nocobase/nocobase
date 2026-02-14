@@ -1,16 +1,12 @@
 ---
-displayName: "प्रमाणीकरण"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  उपयोगकर्ता प्रमाणीकरण प्रबंधन, जिसमें बुनियादी पासवर्ड प्रमाणीकरण, एसएमएस प्रमाणीकरण, एसएसओ (SSO) प्रोटोकॉल और अन्य प्रमाणीकरण विधियाँ शामिल हैं, जिसे बढ़ाया जा सकता है।
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# प्रमाणीकरण
+# Authentication

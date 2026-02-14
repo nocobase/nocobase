@@ -5,14 +5,11 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Zapewnia możliwości integracji z WeCom, w tym metody uwierzytelniania, kanał powiadomień oraz źródło danych do synchronizacji danych użytkowników.
-isFree: fałsz
-builtIn: fałsz
-defaultEnabled: fałsz
-points: 4
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 3
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
 # WeCom

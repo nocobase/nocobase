@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: Vertragingsknooppunt"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Te gebruiken in parallelle takken van een workflow om te wachten tot andere takken zijn voltooid.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: Vertragingsknooppunt
+# Workflow: Delay node

@@ -1,18 +1,15 @@
 ---
-displayName: "محول قائمة انتظار Redis"
+displayName: "Redis queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يُستخدم لمعالجة قوائم انتظار الرسائل في التطبيق باستخدام Redis.
+  Used for hanlding message queue with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# محول قائمة انتظار Redis
+# Redis queue adapter

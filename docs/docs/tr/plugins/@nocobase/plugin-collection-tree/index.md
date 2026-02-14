@@ -1,16 +1,12 @@
 ---
-displayName: "Koleksiyon: Ağaç"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Ağaç koleksiyonu şablonu sağlar.
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-
-
-# Koleksiyon: Ağaç
+# Collection: Tree

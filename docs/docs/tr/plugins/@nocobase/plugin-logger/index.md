@@ -1,14 +1,12 @@
 ---
-displayName: "Günlükler"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Sunucu tarafı günlükleri; başlıca API istek günlüklerini ve sistem çalışma zamanı günlüklerini içerir, ayrıca günlük dosyalarını paketlemeyi ve indirmeyi destekler.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Günlükler
+# Logger

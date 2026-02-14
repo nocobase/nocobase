@@ -1,18 +1,15 @@
 ---
-displayName: "Sjabloon afdrukken"
+displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Hiermee kunnen gebruikers sjablonen afdrukken binnen de NocoBase-applicatie.
+  It supports users in printing templates within the NocoBase application.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Sjabloon afdrukken
+# Template print

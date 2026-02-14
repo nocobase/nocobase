@@ -1,14 +1,12 @@
 ---
-displayName: "Управління сповіщеннями"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Надає уніфікований сервіс керування, що охоплює конфігурацію каналів, ведення журналів та інші функції, підтримуючи налаштування різних каналів сповіщень, включно з повідомленнями в застосунку та електронною поштою.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Управління сповіщеннями
+# Notification manager

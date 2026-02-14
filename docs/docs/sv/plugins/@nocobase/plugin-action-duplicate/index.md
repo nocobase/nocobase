@@ -1,16 +1,15 @@
 ---
-displayName: "Åtgärd: Duplicera post"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Duplicera en post. Du kan antingen kopiera den till ett formulär för redigering innan du sparar, eller så kan du duplicera den direkt för att skapa en ny post.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-
-# Åtgärd: Duplicera post
+# Action: Duplicate record

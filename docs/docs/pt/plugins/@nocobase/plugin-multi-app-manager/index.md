@@ -1,14 +1,12 @@
 ---
-displayName: "Gerenciador de multiaplicativos (obsoleto)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  Multiaplicativos são executados compartilhando processos. Este recurso é adequado apenas para ambientes de teste e demonstração. Não o utilize em produção.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Gerenciador de multiaplicativos (obsoleto)
+# Multi-app manager (deprecated)

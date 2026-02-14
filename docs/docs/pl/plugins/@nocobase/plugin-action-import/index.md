@@ -1,14 +1,15 @@
 ---
-displayName: "Akcja: Importuj rekordy"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Importowanie rekordów za pomocą szablonów Excel. Mogą Państwo skonfigurować, które pola mają być importowane, a szablony zostaną wygenerowane automatycznie.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Akcja: Importuj rekordy
+# Action: Import records

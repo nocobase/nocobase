@@ -1,14 +1,15 @@
 ---
-displayName: "Eylem: Toplu Güncelleme"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Tüm verileri veya seçilen verileri toplu olarak günceller.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Eylem: Toplu Güncelleme
+# Action: Batch update

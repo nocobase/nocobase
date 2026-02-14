@@ -1,17 +1,14 @@
 ---
-displayName: "تطبيقات متعددة"
+displayName: "Multi-app"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
-  ينشئ ويدير ويشغل عدة نُسخ مستقلة من التطبيقات الفرعية ضمن تطبيق رئيسي.
+  Creates, manages, and runs multiple independent sub-application instances within a parent application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# تطبيقات متعددة
+# Multi-app

@@ -1,17 +1,15 @@
 ---
-displayName: "สำหรับมือถือ (เลิกใช้งานแล้ว)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  ช่วยให้สามารถกำหนดค่าหน้าจอสำหรับมือถือได้
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# สำหรับมือถือ (เลิกใช้งานแล้ว)
+# Mobile client(Deprecated)
 
-> หมายเหตุ: ปลั๊กอินนี้เลิกใช้งานแล้ว
+> Note: This plugin is deprecated.

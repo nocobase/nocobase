@@ -1,14 +1,12 @@
 ---
-displayName: "Collectieveld: Automatische codering"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Genereert automatisch codes op basis van geconfigureerde regels, met ondersteuning voor combinaties van datums, cijfers en tekst.
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Collectieveld: Automatische codering
+# Collection field: Sequence

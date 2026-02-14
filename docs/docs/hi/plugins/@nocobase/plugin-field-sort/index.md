@@ -1,14 +1,12 @@
 ---
-displayName: "संग्रह फ़ील्ड: क्रमबद्धता"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  इसका उपयोग किसी संग्रह में डेटा को क्रमबद्ध करने के लिए किया जाता है।
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: क्रमबद्धता
+# Collection field: Sort

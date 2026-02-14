@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: Seznam"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Zobrazuje data ve formě seznamu s podporou stránkování.
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Blok: Seznam
+# Block: List

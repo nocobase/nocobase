@@ -1,14 +1,12 @@
 ---
-displayName: "Notificatiebeheer"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Biedt een uniforme beheerservice die functies omvat zoals kanaalconfiguratie en logboekregistratie, en ondersteunt de configuratie van diverse notificatiekanalen, waaronder in-app berichten en e-mail.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Notificatiebeheer
+# Notification manager

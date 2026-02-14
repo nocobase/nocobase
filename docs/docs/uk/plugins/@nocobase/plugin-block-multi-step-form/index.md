@@ -1,17 +1,14 @@
 ---
-displayName: "Блок: Багатоетапна форма"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Розділяє форму з багатьма полями на кілька кроків, щоб полегшити навантаження на користувачів.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Блок: Багатоетапна форма
+# Block: Multi-step form

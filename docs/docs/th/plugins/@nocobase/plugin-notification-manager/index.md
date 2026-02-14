@@ -1,14 +1,12 @@
 ---
-displayName: "การจัดการการแจ้งเตือน"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  ให้บริการจัดการแบบรวมศูนย์ ครอบคลุมฟังก์ชันต่างๆ เช่น การตั้งค่าช่องทางและการบันทึกข้อมูล พร้อมรองรับการตั้งค่าช่องทางการแจ้งเตือนที่หลากหลาย ไม่ว่าจะเป็นข้อความในแอปและอีเมล เป็นต้น
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การจัดการการแจ้งเตือน
+# Notification manager

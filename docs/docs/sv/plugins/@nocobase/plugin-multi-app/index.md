@@ -1,18 +1,14 @@
 ---
-displayName: "Flera appar"
+displayName: "Multi-app"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
-  Skapar, hanterar och kör flera oberoende underapplikationsinstanser inom en föräldraapplikation.
+  Creates, manages, and runs multiple independent sub-application instances within a parent application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Flera appar
+# Multi-app

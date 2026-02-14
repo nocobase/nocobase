@@ -1,17 +1,15 @@
 ---
-displayName: "לקוח מובייל (הוצא משימוש)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  מספק את היכולת להגדיר דפים עבור מכשירים ניידים.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# לקוח מובייל (הוצא משימוש)
+# Mobile client(Deprecated)
 
-> שימו לב: תוסף זה הוצא משימוש.
+> Note: This plugin is deprecated.

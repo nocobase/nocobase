@@ -1,16 +1,15 @@
 ---
-displayName: "Datakälla: KingbaseES"
+displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Använd KingbaseES-databasen som datakälla. Den kan fungera som antingen huvuddatabas eller extern databas.
+  Using the KingbaseES database as a data source, it can serve as the main database or as an external database.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Datakälla: KingbaseES
+# Data source: KingbaseES

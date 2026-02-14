@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: Węzeł opóźnienia"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Może być używany w równoległych gałęziach przepływu pracy do oczekiwania na zakończenie działania innych gałęzi.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Węzeł opóźnienia
+# Workflow: Delay node
