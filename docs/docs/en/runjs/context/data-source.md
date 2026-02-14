@@ -1,8 +1,18 @@
 # ctx.dataSource
 
-The current data source instance (`DataSource`).
+The data source instance (`DataSource`) bound to the current RunJS context; used to access collections, field metadata, and collection config **within that data source**. Usually the current page/block’s data source (e.g. main `main`).
 
-## Type definition
+## Use Cases
+
+| Scenario | Description |
+|----------|-------------|
+| **Single data source** | Get collections, field metadata when the current data source is known |
+| **Collection management** | Get/add/update/remove collections in the current data source |
+| **Field by path** | Get field definition by `collectionName.fieldPath` (supports association path) |
+
+> Note: `ctx.dataSource` is the single data source for the current context; to enumerate or access other data sources use [ctx.dataSourceManager](./data-source-manager.md).
+
+## Type
 
 ```ts
 dataSource: DataSource;
@@ -10,17 +20,15 @@ dataSource: DataSource;
 class DataSource {
   constructor(options?: Record<string, any>);
 
-  // Read-only properties
-  get flowEngine(): FlowEngine;   // current FlowEngine instance
-  get displayName(): string;      // display name (i18n supported)
-  get key(): string;              // data source key, e.g. 'main'
+  get flowEngine(): FlowEngine;
+  get displayName(): string;
+  get key(): string;
+  get name(): string;
 
-  // Collection methods
-  getCollections(): Collection[];                      // list all collections
-  getCollection(name: string): Collection | undefined;  // get by name
-  getAssociation(associationName: string): CollectionField | undefined; // get association field (hasMany / belongsTo)
+  getCollections(): Collection[];
+  getCollection(name: string): Collection | undefined;
+  getAssociation(associationName: string): CollectionField | undefined;
 
-  // Collection management
   addCollection(collection: Collection | CollectionOptions): void;
   updateCollection(newOptions: CollectionOptions): void;
   upsertCollection(options: CollectionOptions): Collection | undefined;
@@ -28,36 +36,93 @@ class DataSource {
   removeCollection(name: string): void;
   clearCollections(): void;
 
-  // Field metadata
   getCollectionField(fieldPath: string): CollectionField | undefined;
 }
 ```
 
-## Common properties
+## Common Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `key` | `string` | Data source key (e.g. `main`) |
+| `name` | `string` | Same as key |
+| `displayName` | `string` | Display name (i18n) |
+| `flowEngine` | `FlowEngine` | Current FlowEngine instance |
+
+## Common Methods
+
+| Method | Description |
+|--------|-------------|
+| `getCollections()` | All collections in this data source (sorted, hidden filtered) |
+| `getCollection(name)` | Collection by name; `name` can be `collectionName.fieldName` for association target |
+| `getAssociation(associationName)` | Association field by `collectionName.fieldName` |
+| `getCollectionField(fieldPath)` | Field by `collectionName.fieldPath`; supports paths like `users.profile.avatar` |
+
+## Relation to ctx.dataSourceManager
+
+| Need | Recommended |
+|------|-------------|
+| **Single data source for context** | `ctx.dataSource` |
+| **Entry to all data sources** | `ctx.dataSourceManager` |
+| **Collection in current data source** | `ctx.dataSource.getCollection(name)` |
+| **Collection in another data source** | `ctx.dataSourceManager.getCollection(dataSourceKey, collectionName)` |
+| **Field in current data source** | `ctx.dataSource.getCollectionField('users.profile.avatar')` |
+| **Field across data sources** | `ctx.dataSourceManager.getCollectionField('main.users.profile.avatar')` |
+
+## Examples
+
+### Get collections and fields
 
 ```ts
-ctx.dataSource.key;         // data source key, e.g. 'main'
-ctx.dataSource.displayName; // display name (i18n supported)
-```
-
-### Collections
-
-```ts
-// List all collections
 const collections = ctx.dataSource.getCollections();
 
-// Get collection by name
 const users = ctx.dataSource.getCollection('users');
+const primaryKey = users?.filterTargetKey ?? 'id';
 
-// Get field definition by collection.field path
 const field = ctx.dataSource.getCollectionField('users.profile.avatar');
+const userNameField = ctx.dataSource.getCollectionField('orders.createdBy.name');
 ```
 
-> Note: `getCollectionField('users.profile.avatar')` parses collection name and field path to return the `CollectionField` definition. Useful for dynamic UI or validation based on metadata.
+### Get association field
 
-## Relationship with ctx.dataSourceManager
+```ts
+const rolesField = ctx.dataSource.getAssociation('users.roles');
+if (rolesField?.isAssociationField()) {
+  const targetCol = rolesField.targetCollection;
+  // ...
+}
+```
 
-- `ctx.dataSource`: the **single data source** of the current context (e.g. the selected `main`)
-- `ctx.dataSourceManager`: manages all data sources; use `getDataSource(key)` to access others
+### Iterate collections
 
-Use `ctx.dataSource` when operating within the current data source. Use `ctx.dataSourceManager` to enumerate or switch data sources.
+```ts
+const collections = ctx.dataSource.getCollections();
+for (const col of collections) {
+  const fields = col.getFields();
+  const requiredFields = fields.filter((f) => f.options?.required);
+  // ...
+}
+```
+
+### Validation or dynamic UI from field metadata
+
+```ts
+const field = ctx.dataSource.getCollectionField('users.status');
+if (field) {
+  const options = field.enum ?? [];
+  const operators = field.getFilterOperators();
+  // ...
+}
+```
+
+## Notes
+
+- `getCollectionField(fieldPath)` uses path format `collectionName.fieldPath`; first segment is collection name, rest is field path (supports association, e.g. `user.name`).
+- `getCollection(name)` supports `collectionName.fieldName` and returns the association target collection.
+- In RunJS, `ctx.dataSource` is usually determined by the current block/page; if there is no bound data source it may be `undefined`—check before use.
+
+## Related
+
+- [ctx.dataSourceManager](./data-source-manager.md): manager for all data sources
+- [ctx.collection](./collection.md): collection for current context
+- [ctx.collectionField](./collection-field.md): current field’s collection field definition

@@ -1,20 +1,20 @@
 # Import Modules
 
-RunJS supports two categories of modules: **built-in modules** (available via `ctx.libs` without import) and **external modules** (loaded on demand via `ctx.importAsync()` or `ctx.requireAsync()`).
+In RunJS you can use two kinds of modules: **built-in modules** (via `ctx.libs`, no import needed) and **external modules** (loaded on demand via `ctx.importAsync()` or `ctx.requireAsync()`).
 
 ---
 
-## Built-in modules - ctx.libs (no import required)
+## Built-in Modules - ctx.libs (no import)
 
-RunJS ships with common libraries that are directly available via `ctx.libs`.
+RunJS provides common libraries via `ctx.libs`; you can use them directly **without** `import` or async loading.
 
 | Property | Description |
-|------|------|
-| **ctx.libs.React** | React core, for JSX and Hooks |
-| **ctx.libs.ReactDOM** | ReactDOM (useful for `createRoot`, etc.) |
-| **ctx.libs.antd** | Ant Design component library |
+|----------|-------------|
+| **ctx.libs.React** | React core for JSX and Hooks |
+| **ctx.libs.ReactDOM** | ReactDOM (e.g. for createRoot) |
+| **ctx.libs.antd** | Ant Design components |
 | **ctx.libs.antdIcons** | Ant Design icons |
-| **ctx.libs.math** | [Math.js](https://mathjs.org/): math expressions, matrix ops |
+| **ctx.libs.math** | [Math.js](https://mathjs.org/): math expressions, matrix operations, etc. |
 | **ctx.libs.formula** | [Formula.js](https://formulajs.github.io/): Excel-like formulas (SUM, AVERAGE, etc.) |
 
 ### Example: React and antd
@@ -42,69 +42,69 @@ const avg = ctx.libs.formula.AVERAGE(values);
 
 ---
 
-## External modules
+## External Modules
 
-Pick the loading method based on the module format:
+For third-party libraries, choose the loader by module format:
 
-- **ESM modules** -> `ctx.importAsync()`
-- **UMD/AMD modules** -> `ctx.requireAsync()`
+- **ESM** → use `ctx.importAsync()`
+- **UMD/AMD** → use `ctx.requireAsync()`
 
 ---
 
-### Import ESM modules
+### Import ESM Modules
 
-Use **`ctx.importAsync()`** to dynamically load ESM modules by URL, suitable for JS blocks/fields/actions.
+Use **`ctx.importAsync()`** to load ESM modules by URL at runtime. Suitable for JS Block, JS Field, JS Action, etc.
 
 ```ts
 importAsync<T = any>(url: string): Promise<T>;
 ```
 
-- **url**: ESM module URL. Supports shorthand `<package>@<version>` or with subpath `<package>@<version>/<file>` (e.g. `vue@3.4.0`, `lodash@4/lodash.js`), which will be resolved with the configured CDN base; full URLs are also supported.
-- **Return**: resolved module namespace object.
+- **url**: ESM module URL. Supports shorthand `<package>@<version>` or subpath `<package>@<version>/<path>` (e.g. `vue@3.4.0`, `lodash@4/lodash.js`), which is resolved with the configured CDN prefix; full URLs are also supported.
+- **Returns**: The resolved module namespace object.
 
-#### Default CDN: https://esm.sh
+#### Default: https://esm.sh
 
-If not configured, shorthand URLs are resolved via **https://esm.sh**. For example:
+When not configured, the shorthand form uses **https://esm.sh** as the CDN prefix. For example:
 
 ```ts
 const Vue = await ctx.importAsync('vue@3.4.0');
-// Equivalent to loading from https://esm.sh/vue@3.4.0
+// equivalent to loading from https://esm.sh/vue@3.4.0
 ```
 
-#### Self-hosted esm.sh-compatible service
+#### Self-hosted esm.sh
 
-You can deploy an internal CDN compatible with esm.sh and configure it via environment variables:
+For intranet or custom CDN, deploy an esm.sh-compatible service and set:
 
 - **ESM_CDN_BASE_URL**: ESM CDN base URL (default `https://esm.sh`)
-- **ESM_CDN_SUFFIX**: optional suffix (e.g. `/+esm` for jsDelivr)
+- **ESM_CDN_SUFFIX**: Optional suffix (e.g. jsDelivr’s `/+esm`)
 
-See: [https://github.com/nocobase/esm-server](https://github.com/nocobase/esm-server)
+Reference: [https://github.com/nocobase/esm-server](https://github.com/nocobase/esm-server)
 
 ---
 
-### Import UMD/AMD modules
+### Import UMD/AMD Modules
 
-Use **`ctx.requireAsync()`** to load UMD/AMD scripts or scripts that attach to globals.
+Use **`ctx.requireAsync()`** to load UMD/AMD scripts or scripts that attach to the global object by URL.
 
 ```ts
 requireAsync<T = any>(url: string): Promise<T>;
 ```
 
-- **url**: supports two forms:
-  - **Shorthand path**: `<package>@<version>/<file>` (same as `ctx.importAsync()`), resolved by the ESM CDN; `?raw` is appended to request the raw UMD file. For example, `echarts@5/dist/echarts.min.js` becomes `https://esm.sh/echarts@5/dist/echarts.min.js?raw` when using esm.sh.
-  - **Full URL**: any CDN URL (e.g. `https://cdn.jsdelivr.net/npm/xxx`).
-- **Return**: loaded library object (format depends on the library).
+- **url**: Either:
+  - **Shorthand path**: `<package>@<version>/<path>`, same as `ctx.importAsync()`; resolved with the current ESM CDN config; `?raw` is appended to request the raw file (usually UMD). E.g. `echarts@5/dist/echarts.min.js` becomes `https://esm.sh/echarts@5/dist/echarts.min.js?raw` when using default esm.sh.
+  - **Full URL**: Any CDN URL (e.g. `https://cdn.jsdelivr.net/npm/xxx`).
+- **Returns**: The loaded library object (shape depends on the library’s exports).
 
-Many UMD libraries attach to globals (e.g. `window.xxx`). Use them as described in the library docs.
+Many UMD libraries attach to the global (e.g. `window.xxx`); use them as documented.
 
 **Example**
 
 ```ts
-// Shorthand path (resolved via esm.sh with ?raw)
+// Shorthand (resolved via esm.sh with ...?raw)
 const echarts = await ctx.requireAsync('echarts@5/dist/echarts.min.js');
 
 // Full URL
 const dayjs = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js');
 ```
 
-**Note**: If a library provides an ESM build, prefer `ctx.importAsync()` for better module semantics and tree-shaking.
+**Note**: If a library provides both ESM and UMD, prefer `ctx.importAsync()` for better module semantics and tree-shaking.

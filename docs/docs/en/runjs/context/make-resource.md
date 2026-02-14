@@ -1,33 +1,89 @@
 # ctx.makeResource()
 
-Create a **new** resource instance and return it, **without** modifying `ctx.resource`. Use when you need multiple independent resources or a temporary resource.
+**Creates** a new resource instance and returns it; **does not** set or change `ctx.resource`. Use when you need multiple resources or a temporary one.
+
+## Use Cases
+
+| Scenario | Description |
+|----------|-------------|
+| **Multiple resources** | Load several data sources (e.g. users + orders), each with its own resource |
+| **One-off query** | Single query, no need to bind to `ctx.resource` |
+| **Auxiliary data** | Main data in `ctx.resource`, extra data from a `makeResource` instance |
+
+If you only need one resource and want it on `ctx.resource`, use [ctx.initResource()](./init-resource.md).
 
 ## Type
 
 ```ts
-makeResource<T = FlowResource>(resourceType: ResourceType<T>): T;
+makeResource<T = FlowResource>(
+  resourceType: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource'
+): T;
 ```
 
-- `resourceType`: resource type, a class name string or constructor, e.g. `'MultiRecordResource'`, `'SingleRecordResource'`, `'SQLResource'`, `'APIResource'`.
-- Return: the newly created resource instance.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resourceType` | `string` | `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
 
-## Example
+**Returns**: The new resource instance.
 
-```js
-// Create a list resource without changing ctx.resource
+## Relation to ctx.initResource()
+
+| Method | Behavior |
+|--------|----------|
+| `ctx.makeResource(type)` | Creates and returns; **does not** set `ctx.resource`; can call multiple times for multiple resources |
+| `ctx.initResource(type)` | Creates and binds if missing; otherwise returns existing. Ensures `ctx.resource` is set |
+
+## Examples
+
+### Single resource
+
+```ts
 const listRes = ctx.makeResource('MultiRecordResource');
 listRes.setResourceName('users');
 await listRes.refresh();
-
-// ctx.resource remains unchanged (if any)
-const current = ctx.resource;
+const users = listRes.getData();
+// ctx.resource unchanged (if it existed)
 ```
 
-Difference from `initResource`: `makeResource` only creates a new instance; `initResource` initializes and binds to context when `ctx.resource` is missing.
+### Multiple resources
 
-See detailed APIs for each Resource type:
+```ts
+const usersRes = ctx.makeResource('MultiRecordResource');
+usersRes.setResourceName('users');
+await usersRes.refresh();
 
-- [MultiRecordResource](/runjs/resource/multi-record-resource) - multiple records / list
-- [SingleRecordResource](/runjs/resource/single-record-resource) - single record
-- [APIResource](/runjs/resource/api-resource) - generic API resource
-- [SQLResource](/runjs/resource/sql-resource) - SQL query resource
+const ordersRes = ctx.makeResource('MultiRecordResource');
+ordersRes.setResourceName('orders');
+await ordersRes.refresh();
+
+ctx.render(
+  <div>
+    <p>Users: {usersRes.getData().length}</p>
+    <p>Orders: {ordersRes.getData().length}</p>
+  </div>
+);
+```
+
+### One-off query
+
+```ts
+const tempRes = ctx.makeResource('SingleRecordResource');
+tempRes.setResourceName('users');
+tempRes.setFilterByTk(1);
+await tempRes.refresh();
+const record = tempRes.getData();
+```
+
+## Notes
+
+- Call `setResourceName(name)` then `refresh()` to load data.
+- Each instance is independent; good for loading several sources in parallel.
+
+## Related
+
+- [ctx.initResource()](./init-resource.md): init and bind to `ctx.resource`
+- [ctx.resource](./resource.md): current context resource
+- [MultiRecordResource](../resource/multi-record-resource.md)
+- [SingleRecordResource](../resource/single-record-resource.md)
+- [APIResource](../resource/api-resource.md)
+- [SQLResource](../resource/sql-resource.md)

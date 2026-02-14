@@ -1,9 +1,5 @@
 [
-  {
-    "type": "custom-link",
-    "label": "RunJS Overview",
-    "link": "/runjs"
-  },
+  { "type": "custom-link", "label": "RunJS Overview", "link": "/runjs" },
   {
     "type": "custom-link",
     "label": "Import Modules",
@@ -16,18 +12,10 @@
   },
   {
     "type": "custom-link",
-    "label": "Globals",
+    "label": "Global Variables",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "window",
-        "link": "/runjs/window"
-      },
-      {
-        "type": "custom-link",
-        "label": "document",
-        "link": "/runjs/document"
-      },
+      { "type": "custom-link", "label": "window", "link": "/runjs/window" },
+      { "type": "custom-link", "label": "document", "link": "/runjs/document" },
       {
         "type": "custom-link",
         "label": "navigator",

@@ -1,76 +1,108 @@
 # ctx.message
 
-Ant Design global message API for lightweight, temporary prompts.
+Ant Design global message API; shows short messages at the top center. Messages auto-close after a while or can be closed by the user.
 
-## Type definition
+## Use Cases
 
-```typescript
-message: MessageInstance
+| Scenario | Description |
+|----------|-------------|
+| **JSBlock / JSField / JSItem / JSColumn** | Quick feedback: validation, copy success, etc. |
+| **Form actions / event flow** | Submit success, save failed, validation failed |
+| **JSAction** | Click or batch action feedback |
+
+> Note: `ctx.message` may be absent in some contexts (e.g. pure server logic); use optional chaining: `ctx.message?.success('...')`.
+
+## Type
+
+```ts
+message: MessageInstance | undefined;
 ```
 
-`MessageInstance` provides the following methods:
+`MessageInstance` is the Ant Design message API.
 
-- `success(content: string | ConfigOptions, duration?: number): MessageType`
-- `error(content: string | ConfigOptions, duration?: number): MessageType`
-- `warning(content: string | ConfigOptions, duration?: number): MessageType`
-- `info(content: string | ConfigOptions, duration?: number): MessageType`
-- `loading(content: string | ConfigOptions, duration?: number): MessageType`
+## Common Methods
 
-## Notes
-
-`ctx.message` shows lightweight messages at the top center of the page. Messages auto-close after a while, but can be closed manually.
-
-**Difference from `ctx.notification`:**
-
-- `ctx.message`: top-center transient message, auto closes
-- `ctx.notification`: top-right notification panel, can be closed manually or auto
-
-## Method details
-
-### success(content, duration?)
-
-Show a success message.
+| Method | Description |
+|--------|-------------|
+| `success(content, duration?)` | Success message |
+| `error(content, duration?)` | Error message |
+| `warning(content, duration?)` | Warning message |
+| `info(content, duration?)` | Info message |
+| `loading(content, duration?)` | Loading (usually closed manually) |
+| `open(config)` | Open with custom config |
+| `destroy()` | Close all messages |
 
 **Parameters:**
 
-- `content` (string | ConfigOptions): message content or config object
-- `duration` (number, optional): auto-close delay (seconds), default 3
+- `content`: `string` or `ConfigOptions`
+- `duration`: optional seconds; default 3; 0 = no auto-close
 
-**Return**: `MessageType`, which can be used to close the message manually
+**ConfigOptions** (when content is an object):
 
-### error(content, duration?)
-
-Show an error message.
-
-**Parameters**: same as above.
-
-### warning(content, duration?)
-
-Show a warning message.
-
-**Parameters**: same as above.
-
-### info(content, duration?)
-
-Show an info message.
-
-**Parameters**: same as above.
-
-### loading(content, duration?)
-
-Show a loading message.
-
-**Parameters**: same as above.
-
-## ConfigOptions
-
-When `content` is an object, the following options are supported:
-
-```typescript
+```ts
 interface ConfigOptions {
-  content: React.ReactNode;  // message content
-  duration?: number;        // auto-close delay (seconds)
-  onClose?: () => void;     // close callback
-  icon?: React.ReactNode;   // custom icon
+  content: React.ReactNode;
+  duration?: number;
+  onClose?: () => void;
+  icon?: React.ReactNode;
 }
 ```
+
+## Examples
+
+### Basic
+
+```ts
+ctx.message.success('Done');
+ctx.message.error('Failed');
+ctx.message.warning('Please select data first');
+ctx.message.info('Processing...');
+```
+
+### With ctx.t (i18n)
+
+```ts
+ctx.message.success(ctx.t('Copied'));
+ctx.message.warning(ctx.t('Please select at least one row'));
+ctx.message.success(ctx.t('Exported {{count}} records', { count: rows.length }));
+```
+
+### Loading and manual close
+
+```ts
+const hide = ctx.message.loading(ctx.t('Saving...'));
+await saveData();
+hide();
+ctx.message.success(ctx.t('Saved'));
+```
+
+### open with config
+
+```ts
+ctx.message.open({
+  type: 'success',
+  content: 'Custom success',
+  duration: 5,
+  onClose: () => console.log('closed'),
+});
+```
+
+### Close all
+
+```ts
+ctx.message.destroy();
+```
+
+## ctx.message vs ctx.notification
+
+| | ctx.message | ctx.notification |
+|---|-------------|-------------------|
+| **Position** | Top center | Top right |
+| **Use** | Short, auto-dismiss | Panel with title/description; can stay longer |
+| **Typical** | Action feedback, validation, copy | Task done, system notice, longer content |
+
+## Related
+
+- [ctx.notification](./notification.md): top-right notifications
+- [ctx.modal](./modal.md): modal confirm
+- [ctx.t()](./t.md): i18n; often used with message
