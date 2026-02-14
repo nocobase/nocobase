@@ -36,6 +36,18 @@ pkg: '@nocobase/plugin-workflow-cc'
 
 ![用户界面](https://static-docs.nocobase.com/20250710225400.png)
 
+### 待办卡片 <Badge>2.0+</Badge>
+
+可用于配置待办中心“抄送我的”列表中的任务卡片。
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+卡片中可以自由配置希望展示的业务字段（关系字段除外）。
+
+工作流抄送任务创建后，待办中心列表即可看到自定义的任务卡片：
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
+
 ### 任务标题
 
 任务标题是待办中心中显示的标题，可以使用流程上下文中的变量来动态生成标题。
