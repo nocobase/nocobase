@@ -10,8 +10,6 @@ Ant Design global message API; shows short messages at the top center. Messages 
 | **Form actions / event flow** | Submit success, save failed, validation failed |
 | **JSAction** | Click or batch action feedback |
 
-> Note: `ctx.message` may be absent in some contexts (e.g. pure server logic); use optional chaining: `ctx.message?.success('...')`.
-
 ## Type
 
 ```ts
