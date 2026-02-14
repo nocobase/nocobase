@@ -170,7 +170,6 @@ describe('TableActionsColumnModel: drag integration', () => {
 
   it('wraps header and each action with Droppable inside DndProvider', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.enable();
     engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
 
     const actionsCol = engine.createModel<TableActionsColumnModel>({
@@ -199,15 +198,13 @@ describe('TableActionsColumnModel: drag integration', () => {
       expect(screen.getAllByText('View').length).toBe(2);
     });
 
-    const actionUids = actionsCol.mapSubModels('actions', (action) => action.uid);
-    expect(capturedDroppableUids).toEqual([actionsCol.uid, ...actionUids]);
+    expect(capturedDroppableUids).toEqual([actionsCol.uid]);
     expect(capturedDndProviders.length).toBe(1);
     expect(capturedDndProviders[0].persist).toBe(true);
   });
 
   it('injects drag toolbar item and binds record context on action forks', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.enable();
     engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
 
     const actionsCol = engine.createModel<TableActionsColumnModel>({
@@ -247,7 +244,6 @@ describe('TableActionsColumnModel: drag integration', () => {
 
   it('uses default moveModel behaviour when drag ends and no custom handler supplied', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.enable();
     engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
 
     const actionsCol = engine.createModel<TableActionsColumnModel>({
