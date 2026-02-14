@@ -70,7 +70,7 @@ Follow this exact order:
 - Prefer top-level await
 - No import / require
 - Libraries ONLY via ctx.importAsync()
-- HTTP ONLY via ctx.api.request
+- HTTP ONLY via ctx.request()
 - Only call ctx.render when UI is required
 - JSX uses ctx.libs.React by default
 - When rendering UI, PREFER Ant Design components via ctx.libs.antd to match NocoBase style
