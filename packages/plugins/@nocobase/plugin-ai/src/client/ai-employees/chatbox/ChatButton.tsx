@@ -23,7 +23,7 @@ import { useChatConversationsStore } from './stores/chat-conversations';
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const { isMobileLayout } = useMobileLayout();
-  const isV2Page = ctx.pageInfo.version === 'v2';
+  const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { token } = useToken();
 
   const { aiEmployees } = useAIEmployeesData();
@@ -56,15 +56,14 @@ export const ChatButton: React.FC = observer(() => {
       }));
   }, [aiEmployees]);
 
-  if (open || !aiEmployees?.length) {
+  if (open || !aiEmployees?.length || isV1Page) {
     return null;
   }
 
   const buttonShadow = token.boxShadowSecondary || token.boxShadow;
 
   return (
-    !isMobileLayout &&
-    isV2Page && (
+    !isMobileLayout && (
       <Dropdown
         menu={{ items }}
         placement="topRight"

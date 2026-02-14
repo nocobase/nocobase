@@ -108,7 +108,7 @@ export class BuiltInManager {
             enableKnowledgeBase: false,
             knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
             knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
-            enabled: false,
+            enabled: true,
             builtIn: true,
           },
         });

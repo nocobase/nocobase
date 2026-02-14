@@ -260,7 +260,7 @@
   "Recommended": "推荐",
   "Select models to enable": "选择要启用的模型",
   "Please fill in the API Key first": "请先填写 API Key",
-  "Please set up Enabled Models first": "请先设置 Enabled Models",
+  "Please configure enabled models first": "请先配置启用的模型",
   "Test connection with the configured API Key": "测试配置的 API Key 连接",
   "Successful": "成功",
   "Failure": "失败",
