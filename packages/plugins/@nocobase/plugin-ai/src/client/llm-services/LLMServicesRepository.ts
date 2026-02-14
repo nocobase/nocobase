@@ -12,8 +12,11 @@ import { define, observable } from '@formily/reactive';
 export interface LLMServiceItem {
   llmService: string;
   llmServiceTitle: string;
+  provider?: string;
+  providerTitle?: string;
   enabledModels: { label: string; value: string }[];
   supportWebSearch?: boolean;
+  isToolConflict?: boolean;
 }
 
 export class LLMServicesRepository {

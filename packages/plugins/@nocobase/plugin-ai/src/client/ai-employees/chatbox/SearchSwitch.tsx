@@ -13,7 +13,8 @@ import { GlobalOutlined } from '@ant-design/icons';
 import { observer } from '@nocobase/flow-engine';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatBoxStore } from './stores/chat-box';
-import { useLLMServicesRepository } from '../../llm-services/hooks/useLLMServicesRepository';
+import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
+import { getServiceByOverride } from '../../llm-services/utils';
 import { useT } from '../../locale';
 
 export const SearchSwitch: React.FC = observer(
@@ -21,13 +22,13 @@ export const SearchSwitch: React.FC = observer(
     const t = useT();
     const webSearch = useChatConversationsStore.use.webSearch();
     const setWebSearch = useChatConversationsStore.use.setWebSearch();
-    const modelOverride = useChatBoxStore.use.modelOverride();
-    const repo = useLLMServicesRepository();
+    const currentEmployee = useChatBoxStore.use.currentEmployee();
+    const model = useChatBoxStore.use.model();
+    const { services } = useLLMServiceCatalog();
 
-    const currentService = modelOverride
-      ? repo.services.find((s) => s.llmService === modelOverride.llmService)
-      : undefined;
+    const currentService = getServiceByOverride(services, model);
     const supportWebSearch = currentService?.supportWebSearch ?? false;
+    const isToolConflict = currentService?.isToolConflict ?? false;
 
     useEffect(() => {
       if (!supportWebSearch && webSearch) {
@@ -35,21 +36,35 @@ export const SearchSwitch: React.FC = observer(
       }
     }, [supportWebSearch, webSearch, setWebSearch]);
 
-    if (!supportWebSearch) {
-      return null;
-    }
-
     const switchChecked = () => {
+      if (!supportWebSearch) {
+        return;
+      }
       setWebSearch(!webSearch);
     };
 
+    if (!currentEmployee) {
+      return <Button type="text" icon={<GlobalOutlined />} disabled={true} />;
+    }
+
+    const enabledTooltip = t('Disable search');
+    const unsupportedTooltip = t('Web search not supported');
+    const disabledTooltip = isToolConflict ? (
+      <div>
+        <div>{t('Enable search')}</div>
+        <div style={{ marginTop: 4 }}>{t('Search disables tools')}</div>
+      </div>
+    ) : (
+      t('Enable search')
+    );
+
     return webSearch ? (
-      <Tooltip title={t('Disable search')} arrow={false}>
+      <Tooltip title={enabledTooltip} arrow={false}>
         <Button color="primary" variant="filled" icon={<GlobalOutlined />} onClick={switchChecked} />
       </Tooltip>
     ) : (
-      <Tooltip title={t('Enable search')} arrow={false}>
-        <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} />
+      <Tooltip title={supportWebSearch ? disabledTooltip : unsupportedTooltip} arrow={false}>
+        <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} disabled={!supportWebSearch} />
       </Tooltip>
     );
   },

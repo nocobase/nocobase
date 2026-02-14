@@ -28,6 +28,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
   const { aiEmployees } = useAIEmployeesData();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
+  const { token } = useToken();
 
   const menuItems = useMemo(() => {
     if (!aiEmployees.length) {
@@ -35,7 +36,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
         {
           key: 'empty',
           label: (
-            <span style={{ fontSize: 12, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Please choose an AI employee')}</span>
+            <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{t('Please choose an AI employee')}</span>
           ),
           disabled: true,
           style: { cursor: 'default', padding: '16px 12px', height: 'auto', minHeight: 0 },
@@ -50,13 +51,13 @@ export const AIEmployeeSwitcher: React.FC = () => {
         label: (
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <AIEmployeeListItem aiEmployee={employee} />
-            {isSelected && <CheckOutlined style={{ fontSize: 12, color: '#1890ff' }} />}
+            {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
           </span>
         ),
         onClick: () => switchAIEmployee(employee),
       };
     });
-  }, [aiEmployees, currentEmployee?.username, switchAIEmployee, t]);
+  }, [aiEmployees, currentEmployee?.username, switchAIEmployee, t, token.colorPrimary, token.colorTextSecondary]);
 
   const hasEmployees = aiEmployees.length > 0;
   const currentLabel = currentEmployee ? currentEmployee.nickname : `${t('Select an')} ${t('AI employee')}`;
@@ -69,7 +70,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
         alignItems: 'center',
         gap: 4,
         fontSize: 12,
-        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        backgroundColor: token.colorFillTertiary,
         borderRadius: 6,
         height: 28,
         padding: '0 8px',
@@ -80,7 +81,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
       {currentEmployee ? <Avatar shape="circle" size={20} src={avatars(currentEmployee.avatar)} /> : null}
       <span
         style={{
-          color: hasEmployees ? 'rgba(0, 0, 0, 0.88)' : '#ff4d4f',
+          color: hasEmployees ? token.colorText : token.colorError,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -89,7 +90,7 @@ export const AIEmployeeSwitcher: React.FC = () => {
       >
         {currentLabel}
       </span>
-      <DownOutlined style={{ fontSize: 10, color: hasEmployees ? 'rgba(0, 0, 0, 0.45)' : '#ff4d4f' }} />
+      <DownOutlined style={{ fontSize: 10, color: hasEmployees ? token.colorTextSecondary : token.colorError }} />
     </span>
   );
 

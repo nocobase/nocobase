@@ -8,10 +8,10 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { ensureModelOverride } from '../../ai-employees/chatbox/model-override';
+import { ensureModel } from '../../ai-employees/chatbox/model';
 
-describe('chatbox model override recovery', () => {
-  it('resolves model when current override is missing (historical conversation case)', async () => {
+describe('chatbox model recovery', () => {
+  it('resolves model when current selection is missing (historical conversation case)', async () => {
     const llmServicesRepository = {
       services: [
         {
@@ -29,7 +29,7 @@ describe('chatbox model override recovery', () => {
     };
     const onResolved = vi.fn();
 
-    const result = await ensureModelOverride({
+    const result = await ensureModel({
       api,
       llmServicesRepository: llmServicesRepository as any,
       username: 'orin',
@@ -42,7 +42,7 @@ describe('chatbox model override recovery', () => {
     expect(onResolved).toHaveBeenCalledWith({ llmService: 'svc-openai', model: 'gpt-4o' });
   });
 
-  it('keeps current override when it is still valid', async () => {
+  it('keeps current model when it is still valid', async () => {
     const llmServicesRepository = {
       services: [
         {
@@ -61,7 +61,7 @@ describe('chatbox model override recovery', () => {
     const onResolved = vi.fn();
     const currentOverride = { llmService: 'svc-openai', model: 'gpt-4o' };
 
-    const result = await ensureModelOverride({
+    const result = await ensureModel({
       api,
       llmServicesRepository: llmServicesRepository as any,
       username: 'orin',

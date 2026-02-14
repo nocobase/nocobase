@@ -110,7 +110,7 @@ export type SendOptions = {
   editingMessageId?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
-  modelOverride?: {
+  model?: {
     llmService: string;
     model: string;
   } | null;
@@ -128,15 +128,20 @@ export type TaskMessage = {
   system?: string;
   attachments?: any[];
   workContext?: ContextItem[];
-  skillSettings?: {
-    skills?: string[];
-  };
 };
 
 export type Task = {
   title?: string;
   message: TaskMessage;
   autoSend?: boolean;
+  skillSettings?: {
+    skills?: string[];
+  };
+  webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
 
 export type TriggerTaskOptions = {

@@ -10,82 +10,54 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dropdown, Spin, Typography, App } from 'antd';
 import { PlusOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons';
-import { useAPIClient, useApp } from '@nocobase/client';
+import { useAPIClient, useApp, useToken } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
 import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
-import { useLLMServicesRepository } from '../../llm-services/hooks/useLLMServicesRepository';
-import {
-  isSameModelOverride,
-  isValidModelOverride,
-  MODEL_PREFERENCE_STORAGE_KEY,
-  resolveModelOverride,
-} from './model-override';
+import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
+import { isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from './model';
 
 export const ModelSwitcher: React.FC = observer(
   () => {
     const t = useT();
     const app = useApp();
     const api = useAPIClient();
+    const { token } = useToken();
     const { message } = App.useApp();
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
     const currentEmployeeUsername = currentEmployee?.username;
-    const modelOverride = useChatBoxStore.use.modelOverride();
-    const setModelOverride = useChatBoxStore.use.setModelOverride();
+    const model = useChatBoxStore.use.model();
+    const setModel = useChatBoxStore.use.setModel();
 
     const hasConfigPermission = app.pluginSettingsManager.has('ai.llm-services');
 
     const [addModalOpen, setAddModalOpen] = useState(false);
 
-    const repo = useLLMServicesRepository();
-
-    useEffect(() => {
-      repo.load();
-    }, [repo]);
-
-    const llmServices = repo.services;
-    const loading = repo.loading;
-
-    const allModelsWithLabel = useMemo(
-      () =>
-        llmServices.flatMap((s) =>
-          s.enabledModels.map((m) => ({
-            llmService: s.llmService,
-            model: m.value,
-            label: m.label,
-            value: m.value,
-          })),
-        ),
-      [llmServices],
-    );
-    const allModels = useMemo(
-      () => allModelsWithLabel.map(({ llmService, model }) => ({ llmService, model })),
-      [allModelsWithLabel],
-    );
+    const { repo, services: llmServices, loading, allModelsWithLabel, allModels } = useLLMServiceCatalog();
 
     // Initialize: cache >> first model
     useEffect(() => {
       if (!currentEmployeeUsername || !allModels.length) return;
 
-      const resolved = resolveModelOverride(api, currentEmployeeUsername, allModels, modelOverride);
-      if (isSameModelOverride(resolved, modelOverride)) {
+      const resolved = resolveModel(api, currentEmployeeUsername, allModels, model);
+      if (isSameModel(resolved, model)) {
         return;
       }
-      setModelOverride(resolved);
-    }, [api, currentEmployeeUsername, allModels, modelOverride, setModelOverride]);
+      setModel(resolved);
+    }, [api, currentEmployeeUsername, allModels, model, setModel]);
 
     // Current selected model value
     const selectedModel = useMemo(() => {
-      if (isValidModelOverride(modelOverride, allModels)) {
-        return modelOverride;
+      if (isValidModel(model, allModels)) {
+        return model;
       }
       if (allModels.length) {
         return { llmService: allModels[0].llmService, model: allModels[0].model };
       }
       return undefined;
-    }, [modelOverride, allModels]);
+    }, [model, allModels]);
 
     // Current display label
     const selectedLabel = useMemo(() => {
@@ -103,15 +75,15 @@ export const ModelSwitcher: React.FC = observer(
       const target = allModelsWithLabel.find((m) => m.llmService === llmService && m.value === modelValue);
       if (target) {
         const newValue = { llmService: target.llmService, model: target.model };
-        setModelOverride(newValue);
+        setModel(newValue);
         if (currentEmployee) {
           try {
-            api.storage.setItem(
+            api?.storage.setItem(
               MODEL_PREFERENCE_STORAGE_KEY + currentEmployee.username,
               `${target.llmService}:${target.model}`,
             );
-          } catch {
-            // Ignore storage errors
+          } catch (err) {
+            console.log(err);
           }
         }
       }
@@ -158,7 +130,7 @@ export const ModelSwitcher: React.FC = observer(
           label: (
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span>{model.label}</span>
-              {isSelected && <CheckOutlined style={{ fontSize: 12, color: '#1890ff' }} />}
+              {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
             </span>
           ),
           onClick: () => handleSelect(service.llmService, model.value),
@@ -202,7 +174,7 @@ export const ModelSwitcher: React.FC = observer(
           alignItems: 'center',
           gap: 4,
           fontSize: 12,
-          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+          backgroundColor: token.colorFillTertiary,
           borderRadius: 6,
           height: 28,
           padding: '0 8px',
@@ -213,7 +185,7 @@ export const ModelSwitcher: React.FC = observer(
       >
         <span
           style={{
-            color: hasModels ? 'rgba(0, 0, 0, 0.88)' : '#ff4d4f',
+            color: hasModels ? token.colorText : token.colorError,
             display: 'inline-block',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -223,7 +195,7 @@ export const ModelSwitcher: React.FC = observer(
         >
           {hasModels ? selectedLabel : t('No model available')}
         </span>
-        <DownOutlined style={{ fontSize: 10, color: hasModels ? 'rgba(0, 0, 0, 0.45)' : '#ff4d4f' }} />
+        <DownOutlined style={{ fontSize: 10, color: hasModels ? token.colorTextSecondary : token.colorError }} />
       </span>
     );
 

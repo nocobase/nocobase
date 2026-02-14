@@ -12,7 +12,7 @@ import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from '
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { lazy, usePlugin, useToken } from '@nocobase/client';
+import { lazy, usePlugin, useToken, useTools, toToolsMap } from '@nocobase/client';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
@@ -29,6 +29,11 @@ const { Markdown } = lazy(() => import('./markdown/Markdown'), 'Markdown');
 
 const { Link } = Typography;
 
+const messageFooterWeakClass = css`
+  margin-top: 4px;
+  display: flex;
+`;
+
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
@@ -36,19 +41,18 @@ const MessageWrapper = React.forwardRef<
     footer?: React.ReactNode;
   }
 >(({ children, footer, ...props }, ref) => {
-  const [showFooter, setShowFooter] = React.useState(false);
-
   return (
-    <div ref={ref} {...props} onMouseEnter={() => setShowFooter(true)} onMouseLeave={() => setShowFooter(false)}>
+    <div ref={ref} {...props}>
       {children}
-      {footer && <div style={{ marginTop: '4px', display: showFooter ? 'flex' : 'none' }}>{footer}</div>}
+      {footer && <div className={messageFooterWeakClass}>{footer}</div>}
     </div>
   );
 });
 
 const AITextMessageRenderer: React.FC<{
   msg: Message['content'];
-}> = ({ msg }) => {
+  toolInlineActions?: React.ReactNode;
+}> = ({ msg, toolInlineActions }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
   if (!provider?.components?.MessageRenderer) {
@@ -60,7 +64,9 @@ const AITextMessageRenderer: React.FC<{
         }}
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} /> : null}
+        {msg.tool_calls?.length ? (
+          <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
+        ) : null}
       </div>
     );
   }
@@ -70,7 +76,8 @@ const AITextMessageRenderer: React.FC<{
 
 const AIMessageRenderer: React.FC<{
   msg: Message['content'];
-}> = ({ msg }) => {
+  toolInlineActions?: React.ReactNode;
+}> = ({ msg, toolInlineActions }) => {
   switch (msg.type) {
     case 'greeting':
       return (
@@ -91,7 +98,7 @@ const AIMessageRenderer: React.FC<{
             },
           }}
           variant="borderless"
-          content={<AITextMessageRenderer msg={msg} />}
+          content={<AITextMessageRenderer msg={msg} toolInlineActions={toolInlineActions} />}
         />
       );
   }
@@ -103,6 +110,21 @@ export const AIMessage: React.FC<{
   const t = useT();
   const { token } = useToken();
   const { message } = App.useApp();
+  const { tools, loading: toolsLoading } = useTools();
+  const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
+  const plugin = usePlugin('ai') as PluginAIClient;
+  const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
+  const hasCustomRenderer = !!provider?.components?.MessageRenderer;
+  const footerButtonStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+    height: token.controlHeightSM,
+    padding: `0 ${token.paddingXS}px`,
+  };
+  const footerIconStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+  };
   const copy = () => {
     navigator.clipboard.writeText(msg.content);
     message.success(t('Copied'));
@@ -114,68 +136,47 @@ export const AIMessage: React.FC<{
 
   const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;
-  return (
-    <MessageWrapper
-      ref={msg.ref}
-      footer={
-        msg.type !== 'greeting' && (
-          <Space>
-            <Button
-              color="default"
-              variant="text"
-              size="small"
-              icon={
-                <ReloadOutlined
-                  onClick={() =>
-                    resendMessages({
-                      sessionId: currentConversation,
-                      messageId: msg.messageId,
-                      aiEmployee: currentEmployee,
-                    })
-                  }
-                />
+  const hasTextContent = typeof msg.content === 'string' && msg.content.trim().length > 0;
+  const hasSingleToolCall = msg.tool_calls?.length === 1;
+  const toolCall = hasSingleToolCall ? msg.tool_calls?.[0] : undefined;
+  const isDefaultToolCard = !!toolCall && !toolsLoading && !toolsMap.get(toolCall.name)?.ui?.card;
+  const useInlineToolActions = !hasCustomRenderer && hasSingleToolCall && !hasTextContent && isDefaultToolCard;
+  const messageActions =
+    msg.type !== 'greeting' ? (
+      <Space>
+        <Button
+          color="default"
+          variant="text"
+          size="small"
+          style={footerButtonStyle}
+          icon={
+            <ReloadOutlined
+              style={footerIconStyle}
+              onClick={() =>
+                resendMessages({
+                  sessionId: currentConversation,
+                  messageId: msg.messageId,
+                  aiEmployee: currentEmployee,
+                })
               }
             />
-            {typeof msg.content === 'string' && msg.content && (
-              <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
-            )}
-            {/* {usageMetadata && usageMetadata.input_tokens && usageMetadata.output_tokens && ( */}
-            {/*   <span */}
-            {/*     style={{ */}
-            {/*       fontSize: token.fontSizeSM, */}
-            {/*       color: token.colorTextDescription, */}
-            {/*     }} */}
-            {/*   > */}
-            {/*     <span */}
-            {/*       style={{ */}
-            {/*         marginLeft: '8px', */}
-            {/*       }} */}
-            {/*     > */}
-            {/*       Tokens: <ArrowUpOutlined /> */}
-            {/*       {new Intl.NumberFormat('en-US', { */}
-            {/*         notation: 'compact', */}
-            {/*         maximumFractionDigits: 1, */}
-            {/*       }).format(usageMetadata.input_tokens)} */}
-            {/*     </span> */}
-            {/*     <span */}
-            {/*       style={{ */}
-            {/*         marginLeft: '4px', */}
-            {/*       }} */}
-            {/*     > */}
-            {/*       <ArrowDownOutlined /> */}
-            {/*       {new Intl.NumberFormat('en-US', { */}
-            {/*         notation: 'compact', */}
-            {/*         maximumFractionDigits: 1, */}
-            {/*       }).format(usageMetadata.output_tokens)} */}
-            {/*     </span> */}
-            {/*   </span> */}
-            {/* )} */}
-          </Space>
-        )
-      }
-    >
+          }
+        />
+        {typeof msg.content === 'string' && msg.content && (
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            style={footerButtonStyle}
+            icon={<CopyOutlined style={footerIconStyle} onClick={copy} />}
+          />
+        )}
+      </Space>
+    ) : null;
+  return (
+    <MessageWrapper ref={msg.ref} footer={messageActions && !useInlineToolActions ? messageActions : null}>
       {msg.reference?.length && <Reference references={msg.reference} />}
-      <AIMessageRenderer msg={msg} />
+      <AIMessageRenderer msg={msg} toolInlineActions={useInlineToolActions ? messageActions : null} />
     </MessageWrapper>
   );
 });
@@ -211,7 +212,18 @@ export const UserMessage: React.FC<{
   msg: Message['content'];
 }> = memo(({ msg }) => {
   const t = useT();
+  const { token } = useToken();
   const { message } = App.useApp();
+  const footerButtonStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+    height: token.controlHeightSM,
+    padding: `0 ${token.paddingXS}px`,
+  };
+  const footerIconStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+  };
 
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const senderRef = useChatBoxStore.use.senderRef();
@@ -246,8 +258,10 @@ export const UserMessage: React.FC<{
             color="default"
             variant="text"
             size="small"
+            style={footerButtonStyle}
             icon={
               <EditOutlined
+                style={footerIconStyle}
                 onClick={() => {
                   startEditingMessage(msg);
                   setSenderValue(msg.content);
@@ -257,7 +271,13 @@ export const UserMessage: React.FC<{
             }
           />
           {typeof msg.content === 'string' && msg.content && (
-            <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              style={footerButtonStyle}
+              icon={<CopyOutlined style={footerIconStyle} onClick={copy} />}
+            />
           )}
         </Space>
       }

@@ -321,7 +321,7 @@ export default {
         aiEmployee: employeeName,
         messages,
         editingMessageId,
-        modelOverride,
+        model,
         webSearch,
         stream = true,
       } = ctx.action.params.values || {};
@@ -397,7 +397,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           webSearch,
-          modelOverride,
+          model,
           legacy,
         );
         await aiEmployee.cancelToolCall();
@@ -429,7 +429,7 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, webSearch, modelOverride } = ctx.action.params.values || {};
+      const { sessionId, webSearch, model } = ctx.action.params.values || {};
       let { messageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
@@ -497,7 +497,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           webSearch,
-          modelOverride,
+          model,
         );
         await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
       } catch (err) {
@@ -608,7 +608,7 @@ export default {
     async resumeToolCall(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId, modelOverride, webSearch } = ctx.action.params.values || {};
+      const { sessionId, messageId, model, webSearch } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -662,7 +662,7 @@ export default {
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
           webSearch,
-          modelOverride,
+          model,
         );
 
         const userDecisions = await aiEmployee.getUserDecisions(messageId);

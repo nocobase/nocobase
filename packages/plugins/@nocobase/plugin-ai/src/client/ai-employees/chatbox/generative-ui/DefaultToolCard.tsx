@@ -113,7 +113,8 @@ const ToolCallRow: React.FC<{
   toolsMap: Map<string, ToolsEntry>;
   generating: boolean;
   defaultExpanded?: boolean;
-}> = ({ toolCall, toolsMap, generating, defaultExpanded }) => {
+  rightExtra?: React.ReactNode;
+}> = ({ toolCall, toolsMap, generating, defaultExpanded, rightExtra }) => {
   const t = useT();
   const { token } = useToken();
   const [expanded, setExpanded] = useState(!!defaultExpanded);
@@ -156,7 +157,7 @@ const ToolCallRow: React.FC<{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '6px 12px 0',
+          padding: '6px 12px 0 4px',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -189,6 +190,15 @@ const ToolCallRow: React.FC<{
               <RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
             )
           ) : null}
+          {rightExtra ? (
+            <div
+              onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              {rightExtra}
+            </div>
+          ) : null}
         </Flex>
       </div>
       {expanded && (
@@ -204,7 +214,8 @@ export const DefaultToolCard: React.FC<{
   messageId: string;
   tools: ToolsEntry[];
   toolCalls: ToolCall[];
-}> = ({ messageId, tools, toolCalls }) => {
+  inlineActions?: React.ReactNode;
+}> = ({ messageId, tools, toolCalls, inlineActions }) => {
   const toolsMap = toToolsMap(tools);
   const messages = useChatMessagesStore.use.messages();
   const responseLoading = useChatMessagesStore.use.responseLoading();
@@ -223,6 +234,8 @@ export const DefaultToolCard: React.FC<{
     }
   }, [showCallButton]);
 
+  const singleInlineActions = inlineActions && toolCalls.length === 1 ? inlineActions : null;
+
   return (
     <Flex vertical>
       {toolCalls.map((toolCall) => (
@@ -232,6 +245,7 @@ export const DefaultToolCard: React.FC<{
           toolsMap={toolsMap}
           generating={generating}
           defaultExpanded={shouldAutoExpand}
+          rightExtra={singleInlineActions}
         />
       ))}
       {showCallButton && <CallButton messageId={messageId} toolCalls={toolCalls} />}

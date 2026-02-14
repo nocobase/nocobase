@@ -50,6 +50,6 @@ export const openaiResponsesProviderOptions: LLMProviderMeta = {
 export const openaiCompletionsProviderOptions: LLMProviderMeta = {
   ...commonProperties,
   embedding,
-  title: 'OpenAI(completions)',
+  title: 'OpenAI (completions)',
   provider: OpenAICompletionsProvider,
 };
