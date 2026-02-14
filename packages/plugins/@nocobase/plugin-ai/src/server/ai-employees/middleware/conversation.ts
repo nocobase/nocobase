@@ -179,6 +179,10 @@ export const conversationMiddleware = (
               fillToolCall(result, toolsMap, initializedToolCalls, toolCalls as any);
             }
           });
+          runtime.writer?.({
+            action: 'AfterAIMessageSaved',
+            body: { id: aiMessage.id, messageId: state.messageId },
+          });
         }
         if (toolCalls?.length) {
           runtime.writer?.({

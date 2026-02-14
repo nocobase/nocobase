@@ -30,6 +30,8 @@ import { createAgent as createLangChainAgent } from 'langchain';
 import { Command } from '@langchain/langgraph';
 import { concat } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
+import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
+import { LLMResult } from '@langchain/core/outputs';
 
 export interface ModelOverride {
   llmService: string;
@@ -173,10 +175,13 @@ export class AIEmployee {
         userDecisions,
       });
 
+      const responseMetadata = new Map<string, any>();
+      const responseMetadataCollector = new ResponseMetadataCollector(provider, responseMetadata);
+
       const { stream, signal } = await this.prepareChatStream({
         chatContext,
         provider,
-        config,
+        config: { ...config, callbacks: [responseMetadataCollector] } as any,
         state,
       });
       await this.processChatStream(stream, {
@@ -184,6 +189,7 @@ export class AIEmployee {
         providerName,
         model,
         provider,
+        responseMetadata,
       });
 
       return true;
@@ -359,10 +365,11 @@ export class AIEmployee {
       model: string;
       provider: LLMProvider;
       allowEmpty?: boolean;
+      responseMetadata: Map<string, any>;
     },
   ) {
     let toolCalls: AIToolCall[];
-    const { signal, providerName, model, provider, allowEmpty = false } = options;
+    const { signal, providerName, model, provider, responseMetadata, allowEmpty = false } = options;
 
     let gathered: any;
     signal.addEventListener('abort', async () => {
@@ -433,7 +440,34 @@ export class AIEmployee {
             }
           }
         } else if (mode === 'custom') {
-          if (chunks.action === 'initToolCalls') {
+          if (chunks.action === 'AfterAIMessageSaved') {
+            const data = responseMetadata.get(chunks.body.id);
+            if (data) {
+              const savedMessage = await this.aiMessagesModel.findOne({
+                where: {
+                  messageId: chunks.body.messageId,
+                },
+              });
+              if (savedMessage) {
+                await this.aiMessagesModel.update(
+                  {
+                    metadata: {
+                      ...savedMessage.metadata,
+                      response_metadata: {
+                        ...savedMessage.metadata.response_metadata,
+                        ...data,
+                      },
+                    },
+                  },
+                  {
+                    where: {
+                      messageId: chunks.body.messageId,
+                    },
+                  },
+                );
+              }
+            }
+          } else if (chunks.action === 'initToolCalls') {
             toolCalls = chunks.body?.toolCalls ?? [];
             this.protocol.toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
@@ -1209,6 +1243,10 @@ If information is missing, clearly state it in the summary.</Important>`;
     return this.ctx.db.getRepository('aiMessages');
   }
 
+  private get aiMessagesModel() {
+    return this.ctx.db.getModel('aiMessages');
+  }
+
   private get aiToolMessagesRepo() {
     return this.ctx.db.getRepository('aiToolMessages');
   }
@@ -1327,5 +1365,26 @@ class ChatStreamProtocol {
     const data = `data: ${JSON.stringify({ type, body })}\n\n`;
     this.ctx.res.write(data);
     this._statistics.addSent(data.length);
+  }
+}
+
+class ResponseMetadataCollector extends BaseCallbackHandler {
+  name = 'ResponseMetadataCollector';
+  constructor(
+    private readonly llmProvider: LLMProvider,
+    private readonly responseMetadata: Map<string, any>,
+  ) {
+    super();
+  }
+
+  handleLLMEnd(output: LLMResult, runId: string) {
+    const [id, metadata] = this.llmProvider.parseResponseMetadata(output);
+    if (id && metadata) {
+      this.responseMetadata.set(id, metadata);
+    }
+  }
+
+  getResponseMetadata(id: string) {
+    return this.responseMetadata.get(id);
   }
 }

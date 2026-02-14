@@ -20,6 +20,7 @@ import { Context } from '@nocobase/actions';
 import { tool } from 'langchain';
 import '@langchain/core/utils/stream';
 import { ToolsEntry } from '@nocobase/ai';
+import { LLMResult } from '@langchain/core/outputs';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -216,6 +217,10 @@ export abstract class LLMProvider {
 
   parseWebSearchAction(chunk: AIMessageChunk): { type: string; query: string }[] {
     return [];
+  }
+
+  parseResponseMetadata(output: LLMResult): any {
+    null;
   }
 }
 
