@@ -70,7 +70,7 @@ if (['m2o', 'o2m', 'm2m'].includes(iface)) {
 }
 ```
 
-### 判断是否为关联字段并访问目标集合
+### 判断是否为关联字段并访问目标数据表
 
 ```ts
 if (ctx.collectionField?.isAssociationField()) {
@@ -98,7 +98,7 @@ if (ctx.collectionField?.readonly) {
 }
 ```
 
-### 获取关联目标集合的标题字段
+### 获取关联目标数据表的标题字段
 
 ```ts
 // 关联字段显示时，可用目标数据表的 titleCollectionField 获取标题字段名

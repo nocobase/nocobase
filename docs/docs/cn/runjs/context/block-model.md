@@ -7,7 +7,7 @@
 | 场景 | 说明 |
 |------|------|
 | **JSField** | 表单字段内访问父表单区块的 `form`、`collection`、`resource`，实现联动或校验 |
-| **JSItem** | 子表格项中访问父表格/表单区块的资源、集合信息 |
+| **JSItem** | 子表格项中访问父表格/表单区块的资源、数据表信息 |
 | **JSColumn** | 表格列中访问父表格区块的 `resource`（如 `getSelectedRows`）、`collection` |
 | **表单操作 / 事件流** | 访问 `form` 做提交前校验、`resource` 做刷新等 |
 
@@ -26,7 +26,7 @@ blockModel: BlockModel | FormBlockModel | TableBlockModel | CollectionBlockModel
 | 属性 | 类型 | 说明 |
 |------|------|------|
 | `uid` | `string` | 区块模型唯一标识 |
-| `collection` | `Collection` | 当前区块绑定的集合 |
+| `collection` | `Collection` | 当前区块绑定的数据表 |
 | `resource` | `Resource` | 区块使用的资源实例（`SingleRecordResource` / `MultiRecordResource` 等） |
 | `form` | `FormInstance` | 表单区块：Ant Design Form 实例，支持 `getFieldsValue`、`validateFields`、`setFieldsValue` 等 |
 | `emitter` | `EventEmitter` | 事件发射器，可监听 `formValuesChange`、`onFieldReset` 等 |

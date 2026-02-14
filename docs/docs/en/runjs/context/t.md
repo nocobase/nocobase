@@ -1,68 +1,79 @@
 # ctx.t()
 
-i18n helper for translating strings in RunJS, based on the current context language. Suitable for inline text such as buttons, titles, and hints.
+i18n helper in RunJS for translating copy; uses the current context’s language. Use for buttons, titles, hints, etc.
 
-## Type definition
+## Use Cases
 
-```typescript
+Available in all RunJS environments.
+
+## Type
+
+```ts
 t(key: string, options?: Record<string, any>): string
 ```
 
 ## Parameters
 
 | Parameter | Type | Description |
-|------|------|------|
-| `key` | string | Translation key or template with placeholders (e.g. `Hello {{name}}`, `{{count}} rows`) |
-| `options` | object | Optional. Interpolation variables (e.g. `{ name: 'Alice', count: 5 }`) or i18n options (`defaultValue`, `ns`) |
+|-----------|------|-------------|
+| `key` | `string` | Translation key or template with placeholders (e.g. `Hello {{name}}`, `{{count}} rows`) |
+| `options` | `object` | Optional. Interpolation (e.g. `{ name: 'John', count: 5 }`) or i18n options (`defaultValue`, `ns`) |
 
-## Return value
+## Returns
 
-- Returns translated string. If no translation exists and no `defaultValue` is provided, it may return the key itself or the interpolated string.
+- Translated string; if key has no translation and no `defaultValue`, may return the key or the interpolated string.
 
-## Notes
+## Namespace (ns)
 
-- i18next-style interpolation is supported: use `{{var}}` in the key and pass variables in `options`.
-- Language is determined by current context (user language, app locale).
-- When the localization plugin is enabled, `ctx.t` strings are extracted for centralized translation management.
+RunJS **default namespace is `runjs`**. Without `ns`, `ctx.t(key)` looks up the key in the `runjs` namespace.
+
+```ts
+ctx.t('Submit');  // same as ctx.t('Submit', { ns: 'runjs' })
+
+ctx.t('Submit', { ns: 'myModule' });
+
+ctx.t('Save', { ns: ['runjs', 'common'] });
+```
 
 ## Examples
 
-### Simple keys
+### Simple key
 
-```javascript
+```ts
 ctx.t('Submit');
 ctx.t('No data');
 ```
 
 ### With interpolation
 
-```javascript
+```ts
 const text = ctx.t('Hello {{name}}', { name: ctx.user?.nickname || 'Guest' });
 ctx.render(`<div>${text}</div>`);
 ```
 
-```js
+```ts
 ctx.message.success(ctx.t('Processed {{count}} rows', { count: rows.length }));
 ```
 
-### Dynamic time text
+### Relative time etc.
 
-```javascript
+```ts
 if (minutes < 60) return ctx.t('{{count}} minutes ago', { count: minutes });
 if (hours < 24) return ctx.t('{{count}} hours ago', { count: hours });
 ```
 
-### Namespaces (ns)
+### Specify namespace
 
-When translation resources are split by namespace, use `ns` to specify which namespace to search:
-
-```javascript
-// Read from a specific namespace
-ctx.t('Submit', { ns: 'myModule' });
-
-// Search multiple namespaces in order (myModule, then common)
-ctx.t('Save', { ns: ['myModule', 'common'] });
-
-// Interpolation with namespace
+```ts
 ctx.t('Hello {{name}}', { name: 'Guest', ns: 'myModule' });
 ```
+
+## Notes
+
+- **Localization plugin**: Activate the localization plugin to manage translations. Missing keys can be collected for translation.
+- i18next-style interpolation: use `{{varName}}` in the key and pass the same name in `options`.
+- Language comes from the current context (e.g. `ctx.i18n.language`, user locale).
+
+## Related
+
+- [ctx.i18n](./i18n.md): read or change language

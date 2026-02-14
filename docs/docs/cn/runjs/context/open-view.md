@@ -36,7 +36,7 @@ openView(uid: string, options?: OpenViewOptions): Promise<void>
 | `filterByTk` | `any` | 主键值，用于单条详情/编辑场景 |
 | `sourceId` | `string` | 来源记录 ID，关联场景使用 |
 | `dataSourceKey` | `string` | 数据源 |
-| `collectionName` | `string` | 集合名 |
+| `collectionName` | `string` | 数据表名 |
 | `associationName` | `string` | 关联字段名 |
 | `navigation` | `boolean` | 是否使用路由导航，传 `defineProperties` / `defineMethods` 时会被强制设为 `false` |
 | `preventClose` | `boolean` | 是否阻止关闭 |

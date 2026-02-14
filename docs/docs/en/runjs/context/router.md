@@ -1,24 +1,31 @@
 # ctx.router
 
-A React Router instance for navigation in flows.
+Router instance based on React Router; used for programmatic navigation in RunJS. Use with `ctx.route` and `ctx.location`.
 
-## Type definition
+## Use Cases
+
+| Scenario | Description |
+|----------|-------------|
+| **JSBlock / JSField** | Button navigates to detail, list, or external link |
+| **Linkage / event flow** | After submit success, `navigate` to list or detail, or pass state to target |
+| **JSAction / event handler** | Navigate on form submit, link click, etc. |
+| **View navigation** | Update URL when switching views |
+
+> Note: `ctx.router` is only available in RunJS when a router context exists (e.g. JSBlock on a page, Flow page, event flow); in pure backend or non-routed contexts (e.g. workflow) it may be empty.
+
+## Type
 
 ```typescript
 router: Router
 ```
 
-`Router` comes from `@remix-run/router`.
-
-## Notes
-
-`ctx.router` provides navigation capabilities in RunJS. Use `ctx.router.navigate()` to navigate to a path, replace history, or pass state.
+`Router` is from `@remix-run/router`; use `ctx.router.navigate()` for navigation, back, refresh.
 
 ## Methods
 
 ### ctx.router.navigate()
 
-Navigate to a target path.
+Navigate to a path, or go back/refresh.
 
 **Signature:**
 
@@ -28,38 +35,65 @@ navigate(to: string | number | null, options?: RouterNavigateOptions): Promise<v
 
 **Parameters:**
 
-- `to`: target path (string), relative history position (number, e.g. `-1` for back), or `null` (refresh current page)
-- `options`: optional config
-  - `replace?: boolean`: replace current history entry (default `false`, i.e. push)
-  - `state?: any`: state passed to target route, not shown in URL; accessible via `ctx.location.state`
+- `to`: Target path (string), relative history position (number, e.g. `-1` for back), or `null` (refresh current page)
+- `options`:
+  - `replace?: boolean`: Replace current history entry (default `false`, i.e. push)
+  - `state?: any`: State passed to the target route. Not in URL; target page reads it via `ctx.location.state`. Use for sensitive or temporary data.
 
-**Examples:**
+## Examples
+
+### Basic navigation
 
 ```ts
-// Basic navigation (push history)
-ctx.router.navigate('/users');
+ctx.router.navigate('/admin/users');
 
-// Navigate and replace history
-ctx.router.navigate('/users', { replace: true });
+ctx.router.navigate(`/admin/users/${recordId}`);
+```
 
-// Navigate with state
-ctx.router.navigate('/users/123', {
-  state: { from: 'dashboard' }
-});
+### Replace (no new history entry)
 
-// Replace with state
-ctx.router.navigate('/home', {
-  replace: true,
-  state: { userId: 123 }
+```ts
+ctx.router.navigate('/admin', { replace: true });
+
+ctx.router.navigate(`/admin/users/${newId}`, { replace: true });
+```
+
+### Pass state
+
+```ts
+ctx.router.navigate('/admin/users/123', { 
+  state: { from: 'dashboard', tab: 'profile' } 
 });
 ```
 
+### Back and refresh
+
+```ts
+ctx.router.navigate(-1);
+
+ctx.router.navigate(-2);
+
+ctx.router.navigate(null);
+```
+
+## Relation to ctx.route, ctx.location
+
+| Use | Recommended |
+|-----|-------------|
+| **Navigate** | `ctx.router.navigate(path)` |
+| **Current path** | `ctx.route.pathname` or `ctx.location.pathname` |
+| **State from navigation** | `ctx.location.state` |
+| **Route params** | `ctx.route.params` |
+
+`ctx.router` does “navigation”; `ctx.route` and `ctx.location` describe “current route state”.
+
 ## Notes
 
-- `navigate()` pushes a new history entry by default
-- `replace: true` replaces the current entry without adding a new one (useful for redirects)
-- **About `state`:**
-  - Data passed via `state` is not in the URL and suits sensitive or temporary info
-  - Access it via `ctx.location.state`
-  - It is stored in browser history and is available on back/forward
-  - It is lost on page refresh
+- `navigate(path)` by default pushes a new history entry; user can use browser back.
+- `replace: true` replaces the current entry; use after login redirect, submit-success redirect, etc.
+- **`state`**: Data in `state` is not in the URL; target page reads it via `ctx.location.state`. State is stored in history (back/forward keep it); it is lost on page refresh.
+
+## Related
+
+- [ctx.route](./route.md): current route match (pathname, params)
+- [ctx.location](./location.md): current URL; read `state` here after navigation

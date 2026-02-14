@@ -50,7 +50,7 @@ type FlowView = {
 | 字段 | 说明 |
 |------|------|
 | `viewUid` | 视图 UID |
-| `collectionName` | 集合名 |
+| `collectionName` | 数据表名 |
 | `filterByTk` | 主键筛选（单条详情） |
 | `parentId` | 父级 ID（关联场景） |
 | `sourceId` | 来源记录 ID |

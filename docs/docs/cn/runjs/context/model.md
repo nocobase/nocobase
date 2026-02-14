@@ -25,7 +25,7 @@ model: FlowModel;
 | 属性 | 类型 | 说明 |
 |------|------|------|
 | `uid` | `string` | 模型唯一标识，可用于 `ctx.getModel(uid)` 或弹窗 UID 绑定 |
-| `collection` | `Collection` | 当前模型绑定的集合（区块/字段绑定数据时存在） |
+| `collection` | `Collection` | 当前模型绑定的数据表（区块/字段绑定数据时存在） |
 | `resource` | `Resource` | 关联的资源实例，用于刷新、获取选中行等 |
 | `props` | `object` | 模型 UI/行为配置，可用 `setProps` 更新 |
 | `subModels` | `Record<string, FlowModel>` | 子模型集合（如表单内字段、表格内列） |
