@@ -43,6 +43,65 @@ function isPlainObject(val: unknown): val is Record<string, any> {
   return !!val && typeof val === 'object' && !Array.isArray(val);
 }
 
+type HydrateStatus = 'pending' | 'done';
+
+type HydrationCandidate = {
+  item: AssociationOption;
+  tk: any;
+  tkKey: string;
+};
+
+export function collectAssociationHydrationCandidates(options: {
+  value: LazySelectProps['value'];
+  isMultiple: boolean;
+  valueKey: string;
+  labelKey: string;
+  statusMap: Map<string, HydrateStatus>;
+}): HydrationCandidate[] {
+  const { value, isMultiple, valueKey, labelKey, statusMap } = options;
+  const list = isMultiple ? (Array.isArray(value) ? value : []) : value != null ? [value] : [];
+
+  const activeTkKeys = new Set<string>();
+  for (const item of list) {
+    if (!isPlainObject(item)) continue;
+    const tk = item?.[valueKey];
+    if (tk == null) continue;
+    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
+    if (!tkKey) continue;
+    activeTkKeys.add(tkKey);
+  }
+
+  for (const key of Array.from(statusMap.keys())) {
+    if (!activeTkKeys.has(key)) {
+      statusMap.delete(key);
+    }
+  }
+
+  const candidates: HydrationCandidate[] = [];
+  for (const item of list) {
+    if (!isPlainObject(item)) continue;
+    const tk = item?.[valueKey];
+    if (tk == null) continue;
+    if (item?.[labelKey] != null) continue;
+
+    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
+    if (!tkKey) continue;
+
+    const status = statusMap.get(tkKey);
+    if (status === 'pending' || status === 'done') continue;
+
+    statusMap.set(tkKey, 'pending');
+    candidates.push({ item, tk, tkKey });
+  }
+
+  return candidates;
+}
+
+function markAssociationHydrationDone(statusMap: Map<string, HydrateStatus>, tkKey: string | null | undefined) {
+  if (!tkKey) return;
+  statusMap.set(tkKey, 'done');
+}
+
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
@@ -99,14 +158,15 @@ export function CreateContent({ model, toOne = false }) {
 
 const useFieldPermissionMessage = (model, allowEdit) => {
   const collection = model.context.collectionField?.collection;
-  const dataSource = collection.dataSource;
+  const dataSource = collection?.dataSource;
   const t = model.context.t;
   const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
-    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const dataSourceLabel = t(dataSource?.displayName || dataSource?.key || '');
+    const dataSourcePrefix = dataSourceLabel ? `${dataSourceLabel} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource?.displayName, dataSource?.key, name, t]);
   if (allowEdit) {
     return null;
   }
@@ -156,7 +216,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
   };
   const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
-  const hydrateInFlightRef = useRef<Set<string>>(new Set());
+  const hydrateStatusRef = useRef<Map<string, HydrateStatus>>(new Map());
 
   useEffect(() => {
     const resource: any = model?.resource;
@@ -166,24 +226,19 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     if (!valueKey || !labelKey) return;
 
     const current = value;
-    const list = isMultiple ? (Array.isArray(current) ? current : []) : current != null ? [current] : [];
-    if (!list.length) return;
-
-    const missing = list
-      .filter((it) => isPlainObject(it))
-      .filter((it) => it[valueKey] != null && it[labelKey] == null) as AssociationOption[];
-    if (!missing.length) return;
+    const candidates = collectAssociationHydrationCandidates({
+      value: current,
+      isMultiple,
+      valueKey,
+      labelKey,
+      statusMap: hydrateStatusRef.current,
+    });
+    if (!candidates.length) return;
 
     const namePath = model?.props?.name ?? model?.context?.fieldPathArray;
     const blockCtx: any = model?.context?.blockModel?.context;
 
-    missing.forEach((it) => {
-      const tk = it?.[valueKey];
-      const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
-      if (!tkKey) return;
-      if (hydrateInFlightRef.current.has(tkKey)) return;
-      hydrateInFlightRef.current.add(tkKey);
-
+    candidates.forEach(({ item, tk, tkKey }) => {
       void (async () => {
         try {
           const record = await resource.get(tk);
@@ -191,7 +246,11 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
             return;
           }
 
-          const merge = { ...(it as any), ...(record as any) };
+          const merge = { ...(item as any), ...(record as any) };
+          if (merge?.[labelKey] == null) {
+            return;
+          }
+
           const nextValue = isMultiple
             ? (Array.isArray(current) ? current : []).map((v: any) => {
                 if (!isPlainObject(v)) return v;
@@ -208,12 +267,11 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
             return;
           }
 
-          // fallback: trigger normal change (may mark as user touched in some form implementations)
           onChange(nextValue as any);
         } catch (error) {
           // ignore
         } finally {
-          hydrateInFlightRef.current.delete(tkKey);
+          markAssociationHydrationDone(hydrateStatusRef.current, tkKey);
         }
       })();
     });
