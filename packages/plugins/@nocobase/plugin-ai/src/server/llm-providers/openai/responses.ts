@@ -103,7 +103,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
     return [];
   }
 
-  protected isToolConflict(): boolean {
+  isToolConflict(): boolean {
     return false;
   }
 

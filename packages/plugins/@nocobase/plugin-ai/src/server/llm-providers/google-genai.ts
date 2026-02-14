@@ -164,7 +164,7 @@ export class GoogleGenAIProvider extends LLMProvider {
     return [];
   }
 
-  protected isToolConflict(): boolean {
+  isToolConflict(): boolean {
     return true;
   }
 }
