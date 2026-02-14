@@ -19,27 +19,32 @@ import { observable } from '@formily/reactive';
 // Mock VariableInput to a minimal test double (single button)
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<any>('@nocobase/flow-engine');
-  const MockVariableInput = ({ onChange }: any) => (
-    <button
-      type="button"
-      data-testid="variable-input"
-      onClick={() =>
-        onChange?.(
-          (globalThis as any).__TEST_PATH__ || 'name',
-          (globalThis as any).__TEST_META__ || {
-            interface: 'input',
-            uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
-            paths: ['collection', 'name'],
-            name: 'name',
-            title: 'Name',
-            type: 'string',
-          },
-        )
-      }
-    >
-      mock-variable-input
-    </button>
-  );
+  const MockVariableInput = (props: any) => {
+    const { onChange } = props;
+    (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__ = props;
+
+    return (
+      <button
+        type="button"
+        data-testid="variable-input"
+        onClick={() =>
+          onChange?.(
+            (globalThis as any).__TEST_PATH__ || 'name',
+            (globalThis as any).__TEST_META__ || {
+              interface: 'input',
+              uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
+              paths: ['collection', 'name'],
+              name: 'name',
+              title: 'Name',
+              type: 'string',
+            },
+          )
+        }
+      >
+        mock-variable-input
+      </button>
+    );
+  };
   return { ...actual, VariableInput: MockVariableInput };
 });
 
@@ -116,6 +121,22 @@ describe('VariableFilterItem', () => {
   beforeEach(() => {
     // Ensure document body for antd portals if needed
     document.body.innerHTML = '';
+    delete (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+  });
+
+  it('returns undefined path for empty left value in converter', () => {
+    const value: VariableFilterItemValue = { path: '', operator: '', value: '' };
+    const model = CreateModel();
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    const leftVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    const resolvePathFromValue = leftVariableInputProps?.converters?.resolvePathFromValue;
+
+    expect(typeof resolvePathFromValue).toBe('function');
+    expect(resolvePathFromValue('')).toBeUndefined();
+    expect(resolvePathFromValue('   ')).toBeUndefined();
+    expect(resolvePathFromValue('name')).toEqual(['collection', 'name']);
   });
 
   it('renders static right input when rightAsVariable=false and updates value on typing', async () => {
