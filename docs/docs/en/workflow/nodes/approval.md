@@ -145,6 +145,18 @@ Same as the original approver configuration of the node, the assignment scope ca
 If an action button is enabled or disabled, or the assignment scope is modified, you must save the node's configuration after closing the action interface configuration pop-up. Otherwise, the changes to the action button will not take effect.
 :::
 
+### "My Approvals" Card <Badge>2.0+</Badge>
+
+Can be used to configure the task card in the "My Approvals" list in the To-do Center.
+
+![20260214141554](https://static-docs.nocobase.com/20260214141554.png)
+
+The card can be freely configured to display the desired business fields (excluding association fields) or approval-related information.
+
+After the approval enters this node, the customized task card will be visible in the To-do Center list:
+
+![20260214141722](https://static-docs.nocobase.com/20260214141722.png)
+
 ## Node Result
 
 After the approval is completed, the relevant status and data will be recorded in the node result and can be used as variables by subsequent nodes.

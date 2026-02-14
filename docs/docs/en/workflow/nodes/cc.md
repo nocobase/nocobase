@@ -43,6 +43,17 @@ Recipients need to view the carbon copied content in the "CC to Me" menu of the 
 
 ![User Interface](https://static-docs.nocobase.com/20250710225400.png)
 
+### Task Card <Badge>2.0+</Badge>
+
+Can be used to configure the task card in the "CC to Me" list in the To-Do Center.
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+The card can be freely configured to display the desired business fields (excluding association fields).
+
+After the workflow carbon copy task is created, the customized task card will be visible in the To-Do Center list:
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
 
 ### Task Title
 

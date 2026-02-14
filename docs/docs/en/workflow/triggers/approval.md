@@ -65,6 +65,28 @@ In addition to the direct submit button, you can also add a "Save as Draft" acti
 
 ![Approval Trigger_Trigger Configuration_Initiator Form_Action Configuration](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
 
+### "My application" Card <Badge>2.0+</Badge>
+
+Could be used to configure task card of "My application" in the tasks center.
+
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
+
+Any fields (unless association fields) in the business collection, or approval information could be configured freely to display on the card.
+
+After applied, the customized task card will show in the list of tasks center:
+
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
+
+### Record show mode in the flow
+
+*   **Snapshot**
+
+    Applicant and approvers will see the record as it was when they entered, and after submitting, only see changed record by themself — not any later updates made by others.
+
+*   **Latest**
+
+    Applicant and approvers will always see the latest version of the record in the flow, no matter what it was before their action. After the flow is done, they will see the final version of the record.
+
 
 ## Approval Node
 
