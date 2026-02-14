@@ -15,7 +15,7 @@ Ant Design 全局 message API，用于在页面顶部中央显示临时轻提示
 ## 类型定义
 
 ```ts
-message: MessageInstance | undefined;
+message: MessageInstance;
 ```
 
 `MessageInstance` 为 Ant Design message 接口，提供以下方法。

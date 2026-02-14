@@ -15,7 +15,7 @@
 ## 类型定义
 
 ```ts
-notification: NotificationInstance | undefined;
+notification: NotificationInstance;
 ```
 
 `NotificationInstance` 为 Ant Design notification 接口，提供以下方法。

@@ -15,7 +15,7 @@ Global notification API based on Ant Design Notification; shows notifications in
 ## Type
 
 ```ts
-notification: NotificationInstance | undefined;
+notification: NotificationInstance;
 ```
 
 `NotificationInstance` is the Ant Design notification API.

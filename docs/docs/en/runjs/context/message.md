@@ -15,7 +15,7 @@ Ant Design global message API; shows short messages at the top center. Messages 
 ## Type
 
 ```ts
-message: MessageInstance | undefined;
+message: MessageInstance;
 ```
 
 `MessageInstance` is the Ant Design message API.
