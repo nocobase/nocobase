@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dropdown, Spin, Typography, App } from 'antd';
 import { PlusOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons';
-import { useAPIClient, useApp } from '@nocobase/client';
+import { useAPIClient, useApp, useToken } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
 import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
@@ -23,6 +23,7 @@ export const ModelSwitcher: React.FC = observer(
     const t = useT();
     const app = useApp();
     const api = useAPIClient();
+    const { token } = useToken();
     const { message } = App.useApp();
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -129,7 +130,7 @@ export const ModelSwitcher: React.FC = observer(
           label: (
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span>{model.label}</span>
-              {isSelected && <CheckOutlined style={{ fontSize: 12, color: '#1890ff' }} />}
+              {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
             </span>
           ),
           onClick: () => handleSelect(service.llmService, model.value),
@@ -173,7 +174,7 @@ export const ModelSwitcher: React.FC = observer(
           alignItems: 'center',
           gap: 4,
           fontSize: 12,
-          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+          backgroundColor: token.colorFillTertiary,
           borderRadius: 6,
           height: 28,
           padding: '0 8px',
@@ -184,7 +185,7 @@ export const ModelSwitcher: React.FC = observer(
       >
         <span
           style={{
-            color: hasModels ? 'rgba(0, 0, 0, 0.88)' : '#ff4d4f',
+            color: hasModels ? token.colorText : token.colorError,
             display: 'inline-block',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -194,7 +195,7 @@ export const ModelSwitcher: React.FC = observer(
         >
           {hasModels ? selectedLabel : t('No model available')}
         </span>
-        <DownOutlined style={{ fontSize: 10, color: hasModels ? 'rgba(0, 0, 0, 0.45)' : '#ff4d4f' }} />
+        <DownOutlined style={{ fontSize: 10, color: hasModels ? token.colorTextSecondary : token.colorError }} />
       </span>
     );
 

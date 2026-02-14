@@ -12,7 +12,7 @@ import { Avatar, Dropdown, FloatButton } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { useMobileLayout } from '@nocobase/client';
+import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
@@ -24,6 +24,7 @@ export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const { isMobileLayout } = useMobileLayout();
   const isV2Page = ctx.pageInfo.version === 'v2';
+  const { token } = useToken();
 
   const { aiEmployees } = useAIEmployeesData();
 
@@ -59,6 +60,8 @@ export const ChatButton: React.FC = observer(() => {
     return null;
   }
 
+  const buttonShadow = token.boxShadowSecondary || token.boxShadow;
+
   return (
     !isMobileLayout &&
     isV2Page && (
@@ -88,11 +91,8 @@ export const ChatButton: React.FC = observer(() => {
             cursor: pointer;
 
             opacity: 0.7;
-            background: rgba(255, 255, 255);
-            box-shadow:
-              0 3px 6px -4px rgba(0, 0, 0, 0.12),
-              0 6px 16px 0px rgba(0, 0, 0, 0.08),
-              0 9px 28px 8px rgba(0, 0, 0, 0.05);
+            background: ${token.colorBgElevated};
+            box-shadow: ${buttonShadow};
             transform: translateX(0);
             will-change: transform;
             transition:
