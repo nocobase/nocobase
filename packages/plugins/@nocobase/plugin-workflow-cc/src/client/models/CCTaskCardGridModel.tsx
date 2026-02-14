@@ -93,4 +93,9 @@ export class CCTaskCardGridModel extends DetailsGridModel {
       </AddSubModelButton>
     );
   }
+
+  render() {
+    this.props.heightMode = 'defaultHeight'; // 强制使用 defaultHeight 模式，避免出现滚动条
+    return super.render();
+  }
 }

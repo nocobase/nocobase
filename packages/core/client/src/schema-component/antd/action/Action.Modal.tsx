@@ -110,8 +110,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
 
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
     const ready = useDelayedVisible(visible, delay); // 200ms 与 Modal 动画时间一致
-    const closedRef = React.useRef(false);
-
     return (
       <ActionContextNoRerender>
         <zIndexContext.Provider value={zIndex}>
@@ -130,10 +128,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
               destroyOnClose
               open={visible}
               onCancel={() => {
-                if (!closedRef.current) {
-                  setVisible(false, true);
-                  closedRef.current = true;
-                }
+                setVisible(false, true);
               }}
               className={classNames(
                 others.className,

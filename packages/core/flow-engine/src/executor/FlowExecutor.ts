@@ -421,6 +421,9 @@ export class FlowExecutor {
               model.uid,
               async (m) => {
                 const res = await this.runFlow(m, it.flow.key, inputArgs, runId, eventName);
+                if (res instanceof FlowExitAllException) {
+                  throw res;
+                }
                 results.push(res);
               },
               { when: whenKey as any },
@@ -442,6 +445,10 @@ export class FlowExecutor {
             }
             results.push(result);
           } catch (error) {
+            if (error instanceof FlowExitAllException) {
+              logger.debug(`[FlowEngine.dispatchEvent] ${error.message}`);
+              break; // 终止后续
+            }
             logger.error(
               { err: error },
               `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}' (sequential):`,
