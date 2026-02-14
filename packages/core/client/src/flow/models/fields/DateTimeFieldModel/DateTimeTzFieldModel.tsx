@@ -56,7 +56,15 @@ export const DateTimeTzPicker = (props) => {
     picker,
     showTime,
     onChange: (val: any) => {
-      const result = parseToDate(val, format);
+      let result = parseToDate(val, format);
+      // Adjust to start of period for month/quarter/year pickers
+      if (result && picker !== 'date') {
+        const date = dayjs(result);
+        if (date.isValid()) {
+          result = date.startOf(picker).toDate();
+        }
+      }
+
       rest.onChange(result);
     },
   };
