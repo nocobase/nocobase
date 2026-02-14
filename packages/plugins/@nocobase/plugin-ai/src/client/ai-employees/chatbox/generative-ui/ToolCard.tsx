@@ -17,7 +17,8 @@ import { useToolCallActions } from '../hooks/useToolCallActions';
 export const ToolCard: React.FC<{
   messageId: string;
   toolCalls: ToolCall[];
-}> = ({ toolCalls, messageId }) => {
+  inlineActions?: React.ReactNode;
+}> = ({ toolCalls, messageId, inlineActions }) => {
   const { tools, loading } = useTools();
   const toolsMap = toToolsMap(tools);
   const { getDecisionActions } = useToolCallActions({ messageId });
@@ -79,7 +80,12 @@ export const ToolCard: React.FC<{
       ) : (
         <>
           {toolsWithoutUI.length > 0 ? (
-            <DefaultToolCard messageId={messageId} tools={tools} toolCalls={toolsWithoutUI} />
+            <DefaultToolCard
+              messageId={messageId}
+              tools={tools}
+              toolCalls={toolsWithoutUI}
+              inlineActions={toolsWithoutUI.length === 1 && toolsWithUI.length === 0 ? inlineActions : null}
+            />
           ) : null}
           {toolsWithUI.map(({ C, messageId, tools, toolCall, decisions }, index) => (
             <C key={index} messageId={messageId} tools={tools} toolCall={toolCall} decisions={decisions} />
