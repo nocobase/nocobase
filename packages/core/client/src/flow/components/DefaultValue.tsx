@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- */
-
 import { connect } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -20,6 +16,9 @@ import {
   VariableTag,
   isVariableExpression,
   parseValueToPath,
+  isRunJSValue,
+  normalizeRunJSValue,
+  runjsWithSafeGlobals,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -33,6 +32,8 @@ import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
+import { RunJSValueEditor } from './RunJSValueEditor';
+import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
 
 interface Props {
   value: any;
@@ -41,6 +42,29 @@ interface Props {
   model: FieldModel;
   flags?: Record<string, any>;
 }
+
+const snapshotOptions = (input: any): any[] | undefined => {
+  if (!input) return undefined;
+  let normalized: any[] | undefined;
+  if (Array.isArray(input)) {
+    normalized = input;
+  } else if (typeof input === 'object' && typeof input?.[Symbol.iterator] === 'function') {
+    try {
+      normalized = Array.from(input as Iterable<any>);
+    } catch (error) {
+      normalized = undefined;
+    }
+  } else if (typeof input === 'object') {
+    const numericKeys = Object.keys(input)
+      .filter((key) => /^\d+$/.test(key))
+      .sort((a, b) => Number(a) - Number(b));
+    if (numericKeys.length) {
+      normalized = numericKeys.map((key) => input[key]);
+    }
+  }
+  if (!normalized?.length) return undefined;
+  return normalized.map((item) => (item && typeof item === 'object' ? { ...item } : item));
+};
 
 function createTempFieldClass(Base: any) {
   return class Temp extends Base {
@@ -54,7 +78,7 @@ function createTempFieldClass(Base: any) {
         `${initParams.dataSourceKey}.${initParams.collectionName}.${initParams.fieldPath}`;
       const collectionFieldFromManager =
         collectionFieldKey && this.context?.dataSourceManager?.getCollectionField?.(collectionFieldKey);
-      const fallbackCollectionField = this._originalModel?.collectionField;
+      const fallbackCollectionField = this._originalModel?.collectionField || this._fallbackCollectionField;
       if (collectionFieldFromManager || fallbackCollectionField)
         this.context.defineProperty('collectionField', {
           get: () => collectionFieldFromManager || fallbackCollectionField,
@@ -62,8 +86,25 @@ function createTempFieldClass(Base: any) {
     }
     async onDispatchEventEnd(eventName: string) {
       if (eventName !== 'beforeRender') return;
-      const originalProps = this._originalModel?.props || {};
+      const originalProps = {
+        ...(this._originalPropsFallback || {}),
+        ...(this._originalModel?.props || {}),
+      };
       const collectionField = this.context?.collectionField;
+      const nextProps: Record<string, any> = {};
+      if (originalProps?.fieldNames) {
+        nextProps.fieldNames = originalProps.fieldNames;
+      }
+      if (typeof originalProps?.allowMultiple !== 'undefined') {
+        nextProps.allowMultiple = originalProps.allowMultiple;
+      }
+      const currentOptions = snapshotOptions(this.props?.options);
+      const hasCurrentOptions = !!currentOptions?.length;
+      const originalOptions = snapshotOptions(originalProps?.options);
+      const fallbackOptions = originalOptions?.length ? originalOptions : this._originalOptionsFallback;
+      if (!hasCurrentOptions && Array.isArray(fallbackOptions) && fallbackOptions.length > 0) {
+        nextProps.options = fallbackOptions.map((item) => (item && typeof item === 'object' ? { ...item } : item));
+      }
       const inferMultipleFromCollectionField = () => {
         const relationType = collectionField?.type;
         const relationInterface = collectionField?.interface;
@@ -75,10 +116,22 @@ function createTempFieldClass(Base: any) {
           (relationInterface === 'm2m' || relationInterface === 'o2m' || relationInterface === 'mbm');
         return !!(byType || byInterface);
       };
-      const multiple =
-        typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCollectionField();
+      const inferredMultiple = inferMultipleFromCollectionField();
+      const multiple = typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferredMultiple;
+      const allowMultiple =
+        typeof originalProps.allowMultiple !== 'undefined'
+          ? originalProps.allowMultiple
+          : typeof originalProps.multiple !== 'undefined'
+            ? originalProps.multiple
+            : inferredMultiple;
       if (typeof multiple !== 'undefined') {
-        this.setProps({ multiple });
+        nextProps.multiple = multiple;
+      }
+      if (typeof allowMultiple !== 'undefined') {
+        nextProps.allowMultiple = allowMultiple;
+      }
+      if (Object.keys(nextProps).length) {
+        this.setProps(nextProps);
       }
 
       // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
@@ -183,6 +236,17 @@ export const DefaultValue = connect((props: Props) => {
   const resolveMaybeVariable = React.useCallback(
     async (rawVal: any) => {
       let out = rawVal;
+      // RunJS default: execute and use the computed result for preview/backfill
+      if (isRunJSValue(out)) {
+        try {
+          const { code, version } = normalizeRunJSValue(out);
+          const ret = await runjsWithSafeGlobals(model?.context, code, { version });
+          out = ret?.success ? ret.value : undefined;
+        } catch {
+          out = undefined;
+        }
+        return out;
+      }
       if (isVariableExpression(out)) {
         const resolved = await model?.context?.resolveJsonTemplate?.(out);
         if (typeof resolved !== 'undefined') out = resolved;
@@ -199,12 +263,7 @@ export const DefaultValue = connect((props: Props) => {
   // 构建动态 NamePath（兼容数组子表单的行索引）
   const buildDynamicName = React.useCallback(
     (nameParts: (string | number)[], fieldIndex?: string[]): (string | number)[] => {
-      if (!fieldIndex?.length) return nameParts;
-      const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
-      const idx = Number(indexStr);
-      const lastIndex = nameParts.findIndex((p) => String(p) === lastField);
-      if (lastIndex === -1) return nameParts;
-      return [idx, ...nameParts.slice(lastIndex + 1)];
+      return buildDynamicNamePath(nameParts, fieldIndex);
     },
     [],
   );
@@ -269,11 +328,25 @@ export const DefaultValue = connect((props: Props) => {
     }
     return { ...(baseFlags || {}), ...(componentFlags || {}) };
   }, [model, componentFlags]);
+  // 外层经常传入新的 flags 对象引用（内容不变），这里做深比较稳定引用，避免临时模型被误重建
+  const stableMergedFlagsRef = React.useRef<Record<string, any> | undefined>(undefined);
+  if (!isEqual(stableMergedFlagsRef.current, mergedFlags)) {
+    stableMergedFlagsRef.current = mergedFlags;
+  }
+  const stableMergedFlags = stableMergedFlagsRef.current;
 
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
     const host = model;
     const origin = host?.customFieldModelInstance || host?.subModels?.field;
+    const originProps = (origin?.props || {}) as Record<string, any>;
+    const hostCustomFieldProps = (host?.customFieldProps || {}) as Record<string, any>;
+    const { value: _originValue, defaultValue: _originDefaultValue, ...originPropsWithoutValue } = originProps;
+    const {
+      value: _customValue,
+      defaultValue: _customDefaultValue,
+      ...hostCustomFieldPropsWithoutValue
+    } = hostCustomFieldProps;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
     // 解析 collectionField（优先使用原字段上的引用；必要时从 dataSourceManager 回落）
     let collectionField = origin?.collectionField as any;
@@ -302,27 +375,59 @@ export const DefaultValue = connect((props: Props) => {
       relationInterface === 'm2m' ||
       relationInterface === 'o2m' ||
       relationInterface === 'mbm';
+    const shouldKeepDropdownOpenOnSelect = Boolean(stableMergedFlags?.isInSetDefaultValueDialog && isToManyRelation);
 
     const FallbackClass = isToManyRelation ? RecordSelectFieldModel : InputFieldModel;
     const BoundClass = editableBinding
       ? (model?.context?.engine?.getModelClass?.(editableBinding.modelName) as any)
       : null;
+    const PreferredClass =
+      typeof PreferredClassFromOrigin === 'function' ? (PreferredClassFromOrigin as any) : (null as any);
     // 当来源是筛选字段（类名以 FilterFieldModel 结尾）时优先采用来源类，否则采用可编辑绑定类
     const originIsFilterField =
       typeof (PreferredClassFromOrigin as any)?.name === 'string' &&
       /FilterFieldModel$/.test((PreferredClassFromOrigin as any).name);
-    const BaseClass = originIsFilterField
-      ? PreferredClassFromOrigin
-      : BoundClass || (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || FallbackClass;
+    const shouldPreferOriginClass = originIsFilterField || Boolean((host as any)?.customFieldModelInstance);
+    const BaseClass = shouldPreferOriginClass
+      ? PreferredClass || BoundClass || FallbackClass
+      : BoundClass || PreferredClass || FallbackClass;
     const TempFieldClass = createTempFieldClass(BaseClass);
+    // 继承原关系字段的显示映射，避免默认值编辑器回退为 id 展示
+    const inheritedFieldNames = (origin as any)?.props?.fieldNames;
+    const inheritedTitleField = (origin as any)?.props?.titleField;
+    // 继承 selectSettings 中已保存的参数（如 title-field、多选开关）
+    const inheritedSelectFieldNamesStep = (origin as any)?.getStepParams?.('selectSettings', 'fieldNames');
+    const inheritedSelectAllowMultipleStep = (origin as any)?.getStepParams?.('selectSettings', 'allowMultiple');
+    const tempFieldStepParams: Record<string, any> = {};
+    if (init) {
+      tempFieldStepParams.fieldSettings = { init };
+    }
+    if (inheritedSelectFieldNamesStep || inheritedSelectAllowMultipleStep) {
+      tempFieldStepParams.selectSettings = {
+        ...(inheritedSelectFieldNamesStep ? { fieldNames: inheritedSelectFieldNamesStep } : {}),
+        ...(inheritedSelectAllowMultipleStep ? { allowMultiple: inheritedSelectAllowMultipleStep } : {}),
+      };
+    }
     const fieldSub = {
       use: TempFieldClass,
       uid: uid(),
       parentId: null,
       subKey: null,
       subType: null,
-      stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false, allowClear: true, ...host?.customFieldProps },
+      stepParams: {
+        ...(origin?.stepParams || {}),
+        ...(Object.keys(tempFieldStepParams).length ? tempFieldStepParams : {}),
+      },
+      // 默认值编辑器不应继承原字段当前值，否则会把“筛选表单实时值”误显示为“默认值”。
+      props: {
+        disabled: false,
+        allowClear: true,
+        ...originPropsWithoutValue,
+        ...(typeof inheritedFieldNames !== 'undefined' ? { fieldNames: inheritedFieldNames } : {}),
+        ...(typeof inheritedTitleField !== 'undefined' ? { titleField: inheritedTitleField } : {}),
+        ...(shouldKeepDropdownOpenOnSelect ? { keepDropdownOpenOnSelect: true } : {}),
+        ...hostCustomFieldPropsWithoutValue,
+      },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
@@ -331,6 +436,12 @@ export const DefaultValue = connect((props: Props) => {
     const tempFieldModel = created.subModels?.fields?.[0];
     if (tempFieldModel) {
       tempFieldModel._originalModel = origin;
+      tempFieldModel._originalPropsFallback = host?.customFieldProps;
+      tempFieldModel._fallbackCollectionField = (host as any)?.context?.collectionField;
+      tempFieldModel._originalOptionsFallback =
+        snapshotOptions((origin as any)?.getDataSource?.()) ||
+        snapshotOptions((origin as any)?.props?.options) ||
+        snapshotOptions(host?.customFieldProps?.options);
     }
     if (init?.dataSourceKey && init?.collectionName) {
       const dataSourceManager = model.context.dataSourceManager;
@@ -339,11 +450,11 @@ export const DefaultValue = connect((props: Props) => {
       if (dataSource) created.context?.defineProperty?.('dataSource', { get: () => dataSource });
       if (targetCollection) created.context?.defineProperty?.('collection', { get: () => targetCollection });
     }
-    if (mergedFlags) {
-      created.context?.defineProperty?.('flags', { value: mergedFlags });
+    if (stableMergedFlags) {
+      created.context?.defineProperty?.('flags', { value: stableMergedFlags });
     }
     return created;
-  }, [model, mergedFlags]);
+  }, [model, stableMergedFlags]);
 
   // Cleanup temporary models on unmount to avoid leaking into engine instance map
   React.useEffect(() => {
@@ -538,6 +649,13 @@ export const DefaultValue = connect((props: Props) => {
     }
     return NullValuePlaceholder;
   }, [flowContext]);
+
+  const RunJSComponent = useMemo(() => {
+    const C: React.FC<any> = (inputProps) => (
+      <RunJSValueEditor t={flowContext.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+    );
+    return C;
+  }, [flowContext]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       let base: MetaTreeNode[] = [];
@@ -554,19 +672,26 @@ export const DefaultValue = connect((props: Props) => {
           name: 'constant',
           type: 'string',
           paths: ['constant'],
-          render: InputComponent,
+          render: InputComponent as (props: any) => JSX.Element,
         },
         {
           title: flowContext.t?.('Null') ?? 'Null',
           name: 'null',
           type: 'object',
           paths: ['null'],
-          render: NullComponent,
+          render: NullComponent as (props: any) => JSX.Element,
+        },
+        {
+          title: flowContext.t?.('RunJS') ?? 'RunJS',
+          name: 'runjs',
+          type: 'object',
+          paths: ['runjs'],
+          render: RunJSComponent as (props: any) => JSX.Element,
         },
         ...base,
       ];
     };
-  }, [propMetaTree, flowContext, InputComponent, NullComponent]);
+  }, [propMetaTree, flowContext, InputComponent, NullComponent, RunJSComponent]);
 
   // Ensure temp field is editable. Do not override value/onChange here to avoid racing with VariableInput
   React.useEffect(() => {
@@ -586,16 +711,19 @@ export const DefaultValue = connect((props: Props) => {
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return InputComponent;
           if (firstPath === 'null') return NullComponent;
+          if (firstPath === 'runjs') return RunJSComponent;
           return VariableTag;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
+          if (firstPath === 'runjs') return { code: '', version: 'v1' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}

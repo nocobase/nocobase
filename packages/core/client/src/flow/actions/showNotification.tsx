@@ -23,6 +23,21 @@ type NotificationValue = {
   placement?: NotificationPlacement;
 };
 
+const DEFAULT_DURATION = 5;
+
+function normalizeDuration(duration: number | null | undefined, fallback = DEFAULT_DURATION) {
+  if (duration === null || typeof duration === 'undefined') {
+    return fallback;
+  }
+
+  const numeric = Number(duration);
+  if (Number.isNaN(numeric)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.trunc(numeric));
+}
+
 export const showNotification = defineAction({
   name: 'showNotification',
   title: tExpr('Show notification'),
@@ -41,7 +56,7 @@ export const showNotification = defineAction({
           type: rawValue.type ?? 'info',
           title: rawValue.title || '',
           description: rawValue.description || '',
-          duration: rawValue.duration ?? 4.5,
+          duration: normalizeDuration(rawValue.duration),
           placement: rawValue.placement ?? 'topRight',
         };
 
@@ -65,7 +80,7 @@ export const showNotification = defineAction({
         };
 
         const handleDurationChange = (value: number | null) => {
-          updateValue({ duration: value ?? 4.5 });
+          updateValue({ duration: normalizeDuration(value) });
         };
 
         const handlePlacementChange = (value: NotificationPlacement) => {
@@ -128,7 +143,8 @@ export const showNotification = defineAction({
                 value={mergedValue.duration}
                 onChange={handleDurationChange}
                 min={0}
-                step={0.5}
+                step={1}
+                precision={0}
                 style={{ width: '100%' }}
               />
             </div>
@@ -142,10 +158,11 @@ export const showNotification = defineAction({
       type: 'info',
       title: '',
       description: '',
-      duration: 4.5,
+      duration: DEFAULT_DURATION,
       placement: 'topRight',
     };
-    const { type = 'info', title, description, duration = 4.5, placement = 'topRight' } = params;
+    const { type = 'info', title, description, duration = DEFAULT_DURATION, placement = 'topRight' } = params;
+    const normalizedDuration = normalizeDuration(duration);
 
     if (!title && !description) {
       return;
@@ -155,7 +172,7 @@ export const showNotification = defineAction({
       type,
       message: title,
       description,
-      duration,
+      duration: normalizedDuration,
       placement,
     });
   },

@@ -14,6 +14,7 @@ import {
   useFlowSettingsContext,
   SingleRecordResource,
   MultiRecordResource,
+  resolveRunJSObjectValues,
 } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
@@ -159,7 +160,7 @@ UpdateRecordActionModel.registerFlow({
       },
     },
     assignFieldValues: {
-      title: tExpr('Assign field values'),
+      title: tExpr('Field values'),
       uiSchema() {
         return {
           tip: {
@@ -200,7 +201,16 @@ UpdateRecordActionModel.registerFlow({
         const savedConfirm = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'confirm');
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
-        const assignedValues = params?.assignedValues || {};
+
+        let assignedValues: Record<string, any> = {};
+        try {
+          assignedValues = await resolveRunJSObjectValues(ctx, params?.assignedValues);
+        } catch (error) {
+          console.error('[UpdateRecordAction] RunJS execution failed', error);
+          ctx.message.error(ctx.t('RunJS execution failed'));
+          return;
+        }
+
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
           return;

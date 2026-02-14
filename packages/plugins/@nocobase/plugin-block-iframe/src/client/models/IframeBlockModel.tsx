@@ -52,8 +52,8 @@ const HtmlEditorBase: React.FC<any> = (props) => {
 };
 
 const Iframe: any = observer(
-  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
-    const { url, htmlId, mode = 'url', html, params, height, ...others } = props;
+  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any; heightMode?: string }) => {
+    const { url, htmlId, mode = 'url', html, params, heightMode, ...others } = props;
     const { token } = theme.useToken();
     const compile = useCompile();
     const ctx = useFlowContext();
@@ -91,7 +91,6 @@ const Iframe: any = observer(
         } else {
           try {
             const targetUrl = joinUrlSearch(url, params);
-            console.log(targetUrl);
             if (active) setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
@@ -107,13 +106,11 @@ const Iframe: any = observer(
         active = false;
       };
     }, [htmlContent, mode, url, params, html, htmlId]);
-    console.log(src);
     if (loading && !src) {
       return (
         <div
           style={{
-            height: height || '60vh',
-            marginBottom: token.padding,
+            height: heightMode === 'defaultHeight' ? '60vh' : '100%',
             border: 0,
           }}
         >
@@ -129,8 +126,7 @@ const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: height || '60vh',
-          marginBottom: '24px',
+          height: heightMode === 'defaultHeight' ? '60vh' : '100%',
           border: 0,
         }}
         {...others}
@@ -141,14 +137,15 @@ const Iframe: any = observer(
 );
 
 export class IframeBlockModel extends BlockModel {
-  render() {
+  renderComponent() {
     const { url, htmlId, mode = 'url', html, params, ...others } = this.props;
+    const { heightMode } = this.decoratorProps;
     const token = this.context.themeToken;
     const t = this.context.t;
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: token.padding }}>{t('Please fill in the iframe URL')}</Card>;
     }
-    return <Iframe {...this.props} />;
+    return <Iframe {...this.props} heightMode={heightMode} />;
   }
 }
 const AllowDescription = () => {
@@ -228,16 +225,6 @@ const AllowOptionsHelp = ({ type }) => {
     </span>
   );
 };
-
-IframeBlockModel.registerFlow({
-  key: 'cardSettings',
-  title: escapeT('Block settings', { ns: 'block-iframe' }),
-  steps: {
-    linkageRules: {
-      use: 'blockLinkageRules',
-    },
-  },
-});
 
 IframeBlockModel.registerFlow({
   key: 'iframeBlockSettings',

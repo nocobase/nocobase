@@ -64,7 +64,7 @@ In addition to selecting fields from collections, you can also create form field
 
 ![20251031173833](https://static-docs.nocobase.com/20251031173833.png)
 
-2. Fill in the field title, select "Select" as the field model, and configure the options.
+2. Fill in the field title, select "Select" in "Field type", and configure the options.
 
 ![20251031174857_rec_](https://static-docs.nocobase.com/20251031174857_rec_.gif)
 
@@ -77,14 +77,37 @@ In addition to selecting fields from collections, you can also create form field
 ![20251031182235_rec_](https://static-docs.nocobase.com/20251031182235_rec_.gif)
 
 
-Currently supported field models:
+Currently supported field types:
 
-- Input: Single-line text input
-- Number: Numeric input
-- Date: Date picker
-- Select: Dropdown (can be configured for single or multiple selection)
-- Radio group: Radio buttons
-- Checkbox group: Checkboxes
+- Input
+- Number
+- Date
+- Select
+- Radio group
+- Checkbox group
+- Record select
+
+#### Record select (custom relationship field)
+
+`Record select` is suitable for scenarios where you filter by related records. For example, filtering orders by customer, or filtering tasks by assignee.
+
+Configuration options:
+
+- **Target collection**: Specifies which collection to load selectable records from.
+- **Title field**: Used as display text in the dropdown options and selected tags (such as name or title).
+- **Value field**: Used as the actual submitted filter value, usually a primary key field (such as `id`).
+- **Allow multiple**: When enabled, users can select multiple records at once.
+- **Operator**: Defines how filter conditions are matched (see "Operator" below).
+
+Recommended setup:
+
+1. Choose a readable field for `Title field` (such as "Name"), instead of raw IDs.
+2. Prefer a primary key field for `Value field` to ensure stable and unique filtering.
+3. In single-select scenarios, usually disable `Allow multiple`. In multi-select scenarios, enable `Allow multiple` and use an appropriate `Operator`.
+
+#### Operator
+
+`Operator` defines the matching relationship between the filter form field value and the target block field value.
 
 ### Collapse
 

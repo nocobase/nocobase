@@ -37,8 +37,10 @@ import {
   extractPropertyPath,
   extractUsedVariablePaths,
   FlowExitException,
+  isCtxDatePathPrefix,
   isCssFile,
   prepareRunJsCode,
+  resolveCtxDatePath,
   resolveDefaultParams,
   resolveExpressions,
   resolveModuleUrl,
@@ -205,7 +207,7 @@ export interface PropertyOptions {
   // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
   resolveOnServer?: boolean | ((subPath: string) => boolean);
   // 优化：当需要服务端解析但本属性在 buildVariablesParams 返回空时，是否跳过调用服务端。
-  // - 典型场景：formValues / currentObject 仅在“已选关联值”存在时才需要服务端；否则没有必要请求。
+  // - 典型场景：formValues / item 仅在“已选关联值”存在时才需要服务端；否则没有必要请求。
   // - 默认 false：保持兼容，其他变量即使没有 contextParams 也可选择调用服务端。
   serverOnlyWhenContextParams?: boolean;
 }
@@ -1428,6 +1430,32 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         user: this.user,
       }),
     });
+    this.defineProperty('date', {
+      get: () => {
+        const createBranch = (prefix: string[]) => {
+          return new Proxy(
+            {},
+            {
+              get: (_target, prop) => {
+                if (typeof prop !== 'string') return undefined;
+                const nextPath = [...prefix, prop];
+                if (!isCtxDatePathPrefix(nextPath)) {
+                  return undefined;
+                }
+                const resolved = resolveCtxDatePath(nextPath);
+                if (typeof resolved !== 'undefined') {
+                  return resolved;
+                }
+                return createBranch(nextPath);
+              },
+            },
+          );
+        };
+
+        return createBranch(['date']);
+      },
+      cache: false,
+    });
     this.defineMethod('loadCSS', async (href: string) => {
       const url = resolveModuleUrl(href);
       return new Promise((resolve, reject) => {
@@ -1472,6 +1500,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const modelClass = getModelClassName(this);
       const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
       const runCtx = new Ctor(this);
+      runCtx.defineMethod('t', (key: string, options?: any) => {
+        return this.t(key, { ns: 'runjs', ...options });
+      });
       const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
@@ -1490,57 +1521,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return this.engine.getEvents();
     });
 
-    // // Date variables (for variable selector meta tree)
-    // this.defineProperty('date', {
-    //   get: () => {
-    //     const vars = getDateVars() as Record<string, any>;
-    //     // align with client options: add dayBeforeYesterday
-    //     vars.dayBeforeYesterday = toUnit('day', -2);
-    //     const now = new Date().toISOString();
-    //     const out: Record<string, any> = {};
-    //     for (const [k, v] of Object.entries(vars)) {
-    //       try {
-    //         out[k] = typeof v === 'function' ? v({ now }) : v;
-    //       } catch (e) {
-    //         // ignore
-    //       }
-    //     }
-    //     return out;
-    //   },
-    //   meta: () => {
-    //     const title = this.t('Date variables');
-    //     const mk = (t: string) => ({ type: 'any', title: this.t(t) });
-    //     return {
-    //       type: 'object',
-    //       title,
-    //       properties: {
-    //         now: mk('Current time'),
-    //         dayBeforeYesterday: mk('Day before yesterday'),
-    //         yesterday: mk('Yesterday'),
-    //         today: mk('Today'),
-    //         tomorrow: mk('Tomorrow'),
-    //         lastIsoWeek: mk('Last week'),
-    //         thisIsoWeek: mk('This week'),
-    //         nextIsoWeek: mk('Next week'),
-    //         lastMonth: mk('Last month'),
-    //         thisMonth: mk('This month'),
-    //         nextMonth: mk('Next month'),
-    //         lastQuarter: mk('Last quarter'),
-    //         thisQuarter: mk('This quarter'),
-    //         nextQuarter: mk('Next quarter'),
-    //         lastYear: mk('Last year'),
-    //         thisYear: mk('This year'),
-    //         nextYear: mk('Next year'),
-    //         last7Days: mk('Last 7 days'),
-    //         next7Days: mk('Next 7 days'),
-    //         last30Days: mk('Last 30 days'),
-    //         next30Days: mk('Next 30 days'),
-    //         last90Days: mk('Last 90 days'),
-    //         next90Days: mk('Next 90 days'),
-    //       },
-    //     } as PropertyMeta;
-    //   },
-    // });
     this.defineMethod(
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
@@ -1850,7 +1830,7 @@ export class FlowRuntimeContext<
   }
 
   exit() {
-    throw new FlowExitException(this.flowKey, this.model.uid);
+    throw new FlowExitAllException(this.flowKey, this.model.uid);
   }
 
   exitAll() {
@@ -2085,6 +2065,15 @@ export class FlowRunJSContext extends FlowContext {
       },
     );
   }
+
+  exit() {
+    throw new FlowExitAllException(this.flowKey, this.model?.uid || 'runjs');
+  }
+
+  exitAll() {
+    throw new FlowExitAllException(this.flowKey, this.model?.uid || 'runjs');
+  }
+
   static define(meta: RunJSDocMeta, options?: { locale?: string }) {
     const locale = options?.locale;
     if (locale) {

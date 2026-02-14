@@ -18,12 +18,20 @@ import {
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
-import React from 'react';
+import { getValuesByPath } from '@nocobase/shared';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import {
+  markSaveStepParamsWithSubModels,
+  saveStepParamsWithSubModelsIfNeeded,
+} from '../../../internal/utils/saveStepParamsWithSubModels';
 import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
+import { FormValueRuntime } from './value-runtime';
+import { collectUpdateAssociationValuesFromAssignRules } from './assignRulesUpdateAssociationValues';
+import { clearLegacyDefaultValuesFromFormModel } from './legacyDefaultValueMigration';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -33,7 +41,7 @@ type DefaultCollectionBlockModelStructure = {
 type CustomFormBlockModelClassesEnum = {};
 
 const GRID_DELEGATED_STEP_KEYS: Record<string, Set<string>> = {
-  formModelSettings: new Set(['layout']),
+  formModelSettings: new Set(['layout', 'assignRules']),
   eventSettings: new Set(['linkageRules']),
 };
 
@@ -43,6 +51,8 @@ function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
+  formValueRuntime?: FormValueRuntime;
+
   private userModifiedTopLevelFields = new Set<string>();
 
   get form() {
@@ -71,10 +81,24 @@ export class FormBlockModel<
   }
 
   setFieldsValue(values: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValues === 'function') {
+      void ctx.setFormValues(values, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form values via ctx.setFormValues', error);
+      });
+      return;
+    }
     this.form.setFieldsValue(values);
   }
 
-  setFieldValue(fieldName, value) {
+  setFieldValue(fieldName: any, value: any) {
+    const ctx = this.context as any;
+    if (typeof ctx.setFormValue === 'function') {
+      void ctx.setFormValue(fieldName, value, { source: 'system' }).catch((error: any) => {
+        console.warn('[FormBlockModel] Failed to set form value via ctx.setFormValue', error);
+      });
+      return;
+    }
     this.form.setFieldValue(fieldName, value);
   }
 
@@ -208,10 +232,12 @@ export class FormBlockModel<
   }
 
   async saveStepParams() {
-    const res = await super.saveStepParams();
-    const grid = this.subModels.grid;
-    await grid?.saveStepParams();
-    return res;
+    return await saveStepParamsWithSubModelsIfNeeded(this, async () => {
+      const res = await super.saveStepParams();
+      const grid = this.subModels.grid;
+      await grid?.saveStepParams();
+      return res;
+    });
   }
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {
@@ -227,12 +253,21 @@ export class FormBlockModel<
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form });
+
+    if (!this.formValueRuntime) {
+      this.formValueRuntime = new FormValueRuntime({
+        model: this,
+        getForm: () => this.context.form,
+      });
+    }
+    const runtime = this.formValueRuntime;
+    runtime.mount();
     // 增强：为 formValues 提供基于“已选关联值”的服务端解析锚点
     const formValuesMeta: PropertyMetaFactory = this.createFormValuesMetaFactory();
 
     this.context.defineProperty('formValues', {
       get: () => {
-        return this.context.form.getFieldsValue();
+        return runtime.formValues;
       },
       cache: false,
       meta: formValuesMeta,
@@ -272,10 +307,22 @@ export class FormBlockModel<
           const topValue = this.form?.getFieldValue?.(top);
           if (topValue == null) return false;
           if (Array.isArray(topValue) && topValue.length === 0) return false;
+
+          // 本地优先：支持对多关系的 dot 聚合路径（例如 assignees.name）。
+          // lodash.get 对数组聚合路径会返回 undefined（如 _.get({ assignees:[{name:'A'}] }, 'assignees.name')），
+          // 因而这里先用 getValuesByPath 做一次前端可解析性检查，命中则直接前端解析。
+          const formValuesSnapshot = runtime.getFormValuesSnapshot();
+          if (formValuesSnapshot && typeof formValuesSnapshot === 'object') {
+            const localResolved = getValuesByPath(formValuesSnapshot as Record<string, any>, subPath);
+            if (typeof localResolved !== 'undefined') {
+              return false;
+            }
+          }
+
           // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
           const assocResolver = createAssociationSubpathResolver(
             () => this.collection,
-            () => this.form.getFieldsValue(),
+            () => runtime.getFormValuesSnapshot(),
           );
           return assocResolver(subPath);
         }
@@ -296,6 +343,18 @@ export class FormBlockModel<
       },
       serverOnlyWhenContextParams: true,
     });
+
+    this.context.defineMethod('getFormValues', function () {
+      return runtime.getFormValuesSnapshot();
+    });
+
+    this.context.defineMethod('setFormValues', function (patch, options) {
+      return runtime.setFormValues(this, patch, options);
+    });
+
+    this.context.defineMethod('setFormValue', function (path, value, options) {
+      return runtime.setFormValues(this, [{ path, value }], options);
+    });
   }
 
   onInit(options) {
@@ -311,10 +370,28 @@ export class FormBlockModel<
 
   protected onMount() {
     super.onMount();
+    this.formValueRuntime?.mount({ sync: true });
+    // 将"表单赋值"配置编译为运行时规则
+    const params = this.getStepParams('formModelSettings', 'assignRules');
+    const items = (params?.value || []) as any[];
+    this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
+
+    // 若规则目标包含关联字段的嵌套属性（如 user.name），自动补全 updateAssociationValues 以启用后端 nested update
+    const resource: any = (this.context as any)?.resource;
+    const updateAssociationValues = collectUpdateAssociationValuesFromAssignRules(items, this.collection);
+    if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
+      resource.addUpdateAssociationValues(updateAssociationValues);
+    }
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
     }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
+  }
+
+  onUnmount() {
+    this.formValueRuntime?.dispose();
+    this.formValueRuntime = undefined;
+    super.onUnmount();
   }
 
   getCurrentRecord() {
@@ -338,6 +415,7 @@ export function FormComponent({
   layoutProps?: any;
   initialValues?: any;
   onFinish?: (values: any) => void;
+  [key: string]: any;
 }) {
   return (
     <Form
@@ -345,8 +423,20 @@ export function FormComponent({
       initialValues={model.context?.view?.inputArgs?.formData || model.context.record || initialValues}
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onFieldsChange={(changedFields) => {
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormFieldsChange(changedFields as any);
+        }
+      }}
       onValuesChange={(changedValues, allValues) => {
         model.markUserModifiedFields?.(changedValues);
+
+        const runtime = model.formValueRuntime;
+        if (runtime) {
+          runtime.handleFormValuesChange(changedValues, allValues);
+          return;
+        }
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
@@ -356,6 +446,141 @@ export function FormComponent({
     </Form>
   );
 }
+
+type UseFormGridHeightOptions = {
+  heightMode?: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  actionsRef?: React.RefObject<HTMLDivElement>;
+  footerRef?: React.RefObject<HTMLDivElement>;
+  deps?: React.DependencyList;
+};
+
+const getOuterHeight = (element?: HTMLElement | null) => {
+  if (!element) return 0;
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = parseFloat(style.marginTop) || 0;
+  const marginBottom = parseFloat(style.marginBottom) || 0;
+  return rect.height + marginTop + marginBottom;
+};
+
+const useFormGridHeight = ({
+  heightMode,
+  containerRef,
+  actionsRef,
+  footerRef,
+  deps = [],
+}: UseFormGridHeightOptions) => {
+  const [gridHeight, setGridHeight] = useState<number>();
+
+  const calcGridHeight = useCallback(() => {
+    if (heightMode !== 'specifyValue' && heightMode !== 'fullHeight') {
+      setGridHeight((prev) => (prev === undefined ? prev : undefined));
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const containerHeight = container.getBoundingClientRect().height;
+    if (!containerHeight) return;
+    const actionsHeight = getOuterHeight(actionsRef?.current || null);
+    const footerHeight = getOuterHeight(footerRef?.current || null);
+    const nextHeight = Math.max(0, Math.floor(containerHeight - actionsHeight - footerHeight));
+    setGridHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [heightMode, containerRef, actionsRef, footerRef]);
+
+  useLayoutEffect(() => {
+    calcGridHeight();
+  }, [calcGridHeight, ...deps]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
+    const container = containerRef.current;
+    const actions = actionsRef?.current || null;
+    const footer = footerRef?.current || null;
+    const observer = new ResizeObserver(() => calcGridHeight());
+    observer.observe(container);
+    if (actions) observer.observe(actions);
+    if (footer) observer.observe(footer);
+    return () => observer.disconnect();
+  }, [calcGridHeight, containerRef, actionsRef, footerRef, ...deps]);
+
+  return gridHeight;
+};
+
+type FormBlockContentProps = {
+  model: FormBlockModel;
+  gridModel: FormGridModel;
+  layoutProps?: any;
+  onFinish?: (values: any) => void;
+  grid: React.ReactNode;
+  actions?: React.ReactNode;
+  footer?: React.ReactNode;
+  heightMode?: string;
+  height?: number;
+};
+
+export const FormBlockContent = ({
+  model,
+  gridModel,
+  layoutProps,
+  onFinish,
+  grid,
+  actions,
+  footer,
+  heightMode,
+  height,
+}: FormBlockContentProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const gridHeight = useFormGridHeight({
+    heightMode,
+    containerRef,
+    actionsRef: actions ? actionsRef : undefined,
+    footerRef: footer ? footerRef : undefined,
+    deps: [height],
+  });
+
+  useEffect(() => {
+    if (!gridModel) return;
+    const nextHeight = isFixedHeight ? gridHeight : undefined;
+    if (gridModel.props?.height === nextHeight) return;
+    gridModel.setProps({ height: nextHeight });
+  }, [gridModel, gridHeight, isFixedHeight]);
+
+  const formStyle = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }
+    : undefined;
+
+  const containerStyle: any = isFixedHeight
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        flex: 1,
+      }
+    : undefined;
+
+  return (
+    <FormComponent model={model} layoutProps={layoutProps} onFinish={onFinish} style={formStyle}>
+      <div ref={containerRef} style={containerStyle}>
+        {grid}
+        {actions ? (
+          <div style={{ paddingTop: model.context?.themeToken?.padding }} ref={actionsRef}>
+            {actions}
+          </div>
+        ) : null}
+        {footer ? <div ref={footerRef}>{footer}</div> : null}
+      </div>
+    </FormComponent>
+  );
+};
 
 FormBlockModel.define({
   hide: true,
@@ -369,6 +594,36 @@ FormBlockModel.registerFlow({
       use: 'layout',
       title: tExpr('Layout'),
     },
+    assignRules: {
+      use: 'formAssignRules',
+      title: tExpr('Field values'),
+      beforeParamsSave(ctx) {
+        // 迁移：保存表单级规则后，移除字段级默认值配置（editItemSettings/formItemSettings.initialValue）
+        // 字段级默认值会在 UI 打开时自动合并到本步骤表单值中，因此此处仅做清理即可。
+        const cleared = clearLegacyDefaultValuesFromFormModel(ctx.model);
+        if (Array.isArray(cleared) && cleared.length) {
+          // FlowModelRepository({ onlyStepParams: true }) 不会写入 subModels，
+          // 此处标记后在 saveStepParams 中触发一次全量保存以持久化清理结果。
+          markSaveStepParamsWithSubModels(ctx.model);
+        }
+      },
+      afterParamsSave(ctx) {
+        // 保存后同步到运行时（若存在），以便立即生效
+        const params = ctx.model.getStepParams('formModelSettings', 'assignRules');
+        const items = (params?.value || []) as any[];
+        (ctx.model as any)?.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
+
+        // 保存后同步补全 updateAssociationValues（避免 nested 字段在后端被 sanitize 掉）
+        const resource: any = (ctx.model as any)?.context?.resource;
+        const updateAssociationValues = collectUpdateAssociationValuesFromAssignRules(
+          items,
+          (ctx.model as any)?.collection,
+        );
+        if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
+          resource.addUpdateAssociationValues(updateAssociationValues);
+        }
+      },
+    },
   },
 });
 
@@ -381,7 +636,10 @@ FormBlockModel.registerFlow({
       use: 'fieldLinkageRules',
       afterParamsSave(ctx) {
         // 保存后，自动运行一次
-        ctx.model.applyFlow('eventSettings');
+        ctx.model.applyFlow('eventSettings', {
+          changedValues: {},
+          allValues: ctx.form?.getFieldsValue(true),
+        });
       },
     },
   },

@@ -15,7 +15,7 @@ import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 import { BlockPlaceholder, BlockDeletePlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
-export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | 'subForm' | BlockSceneType[];
+export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | 'subForm'| 'bulkEditForm' | BlockSceneType[];
 
 export const BlockSceneEnum = {
   new: 'new' as BlockSceneType,
@@ -25,6 +25,7 @@ export const BlockSceneEnum = {
   filter: 'filter' as BlockSceneType,
   oam: ['one', 'many'] as BlockSceneType,
   subForm: 'subForm' as BlockSceneType,
+  bulkEditForm: 'bulkEditForm' as BlockSceneType,
 };
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
@@ -130,62 +131,17 @@ BlockModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        const title = ctx.t(params.title);
-        const description = ctx.t(params.description);
-        ctx.model.setDecoratorProps({ title: title, description: description });
+        const title = ctx.t(params.title, { ns: 'lm-flow-engine' });
+        const description = ctx.t(params.description, { ns: 'lm-flow-engine' });
+        ctx.model.setDecoratorProps({ title, description });
       },
     },
     linkageRules: {
       use: 'blockLinkageRules',
     },
-    // setBlockHeight: {
-    //   title: tval('Set block height'),
-    //   uiSchema: {
-    //     heightMode: {
-    //       type: 'string',
-    //       enum: [
-    //         { label: tval('Default'), value: HeightMode.DEFAULT },
-    //         { label: tval('Specify height'), value: HeightMode.SPECIFY_VALUE },
-    //         { label: tval('Full height'), value: HeightMode.FULL_HEIGHT },
-    //       ],
-    //       required: true,
-    //       'x-decorator': 'FormItem',
-    //       'x-component': 'Radio.Group',
-    //     },
-    //     height: {
-    //       title: tval('Height'),
-    //       type: 'string',
-    //       required: true,
-    //       'x-decorator': 'FormItem',
-    //       'x-component': 'NumberPicker',
-    //       'x-component-props': {
-    //         addonAfter: 'px',
-    //       },
-    //       'x-validator': [
-    //         {
-    //           minimum: 40,
-    //         },
-    //       ],
-    //       'x-reactions': {
-    //         dependencies: ['heightMode'],
-    //         fulfill: {
-    //           state: {
-    //             hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="defaultHeight"}}',
-    //             value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
-    //           },
-    //         },
-    //       },
-    //     },
-    //   },
-    //   defaultParams: () => {
-    //     return {
-    //       heightMode: HeightMode.DEFAULT,
-    //     };
-    //   },
-    //   handler(ctx, params) {
-    //     ctx.model.setDecoratorProps({ heightMode: params.heightMode, height: params.height });
-    //   },
-    // },
+    blockHeight: {
+      use: 'blockHeight',
+    },
   },
 });
 

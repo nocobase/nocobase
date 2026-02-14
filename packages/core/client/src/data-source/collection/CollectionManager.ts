@@ -87,6 +87,7 @@ export class CollectionManager {
     if (!path) return undefined;
 
     if (typeof path === 'object') {
+      path.disableTranslation = true;
       return this.getCollectionInstance(path) as Mixins & Collection;
     }
 

@@ -277,7 +277,19 @@ const DisplayTable = (props) => {
       columns={columns}
       pagination={pagination}
       locale={{
-        emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
+        emptyText: (
+          <span>
+            {disabled
+              ? t('No data')
+              : allowAddNew && allowSelectExistingRecord
+                ? t('Please add or select record')
+                : allowAddNew
+                  ? t('Please add record')
+                  : allowSelectExistingRecord
+                    ? t('Please select record')
+                    : t('No data')}
+          </span>
+        ),
       }}
       className={css`
         .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
@@ -541,7 +553,7 @@ PopupSubTableFieldModel.registerFlow({
       title: tExpr('Enable select action'),
       uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       defaultParams: {
-        allowSelectExistingRecord: false,
+        allowSelectExistingRecord: true,
       },
       handler(ctx, params) {
         ctx.model.setProps({
@@ -610,6 +622,12 @@ PopupSubTableFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        const parentItem = ctx?.item ?? {
+          value: (typeof ctx?.getFormValues === 'function' ? ctx.getFormValues() : ctx.formValues) ?? ctx.record,
+        };
+        const parentItemOptions = ctx?.getPropertyOptions?.('item');
+        const itemIndex = Array.isArray(ctx.model?.props?.value) ? ctx.model.props.value.length : 0;
+        const itemLength = itemIndex + 1;
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -621,6 +639,11 @@ PopupSubTableFieldModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
+            parentItem,
+            parentItemMeta: parentItemOptions?.meta,
+            parentItemResolver: parentItemOptions?.resolveOnServer,
+            itemIndex,
+            itemLength,
           },
           content: () => <EditFormContent model={ctx.model} scene="create" />,
           styles: {

@@ -22,7 +22,7 @@ export {
 export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
-export { FlowExitException } from './exceptions';
+export { FlowCancelSaveException, FlowExitException } from './exceptions';
 
 // 流程定义相关
 export { defineAction } from './flow-definitions';
@@ -34,7 +34,13 @@ export { isInheritedFrom } from './inheritance';
 export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema, resolveUiMode, shouldHideStepInSettings } from './schema-utils';
+export {
+  compileUiSchema,
+  resolveStepUiSchema,
+  resolveStepDisabledInSettings,
+  resolveUiMode,
+  shouldHideStepInSettings,
+} from './schema-utils';
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
@@ -59,9 +65,31 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
+export {
+  decodeBase64Url,
+  encodeBase64Url,
+  isCompleteCtxDatePath,
+  isCtxDatePathPrefix,
+  isCtxDateExpression,
+  parseCtxDateExpression,
+  resolveCtxDatePath,
+  serializeCtxDateValue,
+} from './dateVariable';
 
 // 安全全局对象（window/document）
-export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';
+export {
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  createSafeRunJSGlobals,
+  runjsWithSafeGlobals,
+} from './safeGlobals';
+
+// RunJS value helpers
+export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';
+
+// RunJS helpers
+export { resolveRunJSObjectValues } from './resolveRunJSObjectValues';
 
 // RunJS 代码兼容预处理（{{ }}）与 JSX 编译
 export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';

@@ -234,6 +234,34 @@ JSColumnModel.registerFlow({
       },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
+
+        const preview = ctx.inputArgs?.preview;
+        const isPreview = !!preview;
+        const isFork = (ctx.model as any)?.isFork === true;
+
+        // 预览模式：在 master 上分发到当前已挂载（可见）的行内 fork，确保点击 Run 可即时看到单元格渲染结果
+        if (isPreview && !isFork) {
+          const masterModel = ctx.model as any;
+          const mountedForks = Array.from(masterModel?.forks || []).filter((fork: any) => {
+            return !!fork?.context?.ref?.current;
+          });
+
+          if (mountedForks.length > 0) {
+            const settled = await Promise.allSettled(
+              mountedForks.map((fork: any) => {
+                return fork.applyFlow('jsSettings', { preview: { code, version } });
+              }),
+            );
+            const firstRejected = settled.find(
+              (result): result is PromiseRejectedResult => result.status === 'rejected',
+            );
+            if (firstRejected) {
+              throw firstRejected.reason;
+            }
+            return;
+          }
+        }
+
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),

@@ -34,3 +34,14 @@ export class FlowExitAllException extends Error {
     this.modelUid = modelUid;
   }
 }
+
+/**
+ * 取消当前保存但保持设置弹窗打开
+ * 用于“保存前确认”场景，用户取消时不应关闭弹窗也不应提示错误
+ */
+export class FlowCancelSaveException extends Error {
+  constructor(message = 'Flow settings save cancelled.') {
+    super(message);
+    this.name = 'FlowCancelSaveException';
+  }
+}

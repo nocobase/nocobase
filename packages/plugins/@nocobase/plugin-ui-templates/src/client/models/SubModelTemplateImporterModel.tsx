@@ -132,10 +132,14 @@ function isModelInsideReferenceBlock(model: FlowModel | undefined): boolean {
   return model.parent?.use === 'ReferenceBlockModel';
 }
 
-function resolveExpectedRootUse(blockModel: FlowModel | undefined): string | string[] {
+export function resolveExpectedRootUse(blockModel: FlowModel | undefined): string | string[] {
   // Create/Edit：允许互通
   if (blockModel?.use === 'CreateFormModel' || blockModel?.use === 'EditFormModel') {
     return ['CreateFormModel', 'EditFormModel'];
+  }
+  // 审批发起/处理表单：允许互通（最小改动方案）
+  if (blockModel?.use === 'ApplyFormModel' || blockModel?.use === 'ProcessFormModel') {
+    return ['ApplyFormModel', 'ProcessFormModel'];
   }
   return blockModel?.use || '';
 }

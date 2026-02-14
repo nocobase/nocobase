@@ -401,6 +401,36 @@ describe('ReferenceBlockModel', () => {
 
   describe('Reference block basics', () => {
     it(
+      'should keep target runtime context engine scoped after parent delegation',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const targetModel = (referenceBlockModel as any)._targetModel as FlowModel;
+        expect(targetModel).toBeDefined();
+        expect(targetModel.context.engine).toBe(scopedEngine);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
       'should resolve the target block correctly',
       async () => {
         gridModel.addSubModel('items', targetBlockModel);

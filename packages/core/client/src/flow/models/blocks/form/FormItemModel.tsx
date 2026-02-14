@@ -23,6 +23,7 @@ import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
 import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
+import { buildDynamicNamePath } from './dynamicNamePath';
 
 const interfacesOfUnsupportedDefaultValue = [
   'o2o',
@@ -38,27 +39,6 @@ const interfacesOfUnsupportedDefaultValue = [
   'sequence',
   'formula',
 ];
-
-function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
-  if (!fieldIndex?.length) {
-    return nameParts;
-  }
-
-  // 取最后一个索引
-  const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
-  const idx = Number(indexStr);
-
-  // 找到 lastField 在 nameParts 的位置
-  const lastIndex = nameParts.indexOf(lastField);
-
-  if (lastIndex === -1) {
-    // 找不到对应字段，直接返回原始 nameParts
-    return nameParts;
-  }
-
-  // 结果 = [索引, ...lastField 后面的字段]
-  return [idx, ...nameParts.slice(lastIndex + 1)];
-}
 
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
@@ -140,6 +120,15 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
                 get: () => this.context.currentObject,
               });
             }
+            const itemOptions = this.context.getPropertyOptions('item');
+            if (this.context.item) {
+              const { value: _value, ...rest } = (itemOptions || {}) as any;
+              fork.context.defineProperty('item', {
+                ...rest,
+                get: () => this.context.item,
+                cache: false,
+              });
+            }
             if (this.context.pattern) {
               fork.context.defineProperty('pattern', {
                 get: () => this.context.pattern,
@@ -149,14 +138,15 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
           })()
         : fieldModel;
     const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
-    const fieldPath = buildDynamicName(this.props.name, idx);
+    const { initialValue, ...mergedPropsWithoutInitial } = mergedProps as any;
+    const fieldPath = buildDynamicNamePath(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
-    const record = this.context.currentObject || this.context.record;
+    const record = this.context.item?.value || this.context.record;
     return (
       <FormItem
-        {...mergedProps}
+        {...mergedPropsWithoutInitial}
         name={fieldPath}
         validateFirst={true}
         disabled={
@@ -203,7 +193,7 @@ FormItemModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -215,7 +205,8 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label || ctx.collectionField?.title });
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.collectionField?.title };
+        ctx.model.setProps({ label: ctx.t(params.label, options) });
       },
     },
     aclCheck: {
@@ -240,7 +231,7 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'view',
           });
-          if (ctx.prefixFieldPath && ctx.currentObject) {
+          if (ctx.prefixFieldPath && ctx.item) {
             //子表单下的新增
             const createFieldAclResult = await ctx.aclCheck({
               dataSourceKey: ctx.dataSource?.key,
@@ -256,7 +247,8 @@ FormItemModel.registerFlow({
             }
           }
 
-          if (!resultView && !ctx.currentObject?.__is_new__) {
+          const isNew = ctx.item?.__is_new__ ?? false;
+          if (!resultView && !isNew) {
             ctx.model.hidden = true;
             ctx.model.forbidden = {
               actionName: 'view',
@@ -283,7 +275,8 @@ FormItemModel.registerFlow({
             fields: [ctx.collectionField.name],
             actionName: 'update',
           });
-          if (!result && !ctx.currentObject?.__is_stored__) {
+          const isStored = ctx.item?.__is_stored__ ?? false;
+          if (!result && !isStored) {
             // 子表单中选择的记录
             ctx.model.hidden = true;
             ctx.model.forbidden = {
@@ -318,7 +311,7 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: ctx.t(params.tooltip, { ns: 'lm-flow-engine' }) });
       },
     },
     description: {
@@ -333,11 +326,17 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ extra: params.description });
+        ctx.model.setProps({
+          extra: ctx.t(params.description, { ns: 'lm-flow-engine' }),
+        });
       },
     },
     initialValue: {
       title: tExpr('Default value'),
+      // 默认值已统一到表单级“字段赋值/默认值”配置，此处仅保留旧配置兼容读取（禁用入口）
+      disabledInSettings: true,
+      disabledReasonInSettings: (ctx) =>
+        `${ctx.t('This setting has been moved to')}: ${ctx.t('Form block settings')} > ${ctx.t('Field values')}`,
       uiSchema: (ctx) => {
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;

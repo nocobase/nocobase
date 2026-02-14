@@ -71,6 +71,7 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export * from './utils';
+export * from './actions';
 export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
 
