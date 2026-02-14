@@ -63,6 +63,13 @@ interface FlowSQLRepository {
 | `ctx.sql.runById(uid, options?)` | 按 ID 执行已保存的 SQL 模板 | 登录用户均可 |
 | `ctx.sql.destroy(uid)` | 删除指定 ID 的 SQL 模板 | 需 SQL 配置权限 |
 
+注意：
+
+- `run` 用于调试 SQL，需配置权限；
+- `save`、`destroy` 用于管理 SQL 模板，需配置权限；
+- `runById` 开放给普通用户，仅能按已保存模板执行，无法调试或修改 SQL；
+- SQL 模板有变动时，需调用 `save` 保存。
+
 ## 参数说明
 
 ### run / runById 的 options
