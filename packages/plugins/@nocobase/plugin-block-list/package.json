@@ -4,7 +4,7 @@
   "displayName.zh-CN": "区块：列表",
   "description": "Display data in a list with pagination support.",
   "description.zh-CN": "以列表形式展示数据,支持分页设置",
-  "version": "2.1.0-alpha.1",
+  "version": "2.1.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-list",

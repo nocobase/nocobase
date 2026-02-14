@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-gantt",
-  "version": "2.1.0-alpha.1",
+  "version": "2.1.0-alpha.2",
   "displayName": "Block: Gantt",
   "displayName.ru-RU": "Блок: Диаграмма Ганта",
   "displayName.zh-CN": "区块：甘特图",
