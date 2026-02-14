@@ -89,6 +89,7 @@ const FormAssignRulesUI = observer(
         showValueEditorWhenNoField
         isTitleFieldCandidate={isTitleFieldCandidate}
         onSyncAssociationTitleField={onSyncAssociationTitleField}
+        enableDateVariableAsConstant
       />
     );
   },

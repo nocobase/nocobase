@@ -908,6 +908,7 @@ const FieldAssignRulesActionComponent: React.FC<
       fixedMode={fixedMode}
       isTitleFieldCandidate={isTitleFieldCandidate}
       onSyncAssociationTitleField={onSyncAssociationTitleField}
+      enableDateVariableAsConstant
     />
   );
 };

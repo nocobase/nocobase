@@ -28,11 +28,11 @@ export const DateTimeNoTzPicker = (props) => {
         return onChange(val);
       }
       const outputFormat = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
-      if (showTime) {
-        onChange(dayjs(val, format).format(outputFormat));
-      } else {
-        onChange(dayjs(val, format).startOf(picker).format(outputFormat));
-      }
+
+      // Adjust to start of period for month/quarter/year pickers
+      const adjustedVal = picker !== 'date' ? dayjs(val).startOf(picker) : dayjs(val);
+
+      onChange(adjustedVal.format(outputFormat));
     },
   };
 

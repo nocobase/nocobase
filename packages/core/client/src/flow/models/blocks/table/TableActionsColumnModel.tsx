@@ -21,7 +21,7 @@ import {
   FlowsFloatContextMenu,
   observer,
 } from '@nocobase/flow-engine';
-import { Skeleton, Space, Tooltip } from 'antd';
+import { Skeleton, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
@@ -36,10 +36,15 @@ const Columns = observer<any>(({ record, model, index }) => {
   const recordIdentity = getRowKey(record, model?.context?.collection?.filterTargetKey);
   return (
     <DndProvider>
-      <Space
-        wrap
-        size={'middle'}
+      <div
+        style={{ gap: model.context?.themeToken?.marginSM ?? 16 }}
         className={css`
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          > div:empty {
+            display: none;
+          }
           button {
             padding: 0;
           }
@@ -88,26 +93,33 @@ const Columns = observer<any>(({ record, model, index }) => {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          const renderer = (
+            <FlowModelRenderer
+              showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
+              key={fork.uid}
+              model={fork}
+              inputArgs={record}
+              fallback={<Skeleton.Button size="small" />}
+              extraToolbarItems={[
+                {
+                  key: 'drag-handler',
+                  component: DragHandler,
+                  sort: 1,
+                },
+              ]}
+            />
+          );
+          if (!isConfigMode) {
+            // 非配置模式不包裹 Droppable，避免隐藏动作留下空占位。
+            return renderer;
+          }
           return (
             <Droppable model={action} key={action.uid}>
-              <FlowModelRenderer
-                showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
-                key={fork.uid}
-                model={fork}
-                inputArgs={record}
-                fallback={<Skeleton.Button size="small" />}
-                extraToolbarItems={[
-                  {
-                    key: 'drag-handler',
-                    component: DragHandler,
-                    sort: 1,
-                  },
-                ]}
-              />
+              {renderer}
             </Droppable>
           );
         })}
-      </Space>
+      </div>
     </DndProvider>
   );
 });

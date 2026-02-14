@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { EventEmitter } from 'events';
+import dayjs from 'dayjs';
 import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
@@ -309,6 +310,64 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     expect(rules.has(instanceId)).toBe(false);
     expect(rules.has(blockId)).toBe(true);
+  });
+
+  it('normalizes date-only value for unixTimestamp target to start-of-day datetime', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-unix-ts-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '2026-02-12',
+      },
+    ]);
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('collectionField', { value: { interface: 'unixTimestamp' } });
+
+    const fieldModel: any = {
+      uid: 'field-a-unix-ts-1',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'a' };
+        }
+        return undefined;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+    fieldModel.context = fieldCtx;
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    await waitFor(() => {
+      const assigned = formStub.getFieldValue(['a']);
+      expect(typeof assigned).toBe('string');
+      expect(assigned).not.toBe('2026-02-12');
+      expect(dayjs(assigned).isValid()).toBe(true);
+      expect(dayjs(assigned).format('YYYY-MM-DD')).toBe('2026-02-12');
+    });
   });
 
   it('supports RunJSValue and updates on formValues dependency change', async () => {

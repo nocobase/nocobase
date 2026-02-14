@@ -9,7 +9,28 @@
 
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, it, expect, vi } from 'vitest';
-import { SubModelTemplateImporterModel } from '../SubModelTemplateImporterModel';
+import { SubModelTemplateImporterModel, resolveExpectedRootUse } from '../SubModelTemplateImporterModel';
+
+describe('resolveExpectedRootUse', () => {
+  it('allows ApplyFormModel and ProcessFormModel to share templates', () => {
+    expect(resolveExpectedRootUse({ use: 'ApplyFormModel' } as FlowModel)).toEqual([
+      'ApplyFormModel',
+      'ProcessFormModel',
+    ]);
+    expect(resolveExpectedRootUse({ use: 'ProcessFormModel' } as FlowModel)).toEqual([
+      'ApplyFormModel',
+      'ProcessFormModel',
+    ]);
+  });
+
+  it('keeps CreateFormModel and EditFormModel sharing behavior', () => {
+    expect(resolveExpectedRootUse({ use: 'CreateFormModel' } as FlowModel)).toEqual([
+      'CreateFormModel',
+      'EditFormModel',
+    ]);
+    expect(resolveExpectedRootUse({ use: 'EditFormModel' } as FlowModel)).toEqual(['CreateFormModel', 'EditFormModel']);
+  });
+});
 
 describe('SubModelTemplateImporterModel', () => {
   it('stores derived targetUid into stepParams in beforeParamsSave', async () => {

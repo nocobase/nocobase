@@ -102,6 +102,8 @@ export interface FieldAssignRulesEditorProps {
   isTitleFieldCandidate?: (field: any, targetCollection: any) => boolean;
   /** 可选：点击同步按钮后，将选中的 title field 持久化到关系集合 */
   onSyncAssociationTitleField?: (params: SyncAssociationTitleFieldParams) => Promise<void> | void;
+  /** 在日期字段下启用“日期变量替换 Constant 位”。 */
+  enableDateVariableAsConstant?: boolean;
 }
 
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
@@ -119,6 +121,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     getValueInputProps,
     isTitleFieldCandidate,
     onSyncAssociationTitleField,
+    enableDateVariableAsConstant = false,
   } = props;
 
   const value = Array.isArray(rawValue) ? rawValue : [];
@@ -885,6 +888,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 onChange={(v) => patchItem(index, { value: v })}
                 extraMetaTree={extraMetaTree}
                 {...(getValueInputProps?.(item, index) || {})}
+                enableDateVariableAsConstant={enableDateVariableAsConstant}
                 associationFieldNamesOverride={
                   associationQuickContext && previewTitleField
                     ? {
