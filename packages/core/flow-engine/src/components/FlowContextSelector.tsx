@@ -48,28 +48,6 @@ const normalizePath = (path: unknown): string[] | undefined => {
   return path.map((segment) => String(segment));
 };
 
-const formatPathSegmentTitle = (segment: string) => {
-  return segment
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-};
-
-const getFallbackMetaFromPath = (path: string[] | undefined): ContextSelectorItem['meta'] | undefined => {
-  if (!path?.length) {
-    return undefined;
-  }
-
-  const name = path[path.length - 1];
-  return {
-    name,
-    title: formatPathSegmentTitle(name),
-    type: 'string',
-    paths: path,
-  };
-};
-
 const getSelectedPathInfo = (path: string[] | undefined, options: ContextSelectorItem[]): SelectedPathInfo => {
   if (!Array.isArray(path) || path.length === 0) {
     return { text: '', meta: undefined };
@@ -173,6 +151,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const [updateFlag, setUpdateFlag] = useState(0);
   const [searchText, setSearchText] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const inlineFocusByPointerRef = useRef(false);
   const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
   const isSearchEnabled = showSearch || children === null;
 
@@ -363,10 +342,6 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   } = cascaderProps;
 
   const selectedPathInfo = useMemo(() => getSelectedPathInfo(effectivePath, options), [effectivePath, options]);
-  const selectedPathMeta = useMemo(
-    () => selectedPathInfo.meta ?? getFallbackMetaFromPath(effectivePath),
-    [effectivePath, selectedPathInfo.meta],
-  );
 
   const mergedOpen = open !== undefined ? open : children === null ? dropdownOpen : undefined;
 
@@ -417,10 +392,18 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const hasSelectedPath = Array.isArray(effectivePath) && effectivePath.length > 0;
 
   const handleInlineInputFocus = useCallback(() => {
-    if (open === undefined) {
+    if (open === undefined && !inlineFocusByPointerRef.current) {
       setDropdownOpen(true);
     }
   }, [open]);
+
+  const markInlineFocusByPointer = useCallback(() => {
+    inlineFocusByPointerRef.current = true;
+  }, []);
+
+  const resetInlineFocusByPointer = useCallback(() => {
+    inlineFocusByPointerRef.current = false;
+  }, []);
 
   const handleInlineInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -429,7 +412,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 下拉关闭态下点击清空：应清空真实已选值，而不是仅清空搜索词。
       if (!isDropdownVisible && nextValue === '' && hasSelectedPath) {
         setTempSelectedPath([]);
-        onChange?.('', selectedPathMeta);
+        // 清空语义：传空 meta，确保上层（如 VariableInput）进入 clear 分支。
+        onChange?.('', undefined);
         return;
       }
 
@@ -439,7 +423,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       setSearchText(nextValue);
     },
-    [hasSelectedPath, isDropdownVisible, onChange, open, selectedPathMeta],
+    [hasSelectedPath, isDropdownVisible, onChange, open],
   );
 
   const inlinePathText = Array.isArray(effectivePath) ? effectivePath.join(' / ') : '';
@@ -466,7 +450,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
           allowClear
           value={inlineInputValue}
           placeholder={inlinePlaceholder}
+          onMouseDown={markInlineFocusByPointer}
+          onMouseUp={resetInlineFocusByPointer}
+          onMouseLeave={resetInlineFocusByPointer}
           onFocus={handleInlineInputFocus}
+          onBlur={resetInlineFocusByPointer}
           onChange={handleInlineInputChange}
           onKeyDown={(e) => e.stopPropagation()}
           disabled={restCascaderProps.disabled}

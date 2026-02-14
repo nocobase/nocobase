@@ -322,6 +322,27 @@ describe('FlowContextSelector', () => {
     });
   });
 
+  it('should keep dropdown open on first pointer click in inline input mode', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()}>{null}</FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    const inlineInput = await screen.findByRole('textbox');
+
+    fireEvent.mouseDown(inlineInput);
+    fireEvent.focus(inlineInput);
+    fireEvent.mouseUp(inlineInput);
+    fireEvent.click(inlineInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('User')).toBeInTheDocument();
+    });
+  });
+
   it('should show selected path text when inline input dropdown is closed', async () => {
     const flowContext = createTestFlowContext();
 
@@ -360,14 +381,37 @@ describe('FlowContextSelector', () => {
     fireEvent.change(inlineInput, { target: { value: '' } });
 
     await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        '',
-        expect.objectContaining({
-          name: 'name',
-          title: 'Name',
-          paths: ['user', 'name'],
-        }),
-      );
+      expect(onChange).toHaveBeenCalledWith('', undefined);
+    });
+  });
+
+  it('should clear selected value when clicking inline clear icon while dropdown is closed', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+        >
+          {null}
+        </FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    await screen.findByRole('textbox');
+
+    const clearIcon = document.querySelector('.ant-input-clear-icon') as HTMLElement | null;
+    expect(clearIcon).toBeInTheDocument();
+
+    fireEvent.mouseDown(clearIcon!);
+    fireEvent.mouseUp(clearIcon!);
+    fireEvent.click(clearIcon!);
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('', undefined);
     });
   });
 
