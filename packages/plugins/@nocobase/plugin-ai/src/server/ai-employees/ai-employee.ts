@@ -308,7 +308,7 @@ export class AIEmployee {
     return agent.stream(input, config);
   }
 
-  async agentInvoke(provider: LLMProvider, context: AIChatContext, config?: any, state?: any) {
+  async agentInvoke(provider: LLMProvider, context: AIChatContext, config?: any, state?: any): Promise<any> {
     const { systemPrompt, tools, middleware } = context;
     const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
     const input = this.getAgentInput(context, state);
