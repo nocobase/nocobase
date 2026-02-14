@@ -77,12 +77,12 @@ export const ModelSwitcher: React.FC = observer(
         setModel(newValue);
         if (currentEmployee) {
           try {
-            api.storage.setItem(
+            api?.storage.setItem(
               MODEL_PREFERENCE_STORAGE_KEY + currentEmployee.username,
               `${target.llmService}:${target.model}`,
             );
-          } catch {
-            // Ignore storage errors
+          } catch (err) {
+            console.log(err);
           }
         }
       }

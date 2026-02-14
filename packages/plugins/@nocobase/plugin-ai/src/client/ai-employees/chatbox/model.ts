@@ -33,9 +33,9 @@ export const resolveModel = (api: any, username: string, allModels: ModelRef[], 
   }
   let cachedId: string | null = null;
   try {
-    cachedId = api.storage.getItem(MODEL_PREFERENCE_STORAGE_KEY + username);
-  } catch {
-    // Ignore storage errors
+    cachedId = api?.storage.getItem(MODEL_PREFERENCE_STORAGE_KEY + username);
+  } catch (err) {
+    console.log(err);
   }
   if (cachedId) {
     if (cachedId.includes(':')) {
