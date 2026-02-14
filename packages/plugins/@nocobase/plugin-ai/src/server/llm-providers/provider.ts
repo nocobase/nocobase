@@ -220,7 +220,7 @@ export abstract class LLMProvider {
   }
 
   parseResponseMetadata(output: LLMResult): any {
-    null;
+    return [null, null];
   }
 }
 
