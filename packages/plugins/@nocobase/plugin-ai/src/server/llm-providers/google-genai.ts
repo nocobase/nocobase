@@ -17,6 +17,7 @@ import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Context } from '@nocobase/actions';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
+import { ChatGenerationChunk, LLMResult } from '@langchain/core/outputs';
 
 const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com/v1beta/';
 
@@ -124,6 +125,15 @@ export class GoogleGenAIProvider extends LLMProvider {
         data,
       };
     }
+  }
+
+  parseResponseMetadata(output: LLMResult) {
+    const [generation] = output?.generations ?? [];
+    const [chatGenerationChunk] = generation ?? [];
+    return [
+      (chatGenerationChunk as any)?.message?.id,
+      { groundingMetadata: chatGenerationChunk?.generationInfo?.groundingMetadata },
+    ];
   }
 
   getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
