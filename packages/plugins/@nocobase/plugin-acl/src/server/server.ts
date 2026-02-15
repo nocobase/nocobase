@@ -551,8 +551,6 @@ export class PluginACLServer extends Plugin {
       return next();
     });
 
-    const parseJsonTemplate = this.app.acl.parseJsonTemplate;
-
     this.app.acl.beforeGrantAction(async (ctx) => {
       const actionName = this.app.acl.resolveActionAlias(ctx.actionName);
 

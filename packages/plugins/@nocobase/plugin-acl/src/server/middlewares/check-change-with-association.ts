@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACL } from '@nocobase/acl';
+import { ACL, createUserProvider } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 import _ from 'lodash';
 
 export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
+  const timezone =
+    ctx.request?.get?.('x-timezone') ?? ctx.request?.header?.['x-timezone'] ?? ctx.req?.headers?.['x-timezone'];
   const { resourceName, actionName } = ctx.action;
   if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
     return next();
@@ -38,12 +40,23 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   }
 
   const protectedKeys = ['firstOrCreate', 'updateOrCreate'].includes(actionName) ? params.filterKeys || [] : [];
-  const processed = await ctx.acl.sanitizeAssociationValues(ctx, {
+  const processed = await ctx.acl.sanitizeAssociationValues({
+    db: ctx.db,
+    database: ctx.database,
+    timezone,
+    userProvider: createUserProvider({
+      db: ctx.db,
+      currentUser: ctx.state?.currentUser,
+    }),
     resourceName,
     actionName,
     values: rawValues,
     updateAssociationValues: params.updateAssociationValues || [],
     protectedKeys,
+    roles,
+    currentRole: ctx.state.currentRole,
+    currentUser: ctx.state.currentUser,
+    aclParams: ctx.permission?.can?.params,
   });
   ctx.action.params.values = processed;
   await next();
