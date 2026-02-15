@@ -265,7 +265,7 @@ export const ChatBoxMinimizeControl: React.FC = () => {
   const currentEmployeeAvatar = currentEmployee?.avatar;
 
   useEffect(() => {
-    if (minimize === true) {
+    if (minimize === true && currentEmployeeAvatar) {
       api.open({
         key: key.current,
         closeIcon: false,
