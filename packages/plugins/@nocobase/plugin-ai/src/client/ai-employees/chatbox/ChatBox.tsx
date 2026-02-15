@@ -262,14 +262,16 @@ export const ChatBoxMinimizeControl: React.FC = () => {
   const [api, contextHolder] = notification.useNotification();
   const key = useRef(`ai-chat-box-minimize--control-${new Date().getTime()}`);
 
+  const currentEmployeeAvatar = currentEmployee?.avatar;
+
   useEffect(() => {
-    if (minimize === true) {
+    if (minimize === true && currentEmployeeAvatar) {
       api.open({
         key: key.current,
         closeIcon: false,
         message: (
           <Flex justify="space-between" align="center">
-            <Avatar shape="circle" size={35} src={avatars(currentEmployee.avatar)} />
+            <Avatar shape="circle" size={35} src={avatars(currentEmployeeAvatar)} />
             <Text ellipsis>{t('Conversation')}</Text>
             <Button
               type="text"
@@ -298,7 +300,7 @@ export const ChatBoxMinimizeControl: React.FC = () => {
     return () => {
       api.destroy(key.current);
     };
-  }, [api, currentEmployee, minimize, setMinimize, setOpen, t]);
+  }, [api, currentEmployeeAvatar, minimize, setMinimize, setOpen, t]);
 
   return <>{contextHolder}</>;
 };
