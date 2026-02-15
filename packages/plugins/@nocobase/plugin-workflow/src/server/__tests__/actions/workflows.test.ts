@@ -179,6 +179,56 @@ describe('workflow > actions > workflows', () => {
     });
   });
 
+  describe('execute', () => {
+    it('autoRevision should not create revision when version has been executed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const w1 = await WorkflowModel.findByPk(workflow.id, {
+        include: ['versionStats'],
+      });
+      expect(w1.versionStats.executed).toBe(1);
+
+      const countBefore = await WorkflowModel.count({
+        where: {
+          key: workflow.key,
+        },
+      });
+
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        autoRevision: true,
+        values: {
+          data: p1.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(data.newVersionId).toBeUndefined();
+
+      const countAfter = await WorkflowModel.count({
+        where: {
+          key: workflow.key,
+        },
+      });
+      expect(countAfter).toBe(countBefore);
+    });
+  });
+
   describe('destroy', () => {
     it('cascading destroy all revisions, nodes, but not executions and jobs', async () => {
       const workflow = await WorkflowModel.create({

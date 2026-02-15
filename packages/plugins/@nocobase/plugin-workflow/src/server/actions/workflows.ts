@@ -136,7 +136,10 @@ export async function execute(context: Context, next) {
   if (!workflow) {
     return context.throw(404, 'workflow not found');
   }
-  const { executed } = workflow;
+  if (!workflow.versionStats) {
+    workflow.versionStats = await workflow.getVersionStats();
+  }
+  const { executed } = workflow.versionStats;
   let processor;
   try {
     processor = (await plugin.execute(workflow, values, { manually: true })) as Processor;
@@ -150,7 +153,7 @@ export async function execute(context: Context, next) {
     filter: { key: workflow.key },
   });
   let newVersion;
-  if (executed == 0 && autoRevision) {
+  if ((executed ?? 0) == 0 && autoRevision) {
     newVersion = await repository.revision({
       filterByTk: workflow.id,
       filter: { key: workflow.key },
