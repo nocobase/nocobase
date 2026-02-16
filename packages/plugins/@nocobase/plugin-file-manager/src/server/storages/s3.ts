@@ -48,7 +48,7 @@ export default class extends StorageType {
 
   constructor(storage: StorageModel) {
     super(storage);
-    const { accessKeyId, secretAccessKey, ...options } = this.storage.options;
+    const { accessKeyId, secretAccessKey, forcePathStyle, ...options } = this.storage.options;
     const params: any = {
       ...options,
       requestChecksumCalculation: 'WHEN_REQUIRED',
@@ -59,9 +59,16 @@ export default class extends StorageType {
         secretAccessKey,
       };
     }
-    if (options.endpoint) {
+    // forcePathStyle: 'virtual' | 'path' | 'ignore'
+    // 'ignore' is default value, which means not set forcePathStyle
+    if (forcePathStyle === 'path') {
+      params.forcePathStyle = true;
+    } else if (forcePathStyle === 'virtual') {
+      params.forcePathStyle = false;
+    } else if (options.endpoint) {
       params.forcePathStyle = true;
     } else {
+      // ignore
       params.endpoint = undefined;
     }
     this.client = new S3Client(params);
@@ -149,6 +156,34 @@ export default class extends StorageType {
         })();
       },
     };
+  }
+
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    if (file.url && isURL(file.url)) {
+      return super.getFileURL(file, preview);
+    }
+
+    const { bucket, forcePathStyle } = this.storage.options;
+    const baseUrl = this.storage.baseUrl;
+
+    let bucketInPath;
+    if (forcePathStyle === 'virtual' && baseUrl) {
+      // ignore
+    } else if (forcePathStyle === 'path') {
+      bucketInPath = bucket;
+    } else if (baseUrl && forcePathStyle === 'ignore') {
+      // ignore
+    }
+
+    const keys = [
+      baseUrl,
+      bucketInPath,
+      file.path && encodeURI(file.path),
+      ensureUrlEncoded(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+
+    return urlJoin(keys);
   }
 
   async deleteS3Objects(bucketName: string, objects: string[]) {
