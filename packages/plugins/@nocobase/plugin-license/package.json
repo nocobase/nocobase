@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "2.1.0-alpha.3",
+  "version": "2.1.0-alpha.4",
   "main": "dist/server/index.js",
   "displayName": "License settings",
   "displayName.ru-RU": "Настройки лицензии",

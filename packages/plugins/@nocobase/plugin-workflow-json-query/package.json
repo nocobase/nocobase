@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-json-query",
-  "version": "2.1.0-alpha.3",
+  "version": "2.1.0-alpha.4",
   "displayName": "Workflow: JSON calculation",
   "displayName.zh-CN": "工作流：JSON 计算",
   "description": "Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).",
