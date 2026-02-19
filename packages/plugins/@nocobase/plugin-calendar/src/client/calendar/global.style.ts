@@ -12,7 +12,7 @@ import { createGlobalStyle } from 'antd-style';
 const GlobalStyle = createGlobalStyle`
   .rbc-overlay {
     position: absolute;
-    z-index: 50;
+    z-index: 1050;
     margin-top: 5px;
     border-radius: ${({ theme }) => `${theme.borderRadius}px`};
     background-color: ${({ theme }) => theme.colorBgElevated};
