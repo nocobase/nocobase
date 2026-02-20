@@ -280,8 +280,24 @@ export class PluginClientServer extends Plugin {
   registerActionHandlers() {
     this.app.resourceManager.registerActionHandler('desktopRoutes:listAccessible', async (ctx, next) => {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const Influencer_FinanceRepository = ctx.db.getRepository('Influencer_Finance');
       const rolesRepository = ctx.db.getRepository('roles');
       const { filter } = ctx.action.params;
+
+      // Get statuses with count > 0 from Influencer_Finance
+      const statusCounts = await Influencer_FinanceRepository.find({
+        attributes: ['Status', [ctx.db.sequelize.fn('COUNT', ctx.db.sequelize.col('id')), 'count']],
+        group: ['Status'],
+        raw: true,
+      });
+
+      // Filter to only statuses where count > 0
+      const validStatuses = statusCounts
+        .filter((item: any) => {
+          const count = parseInt(item.count, 10);
+          return count > 0;
+        })
+        .map((item: any) => item.Status);
 
       if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
@@ -310,7 +326,16 @@ export class PluginClientServer extends Plugin {
           },
         });
 
-        ctx.body = result;
+        const resultBody = result.map((item: any) => {
+          if (item.dataValues.title === 'Campaign' && item.dataValues.parentId === null) {
+            item.dataValues.children = item.dataValues.children.filter((child: any) => {
+              return validStatuses.includes(child.dataValues.title);
+            });
+          }
+          return item;
+        });
+
+        ctx.body = resultBody;
       }
 
       await next();
