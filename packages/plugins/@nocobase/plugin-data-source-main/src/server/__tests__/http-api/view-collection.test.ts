@@ -321,7 +321,6 @@ SELECT * FROM numbers;
 
     await app.db.sync();
     const UserCollection = app.db.getCollection('users');
-
     const viewName = `t_${uid(6)}`;
     const createViewName = app.db.options.schema ? `${app.db.options.schema}.${viewName}` : viewName;
     const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
@@ -496,12 +495,17 @@ SELECT * FROM numbers;
     await app.db.sync();
 
     const UserCollection = app.db.getCollection('users');
-
-    // create view
     const viewName = `t_${uid(6)}`;
-    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    let schemaAndViewName = viewName;
+    const schema = process.env.COLLECTION_MANAGER_SCHEMA || app.db.options.schema || 'public';
+    let usersTableName = UserCollection.quotedTableName();
+    if (db.inDialect('postgres')) {
+      schemaAndViewName = `${schema}.${viewName}`;
+      usersTableName = `${schema}.users`;
+    }
+    const dropSQL = `DROP VIEW IF EXISTS ${schemaAndViewName}`;
     await app.db.sequelize.query(dropSQL);
-    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL = `CREATE VIEW ${schemaAndViewName} AS SELECT * FROM ${usersTableName}`;
     await app.db.sequelize.query(viewSQL);
 
     // create view collection

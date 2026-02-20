@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "เริ่มต้นใช้งานฉบับย่อ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "บทนำ",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "การเขียนปลั๊กอินการดำเนินการ",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

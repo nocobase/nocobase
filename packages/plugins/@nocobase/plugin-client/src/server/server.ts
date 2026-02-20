@@ -37,22 +37,22 @@ export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
-    const uiSchemas = this.db.getRepository<any>('uiSchemas');
-    await uiSchemas.insert({
-      type: 'void',
-      'x-uid': 'nocobase-admin-menu',
-      'x-component': 'Menu',
-      'x-designer': 'Menu.Designer',
-      'x-initializer': 'MenuItemInitializers',
-      'x-component-props': {
-        mode: 'mix',
-        theme: 'dark',
-        // defaultSelectedUid: 'u8',
-        onSelect: '{{ onSelect }}',
-        sideMenuRefScopeKey: 'sideMenuRef',
-      },
-      properties: {},
-    });
+    // const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    // await uiSchemas.insert({
+    //   type: 'void',
+    //   'x-uid': 'nocobase-admin-menu',
+    //   'x-component': 'Menu',
+    //   'x-designer': 'Menu.Designer',
+    //   'x-initializer': 'MenuItemInitializers',
+    //   'x-component-props': {
+    //     mode: 'mix',
+    //     theme: 'dark',
+    //     // defaultSelectedUid: 'u8',
+    //     onSelect: '{{ onSelect }}',
+    //     sideMenuRefScopeKey: 'sideMenuRef',
+    //   },
+    //   properties: {},
+    // });
   }
 
   async load() {
@@ -162,7 +162,13 @@ export class PluginClientServer extends Plugin {
   setACL() {
     this.app.acl.registerSnippet({
       name: `ui.desktopRoutes`,
-      actions: ['desktopRoutes:create', 'desktopRoutes:update', 'desktopRoutes:move', 'desktopRoutes:destroy'],
+      actions: [
+        'desktopRoutes:create',
+        'desktopRoutes:update',
+        'desktopRoutes:move',
+        'desktopRoutes:destroy',
+        'desktopRoutes:updateOrCreate',
+      ],
     });
 
     this.app.acl.registerSnippet({
@@ -170,7 +176,7 @@ export class PluginClientServer extends Plugin {
       actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
     });
 
-    this.app.acl.allow('desktopRoutes', 'listAccessible', 'loggedIn');
+    this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');
   }
 
   /**
@@ -183,7 +189,31 @@ export class PluginClientServer extends Plugin {
         instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
       );
     });
-    this.app.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+    this.db.on('desktopRoutes.afterDestroy', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels');
+      if (r) {
+        await r.destroy({
+          filter: {
+            uid: instance.get('schemaUid'),
+          },
+          transaction,
+        });
+      }
+    });
+    this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels');
+      if (r) {
+        await r.create({
+          transaction,
+          values: {
+            uid: instance.get('schemaUid'),
+            name: instance.get('schemaUid'),
+            schema: {
+              use: 'RouteModel',
+            },
+          },
+        });
+      }
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
           allowNewMenu: true,
@@ -251,11 +281,13 @@ export class PluginClientServer extends Plugin {
     this.app.resourceManager.registerActionHandler('desktopRoutes:listAccessible', async (ctx, next) => {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
+      const { filter } = ctx.action.params;
 
       if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
-          ...ctx.query,
+          sort: 'sort',
+          filter,
         });
         return await next();
       }
@@ -271,13 +303,54 @@ export class PluginClientServer extends Plugin {
         const ids = (await Promise.all(desktopRoutesId)).flat();
         const result = await desktopRoutesRepository.find({
           tree: true,
-          ...ctx.query,
+          sort: 'sort',
           filter: {
+            ...filter,
             id: ids,
           },
         });
 
         ctx.body = result;
+      }
+
+      await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('desktopRoutes:getAccessible', async (ctx, next) => {
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const rolesRepository = ctx.db.getRepository('roles');
+      const { filter } = ctx.action.params;
+
+      if (ctx.state.currentRoles.includes('root')) {
+        ctx.body = await desktopRoutesRepository.findOne({
+          sort: 'sort',
+          ...ctx.action.params,
+        });
+        return await next();
+      }
+
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
+        appends: ['desktopRoutes'],
+      });
+
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
+
+      if (desktopRoutesId && desktopRoutesId.length > 0) {
+        const ids = (await Promise.all(desktopRoutesId)).flat();
+
+        // 将权限检查与用户提供的 filter 合并
+        const result = await desktopRoutesRepository.findOne({
+          filter: {
+            ...filter,
+            id: ids,
+          },
+          ...ctx.action.params,
+        });
+
+        ctx.body = result;
+      } else {
+        ctx.body = null;
       }
 
       await next();

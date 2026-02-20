@@ -1,0 +1,7 @@
+{
+  "SMS": "SMS",
+  "Sign in via SMS": "Bejelentkezés SMS-en keresztül",
+  "Sign up automatically when the user does not exist": "Automatikus regisztráció, ha a felhasználó nem létezik",
+  "User will be registered automatically if not exists.": "A felhasználó automatikusan regisztrálva lesz, ha nem létezik.",
+  "Verifier": "Verifier"
+}

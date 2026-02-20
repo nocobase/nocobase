@@ -29,6 +29,7 @@ import {
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 import React from 'react';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 const COLLECTION_TRIGGER_ACTION = {
   CREATE: 'create',
@@ -315,8 +316,11 @@ export default class extends Trigger {
     TriggerCollectionRecordSelect,
     WorkflowVariableWrapper,
   };
-  isActionTriggerable = (config, context) => {
+  isActionTriggerable_deprecated = (config, context) => {
     return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);
+  };
+  actionTriggerableScope = (config, scope) => {
+    return !config.global && ['form'].includes(scope);
   };
   useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {
@@ -332,6 +336,44 @@ export default class extends Trigger {
       Component: CollectionBlockInitializer,
       collection: config.collection,
       dataPath: '$context.data',
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ config }): SubModelItem | null {
+    // 无上下文数据源时，不提供触发器数据入口
+    if (!config?.collection) {
+      return null;
+    }
+    return {
+      key: 'triggerData',
+      label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: config.collection,
+              dataPath: '$context.data',
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'NodeDetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
     };
   }
 }

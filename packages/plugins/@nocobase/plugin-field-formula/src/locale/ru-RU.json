@@ -1,7 +1,7 @@
 {
   "Calculation engine": "Вычислительный механизм",
   "Compute a value based on the other fields": "Вычисление значения на основе других полей",
-  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Настройте и сохраните результаты вычислений между несколькими значениями полей в одной записи, поддерживаются функции Math.js и формул Excel.",
   "Expression": "Выражение",
   "Expression syntax error": "Синтаксическая ошибка выражения",
   "Formula": "Формула",

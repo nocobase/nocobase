@@ -18,6 +18,7 @@ export const statusEnum = [
 ];
 const collection = {
   name: 'collections-' + uid(),
+  disableTranslation: true,
   fields: [
     {
       type: 'string',
@@ -150,6 +151,7 @@ export const databaseConnectionSchema: ISchema = {
               type: 'checkbox',
             },
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
+            onSuccess: '{{ dataSourceListCallback }}',
           },
           properties: {
             key: {

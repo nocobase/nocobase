@@ -6,7 +6,7 @@
   "description": "Could be used for workflows which some of decisions are made by users.",
   "description.ru-RU": "Может использоваться в рабочих процессах, где какие-то решения принимаются пользователями.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-manual",
@@ -24,14 +24,14 @@
     "react-router-dom": "^6.11.2"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/plugin-data-source-main": "1.x",
-    "@nocobase/plugin-users": "1.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/plugin-users": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

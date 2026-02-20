@@ -1,0 +1,21 @@
+{
+  "1 Day": "1 Nap",
+  "30 Days": "30 Nap",
+  "7 Days": "7 Nap",
+  "90 Days": "90 Nap",
+  "API key created successfully": "API kulcs sikeresen létrehozva",
+  "API keys": "API kulcsok",
+  "Add API key": "API kulcs hozzáadása",
+  "Allow only your own roles to be selected": "Csak a saját szerepköreid kiválasztása engedélyezett",
+  "Created at": "Létrehozva",
+  "Custom": "Egyedi",
+  "Delete API key": "API kulcs törlése",
+  "Expiration": "Lejárat",
+  "Key name": "Kulcs neve",
+  "Keys manager": "Kulcsok kezelője",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Győződjön meg róla, hogy most másolja a személyes hozzáférési kulcsát, mivel ezt később már nem fogja tudni megtekinteni.",
+  "Never": "Soha",
+  "Never expires": "Soha nem jár le",
+  "Role": "Szerep",
+  "Role not found": "Szerep nem található"
+}

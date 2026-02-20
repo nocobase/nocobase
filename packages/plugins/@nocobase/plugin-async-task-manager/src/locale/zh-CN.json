@@ -31,6 +31,8 @@
   "Skipped records": "已跳过记录",
   "Status": "状态",
   "Successfully imported": "成功导入",
+  "Stop": "停止",
+  "Stopping...": "停止中...",
   "Task": "任务",
   "Task cancelled": "任务已取消",
   "Task completed": "任务已完成",

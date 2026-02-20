@@ -12,7 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
-import { createStyles } from 'antd-style';
+import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +60,8 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { useApplications } from './useApplications';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -92,13 +94,19 @@ export const useAllAccessDesktopRoutes = () => {
 };
 
 const RoutesRequestProvider: FC = ({ children }) => {
+  const ctx = useFlowEngineContext();
   const mountedRef = useRef(false);
-  const { data, refresh, loading } = useRequest<{
-    data: any;
-  }>({
-    url: `/desktopRoutes:listAccessible`,
-    params: { tree: true, sort: 'sort' },
-  });
+  const { data, refresh, loading } = useRequest<any>(
+    {
+      url: `/desktopRoutes:listAccessible`,
+      params: { tree: true, sort: 'sort' },
+    },
+    {
+      onSuccess(data) {
+        ctx.routeRepository.setRoutes(data?.data || emptyArray);
+      },
+    },
+  );
 
   const allAccessRoutesValue = useMemo(() => {
     return {
@@ -581,6 +589,15 @@ const subMenuItemRender = (item, dom) => {
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
   const { token } = useToken();
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setContainer(document.querySelector<HTMLDivElement>('#nocobase-app-container'));
+  }, []);
+
+  if (!container) {
+    return null;
+  }
 
   return (
     <RouteContext.Consumer>
@@ -602,7 +619,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
             >
               {props.children}
             </div>,
-            document.body,
+            container,
           )
         )
       }
@@ -668,7 +685,28 @@ export const useMobileLayout = () => {
   return { isMobileLayout, setIsMobileLayout };
 };
 
-export const InternalAdminLayout = () => {
+const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
+const appContainerStyle: React.CSSProperties = {
+  flex: 1,
+  transform: 'translateZ(0)',
+  overflow: 'hidden',
+  scrollPaddingTop: 'var(--nb-header-height)', // 解决调用 scrollIntoView 时顶部菜单被遮挡的问题
+};
+const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
+
+const GlobalStyle = () => {
+  const { token } = useToken();
+  const El: FC<any> = useMemo(() => {
+    if (token.globalStyle) {
+      return createGlobalStyle`${token.globalStyle}`;
+    }
+    return () => null;
+  }, [token.globalStyle]);
+
+  return <El />;
+};
+
+export const InternalAdminLayout = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
   const location = useLocation();
@@ -680,11 +718,13 @@ export const InternalAdminLayout = () => {
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
   const { styles } = useHeaderStyle();
+  const { Component: AppsComponent } = useApplications();
 
   const route = useMemo(() => {
+    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t });
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t }),
+      children: Array.isArray(children) ? children : [],
     };
   }, [allAccessRoutes, designable, isMobileLayout, t]);
   const layoutToken = useMemo(() => {
@@ -747,47 +787,59 @@ export const InternalAdminLayout = () => {
   }, [styles.headerPopup]);
 
   return (
-    <DndContext onDragEnd={onDragEnd}>
-      <ProLayout
-        contentStyle={contentStyle}
-        siderWidth={token.siderWidth || 200}
-        className={resetStyle}
-        location={location}
-        route={route}
-        actionsRender={actionsRender}
-        logo={<NocoBaseLogo />}
-        title={''}
-        layout="mix"
-        splitMenus
-        token={layoutToken}
-        headerRender={headerRender}
-        menuItemRender={menuItemRender}
-        subMenuItemRender={subMenuItemRender}
-        collapsedButtonRender={collapsedButtonRender}
-        onCollapse={onCollapse}
-        collapsed={collapsed}
-        onPageChange={onPageChange}
-        menu={{
-          // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
-          autoClose: false,
-        }}
-        menuProps={menuProps}
-      >
-        <RouteContext.Consumer>
-          {(value: RouteContextType) => {
-            const { isMobile } = value;
+    <div style={rootStyle}>
+      <div id="nocobase-app-container" style={appContainerStyle}>
+        <DndContext onDragEnd={onDragEnd}>
+          <ProLayout
+            {...props}
+            contentStyle={contentStyle}
+            siderWidth={token.siderWidth || 200}
+            className={resetStyle}
+            location={location}
+            route={route}
+            actionsRender={actionsRender}
+            logo={
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {AppsComponent && <AppsComponent />}
+                <NocoBaseLogo />
+              </div>
+            }
+            title={''}
+            layout="mix"
+            splitMenus
+            token={layoutToken}
+            headerRender={headerRender}
+            menuItemRender={menuItemRender}
+            subMenuItemRender={subMenuItemRender}
+            collapsedButtonRender={collapsedButtonRender}
+            onCollapse={onCollapse}
+            collapsed={collapsed}
+            onPageChange={onPageChange}
+            menu={{
+              // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
+              autoClose: false,
+            }}
+            menuProps={menuProps}
+          >
+            <RouteContext.Consumer>
+              {(value: RouteContextType) => {
+                const { isMobile } = value;
 
-            return (
-              <SetIsMobileLayout isMobile={isMobile}>
-                <ConfigProvider theme={isMobile ? mobileTheme : theme}>
-                  <LayoutContent />
-                </ConfigProvider>
-              </SetIsMobileLayout>
-            );
-          }}
-        </RouteContext.Consumer>
-      </ProLayout>
-    </DndContext>
+                return (
+                  <SetIsMobileLayout isMobile={isMobile}>
+                    <ConfigProvider theme={isMobile ? mobileTheme : theme}>
+                      <GlobalStyle />
+                      <LayoutContent />
+                    </ConfigProvider>
+                  </SetIsMobileLayout>
+                );
+              }}
+            </RouteContext.Consumer>
+          </ProLayout>
+        </DndContext>
+      </div>
+      <div id="nocobase-embed-container" style={embedContainerStyle}></div>
+    </div>
   );
 };
 
@@ -947,7 +999,7 @@ function convertRoutesToLayout(
   routes: NocoBaseDesktopRoute[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
 ) {
-  if (!routes) return;
+  if (!routes || !Array.isArray(routes)) return [];
 
   const getInitializerButton = (testId: string) => {
     return {
@@ -961,56 +1013,82 @@ function convertRoutesToLayout(
     };
   };
 
-  const result: any[] = routes.map((item) => {
-    const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
-
-    if (item.type === NocoBaseDesktopRouteType.link) {
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: '/',
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _parentRoute: parentRoute,
-      };
-    }
-
-    if (item.type === NocoBaseDesktopRouteType.page) {
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: `/admin/${item.schemaUid}`,
-        redirect: `/admin/${item.schemaUid}`,
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _parentRoute: parentRoute,
-      };
-    }
-
-    if (item.type === NocoBaseDesktopRouteType.group) {
-      const children =
-        convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1, t }) || [];
-
-      // add a designer button
-      if (designable && depth === 0) {
-        children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
+  const result: any[] = routes
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
       }
 
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: `/admin/${item.id}`,
-        redirect:
-          children[0]?.key === 'x-designer-button'
-            ? undefined
-            : `/admin/${findFirstPageRoute(item.children)?.schemaUid || item.id}`,
-        routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _depth: depth,
-      };
-    }
-  });
+      const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
+
+      if (item.type === NocoBaseDesktopRouteType.link) {
+        return {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: '/',
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _parentRoute: parentRoute,
+        };
+      }
+
+      if (item.type === NocoBaseDesktopRouteType.page) {
+        return {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: `/admin/${item.schemaUid}`,
+          redirect: `/admin/${item.schemaUid}`,
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _parentRoute: parentRoute,
+        };
+      }
+
+      if (item.type === NocoBaseDesktopRouteType.flowPage) {
+        return {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: `/admin/${item.schemaUid}`,
+          redirect: `/admin/${item.schemaUid}`,
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _parentRoute: parentRoute,
+        };
+      }
+
+      if (item.type === NocoBaseDesktopRouteType.group) {
+        const itemChildren = Array.isArray(item.children) ? item.children : [];
+        const children =
+          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, t }) || [];
+
+        // add a designer button
+        if (designable && depth === 0) {
+          children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
+        }
+
+        const groupRoute: any = {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: `/admin/${item.id}`,
+          redirect:
+            children[0]?.key === 'x-designer-button'
+              ? undefined
+              : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || item.id}`,
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _depth: depth,
+        };
+
+        if (children.length > 0) {
+          groupRoute.routes = children;
+        }
+
+        return groupRoute;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
 
   if (designable && depth === 0) {
     isMobile
@@ -1046,7 +1124,7 @@ export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
   for (const route of routes.filter((item) => !item.hideInMenu)) {
-    if (route.type === NocoBaseDesktopRouteType.page) {
+    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
       return route;
     }
 

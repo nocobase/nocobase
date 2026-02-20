@@ -30,6 +30,7 @@
   "Toolbar": "Editor toolbar configuration",
   "Undo": "Undo",
   "Upload": "Upload image or file",
+  "Used to store files uploaded in the Markdown editor": "Used to store files uploaded in the Markdown editor",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "Used to store files uploaded in the Markdown editor (default: attachments)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "upload failed",

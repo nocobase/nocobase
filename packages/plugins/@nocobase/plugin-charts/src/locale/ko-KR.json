@@ -45,7 +45,7 @@
   "Funnel": "퍼널",
   "Funnel Layer Width/Metrics": "퍼널 레이어 너비/지표",
   "Invalid JSON format": "잘못된 JSON 형식",
-  "Invalid JSON format,must be an object array.": "유효하지 않은 JSON 형식, 객체 배열이어야 합니다.",
+  "Invalid JSON format,must be an object array.": "잘못된 JSON 형식입니다. 객체 배열이어야 합니다.",
   "JSON config": "JSON 구성",
   "Json config references": "Json 구성 참조",
   "Json config references: ": "Json 구성 참조:",

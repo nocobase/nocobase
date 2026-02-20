@@ -3,7 +3,7 @@
   "displayName": "Block: Map",
   "displayName.ru-RU": "Блок: Карта",
   "displayName.zh-CN": "区块：地图",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "description": "Map block, support Gaode map and Google map, you can also extend more map types.",
   "description.ru-RU": "Блок карты, поддерживает карты Gaode и Google, можно расширить поддержку других типов карт.",
   "description.zh-CN": "地图区块，支持高德地图和 Google 地图，你也可以扩展更多地图类型。",
@@ -32,12 +32,12 @@
     "react-router-dom": "^6.11.2"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

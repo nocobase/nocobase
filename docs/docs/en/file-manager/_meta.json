@@ -1,0 +1,83 @@
+[
+  {
+    "type": "section-header",
+    "label": "File Manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Storage Engines",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Local Storage",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "File Collection",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "Attachment Field",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "File Preview",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Office File Preview",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "Development",
+    "link": "/file-manager/development/index"
+  }
+]

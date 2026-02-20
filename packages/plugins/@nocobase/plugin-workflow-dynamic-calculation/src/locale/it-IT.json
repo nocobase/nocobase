@@ -1,6 +1,8 @@
 {
+  "An expression for calculation in each rows": "An expression for calculation in each rows",
   "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "Calcola un'espressione basata su un motore di calcolo e ottiene un valore come risultato. Nell'espressione è possibile utilizzare variabili dai nodi upstream. L'espressione è ottenuta dinamicamente da una raccolta di espressioni.",
   "Calculation result": "Risultato del calcolo",
+  "Dynamic Calculation": "Dynamic Calculation",
   "Dynamic expression": "Espressione dinamica",
   "Dynamic expression calculation": "Calcolo dinamico",
   "Expression": "Espressione",

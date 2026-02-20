@@ -121,6 +121,7 @@ describe('memory queue adapter', () => {
       signal: expect.any(AbortSignal),
       id: expect.any(String),
       retried: 0,
+      queueOptions: expect.any(Object),
     });
   });
 
@@ -139,6 +140,7 @@ describe('memory queue adapter', () => {
       signal: expect.any(AbortSignal),
       id: expect.any(String),
       retried: 0,
+      queueOptions: expect.any(Object),
     });
   });
 
@@ -159,6 +161,7 @@ describe('memory queue adapter', () => {
       signal: expect.any(AbortSignal),
       id: expect.any(String),
       retried: 0,
+      queueOptions: expect.any(Object),
     });
   });
 
@@ -190,6 +193,7 @@ describe('memory queue adapter', () => {
       signal: expect.any(AbortSignal),
       id: expect.any(String),
       retried: 0,
+      queueOptions: expect.any(Object),
     });
   });
 

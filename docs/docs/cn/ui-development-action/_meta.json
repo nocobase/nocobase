@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速入门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "介绍",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "编写一个操作插件",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

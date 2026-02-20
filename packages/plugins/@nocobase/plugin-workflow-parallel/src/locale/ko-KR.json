@@ -6,7 +6,7 @@
   "Any succeeded or failed": "하나라도 성공 또는 실패",
   "Continue after all branches succeeded": "모든 분기 성공 후 계속",
   "Continue after any branch succeeded": "하나라도 분기 성공 후 계속",
-  "Continue after any branch succeeded, or exit after any branch failed.": "어떤 분기든 성공하면 계속 진행하거나 어떤 분기든 실패하면 종료합니다.",
+  "Continue after any branch succeeded, or exit after any branch failed.": "하나라도 분기 성공 시 계속, 하나라도 실패 시 종료",
   "Mode": "모드",
   "Parallel branch": "병렬 분기",
   "Run all branches (ignore failures)": "Run all branches (ignore failures)",

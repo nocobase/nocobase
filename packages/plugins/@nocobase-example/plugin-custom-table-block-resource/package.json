@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "name": "@nocobase-example/plugin-custom-table-block-resource",
+  "displayName": "Plugin example: Custom resource for table block",
+  "version": "2.0.1",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}

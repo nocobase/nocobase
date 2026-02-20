@@ -12,5 +12,5 @@
   "Value": "Значение",
   "Variables": "Переменные",
   "Variables and secrets": "Переменные и секреты",
-  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Переменные и секреты были обновлены. Требуется перезапуск для применения изменений."
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Переменные и секреты были обновлены. Для вступления изменений в силу необходим перезапуск."
 }

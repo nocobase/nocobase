@@ -6,7 +6,7 @@
   "description": "Backup and restore applications for scenarios such as application replication, migration, and upgrades.",
   "description.ru-RU": "Резервное копирование и восстановление приложений для задач репликации, миграции и обновления.",
   "description.zh-CN": "备份和还原应用，可用于应用的复制、迁移、升级等场景。",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/backup-restore",
@@ -16,6 +16,9 @@
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/plugin-backup-restore"
+  },
+  "nocobase": {
+    "deprecated": true
   },
   "devDependencies": {
     "@koa/multer": "^3.0.2",
@@ -34,12 +37,12 @@
     "tar": "^7.4.3"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "keywords": [
     "System management"

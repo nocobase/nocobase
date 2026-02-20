@@ -1,0 +1,9 @@
+{
+  "Execute a SQL statement in database": "Jalankan pernyataan SQL dalam database",
+  "Execute a SQL statement in database.": "Jalankan pernyataan SQL dalam database.",
+  "Include meta information of this query in result": "Sertakan informasi meta kueri ini dalam hasil",
+  "SQL action": "Tindakan SQL",
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Hasil kueri SQL dapat digunakan melalui <1>node kueri JSON</1> (Plugin Komersial).",
+  "Select a data source to execute SQL.": "Pilih sumber data untuk menjalankan SQL.",
+  "Usage of SQL query result is not supported yet.": "Penggunaan hasil kueri SQL belum didukung."
+}

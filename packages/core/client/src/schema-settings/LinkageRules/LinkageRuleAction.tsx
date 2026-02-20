@@ -10,7 +10,7 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { TreeSelect } from '@formily/antd-v5';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { uid } from '@formily/shared';
 import { Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';

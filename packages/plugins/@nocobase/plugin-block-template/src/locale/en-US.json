@@ -1,11 +1,12 @@
 {
+  "Reference template (v1)": "Reference template (v1)",
+  "Inherited template (v1)": "Inherited template (v1)",
   "Add new": "Add new",
   "Are you sure you want to convert this template block to a normal block?": "Are you sure you want to convert this template block to a normal block?",
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Are you sure you want to revert all changes from the template?": "Are you sure you want to revert all changes from the template?",
   "Associate record": "Associate record",
   "Block template": "Block template",
-  "Block templates": "Block templates",
   "Cancel": "Cancel",
   "Configure": "Configure",
   "Convert to normal block": "Convert to normal block",

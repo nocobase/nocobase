@@ -1,0 +1,129 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React, { useCallback } from 'react';
+import { Modal, Select, message } from 'antd';
+import { useChatToolsStore } from '../stores/chat-tools';
+import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
+import { Schema } from '@formily/react';
+import { useT } from '../../../locale';
+import { useChatMessageActions } from '../hooks/useChatMessageActions';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useToolCallActions } from '../hooks/useToolCallActions';
+
+const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
+  return {
+    onOk: async () => {},
+  };
+};
+
+export const ToolModal: React.FC = () => {
+  const t = useT();
+  const { tools } = useTools();
+  const toolsMap = toToolsMap(tools);
+
+  const open = useChatToolsStore.use.openToolModal();
+  const setOpen = useChatToolsStore.use.setOpenToolModal();
+  const activeTool = useChatToolsStore.use.activeTool();
+  const setActiveTool = useChatToolsStore.use.setActiveTool();
+  const activeMessageId = useChatToolsStore.use.activeMessageId();
+  const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+  const toolsByName = useChatToolsStore.use.toolsByName();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const { updateToolArgs, messagesService } = useChatMessageActions();
+
+  const toolOption = toolsMap.get(activeTool?.name);
+  const modal = toolOption?.ui?.modal;
+  const useOnOk = toolOption?.ui?.modal?.useOnOk || useDefaultOnOk;
+  const C = modal?.Component;
+
+  const adjustArgs = useChatToolsStore.use.adjustArgs();
+  const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
+  const decisions = getDecisionActions(activeTool);
+  const { onOk } = useOnOk(decisions, adjustArgs);
+
+  const toolCalls = toolsByName[activeTool?.name] || [];
+  const versions = toolCalls.map((tool, index) => {
+    return {
+      key: tool.id,
+      value: tool.id,
+      label: `Version ${index + 1}`,
+    };
+  });
+
+  const saveToolArgs = useCallback(
+    async (args: Record<string, any>) => {
+      if (!activeTool || !currentConversation || !activeMessageId) {
+        return;
+      }
+      await updateToolArgs({
+        sessionId: currentConversation,
+        messageId: activeMessageId,
+        tool: {
+          id: activeTool.id,
+          args,
+        },
+      });
+      message.success(t('Saved successfully'));
+      setActiveTool({
+        ...activeTool,
+        args,
+      });
+      // messagesService.run(currentConversation);
+    },
+    [messagesService, activeMessageId, activeTool, currentConversation, updateToolArgs],
+  );
+
+  return (
+    <Modal
+      title={
+        <>
+          {modal?.title ? Schema.compile(modal.title, { t }) : ''}
+          {versions.length > 1 && (
+            <Select
+              options={versions}
+              value={activeTool?.id}
+              style={{
+                marginLeft: '8px',
+              }}
+              onChange={(value) => {
+                const toolCall = toolCalls.find((tool) => tool.id === value);
+                setActiveMessageId(toolCall?.messageId || '');
+                setActiveTool(toolCall);
+              }}
+            />
+          )}
+        </>
+      }
+      open={open}
+      width="90%"
+      onCancel={() => {
+        setOpen(false);
+        setActiveTool(null);
+      }}
+      okText={modal?.okText ? Schema.compile(modal.okText, { t }) : t('Submit')}
+      onOk={async () => {
+        await onOk?.();
+        setOpen(false);
+      }}
+      okButtonProps={{
+        disabled: !['init', 'interrupted', 'pending'].includes(activeTool.invokeStatus),
+      }}
+      footer={(_, { OkBtn }) => (
+        <>
+          <OkBtn />
+        </>
+      )}
+    >
+      {C ? <C tool={activeTool} saveToolArgs={saveToolArgs} /> : null}
+    </Modal>
+  );
+};

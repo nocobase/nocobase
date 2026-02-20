@@ -10,6 +10,7 @@ console.log('process.env.DOC_LANG', lang);
 
 export default defineConfig({
   hash: true,
+  mfsu: false,
   alias: {
     ...umiConfig.alias,
   },
@@ -38,12 +39,24 @@ export default defineConfig({
     // sidebarGroupModePath: ['/components'],
     nav: [
       {
-        title: 'API',
-        link: '/core/application/application',
+        title: 'Learn',
+        link: '/learn',
+      },
+      {
+        title: 'Models',
+        link: '/models',
       },
       {
         title: 'Components',
-        link: '/components/action',
+        link: '/components',
+      },
+      {
+        title: 'Examples',
+        link: '/examples/flow-models/hello-world',
+      },
+      {
+        title: 'API',
+        link: '/api/flow-engine',
       },
       {
         title: 'Home site',
@@ -55,362 +68,1145 @@ export default defineConfig({
       // },
     ],
     sidebarEnhance: {
-      '/core': [
+      '/components': [
         {
-          title: 'Application',
+          title: 'Filter',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/filter' },
+            { title: 'FilterGroup', link: '/components/filter/filter-group' },
+            { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
+            { title: '变量筛选项组件', link: '/components/filter/variable-filter-item' },
+          ],
+        },
+        {
+          title: 'Variables',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/variables' },
+            {
+              title: 'FlowContextSelector',
+              link: '/components/variables/flow-context-selector',
+            },
+            {
+              title: 'VariableInput',
+              children: [
+                { title: '基础用法', link: '/components/variables/variable-input' },
+                { title: '筛选条件', link: '/components/variables/variable-input/scenarios/filter' },
+                { title: '联动规则', link: '/components/variables/variable-input/scenarios/linkage-rule' },
+                { title: '字段赋值', link: '/components/variables/variable-input/scenarios/assign-fields-value' },
+                { title: '数据范围', link: '/components/variables/variable-input/scenarios/data-scope' },
+              ],
+            },
+            { title: 'SlateVariableEditor', link: '/components/variables/slate-variable-editor' },
+            { title: 'TextArea with Context Selector', link: '/components/variables/text-area-with-context-selector' },
+          ],
+        },
+      ],
+      '/examples': [
+        {
+          title: 'FlowModel',
           type: 'group',
           children: [
             {
-              title: 'Application',
-              link: '/core/application/application',
+              title: 'Hello，NocoBase',
+              link: '/examples/flow-models/hello-world',
             },
             {
-              title: 'Plugin',
-              link: '/core/application/plugin',
+              title: 'AddSubModelButton',
+              link: '/examples/flow-models/sub-model',
             },
             {
-              title: 'PluginManager',
-              link: '/core/application/plugin-manager',
+              title: 'Load model',
+              link: '/examples/flow-models/load-model',
             },
             {
-              title: 'RouterManager',
-              link: '/core/application/router-manager',
+              title: 'Fork model',
+              link: '/examples/flow-models/fork-model',
             },
             {
-              title: 'PluginSettingsManager',
-              link: '/core/application/plugin-settings-manager',
+              title: '拖拽（DND）',
+              link: '/examples/flow-models/dnd',
             },
             {
-              title: 'Request',
-              link: '/core/request',
+              title: '可配置的卡片',
+              link: '/examples/flow-models/my-card',
+            },
+            {
+              title: 'Vditor 集成',
+              link: '/examples/flow-models/vditor',
+            },
+            {
+              title: 'Markdown 解析',
+              link: '/examples/flow-models/markdown',
+            },
+            {
+              title: 'LiquidJS 集成',
+              link: '/examples/flow-models/liquidjs',
+            },
+            {
+              title: 'CRUD',
+              link: '/examples/flow-models/crud',
+            },
+            {
+              title: '错误回退',
+              link: '/examples/flow-models/error-boundary',
+            },
+            {
+              title: '生命周期',
+              link: '/examples/flow-models/lifecycle',
+            },
+            {
+              title: 'scheduleModelOperation',
+              link: '/examples/flow-models/schedule-model-operation',
+            },
+            {
+              title: 'hidden 属性演示',
+              link: '/examples/flow-model-hidden',
             },
           ],
         },
         {
-          title: 'UI Schema',
+          title: 'FlowDefinition',
           type: 'group',
           children: [
             {
-              title: 'SchemaComponent',
-              link: '/core/ui-schema/schema-component',
+              title: '属性流',
+              link: '/examples/flow-definition/props-flow',
             },
             {
-              title: 'Designable',
-              link: '/core/ui-schema/designable',
+              title: '事件流',
+              link: '/examples/flow-definition/event-flow',
             },
             {
-              title: 'SchemaInitializer',
-              link: '/core/ui-schema/schema-initializer',
+              title: 'Context（运行时）',
+              link: '/examples/flow-definition/context-runtime',
             },
             {
-              title: 'SchemaInitializerManager',
-              link: '/core/ui-schema/schema-initializer-manager',
+              title: 'Context（配置态）',
+              link: '/examples/flow-definition/context-settings',
             },
             {
-              title: 'SchemaSettings',
-              link: '/core/ui-schema/schema-settings',
+              title: 'uiSchema - 步骤配置表单',
+              link: '/examples/flow-definition/ui-schema-basic',
             },
             {
-              title: 'SchemaSettingsManager',
-              link: '/core/ui-schema/schema-settings-manager',
+              title: '自定义组件（配置表单）',
+              link: '/examples/flow-definition/ui-schema-custom-component',
             },
             {
-              title: 'SchemaToolbar',
-              link: '/core/ui-schema/schema-toolbar',
-            },
-          ],
-        },
-        {
-          title: 'Data Source',
-          type: 'group',
-          children: [
-            {
-              title: 'DataSourceManager',
-              link: '/core/data-source/data-source-manager',
+              title: 'defaultParams - 步骤参数默认值',
+              link: '/examples/flow-definition/default-params',
             },
             {
-              title: 'DataSourceManagerProvider',
-              link: '/core/data-source/data-source-manager-provider',
+              title: 'beforeParamsSave - 步骤参数保存前',
+              link: '/examples/flow-definition/before-params-save',
             },
             {
-              title: 'DataSource',
-              link: '/core/data-source/data-source',
+              title: 'afterParamsSave - 步骤参数保存后',
+              link: '/examples/flow-definition/after-params-save',
             },
             {
-              title: 'DataSourceProvider',
-              link: '/core/data-source/data-source-provider',
+              title: 'handler - 步骤处理函数',
+              link: '/examples/flow-definition/handler',
             },
             {
-              title: 'CollectionManager',
-              link: '/core/data-source/collection-manager',
+              title: 'preset - 预设置的配置步骤',
+              link: '/examples/flow-definition/preset',
             },
             {
-              title: 'CollectionManagerProvider',
-              link: '/core/data-source/collection-manager-provider',
+              title: 'hideInSettings - 在设置界面中隐藏',
+              link: '/examples/flow-definition/hide-in-settings',
             },
             {
-              title: 'CollectionTemplateManager',
-              link: '/core/data-source/collection-template-manager',
+              title: '扩展设置菜单（Common actions）',
+              link: '/examples/flow-definition/settings-menu-extra-items',
             },
             {
-              title: 'CollectionTemplate',
-              link: '/core/data-source/collection-template',
+              title: 'uiMode - 步骤设置的 UI 模式',
+              link: '/examples/flow-definition/ui-mode',
             },
             {
-              title: 'Collection',
-              link: '/core/data-source/collection',
+              title: '打开预设置的配置表单',
+              link: '/examples/flow-definition/open-preset-step-settings-dialog',
             },
             {
-              title: 'CollectionProvider',
-              link: '/core/data-source/collection-provider',
+              title: '打开流配置表单',
+              link: '/examples/flow-definition/open-settings',
             },
             {
-              title: 'CollectionMixins',
-              link: '/core/data-source/collection-mixins',
+              title: 'Flow Registry',
+              link: '/examples/flow-definition/flow-registry',
             },
             {
-              title: 'CollectionField',
-              link: '/core/data-source/collection-field',
+              title: 'Action Registry',
+              link: '/examples/flow-definition/action-registry',
             },
             {
-              title: 'CollectionFieldInterfaceManager',
-              link: '/core/data-source/collection-field-interface-manager',
-            },
-            {
-              title: 'CollectionFieldInterface',
-              link: '/core/data-source/collection-field-interface',
-            },
-            {
-              title: 'AssociationProvider',
-              link: '/core/data-source/association-provider',
-            },
-            {
-              title: 'ExtendCollectionsProvider',
-              link: '/core/data-source/extend-collections-provider',
-            },
-            {
-              title: 'Collection Fields To Initializer Items',
-              link: '/core/data-source/collection-fields-to-initializer-items',
+              title: 'Event Registry',
+              link: '/examples/flow-definition/event-registry',
             },
           ]
         },
         {
-          title: 'DataBlock',
+          title: 'FlowAction',
           type: 'group',
           children: [
             {
-              title: 'CollectionRecord',
-              link: '/core/data-block/collection-record',
+              title: 'FlowAction 示例',
+              link: '/examples/flow-actions/example',
+            },
+          ],
+        },
+        {
+          title: 'FlowContext',
+          type: 'group',
+          children: [
+            {
+              title: 'ctx.defineProperty() - 定义属性',
+              link: '/examples/flow-context/define-property',
             },
             {
-              title: 'CollectionRecordProvider',
-              link: '/core/data-block/collection-record-provider',
+              title: 'ctx.defineMethod() - 定义方法',
+              link: '/examples/flow-context/define-method',
             },
             {
-              title: 'DataBlockProvider',
-              link: '/core/data-block/data-block-provider',
+              title: 'ctx.addDelegate() - 代理链',
+              link: '/examples/flow-context/add-delegate',
             },
             {
-              title: 'DataBlockResourceProvider',
-              link: '/core/data-block/data-block-resource-provider',
+              title: '异步 ctx 属性的 loading 状态',
+              link: '/examples/flow-context/loading',
             },
             {
-              title: 'DataBlockRequestProvider',
-              link: '/core/data-block/data-block-request-provider',
+              title: 'ctx.model',
+              link: '/examples/flow-context/model',
+            },
+            {
+              title: 'ctx.ref + ctx.onRefReady',
+              link: '/examples/flow-context/ref',
+            },
+            {
+              title: 'ctx.renderJson',
+              link: '/examples/flow-context/render-json',
+            },
+            {
+              title: 'ctx.requirejs',
+              link: '/examples/flow-context/requirejs',
+            },
+            {
+              title: 'ctx.requireAsync',
+              link: '/examples/flow-context/require-async',
+            },
+            {
+              title: 'ctx.runjs',
+              link: '/examples/flow-context/runjs',
+            },
+            {
+              title: 'ctx.openView',
+              link: '/examples/flow-context/open-view',
+            },
+            {
+              title: 'ctx.sql',
+              link: '/examples/flow-context/sql',
+            },
+            {
+              title: 'ctx.t',
+              link: '/examples/flow-context/t',
+            },
+            {
+              title: 'ctx.i18n',
+              link: '/examples/flow-context/i18n',
+            },
+            {
+              title: 'ctx.api',
+              link: '/examples/flow-context/api',
+            },
+            {
+              title: 'ctx.useResource()',
+              link: '/examples/flow-context/use-resource',
+            },
+            {
+              title: 'ctx.viewer',
+              link: '/examples/flow-context/viewer',
+            },
+            {
+              title: 'ctx.view',
+              link: '/examples/flow-context/view',
+            },
+            {
+              title: 'ctx.filterManager',
+              link: '/examples/flow-context/filter-manager',
+            },
+            {
+              title: 'ctx.app',
+              link: '/examples/flow-context/app',
+            },
+            {
+              title: 'ctx.engine',
+              link: '/examples/flow-context/engine',
+            },
+            {
+              title: 'ctx.router',
+              link: '/examples/flow-context/router',
+            },
+            {
+              title: 'ctx.route',
+              link: '/examples/flow-context/route',
+            },
+            {
+              title: 'ctx.location',
+              link: '/examples/flow-context/location',
+            },
+            {
+              title: 'ctx.antd',
+              link: '/examples/flow-context/antd',
+            },
+            {
+              title: 'ctx.modal',
+              link: '/examples/flow-context/modal',
+            },
+            {
+              title: 'ctx.message',
+              link: '/examples/flow-context/message',
+            },
+            {
+              title: 'ctx.notification',
+              link: '/examples/flow-context/notification',
+            },
+            {
+              title: 'ctx.dataSourceManager',
+              link: '/examples/flow-context/data-source-manager',
+            },
+            {
+              title: 'ctx.dataSource',
+              link: '/examples/flow-context/data-source',
+            },
+            {
+              title: 'ctx.collection',
+              link: '/examples/flow-context/collection',
+            },
+            {
+              title: 'ctx.collectionField',
+              link: '/examples/flow-context/collection-field',
+            },
+            {
+              title: 'ctx.association',
+              link: '/examples/flow-context/association',
+            },
+            {
+              title: 'ctx.resource',
+              link: '/examples/flow-context/resource',
+            },
+            {
+              title: 'ctx.exit()',
+              link: '/examples/flow-context/exit',
+            },
+            {
+              title: 'ctx.customRepository',
+              link: '/examples/flow-context/custom-repository',
+            },
+          ],
+        },
+        {
+          title: 'FlowResource',
+          type: 'group',
+          children: [
+            {
+              title: '简单的 Resource',
+              link: '/examples/flow-resources/simple-resource',
+            },
+            {
+              title: 'APIResource',
+              link: '/examples/flow-resources/api-resource',
+            },
+            {
+              title: 'SingleRecordResource',
+              link: '/examples/flow-resources/single-record-resource',
+            },
+            {
+              title: 'MultiRecordResource',
+              link: '/examples/flow-resources/multi-record-resource',
+            },
+            {
+              title: 'SQLResource',
+              link: '/examples/flow-resources/sql-resource',
+            },
+          ],
+        },
+        {
+          title: 'React Hooks',
+          type: 'group',
+          children: [
+            {
+              title: 'useFlowEngine',
+              link: '/examples/hooks/use-flow-engine',
+            },
+            {
+              title: 'useFlowContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+            {
+              title: 'useFlowEngineContext',
+              link: '/examples/hooks/use-flow-engine-context',
+            },
+            {
+              title: 'useFlowModelContext',
+              link: '/examples/hooks/use-flow-model-context',
+            },
+            {
+              title: 'useFlowSettingsContext',
+              link: '/examples/hooks/use-flow-settings-context',
+            },
+            {
+              title: 'useFlowViewContext',
+              link: '/examples/hooks/use-flow-view-context',
+            },
+          ],
+        },
+        {
+          title: '单元测试',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowModel 测试',
+              link: '/examples/tests/flow-model-test',
+            },
+            {
+              title: '流测试',
+              link: '/examples/tests/flow-test',
+            },
+          ],
+        }
+      ],
+      '/learn': [
+        {
+          title: '扩展指南',
+          link: '/learn',
+        },
+        {
+          title: '在线编写 & 运行 JS',
+          link: '/learn/js-in-nocobase',
+        },
+        {
+          title: 'Quick start',
+          type: 'group',
+          children: [
+            {
+              title: '编写第一个 FlowModel 插件',
+              link: '/learn/flow-model-plugin',
+            },
+            {
+              title: '构建可编排的按钮组件',
+              link: '/learn/quickstart',
+            },
+          ],
+        },
+        {
+          title: '区块扩展',
+          type: 'group',
+          children: [
+            {
+              title: '区块的分类',
+              link: '/learn/block-categories',
+            },
+            {
+              title: '区块的使用场景',
+              link: '/learn/block-scenes',
+            },
+          ]
+        },
+        {
+          title: 'Basic',
+          type: 'group',
+          children: [
+            {
+              title: '创建一个 FlowModel',
+              link: '/learn/create-flow-model',
+            },
+            {
+              title: '什么是 FlowModel',
+              link: '/learn/what-is-flow-model',
+            },
+            {
+              title: 'FlowModel 的生命周期',
+              link: '/learn/lifecycle',
+            },
+            {
+              title: 'Observable',
+              link: '/learn/observable',
+            },
+
+            // {
+            //   title: 'Define Collection',
+            //   link: '/learn/define-collection',
+            // },
+            // {
+            //   title: '区块扩展',
+            //   link: '/learn/block',
+            // },
+            // {
+            //   title: '操作扩展',
+            //   link: '/learn/action',
+            // },
+            // {
+            //   title: '字段扩展',
+            //   link: '/learn/field',
+            // },
+          ],
+        },
+        {
+          title: '升级指南',
+          type: 'group',
+          children: [
+            {
+              title: '1.0 vs 2.0',
+              link: '/learn/1-0-vs-2-0',
+            }
+          ]
+        }
+      ],
+      '/models': [
+        {
+          title: 'Overview',
+          link: '/models',
+        },
+        {
+          title: '区块',
+          type: 'group',
+          children: [
+            {
+              title: 'BlockModel',
+              link: '/models/blocks/block-model',
+              extra: '基类',
+            },
+            {
+              title: 'CollectionBlockModel',
+              link: '/models/blocks/collection-block-model',
+              extra: '基类',
+            },
+            {
+              title: 'DataBlockModel',
+              link: '/models/blocks/data-block-model',
+              extra: '基类',
+            },
+            {
+              title: 'FilterBlockModel',
+              link: '/models/blocks/filter-block-model',
+              extra: '基类',
+            },
+            {
+              title: 'JSBlockModel',
+              link: '/models/blocks/js-block-model',
+            },
+          ],
+        },
+        // {
+        //   title: '过滤器',
+        //   type: 'group',
+        //   children: [
+        //     {
+        //       title: 'FormFilterModel',
+        //       link: '/models/filters/form-filter-model',
+        //     },
+        //   ],
+        // },
+        {
+          title: '字段',
+          type: 'group',
+          children: [
+            {
+              title: 'FieldModel',
+              link: '/models/fields/field-model',
+              extra: '基类',
+            },
+            {
+              title: 'ClickableFieldModel',
+              link: '/models/fields/clickable-field-model',
+              extra: '基类',
+            },
+            {
+              title: 'DisplayItemModel',
+              link: '/models/fields/display-item-model',
+            },
+            {
+              title: 'EditableItemModel',
+              link: '/models/fields/editable-item-model',
+            },
+            {
+              title: 'FilterableItemModel',
+              link: '/models/fields/filterable-item-model',
+            },
+            {
+              title: 'JSFieldModel',
+              link: '/models/fields/js-field-model',
+            },
+            {
+              title: 'JSItemModel',
+              link: '/models/fields/js-item-model',
+            },
+            {
+              title: 'JSColumnModel',
+              link: '/models/fields/js-column-model',
+            },
+          ],
+        },
+        {
+          title: '操作',
+          type: 'group',
+          children: [
+            {
+              title: 'ActionModel',
+              link: '/models/actions/action-model',
+              extra: '基类',
+            },
+            {
+              title: 'PopupActionModel',
+              link: '/models/actions/popup-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'FormActionModel',
+              link: '/models/actions/form-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'FilterFormActionModel',
+              link: '/models/actions/filter-form-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'JSActionModel',
+              link: '/models/actions/js-action-model',
+            },
+          ],
+        },
+      ],
+      '/api': [
+        {
+          type: 'group',
+          title: 'Flow Engine',
+          children: [
+            {
+              title: 'Overview',
+              link: '/api/flow-engine',
+            },
+            {
+              title: 'FlowEngine',
+              link: '/api/flow-engine/flow-engine',
+            },
+            {
+              title: 'FlowContext',
+              children: [
+                {
+                  title: 'Overview',
+                  link: '/api/flow-engine/flow-context',
+                },
+                {
+                  title: 'FlowContext',
+                  link: '/api/flow-engine/flow-context/flow-context',
+                },
+                {
+                  title: 'FlowEngineContext',
+                  link: '/api/flow-engine/flow-context/flow-engine-context',
+                },
+                {
+                  title: 'FlowModelContext',
+                  link: '/api/flow-engine/flow-context/flow-model-context',
+                },
+                {
+                  title: 'FlowRuntimeContext',
+                  link: '/api/flow-engine/flow-context/flow-runtime-context',
+                },
+              ],
+            },
+            {
+              title: 'FlowModel',
+              children: [
+                {
+                  title: 'Overview',
+                  link: '/api/flow-engine/flow-model',
+                },
+                {
+                  title: 'FlowModel',
+                  link: '/api/flow-engine/flow-model/flow-model',
+                },
+                {
+                  title: 'SubModel',
+                  link: '/api/flow-engine/flow-model/sub-model',
+                },
+                {
+                  title: 'ForkModel',
+                  link: '/api/flow-engine/flow-model/fork-model',
+                },
+              ]
+            },
+            {
+              title: 'FlowModelRenderer',
+              link: '/api/flow-engine/flow-model-renderer',
+            },
+            {
+              title: 'FlowModelRepository',
+              link: '/api/flow-engine/flow-model-repository',
+            },
+            {
+              title: 'FlowDefinition',
+              link: '/api/flow-engine/flow-definition',
+            },
+            {
+              title: 'FlowRegistry',
+              link: '/api/flow-engine/flow-registry',
+            },
+            {
+              title: 'FlowAction',
+              link: '/api/flow-engine/flow-action',
+            },
+            {
+              title: 'FlowActionRegistry',
+              link: '/api/flow-engine/flow-action-registry',
+            },
+            {
+              title: 'FlowEventRegistry',
+              link: '/api/flow-engine/flow-event-registry',
+            },
+            {
+              title: 'FlowResource',
+              children: [
+                {
+                  title: 'Overview',
+                  link: '/api/flow-engine/flow-resource',
+                },
+                {
+                  title: 'APIResource',
+                  link: '/api/flow-engine/flow-resource/api-resource',
+                },
+                {
+                  title: 'SingleRecordResource',
+                  link: '/api/flow-engine/flow-resource/single-record-resource',
+                },
+                {
+                  title: 'MultiRecordResource',
+                  link: '/api/flow-engine/flow-resource/multi-record-resource',
+                },
+                {
+                  title: 'SQLResource',
+                  link: '/api/flow-engine/flow-resource/sql-resource',
+                },
+              ],
+            },
+            {
+              title: 'FlowSettings',
+              link: '/api/flow-engine/flow-settings',
+            },
+            {
+              title: 'FlowSQLRepository',
+              link: '/api/flow-engine/flow-sql-repository',
             },
           ]
         }
       ],
-      '/components': [
-        {
-          title: 'Action',
-          type: 'group',
-          children: [
-            {
-              "title": "Action",
-              "link": "/components/action"
-            },
-            {
-              "title": "Filter",
-              "link": "/components/filter"
-            },
-            {
-              "title": "LinkageFilter",
-              "link": "/components/linkage-filter"
-            },
-          ]
-        },
-        {
-          title: 'Field',
-          type: 'group',
-          children: [
-            {
-              "title": "Checkbox",
-              "link": "/components/checkbox"
-            },
-            {
-              "title": "Cascader",
-              "link": "/components/cascader"
-            },
-            {
-              "title": "ColorPicker",
-              "link": "/components/color-picker"
-            },
-            {
-              "title": "ColorSelect",
-              "link": "/components/color-select"
-            },
-            {
-              "title": "DatePicker",
-              "link": "/components/date-picker"
-            },
-            {
-              "title": "TimePicker",
-              "link": "/components/time-picker"
-            },
-            {
-              "title": "IconPicker",
-              "link": "/components/icon-picker"
-            },
-            {
-              "title": "InputNumber",
-              "link": "/components/input-number"
-            },
-            {
-              "title": "Input",
-              "link": "/components/input"
-            },
-            {
-              "title": "AutoComplete",
-              "link": "/components/auto-complete"
-            },
-            {
-              "title": "NanoIDInput",
-              "link": "/components/nanoid-input"
-            },
-            {
-              "title": "Password",
-              "link": "/components/password"
-            },
-            {
-              "title": "Percent",
-              "link": "/components/percent"
-            },
-            {
-              "title": "Radio",
-              "link": "/components/radio"
-            },
-            {
-              "title": "Select",
-              "link": "/components/select"
-            },
-            {
-              "title": "RemoteSelect",
-              "link": "/components/remote-select"
-            },
-            {
-              "title": "TreeSelect",
-              "link": "/components/tree-select"
-            },
-            {
-              "title": "Upload",
-              "link": "/components/upload"
-            },
-            {
-              "title": "CollectionSelect",
-              "link": "/components/collection-select"
-            },
-            {
-              "title": "Cron",
-              "link": "/components/cron"
-            },
-            {
-              "title": "Markdown",
-              "link": "/components/markdown"
-            },
-            {
-              "title": "Variable",
-              "link": "/components/variable"
-            },
-            {
-              "title": "QuickEdit",
-              "link": "/components/quick-edit"
-            },
-            {
-              "title": "RichText",
-              "link": "/components/rich-text"
-            }
-          ]
-        },
-        {
-          title: 'Block',
-          type: 'group',
-          children: [
-            {
-              "title": "BlockItem",
-              "link": "/components/block-item"
-            },
-            {
-              "title": "CardItem",
-              "link": "/components/card-item"
-            },
-            {
-              "title": "FormItem",
-              "link": "/components/form-item"
-            },
-            {
-              "title": "FormV2",
-              "link": "/components/form-v2"
-            },
-            {
-              "title": "TableV2",
-              "link": "/components/table-v2"
-            },
-            {
-              "title": "Details",
-              "link": "/components/details"
-            },
-            {
-              "title": "GridCard",
-              "link": "/components/grid-card"
-            },
-            {
-              "title": "Grid",
-              "link": "/components/grid"
-            },
-            {
-              "title": "List",
-              "link": "/components/list"
-            },
-          ]
-        },
-        {
-          title: 'Others',
-          type: 'group',
-          children: [
-            {
-              "title": "Tabs",
-              "link": "/components/tabs"
-            },
-            {
-              "title": "ErrorFallback",
-              "link": "/components/error-fallback"
-            },
-            {
-              "title": "G2Plot",
-              "link": "/components/g2plot"
-            },
-            {
-              "title": "Menu",
-              "link": "/components/menu"
-            },
-            {
-              "title": "Pagination",
-              "link": "/components/pagination"
-            },
-          ]
-        },
-      ]
+      // '/core': [
+      //   // {
+      //   //   title: 'Application',
+      //   //   type: 'group',
+      //   //   children: [
+      //   //     {
+      //   //       title: 'Application',
+      //   //       link: '/core/application/application',
+      //   //     },
+      //   //     {
+      //   //       title: 'PluginManager',
+      //   //       link: '/core/application/plugin-manager',
+      //   //     },
+      //   //     {
+      //   //       title: 'RouterManager',
+      //   //       link: '/core/application/router-manager',
+      //   //     },
+      //   //     {
+      //   //       title: 'PluginSettingsManager',
+      //   //       link: '/core/application/plugin-settings-manager',
+      //   //     },
+      //   //     {
+      //   //       title: 'Request',
+      //   //       link: '/core/request',
+      //   //     },
+      //   //   ],
+      //   // },
+      //   {
+      //     title: 'Quickstart',
+      //     link: '/core/flow-models/quickstart',
+      //   },
+      //   {
+      //     title: 'FlowEngine',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         title: 'Overview',
+      //         link: '/core/flow-engine',
+      //       },
+      //       {
+      //         title: 'FlowEngine',
+      //         link: '/core/flow-engine/flow-engine',
+      //       },
+      //       {
+      //         title: 'FlowModelRepository',
+      //         link: '/core/flow-engine/flow-model-repository',
+      //       },
+      //       {
+      //         title: 'FlowModel',
+      //         link: '/core/flow-engine/flow-model',
+      //       },
+      //       {
+      //         title: 'FlowSubModel',
+      //         link: '/core/flow-engine/flow-sub-model',
+      //       },
+      //       {
+      //         title: 'FlowModelRenderer',
+      //         link: '/core/flow-engine/flow-model-renderer',
+      //       },
+      //       {
+      //         title: 'FlowModelSettings',
+      //         link: '/core/flow-engine/flow-model-settings',
+      //       },
+      //       {
+      //         title: 'FlowDefinition',
+      //         link: '/core/flow-engine/flow-definition',
+      //       },
+      //       {
+      //         title: 'FlowResource',
+      //         link: '/core/flow-engine/flow-resource',
+      //       },
+      //       {
+      //         title: 'FlowContext',
+      //         children: [
+      //           {
+      //             title: 'Overview',
+      //             link: '/core/flow-engine/flow-context',
+      //           },
+      //           {
+      //             title: 'FlowContext',
+      //             link: '/core/flow-engine/flow-context/flow-context',
+      //           },
+      //           {
+      //             title: 'FlowEngineContext',
+      //             link: '/core/flow-engine/flow-context/flow-engine-context',
+      //           },
+      //           {
+      //             title: 'FlowModelContext',
+      //             link: '/core/flow-engine/flow-context/flow-model-context',
+      //           },
+      //           {
+      //             title: 'FlowRuntimeContext',
+      //             link: '/core/flow-engine/flow-context/flow-runtime-context',
+      //           },
+      //         ],
+      //       },
+      //       {
+      //         title: 'FlowAction',
+      //         link: '/core/flow-engine/flow-action',
+      //       },
+      //       {
+      //         title: 'FlowHooks',
+      //         link: '/core/flow-engine/flow-hooks',
+      //       },
+      //     ],
+      //   },
+      //   {
+      //     title: 'Flow Models',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         title: 'Overview',
+      //         link: '/core/flow-models',
+      //       },
+      //       {
+      //         title: 'LayoutModel',
+      //         link: '/core/flow-models/layout-flow-model',
+      //       },
+      //       {
+      //         title: 'LayoutRouteModel',
+      //         link: '/core/flow-models/layout-route-flow-model',
+      //       },
+      //       {
+      //         title: 'PageModel',
+      //         link: '/core/flow-models/page-flow-model',
+      //       },
+      //       {
+      //         title: 'PageTabModel',
+      //         link: '/core/flow-models/page-tab-flow-model',
+      //       },
+      //       {
+      //         title: 'GridModel',
+      //         link: '/core/flow-models/grid-flow-model',
+      //       },
+      //       {
+      //         title: 'BlockGridModel',
+      //         link: '/core/flow-models/block-grid-flow-model',
+      //       },
+      //       {
+      //         title: 'BlockModel',
+      //         link: '/core/flow-models/block-flow-model',
+      //       },
+      //       {
+      //         title: 'FormModel',
+      //         link: '/core/flow-models/form-flow-model',
+      //       },
+      //       {
+      //         title: 'TableBlockModel',
+      //         link: '/core/flow-models/table-flow-model',
+      //       },
+      //       {
+      //         title: 'DetailsBlockModel',
+      //         link: '/core/flow-models/details-flow-model',
+      //       },
+      //       {
+      //         title: 'ListModel',
+      //         link: '/core/flow-models/list-flow-model',
+      //       },
+      //       {
+      //         title: 'CalendarModel',
+      //         link: '/core/flow-models/calendar-flow-model',
+      //       },
+
+      //       {
+      //         title: 'KanbanModel',
+      //         link: '/core/flow-models/kanban-flow-model',
+      //       },
+      //       {
+      //         title: 'MapModel',
+      //         link: '/core/flow-models/map-flow-model',
+      //       },
+      //       {
+      //         title: 'GanttModel',
+      //         link: '/core/flow-models/gantt-flow-model',
+      //       },
+      //       {
+      //         title: 'ChartModel',
+      //         link: '/core/flow-models/chart-flow-model',
+      //       },
+      //       {
+      //         title: 'MarkdownModel',
+      //         link: '/core/flow-models/markdown-flow-model',
+      //       },
+      //       {
+      //         title: 'HtmlModel',
+      //         link: '/core/flow-models/html-flow-model',
+      //       },
+      //       {
+      //         title: 'iframeModel',
+      //         link: '/core/flow-models/iframe-flow-model',
+      //       },
+      //       {
+      //         title: 'TimelineModel',
+      //         link: '/core/flow-models/timeline-flow-model',
+      //       },
+      //       {
+      //         title: 'CollapseModel',
+      //         link: '/core/flow-models/collapse-flow-model',
+      //       },
+      //     ],
+      //   },
+      //   {
+      //     title: 'Flow Actions',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         title: 'Overview',
+      //         link: '/core/flow-actions',
+      //       },
+      //     ],
+      //   },
+      // ],
+      // '/components': [
+      //   {
+      //     title: 'Action',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "Action",
+      //         "link": "/components/action"
+      //       },
+      //       {
+      //         "title": "Filter",
+      //         "link": "/components/filter"
+      //       },
+      //       {
+      //         "title": "LinkageFilter",
+      //         "link": "/components/linkage-filter"
+      //       },
+      //     ]
+      //   },
+      //   {
+      //     title: 'Field',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "Checkbox",
+      //         "link": "/components/checkbox"
+      //       },
+      //       {
+      //         "title": "Cascader",
+      //         "link": "/components/cascader"
+      //       },
+      //       {
+      //         "title": "ColorPicker",
+      //         "link": "/components/color-picker"
+      //       },
+      //       {
+      //         "title": "ColorSelect",
+      //         "link": "/components/color-select"
+      //       },
+      //       {
+      //         "title": "DatePicker",
+      //         "link": "/components/date-picker"
+      //       },
+      //       {
+      //         "title": "TimePicker",
+      //         "link": "/components/time-picker"
+      //       },
+      //       {
+      //         "title": "IconPicker",
+      //         "link": "/components/icon-picker"
+      //       },
+      //       {
+      //         "title": "InputNumber",
+      //         "link": "/components/input-number"
+      //       },
+      //       {
+      //         "title": "Input",
+      //         "link": "/components/input"
+      //       },
+      //       {
+      //         "title": "AutoComplete",
+      //         "link": "/components/auto-complete"
+      //       },
+      //       {
+      //         "title": "NanoIDInput",
+      //         "link": "/components/nanoid-input"
+      //       },
+      //       {
+      //         "title": "Password",
+      //         "link": "/components/password"
+      //       },
+      //       {
+      //         "title": "Percent",
+      //         "link": "/components/percent"
+      //       },
+      //       {
+      //         "title": "Radio",
+      //         "link": "/components/radio"
+      //       },
+      //       {
+      //         "title": "Select",
+      //         "link": "/components/select"
+      //       },
+      //       {
+      //         "title": "RemoteSelect",
+      //         "link": "/components/remote-select"
+      //       },
+      //       {
+      //         "title": "TreeSelect",
+      //         "link": "/components/tree-select"
+      //       },
+      //       {
+      //         "title": "Upload",
+      //         "link": "/components/upload"
+      //       },
+      //       {
+      //         "title": "CollectionSelect",
+      //         "link": "/components/collection-select"
+      //       },
+      //       {
+      //         "title": "Cron",
+      //         "link": "/components/cron"
+      //       },
+      //       {
+      //         "title": "Markdown",
+      //         "link": "/components/markdown"
+      //       },
+      //       {
+      //         "title": "Variable",
+      //         "link": "/components/variable"
+      //       },
+      //       {
+      //         "title": "QuickEdit",
+      //         "link": "/components/quick-edit"
+      //       },
+      //       {
+      //         "title": "RichText",
+      //         "link": "/components/rich-text"
+      //       }
+      //     ]
+      //   },
+      //   {
+      //     title: 'Block',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "BlockItem",
+      //         "link": "/components/block-item"
+      //       },
+      //       {
+      //         "title": "CardItem",
+      //         "link": "/components/card-item"
+      //       },
+      //       {
+      //         "title": "FormItem",
+      //         "link": "/components/form-item"
+      //       },
+      //       {
+      //         "title": "FormV2",
+      //         "link": "/components/form-v2"
+      //       },
+      //       {
+      //         "title": "TableV2",
+      //         "link": "/components/table-v2"
+      //       },
+      //       {
+      //         "title": "Details",
+      //         "link": "/components/details"
+      //       },
+      //       {
+      //         "title": "GridCard",
+      //         "link": "/components/grid-card"
+      //       },
+      //       {
+      //         "title": "Grid",
+      //         "link": "/components/grid"
+      //       },
+      //       {
+      //         "title": "List",
+      //         "link": "/components/list"
+      //       },
+      //     ]
+      //   },
+      //   {
+      //     title: 'Others',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "Tabs",
+      //         "link": "/components/tabs"
+      //       },
+      //       {
+      //         "title": "ErrorFallback",
+      //         "link": "/components/error-fallback"
+      //       },
+      //       {
+      //         "title": "G2Plot",
+      //         "link": "/components/g2plot"
+      //       },
+      //       {
+      //         "title": "Menu",
+      //         "link": "/components/menu"
+      //       },
+      //       {
+      //         "title": "Pagination",
+      //         "link": "/components/pagination"
+      //       },
+      //     ]
+      //   },
+      // ]
       // '/ui-schema': [
       //   {
       //     title: 'Overview',

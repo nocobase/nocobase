@@ -463,6 +463,7 @@ export class PluginManager {
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       this.app.logger.trace(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.loadCollections();
+      await plugin.loadAI();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
@@ -603,6 +604,7 @@ export class PluginManager {
           continue;
         }
         await plugin.loadCollections();
+        await plugin.loadAI();
         await plugin.load();
       }
     } catch (error) {
@@ -764,6 +766,42 @@ export class PluginManager {
     });
     if (!this.app.db.getCollection('applications')) {
       await removeDir();
+    }
+  }
+
+  async pull(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
+    if (Array.isArray(urlOrName)) {
+      for (const packageName of urlOrName) {
+        await this.addViaCLI(packageName, _.omit(options, 'name'), false);
+      }
+      return;
+    }
+    if (isURL(urlOrName)) {
+      await this.addByCompressedFileUrl(
+        {
+          ...options,
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
+    } else if (await fs.exists(urlOrName)) {
+      await this.addByCompressedFileUrl(
+        {
+          ...(options as any),
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
+    } else if (options?.registry) {
+      const { name, packageName } = await PluginManager.parseName(urlOrName);
+      options['name'] = name;
+      await this.addByNpm(
+        {
+          ...(options as any),
+          packageName,
+        },
+        emitStartedEvent,
+      );
     }
   }
 

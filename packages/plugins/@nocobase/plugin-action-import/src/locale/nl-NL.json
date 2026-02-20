@@ -17,6 +17,7 @@
   "Illegal percentage format": "Ongeldig percentageformaat",
   "Import": "Import",
   "Import Data": "Importeer gegevens",
+  "Import action settings": "Import action settings",
   "Import completed": "Importeren voltooid: {{success}} records zijn geïmporteerd, {{updated}} records zijn bijgewerkt, {{skipped}} records zijn overgeslagen, totaal {{total}} records",
   "Import explain": "Uitleg",
   "Import warnings": "Maximaal {{limit}} rijen gegevens kunnen tegelijk worden geïmporteerd, eventuele overschrijdingen worden genegeerd.",

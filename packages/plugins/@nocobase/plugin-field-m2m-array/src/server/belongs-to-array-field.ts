@@ -14,6 +14,7 @@ export const elementTypeMap = {
   nanoid: 'string',
   sequence: 'string',
   uid: 'string',
+  snowflakeId: 'bigInt',
 };
 
 export class BelongsToArrayField extends RelationField {

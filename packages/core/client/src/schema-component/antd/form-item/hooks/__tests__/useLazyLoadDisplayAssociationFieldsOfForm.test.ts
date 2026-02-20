@@ -40,7 +40,7 @@ describe('removeCircularReferences', () => {
     it('should clone simple object', () => {
       const input = { name: 'John', age: 30 };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ name: 'John', age: 30 });
       expect(output).not.toBe(input); // Should be a new object
     });
@@ -48,7 +48,7 @@ describe('removeCircularReferences', () => {
     it('should clone simple array', () => {
       const input = [1, 2, 3];
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual([1, 2, 3]);
       expect(output).not.toBe(input); // Should be a new array
     });
@@ -64,16 +64,20 @@ describe('removeCircularReferences', () => {
         },
       };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual(input);
       expect(output).not.toBe(input);
       expect(output.user).not.toBe(input.user);
     });
 
     it('should handle nested arrays', () => {
-      const input = [[1, 2], [3, 4], [5, 6]];
+      const input = [
+        [1, 2],
+        [3, 4],
+        [5, 6],
+      ];
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual(input);
       expect(output).not.toBe(input);
       expect(output[0]).not.toBe(input[0]);
@@ -91,7 +95,7 @@ describe('removeCircularReferences', () => {
         },
       };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual(input);
     });
   });
@@ -101,7 +105,7 @@ describe('removeCircularReferences', () => {
       const shared = { id: 1, name: 'shared' };
       const input = { a: shared, b: shared };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({
         a: { id: 1, name: 'shared' },
         b: { id: 1, name: 'shared' },
@@ -113,7 +117,7 @@ describe('removeCircularReferences', () => {
       const shared = { id: 1, name: 'shared' };
       const input = [shared, shared, shared];
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual([
         { id: 1, name: 'shared' },
         { id: 1, name: 'shared' },
@@ -133,7 +137,7 @@ describe('removeCircularReferences', () => {
         defaultRole: role,
       };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({
         users: [
           { name: 'Alice', role: { id: 1, name: 'Admin' } },
@@ -149,7 +153,7 @@ describe('removeCircularReferences', () => {
       const sharedArray = [1, 2, 3];
       const input = { a: sharedArray, b: sharedArray };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({
         a: [1, 2, 3],
         b: [1, 2, 3],
@@ -163,7 +167,7 @@ describe('removeCircularReferences', () => {
       const circular: any = { name: 'circular' };
       circular.self = circular;
       const output = removeCircularReferences(circular);
-      
+
       expect(output).toEqual({ name: 'circular' });
       expect(output.self).toBeUndefined();
     });
@@ -173,7 +177,7 @@ describe('removeCircularReferences', () => {
       const child: any = { name: 'child', parent: parent };
       parent.child = child;
       const output = removeCircularReferences(parent);
-      
+
       expect(output).toEqual({
         name: 'parent',
         child: { name: 'child' },
@@ -186,7 +190,7 @@ describe('removeCircularReferences', () => {
       const arr = [circular];
       circular.items = arr;
       const output = removeCircularReferences(arr);
-      
+
       expect(output).toEqual([{ name: 'item' }]);
       expect(output[0].items).toBeUndefined();
     });
@@ -196,9 +200,9 @@ describe('removeCircularReferences', () => {
       const b: any = { name: 'b', ref: a };
       const c: any = { name: 'c', ref: b };
       a.ref = c; // Creates circular: a -> c -> b -> a
-      
+
       const output = removeCircularReferences(a);
-      
+
       expect(output.name).toBe('a');
       expect(output.ref.name).toBe('c');
       expect(output.ref.ref.name).toBe('b');
@@ -210,9 +214,9 @@ describe('removeCircularReferences', () => {
       obj.self1 = obj;
       obj.self2 = obj;
       obj.data = { value: 42 };
-      
+
       const output = removeCircularReferences(obj);
-      
+
       expect(output).toEqual({
         name: 'root',
         data: { value: 42 },
@@ -227,9 +231,9 @@ describe('removeCircularReferences', () => {
       const shared: any = { name: 'shared' };
       shared.self = shared;
       const input = { a: shared, b: shared };
-      
+
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({
         a: { name: 'shared' },
         b: { name: 'shared' },
@@ -245,9 +249,9 @@ describe('removeCircularReferences', () => {
         b: siblingShared,
         c: { nested: siblingShared },
       };
-      
+
       const output = removeCircularReferences(input);
-      
+
       expect(output.a).toBe(output.b);
       expect(output.a).toBe(output.c.nested);
       expect(output).toEqual({
@@ -261,9 +265,9 @@ describe('removeCircularReferences', () => {
       const deepShared = { id: 1 };
       const level2 = { shared: deepShared, data: 'level2' };
       const level1 = { shared: deepShared, child: level2, data: 'level1' };
-      
+
       const output = removeCircularReferences(level1);
-      
+
       expect(output.shared).toBe(output.child.shared);
       expect(output).toEqual({
         shared: { id: 1 },
@@ -276,15 +280,11 @@ describe('removeCircularReferences', () => {
       const shared = { id: 1 };
       const circular: any = { id: 2 };
       circular.self = circular;
-      
+
       const input = [shared, circular, shared];
       const output = removeCircularReferences(input);
-      
-      expect(output).toEqual([
-        { id: 1 },
-        { id: 2 },
-        { id: 1 },
-      ]);
+
+      expect(output).toEqual([{ id: 1 }, { id: 2 }, { id: 1 }]);
       expect(output[0]).toBe(output[2]);
       expect(output[1].self).toBeUndefined();
     });
@@ -292,18 +292,18 @@ describe('removeCircularReferences', () => {
     it('should handle real-world form data structure', () => {
       const department = { id: 1, name: 'Engineering' };
       const role = { id: 1, name: 'Admin', department };
-      
+
       const input = {
         users: [
-          { 
-            id: 1, 
-            name: 'Alice', 
+          {
+            id: 1,
+            name: 'Alice',
             role: role,
             department: department,
           },
-          { 
-            id: 2, 
-            name: 'Bob', 
+          {
+            id: 2,
+            name: 'Bob',
             role: role,
             department: department,
           },
@@ -311,13 +311,13 @@ describe('removeCircularReferences', () => {
         defaultRole: role,
         defaultDepartment: department,
       };
-      
+
       const output = removeCircularReferences(input);
-      
+
       // All role references should point to same object
       expect(output.users[0].role).toBe(output.users[1].role);
       expect(output.users[0].role).toBe(output.defaultRole);
-      
+
       // All department references should point to same object
       expect(output.users[0].department).toBe(output.users[1].department);
       expect(output.users[0].department).toBe(output.defaultDepartment);
@@ -337,7 +337,7 @@ describe('removeCircularReferences', () => {
     it('should handle object with undefined values', () => {
       const input = { a: 1, b: undefined, c: 3 };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ a: 1, c: 3 });
       expect('b' in output).toBe(false);
     });
@@ -345,7 +345,7 @@ describe('removeCircularReferences', () => {
     it('should handle array with undefined values', () => {
       const input = [1, undefined, 3];
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual([1, undefined, 3]);
     });
 
@@ -353,9 +353,9 @@ describe('removeCircularReferences', () => {
       const date = new Date('2024-01-01');
       const regex = /test/;
       const input = { date, regex, number: 42 };
-      
+
       const output = removeCircularReferences(input);
-      
+
       expect(output.date).toBe(date);
       expect(output.regex).toBe(regex);
       expect(output.number).toBe(42);
@@ -365,10 +365,10 @@ describe('removeCircularReferences', () => {
       const obj = Object.create(null);
       obj.a = 1;
       obj.b = 2;
-      
+
       const input = { data: obj };
       const output = removeCircularReferences(input);
-      
+
       // Non-plain object should be preserved as-is
       expect(output.data).toBe(obj);
     });
@@ -378,9 +378,9 @@ describe('removeCircularReferences', () => {
       for (let i = 1; i < 100; i++) {
         deep = { value: i, child: deep };
       }
-      
+
       const output = removeCircularReferences(deep);
-      
+
       // Should successfully process without stack overflow
       expect(output.value).toBe(99);
       let current = output;
@@ -397,9 +397,9 @@ describe('removeCircularReferences', () => {
       const level2: any = { name: 'level2', parent: level1, root: root };
       root.level1 = level1;
       level1.level2 = level2;
-      
+
       const output = removeCircularReferences(root);
-      
+
       expect(output.name).toBe('root');
       expect(output.level1.name).toBe('level1');
       expect(output.level1.level2.name).toBe('level2');
@@ -413,35 +413,35 @@ describe('removeCircularReferences', () => {
     it('should preserve properties with value 0', () => {
       const input = { count: 0, name: 'test' };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ count: 0, name: 'test' });
     });
 
     it('should preserve properties with empty string', () => {
       const input = { name: '', value: 'test' };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ name: '', value: 'test' });
     });
 
     it('should preserve properties with false', () => {
       const input = { active: false, name: 'test' };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ active: false, name: 'test' });
     });
 
     it('should preserve properties with null', () => {
       const input = { data: null, name: 'test' };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ data: null, name: 'test' });
     });
 
     it('should omit properties with undefined', () => {
       const input = { data: undefined, name: 'test' };
       const output = removeCircularReferences(input);
-      
+
       expect(output).toEqual({ name: 'test' });
       expect('data' in output).toBe(false);
     });

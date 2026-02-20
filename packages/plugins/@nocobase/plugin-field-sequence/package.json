@@ -6,7 +6,7 @@
   "description": "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.",
   "description.ru-RU": "Автоматически генерирует коды по заданным правилам с поддержкой комбинаций дат, чисел и текста.",
   "description.zh-CN": "根据配置的规则自动生成编码，支持日期、数字、文本的组合。",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-sequence",
@@ -24,13 +24,13 @@
     "react-js-cron": "^3.1.0"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/plugin-data-source-main": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

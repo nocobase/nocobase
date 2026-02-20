@@ -17,6 +17,7 @@
   "Illegal percentage format": "百分比格式有误",
   "Import": "导入",
   "Import Data": "导入数据",
+  "Import action settings": "导入设置",
   "Import completed": "导入完成：{{success}} 条记录已导入，{{updated}} 条记录已更新，{{skipped}} 条记录已跳过，共 {{total}} 条记录",
   "Import explain": "说明",
   "Import warnings": "每次最多导入 {{limit}} 行数据，超出的将被忽略。",

@@ -6,7 +6,7 @@
   "description": "Useful plugin for doing dynamic calculation based on expression collection records in workflow.",
   "description.zh-CN": "用于在工作流中进行基于数据行的动态表达式计算。",
   "description.ru-RU": "Плагин для выполнения динамических вычислений на основе записей коллекции выражений в рабочем процессе.",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-dynamic-calculation",
@@ -24,18 +24,21 @@
     "react-router-dom": "^6.11.2"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/evaluators": "1.x",
-    "@nocobase/plugin-data-source-main": "1.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/evaluators": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Workflow",
     "Collections"
-  ]
+  ],
+  "nocobase": {
+    "deprecated": true
+  }
 }

@@ -679,7 +679,7 @@ describe('update associations', () => {
           students: [{ id: student.id }],
         },
       });
-      assert.ok(teacher);
+      expect(teacher).toBeTruthy();
     });
 
     test('should update belongsToMany association not throw error when relation table field is nanoid', async () => {
@@ -720,7 +720,7 @@ describe('update associations', () => {
           students: [{ id: student.id }],
         },
       });
-      assert.ok(teacher);
+      expect(teacher).toBeTruthy();
     });
   });
 });

@@ -6,7 +6,7 @@
   "description.ru-RU": "Предоставляет единый сервис управления, включающий конфигурирование каналов, логирование и другие функции, поддерживает настройку различных каналов уведомлений, включая внутренние сообщения и электронную почту.",
   "displayName.zh-CN": "通知管理",
   "description.zh-CN": "提供统一的管理服务，涵盖渠道配置、日志记录等功能，支持多种通知渠道的配置，包括站内信和电子邮件等。",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "homepage": "https://docs.nocobase.com/handbook/notification-manager",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/notification-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-manager",
@@ -23,13 +23,13 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "keywords": [
     "Notification"

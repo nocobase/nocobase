@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "快速开始",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "功能介绍",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "数据查询",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "图表选项",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "预览与保存",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用上下文环境变量",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "页面筛选器与联动",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "进阶",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "SQL 模式查询数据",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "自定义图表配置",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "自定义交互事件",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "常见问题",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "最佳实践",
+    "link": "/data-visualization/best-practices"
+  }
+]

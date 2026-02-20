@@ -1,4 +1,5 @@
 import { defineConfig } from '@nocobase/build';
+import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -119,10 +120,14 @@ async function writeIndexFiles(pkgPath: string) {
 }
 
 export default defineConfig({
-  beforeBuild: async (log) => {
-    await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
-    const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
-    await writeIndexFiles(pkgPath);
+  // beforeBuild: async (log) => {
+  //   await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
+  //   const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
+  //   await writeIndexFiles(pkgPath);
+  // },
+  beforeBuild: async () => {
+    const distPath = path.resolve(__dirname, 'dist');
+    await fs.remove(distPath);
   },
 
   afterBuild: async (log) => {
@@ -130,7 +135,7 @@ export default defineConfig({
     const deps = [
       'decamelize',
       'zod',
-      'zod-to-json-schema',
+      // 'zod-to-json-schema',
       'langsmith',
       'p-retry',
       'p-queue',
@@ -142,9 +147,14 @@ export default defineConfig({
     ];
     for (const dep of deps) {
       const depPath = path.resolve(process.cwd(), 'node_modules', dep);
+      if (!fs.existsSync(depPath)) {
+        console.warn(`depPath not existed skip: ${depPath}`);
+        continue;
+      }
       await fs.promises.cp(depPath, path.resolve(__dirname, 'dist/node_modules/@langchain/core/node_modules', dep), {
         recursive: true,
         force: true,
+        filter: (src) => !src.includes(`${path.sep}.bin${path.sep}`) && !src.endsWith(`${path.sep}.bin`),
       });
     }
     log('copying js-tiktoken/lite');
@@ -161,5 +171,28 @@ export default defineConfig({
         },
       );
     }
+
+    log('copying markdown files from src/server to dist/server');
+    await fs.copy(
+      path.resolve(__dirname, 'src/server/ai-employees'),
+      path.resolve(__dirname, 'dist/server/ai-employees'),
+      {
+        overwrite: true,
+        filter: (src) => {
+          // Keep directory structure and only copy .md files
+          if (fs.lstatSync(src).isDirectory()) return true;
+          return src.endsWith('.md');
+        },
+      },
+    );
+
+    log('removing node_modules/**/*.d.ts');
+    fg.sync(['./node_modules/**/*.d.ts', './node_modules/**/*.d.cts'], {
+      cwd: path.resolve(__dirname, 'dist'),
+      absolute: true,
+      onlyFiles: true,
+    }).forEach((file) => {
+      fs.unlinkSync(file);
+    });
   },
 });

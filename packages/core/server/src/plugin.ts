@@ -18,6 +18,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
+import { ToolsLoader } from '@nocobase/ai';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -73,6 +74,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   get name() {
     return this.options.name as string;
+  }
+
+  get ai() {
+    return this.app.aiManager;
   }
 
   get pm() {
@@ -139,7 +144,11 @@ export abstract class Plugin<O = any> implements PluginInterface {
       throw new Error(`plugin name invalid`);
     }
 
-    await this.app.syncMessageManager.publish(this.name, message, options);
+    try {
+      await this.app.syncMessageManager.publish(this.name, message, options);
+    } catch (err) {
+      this.log.error(err);
+    }
   }
 
   /**
@@ -197,6 +206,28 @@ export abstract class Plugin<O = any> implements PluginInterface {
         from: this.options.packageName,
       });
     }
+  }
+
+  /**
+   * @internal
+   */
+  async loadAI() {
+    const pluginRoot = await this.getPluginBasePath();
+    if (!pluginRoot) {
+      return;
+    }
+    const basePath = resolve(pluginRoot, 'ai');
+    if (!(await fsExists(basePath))) {
+      return;
+    }
+    const toolsLoader = new ToolsLoader(this.ai, {
+      scan: {
+        basePath,
+        pattern: ['**/tools/**/*.ts', '**/tools/**/*.js', '!**/tools/**/*.d.ts', '**/tools/**/*/description.md'],
+      },
+      log: this.log,
+    });
+    await toolsLoader.load();
   }
 
   /**

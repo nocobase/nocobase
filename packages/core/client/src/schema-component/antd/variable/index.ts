@@ -8,4 +8,5 @@
  */
 
 export * from './Variable';
+export { VariableSelect } from './VariableSelect';
 export { TextAreaWithGlobalScope } from './TextAreaWithGlobalScope';

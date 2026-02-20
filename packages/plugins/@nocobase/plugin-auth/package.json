@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth",
@@ -17,12 +17,12 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/auth": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/auth": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "displayName": "Authentication",
   "displayName.ru-RU": "Аутентификация пользователей",

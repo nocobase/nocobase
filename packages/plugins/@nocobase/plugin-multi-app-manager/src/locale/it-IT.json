@@ -9,10 +9,18 @@
   "Custom domain": "Dominio personalizzato",
   "JWT secret": "JWT secret",
   "Manage applications": "Gestisci applicazioni",
+  "Migrate data": "Migrate data",
+  "Migrate data to new multi-app": "Migrate data to new multi-app",
+  "Migrate successfully": "Migrate successfully",
+  "Multi-app is not enabled, please enable it first": "Multi-app is not enabled, please enable it first",
   "Multi-app manager": "Gestore multi-app",
+  "Multi-app manager (deprecated)": "Multi-app manager (deprecated)",
   "Pin to menu": "Fissa al menu",
+  "Please enter the port": "Please enter the port",
+  "Port": "Port",
   "Standalone deployment": "Distribuzione autonoma",
   "Start mode": "Modalità di avvio",
   "Start on first visit": "Avvia alla prima visita",
-  "Start with main application": "Avvia con l'applicazione principale"
+  "Start with main application": "Avvia con l'applicazione principale",
+  "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate."
 }

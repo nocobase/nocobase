@@ -40,6 +40,12 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
+import {
+  FlowEngine,
+  FlowEngineContext,
+  FlowEngineGlobalsContextProvider,
+  FlowEngineProvider,
+} from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
@@ -47,6 +53,8 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
+import { RouteRepository } from './RouteRepository';
+import { AIManager } from '../ai';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -106,6 +114,7 @@ interface Variable {
 export class Application {
   public eventBus = new EventTarget();
 
+  public aiManager: AIManager;
   public providers: ComponentAndProps[] = [];
   public router: RouterManager;
   public scopes: Record<string, any> = {};
@@ -131,14 +140,25 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  public flowEngine: FlowEngine;
+  public context: FlowEngineContext & {
+    pluginSettingsRouter: PluginSettingsManager;
+    pluginManager: PluginManager;
+  };
   loading = true;
   maintained = false;
   maintaining = false;
   error = null;
   hasLoadError = false;
+  locales = null;
 
   private wsAuthorized = false;
-  private variables: Variable[] = [];
+  private readonly variables: Variable[] = [];
+  apps: {
+    Component?: ComponentType;
+  } = {
+    Component: null,
+  };
 
   get pm() {
     return this.pluginManager;
@@ -183,7 +203,14 @@ export class Application {
     this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
-    this.apiClient = options.apiClient instanceof APIClient ? options.apiClient : new APIClient(options.apiClient);
+    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
+    this.apiClient =
+      options.apiClient instanceof APIClient
+        ? options.apiClient
+        : new APIClient({
+            ...options.apiClient,
+            appName: this.options.name || getSubAppName(options.publicPath),
+          });
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager(options.router, this);
@@ -191,6 +218,14 @@ export class Application {
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
+    this.flowEngine = new FlowEngine();
+    this.context = this.flowEngine.context as any;
+    this.context.defineProperty('pluginManager', {
+      get: () => this.pluginManager,
+    });
+    this.context.defineProperty('pluginSettingsRouter', {
+      get: () => this.pluginSettingsManager,
+    });
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -198,12 +233,12 @@ export class Application {
     this.ws.app = this;
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
-    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
     });
     this.initListeners();
     this.jsonLogic = getOperators();
+    this.aiManager = new AIManager(this);
   }
 
   private initListeners() {
@@ -251,7 +286,12 @@ export class Application {
   }
 
   private initRequireJs() {
-    this.requirejs = getRequireJs();
+    // 避免重复初始化 requirejs
+    if (window['requirejs']) {
+      this.requirejs = window['requirejs'];
+      return;
+    }
+    window['requirejs'] = this.requirejs = getRequireJs();
     defineGlobalDeps(this.requirejs);
     window.define = this.requirejs.define;
   }
@@ -270,6 +310,45 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
+    this.flowEngine.context.defineProperty('app', {
+      value: this,
+    });
+    this.flowEngine.context.defineProperty('routeRepository', {
+      value: new RouteRepository(this.flowEngine.context),
+    });
+    this.flowEngine.context.defineProperty('appInfo', {
+      get: async () => {
+        const rest = await this.apiClient.request({
+          url: 'app:getInfo',
+        });
+        return rest.data?.data || {};
+      },
+    });
+    this.flowEngine.context.defineProperty('api', {
+      value: this.apiClient,
+    });
+    this.flowEngine.context.defineProperty('i18n', {
+      value: this.i18n,
+    });
+    this.flowEngine.context.defineProperty('router', {
+      get: () => this.router.router,
+      cache: false,
+    });
+    this.flowEngine.context.defineProperty('documentTitle', {
+      get: () => document.title,
+    });
+    this.flowEngine.context.defineProperty('route', {
+      get: () => {},
+      observable: true,
+    });
+    this.flowEngine.context.defineProperty('location', {
+      get: () => location,
+      observable: true,
+    });
+    this.use(FlowEngineProvider, { engine: this.flowEngine });
+    this.use(FlowEngineGlobalsContextProvider);
+    const pageInfo = observable({ version: undefined as 'v2' | 'v1' | undefined });
+    this.flowEngine.context.defineProperty('pageInfo', { value: pageInfo });
   }
 
   private addReactRouterComponents() {
@@ -360,6 +439,7 @@ export class Application {
       this.loading = true;
       await this.loadWebSocket();
       await this.pm.load();
+      await this.flowEngine.flowSettings.load();
     } catch (error) {
       this.hasLoadError = true;
 
@@ -548,6 +628,7 @@ export class Application {
   getGlobalVarCtx(key) {
     return get(this.globalVarCtxs, key);
   }
+
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);
     const useVisible = () => {
@@ -586,5 +667,9 @@ export class Application {
    */
   getVariables() {
     return this.variables;
+  }
+
+  setAppsComponent({ Component }: { Component: ComponentType }) {
+    this.apps.Component = Component;
   }
 }

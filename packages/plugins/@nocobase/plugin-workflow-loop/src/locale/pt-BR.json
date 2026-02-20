@@ -12,10 +12,12 @@
   "Exit workflow": "Exit workflow",
   "Loop": "Loop",
   "Loop condition on each item": "Loop condition on each item",
+  "Loop index": "Loop index",
   "Loop index (starts from 0)": "Loop index (starts from 0)",
   "Loop length": "Loop length",
   "Loop sequence (starts from 1)": "Loop sequence (starts from 1)",
   "Loop target": "Loop target",
+  "Scope variables": "Scope variables",
   "When condition is not met on item": "When condition is not met on item",
   "When node inside loop failed": "When node inside loop failed",
   "When to check": "When to check"

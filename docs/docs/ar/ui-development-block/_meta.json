@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "بدء سريع",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "مقدمة",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "كتابة إضافة قالب",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

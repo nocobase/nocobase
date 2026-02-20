@@ -53,8 +53,6 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-component-props']?.mode],
     );
 
-    const [loading, setLoading] = useState(!field.readPretty);
-
     const { loading: rLoading, run } = useRequest(
       () => {
         const targetKey = collectionField.targetKey;
@@ -103,9 +101,7 @@ export const AssociationFieldProvider = observer(
         return;
       }
 
-      setLoading(true);
       if (!collectionField) {
-        setLoading(false);
         return;
       }
       // TODO：这个判断不严谨
@@ -138,7 +134,6 @@ export const AssociationFieldProvider = observer(
             field.value = [markRecordAsNew({})];
           }
         }
-        setLoading(false);
         return;
       }
       if (['Nester'].includes(currentMode)) {
@@ -151,13 +146,12 @@ export const AssociationFieldProvider = observer(
       if (currentMode === 'SubTable') {
         field.value = [];
       }
-
-      setLoading(false);
     }, [currentMode, collectionField, field, active]);
 
-    if (loading || rLoading) {
+    if (rLoading) {
       return null;
     }
+
     const components = {
       ...option.components,
       FormItem: (props) => {

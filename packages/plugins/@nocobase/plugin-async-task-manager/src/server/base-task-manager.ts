@@ -9,7 +9,7 @@
 
 import { throttle, DebouncedFunc } from 'lodash';
 
-import { Application } from '@nocobase/server';
+import { Application, QueueCallbackOptions } from '@nocobase/server';
 import { Logger } from '@nocobase/logger';
 
 import { AsyncTasksManager, CreateTaskOptions } from './interfaces/async-task-manager';
@@ -20,12 +20,22 @@ import { randomUUID } from 'crypto';
 import { TaskType } from './task-type';
 import PluginAsyncTaskManagerServer from './plugin';
 import { Model } from '@nocobase/database';
+import { ConcurrencyMode, ConcurrencyMonitor } from './interfaces/concurrency-monitor';
+import { BaseConcurrencyMonitor } from './base-concurrency-monitor';
 
 const WORKER_JOB_ASYNC_TASK_PROCESS = 'async-task:process';
 
 type QueueMessage = {
   id: string;
 };
+
+const CONCURRENCY: number = process.env.ASYNC_TASK_MAX_CONCURRENCY
+  ? Number.parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY, 10)
+  : 3;
+
+const CONCURRENCY_MODE: ConcurrencyMode = (process.env.ASYNC_TASK_CONCURRENCY_MODE as ConcurrencyMode) ?? 'app';
+
+const PROCESS_CONCURRENCY_MONITOR: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY);
 
 export class BaseTaskManager implements AsyncTasksManager {
   private taskTypes: Map<string, TaskConstructor> = new Map();
@@ -43,17 +53,29 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private progressThrottles: Map<string, DebouncedFunc<(...args: any[]) => any>> = new Map();
 
-  concurrency: number = process.env.ASYNC_TASK_MAX_CONCURRENCY
-    ? Number.parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY, 10)
-    : 3;
+  private concurrencyMonitor: ConcurrencyMonitor = new ConcurrencyMonitorDelegate();
 
-  private idle = () => {
-    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.tasks.size < this.concurrency;
-  };
+  get concurrency() {
+    return this.concurrencyMonitor.concurrency;
+  }
 
-  private onQueueTask = async ({ id }: QueueMessage) => {
+  set concurrency(concurrency: number) {
+    this.concurrencyMonitor.concurrency = concurrency;
+  }
+
+  private idle = () => this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.concurrencyMonitor.idle();
+
+  private onQueueTask = async ({ id }: QueueMessage, { queueOptions }: QueueCallbackOptions) => {
     const task = await this.prepareTask(id);
-    await this.runTask(task);
+    if (!this.concurrencyMonitor.increase(task.record.id)) {
+      this.enqueueTask(task, queueOptions);
+      return;
+    }
+    try {
+      await this.runTask(task);
+    } finally {
+      this.concurrencyMonitor.decrease(task.record.id);
+    }
   };
 
   private onTaskProgress = (item: TaskModel) => {
@@ -106,6 +128,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     if (task.doneAt) {
       this.progressThrottles.delete(task.id);
       this.tasks.delete(task.id);
+      this.concurrencyMonitor.decrease(task.id);
     }
 
     if (task.status === TASK_STATUS.SUCCEEDED) {
@@ -116,6 +139,7 @@ export class BaseTaskManager implements AsyncTasksManager {
   private onTaskAfterDelete = (task) => {
     this.tasks.delete(task.id);
     this.progressThrottles.delete(task.id);
+    this.concurrencyMonitor.decrease(task.id);
     const userId = task.createdById;
     if (userId) {
       this.app.emit('ws:sendToUser', {
@@ -159,6 +183,7 @@ export class BaseTaskManager implements AsyncTasksManager {
         for (const task of tasksToCleanup) {
           this.tasks.delete(task.id);
           this.progressThrottles.delete(task.id);
+          this.concurrencyMonitor.decrease(task.id);
         }
 
         await TaskRepo.destroy({
@@ -356,5 +381,37 @@ export class BaseTaskManager implements AsyncTasksManager {
         this.tasks.delete(task.record.id);
       }
     }
+  }
+}
+
+export class ConcurrencyMonitorDelegate implements ConcurrencyMonitor {
+  constructor(
+    private mode: ConcurrencyMode = CONCURRENCY_MODE,
+    private appConcurrencyMonitor: ConcurrencyMonitor = new BaseConcurrencyMonitor(CONCURRENCY),
+    private processConcurrencyMonitor: ConcurrencyMonitor = PROCESS_CONCURRENCY_MONITOR,
+  ) {}
+
+  private get concurrencyMonitor(): ConcurrencyMonitor {
+    return this.mode === 'process' ? this.processConcurrencyMonitor : this.appConcurrencyMonitor;
+  }
+
+  idle(): boolean {
+    return this.concurrencyMonitor.idle();
+  }
+
+  get concurrency(): number {
+    return this.concurrencyMonitor.concurrency;
+  }
+
+  set concurrency(concurrency: number) {
+    this.concurrencyMonitor.concurrency = concurrency;
+  }
+
+  increase(taskId: TaskId): boolean {
+    return this.concurrencyMonitor.increase(taskId);
+  }
+
+  decrease(taskId: TaskId): void {
+    this.concurrencyMonitor.decrease(taskId);
   }
 }

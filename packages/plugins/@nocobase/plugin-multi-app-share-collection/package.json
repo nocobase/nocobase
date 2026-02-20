@@ -3,10 +3,11 @@
   "displayName": "Multi-app share collection",
   "displayName.ru-RU": "Совместное использование коллекций приложениями",
   "displayName.zh-CN": "多应用数据表共享",
+  "private": true,
   "description": "",
   "description.ru-RU": "Обеспечивает совместное использование коллекций между несколькими приложениями.",
   "description.zh-CN": "",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
@@ -14,16 +15,19 @@
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
+  "nocobase": {
+    "deprecated": true
+  },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/plugin-data-source-main": "1.x",
-    "@nocobase/plugin-error-handler": "1.x",
-    "@nocobase/plugin-multi-app-manager": "1.x",
-    "@nocobase/plugin-users": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/plugin-error-handler": "2.x",
+    "@nocobase/plugin-multi-app-manager": "2.x",
+    "@nocobase/plugin-users": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

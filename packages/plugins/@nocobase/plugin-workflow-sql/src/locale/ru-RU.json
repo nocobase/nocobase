@@ -1,7 +1,9 @@
 {
+  "Execute a SQL statement in database": "Выполнить SQL-запрос в базе данных",
   "Execute a SQL statement in database.": "Выполнить SQL-запрос в базе данных.",
   "Include meta information of this query in result": "Включить метаинформацию этого запроса в результат",
   "SQL action": "Действие SQL",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Результат SQL-запроса может быть использован через <1>узел JSON-запроса</1> (коммерческий плагин).",
-  "Select a data source to execute SQL.": "Выберите источник данных для выполнения SQL."
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Результат SQL-запроса может быть использован через узел <1>JSON-запроса</1> (коммерческий плагин).",
+  "Select a data source to execute SQL.": "Выберите источник данных для выполнения SQL.",
+  "Usage of SQL query result is not supported yet.": "Использование результата SQL-запроса пока не поддерживается."
 }

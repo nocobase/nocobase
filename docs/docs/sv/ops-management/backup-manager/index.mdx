@@ -1,0 +1,187 @@
+:::tip
+Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Säkerhetskopieringshanteraren
+
+## Introduktion
+
+Pluginet NocoBase Säkerhetskopieringshanteraren erbjuder funktioner för fullständig säkerhetskopiering av NocoBase-databasen och användaruppladdade filer. Detta inkluderar schemaläggning, nedladdning, radering och återställning av säkerhetskopior.
+
+:::warning
+Pluginet Säkerhetskopieringshanteraren ingår i Professional- och Enterprise-utgåvorna. För användare av Community- och Standard-utgåvorna kan ni säkerhetskopiera databasen direkt; se detaljer här: [`Hur du säkerhetskopierar och återställer NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Installera databasklient
+
+Säkerhetskopieringshanteraren är beroende av klienten för den motsvarande databasen. Innan ni använder den, besök den officiella webbplatsen för att ladda ner den klient som matchar er databasversion:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+För Docker-versioner kan ni direkt skriva ett skript i katalogen `./storage/scripts`:
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Innehållet i `install-database-client.sh` är följande:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Kontrollera om pg_dump är installerat
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump är inte installerat, startar installation av PostgreSQL-klient..."
+
+    # Installerar nödvändiga verktyg och rensar cache...
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Konfigurerar PostgreSQL-källa
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Installerar PostgreSQL-klient
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "Installation av PostgreSQL-klient slutförd."
+else
+    echo "pg_dump är redan installerat, hoppar över installation av PostgreSQL-klient."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL-klienten är inte installerad, startar installation av MySQL-klient..."
+
+    echo "Uppdaterar paketlista och installerar nödvändiga verktyg..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "Installation av MySQL-klient slutförd."
+else
+    echo "MySQL-klienten är redan installerad, hoppar över installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Starta sedan om app-containern:
+
+```bash
+docker compose restart app
+# Visa loggar
+docker compose logs app
+```
+
+Kontrollera databasklientens versionsnummer, vilket måste matcha databasserverns versionsnummer.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Användningsinstruktioner
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Skapa ny säkerhetskopia
+
+Klicka på knappen "Ny säkerhetskopia" för att skapa en ny säkerhetskopia baserat på säkerhetskopieringskonfigurationen. Statusen för säkerhetskopian visas sedan i säkerhetskopieringslistan.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Återställ säkerhetskopia
+
+Det går att återställa säkerhetskopior från säkerhetskopieringslistan eller genom att ladda upp lokala säkerhetskopieringsfiler.
+Återställningsoperationer är inte tillåtna i följande scenarier:
+
+- När den aktuella NocoBase-versionen är lägre än NocoBase-versionen i säkerhetskopieringsfilen.
+- När den aktuella NocoBase-databasen inte överensstämmer med följande konfigurationer i säkerhetskopieringsfilen:
+  - dialekt (databastyp)
+  - underscored (fältkonfiguration)
+  - tabellprefix
+  - schema (tabellstruktur)
+- När `Feltolerant läge` inte är aktiverat, och databasversionen vid skapandet av säkerhetskopian är högre än den aktuella applikationsdatabasversionen.
+
+> **Återställning är en fullständig databasoperation. Vi rekommenderar att ni säkerhetskopierar den aktuella databasen innan ni återställer en säkerhetskopia.**
+
+#### Återställ från säkerhetskopieringslistan
+
+Klicka på knappen `Återställ` för säkerhetskopian i listan, ange lösenordet för den krypterade säkerhetskopieringsfilen i popup-fönstret och klicka på "Bekräfta" för att återställa säkerhetskopian.
+
+> För okrypterade säkerhetskopieringsfiler behöver ni inte ange något lösenord.
+
+> Om ni behöver återställa säkerhetskopian till en äldre databasversion, måste ni aktivera feltolerant läge.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Återställ från lokal säkerhetskopieringsfil
+
+Klicka på knappen `Återställ från lokal säkerhetskopia`, välj den lokala säkerhetskopieringsfilen i popup-fönstret, ange lösenordet för den krypterade säkerhetskopieringsfilen och klicka på "Bekräfta" för att återställa säkerhetskopian.
+
+> För okrypterade säkerhetskopieringsfiler behöver ni inte ange något lösenord.
+
+> Om ni behöver återställa säkerhetskopian till en äldre databasversion, måste ni aktivera feltolerant läge.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Ladda ner säkerhetskopieringsfil
+
+Klicka på knappen `Ladda ner` för säkerhetskopian i listan för att ladda ner säkerhetskopieringsfilen.
+
+#### Ta bort säkerhetskopia
+
+Klicka på knappen `Ta bort` för säkerhetskopian i listan för att ta bort säkerhetskopieringsfilen.
+
+## Säkerhetskopieringsinställningar
+
+Växla till fliken `Inställningar`, ändra säkerhetskopieringsinställningarna och klicka på `Spara` för att tillämpa ändringarna.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Beskrivning av säkerhetskopieringsinställningar
+
+- `Automatisk säkerhetskopiering`: När ni har aktiverat `Kör automatisk säkerhetskopiering enligt Cron-schema`, kan ni ställa in automatiska säkerhetskopior vid angivna tidpunkter.
+- `Maximalt antal säkerhetskopior`: Ställ in det maximala antalet lokalt sparade säkerhetskopieringsfiler. När antalet överskrids kommer de äldsta lokala säkerhetskopieringsfilerna automatiskt att raderas.
+- `Synkronisera säkerhetskopia till molnlagring`: Ställ in molnlagringen dit säkerhetskopieringsfilerna automatiskt laddas upp efter en lyckad säkerhetskopiering.
+- `Säkerhetskopiera lokala lagringsfiler`: Anger om filer som användare laddat upp till serverns lokala lagring (storage/uploads) ska inkluderas i säkerhetskopian.
+- `Återställningslösenord`: Om ett återställningslösenord har ställts in måste det anges vid återställning av säkerhetskopian.
+
+> **Vänligen förvara återställningslösenordet säkert. Om ni glömmer lösenordet kommer det inte att vara möjligt att återställa säkerhetskopieringsfilen.**

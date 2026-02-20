@@ -2,6 +2,6 @@
   "SMS": "SMS",
   "Sign in via SMS": "SMS로 로그인",
   "Sign up automatically when the user does not exist": "사용자가 존재하지 않을 때 자동으로 가입합니다",
-  "User will be registered automatically if not exists.": "사용자가 없을 경우 자동으로 등록됩니다.",
+  "User will be registered automatically if not exists.": "사용자가 존재하지 않으면 자동으로 등록됩니다.",
   "Verifier": "Verifier"
 }

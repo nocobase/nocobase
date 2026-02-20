@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "通知チャネル",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "サイト内メッセージ",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "メール",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "企業微信",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "開発ガイド",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "通知チャネルタイプの拡張",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "通知APIの拡張",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

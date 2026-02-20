@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-custom-request",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-custom-request",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-custom-request",
@@ -20,10 +20,16 @@
     "react-i18next": "^11.15.1",
     "react-router-dom": "6.x"
   },
+  "nocobase": {
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

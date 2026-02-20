@@ -1,0 +1,86 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API 密钥",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API 文档",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用场景",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "工作流",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP 请求",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "外部数据源",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "外部数据表 (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "启用 MySQL Federated",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "嵌入式内容",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe 区块",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "嵌入",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

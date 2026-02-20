@@ -8,5 +8,8 @@
  */
 
 export { default } from './plugin';
-export { LLMProvider } from './llm-providers/provider';
-export { LLMProviderOptions } from './manager/ai-manager';
+export { LLMProvider, LLMProviderOptions } from './llm-providers/provider';
+export { LLMProviderMeta } from './manager/ai-manager';
+export { ToolOptions } from './manager/tool-manager';
+export type * from './features';
+export type * from './types';

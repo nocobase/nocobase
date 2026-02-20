@@ -6,7 +6,7 @@
   "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
   "description.ru-RU": "На основе ролей, ресурсов и действий система контроля доступа может точно управлять разрешениями на изменение интерфейса, работу с данными, доступ к меню и разрешениями для подключаемых модулей.",
   "description.zh-CN": "基于角色、资源和操作的权限控制，可以精确控制界面配置权限、数据操作权限、菜单访问权限、插件权限。",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/acl",
@@ -15,6 +15,14 @@
   "keywords": [
     "Users & permissions"
   ],
+  "nocobase": {
+    "defaultEnabled": true,
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",
     "jsonwebtoken": "^9.0.2",
@@ -22,14 +30,14 @@
     "react-dom": "^18.2.0"
   },
   "peerDependencies": {
-    "@nocobase/acl": "1.x",
-    "@nocobase/actions": "1.x",
-    "@nocobase/cache": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/acl": "2.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/cache": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "repository": {
     "type": "git",

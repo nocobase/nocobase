@@ -8,10 +8,12 @@
  */
 
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
+import Application, { AppStatus, AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
+import { Meter } from '@nocobase/telemetry';
+import { LegacyAdapter } from './adapters/legacy-adapter';
 
 export type AppDbCreator = (
   app: Application,
@@ -46,7 +48,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
       continue;
     }
 
-    const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
+    const beforeSubAppStatus = await AppSupervisor.getInstance().getAppStatus(instance.name);
 
     const subApp = await appSupervisor.getApp(instance.name, {
       upgrading: true,
@@ -55,7 +57,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     try {
       mainApp.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
       await subApp.runAsCLI(['upgrade'], { from: 'user' });
-      if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
+      if (!beforeSubAppStatus && (await AppSupervisor.getInstance().getAppStatus(instance.name)) === 'initialized') {
         await AppSupervisor.getInstance().removeApp(instance.name);
       }
     } catch (error) {
@@ -66,90 +68,21 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
   }
 };
 
-const defaultDbCreator = async (app: Application) => {
-  const databaseOptions = app.options.database as any;
-  const { host, port, username, password, dialect, database, schema } = databaseOptions;
-
-  if (dialect === 'mysql') {
-    const mysql = require('mysql2/promise');
-    const connection = await mysql.createConnection({ host, port, user: username, password });
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
-    await connection.close();
-  }
-
-  if (dialect === 'mariadb') {
-    const mariadb = require('mariadb');
-    const connection = await mariadb.createConnection({ host, port, user: username, password });
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
-    await connection.end();
-  }
-
-  if (['postgres', 'kingbase'].includes(dialect)) {
-    const { Client } = require('pg');
-
-    const client = new Client({
-      host,
-      port,
-      user: username,
-      password,
-      database: dialect,
-    });
-
-    await client.connect();
-
-    try {
-      if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true') {
-        await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-      } else {
-        await client.query(`CREATE DATABASE "${database}"`);
-      }
-    } catch (e) {
-      console.log(e);
-    }
-
-    await client.end();
-  }
-};
-
-const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
-  const rawDatabaseOptions = PluginMultiAppManagerServer.getDatabaseConfig(mainApp);
-
-  if (rawDatabaseOptions.dialect === 'sqlite') {
-    const mainAppStorage = rawDatabaseOptions.storage;
-    if (mainAppStorage !== ':memory:') {
-      const mainStorageDir = path.dirname(mainAppStorage);
-      rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
-    }
-  } else if (
-    process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' &&
-    ['postgres', 'kingbase'].includes(rawDatabaseOptions.dialect)
-  ) {
-    rawDatabaseOptions.schema = appName;
-  } else {
-    rawDatabaseOptions.database = appName;
-  }
-
-  return {
-    database: {
-      ...rawDatabaseOptions,
-      tablePrefix: '',
-    },
-    plugins: ['nocobase'],
-    resourcer: {
-      prefix: process.env.API_BASE_PATH,
-    },
-    cacheManager: {
-      ...mainApp.options.cacheManager,
-      prefix: appName,
-    },
-    logger: mainApp.options.logger,
-  };
-};
-
 export class PluginMultiAppManagerServer extends Plugin {
-  appDbCreator: AppDbCreator = defaultDbCreator;
-  appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
+  meter: Meter;
+
+  setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
+    this.subAppUpgradeHandler = handler;
+  }
+
+  protected static registerLegacyAdapter() {
+    const factory = ({ supervisor }) => new LegacyAdapter(supervisor);
+    AppSupervisor.registerDiscoveryAdapter('legacy', factory);
+    AppSupervisor.registerProcessAdapter('legacy', factory);
+    AppSupervisor.setDefaultDiscoveryAdapter('legacy');
+    AppSupervisor.setDefaultProcessAdapter('legacy');
+  }
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
@@ -164,48 +97,12 @@ export class PluginMultiAppManagerServer extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
-  async handleSyncMessage(message) {
-    const { type } = message;
-
-    if (type === 'subAppStarted') {
-      const { appName } = message;
-      const model = await this.app.db.getRepository('applications').findOne({
-        filter: {
-          name: appName,
-        },
-      });
-
-      if (!model) {
-        return;
-      }
-
-      if (AppSupervisor.getInstance().hasApp(appName)) {
-        return;
-      }
-
-      const subApp = model.registerToSupervisor(this.app, {
-        appOptionsFactory: this.appOptionsFactory,
-      });
-
-      subApp.runCommand('start', '--quickstart');
-    }
-
-    if (type === 'removeApp') {
-      const { appName } = message;
-      await AppSupervisor.getInstance().removeApp(appName);
-    }
+  setAppOptionsFactory(appOptionsFactory: AppOptionsFactory) {
+    AppSupervisor.getInstance().setAppOptionsFactory(appOptionsFactory);
   }
 
-  setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
-    this.subAppUpgradeHandler = handler;
-  }
-
-  setAppOptionsFactory(factory: AppOptionsFactory) {
-    this.appOptionsFactory = factory;
-  }
-
-  setAppDbCreator(appDbCreator: AppDbCreator) {
-    this.appDbCreator = appDbCreator;
+  static staticImport() {
+    this.registerLegacyAdapter();
   }
 
   beforeLoad() {
@@ -220,8 +117,52 @@ export class PluginMultiAppManagerServer extends Plugin {
     }
   }
 
+  setMetrics() {
+    const supervisor = AppSupervisor.getInstance();
+    if (supervisor.getDiscoveryAdapter().name !== 'legacy') {
+      return;
+    }
+    this.meter = this.app.telemetry.metric.getMeter();
+    if (!this.meter) {
+      return;
+    }
+    const subAppStatusGauge = this.meter.createObservableGauge('sub_app_status', {
+      description: 'Number of sub applications by cached status in supervisor.appStatus',
+    });
+    this.meter.addBatchObservableCallback(
+      (observableResult) => {
+        const allStatuses = { ...supervisor.appStatus };
+
+        const createCounts = (): Record<AppStatus, number> => ({
+          preparing: 0,
+          initializing: 0,
+          initialized: 0,
+          running: 0,
+          commanding: 0,
+          stopped: 0,
+          error: 0,
+          not_found: 0,
+        });
+
+        const cachedCounts = createCounts();
+        for (let status of Object.values(allStatuses)) {
+          if (!status) {
+            status = 'stopped';
+          }
+          if (cachedCounts[status as AppStatus] !== undefined) cachedCounts[status as AppStatus]++;
+        }
+
+        for (const [status, count] of Object.entries(cachedCounts)) {
+          observableResult.observe(subAppStatusGauge, count, { status });
+        }
+      },
+      [subAppStatusGauge],
+    );
+  }
+
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    const supervisor = AppSupervisor.getInstance();
+    this.setMetrics();
 
     // after application created
     this.db.on(
@@ -235,107 +176,42 @@ export class PluginMultiAppManagerServer extends Plugin {
           throw new Error('Application name "main" is reserved');
         }
 
-        const subApp = model.registerToSupervisor(this.app, {
-          appOptionsFactory: this.appOptionsFactory,
-        });
-
-        subApp.on('afterStart', async () => {
-          this.sendSyncMessage({
-            type: 'subAppStarted',
-            appName: name,
-          });
+        const subApp = supervisor.registerApp({
+          appModel: model as any,
+          mainApp: this.app,
         });
 
         const quickstart = async () => {
           // create database
-          await this.appDbCreator(subApp, {
-            transaction,
-            applicationModel: model,
-            context: options.context,
-          });
+          try {
+            await supervisor.createDatabase({
+              app: subApp,
+              transaction,
+              appOptions: model.get('options') || {},
+            });
+          } catch (error) {
+            this.log.error(error, { method: 'appDbCreator' });
+            await supervisor.setAppStatus(subApp.name, 'error');
+            return;
+          }
 
-          await subApp.runCommand('start', '--quickstart');
+          await supervisor.getApp(subApp.name);
         };
 
-        const startPromise = quickstart();
-
         if (options?.context?.waitSubAppInstall) {
-          await startPromise;
+          await quickstart();
+          await subApp.runCommand('start', '--quickstart');
+        } else {
+          quickstart().catch((err) => {
+            this.log.error(err);
+          });
         }
       },
     );
 
-    this.db.on('applications.afterDestroy', async (model: ApplicationModel, options) => {
-      await AppSupervisor.getInstance().removeApp(model.get('name') as string);
-
-      this.sendSyncMessage(
-        {
-          type: 'removeApp',
-          appName: model.get('name'),
-        },
-        {
-          transaction: options.transaction,
-        },
-      );
+    this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
+      await supervisor.removeApp(model.get('name') as string);
     });
-
-    const self = this;
-
-    async function LazyLoadApplication({
-      appSupervisor,
-      appName,
-      options,
-    }: {
-      appSupervisor: AppSupervisor;
-      appName: string;
-      options: any;
-    }) {
-      const loadButNotStart = options?.upgrading;
-
-      const name = appName;
-      if (appSupervisor.hasApp(name)) {
-        return;
-      }
-
-      const mainApp = await appSupervisor.getApp('main');
-      const applicationRecord = (await mainApp.db.getRepository('applications').findOne({
-        filter: {
-          name,
-        },
-      })) as ApplicationModel | null;
-
-      if (!applicationRecord) {
-        return;
-      }
-
-      const instanceOptions = applicationRecord.get('options');
-
-      if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-        return;
-      }
-
-      if (!applicationRecord) {
-        return;
-      }
-
-      const subApp = applicationRecord.registerToSupervisor(mainApp, {
-        appOptionsFactory: self.appOptionsFactory,
-      });
-
-      subApp.on('afterStart', async () => {
-        this.sendSyncMessage({
-          type: 'subAppStarted',
-          appName: name,
-        });
-      });
-
-      // must skip load on upgrade
-      if (!loadButNotStart) {
-        await subApp.runCommand('start', '--quickstart');
-      }
-    }
-
-    AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication.bind(this));
 
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
       const { req } = ctx;
@@ -363,7 +239,7 @@ export class PluginMultiAppManagerServer extends Plugin {
 
     this.app.on('afterStart', async (app) => {
       const repository = this.db.getRepository('applications');
-      const appSupervisor = AppSupervisor.getInstance();
+      const appSupervisor = supervisor;
 
       this.app.setMaintainingMessage('starting sub applications...');
 
@@ -372,7 +248,7 @@ export class PluginMultiAppManagerServer extends Plugin {
 
         // If the sub application is running in single mode, register the application automatically
         try {
-          await AppSupervisor.getInstance().getApp(appSupervisor.singleAppName);
+          await supervisor.getApp(appSupervisor.singleAppName);
         } catch (err) {
           console.error('Auto register sub application in single mode failed: ', appSupervisor.singleAppName, err);
         }
@@ -386,23 +262,11 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
 
-        const promises = [];
-
         for (const subAppInstance of subApps) {
-          promises.push(
-            (async () => {
-              if (!appSupervisor.hasApp(subAppInstance.name)) {
-                await AppSupervisor.getInstance().getApp(subAppInstance.name);
-              } else if (appSupervisor.getAppStatus(subAppInstance.name) === 'initialized') {
-                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start', '--quickstart');
-              }
-            })(),
-          );
+          supervisor.getApp(subAppInstance.name);
         }
-
-        await Promise.all(promises);
       } catch (err) {
-        console.error('Auto register sub applications failed: ', err);
+        this.log.error('Auto register sub applications failed: ', err);
       }
     });
 
@@ -418,6 +282,32 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
         ctx.body = items;
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:stop': async (ctx, next) => {
+        const { filterByTk } = ctx.action.params;
+        supervisor.stopApp(filterByTk);
+        ctx.body = 'ok';
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:start': async (ctx, next) => {
+        const { filterByTk } = ctx.action.params;
+        supervisor.startApp(filterByTk);
+        ctx.body = 'ok';
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:memoryUsage': async (ctx, next) => {
+        ctx.body = process.memoryUsage();
+        await next();
       },
     });
 
@@ -434,7 +324,7 @@ export class PluginMultiAppManagerServer extends Plugin {
       if (actionName === 'list' && resourceName === 'applications') {
         const applications = ctx.body.rows;
         for (const application of applications) {
-          const appStatus = AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
+          const appStatus = await supervisor.getAppStatus(application.name, 'stopped');
           application.status = appStatus;
         }
       }

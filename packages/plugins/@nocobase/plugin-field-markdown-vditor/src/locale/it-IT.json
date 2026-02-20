@@ -30,6 +30,7 @@
   "Toolbar": "Configurazione barra degli strumenti dell'editor",
   "Undo": "Annulla",
   "Upload": "Carica immagine o file",
+  "Used to store files uploaded in the Markdown editor": "Utilizzato per archiviare i file caricati nell'editor Markdown",
   "Used to store files uploaded in the Markdown editor (default: attachments)": "Utilizzato per archiviare i file caricati nell'editor Markdown (default: attachments)",
   "Vditor": "Markdown(Vditor)",
   "upload failed": "upload failed",

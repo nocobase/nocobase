@@ -6,16 +6,16 @@
   "description": "Provides SQL collection template",
   "description.ru-RU": "Предоставляет шаблон коллекции на основе SQL",
   "description.zh-CN": "提供 SQL 数据表模板",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "homepage": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/collection-sql",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "main": "dist/server/index.js",
   "license": "AGPL-3.0",
   "peerDependencies": {
-    "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "Collections"

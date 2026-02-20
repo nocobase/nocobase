@@ -250,6 +250,13 @@ describe('data source', async () => {
           enabled: true,
         },
       });
+    for (let i = 0; i < 5; i++) {
+      const mockInstance1 = app.dataSourceManager.dataSources.get('mockInstance1');
+      if (mockInstance1) {
+        break;
+      }
+      await waitSecond(200);
+    }
 
     testConnectionFn.mockClear();
 
@@ -308,6 +315,13 @@ describe('data source', async () => {
           key: 'mockInstance1',
         },
       });
+    for (let i = 0; i < 5; i++) {
+      const mockInstance1 = app.dataSourceManager.dataSources.get('mockInstance1');
+      if (mockInstance1) {
+        break;
+      }
+      await waitSecond(200);
+    }
 
     testConnectionFn.mockClear();
 

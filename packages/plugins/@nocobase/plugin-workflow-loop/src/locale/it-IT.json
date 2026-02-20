@@ -12,10 +12,12 @@
   "Exit workflow": "Esci dal workflow",
   "Loop": "Ciclo",
   "Loop condition on each item": "Condizione del ciclo su ciascun elemento",
+  "Loop index": "Loop index",
   "Loop index (starts from 0)": "Indice del ciclo (inizia da 0)",
   "Loop length": "Lunghezza ciclo",
   "Loop sequence (starts from 1)": "Sequenza del ciclo (inizia da 1)",
   "Loop target": "Destinazione ciclo",
+  "Scope variables": "Scope variables",
   "When condition is not met on item": "Quando la condizione non è soddisfatta sull'elemento",
   "When node inside loop failed": "Quando il nodo all'interno del ciclo fallisce",
   "When to check": "Quando controllare"

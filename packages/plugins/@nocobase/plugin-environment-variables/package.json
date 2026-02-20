@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/plugin-environment-variables",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "displayName": "Variables and secrets",
   "displayName.zh-CN": "变量和密钥",

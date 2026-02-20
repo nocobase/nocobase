@@ -32,6 +32,9 @@ export default function ({ app }) {
     ...make('flow_nodes', {
       update: nodes.update,
       destroy: nodes.destroy,
+      destroyBranch: nodes.destroyBranch,
+      duplicate: nodes.duplicate,
+      move: nodes.move,
       test: nodes.test,
     }),
     ...make('jobs', jobs),

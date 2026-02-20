@@ -73,6 +73,12 @@ export const errors: AppErrors = {
     maintaining: true,
   },
 
+  APP_PREPARING: {
+    status: 503,
+    message: ({ appName }) => `application ${appName} is preparing, please wait patiently`,
+    maintaining: true,
+  },
+
   APP_STARTING: {
     status: 503,
     message: ({ app }) => app?.maintainingMessage || '',
@@ -81,7 +87,7 @@ export const errors: AppErrors = {
 
   APP_STOPPED: {
     status: 503,
-    message: ({ app }) => `application ${getAppName(app)} is stopped`,
+    message: ({ app, appName }) => `application ${appName || getAppName(app)} is stopped`,
     maintaining: true,
   },
 

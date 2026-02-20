@@ -10,17 +10,17 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-cc",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-cc",
   "license": "AGPL-3.0",
-  "version": "1.9.47",
+  "version": "2.0.1",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-ui-schema-storage": "1.x",
-    "@nocobase/plugin-users": "1.x",
-    "@nocobase/plugin-workflow": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-ui-schema-storage": "2.x",
+    "@nocobase/plugin-users": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "keywords": [
     "Workflow"
