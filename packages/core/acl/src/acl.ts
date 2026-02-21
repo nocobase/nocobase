@@ -20,6 +20,7 @@ import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
+import Database, { Collection } from '@nocobase/database';
 
 export interface CanResult {
   role: string;
@@ -53,6 +54,14 @@ export interface ListenerContext {
 }
 
 type Listener = (ctx: ListenerContext) => void;
+
+export type UserProvider = (args: { fields: string[] }) => Promise<any>;
+
+export interface ParseJsonTemplateOptions {
+  timezone?: string;
+  state?: any;
+  userProvider?: UserProvider;
+}
 
 interface CanArgs {
   role?: string;
@@ -353,31 +362,6 @@ export class ACL extends EventEmitter {
     }
   }
 
-  /**
-   * @internal
-   */
-  async parseJsonTemplate(json: any, ctx: any) {
-    if (json.filter) {
-      ctx.logger?.info?.('parseJsonTemplate.raw', JSON.parse(JSON.stringify(json.filter)));
-      const timezone = ctx?.get?.('x-timezone');
-      const state = JSON.parse(JSON.stringify(ctx.state));
-      const filter = await parseFilter(json.filter, {
-        timezone,
-        now: new Date().toISOString(),
-        vars: {
-          ctx: {
-            state,
-          },
-          $user: getUser(ctx),
-          $nRole: () => state.currentRole,
-        },
-      });
-      json.filter = filter;
-      ctx.logger?.info?.('parseJsonTemplate.parsed', filter);
-    }
-    return json;
-  }
-
   middleware() {
     const acl = this;
 
@@ -462,37 +446,6 @@ export class ACL extends EventEmitter {
     this.snippetManager.register(snippet);
   }
 
-  /**
-   * @internal
-   */
-  filterParams(ctx, resourceName, params) {
-    if (params?.filter?.createdById) {
-      const collection = ctx.db.getCollection(resourceName);
-      if (!collection || !collection.getField('createdById')) {
-        throw new NoPermissionError('createdById field not found');
-      }
-    }
-
-    // 检查 $or 条件中的 createdById
-    if (params?.filter?.$or?.length) {
-      const checkCreatedById = (items) => {
-        return items.some(
-          (x) =>
-            'createdById' in x || x.$or?.some((y) => 'createdById' in y) || x.$and?.some((y) => 'createdById' in y),
-        );
-      };
-
-      if (checkCreatedById(params.filter.$or)) {
-        const collection = ctx.db.getCollection(resourceName);
-        if (!collection || !collection.getField('createdById')) {
-          throw new NoPermissionError('createdById field not found');
-        }
-      }
-    }
-
-    return params;
-  }
-
   protected addCoreMiddleware() {
     const acl = this;
 
@@ -516,8 +469,18 @@ export class ACL extends EventEmitter {
 
         try {
           if (params && resourcerAction.mergeParams) {
-            const filteredParams = acl.filterParams(ctx, resourceName, params);
-            const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
+            const db = ctx.database ?? ctx.db;
+            const collection = db?.getCollection?.(resourceName);
+            checkFilterParams(collection, params?.filter);
+            const parsedFilter = await parseJsonTemplate(params.filter, {
+              state: ctx.state,
+              timezone: getTimezone(ctx),
+              userProvider: createUserProvider({
+                db: ctx.db,
+                currentUser: ctx.state?.currentUser,
+              }),
+            });
+            const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
 
             ctx.permission.parsedParams = parsedParams;
             ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
@@ -579,25 +542,108 @@ export class ACL extends EventEmitter {
   }
 }
 
-function getUser(ctx) {
-  const dataSource = ctx.app.dataSourceManager.dataSources.get('main');
-  const db = dataSource.collectionManager.db;
+function getTimezone(ctx: any) {
+  return ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
+}
+
+export function createUserProvider(options: {
+  db?: Database;
+  dataSourceManager?: any;
+  currentUser?: any;
+}): UserProvider {
+  const db = options.db ?? options.dataSourceManager?.dataSources?.get?.('main')?.collectionManager?.db;
+  const currentUser = options.currentUser;
   return async ({ fields }) => {
-    const userFields = fields.filter((f) => f && db.getFieldByPath('users.' + f));
-    ctx.logger?.info('filter-parse: ', { userFields });
-    if (!ctx.state.currentUser) {
+    if (!db) {
       return;
     }
+    if (!currentUser) {
+      return;
+    }
+    const userFields = fields.filter((f) => f && db.getFieldByPath('users.' + f));
     if (!userFields.length) {
       return;
     }
     const user = await db.getRepository('users').findOne({
-      filterByTk: ctx.state.currentUser.id,
+      filterByTk: currentUser.id,
       fields: userFields,
-    });
-    ctx.logger?.info('filter-parse: ', {
-      $user: user?.toJSON(),
     });
     return user;
   };
+}
+
+function containsCreatedByIdFilter(input: any, seen = new Set<any>()): boolean {
+  if (!input) {
+    return false;
+  }
+
+  if (Array.isArray(input)) {
+    return input.some((item) => containsCreatedByIdFilter(item, seen));
+  }
+
+  if (!lodash.isPlainObject(input)) {
+    return false;
+  }
+
+  if (seen.has(input)) {
+    return false;
+  }
+  seen.add(input);
+
+  for (const [key, value] of Object.entries(input)) {
+    if (isCreatedByIdKey(key)) {
+      return true;
+    }
+
+    if (containsCreatedByIdFilter(value, seen)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isCreatedByIdKey(key: string): boolean {
+  return key === 'createdById' || key.startsWith('createdById.') || key.startsWith('createdById$');
+}
+
+/**
+ * @internal
+ */
+export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateOptions) {
+  if (!filter) {
+    return filter;
+  }
+
+  const timezone = options?.timezone;
+  const state = JSON.parse(JSON.stringify(options?.state || {}));
+  const parsedFilter = await parseFilter(filter, {
+    timezone,
+    now: new Date().toISOString(),
+    vars: {
+      ctx: {
+        state,
+      },
+      $user: options?.userProvider || (async () => undefined),
+      $nRole: () => state.currentRole,
+    },
+  });
+  return parsedFilter;
+}
+
+/**
+ * @internal
+ */
+export function checkFilterParams(collection: Collection, filter: any) {
+  if (!filter) {
+    return;
+  }
+
+  if (!containsCreatedByIdFilter(filter)) {
+    return;
+  }
+
+  if (!collection || !collection.getField('createdById')) {
+    throw new NoPermissionError('createdById field not found');
+  }
 }

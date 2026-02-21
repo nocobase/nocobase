@@ -7,19 +7,312 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACL, NoPermissionError } from '@nocobase/acl';
+import {
+  ACL,
+  CanResult,
+  NoPermissionError,
+  ParseJsonTemplateOptions,
+  UserProvider,
+  checkFilterParams,
+  createUserProvider,
+  parseJsonTemplate,
+} from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
-import { Database } from '@nocobase/database';
+import { Collection } from '@nocobase/database';
 import _ from 'lodash';
+
+type ProcessValuesOptions = {
+  values: Record<string, any> | Record<string, any>[];
+  updateAssociationValues: string[];
+  aclParams: any;
+  collection: Collection;
+  lastFieldPath?: string;
+  protectedKeys?: string[];
+  can?: (options: Omit<Parameters<ACL['can']>[0], 'role'>) => CanResult | null;
+  parseOptions?: ParseJsonTemplateOptions;
+};
 
 type AllowedRecordKeysResult = {
   allowedKeys: Set<any>;
   missingKeys: Set<any>;
 };
 
-/**
- * Pick only record key fields from given value(s).
- */
+export type SanitizeAssociationValuesOptions = {
+  acl?: ACL;
+  resourceName: string;
+  actionName: string;
+  values: any;
+  updateAssociationValues?: string[];
+  protectedKeys?: string[];
+  aclParams?: any;
+  roles?: string[];
+  currentRole?: string;
+  currentUser?: any;
+  collection?: Collection;
+  db?: any;
+  database?: any;
+  timezone?: string;
+  userProvider?: UserProvider;
+};
+
+export async function sanitizeAssociationValues(options: SanitizeAssociationValuesOptions) {
+  const {
+    acl,
+    resourceName,
+    actionName,
+    values,
+    updateAssociationValues = [],
+    protectedKeys = [],
+    aclParams,
+  } = options;
+
+  if (_.isEmpty(values)) {
+    return values;
+  }
+
+  const collection = options.collection ?? (options.database ?? options.db)?.getCollection?.(resourceName);
+  if (!collection) {
+    return values;
+  }
+
+  const params = aclParams ?? (acl ? (acl as any).fixedParamsManager?.getParams(resourceName, actionName) : undefined);
+  const roles = options.roles;
+  const can = (canOptions: Omit<Parameters<ACL['can']>[0], 'role'>) =>
+    acl?.can({ roles: roles?.length ? roles : ['anonymous'], ...canOptions }) ?? null;
+
+  const parseOptions: ParseJsonTemplateOptions = {
+    timezone: options.timezone,
+    userProvider: options.userProvider,
+    state: {
+      currentRole: options.currentRole,
+      currentRoles: options.roles,
+      currentUser: options.currentUser,
+    },
+  };
+
+  return await processValues({
+    values,
+    updateAssociationValues,
+    aclParams: params,
+    collection,
+    lastFieldPath: '',
+    protectedKeys,
+    can,
+    parseOptions,
+  });
+}
+
+export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
+  const timezone = (ctx.request?.get?.('x-timezone') ??
+    ctx.request?.header?.['x-timezone'] ??
+    ctx.req?.headers?.['x-timezone']) as string;
+  const { resourceName, actionName } = ctx.action;
+  if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
+    return next();
+  }
+  if (ctx.permission?.skip) {
+    return next();
+  }
+  const roles = ctx.state.currentRoles;
+  if (roles.includes('root')) {
+    return next();
+  }
+  const acl = ctx.acl;
+  for (const role of roles) {
+    const aclRole = acl.getRole(role);
+    if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
+      return next();
+    }
+  }
+
+  const params = ctx.action.params || {};
+  const rawValues = params.values;
+  if (_.isEmpty(rawValues)) {
+    return next();
+  }
+
+  const protectedKeys = ['firstOrCreate', 'updateOrCreate'].includes(actionName) ? params.filterKeys || [] : [];
+  const collection = (ctx.database ?? ctx.db)?.getCollection?.(resourceName);
+  const processed = await sanitizeAssociationValues({
+    acl,
+    collection,
+    resourceName,
+    actionName,
+    values: rawValues,
+    updateAssociationValues: params.updateAssociationValues || [],
+    protectedKeys,
+    roles,
+    currentRole: ctx.state.currentRole,
+    currentUser: ctx.state.currentUser,
+    aclParams: ctx.permission?.can?.params,
+    timezone,
+    userProvider: createUserProvider({
+      dataSourceManager: ctx.app?.dataSourceManager,
+      currentUser: ctx.state?.currentUser,
+    }),
+  });
+  ctx.action.params.values = processed;
+  await next();
+};
+
+async function processValues(options: ProcessValuesOptions) {
+  const {
+    values,
+    updateAssociationValues,
+    aclParams,
+    collection,
+    lastFieldPath = '',
+    protectedKeys = [],
+    can,
+    parseOptions,
+  } = options;
+  if (Array.isArray(values)) {
+    const result = [];
+
+    for (const item of values) {
+      if (!_.isPlainObject(item)) {
+        result.push(item);
+        continue;
+      }
+
+      const processed = await processValues({
+        values: item,
+        updateAssociationValues,
+        aclParams,
+        collection,
+        lastFieldPath,
+        protectedKeys,
+        can,
+        parseOptions,
+      });
+
+      if (processed !== null && processed !== undefined) {
+        result.push(processed);
+      }
+    }
+
+    return result;
+  }
+
+  if (!values || !_.isPlainObject(values)) {
+    return values;
+  }
+
+  if (!collection) {
+    return values;
+  }
+
+  let v = values;
+  if (aclParams?.whitelist) {
+    const combined = _.uniq([...aclParams.whitelist, ...protectedKeys]);
+    v = _.pick(values, combined);
+  }
+
+  for (const [fieldName, fieldValue] of Object.entries(v)) {
+    if (protectedKeys.includes(fieldName)) {
+      continue;
+    }
+
+    const field = collection.getField(fieldName);
+    const isAssociation =
+      field && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field.type);
+
+    if (!isAssociation) {
+      continue;
+    }
+
+    const targetCollection = collection.db.getCollection(field.target);
+    if (!targetCollection) {
+      delete v[fieldName];
+      continue;
+    }
+
+    const fieldPath = lastFieldPath ? `${lastFieldPath}.${fieldName}` : fieldName;
+    const recordKey = field.type === 'hasOne' ? targetCollection.model.primaryKeyAttribute : field.targetKey;
+
+    const canUpdateAssociation = updateAssociationValues.includes(fieldPath);
+
+    if (!canUpdateAssociation) {
+      const normalized = normalizeAssociationValue(fieldValue, recordKey);
+
+      if (normalized === undefined && !protectedKeys.includes(fieldName)) {
+        delete v[fieldName];
+      } else {
+        v[fieldName] = normalized;
+      }
+
+      continue;
+    }
+
+    const createParams = can?.({
+      resource: field.target,
+      action: 'create',
+    });
+
+    const updateParams = can?.({
+      resource: field.target,
+      action: 'update',
+    });
+
+    if (Array.isArray(fieldValue)) {
+      const processed = [];
+      let allowedRecordKeys: Set<any> | undefined;
+      let existingRecordKeys: Set<any> | undefined;
+
+      if (updateParams) {
+        const allowedResult = await collectAllowedRecordKeys(
+          fieldValue,
+          recordKey,
+          updateParams?.params?.filter,
+          targetCollection,
+          parseOptions,
+        );
+        allowedRecordKeys = allowedResult?.allowedKeys;
+        if (createParams && allowedResult?.missingKeys?.size) {
+          existingRecordKeys = await collectExistingRecordKeys(recordKey, targetCollection, allowedResult.missingKeys);
+        }
+      }
+
+      for (const item of fieldValue) {
+        const r = await processAssociationChild({
+          value: item,
+          recordKey,
+          updateAssociationValues,
+          createParams,
+          updateParams,
+          target: targetCollection,
+          fieldPath,
+          allowedRecordKeys,
+          existingRecordKeys,
+          can,
+          parseOptions,
+        });
+        if (r !== null && r !== undefined) {
+          processed.push(r);
+        }
+      }
+
+      v[fieldName] = processed;
+      continue;
+    }
+
+    const r = await processAssociationChild({
+      value: fieldValue,
+      recordKey,
+      updateAssociationValues,
+      createParams,
+      updateParams,
+      target: targetCollection,
+      fieldPath,
+      can,
+      parseOptions,
+    });
+    v[fieldName] = r;
+  }
+
+  return v;
+}
+
 function normalizeAssociationValue(
   value: any,
   recordKey: string,
@@ -32,44 +325,36 @@ function normalizeAssociationValue(
       .map((v) => (typeof v === 'number' || typeof v === 'string' ? v : v[recordKey]))
       .filter((v) => v !== null && v !== undefined);
     return result.length > 0 ? result : undefined;
-  } else {
-    return typeof value === 'number' || typeof value === 'string' ? value : value[recordKey];
   }
-}
-
-async function resolveScopeFilter(ctx: Context, target: string, params?: any) {
-  if (!params) {
-    return {};
-  }
-
-  const filteredParams = ctx.acl.filterParams(ctx, target, params);
-  const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
-  return parsedParams.filter || {};
+  return typeof value === 'number' || typeof value === 'string' ? value : value[recordKey];
 }
 
 async function collectAllowedRecordKeys(
-  ctx: Context,
   items: any[],
   recordKey: string,
-  updateParams: any,
-  target: string,
+  filter: any,
+  collection: Collection,
+  parseOptions?: ParseJsonTemplateOptions,
 ): Promise<AllowedRecordKeysResult | undefined> {
-  const repo = ctx.database.getRepository(target);
-  if (!repo) {
-    return undefined;
+  if (!collection) {
+    return;
   }
+
+  const { repository } = collection;
 
   const keys = items
     .map((item) => (_.isPlainObject(item) ? item[recordKey] : undefined))
     .filter((key) => key !== undefined && key !== null);
 
   if (!keys.length) {
-    return undefined;
+    return;
   }
 
   try {
-    const scopedFilter = await resolveScopeFilter(ctx, target, updateParams?.params);
-    const records = await repo.find({
+    checkFilterParams(collection, filter);
+
+    const scopedFilter = filter ? await parseJsonTemplate(filter, parseOptions) : {};
+    const records = await repository.find({
       filter: {
         ...scopedFilter,
         [`${recordKey}.$in`]: keys,
@@ -98,13 +383,12 @@ async function collectAllowedRecordKeys(
 }
 
 async function collectExistingRecordKeys(
-  ctx: Context,
   recordKey: string,
-  target: string,
+  collection: Collection,
   keys: Iterable<any>,
 ): Promise<Set<any>> {
-  const repo = ctx.database.getRepository(target);
-  if (!repo) {
+  const { repository } = collection;
+  if (!repository) {
     return new Set();
   }
 
@@ -113,7 +397,7 @@ async function collectExistingRecordKeys(
     return new Set();
   }
 
-  const records = await repo.find({
+  const records = await repository.find({
     filter: {
       [`${recordKey}.$in`]: keyList,
     },
@@ -129,17 +413,12 @@ async function collectExistingRecordKeys(
   return existingKeys;
 }
 
-async function recordExistsWithoutScope(
-  ctx: Context,
-  target: string,
-  recordKey: string,
-  keyValue: any,
-): Promise<boolean> {
-  const repo = ctx.database.getRepository(target);
-  if (!repo) {
+async function recordExistsWithoutScope(collection: Collection, recordKey: string, keyValue: any): Promise<boolean> {
+  const { repository } = collection;
+  if (!repository) {
     return false;
   }
-  const record = await repo.findOne({
+  const record = await repository.findOne({
     filter: {
       [recordKey]: keyValue,
     },
@@ -147,33 +426,50 @@ async function recordExistsWithoutScope(
   return Boolean(record);
 }
 
-/**
- * Process nested association values recursively if creation is allowed.
- */
-async function processAssociationChild(
-  ctx: Context,
-  value: Record<string, any>,
-  recordKey: string,
-  updateAssociationValues: string[],
-  createParams: any,
-  updateParams: any,
-  target: string,
-  fieldPath: string,
-  allowedRecordKeys?: Set<any>,
-  existingRecordKeys?: Set<any>,
-): Promise<Record<string, any> | string | number | null> {
+type ProcessAssociationChildOptions = {
+  value: Record<string, any>;
+  recordKey: string;
+  updateAssociationValues: string[];
+  createParams: any;
+  updateParams: any;
+  target: Collection;
+  fieldPath: string;
+  allowedRecordKeys?: Set<any>;
+  existingRecordKeys?: Set<any>;
+  can?: (options: Omit<Parameters<ACL['can']>[0], 'role'>) => CanResult | null;
+  parseOptions?: ParseJsonTemplateOptions;
+};
+
+async function processAssociationChild(options: ProcessAssociationChildOptions) {
+  const {
+    value,
+    recordKey,
+    updateAssociationValues,
+    createParams,
+    updateParams,
+    target,
+    fieldPath,
+    allowedRecordKeys,
+    existingRecordKeys,
+    can,
+    parseOptions,
+  } = options;
   const keyValue = value?.[recordKey];
 
   const fallbackToCreate = async () => {
     if (!createParams) {
       return keyValue;
     }
-    ctx.log.debug(`Association record missing, fallback to create`, {
-      fieldPath,
-      value,
-      target,
+    return await processValues({
+      values: value,
+      updateAssociationValues,
+      aclParams: createParams.params,
+      collection: target,
+      lastFieldPath: fieldPath,
+      protectedKeys: [],
+      can,
+      parseOptions,
     });
-    return await processValues(ctx, value, updateAssociationValues, createParams.params, target, fieldPath, []);
   };
 
   const tryFallbackToCreate = async (
@@ -184,293 +480,86 @@ async function processAssociationChild(
       return undefined;
     }
     const recordExists =
-      typeof knownExists === 'boolean' ? knownExists : await recordExistsWithoutScope(ctx, target, recordKey, keyValue);
+      typeof knownExists === 'boolean' ? knownExists : await recordExistsWithoutScope(target, recordKey, keyValue);
     if (!recordExists) {
-      ctx.log.debug(reason, {
-        fieldPath,
-        value,
-        createParams,
-        updateParams,
-      });
       return await fallbackToCreate();
     }
     return undefined;
   };
 
-  // Case 1: Existing record → potential update
   if (keyValue !== undefined && keyValue !== null) {
     if (!updateParams) {
-      // No update permission, try create
       const created = await tryFallbackToCreate(`No permission to update association, try create not exist record`);
       if (created !== undefined) {
         return created;
       }
-      ctx.log.debug(`No permission to update association`, { fieldPath, value, updateParams });
       return keyValue;
-    } else {
-      const repo = ctx.database.getRepository(target);
-      if (!repo) {
-        ctx.log.debug(`Repository not found for association target`, { fieldPath, target });
-        return keyValue;
-      }
-      try {
-        if (allowedRecordKeys) {
-          if (!allowedRecordKeys.has(keyValue)) {
-            const created = await tryFallbackToCreate(
-              `No permission to update association due to scope, try create not exist record`,
-              existingRecordKeys ? existingRecordKeys.has(keyValue) : undefined,
-            );
-            if (created !== undefined) {
-              return created;
-            }
-            ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
-            return keyValue;
+    }
+    const { repository } = target;
+    if (!repository) {
+      return keyValue;
+    }
+    try {
+      if (allowedRecordKeys) {
+        if (!allowedRecordKeys.has(keyValue)) {
+          const created = await tryFallbackToCreate(
+            `No permission to update association due to scope, try create not exist record`,
+            existingRecordKeys ? existingRecordKeys.has(keyValue) : undefined,
+          );
+          if (created !== undefined) {
+            return created;
           }
-        } else {
-          const filter = await resolveScopeFilter(ctx, target, updateParams.params);
-          const record = await repo.findOne({
-            filter: {
-              ...filter,
-              [recordKey]: keyValue,
-            },
-          });
-          if (!record) {
-            const created = await tryFallbackToCreate(
-              `No permission to update association due to scope, try create not exist record`,
-            );
-            if (created !== undefined) {
-              return created;
-            }
-            ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
-            return keyValue;
-          }
-        }
-        return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath, []);
-      } catch (e) {
-        if (e instanceof NoPermissionError) {
           return keyValue;
         }
-        throw e;
+      } else {
+        checkFilterParams(target, updateParams.params?.filter);
+        const filter = await parseJsonTemplate(updateParams.params?.filter, parseOptions);
+        const record = await repository.findOne({
+          filter: {
+            ...filter,
+            [recordKey]: keyValue,
+          },
+        });
+        if (!record) {
+          const created = await tryFallbackToCreate(
+            `No permission to update association due to scope, try create not exist record`,
+          );
+          if (created !== undefined) {
+            return created;
+          }
+          return keyValue;
+        }
       }
+      return await processValues({
+        values: value,
+        updateAssociationValues,
+        aclParams: updateParams.params,
+        collection: target,
+        lastFieldPath: fieldPath,
+        protectedKeys: [],
+        can,
+        parseOptions,
+      });
+    } catch (e) {
+      if (e instanceof NoPermissionError) {
+        return keyValue;
+      }
+      throw e;
     }
   }
 
-  // Case 2: New record → potential create
   if (createParams) {
-    return await processValues(ctx, value, updateAssociationValues, createParams.params, target, fieldPath, []);
+    return await processValues({
+      values: value,
+      updateAssociationValues,
+      aclParams: createParams.params,
+      collection: target,
+      lastFieldPath: fieldPath,
+      protectedKeys: [],
+      can,
+      parseOptions,
+    });
   }
 
-  // Case 3: Neither create nor update is allowed
-  ctx.log.debug(`No permission to create association`, { fieldPath, value, createParams });
   return null;
 }
-
-/**
- * Recursively process values based on ACL and association rules.
- */
-async function processValues(
-  ctx: Context,
-  values: Record<string, any> | Record<string, any>[],
-  updateAssociationValues: string[],
-  aclParams: any,
-  collectionName: string,
-  lastFieldPath = '',
-  protectedKeys: string[] = [],
-) {
-  // Case: array of items → process each item
-  if (Array.isArray(values)) {
-    const result = [];
-
-    for (const item of values) {
-      if (!_.isPlainObject(item)) {
-        // Non-object items are returned as-is
-        result.push(item);
-        continue;
-      }
-
-      const processed = await processValues(
-        ctx,
-        item,
-        updateAssociationValues,
-        aclParams,
-        collectionName,
-        lastFieldPath,
-        protectedKeys,
-      );
-
-      if (processed !== null && processed !== undefined) {
-        result.push(processed);
-      }
-    }
-
-    return result;
-  }
-
-  if (!values || !_.isPlainObject(values)) {
-    return values;
-  }
-
-  const db: Database = ctx.database;
-  const collection = db.getCollection(collectionName);
-
-  if (!collection) {
-    return values;
-  }
-
-  // Whitelist: protectedKeys must never be removed
-  if (aclParams?.whitelist) {
-    const combined = _.uniq([...aclParams.whitelist, ...protectedKeys]);
-    values = _.pick(values, combined);
-  }
-
-  for (const [fieldName, fieldValue] of Object.entries(values)) {
-    // Skip protected fields
-    if (protectedKeys.includes(fieldName)) {
-      continue;
-    }
-
-    const field = collection.getField(fieldName);
-    const isAssociation =
-      field && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field.type);
-
-    if (!isAssociation) {
-      continue;
-    }
-
-    const targetCollection = db.getCollection(field.target);
-    if (!targetCollection) {
-      delete values[fieldName];
-      continue;
-    }
-
-    const fieldPath = lastFieldPath ? `${lastFieldPath}.${fieldName}` : fieldName;
-    const recordKey = field.type === 'hasOne' ? targetCollection.model.primaryKeyAttribute : field.targetKey;
-
-    const canUpdateAssociation = updateAssociationValues.includes(fieldPath);
-
-    // Association cannot update → only keep key(s)
-    if (!canUpdateAssociation) {
-      const normalized = normalizeAssociationValue(fieldValue, recordKey);
-
-      if (normalized === undefined && !protectedKeys.includes(fieldName)) {
-        delete values[fieldName];
-      } else {
-        values[fieldName] = normalized;
-      }
-
-      ctx.log.debug(`Not allow to update association, only keep keys`, {
-        fieldPath,
-        fieldValue,
-        updateAssociationValues,
-        recordKey,
-        normalizedValue: values[fieldName],
-      });
-      continue;
-    }
-
-    // Allowed: process create/update rules
-    const createParams = ctx.can({
-      roles: ctx.state.currentRoles,
-      resource: field.target,
-      action: 'create',
-    });
-
-    const updateParams = ctx.can({
-      roles: ctx.state.currentRoles,
-      resource: field.target,
-      action: 'update',
-    });
-
-    // Multi
-    if (Array.isArray(fieldValue)) {
-      const processed = [];
-      let allowedRecordKeys: Set<any> | undefined;
-      let existingRecordKeys: Set<any> | undefined;
-
-      if (updateParams) {
-        const allowedResult = await collectAllowedRecordKeys(ctx, fieldValue, recordKey, updateParams, field.target);
-        allowedRecordKeys = allowedResult?.allowedKeys;
-        if (createParams && allowedResult?.missingKeys?.size) {
-          existingRecordKeys = await collectExistingRecordKeys(ctx, recordKey, field.target, allowedResult.missingKeys);
-        }
-      }
-
-      for (const item of fieldValue) {
-        const r = await processAssociationChild(
-          ctx,
-          item,
-          recordKey,
-          updateAssociationValues,
-          createParams,
-          updateParams,
-          field.target,
-          fieldPath,
-          allowedRecordKeys,
-          existingRecordKeys,
-        );
-        if (r !== null && r !== undefined) {
-          processed.push(r);
-        }
-      }
-
-      values[fieldName] = processed;
-      continue;
-    }
-
-    // Single
-    const r = await processAssociationChild(
-      ctx,
-      fieldValue,
-      recordKey,
-      updateAssociationValues,
-      createParams,
-      updateParams,
-      field.target,
-      fieldPath,
-    );
-    values[fieldName] = r;
-  }
-
-  return values;
-}
-
-export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
-  const { resourceName, actionName } = ctx.action;
-  if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
-    return next();
-  }
-  if (ctx.permission?.skip) {
-    return next();
-  }
-  const roles = ctx.state.currentRoles;
-  if (roles.includes('root')) {
-    return next();
-  }
-  const acl: ACL = ctx.acl;
-  for (const role of roles) {
-    const aclRole = acl.getRole(role);
-    if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
-      return next();
-    }
-  }
-
-  const params = ctx.action.params || {};
-  const rawValues = params.values;
-  if (_.isEmpty(rawValues)) {
-    return next();
-  }
-
-  const protectedKeys = ['firstOrCreate', 'updateOrCreate'].includes(actionName) ? params.filterKeys || [] : [];
-  const aclParams = ctx.permission.can?.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
-  const processed = await processValues(
-    ctx,
-    rawValues,
-    params.updateAssociationValues || [],
-    aclParams,
-    resourceName,
-    '',
-    protectedKeys,
-  );
-  ctx.action.params.values = processed;
-  await next();
-};
