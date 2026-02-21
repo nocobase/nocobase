@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext, useEffect } from 'react';
-import { App, Tooltip } from 'antd';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { App, Switch, Tooltip } from 'antd';
 import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
@@ -123,6 +123,60 @@ function useRevisionAction() {
   };
 }
 
+function WorkflowEnabledSwitch() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const record = useRecord();
+  const { resource } = useResourceContext();
+
+  const [checked, setChecked] = useState(Boolean(record?.enabled));
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setChecked(Boolean(record?.enabled));
+  }, [record?.enabled]);
+
+  const onChange = useCallback(
+    async (nextChecked: boolean, e: React.MouseEvent<HTMLButtonElement>) => {
+      e?.stopPropagation?.();
+      if (!record?.id) {
+        return;
+      }
+
+      const prev = checked;
+      setChecked(nextChecked);
+      setLoading(true);
+      try {
+        await resource.update({
+          filterByTk: record.id,
+          values: {
+            enabled: nextChecked,
+          },
+        });
+        record.enabled = nextChecked;
+      } catch (error) {
+        console.error(error);
+        record.enabled = prev;
+        setChecked(prev);
+        message.error(t('Operation failed'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [checked, message, record, resource, t],
+  );
+
+  return (
+    <Switch
+      checked={checked}
+      disabled={loading || !record?.id}
+      loading={loading}
+      onClick={(val, e) => e?.stopPropagation?.()}
+      onChange={onChange}
+    />
+  );
+}
+
 export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
   const { useTriggersOptions } = usePlugin(WorkflowPlugin);
@@ -141,6 +195,7 @@ export function WorkflowPane() {
           Tooltip,
           CategoryTabs,
           EnumerationField,
+          WorkflowEnabledSwitch,
         }}
         scope={{
           useTriggersOptions,

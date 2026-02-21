@@ -336,8 +336,7 @@ export const workflowSchema: ISchema = {
                   properties: {
                     enabled: {
                       type: 'boolean',
-                      'x-component': 'CollectionField',
-                      'x-read-pretty': true,
+                      'x-component': 'WorkflowEnabledSwitch',
                       default: false,
                     },
                   },
