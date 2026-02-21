@@ -24,11 +24,23 @@ import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
 import { checkAssociationOperate } from './middlewares/check-association-operate';
-import { checkChangesWithAssociation } from './middlewares/check-change-with-association';
+import {
+  SanitizeAssociationValuesOptions,
+  checkChangesWithAssociation,
+  sanitizeAssociationValues,
+} from './middlewares/check-change-with-association';
+import type { ACL } from '@nocobase/acl';
 
 export class PluginACLServer extends Plugin {
   get acl() {
     return this.app.acl;
+  }
+
+  async sanitizeAssociationValues(options: SanitizeAssociationValuesOptions & { acl?: ACL }) {
+    return sanitizeAssociationValues({
+      ...options,
+      acl: options.acl ?? this.acl,
+    });
   }
 
   async writeResourceToACL(resourceModel: RoleResourceModel, transaction: Transaction) {
