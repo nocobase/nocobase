@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'specific a version (e.g. 1.9.48)'
+        description: 'specify a version (e.g. 1.9.48)'
         type: string
         required: false
       is_feat:
