@@ -31,7 +31,7 @@ jobs:
         shell: bash
         run: |
           git fetch --tags --force
-          baseline=$(git tag --merged HEAD --list 'v1.*' | sort -V | tail -n 1)
+          baseline=$(git tag --merged HEAD --list 'v1.*' | grep -v -- '-' | sort -V | tail -n 1)
           if [[ -z "$baseline" ]]; then
             echo "No v1.* tag found on branch v1" >&2
             exit 1
