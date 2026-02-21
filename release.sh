@@ -6,7 +6,7 @@ if [ "$1" == '--version' ];then
   new_version="$2"
   echo $new_version;
 else
-  if [ "$branch" == "main" ]; then
+  if [ "$branch" == "main" ] || [ "$branch" == "v1" ]; then
     # rc
     if [ "$1" == '--is-feat' ]; then
       new_version="$major.$minor.0"
