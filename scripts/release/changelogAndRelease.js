@@ -51,6 +51,13 @@ function parsePRBody(body, language) {
     };
   }
   const docMatch = docLink.match(/\[(.*)\]\((.*)\)/);
+  if (!docMatch) {
+    return {
+      description,
+      docTitle: '',
+      docLink: '',
+    };
+  }
   return {
     description,
     docTitle: docMatch[1],
