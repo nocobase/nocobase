@@ -72,6 +72,10 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
   private reading: Map<string, Promise<void>[]> = new Map();
 
+  private listeningTasks: Map<string, Promise<void>> = new Map();
+
+  private pendingSignals: Set<string> = new Set();
+
   protected events: Map<string, QueueEventOptions> = new Map();
 
   protected queues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]> = new Map();
@@ -94,10 +98,37 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     if (!this.connected) {
       return;
     }
+    if (this.listeningTasks.has(channel)) {
+      this.pendingSignals.add(channel);
+      return;
+    }
+    const task = this.tryListen(channel);
+    const watcher = task
+      .catch((error) => {
+        this.options.logger.error(`memory queue (${channel}) listen task failed`, error);
+      })
+      .finally(() => {
+        this.listeningTasks.delete(channel);
+        if (this.pendingSignals.has(channel)) {
+          this.pendingSignals.delete(channel);
+          this.listen(channel);
+        }
+      });
+    this.listeningTasks.set(channel, watcher);
+  };
+
+  private async tryListen(channel: string) {
+    if (!this.connected) {
+      return;
+    }
     const { logger } = this.options;
     const event = this.events.get(channel);
     if (!event) {
       logger.warn(`memory queue (${channel}) not found, skipping...`);
+      return;
+    }
+    const queue = this.queues.get(channel);
+    if (!queue?.length) {
       return;
     }
     if (!event.idle()) {
@@ -105,15 +136,17 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
 
     const reading = this.reading.get(channel) || [];
-    const count = (event.concurrency || QUEUE_DEFAULT_CONCURRENCY) - reading.length;
+    const limit = (event.concurrency || QUEUE_DEFAULT_CONCURRENCY) - reading.length;
+    const count = Math.min(limit, queue.length);
     if (count <= 0) {
-      // logger.debug(
-      //   `memory queue (${channel}) is already reading as max concurrency (${reading.length}), waiting last reading to end...`,
-      // );
       return;
     }
     logger.debug(`reading more from queue (${channel}), count: ${count}`);
-    this.read(channel, count).forEach((promise) => {
+    const batch = this.read(channel, count);
+    if (!batch.length) {
+      return;
+    }
+    batch.forEach((promise) => {
       reading.push(promise);
       // eslint-disable-next-line promise/catch-or-return
       promise.finally(() => {
@@ -121,10 +154,13 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         if (index > -1) {
           reading.splice(index, 1);
         }
+        if (this.connected) {
+          this.listen(channel);
+        }
       });
     });
     this.reading.set(channel, reading);
-  };
+  }
 
   constructor(private options: { appName: string; logger: SystemLogger }) {
     this.emitter.setMaxListeners(0);
@@ -268,7 +304,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       const interval = event.interval || QUEUE_DEFAULT_INTERVAL;
 
       const queue = this.queues.get(channel);
-      if (event.idle() && queue?.length) {
+      if (queue?.length) {
         this.listen(channel);
       }
 
