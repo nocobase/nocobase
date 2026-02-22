@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { App, Switch, Tooltip, theme } from 'antd';
+import { App, Switch, Tooltip } from 'antd';
 import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
@@ -130,7 +130,6 @@ function WorkflowEnabledSwitch() {
   const record = useRecord();
   const { resource } = useResourceContext();
   const { refresh } = useResourceActionContext();
-  const { token } = theme.useToken();
 
   const [loading, setLoading] = useState(false);
 
@@ -148,7 +147,7 @@ function WorkflowEnabledSwitch() {
             enabled: nextChecked,
           },
         });
-        message.success(t('Operation succeeded'));
+        // message.success(t('Operation succeeded'));
         // refresh later to avoid blocking the interaction
         setTimeout(() => refresh?.(), 0);
       } catch (error) {
@@ -169,7 +168,6 @@ function WorkflowEnabledSwitch() {
       unCheckedChildren={lang('Off')}
       disabled={loading || !record?.id}
       loading={loading}
-      style={record?.enabled ? { backgroundColor: token.colorSuccess } : undefined}
       onClick={(val, e) => e?.stopPropagation?.()}
       onChange={onChange}
     />
