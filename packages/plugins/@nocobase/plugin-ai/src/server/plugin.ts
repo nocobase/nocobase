@@ -161,6 +161,8 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiEmployees', 'listByUser', 'loggedIn');
     this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');
 
+    this.app.acl.allow('aiTools', 'list', 'loggedIn');
+
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {
       workflowSnippet.actions.push('ai:listModels');
