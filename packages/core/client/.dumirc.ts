@@ -14,13 +14,15 @@ export default defineConfig({
   alias: {
     ...umiConfig.alias,
   },
+  publicPath: process.env.DEPLOY_SITE === 'local' ? '/' : '/flow-engine/',
+  base: process.env.DEPLOY_SITE === 'local' ? '/' : '/flow-engine',
   fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   // ssr: {},
   // exportStatic: {
   //   ignorePreRenderError: true
   // },
   cacheDirectoryPath: `node_modules/.docs-client-${lang}-cache`,
-  outputPath: `./dist/${lang}`,
+  outputPath: `./dist/flow-engine`,
   resolve: {
     docDirs: [`./docs/${lang}`],
     atomDirs: [
@@ -39,8 +41,8 @@ export default defineConfig({
     // sidebarGroupModePath: ['/components'],
     nav: [
       {
-        title: 'Learn',
-        link: '/learn',
+        title: '指南',
+        link: '/guide/what-is-flow-engine',
       },
       {
         title: 'Models',
@@ -51,17 +53,21 @@ export default defineConfig({
         link: '/components',
       },
       {
-        title: 'Examples',
+        title: 'Playground',
         link: '/examples/flow-models/hello-world',
+      },
+      {
+        title: 'Examples',
+        link: 'https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example',
       },
       {
         title: 'API',
         link: '/api/flow-engine',
       },
-      {
-        title: 'Home site',
-        link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
-      }
+      // {
+      //   title: 'Home site',
+      //   link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
+      // }
       // {
       //   title: 'UI Schema',
       //   link: '/ui-schema',
@@ -479,6 +485,73 @@ export default defineConfig({
           ],
         }
       ],
+      '/guide': [
+        {
+          title: '简介',
+          type: 'group',
+          children: [
+            { title: '什么是 FlowEngine？', link: '/guide/what-is-flow-engine' },
+            { title: 'FlowEngine 与插件的关系', link: '/guide/flow-engine-and-plugins' },
+            { title: '快速开始', link: '/guide/quickstart' },
+            {
+              title: '学习路线图', link: '/guide/learning-roadmap'
+            }
+          ]
+        },
+        {
+          title: '指南',
+          type: 'group',
+          children: [
+            {
+              title: '注册 FlowModel',
+              link: '/guide/register-flow-model'
+            },
+            {
+              title: '创建 FlowModel',
+              link: '/guide/create-flow-model'
+            },
+            {
+              title: '渲染 FlowModel',
+              link: '/guide/flow-model-renderer'
+            },
+            {
+              title: 'FlowModel 事件流与配置化',
+              link: '/guide/flow-model-settings'
+            },
+            {
+              title: 'FlowModel 持久化',
+              link: '/guide/flow-model-repository'
+            },
+            {
+              title: 'FlowModel 生命周期',
+              link: '/guide/flow-model-lifecycle'
+            },
+            {
+              title: 'FlowModel 的上下文体系',
+              link: '/guide/flow-context'
+            },
+            {
+              title: '响应式机制：Observable',
+              link: '/guide/observable'
+            },
+            {
+              title: 'FlowModel vs React.Component',
+              link: '/guide/flow-model-vs-react-component'
+            },
+          ]
+        },
+        {
+          title: 'Definitions',
+          type: 'group',
+          children: [
+            { title: 'ModelDefinition', link: '/guide/definitions/model-definition' },
+            { title: 'FlowDefinition', link: '/guide/definitions/flow-definition' },
+            { title: 'EventDefinition', link: '/guide/definitions/event-definition' },
+            { title: 'ActionDefinition', link: '/guide/definitions/action-definition' },
+            { title: 'StepDefinition', link: '/guide/definitions/step-definition' },
+          ],
+        },
+      ],
       '/learn': [
         {
           title: '扩展指南',
@@ -492,10 +565,7 @@ export default defineConfig({
           title: 'Quick start',
           type: 'group',
           children: [
-            {
-              title: '编写第一个 FlowModel 插件',
-              link: '/learn/flow-model-plugin',
-            },
+
             {
               title: '构建可编排的按钮组件',
               link: '/learn/quickstart',
@@ -572,9 +642,25 @@ export default defineConfig({
           link: '/models',
         },
         {
+          title: '在线编写 & 运行 JS',
+          link: '/models/js-in-nocobase',
+        },
+        {
+          title: '编写第一个 FlowModel 插件',
+          link: '/models/flow-model-plugin',
+        },
+        {
           title: '区块',
           type: 'group',
           children: [
+            {
+              title: '区块扩展',
+              children: [
+                { title: '区块的分类', link: '/models/blocks/block-categories' },
+                { title: '区块的使用场景', link: '/models/blocks/block-scenes' },
+                { title: '区块扩展', link: '/models/blocks/block-extensions' },
+              ],
+            },
             {
               title: 'BlockModel',
               link: '/models/blocks/block-model',
@@ -683,6 +769,83 @@ export default defineConfig({
         },
       ],
       '/api': [
+        { title: '概述', link: '/api/flow-engine' },
+        { title: 'FlowEngine', link: '/api/flow-engine/flow-engine' },
+        { title: 'FlowModel', link: '/api/flow-engine/flow-model' },
+        {
+          title: 'FlowContext',
+          children: [
+            { title: 'FlowContext', link: '/api/flow-engine/flow-context' },
+            { title: 'FlowEngineContext', link: '/api/flow-engine/flow-engine-context' },
+            { title: 'FlowViewContext', link: '/api/flow-engine/flow-view-context' },
+            { title: 'FlowModelContext', link: '/api/flow-engine/flow-model-context' },
+            { title: 'FlowRuntimeContext', link: '/api/flow-engine/flow-runtime-context' },
+            {
+              title: 'FlowRunJSContext', link: '/api/flow-engine/flow-runjs-context'
+            }
+          ]
+        },
+        {
+          title: 'FlowResource',
+          children: [
+            {
+              title: 'FlowResource', link: '/api/flow-engine/flow-resource'
+            },
+            {
+              title: 'APIResource', link: '/api/flow-engine/api-resource'
+            },
+            {
+              title: 'BaseRecordResource', link: '/api/flow-engine/base-record-resource'
+            },
+            {
+              title: 'MultiRecordResource', link: '/api/flow-engine/multi-record-resource'
+            },
+            {
+              title: 'SingleRecordResource', link: '/api/flow-engine/single-record-resource'
+            },
+            {
+              title: 'SQLResource', link: '/api/flow-engine/sql-resource'
+            },
+          ],
+        },
+        {
+          title: 'DataSource',
+          children: [
+            { title: 'DataSourceManager', link: '/api/flow-engine/data-source-manager' },
+            { title: 'DataSource', link: '/api/flow-engine/data-source' },
+            { title: 'Collection', link: '/api/flow-engine/collection' },
+            { title: 'CollectionField', link: '/api/flow-engine/collection-field' }
+          ]
+        },
+        {
+          title: 'Components',
+          children: [
+
+            { title: 'FlowModelRenderer', link: '/api/flow-engine/components/flow-model-renderer' },
+            { title: 'FieldModelRenderer', link: '/api/flow-engine/components/field-model-renderer' },
+            { title: 'FlowContextSelector', link: '/api/flow-engine/components/flow-context-selector' },
+            { title: 'FlowSettingsButton', link: '/api/flow-engine/components/flow-settings-button' },
+            { title: 'AddSubModelButton', link: '/api/flow-engine/components/add-sub-model-button' },
+            { title: 'FormItem', link: '/api/flow-engine/components/form-item' },
+            { title: 'DndProvider', link: '/api/flow-engine/components/dnd-provider' },
+            { title: 'DragHandler', link: '/api/flow-engine/components/drag-handler' },
+            { title: 'Droppable', link: '/api/flow-engine/components/droppable' }
+          ]
+        },
+        {
+          title: 'Hooks',
+          children: [
+            { title: 'useFlowEngine', link: '/api/flow-engine/hooks/use-flow-engine' },
+            { title: 'useFlowContext', link: '/api/flow-engine/hooks/use-flow-context' },
+            { title: 'useFlowEngineContext', link: '/api/flow-engine/hooks/use-flow-engine-context' },
+            { title: 'useFlowModelContext', link: '/api/flow-engine/hooks/use-flow-model-context' },
+            { title: 'useFlowSettingsContext', link: '/api/flow-engine/hooks/use-flow-settings-context' },
+            { title: 'useFlowViewContext', link: '/api/flow-engine/hooks/use-flow-view-context' },
+            { title: 'useFlowStep', link: '/api/flow-engine/hooks/use-flow-step' }
+          ],
+        }
+      ],
+      '/api2': [
         {
           type: 'group',
           title: 'Flow Engine',
@@ -722,24 +885,7 @@ export default defineConfig({
             },
             {
               title: 'FlowModel',
-              children: [
-                {
-                  title: 'Overview',
-                  link: '/api/flow-engine/flow-model',
-                },
-                {
-                  title: 'FlowModel',
-                  link: '/api/flow-engine/flow-model/flow-model',
-                },
-                {
-                  title: 'SubModel',
-                  link: '/api/flow-engine/flow-model/sub-model',
-                },
-                {
-                  title: 'ForkModel',
-                  link: '/api/flow-engine/flow-model/fork-model',
-                },
-              ]
+              link: '/api/flow-engine/flow-model',
             },
             {
               title: 'FlowModelRenderer',
