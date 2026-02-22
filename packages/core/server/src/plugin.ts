@@ -253,6 +253,21 @@ export abstract class Plugin<O = any> implements PluginInterface {
       };
     }
 
+    const langMap = {
+      'zh-CN': 'cn/',
+      'en-US': '',
+      'ja-JP': 'ja/',
+      'ko-KR': 'ko/',
+      'es-ES': 'es/',
+      'pt-PT': 'pt/',
+      'de-DE': 'de',
+      'fr-FR': 'fr/',
+    };
+
+    if (packageName.startsWith('@nocobase/plugin-')) {
+      packageJson.homepage = `https://v2.docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
+    }
+
     const results = {
       ...this.options,
       keywords: packageJson.keywords,
@@ -260,7 +275,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       changelogUrl: getExposeChangelogUrl(packageName),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
-      homepage: packageJson[`homepage.${locale}`] || packageJson.homepage,
+      homepage: packageJson.homepage,
     };
 
     if (!options.withOutOpenFile) {
