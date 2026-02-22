@@ -72,7 +72,7 @@ export function getDepsConfig(cwd: string, outDir: string, depsName: string[], e
 
   const depExternals = {};
   const deps = depsName.reduce<Record<string, IDepPkg>>((acc, packageName) => {
-    const depEntryPath = require.resolve(packageName, { paths: [cwd] });
+    const depEntryPath = path.dirname(require.resolve(`${packageName}/package.json`, { paths: [cwd] }));
     const depPkgPath = getDepPkgPath(packageName, cwd);
     const depPkg = require(depPkgPath);
     const depDir = path.dirname(depPkgPath);
