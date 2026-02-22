@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Office-bestandsweergave",
+  "Configuration": "Configuratie",
+  "Preview Type": "Voorbeeldtype",
+  "Microsoft Online": "Microsoft Online (standaard)",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "KKFileView URL",
+  "KKFileView server address (e.g., http://localhost:8012)": "KKFileView-serveradres (bijv. http://localhost:8012)",
+  "Open in new window": "In nieuw venster openen",
+  "Download": "Downloaden",
+  "Close": "Sluiten",
+  "Save": "Opslaan",
+  "Settings saved successfully": "Instellingen succesvol opgeslagen",
+  "Failed to save settings": "Instellingen opslaan mislukt",
+  "Select preview type": "Selecteer voorbeeldtype"
+}
