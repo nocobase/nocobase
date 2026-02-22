@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
+
+### 🐛 修复
+
+- **[日历]** N/A ([#8498](https://github.com/nocobase/nocobase/pull/8498)) by @sembaev-a-a
+
 ## [v2.0.1](https://github.com/nocobase/nocobase/compare/v2.0.0...v2.0.1) - 2026-02-16
 
 ### 🐛 修复
