@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import { App, Switch, Tooltip, theme } from 'antd';
 import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
@@ -132,22 +132,14 @@ function WorkflowEnabledSwitch() {
   const { refresh } = useResourceActionContext();
   const { token } = theme.useToken();
 
-  const [checked, setChecked] = useState(Boolean(record?.enabled));
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setChecked(Boolean(record?.enabled));
-  }, [record?.enabled]);
-
   const onChange = useCallback(
-    async (nextChecked: boolean, e: React.MouseEvent<HTMLButtonElement>) => {
-      e?.stopPropagation?.();
+    async (nextChecked: boolean) => {
       if (!record?.id) {
         return;
       }
 
-      const prev = checked;
-      setChecked(nextChecked);
       setLoading(true);
       try {
         await resource.update({
@@ -156,29 +148,28 @@ function WorkflowEnabledSwitch() {
             enabled: nextChecked,
           },
         });
-        record.enabled = nextChecked;
+        // success -> refresh list to get the latest record state
         refresh?.();
         message.success(t('Operation succeeded'));
       } catch (error) {
         console.error(error);
-        record.enabled = prev;
-        setChecked(prev);
+        // fail -> do not refresh, keep current list state
         message.error(t('Operation failed'));
       } finally {
         setLoading(false);
       }
     },
-    [checked, message, record, refresh, resource, t],
+    [message, record, refresh, resource, t],
   );
 
   return (
     <Switch
-      checked={checked}
+      checked={Boolean(record?.enabled)}
       checkedChildren={lang('On')}
       unCheckedChildren={lang('Off')}
       disabled={loading || !record?.id}
       loading={loading}
-      style={checked ? { backgroundColor: token.colorSuccess } : undefined}
+      style={record?.enabled ? { backgroundColor: token.colorSuccess } : undefined}
       onClick={(val, e) => e?.stopPropagation?.()}
       onChange={onChange}
     />
