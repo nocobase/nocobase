@@ -35,6 +35,7 @@ import { RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
+import { lang } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
 import { useWorkflowFilterActionProps } from './hooks/useWorkflowFilterActionProps';
@@ -171,8 +172,8 @@ function WorkflowEnabledSwitch() {
   return (
     <Switch
       checked={checked}
-      checkedChildren={t('On')}
-      unCheckedChildren={t('Off')}
+      checkedChildren={lang('On')}
+      unCheckedChildren={lang('Off')}
       disabled={loading || !record?.id}
       loading={loading}
       style={checked ? { backgroundColor: token.colorSuccess } : undefined}
