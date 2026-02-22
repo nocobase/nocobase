@@ -302,17 +302,22 @@ export const Calendar: any = withDynamicSchemaProps(
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
-            local.format(date, culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy', culture),
-          dayHeaderFormat: (date, culture, local) => {
-            return local.format(date, culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d', culture);
-          },
-          agendaDateFormat: (date, culture, local) => {
-            return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
             local.format(
               date,
               culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
               culture,
             ),
+          // dayHeaderFormat: (date, culture, local) => {
+          //   return local.format(date, culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d', culture);
+          // },
+          agendaDateFormat: (date, culture, local) => {
+            // return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+            return local.format(
+              date,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            );
+          },
           dayHeaderFormat: (date, culture, local) => {
             return local.format(
               date,
@@ -320,9 +325,9 @@ export const Calendar: any = withDynamicSchemaProps(
               culture,
             );
           },
-          agendaDateFormat: (date, culture, local) => {
-            return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
-          },
+          // agendaDateFormat: (date, culture, local) => {
+          //   return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+          // },
 
           dayRangeHeaderFormat: ({ start, end }, culture, local) => {
             if (start.getMonth() === end.getMonth()) {
