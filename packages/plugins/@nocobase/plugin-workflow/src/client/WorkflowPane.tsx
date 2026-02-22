@@ -155,6 +155,7 @@ function WorkflowEnabledSwitch() {
           },
         });
         record.enabled = nextChecked;
+        message.success(t('Operation succeeded'));
       } catch (error) {
         console.error(error);
         record.enabled = prev;
@@ -169,8 +170,9 @@ function WorkflowEnabledSwitch() {
 
   return (
     <Switch
-      size="small"
       checked={checked}
+      checkedChildren={t('On')}
+      unCheckedChildren={t('Off')}
       disabled={loading || !record?.id}
       loading={loading}
       style={checked ? { backgroundColor: token.colorSuccess } : undefined}
