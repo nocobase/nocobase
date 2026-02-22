@@ -148,9 +148,9 @@ function WorkflowEnabledSwitch() {
             enabled: nextChecked,
           },
         });
-        // success -> refresh list to get the latest record state
-        refresh?.();
         message.success(t('Operation succeeded'));
+        // refresh later to avoid blocking the interaction
+        setTimeout(() => refresh?.(), 0);
       } catch (error) {
         console.error(error);
         // fail -> do not refresh, keep current list state
