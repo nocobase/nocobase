@@ -17,37 +17,14 @@ on:
         required: false
 
 jobs:
-  compute-baseline:
-    runs-on: ubuntu-latest
-    outputs:
-      baseline_tag: ${{ steps.baseline.outputs.baseline_tag }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: v1
-      - name: Compute latest v1.* tag on v1 branch
-        id: baseline
-        shell: bash
-        run: |
-          git fetch --tags --force
-          baseline=$(git tag --merged HEAD --list 'v1.*' | grep -v -- '-' | sort -V | tail -n 1)
-          if [[ -z "$baseline" ]]; then
-            echo "No v1.* tag found on branch v1" >&2
-            exit 1
-          fi
-          echo "baseline_tag=$baseline" >> "$GITHUB_OUTPUT"
-
   get-plugins:
-    needs: compute-baseline
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
-      require_tag: ${{ needs.compute-baseline.outputs.baseline_tag }}
+      require_branch: v1
     secrets: inherit
 
   update-version:
     needs:
-      - compute-baseline
       - get-plugins
     runs-on: ubuntu-latest
     steps:

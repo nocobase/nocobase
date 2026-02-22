@@ -14,9 +14,9 @@ jobs:
   get-plugins:
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
-      # Only filter repos by tag for v1.x maintenance releases.
-      # For v2+ we keep the original strict behavior (clone should fail if a repo is missing the tag).
-      require_tag: ${{ startsWith(github.ref_name, 'v1.') && github.ref_name || '' }}
+      # For v1.x maintenance releases, only include repos that have the v1 branch.
+      # For v2+ we keep the original behavior (no filtering at this stage).
+      require_branch: ${{ startsWith(github.ref_name, 'v1.') && 'v1' || '' }}
     secrets: inherit
   publish-npm:
     needs: get-plugins
