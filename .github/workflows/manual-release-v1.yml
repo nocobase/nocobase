@@ -15,6 +15,11 @@ on:
         description: 'is feat (minor bump behavior, see release.sh)'
         type: boolean
         required: false
+      dry_run:
+        description: 'If true, do not build, commit, tag, or push. Only compute version + validate tag conflicts and print a plan.'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   get-plugins:
@@ -90,16 +95,79 @@ jobs:
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
           echo "packages/pro-plugins" >> .git/info/exclude
 
+      - name: Compute version (v1.x)
+        id: compute-version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ inputs.version }}" ]]; then
+            v=$(bash release.sh --only-version --version "${{ inputs.version }}")
+          else
+            v=$(bash release.sh --only-version $IS_FEAT)
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $v"
+        env:
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+
+      - name: Validate tag conflicts (v1.x)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.compute-version.outputs.version }}"
+          echo "Validating tag does not already exist: $TAG"
+
+          missing_ok=true
+          conflict=()
+
+          repos=("nocobase" "pro-plugins")
+          for r in $(echo '${{ needs.get-plugins.outputs.rc-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
+          for r in $(echo '${{ needs.get-plugins.outputs.custom-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
+
+          for repo in "${repos[@]}"; do
+            if gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" >/dev/null 2>&1; then
+              conflict+=("$repo")
+            fi
+          done
+
+          if [[ ${#conflict[@]} -gt 0 ]]; then
+            echo "Tag conflict: $TAG already exists in repos:" >&2
+            printf '%s\n' "${conflict[@]}" >&2
+            exit 1
+          fi
+
+          echo "OK: no conflicts for $TAG"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Dry run plan (v1.x)
+        if: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ inputs.version }}" ]]; then
+            bash release.sh --dry-run --version "${{ inputs.version }}"
+          else
+            bash release.sh --dry-run $IS_FEAT
+          fi
+        env:
+          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.rc-plugins }}
+          CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+
       - name: yarn install and build
+        if: ${{ !inputs.dry_run }}
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build
 
       - name: Install Lerna
+        if: ${{ !inputs.dry_run }}
         run: npm install -g lerna@4
 
       - name: Run release.sh (v1.x)
+        if: ${{ !inputs.dry_run }}
         shell: bash
         run: |
           if [[ -n "${{ inputs.version }}" ]]; then
@@ -113,6 +181,7 @@ jobs:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
       - name: Push tags/commits (v1)
+        if: ${{ !inputs.dry_run }}
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
