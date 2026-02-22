@@ -336,8 +336,7 @@ export const workflowSchema: ISchema = {
                   properties: {
                     enabled: {
                       type: 'boolean',
-                      'x-component': 'CollectionField',
-                      'x-read-pretty': true,
+                      'x-component': 'WorkflowEnabledSwitch',
                       default: false,
                     },
                   },
@@ -397,7 +396,6 @@ export const workflowSchema: ISchema = {
                               title: '{{ t("Edit") }}',
                               properties: {
                                 title: workflowFieldset.title,
-                                enabled: workflowFieldset.enabled,
                                 sync: workflowFieldset.sync,
                                 categories: workflowFieldset.categories,
                                 description: workflowFieldset.description,
