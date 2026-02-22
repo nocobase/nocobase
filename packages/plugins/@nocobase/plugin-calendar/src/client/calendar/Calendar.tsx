@@ -35,9 +35,12 @@ import {
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { cloneDeep, get, omit } from 'lodash';
+import chunk from 'lodash/chunk';
+import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
+import BaseMonthView from 'react-big-calendar/lib/Month';
 import { CalendarRecordViewer, findEventSchema } from './CalendarRecordViewer';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
@@ -62,7 +65,42 @@ interface Event {
   end: Date;
 }
 
-const Weeks = ['month', 'week', 'day'] as View[];
+type CalendarView = View | 'work_week';
+
+class WorkWeekMonthView extends (BaseMonthView as any) {
+  getBusinessWeeks = () => {
+    const { date, localizer } = this.props;
+    const start = localizer.firstVisibleDay(date, localizer);
+    const end = localizer.lastVisibleDay(date, localizer);
+    const days = localizer.range(start, end, 'day');
+    const weekdays = days.filter((day) => {
+      const d = day.getDay();
+      return d !== 0 && d !== 6;
+    });
+    return chunk(weekdays, 5);
+  };
+
+  render() {
+    const { className, popup } = this.props;
+    const weeks = this.getBusinessWeeks();
+    (this as any)._weekCount = weeks.length;
+
+    return (
+      <div
+        className={clsx('rbc-month-view', className)}
+        role="table"
+        aria-label="Month View"
+        ref={(this as any).containerRef}
+      >
+        <div className="rbc-row rbc-month-header" role="row">
+          {(this as any).renderHeaders(weeks[0] || [])}
+        </div>
+        {weeks.map((week, idx) => (this as any).renderWeek(week, idx))}
+        {popup && (this as any).renderOverlay()}
+      </div>
+    );
+  }
+}
 
 export const DeleteEventContext = React.createContext({
   close: () => {},
@@ -98,7 +136,7 @@ const useEvents = (
     title: string;
   },
   date: Date,
-  view: (typeof Weeks)[number] | any = 'month',
+  view: CalendarView | any = 'month',
 ) => {
   const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
@@ -122,8 +160,9 @@ const useEvents = (
       const intervalTime = end.diff(start, 'millisecond', true);
 
       const dateM = dayjs(date);
-      const startDate = dateM.clone().startOf(view);
-      const endDate = startDate.clone().endOf(view);
+      const normalizedView = view === 'work_week' ? 'week' : view;
+      const startDate = dateM.clone().startOf(normalizedView);
+      const endDate = startDate.clone().endOf(normalizedView);
 
       /**
        * view === month 时，会显示当月日程
@@ -271,12 +310,26 @@ export const Calendar: any = withDynamicSchemaProps(
         'eq',
       );
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
-        useProps(props);
+      const {
+        dataSource,
+        fieldNames,
+        showLunar,
+        getFontColor,
+        getBackgroundColor,
+        enableQuickCreateEvent,
+        weekType,
+        weekViewStartHour,
+        weekViewEndHour,
+      } = useProps(props);
       const height = useCalenderHeight();
+      const weekView: CalendarView = weekType === 'work_week' ? 'work_week' : 'week';
       const [date, setDate] = useState<Date>(new Date());
-      const [view, setView] = useState<View>(props.defaultView || 'month');
-      const { events, enumList } = useEvents(dataSource, fieldNames, date, view);
+      const [view, setView] = useState<CalendarView>(() => {
+        const defaultView = (props.defaultView as CalendarView) || 'month';
+        return defaultView === 'week' || defaultView === 'work_week' ? weekView : defaultView;
+      });
+      const runtimeView: CalendarView = view === 'week' || view === 'work_week' ? weekView : view;
+      const { events, enumList } = useEvents(dataSource, fieldNames, date, runtimeView);
       const [record, setRecord] = useState<any>({});
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
       const parentRecordData = useCollectionParentRecordData();
@@ -362,8 +415,40 @@ export const Calendar: any = withDynamicSchemaProps(
         });
       }, [locale, props.weekStart]);
       useEffect(() => {
-        setView(props.defaultView);
+        const defaultView = (props.defaultView as CalendarView) || 'month';
+        setView(defaultView === 'week' || defaultView === 'work_week' ? weekView : defaultView);
       }, [props.defaultView]);
+
+      useEffect(() => {
+        if (view === 'week' || view === 'work_week') {
+          setView(weekView);
+        }
+      }, [weekView]);
+
+      const calendarViews = useMemo(() => {
+        if (weekType === 'work_week') {
+          return {
+            month: WorkWeekMonthView,
+            work_week: true,
+            day: true,
+          };
+        }
+
+        return ['month', weekView, 'day'] as CalendarView[];
+      }, [weekType, weekView]);
+
+      const { minTime, maxTime } = useMemo(() => {
+        const parsedStart = Number(weekViewStartHour);
+        const parsedEnd = Number(weekViewEndHour);
+        const startHour = Number.isFinite(parsedStart) ? parsedStart : 0;
+        const endHour = Number.isFinite(parsedEnd) ? parsedEnd : 23;
+        const normalizedStart = Math.min(Math.max(startHour, 0), 23);
+        const normalizedEnd = Math.min(Math.max(endHour, normalizedStart + 1), 23);
+        return {
+          minTime: new Date(1970, 0, 1, normalizedStart, 0, 0),
+          maxTime: new Date(1970, 0, 1, normalizedEnd, 59, 59),
+        };
+      }, [weekViewStartHour, weekViewEndHour]);
 
       const components = useMemo(() => {
         return {
@@ -377,7 +462,7 @@ export const Calendar: any = withDynamicSchemaProps(
             dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
           },
         };
-      }, [showLunar]);
+      }, [showLunar, localizer, locale]);
 
       const messages: any = {
         allDay: '',
@@ -484,14 +569,16 @@ export const Calendar: any = withDynamicSchemaProps(
               selectable
               events={events}
               eventPropGetter={eventPropGetter}
-              view={view}
-              views={Weeks}
+              view={runtimeView}
+              views={calendarViews as any}
               date={date}
+              min={minTime}
+              max={maxTime}
               step={60}
               showMultiDayTimes
               messages={messages}
               onNavigate={setDate}
-              onView={setView}
+              onView={(nextView) => setView(nextView as CalendarView)}
               onSelectSlot={(slotInfo) => {
                 setCurrentSelectDate(slotInfo);
                 if (canCreate && enableQuickCreateEvent) {
