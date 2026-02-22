@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/ai",
-  "version": "2.1.0-alpha.4",
+  "version": "2.1.0-alpha.5",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/logger": "2.1.0-alpha.4",
-    "@nocobase/resourcer": "2.1.0-alpha.4",
-    "@nocobase/utils": "2.1.0-alpha.4",
+    "@nocobase/logger": "2.1.0-alpha.5",
+    "@nocobase/resourcer": "2.1.0-alpha.5",
+    "@nocobase/utils": "2.1.0-alpha.5",
     "fast-glob": "^3.3.2",
     "flexsearch": "^0.8.2"
   },

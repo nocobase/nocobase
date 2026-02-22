@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-markdown",
-  "version": "2.1.0-alpha.4",
+  "version": "2.1.0-alpha.5",
   "main": "dist/server/index.js",
   "displayName": "Block: Markdown",
   "displayName.zh-CN": "Markdown",
