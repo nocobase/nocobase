@@ -65,7 +65,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
    */
   hasActiveFilters(): boolean {
     // 检查 dataScope 是否有筛选
-    const resource = this.resource as any;
+    const resource = this['resource'] as any;
     if (resource && resource['filter'] && Object.keys(resource['filter']).length > 0) {
       return true;
     }
