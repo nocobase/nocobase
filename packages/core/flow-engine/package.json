@@ -26,6 +26,7 @@
     "react": ">=18"
   },
   "devDependencies": {
+    "vitepress": "^1.6.4",
     "typescript": "^5.x"
   },
   "keywords": [
@@ -35,5 +36,10 @@
     "workflow"
   ],
   "author": "NocoBase Team",
-  "license": "AGPL-3.0"
+  "license": "AGPL-3.0",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  }
 }
