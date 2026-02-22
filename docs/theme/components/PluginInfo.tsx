@@ -1,8 +1,8 @@
 import { Badge } from '@rspress/core/theme';
 import { Link, useFrontmatter } from "@rspress/runtime";
-import { PluginPrice } from './PluginPrice';
-import { EditionLevelsTypes, EditionLevels, EditionLevelsEN } from './EditionLevels';
 import { transformHref, useLangPrefix } from '../utils';
+import { EditionLevels, EditionLevelsEN, EditionLevelsTypes } from './EditionLevels';
+import { Related } from './Related';
 
 export type PluginInfoFrontmatter = {
   displayName?: string;
@@ -90,7 +90,7 @@ export function PluginInfo() {
               <td style={firstTdStyle}>Edition</td>
               <td style={tdStyle}>
                 <div style={{ display: "inline-flex", gap: "2px" }}>
-                  <Badge type={EditionLevelsTypes[frontmatter.editionLevel as number]}>
+                  <Badge type={EditionLevelsTypes[frontmatter.editionLevel as number] as 'tip'}>
                     {lang === 'cn' ? EditionLevels[frontmatter.editionLevel] : EditionLevelsEN[frontmatter.editionLevel]}+
                   </Badge>
                 </div>
@@ -99,6 +99,7 @@ export function PluginInfo() {
           )}
         </tbody>
       </table>
+      <Related pkg={frontmatter.packageName} />
       {/* <p>{frontmatter.description}</p> */}
     </>
   );
