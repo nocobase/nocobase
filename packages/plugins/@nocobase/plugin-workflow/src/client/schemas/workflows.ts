@@ -396,7 +396,6 @@ export const workflowSchema: ISchema = {
                               title: '{{ t("Edit") }}',
                               properties: {
                                 title: workflowFieldset.title,
-                                enabled: workflowFieldset.enabled,
                                 sync: workflowFieldset.sync,
                                 categories: workflowFieldset.categories,
                                 description: workflowFieldset.description,

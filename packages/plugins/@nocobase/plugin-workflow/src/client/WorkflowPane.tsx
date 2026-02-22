@@ -129,6 +129,7 @@ function WorkflowEnabledSwitch() {
   const { t } = useTranslation();
   const record = useRecord();
   const { resource } = useResourceContext();
+  const { refresh } = useResourceActionContext();
   const { token } = theme.useToken();
 
   const [checked, setChecked] = useState(Boolean(record?.enabled));
@@ -156,6 +157,7 @@ function WorkflowEnabledSwitch() {
           },
         });
         record.enabled = nextChecked;
+        refresh?.();
         message.success(t('Operation succeeded'));
       } catch (error) {
         console.error(error);
@@ -166,7 +168,7 @@ function WorkflowEnabledSwitch() {
         setLoading(false);
       }
     },
-    [checked, message, record, resource, t],
+    [checked, message, record, refresh, resource, t],
   );
 
   return (
