@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { App, Switch, Tooltip } from 'antd';
+import { App, Switch, Tooltip, theme } from 'antd';
 import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
@@ -128,6 +128,7 @@ function WorkflowEnabledSwitch() {
   const { t } = useTranslation();
   const record = useRecord();
   const { resource } = useResourceContext();
+  const { token } = theme.useToken();
 
   const [checked, setChecked] = useState(Boolean(record?.enabled));
   const [loading, setLoading] = useState(false);
@@ -168,9 +169,11 @@ function WorkflowEnabledSwitch() {
 
   return (
     <Switch
+      size="small"
       checked={checked}
       disabled={loading || !record?.id}
       loading={loading}
+      style={checked ? { backgroundColor: token.colorSuccess } : undefined}
       onClick={(val, e) => e?.stopPropagation?.()}
       onChange={onChange}
     />
