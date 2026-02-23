@@ -48,4 +48,4 @@ jobs:
 
       - run: yarn install
       - run: yarn test:client
-    timeout-minutes: 40
+    timeout-minutes: 30
