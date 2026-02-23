@@ -6,8 +6,18 @@
   },
   {
     "type": "file",
+    "name": "design",
+    "label": "System Design"
+  },
+  {
+    "type": "file",
     "name": "installation",
     "label": "Installation"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Legacy CRM (v1)"
   },
   {
     "type": "file",
