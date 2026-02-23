@@ -2,6 +2,15 @@ name: Get plugins
 
 on:
   workflow_call:
+    inputs:
+      require_tag:
+        description: 'If set, only include repos that have this git tag (e.g. v1.9.47 or v2.0.1)'
+        required: false
+        type: string
+      require_branch:
+        description: 'If set, only include repos that have this branch (e.g. v1)'
+        required: false
+        type: string
     secrets:
       NOCOBASE_APP_PRIVATE_KEY:
         required: true
@@ -52,32 +61,67 @@ jobs:
             done
             echo $plugins
           }
-          allPlugins=$(retry custom,rc,beta,alpha,unreleased)
+
+          function filterByBranch() {
+            local branch="$1"
+            local reposJson="$2"
+
+            if [[ -z "$branch" || "$reposJson" == "[]" ]]; then
+              echo "$reposJson"
+              return 0
+            fi
+
+            local repos
+            repos=$(echo "$reposJson" | jq -r '.[]')
+
+            local kept="[]"
+            for repo in $repos; do
+              if gh api -H "Accept: application/vnd.github+json" \
+                "/repos/nocobase/$repo/git/ref/heads/$branch" >/dev/null 2>&1; then
+                kept=$(echo "$kept" | jq --arg r "$repo" '. + [$r]')
+              fi
+            done
+
+            echo "$kept" | jq -c '.'
+          }
+
+          function filterByTag() {
+            local tag="$1"
+            local reposJson="$2"
+
+            if [[ -z "$tag" || "$reposJson" == "[]" ]]; then
+              echo "$reposJson"
+              return 0
+            fi
+
+            local repos
+            repos=$(echo "$reposJson" | jq -r '.[]')
+
+            local kept="[]"
+            for repo in $repos; do
+              if gh api -H "Accept: application/vnd.github+json" \
+                "/repos/nocobase/$repo/git/ref/tags/$tag" >/dev/null 2>&1; then
+                kept=$(echo "$kept" | jq --arg r "$repo" '. + [$r]')
+              fi
+            done
+
+            echo "$kept" | jq -c '.'
+          }
+
+          REQUIRE_TAG='${{ inputs.require_tag }}'
+
+          REQUIRE_BRANCH='${{ inputs.require_branch }}'
+
+          allPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry custom,rc,beta,alpha,unreleased)")")
           if [[ "$allPlugins" == "[]" ]]; then
             echo "Get all plugins empty"
             exit 1
           fi
-          customPlugins=$(retry custom)
-          if [[ "$customPlugins" == "[]" ]]; then
-            echo "Get custom plugins empty"
-            exit 1
-          fi
-          rcPlugins=$(retry rc)
-          if [[ "$rcPlugins" == "[]" ]]; then
-            echo "Get rc plugins empty"
-            exit 1
-          fi
-          betaPlugins=$(retry beta,rc)
-          if [[ "$betaPlugins" == "[]" ]]; then
-            echo "Get beta plugins empty"
-            exit 1
-          fi
-          alphaPlugins=$(retry alpha,beta,rc)
-          if [[ "$alphaPlugins" == "[]" ]]; then
-            echo "Get alpha plugins empty"
-            exit 1
-          fi
-          unreleasedPlugins=$(retry unreleased)
+          customPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry custom)")")
+          rcPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry rc)")")
+          betaPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry beta,rc)")")
+          alphaPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry alpha,beta,rc)")")
+          unreleasedPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry unreleased)")")
           echo "all-plugins=$allPlugins" >> "$GITHUB_OUTPUT"
           echo "custom-plugins=$customPlugins" >> "$GITHUB_OUTPUT"
           echo "rc-plugins=$rcPlugins" >> "$GITHUB_OUTPUT"
