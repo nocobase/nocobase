@@ -42,7 +42,189 @@ Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jenis basis da
 
 <Tabs>
 
-<Tab label="Versi Beta (2.0-beta)">
+<Tab label="Versi Latest">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
+      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      - APP_KEY=your-secret-key
+      # Jenis basis data, mendukung postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      - DB_HOST=postgres
+      # Port basis data
+      - DB_PORT=5432
+      # Nama basis data
+      - DB_DATABASE=nocobase
+      # Pengguna basis data
+      - DB_USER=nocobase
+      # Kata sandi basis data
+      - DB_PASSWORD=nocobase
+      # Zona waktu
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan postgres.
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
+      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      - APP_KEY=your-secret-key
+      # Jenis basis data, mendukung postgres, mysql, mariadb
+      - DB_DIALECT=mysql
+      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      - DB_HOST=mysql
+      # Port basis data
+      - DB_PORT=3306
+      # Nama basis data
+      - DB_DATABASE=nocobase
+      # Pengguna basis data
+      - DB_USER=root
+      # Kata sandi basis data
+      - DB_PASSWORD=nocobase
+      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      - DB_UNDERSCORED=true
+      # Zona waktu
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mysql.
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
+      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      - APP_KEY=your-secret-key
+      # Jenis basis data, mendukung postgres, mysql, mariadb
+      - DB_DIALECT=mariadb
+      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      - DB_HOST=mariadb
+      # Port basis data
+      - DB_PORT=3306
+      # Nama basis data
+      - DB_DATABASE=nocobase
+      # Pengguna basis data
+      - DB_USER=root
+      # Kata sandi basis data
+      - DB_PASSWORD=nocobase
+      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      - DB_UNDERSCORED=true
+      # Zona waktu
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mariadb.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Versi Beta">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -224,7 +406,7 @@ services:
 
 </Tab>
 
-<Tab label="Versi Alpha (2.0-alpha)">
+<Tab label="Versi Alpha">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -354,188 +536,6 @@ networks:
 services:
   app:
     image: nocobase/nocobase:alpha-full
-    restart: always
-    networks:
-      - nocobase
-    depends_on:
-      - mariadb
-    environment:
-      # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
-      - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
-      - DB_DIALECT=mariadb
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
-      - DB_HOST=mariadb
-      # Port basis data
-      - DB_PORT=3306
-      # Nama basis data
-      - DB_DATABASE=nocobase
-      # Pengguna basis data
-      - DB_USER=root
-      # Kata sandi basis data
-      - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
-      - DB_UNDERSCORED=true
-      # Zona waktu
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - '13000:80'
-    # init: true
-
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mariadb.
-  mariadb:
-    image: mariadb:11
-    environment:
-      MYSQL_DATABASE: nocobase
-      MYSQL_USER: nocobase
-      MYSQL_PASSWORD: nocobase
-      MYSQL_ROOT_PASSWORD: nocobase
-    restart: always
-    volumes:
-      - ./storage/db/mariadb:/var/lib/mysql
-    networks:
-      - nocobase
-```
-
-</Tab>
-</Tabs>
-
-</Tab>
-
-<Tab label="Versi Latest (1.9)">
-
-<Tabs>
-<Tab label="PostgreSQL">
-
-```yml
-networks:
-  nocobase:
-    driver: bridge
-
-services:
-  app:
-    image: nocobase/nocobase:latest-full
-    restart: always
-    networks:
-      - nocobase
-    depends_on:
-      - postgres
-    environment:
-      # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
-      - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
-      - DB_DIALECT=postgres
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
-      - DB_HOST=postgres
-      # Port basis data
-      - DB_PORT=5432
-      # Nama basis data
-      - DB_DATABASE=nocobase
-      # Pengguna basis data
-      - DB_USER=nocobase
-      # Kata sandi basis data
-      - DB_PASSWORD=nocobase
-      # Zona waktu
-      - TZ=Asia/Shanghai
-
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - '13000:80'
-    # init: true
-
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan postgres.
-  postgres:
-    image: postgres:16
-    restart: always
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
-    volumes:
-      - ./storage/db/postgres:/var/lib/postgresql/data
-    networks:
-      - nocobase
-```
-
-</Tab>
-
-<Tab label="MySQL">
-
-```yml
-networks:
-  nocobase:
-    driver: bridge
-
-services:
-  app:
-    image: nocobase/nocobase:latest-full
-    restart: always
-    networks:
-      - nocobase
-    depends_on:
-      - mysql
-    environment:
-      # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
-      - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
-      - DB_DIALECT=mysql
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
-      - DB_HOST=mysql
-      # Port basis data
-      - DB_PORT=3306
-      # Nama basis data
-      - DB_DATABASE=nocobase
-      # Pengguna basis data
-      - DB_USER=root
-      # Kata sandi basis data
-      - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
-      - DB_UNDERSCORED=true
-      # Zona waktu
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - '13000:80'
-    # init: true
-
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mysql.
-  mysql:
-    image: mysql:8
-    environment:
-      MYSQL_DATABASE: nocobase
-      MYSQL_USER: nocobase
-      MYSQL_PASSWORD: nocobase
-      MYSQL_ROOT_PASSWORD: nocobase
-    restart: always
-    volumes:
-      - ./storage/db/mysql:/var/lib/mysql
-    networks:
-      - nocobase
-```
-
-</Tab>
-
-<Tab label="MariaDB">
-
-```yml
-networks:
-  nocobase:
-    driver: bridge
-
-services:
-  app:
-    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
