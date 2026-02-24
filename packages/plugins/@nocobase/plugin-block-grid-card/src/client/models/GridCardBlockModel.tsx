@@ -19,7 +19,16 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
+import {
+  CollectionBlockModel,
+  BlockSceneEnum,
+  ActionModel,
+  getUnknownCountPaginationTotal,
+  getSimpleModePaginationClassName,
+  createCompactSimpleItemRender,
+  applyMobilePaginationProps,
+  mergePaginationClassName,
+} from '@nocobase/client';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { List, Space, Slider, Grid, InputNumber, Col } from 'antd';
 import { css } from '@emotion/css';
@@ -79,13 +88,14 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
     const data = this.resource.getData();
     const columns = this.props.columnCount?.[this._screens] || 1;
     const rowCount = this.props.rowCount || 1;
+    const isMobileLayout = !!this.context.isMobileLayout;
 
     const multiples = [1, 2, 3, 5, 10];
 
     const pageSizeOptions = multiples.map((m) => columns * rowCount * m);
 
     if (totalCount) {
-      return {
+      const result = {
         current,
         pageSize,
         total: totalCount,
@@ -101,39 +111,30 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
           this.resource.refresh();
         },
       };
+      return applyMobilePaginationProps(result, isMobileLayout);
     } else {
-      return {
+      const nextPageSize = pageSize || 10;
+      const nextCurrent = current || 1;
+      const result = {
         // showTotal: false,
         simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
-        pageSize,
-        total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
-        className: css`
-          .ant-pagination-simple-pager {
-            display: none !important;
-          }
-        `,
-        itemRender: (_, type, originalElement) => {
-          if (type === 'prev') {
-            return (
-              <div
-                style={{ display: 'flex' }}
-                className={css`
-                  .ant-pagination-item-link {
-                    min-width: ${this.context.themeToken.controlHeight}px;
-                  }
-                `}
-              >
-                {originalElement} <div>{this.resource.getPage()}</div>
-              </div>
-            );
-          } else {
-            return originalElement;
-          }
-        },
+        pageSize: nextPageSize,
+        total: getUnknownCountPaginationTotal({
+          dataLength: data?.length,
+          pageSize: nextPageSize,
+          current: nextCurrent,
+          hasNext,
+        }),
+        className: mergePaginationClassName(getSimpleModePaginationClassName(true), undefined),
+        itemRender: createCompactSimpleItemRender({
+          current: nextCurrent,
+          controlHeight: this.context.themeToken.controlHeight,
+        }),
       };
+      return applyMobilePaginationProps(result, isMobileLayout);
     }
   }
 
