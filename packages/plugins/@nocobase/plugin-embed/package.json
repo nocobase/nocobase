@@ -1,0 +1,32 @@
+{
+  "name": "@nocobase/plugin-embed",
+  "displayName": "Embed NocoBase",
+  "displayName.zh-CN": "嵌入 NocoBase",
+  "description": "Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.",
+  "description.zh-CN": "将 NocoBase 嵌入外部系统或页面中，使其成为该系统或页面的一部分。",
+  "version": "2.1.0-alpha.5",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/embed",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/embed",
+  "keywords": [],
+  "nocobase": {
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "antd": "5.x",
+    "copy-to-clipboard": "3.3.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "6.x"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x"
+  },
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "license": "Apache-2.0"
+}

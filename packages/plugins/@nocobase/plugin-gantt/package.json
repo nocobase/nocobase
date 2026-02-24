@@ -7,7 +7,7 @@
   "description": "Provides Gantt block.",
   "description.ru-RU": "Предоставляет блок диаграммы Ганта.",
   "description.zh-CN": "提供甘特图区块。",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-gantt",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-gantt",

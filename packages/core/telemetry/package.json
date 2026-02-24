@@ -2,7 +2,7 @@
   "name": "@nocobase/telemetry",
   "version": "2.1.0-alpha.5",
   "description": "nocobase telemetry library",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "repository": {

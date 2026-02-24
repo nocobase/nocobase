@@ -5,7 +5,7 @@
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile-client",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile-client",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "displayName": "Mobile client(Deprecated)",
   "displayName.ru-RU": "Мобильный клиент (устарел)",
   "displayName.zh-CN": "移动端（已废弃）",

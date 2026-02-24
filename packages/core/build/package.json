@@ -46,7 +46,7 @@
     "vite-plugin-lib-inject-css": "1.2.0",
     "yargs-parser": "13.1.2"
   },
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch"

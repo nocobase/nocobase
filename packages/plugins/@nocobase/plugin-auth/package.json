@@ -34,5 +34,6 @@
   "keywords": [
     "Authentication",
     "Security"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

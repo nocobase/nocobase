@@ -1,0 +1,14 @@
+{
+  "AddStep": "단계 추가",
+  "Delete": "삭제",
+  "Edit step title": "단계 제목 편집",
+  "Next": "다음",
+  "Previous": "이전",
+  "Step": "단계",
+  "Step title": "단계 제목",
+  "StepsForm": "단계별 양식",
+  "StepsForm(Add new)": "단계별 양식(새로 추가)",
+  "StepsForm(Edit)": "단계 양식(편집)",
+  "The last step cannot be deleted": "마지막 단계는 삭제할 수 없습니다",
+  "Whether to delete this step": "이 단계를 삭제하시겠습니까?"
+}

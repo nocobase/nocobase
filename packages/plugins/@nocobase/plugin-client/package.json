@@ -8,7 +8,7 @@
   "description.zh-CN": "为 NocoBase 服务端提供客户端界面",
   "version": "2.1.0-alpha.5",
   "main": "./dist/server/index.js",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "antd": "5.x",
     "cronstrue": "^2.11.0",
