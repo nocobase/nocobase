@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-form-drafts",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/server/index.js",
   "displayName": "Form drafts",
   "displayName.zh-CN": "表单草稿",

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-variable",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "displayName": "Workflow: Custom variable",
   "displayName.zh-CN": "工作流：自定义变量节点",
   "description": "Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.",
