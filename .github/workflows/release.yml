@@ -41,6 +41,16 @@ jobs:
             echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
             echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
           fi
+      - uses: actions/create-github-app-token@v1
+        id: validate-token
+        if: ${{ startsWith(github.ref_name, 'v1.') }}
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          # Use owner-wide installation token so validation can read tags from other (possibly private) repos.
+          owner: nocobase
+          skip-token-revoke: true
+
       - name: Validate v1 tag exists in all selected repos
         if: ${{ startsWith(github.ref_name, 'v1.') }}
         shell: bash
@@ -67,7 +77,7 @@ jobs:
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
 
       - uses: actions/create-github-app-token@v1
         id: app-token
