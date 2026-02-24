@@ -19,7 +19,18 @@ import { SignOut } from './SignOut';
 const { UsersProvider } = lazy(() => import('./UsersProvider'), 'UsersProvider');
 const { UsersManagement } = lazy(() => import('./UsersManagement'), 'UsersManagement');
 const { RoleUsersManager } = lazy(() => import('./RoleUsersManager'), 'RoleUsersManager');
-class PluginUsersClient extends Plugin {
+
+export class PluginUsersClient extends Plugin {
+  private usersTableColumns: Map<string, any> = new Map();
+
+  registerUsersTableColumn(key: string, columnSchema: any) {
+    this.usersTableColumns.set(key, columnSchema);
+  }
+
+  getUsersTableColumns() {
+    return this.usersTableColumns;
+  }
+
   async load() {
     this.app.pluginSettingsManager.add('users-permissions', {
       title: tval('Users & Permissions', { ns: 'users' }),
