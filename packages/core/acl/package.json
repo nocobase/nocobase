@@ -10,7 +10,6 @@
   },
   "peerDependencies": {
     "@nocobase/database": "2.0.2",
-    "@nocobase/data-source-manager": "2.0.2",
     "@nocobase/resourcer": "2.0.2",
     "@nocobase/utils": "2.0.2"
   },

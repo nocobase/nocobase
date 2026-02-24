@@ -21,7 +21,6 @@ import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manage
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 import Database from '@nocobase/database';
-import { ICollection } from '@nocobase/data-source-manager';
 
 export interface CanResult {
   role: string;
@@ -643,7 +642,7 @@ export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateO
 /**
  * @internal
  */
-export function checkFilterParams(collection: ICollection, filter: any) {
+export function checkFilterParams(collection, filter) {
   if (!filter) {
     return;
   }
