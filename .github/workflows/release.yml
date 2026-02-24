@@ -220,8 +220,11 @@ jobs:
 
           TAGS=()
 
-          TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
-          TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
+          # For v1 maintenance tags, do not push a floating default tag (e.g. `latest`).
+          if [[ "${{ github.ref_name }}" != v1.* ]]; then
+            TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
+            TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
+          fi
 
           IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
           for TAG in "${TAG_ARRAY[@]}"; do
@@ -240,8 +243,11 @@ jobs:
 
           TAGS=()
 
-          TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
-          TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
+          # For v1 maintenance tags, do not push a floating default tag (e.g. `latest-full`).
+          if [[ "${{ github.ref_name }}" != v1.* ]]; then
+            TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
+            TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
+          fi
 
           IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
           for TAG in "${TAG_ARRAY[@]}"; do
