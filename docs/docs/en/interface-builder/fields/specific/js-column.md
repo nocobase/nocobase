@@ -37,7 +37,7 @@ The script editor for JS Column supports syntax highlighting, error hints, and b
 
 You can also use an AI Employee to generate code:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Common Usage
 

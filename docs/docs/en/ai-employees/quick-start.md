@@ -1,58 +1,69 @@
 # Quick Start
 
-Let's start from scratch and take 5 minutes to quickly understand and use NocoBase AI Employees.
+Let's complete a minimal usable AI Employee setup in 5 minutes.
 
-![clipboard-image-1766653060](https://static-docs.nocobase.com/clipboard-image-1766653060.png)
+## Install Plugin
 
-## 1. Install Plugin
+AI Employees are built into NocoBase (`@nocobase/plugin-ai`), so no separate installation is required.
 
-AI Employees are built into NocoBase (`@nocobase/plugin-ai`), ready to use out of the box without separate installation.
+## Configure Models
 
-## 2. Configure LLM Service
+You can configure LLM services from either entry:
 
-Before using AI Employees, you need to connect to an online LLM Service.
+1. Admin entry: `System Settings -> AI Employees -> LLM service`.
+2. Frontend shortcut: In the AI chat panel, use `Model Switcher` to choose a model, then click the shortcut to add an LLM service.
 
-NocoBase currently supports mainstream online LLM Services such as OpenAI, Gemini, Claude, DeepSeek, Qwen (Aliyun), etc. Recommended models (tested): **gemini-3**, **deepseek-chat**, **qwen3-max**.
+![quick-start-model-switcher-add-llm-service.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/quick-start-model-switcher-add-llm-service.png)
 
-In addition to online LLM Services, NocoBase also supports connecting to Ollama local models.
+Usually you need to confirm:
 
-1.  Go to **System Settings** -> **AI Employees** -> **LLM Service**.
-2.  Click **Add New** and select your model provider.
-3.  Enter the API Key and Base URL (optional).
-4.  Click **Test Connection** to ensure the configuration is correct.
+1. Select Provider.
+2. Fill API Key.
+3. Configure `Enabled Models`; default `Recommend` is usually enough.
 
-![20251021213122](https://static-docs.nocobase.com/20251021213122.png)
+## Enable Built-in Employees
 
-![20251021214903](https://static-docs.nocobase.com/20251021214903.png)
+Built-in AI Employees are enabled by default, and usually do not need to be enabled one by one.
 
-## 3. Enable Built-in Employees
-NocoBase comes with several built-in AI Employees out of the box, covering common scenarios.
-1.  Go to **System Settings** -> **AI Employees** list page.
-2.  Find the **AI Employee** you need, for example **Viz (Insight Analyst)**.
-3.  Click **Edit**, in **Model Settings**, select the LLM Service and Model configured earlier. Recommended: **gemini-3**, **deepseek-chat**, **qwen3-max**.
-4.  In the **Profile** tab, click the **Enabled** switch.
-5.  Click **Submit** at the bottom to save and take effect.
+If you need to adjust availability (enable/disable a specific employee), update the `Enabled` switch in `System Settings -> AI Employees` list.
 
-![clipboard-image-1766660703](https://static-docs.nocobase.com/clipboard-image-1766660703.png)
+![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
 
-![clipboard-image-1766660863](https://static-docs.nocobase.com/clipboard-image-1766660863.png)
+## Start Collaborating
 
-## 4. Start Collaborating
-1.  Return to the application interface, click the **AI Floating Ball** in the bottom right corner, select the employee you want, and start collaborating.
-2.  Try sending a command: ```"Please analyze the quantity and quality (high intent ratio) of leads by source, and provide 2–3 channel optimization suggestions."```
+On the application page, hover over the bottom-right shortcut entry and choose an AI Employee.
 
-You can also **Add Work Context**, **Upload Files**, etc., to let the AI better understand the current environment and needs.
+![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
 
-![clipboard-image-1766661858](https://static-docs.nocobase.com/clipboard-image-1766661858.png)
+Click to open the AI chat dialog:
 
-![clipboard-image-1766666328](https://static-docs.nocobase.com/clipboard-image-1766666328.png)
+![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)
 
-Congratulations! You have successfully completed this AI workflow experience. You can continue to explore AI Employees in other roles to further improve business efficiency.
+You can also:
+
+- Add blocks
+- Add attachments
+- Enable Web Search
+- Switch AI Employees
+- Select models
+
+AI Employees can also automatically get page structure as context. For example, Dex on a form block can read form field structures and call suitable skills to operate on the page.
+
+## Shortcut Tasks
+
+You can preset common tasks for each AI Employee at the current location, so work can start with one click.
+
+<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
 
 ## Built-in Employees Overview
-NocoBase provides several built-in AI Employees for specific scenarios.
 
-You just need to configure the Model for them to start working.
+NocoBase provides multiple built-in AI Employees for different scenarios.
+
+You only need to:
+
+1. Configure LLM services.
+2. Adjust employee enable status when needed (enabled by default).
+3. Select model in chat and start collaborating.
 
 | Employee Name | Role Positioning | Core Capabilities |
 | :--- | :--- | :--- |
@@ -66,8 +77,10 @@ You just need to configure the Model for them to start working.
 | **Orin** | Data Modeling Expert | Assist in designing data table structures, field suggestions |
 | **Nathan** | Frontend Engineer | Assist in writing frontend code snippets, style adjustments |
 
-## Remarks
-Some built-in AI Employees will not appear in the AI Employee list in the bottom right corner. They have exclusive work scenarios, for example:
-* Orin will only appear on the data configuration page;
-* Dara will only appear on the chart configuration page;
-* Nathan will only appear on the JS Editor.
+**Notes**
+
+Some built-in AI Employees do not appear in the bottom-right list because they have dedicated scenarios:
+
+- Orin: data modeling pages.
+- Dara: chart configuration blocks.
+- Nathan: JS Block and similar code editors.
