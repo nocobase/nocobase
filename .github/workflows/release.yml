@@ -55,6 +55,16 @@ jobs:
           owner: nocobase
           skip-token-revoke: true
 
+      - name: Prepare dist-tag arg
+        shell: bash
+        run: |
+          DIST_TAG="${{ steps.get-info.outputs.defaultTag }}"
+          if [[ -n "$DIST_TAG" ]]; then
+            echo "DIST_TAG_ARG=--dist-tag=$DIST_TAG" >> $GITHUB_ENV
+          else
+            echo "DIST_TAG_ARG=" >> $GITHUB_ENV
+          fi
+
       - name: Validate v1 tag exists in all selected repos
         if: ${{ startsWith(github.ref_name, 'v1.') }}
         shell: bash
@@ -132,11 +142,6 @@ jobs:
           yarn config set registry https://registry.npmjs.org/
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm whoami
-          DIST_TAG="${{ steps.get-info.outputs.defaultTag }}"
-          DIST_TAG_ARG=""
-          if [[ -n "$DIST_TAG" ]]; then
-            DIST_TAG_ARG="--dist-tag=$DIST_TAG"
-          fi
           yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ $DIST_TAG_ARG
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
@@ -161,22 +166,12 @@ jobs:
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          DIST_TAG="${{ steps.get-info.outputs.defaultTag }}"
-          DIST_TAG_ARG=""
-          if [[ -n "$DIST_TAG" ]]; then
-            DIST_TAG_ARG="--dist-tag=$DIST_TAG"
-          fi
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com $DIST_TAG_ARG
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          DIST_TAG="${{ steps.get-info.outputs.defaultTag }}"
-          DIST_TAG_ARG=""
-          if [[ -n "$DIST_TAG" ]]; then
-            DIST_TAG_ARG="--dist-tag=$DIST_TAG"
-          fi
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com $DIST_TAG_ARG
   push-docker:
     runs-on: ubuntu-latest
