@@ -122,6 +122,17 @@ jobs:
           betaPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry beta,rc)")")
           alphaPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry alpha,beta,rc)")")
           unreleasedPlugins=$(filterByTag "$REQUIRE_TAG" "$(filterByBranch "$REQUIRE_BRANCH" "$(retry unreleased)")")
+
+          # For v1.x maintenance releases, we should include all plugin repos that have the v1 branch,
+          # regardless of their props.plugin-type (e.g. repos marked as "unreleased").
+          if [[ "$REQUIRE_BRANCH" == "v1" ]]; then
+            rcPlugins=$allPlugins
+            customPlugins='[]'
+            betaPlugins='[]'
+            alphaPlugins='[]'
+            unreleasedPlugins='[]'
+          fi
+
           echo "all-plugins=$allPlugins" >> "$GITHUB_OUTPUT"
           echo "custom-plugins=$customPlugins" >> "$GITHUB_OUTPUT"
           echo "rc-plugins=$rcPlugins" >> "$GITHUB_OUTPUT"
