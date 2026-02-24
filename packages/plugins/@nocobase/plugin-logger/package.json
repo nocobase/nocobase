@@ -7,7 +7,7 @@
   "description.ru-RU": "Серверные логи, включают журналы запросов API и системные журналы, с возможностью архивации и скачивания лог-файлов.",
   "description.zh-CN": "服务端日志，主要包括接口请求日志和系统运行日志，并支持打包和下载日志文件。",
   "version": "2.1.0-beta.2",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/logger",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/logger",

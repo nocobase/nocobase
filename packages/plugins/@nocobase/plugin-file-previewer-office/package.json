@@ -17,5 +17,6 @@
   "keywords": [
     "File manager",
     "Collection fields"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

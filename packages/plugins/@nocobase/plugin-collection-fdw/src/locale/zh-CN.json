@@ -1,0 +1,17 @@
+{
+  "Connect to foreign data": "连接外部数据",
+  "Connection successful": "连接成功",
+  "Create database server": "创建数据库服务",
+  "Database": "数据库",
+  "Database server": "数据库服务",
+  "Display name": "名称",
+  "Edit database server": "编辑数据库服务",
+  "Host": "服务器地址",
+  "Password": "密码",
+  "Port": "端口",
+  "Remote table": "远程表",
+  "Server name": "服务名称",
+  "Sync from remote table": "从远程表同步",
+  "Test Connection": "测试连接",
+  "Username": "用户名"
+}

@@ -11,7 +11,7 @@
   "homepage": "https://docs.nocobase.com/handbook/auth-sms",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth-sms",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth-sms",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@formily/react": "2.x",
     "antd": "5.x",

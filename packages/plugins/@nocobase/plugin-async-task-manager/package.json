@@ -16,5 +16,6 @@
   },
   "dependencies": {
     "p-queue": "^6.6.2"
-  }
+  },
+  "license": "Apache-2.0"
 }

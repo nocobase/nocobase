@@ -18,5 +18,6 @@
   "keywords": [
     "Users & permissions"
   ],
-  "gitHead": "ce89d10eec858c413f60e001e83c7c8cf2645f5e"
+  "gitHead": "ce89d10eec858c413f60e001e83c7c8cf2645f5e",
+  "license": "Apache-2.0"
 }
