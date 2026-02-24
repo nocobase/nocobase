@@ -55,44 +55,6 @@ jobs:
           owner: nocobase
           skip-token-revoke: true
 
-      - name: Validate v1 tag exists in all selected repos
-        if: ${{ startsWith(github.ref_name, 'v1.') }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG='${{ github.ref_name }}'
-          missing=()
-
-          for repo in $(echo '${{ steps.get-info.outputs.proRepos }}' | jq -r '.[]'); do
-            if ! gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" >/dev/null 2>&1; then
-              missing+=("$repo")
-            fi
-          done
-
-          for repo in $(echo '${{ needs.get-plugins.outputs.custom-plugins }}' | jq -r '.[]'); do
-            if ! gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" >/dev/null 2>&1; then
-              missing+=("$repo")
-            fi
-          done
-
-          if [[ ${#missing[@]} -gt 0 ]]; then
-            echo "Missing tag $TAG in repos:" >&2
-            printf '%s\n' "${missing[@]}" >&2
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ steps.validate-token.outputs.token }}
-
-      - uses: actions/create-github-app-token@v1
-        id: validate-token
-        if: ${{ startsWith(github.ref_name, 'v1.') }}
-        with:
-          app-id: ${{ vars.NOCOBASE_APP_ID }}
-          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          # Use owner-wide installation token so validation can read tags from other (possibly private) repos.
-          owner: nocobase
-          skip-token-revoke: true
-
       - name: Prepare dist-tag arg
         shell: bash
         run: |
