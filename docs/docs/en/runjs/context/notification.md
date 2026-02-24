@@ -10,12 +10,10 @@ Global notification API based on Ant Design Notification; shows notifications in
 | **Event flow** | System notice after async flow ends |
 | **Longer content** | Full notification with title, description, actions |
 
-> Note: `ctx.notification` may be absent in some contexts (e.g. pure server); use optional chaining: `ctx.notification?.open({ ... })`.
-
 ## Type
 
 ```ts
-notification: NotificationInstance | undefined;
+notification: NotificationInstance;
 ```
 
 `NotificationInstance` is the Ant Design notification API.

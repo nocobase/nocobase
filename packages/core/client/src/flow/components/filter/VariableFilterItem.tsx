@@ -304,8 +304,14 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           return metaTreeNode?.paths.slice(1).join('.') || null;
         },
         resolvePathFromValue(v) {
-          if (!v) return v;
-          return ['collection', ...String(v).split('.')];
+          if (v === null || v === undefined) {
+            return undefined;
+          }
+          const normalized = String(v).trim();
+          if (!normalized) {
+            return undefined;
+          }
+          return ['collection', ...normalized.split('.')];
         },
       };
     }, []);
@@ -442,16 +448,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       // 组件类型保持稳定，避免输入过程中重挂载导致失焦
       function Dynamic({ dynValue }: { dynValue: unknown }) {
         const onChangeValueRef = React.useRef<(v: unknown) => void>(() => {});
-        // 将外部变更回调保持最新引用
-        const onChangeValue = useCallback(
-          (v: VariableFilterItemValue['value']) => {
-            setRightValue(v);
-          },
-          [setRightValue],
-        );
-        useEffect(() => {
-          onChangeValueRef.current = onChangeValue;
-        }, [onChangeValue]);
+        // 使用 ref 持有最新回调，避免 form effects 捕获旧闭包
+        onChangeValueRef.current = (v: unknown) => {
+          setRightValue(v as VariableFilterItemValue['value']);
+        };
 
         const formRef = React.useRef<Form | null>(null);
         if (!formRef.current) {
@@ -472,27 +472,25 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           formRef.current?.setValues({ value: dynValue });
         }, [dynValue]);
 
-        const schemaRHS: ISchema = useMemo(
-          () =>
-            merge(
-              {
-                name: 'value',
-                'x-component': 'Input',
-                'x-component-props': {
-                  style: { width: 200 },
-                  placeholder: stableT('Enter value'),
-                },
-                'x-read-pretty': false,
-                'x-validator': undefined,
-                'x-decorator': undefined,
-              },
-              mergedSchema || {},
-            ),
-          [mergedSchema, stableT],
+        const schemaRHS: ISchema = merge(
+          {
+            name: 'value',
+            'x-component': 'Input',
+            'x-component-props': {
+              style: { width: 200 },
+              placeholder: stableT('Enter value'),
+            },
+            'x-read-pretty': false,
+            'x-validator': undefined,
+            'x-decorator': undefined,
+          },
+          mergedSchema || {},
         );
+        const form = formRef.current;
+        if (!form) return null;
 
         return (
-          <FormProvider form={formRef.current!}>
+          <FormProvider form={form}>
             <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
               <SchemaComponent schema={schemaRHS} />
             </div>
@@ -561,6 +559,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       model.context.app,
       setRightValue,
       enumOptions,
+      xComp,
     ]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）

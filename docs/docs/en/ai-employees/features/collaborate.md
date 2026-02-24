@@ -1,52 +1,33 @@
 # Collaborate with AI Employees
 
-After creating an AI Employee, we can collaborate with our AI Employee on any NocoBase page.
+After creating and enabling AI Employees, you can collaborate with them in pages.
 
-We can open them by clicking an employee avatar in the employee list at the bottom right of the page, and then start collaborating.
+## Entry Points
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+There are two common entry points:
 
-You can also pin AI Employees wherever you need them, such as on Tables or Forms, and click them to open the Chatbox.
+1. **Bottom-right main entry**: Open the AI chat panel from the bottom-right corner of business pages. Suitable for general Q&A and cross-block collaboration.
+2. **Block Action entry**: In blocks that support `Actions`, enter via `Actions -> AI employees`. Suitable for tasks on the current block (for example JSBlock scenarios).
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+### Bottom-right main entry
 
+![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
 
-## Basic Operations in the Chatbox
+### Block Action entry
 
-After opening the AI Employee, enter your message and click the send button to start the conversation.
+![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-![20251021234541](https://static-docs.nocobase.com/20251021234541.png)
+## Basic Chat Operations
 
-Hovering over a user message will reveal quick action icons:
-- Edit and resend message
-- Copy user message content
-  
-![20251021235715](https://static-docs.nocobase.com/20251021235715.png)
+The chat panel supports common operations such as sending messages, uploading attachments, viewing history, creating new chats, and editing system prompts.
 
-Hovering over an AI message will reveal quick action icons:
-- Ask AI to regenerate reply
-- Copy AI message content
+## In-Chat Switching
 
-![20251021235847](https://static-docs.nocobase.com/20251021235847.png)
+At the bottom of the input area, you can switch directly:
 
-Click the "Upload" icon to upload and send files to the AI Employee.
+- `AI Employee Switcher`: switch current employee.
+- `Model Switcher`: switch current session model.
 
-![20251022000327](https://static-docs.nocobase.com/20251022000327.png)
+Model preferences are saved per employee and restored next time.
 
-The top left corner of the Chatbox is the chat history list. Click to expand the list and view past conversations.
-
-![20251021234640](https://static-docs.nocobase.com/20251021234640.png)
-
-Click the "Pencil" icon in the top right corner to start a new Chat.
-
-![20251021234841](https://static-docs.nocobase.com/20251021234841.png)
-
-Click the "i" icon in the top right corner to edit the custom System prompt.
-
-![20251021235314](https://static-docs.nocobase.com/20251021235314.png)
-
-Click the "Expand" icon in the top right corner to display the AI Employee Chatbox in full screen.
-
-![20251021235427](https://static-docs.nocobase.com/20251021235427.png)
-
-![20251021235525](https://static-docs.nocobase.com/20251021235525.png)
+![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

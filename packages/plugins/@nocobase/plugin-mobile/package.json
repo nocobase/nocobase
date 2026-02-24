@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "displayName": "Mobile (deprecated)",
   "displayName.zh-CN": "移动端（已废弃）",
   "displayName.ru-RU": "Мобильная версия (устарело)",

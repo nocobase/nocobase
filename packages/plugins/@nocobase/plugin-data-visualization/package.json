@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "displayName": "Data visualization",
   "displayName.ru-RU": "Визуализация данных",
   "displayName.zh-CN": "数据可视化",
@@ -49,5 +49,6 @@
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Blocks"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

@@ -10,12 +10,10 @@
 | **事件流** | 异步流程结束后的系统级提醒 |
 | **需较长展示的内容** | 带标题、描述、操作按钮的完整通知 |
 
-> 注意：`ctx.notification` 在部分上下文中可能不存在（如无 UI 的纯服务端逻辑），使用前建议做空值判断：`ctx.notification?.open({ ... })`。
-
 ## 类型定义
 
 ```ts
-notification: NotificationInstance | undefined;
+notification: NotificationInstance;
 ```
 
 `NotificationInstance` 为 Ant Design notification 接口，提供以下方法。

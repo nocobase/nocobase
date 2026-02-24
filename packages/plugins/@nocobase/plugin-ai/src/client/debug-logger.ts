@@ -56,6 +56,18 @@ const STORAGE_KEY = 'AI_DEBUG_LOGS';
 const MAX_SESSIONS = 5;
 const MAX_LOGS_PER_SESSION = 500;
 
+// [AI_DEBUG] Generate unique ID, fallback for environments without crypto.randomUUID (e.g. older browsers)
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 class AIDebugLogger {
   // [AI_DEBUG] Listeners for real-time updates
   private listeners: Set<LogListener> = new Set();
@@ -102,7 +114,7 @@ class AIDebugLogger {
 
     session.updatedAt = Date.now();
     const logEntry: LogEntry = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       type,
       time: Date.now(),
       data,
@@ -166,7 +178,6 @@ class AIDebugLogger {
   getSession(sessionId: string): SessionLog | undefined {
     return this.getStorage().sessions.find((s) => s.sessionId === sessionId);
   }
-
 }
 
 export const aiDebugLogger = new AIDebugLogger();

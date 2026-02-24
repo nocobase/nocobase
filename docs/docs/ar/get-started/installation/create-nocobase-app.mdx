@@ -24,7 +24,55 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 <Tabs>
 
-<Tab label="إصدار بيتا (2.0-beta)">
+<Tab label="أحدث إصدار">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="إصدار بيتا">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -72,7 +120,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="إصدار ألفا (2.0-alpha)">
+<Tab label="إصدار ألفا">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -107,54 +155,6 @@ npx create-nocobase-app@alpha my-nocobase-app -d mysql \
 
 ```bash
 npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3306 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-</Tabs>
-
-</Tab>
-
-<Tab label="أحدث إصدار (1.9)">
-
-<Tabs>
-<Tab label="PostgreSQL">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d postgres \
-   -e DB_HOST=localhost \
-   -e DB_PORT=5432 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-
-<Tab label="MySQL">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d mysql \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3306 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-
-<Tab label="MariaDB">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d mariadb \
    -e DB_HOST=localhost \
    -e DB_PORT=3306 \
    -e DB_DATABASE=nocobase \

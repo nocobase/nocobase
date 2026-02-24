@@ -7,7 +7,7 @@
   "description": "",
   "description.ru-RU": "Обеспечивает совместное использование коллекций между несколькими приложениями.",
   "description.zh-CN": "",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
@@ -32,5 +32,6 @@
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "System management"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

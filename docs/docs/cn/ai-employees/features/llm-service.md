@@ -1,30 +1,35 @@
-
 # 配置 LLM 服务
 
-在使用 AI 员工之前，需要先接入在线 LLM 服务。
+在使用 AI 员工前，需要先配置可用的 LLM 服务。
 
-NocoBase 目前支持主流的在线 LLM 服务，如 OpenAI, Gemini, Claude, DeepSeek, Qwen（阿里千问）等。
+当前支持 OpenAI、Gemini、Claude、DeepSeek、Qwen、Kimi，以及 Ollama 本地模型。
 
-除了在线 LLM 服务，NocoBase 也支持 Ollama 本地模型的接入。
+## 新建服务
 
+进入 `系统设置 -> AI 员工 -> LLM service`。
 
-## 选择 LLM 服务
-进入 AI 员工插件配置页面，点击 `LLM service` 标签页，进入 LLM 服务管理页。
+1. 点击 `Add New` 打开新建弹窗。
+2. 选择 `Provider`。
+3. 填写 `Title`、`API Key`、`Base URL`（可选）。
+4. 配置 `Enabled Models`：
+   - `Recommended models`：使用官方推荐模型。
+   - `Select models`：从 Provider 返回列表中选择。
+   - `Manual input`：手动录入模型 ID 与显示名。
+5. 点击 `Submit` 保存。
 
-![20251021213122](https://static-docs.nocobase.com/20251021213122.png)
+![llm-service-create-provider-enabled-models.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-create-provider-enabled-models.png)
 
-鼠标在 LLM 服务列表右上角的 `Add New` 按钮上悬停，选择要使用的 LLM 服务
+## 服务启用与排序
 
-![20251021213358](https://static-docs.nocobase.com/20251021213358.png)
+在 LLM 服务列表中可以直接：
 
-这里以 OpenAI 为例，在弹窗中输入一个易于记忆的 `title`，然后输入在 OpenAI 获取的 `API key`，点击 `Submit` 保存，即可完成 LLM 服务配置。
+- 使用 `Enabled` 开关启停服务。
+- 拖拽排序服务顺序（影响模型展示顺序）。
 
-`Base URL` 通常留空即可，假如你正在使用兼容 OpenAI 接口的第三方 LLM 服务，请填写对应的 Base URL。
-
-![20251021214549](https://static-docs.nocobase.com/20251021214549.png)
+![llm-service-list-enabled-and-sort.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-list-enabled-and-sort.png)
 
 ## 可用性测试
 
-在 LLM 服务配置页面，点击 `Test flight` 按钮，输入想要使用的模型名称，点击 `Run` 按钮，即可测试 LLM 服务及模型是否可用。
+在服务配置弹窗底部使用 `Test flight` 测试服务与模型可用性。
 
-![20251021214903](https://static-docs.nocobase.com/20251021214903.png)
+建议先测试再投入业务使用。

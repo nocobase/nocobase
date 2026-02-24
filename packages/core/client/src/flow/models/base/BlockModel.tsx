@@ -43,6 +43,59 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   customModelClasses = {} as any;
   collectionRequired = false;
   private ObservedRenderComponent = null;
+
+  /**
+   * 记录各筛选来源是否活跃（有有效筛选值）
+   * key: filterId (筛选器 uid), value: boolean (是否有有效筛选)
+   */
+  private activeFilterSources: Map<string, boolean> = new Map();
+
+  /**
+   * 设置指定筛选来源的活跃状态
+   * @param filterId 筛选器 uid
+   * @param active 是否有有效筛选值
+   */
+  setFilterActive(filterId: string, active: boolean) {
+    this.activeFilterSources.set(filterId, active);
+  }
+
+  /**
+   * 检查是否有任何活跃的筛选来源
+   * @returns boolean
+   */
+  hasActiveFilters(): boolean {
+    // 检查 dataScope 是否有筛选
+    const resource = this['resource'] as any;
+    if (resource && resource['filter'] && Object.keys(resource['filter']).length > 0) {
+      return true;
+    }
+
+    // 检查所有绑定的筛选器
+    for (const [, active] of this.activeFilterSources) {
+      if (active) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 移除指定筛选来源
+   * @param filterId 筛选器 uid
+   */
+  removeFilterSource(filterId: string) {
+    this.activeFilterSources.delete(filterId);
+  }
+
+  /**
+   * 获取数据加载模式
+   * @returns 'auto' | 'manual'
+   */
+  getDataLoadingMode(): 'auto' | 'manual' {
+    return this.getStepParams('dataLoadingModeSettings')?.mode || 'auto';
+  }
+
   static _getScene() {
     return _.castArray(this['scene'] || []);
   }

@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/test",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "exports": {
     ".": {
       "require": {
@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
-    "@nocobase/server": "2.0.0-alpha.71",
+    "@nocobase/server": "2.0.2",
     "@playwright/test": "^1.45.3",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.0.0",

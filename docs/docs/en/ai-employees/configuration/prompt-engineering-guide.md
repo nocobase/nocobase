@@ -179,7 +179,7 @@ Example Chart:
 Start with a working version → Test on a small scale → Log issues → Add rules/examples to address issues → Test again
 ```
 
-<img src="https://static-docs.nocobase.com/prompt-engineering-guide-2025-11-02-20-19-54.png" alt="Optimization Process" width="50%">
+<img src="https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-20-21.jpg" alt="Optimization Process" width="50%">
 
 It is recommended to test 5–10 typical tasks at once, completing one round within 30 minutes.
 

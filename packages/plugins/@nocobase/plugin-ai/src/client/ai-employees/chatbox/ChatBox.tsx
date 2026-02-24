@@ -261,37 +261,46 @@ export const ChatBoxMinimizeControl: React.FC = () => {
   const t = useT();
   const [api, contextHolder] = notification.useNotification();
   const key = useRef(`ai-chat-box-minimize--control-${new Date().getTime()}`);
-  if (minimize === true) {
-    api.open({
-      key: key.current,
-      closeIcon: false,
-      message: (
-        <Flex justify="space-between" align="center">
-          <Avatar shape="circle" size={35} src={avatars(currentEmployee.avatar)} />
-          <Text ellipsis>{t('Conversation')}</Text>
-          <Button
-            type="text"
-            icon={<CloseOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              setMinimize(false);
-            }}
-          ></Button>
-        </Flex>
-      ),
-      duration: 0,
-      placement: 'top',
-      style: {
-        width: 200,
-      },
-      onClick() {
-        setMinimize(false);
-      },
-    });
-  } else {
-    api.destroy(key.current);
-  }
+
+  const currentEmployeeAvatar = currentEmployee?.avatar;
+
+  useEffect(() => {
+    if (minimize === true && currentEmployeeAvatar) {
+      api.open({
+        key: key.current,
+        closeIcon: false,
+        message: (
+          <Flex justify="space-between" align="center">
+            <Avatar shape="circle" size={35} src={avatars(currentEmployeeAvatar)} />
+            <Text ellipsis>{t('Conversation')}</Text>
+            <Button
+              type="text"
+              icon={<CloseOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                setMinimize(false);
+              }}
+            ></Button>
+          </Flex>
+        ),
+        duration: 0,
+        placement: 'top',
+        style: {
+          width: 200,
+        },
+        onClick() {
+          setMinimize(false);
+        },
+      });
+    } else {
+      api.destroy(key.current);
+    }
+
+    return () => {
+      api.destroy(key.current);
+    };
+  }, [api, currentEmployeeAvatar, minimize, setMinimize, setOpen, t]);
 
   return <>{contextHolder}</>;
 };

@@ -1,0 +1,18 @@
+{
+  "cancel": "取消",
+  "confirm": "确认",
+  "equalsAny": "等于任意一个",
+  "errorParsingExcel": "解析 Excel 文件出错:",
+  "excelFileEmpty": "Excel 文件为空",
+  "failedToParseExcel": "解析 Excel 文件失败",
+  "importExcel": "从 Excel 批量导入关键词",
+  "importSuccess": "成功导入 {{count}} 个关键词",
+  "keywordsInputPlaceholder": "多个关键词用换行符分割",
+  "noValidKeywords": "未找到有效关键词",
+  "notEqualsAny": "不等于任意一个",
+  "providedByPlugin": "由 @nocobase/plugin-multi-keyword-filter 插件提供",
+  "selectAtLeastOneColumn": "请至少选择一列",
+  "selectColumnsPlaceholder": "请选择要导入的列",
+  "selectExcelColumns": "选择要导入的 Excel 列",
+  "tips": "选择单列效果：将该列中所有非空值导入为关键词。\n选择多列效果：将多列中的非空值合并为关键词，重复值会被去除。"
+}

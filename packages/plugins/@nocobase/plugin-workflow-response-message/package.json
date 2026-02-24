@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-response-message",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "displayName": "Workflow: Response message",
   "displayName.ru-RU": "Рабочий процесс: Сообщение ответа",
   "displayName.zh-CN": "工作流：响应消息",
@@ -21,5 +21,6 @@
   "keywords": [
     "Workflow"
   ],
-  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4"
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "license": "Apache-2.0"
 }

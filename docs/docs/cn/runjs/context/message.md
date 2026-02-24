@@ -10,12 +10,10 @@ Ant Design 全局 message API，用于在页面顶部中央显示临时轻提示
 | **表单操作 / 事件流** | 提交成功、保存失败、校验不通过等反馈 |
 | **操作事件 (JSAction)** | 点击、批量操作完成等即时反馈 |
 
-> 注意：`ctx.message` 在部分上下文中可能不存在（如无 UI 的纯服务端逻辑），使用前建议做空值判断：`ctx.message?.success('...')`。
-
 ## 类型定义
 
 ```ts
-message: MessageInstance | undefined;
+message: MessageInstance;
 ```
 
 `MessageInstance` 为 Ant Design message 接口，提供以下方法。
