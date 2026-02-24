@@ -33,7 +33,7 @@ jobs:
           # v1.x maintenance releases should publish under dist-tag `v1` (and must not touch `latest`).
           if [[ "${{ github.ref_name }}" =~ ^v1\. ]]; then
             echo "defaultTag=$(echo 'v1')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.all-plugins }}')" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref_name }}" =~ "beta" ]]; then
             echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
             echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
