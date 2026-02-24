@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-tree",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "main": "dist/server/index.js",
   "displayName": "Block: Tree",
   "displayName.zh-CN": "区块：树",

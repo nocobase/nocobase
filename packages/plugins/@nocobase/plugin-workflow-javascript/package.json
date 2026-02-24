@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-javascript",
-  "version": "2.0.0-alpha.71",
+  "version": "2.0.2",
   "displayName": "Workflow: JavaScript",
   "displayName.zh-CN": "工作流：JavaScript 节点",
   "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
