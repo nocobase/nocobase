@@ -20,5 +20,6 @@
   },
   "devDependencies": {
     "langchain-gigachat": "^0.0.14"
-  }
+  },
+  "license": "Apache-2.0"
 }

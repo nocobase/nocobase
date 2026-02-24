@@ -27,5 +27,6 @@
     ],
     "editionLevel": 0
   },
-  "gitHead": "04f3daa5bac874d52d60b4e8864b8dc8c57d1470"
+  "gitHead": "04f3daa5bac874d52d60b4e8864b8dc8c57d1470",
+  "license": "Apache-2.0"
 }

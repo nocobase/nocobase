@@ -11,7 +11,7 @@
   "homepage": "https://docs.nocobase.com/handbook/data-source-main",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-source-main",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-main",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
     "toposort": "^2.0.2"

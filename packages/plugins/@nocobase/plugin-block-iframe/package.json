@@ -7,7 +7,7 @@
   "description.ru-RU": "Создавайте iframe-блоки и управляйте ими на странице для встраивания и отображения внешних веб-страниц или контента.",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
   "version": "2.0.2",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-iframe",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-iframe",

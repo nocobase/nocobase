@@ -24,5 +24,6 @@
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "keywords": [
     "Custom variables"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

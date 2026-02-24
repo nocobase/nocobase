@@ -27,5 +27,6 @@
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "nocobase": {
     "defaultEnabled": true
-  }
+  },
+  "license": "Apache-2.0"
 }

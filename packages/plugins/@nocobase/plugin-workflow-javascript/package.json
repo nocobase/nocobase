@@ -34,5 +34,6 @@
   },
   "keywords": [
     "Workflow"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

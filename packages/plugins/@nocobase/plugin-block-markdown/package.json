@@ -6,7 +6,7 @@
   "displayName.zh-CN": "Markdown",
   "description": "Provide Markdown block",
   "description.zh-CN": "提供Markdown 区块",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "homepage": "https://docs.nocobase.com/handbook/block-markdown",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-markdown",
   "peerDependencies": {

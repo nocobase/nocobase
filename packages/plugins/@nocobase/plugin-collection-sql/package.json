@@ -11,7 +11,7 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/collection-sql",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "main": "dist/server/index.js",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

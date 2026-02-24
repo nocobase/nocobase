@@ -33,5 +33,6 @@
   },
   "keywords": [
     "Notification"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

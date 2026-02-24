@@ -25,5 +25,6 @@
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "antd": "5.x"
-  }
+  },
+  "license": "Apache-2.0"
 }
