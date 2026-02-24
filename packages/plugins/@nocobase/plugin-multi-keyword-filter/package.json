@@ -1,0 +1,29 @@
+{
+  "name": "@nocobase/plugin-multi-keyword-filter",
+  "version": "2.0.2",
+  "main": "dist/server/index.js",
+  "displayName": "Multi-keyword filter",
+  "displayName.zh-CN": "多关键词筛选",
+  "description": "Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.",
+  "description.zh-CN": "支持常见字段的多关键词筛选，支持快捷输入或从 Excel 批量导入关键词。",
+  "homepage": "https://docs.nocobase.com/handbook/multi-keyword-filter",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/multi-keyword-filter",
+  "keywords": [
+    "Multiple keywords"
+  ],
+  "nocobase": {
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "xlsx": "0.18.5"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "antd": "5.x"
+  }
+}

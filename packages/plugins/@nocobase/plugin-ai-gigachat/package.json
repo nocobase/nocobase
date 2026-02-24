@@ -1,0 +1,24 @@
+{
+  "name": "@nocobase/plugin-ai-gigachat",
+  "displayName": "AI LLM: GigaChat",
+  "displayName.zh-CN": "AI LLM：GigaChat",
+  "description": "Support integration with GigaChat LLM service.",
+  "description.zh-CN": "支持接入 GigaChat LLM 服务。",
+  "version": "2.0.0-alpha.71",
+  "main": "dist/server/index.js",
+  "nocobase": {
+    "supportedVersions": [
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/plugin-ai": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "devDependencies": {
+    "langchain-gigachat": "^0.0.14"
+  }
+}
