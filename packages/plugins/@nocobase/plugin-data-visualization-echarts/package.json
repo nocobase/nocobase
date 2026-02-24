@@ -23,7 +23,8 @@
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/test": "2.x",
+    "@nocobase/plugin-data-visualization": "2.x"
   },
   "keywords": [
     "Blocks"
