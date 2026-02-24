@@ -37,7 +37,189 @@ vi docker-compose.yml
 
 <Tabs>
 
-<Tab label="Beta 版本（2.0-beta）">
+<Tab label="Latest 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # 应用的密钥，用于生成用户 token 等
+      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
+      # 可以是任意随机字符串，并确保不对外泄露
+      - APP_KEY=your-secret-key
+      # 数据库类型，支持 postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # 数据库主机，可以替换为已有的数据库服务器 IP
+      - DB_HOST=postgres
+      # Database port
+      - DB_PORT=5432
+      # 数据库名
+      - DB_DATABASE=nocobase
+      # 数据库用户
+      - DB_USER=nocobase
+      # 数据库密码
+      - DB_PASSWORD=nocobase
+      # 时区
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 如果使用已有数据库服务，可以不启动 postgres
+  postgres:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # 应用的密钥，用于生成用户 token 等
+      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
+      # 可以是任意随机字符串，并确保不对外泄露
+      - APP_KEY=your-secret-key
+      # 数据库类型，支持 postgres, mysql, mariadb
+      - DB_DIALECT=mysql
+      # 数据库主机，可以替换为已有的数据库服务器 IP
+      - DB_HOST=mysql
+      # Database port
+      - DB_PORT=3306
+      # 数据库名
+      - DB_DATABASE=nocobase
+      # 数据库用户
+      - DB_USER=root
+      # 数据库密码
+      - DB_PASSWORD=nocobase
+      # 数据库表名、字段名是否转为 snake case 风格
+      - DB_UNDERSCORED=true
+      # 时区
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 如果使用已有数据库服务，可以不启动 mysql
+  mysql:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # 应用的密钥，用于生成用户 token 等
+      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
+      # 可以是任意随机字符串，并确保不对外泄露
+      - APP_KEY=your-secret-key
+      # 数据库类型，支持 postgres, mysql, mariadb
+      - DB_DIALECT=mariadb
+      # 数据库主机，可以替换为已有的数据库服务器 IP
+      - DB_HOST=mariadb
+      # Database port
+      - DB_PORT=3306
+      # 数据库名
+      - DB_DATABASE=nocobase
+      # 数据库用户
+      - DB_USER=root
+      # 数据库密码
+      - DB_PASSWORD=nocobase
+      # 数据库表名、字段名是否转为 snake case 风格
+      - DB_UNDERSCORED=true
+      # 时区
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # 如果使用已有数据库服务，可以不启动 mariadb
+  mariadb:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Beta 版本">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -219,7 +401,7 @@ services:
 
 </Tab>
 
-<Tab label="Alpha 版本（2.0-alpha）">
+<Tab label="Alpha 版本">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -349,188 +531,6 @@ networks:
 services:
   app:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
-    restart: always
-    networks:
-      - nocobase
-    depends_on:
-      - mariadb
-    environment:
-      # 应用的密钥，用于生成用户 token 等
-      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
-      # 可以是任意随机字符串，并确保不对外泄露
-      - APP_KEY=your-secret-key
-      # 数据库类型，支持 postgres, mysql, mariadb
-      - DB_DIALECT=mariadb
-      # 数据库主机，可以替换为已有的数据库服务器 IP
-      - DB_HOST=mariadb
-      # Database port
-      - DB_PORT=3306
-      # 数据库名
-      - DB_DATABASE=nocobase
-      # 数据库用户
-      - DB_USER=root
-      # 数据库密码
-      - DB_PASSWORD=nocobase
-      # 数据库表名、字段名是否转为 snake case 风格
-      - DB_UNDERSCORED=true
-      # 时区
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - '13000:80'
-    # init: true
-
-  # 如果使用已有数据库服务，可以不启动 mariadb
-  mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
-    environment:
-      MYSQL_DATABASE: nocobase
-      MYSQL_USER: nocobase
-      MYSQL_PASSWORD: nocobase
-      MYSQL_ROOT_PASSWORD: nocobase
-    restart: always
-    volumes:
-      - ./storage/db/mariadb:/var/lib/mysql
-    networks:
-      - nocobase
-```
-
-</Tab>
-</Tabs>
-
-</Tab>
-
-<Tab label="Latest 版本（1.9）">
-
-<Tabs>
-<Tab label="PostgreSQL">
-
-```yml
-networks:
-  nocobase:
-    driver: bridge
-
-services:
-  app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    restart: always
-    networks:
-      - nocobase
-    depends_on:
-      - postgres
-    environment:
-      # 应用的密钥，用于生成用户 token 等
-      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
-      # 可以是任意随机字符串，并确保不对外泄露
-      - APP_KEY=your-secret-key
-      # 数据库类型，支持 postgres, mysql, mariadb
-      - DB_DIALECT=postgres
-      # 数据库主机，可以替换为已有的数据库服务器 IP
-      - DB_HOST=postgres
-      # Database port
-      - DB_PORT=5432
-      # 数据库名
-      - DB_DATABASE=nocobase
-      # 数据库用户
-      - DB_USER=nocobase
-      # 数据库密码
-      - DB_PASSWORD=nocobase
-      # 时区
-      - TZ=Asia/Shanghai
-
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - '13000:80'
-    # init: true
-
-  # 如果使用已有数据库服务，可以不启动 postgres
-  postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
-    restart: always
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: nocobase
-      POSTGRES_DB: nocobase
-      POSTGRES_PASSWORD: nocobase
-    volumes:
-      - ./storage/db/postgres:/var/lib/postgresql/data
-    networks:
-      - nocobase
-```
-
-</Tab>
-
-<Tab label="MySQL">
-
-```yml
-networks:
-  nocobase:
-    driver: bridge
-
-services:
-  app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    restart: always
-    networks:
-      - nocobase
-    depends_on:
-      - mysql
-    environment:
-      # 应用的密钥，用于生成用户 token 等
-      # 如果 APP_KEY 修改了，旧的 token 也会随之失效
-      # 可以是任意随机字符串，并确保不对外泄露
-      - APP_KEY=your-secret-key
-      # 数据库类型，支持 postgres, mysql, mariadb
-      - DB_DIALECT=mysql
-      # 数据库主机，可以替换为已有的数据库服务器 IP
-      - DB_HOST=mysql
-      # Database port
-      - DB_PORT=3306
-      # 数据库名
-      - DB_DATABASE=nocobase
-      # 数据库用户
-      - DB_USER=root
-      # 数据库密码
-      - DB_PASSWORD=nocobase
-      # 数据库表名、字段名是否转为 snake case 风格
-      - DB_UNDERSCORED=true
-      # 时区
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - '13000:80'
-    # init: true
-
-  # 如果使用已有数据库服务，可以不启动 mysql
-  mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
-    environment:
-      MYSQL_DATABASE: nocobase
-      MYSQL_USER: nocobase
-      MYSQL_PASSWORD: nocobase
-      MYSQL_ROOT_PASSWORD: nocobase
-    restart: always
-    volumes:
-      - ./storage/db/mysql:/var/lib/mysql
-    networks:
-      - nocobase
-```
-
-</Tab>
-
-<Tab label="MariaDB">
-
-```yml
-networks:
-  nocobase:
-    driver: bridge
-
-services:
-  app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
