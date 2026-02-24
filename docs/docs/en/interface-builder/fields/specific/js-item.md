@@ -32,7 +32,7 @@ JS Item is used for "custom items" (not bound to a field) in a form. You can use
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
 
-- Can be used with AI Employee to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
+- Can be used with AI Employee to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Common Usage (Simplified Examples)
 

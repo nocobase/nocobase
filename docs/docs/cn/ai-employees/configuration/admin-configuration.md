@@ -41,10 +41,10 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 模型服务相当于 AI 员工的大脑，必须先设置好。
 
-> 💡 详细配置说明请参考：[配置 LLM 服务](/ai-employees/quick-start/llm-service)
+> 💡 详细配置说明请参考：[配置 LLM 服务](/ai-employees/features/llm-service)
 
 **路径：**
-`系统设置 → AI 员工 → 模型服务`
+`系统设置 → AI 员工 → LLM service`
 
 ![进入配置页面](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
 
@@ -52,14 +52,14 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 | 项目     | 说明                         | 注意事项      |
 | ------ | -------------------------- | --------- |
-| 接口类型   | 如 OpenAI、Claude 等          | 兼容相同规范的服务 |
+| Provider   | 如 OpenAI、Claude、Gemini、Kimi 等          | 兼容相同规范的服务 |
 | API 密钥 | 服务商提供的密钥                   | 保密并定期更换   |
-| 服务地址   | API Endpoint               | 使用代理时需修改  |
-| 模型名称   | 具体模型名（如 gpt-4、claude-opus） | 影响能力与成本   |
+| Base URL   | API Endpoint（可选）               | 使用代理时需修改  |
+| Enabled Models   | 推荐模型 / 选择模型 / 手动录入模型 | 决定会话中可切换的模型范围   |
 
 ![创建大模型服务](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
-配置后请**测试连接**。
+配置后请使用 `Test flight` **测试连接**。
 如果失败，请检查网络、密钥或模型名称。
 
 ![测试连接](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
@@ -67,7 +67,7 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 ### 第 2 步：创建 AI 员工
 
-> 💡 详细说明请参考：[创建 AI 员工](/ai-employees/quick-start/ai-employees)
+> 💡 详细说明请参考：[创建 AI 员工](/ai-employees/features/new-ai-employees)
 
 路径：`AI 员工管理 → 创建员工`
 
@@ -84,9 +84,7 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 ![基础信息配置](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
-然后绑定刚刚配置好的**模型服务**。
-
-![绑定大模型服务](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+员工创建阶段主要完成角色与技能配置。实际使用模型可在会话中通过 `Model Switcher` 选择。
 
 **提示词编写建议：**
 
@@ -103,7 +101,7 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 技能决定员工能"做什么"。
 
-> 💡 详细说明请参考：[技能](/ai-employees/advanced/skill)
+> 💡 详细说明请参考：[技能](/ai-employees/features/tool)
 
 | 类型   | 能力范围    | 示例        | 风险等级   |
 | ---- | ------- | --------- | ------ |
@@ -116,7 +114,7 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 * 每个员工 3–5 个技能最合适
 * 不建议全选，容易混乱
-* 重要操作前关闭自动执行（Auto usage）
+* 重要操作建议使用 `Ask` 权限，而不是 `Allow`
 
 ![配置技能](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
 
@@ -164,7 +162,7 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 AI 任务定义了员工在具体页面或区块中的行为。
 
-> 💡 详细说明请参考：[任务](/ai-employees/advanced/task)
+> 💡 详细说明请参考：[任务](/ai-employees/features/task)
 
 
 ### 1. 页面级任务
@@ -227,7 +225,7 @@ AI 任务定义了员工在具体页面或区块中的行为。
 | 项目         | 建议          | 理由       |
 | ---------- | ----------- | -------- |
 | 技能数量       | 3–5 个       | 准确高、响应快  |
-| Auto usage | 谨慎开启        | 防止误操作    |
+| 权限模式（Ask / Allow） | 修改数据建议 Ask | 防止误操作 |
 | 提示词长度      | 500–1000 字符 | 兼顾速度与质量  |
 | 任务目标       | 单一明确        | 避免 AI 迷茫 |
 | 工作流        | 复杂任务封装后使用   | 成功率更高    |
@@ -280,10 +278,10 @@ A：检查是否填写了所有必填项，尤其是模型服务与提示词。
 * 技能太多导致混乱
 * 拆小任务、加示例
 
-**Q：Auto usage 什么时候开？**
+**Q：Ask / Allow 什么时候选？**
 
-* 查询类任务可开
-* 修改数据类任务建议关闭
+* 查询类任务可以使用 `Allow`
+* 修改数据类任务建议使用 `Ask`
 
 **Q：如何让AI处理特定表单？**
 
@@ -301,17 +299,17 @@ A：如果是页面级的配置，需要手动点选区块。
 **配置相关：**
 
 * [提示词工程指南](./prompt-engineering-guide.md) - 编写高质量提示词的技巧和最佳实践
-* [配置 LLM 服务](/ai-employees/quick-start/llm-service) - 大模型服务的详细配置说明
-* [创建 AI 员工](/ai-employees/quick-start/ai-employees) - AI 员工的创建和基础配置
-* [与 AI 员工协作](/ai-employees/quick-start/collaborate) - 如何与 AI 员工进行有效对话
+* [配置 LLM 服务](/ai-employees/features/llm-service) - 大模型服务的详细配置说明
+* [创建 AI 员工](/ai-employees/features/new-ai-employees) - AI 员工的创建和基础配置
+* [与 AI 员工协作](/ai-employees/features/collaborate) - 如何与 AI 员工进行有效对话
 
 **进阶功能：**
 
-* [技能](/ai-employees/advanced/skill) - 深入了解各类技能的配置和使用
-* [任务](/ai-employees/advanced/task) - 任务配置的高级技巧
-* [选择区块](/ai-employees/advanced/pick-block) - 如何为 AI 员工指定数据区块
-* [数据源](/ai-employees/advanced/datasource) - 数据源的配置和管理
-* [联网搜索](/ai-employees/advanced/web-search) - 配置 AI 员工的联网搜索能力
+* [技能](/ai-employees/features/tool) - 深入了解各类技能的配置和使用
+* [任务](/ai-employees/features/task) - 任务配置的高级技巧
+* [选择区块](/ai-employees/features/pick-block) - 如何为 AI 员工指定数据区块
+* 数据源 - 请参考对应插件的数据源配置文档
+* [联网搜索](/ai-employees/features/web-search) - 配置 AI 员工的联网搜索能力
 
 **知识库与 RAG：**
 

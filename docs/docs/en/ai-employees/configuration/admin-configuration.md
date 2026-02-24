@@ -39,10 +39,10 @@ The benefits of this design are:
 
 The model service is like the brain of an AI Employee and must be set up first.
 
-> 💡 For detailed configuration instructions, please refer to: [Configure LLM Service](/ai-employees/quick-start/llm-service)
+> 💡 For detailed configuration instructions, please refer to: [Configure LLM Service](/ai-employees/features/llm-service)
 
 **Path:**
-`System Settings → AI Employee → Model Service`
+`System Settings → AI Employees → LLM service`
 
 
 ![Enter configuration page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
@@ -52,16 +52,16 @@ Click **Add** and fill in the following information:
 
 | Item | Description | Notes |
 |---|---|---|
-| Interface Type | e.g., OpenAI, Claude, etc. | Compatible with services using the same specification |
+| Provider | e.g., OpenAI, Claude, Gemini, Kimi, etc. | Compatible with services using the same specification |
 | API Key | The key provided by the service provider | Keep it confidential and change it regularly |
-| Service Address | API Endpoint | Needs to be modified when using a proxy |
-| Model Name | Specific model name (e.g., gpt-4, claude-opus) | Affects capabilities and cost |
+| Base URL | API Endpoint (optional) | Needs to be modified when using a proxy |
+| Enabled Models | Recommended models / Select models / Manual input | Defines which models are available in chat |
 
 
 ![Create a large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
 
-After configuration, please **test the connection**.
+After configuration, use `Test flight` to **test the connection**.
 If it fails, please check your network, API key, or model name.
 
 
@@ -70,7 +70,7 @@ If it fails, please check your network, API key, or model name.
 
 ### Step 2: Create an AI Employee
 
-> 💡 For detailed instructions, please refer to: [Create an AI Employee](/ai-employees/quick-start/ai-employees)
+> 💡 For detailed instructions, please refer to: [Create an AI Employee](/ai-employees/features/new-ai-employees)
 
 Path: `AI Employee Management → Create Employee`
 
@@ -89,10 +89,7 @@ Fill in the basic information:
 ![Basic information configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
 
-Then, bind the **model service** you just configured.
-
-
-![Bind large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+At employee creation stage, focus on role and skill configuration. The actual model can be selected in chat via `Model Switcher`.
 
 
 **Prompt Writing Suggestions:**
@@ -109,7 +106,7 @@ Then, bind the **model service** you just configured.
 
 Skills determine what an employee "can do".
 
-> 💡 For detailed instructions, please refer to: [Skills](/ai-employees/advanced/skill)
+> 💡 For detailed instructions, please refer to: [Skills](/ai-employees/features/tool)
 
 | Type | Capability Scope | Example | Risk Level |
 |---|---|---|---|
@@ -122,7 +119,7 @@ Skills determine what an employee "can do".
 
 * 3–5 skills per employee is most appropriate
 * It's not recommended to select all skills, as it can cause confusion
-* Disable Auto usage before important operations
+* For important operations, prefer `Ask` over `Allow`
 
 
 ![Configure skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
@@ -173,7 +170,7 @@ Next is to get them "to work".
 
 AI tasks define the employee's behavior on a specific page or block.
 
-> 💡 For detailed instructions, please refer to: [Tasks](/ai-employees/advanced/task)
+> 💡 For detailed instructions, please refer to: [Tasks](/ai-employees/features/task)
 
 ### 1. Page-level Tasks
 
@@ -243,7 +240,7 @@ Suitable for operating on a specific block, such as "Translate the current form"
 | Item | Suggestion | Reason |
 |---|---|---|
 | Number of Skills | 3–5 | High accuracy, fast response |
-| Auto usage | Enable with caution | Prevents accidental operations |
+| Permission mode (Ask / Allow) | Prefer Ask for data changes | Prevent accidental operations |
 | Prompt Length | 500–1000 characters | Balances speed and quality |
 | Task Goal | Single and clear | Avoids confusing the AI |
 | Workflow | Use after encapsulating complex tasks | Higher success rate |
@@ -293,10 +290,10 @@ A: Check if all required fields are filled in, especially the model service and 
 * Too many skills are causing confusion
 * Break down the task into smaller parts, add examples
 
-**Q: When should Auto usage be enabled?**
+**Q: When should I choose Ask vs Allow?**
 
-* It can be enabled for query-type tasks
-* It is recommended to disable it for data modification tasks
+* `Allow` can be used for query-only tasks
+* `Ask` is recommended for data modification tasks
 
 **Q: How to make the AI process a specific form?**
 
@@ -315,17 +312,17 @@ To make your AI employees more powerful, you can continue reading the following 
 **Configuration Related:**
 
 * [Prompt Engineering Guide](./prompt-engineering-guide.md) - Techniques and best practices for writing high-quality prompts
-* [Configure LLM Service](/ai-employees/quick-start/llm-service) - Detailed configuration instructions for large model services
-* [Create an AI Employee](/ai-employees/quick-start/ai-employees) - Creation and basic configuration of AI employees
-* [Collaborate with AI Employee](/ai-employees/quick-start/collaborate) - How to have effective conversations with AI employees
+* [Configure LLM Service](/ai-employees/features/llm-service) - Detailed configuration instructions for large model services
+* [Create an AI Employee](/ai-employees/features/new-ai-employees) - Creation and basic configuration of AI employees
+* [Collaborate with AI Employee](/ai-employees/features/collaborate) - How to have effective conversations with AI employees
 
 **Advanced Features:**
 
-* [Skills](/ai-employees/advanced/skill) - In-depth understanding of the configuration and use of various skills
-* [Tasks](/ai-employees/advanced/task) - Advanced techniques for task configuration
-* [Pick Block](/ai-employees/advanced/pick-block) - How to specify data blocks for AI employees
-* [Data Source](/ai-employees/advanced/datasource) - Configuration and management of data sources
-* [Web Search](/ai-employees/advanced/web-search) - Configuring the web search capability for AI employees
+* [Skills](/ai-employees/features/tool) - In-depth understanding of the configuration and use of various skills
+* [Tasks](/ai-employees/features/task) - Advanced techniques for task configuration
+* [Pick Block](/ai-employees/features/pick-block) - How to specify data blocks for AI employees
+* Data Source - Refer to the datasource plugin documentation
+* [Web Search](/ai-employees/features/web-search) - Configuring the web search capability for AI employees
 
 **Knowledge Base & RAG:**
 
