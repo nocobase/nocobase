@@ -23,7 +23,7 @@
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
-    "tencentcloud-sdk-nodejs": "^4.0.525"
+    "tencentcloud-sdk-nodejs-sms": "^4.1.171"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",
