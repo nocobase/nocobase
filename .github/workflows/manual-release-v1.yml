@@ -38,7 +38,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
           skip-token-revoke: true
 
       - name: Get GitHub App User ID
@@ -69,7 +69,7 @@ jobs:
       - name: Clone pro repos (v1)
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
             git clone -b v1 https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
@@ -84,7 +84,7 @@ jobs:
         run: |
           cd ./packages/pro-plugins
           git checkout v1
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
             echo "@nocobase/$repo" >> .git/info/exclude
           done
@@ -122,7 +122,7 @@ jobs:
           shas=()
 
           repos=("nocobase" "pro-plugins")
-          for r in $(echo '${{ needs.get-plugins.outputs.rc-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
+          for r in $(echo '${{ needs.get-plugins.outputs.all-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
           for r in $(echo '${{ needs.get-plugins.outputs.custom-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
 
           for repo in "${repos[@]}"; do
@@ -173,7 +173,7 @@ jobs:
             bash release.sh --dry-run $IS_FEAT
           fi
         env:
-          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.rc-plugins }}
+          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
@@ -198,14 +198,14 @@ jobs:
             bash release.sh $IS_FEAT
           fi
         env:
-          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.rc-plugins }}
+          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
       - name: Push tags/commits (v1)
         if: ${{ !inputs.dry_run }}
         run: |
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
             git push origin v1 --atomic --tags
