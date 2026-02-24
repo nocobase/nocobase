@@ -15,5 +15,6 @@
   },
   "scripts": {
     "ts:env": "tsc -p tsconfig.env.json"
-  }
+  },
+  "license": "Apache-2.0"
 }

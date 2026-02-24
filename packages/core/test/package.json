@@ -4,7 +4,7 @@
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "exports": {
     ".": {
       "require": {

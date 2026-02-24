@@ -7,7 +7,7 @@
   "description.ru-RU": "Отправляет уведомления в рамках рабочего процесса.",
   "description.zh-CN": "可用于在工作流中发送各类通知。",
   "version": "2.0.2",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-smtp-mailer",

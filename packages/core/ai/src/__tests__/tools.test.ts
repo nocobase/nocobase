@@ -13,6 +13,8 @@ import path from 'path';
 import { AIManager } from '../ai-manager';
 import { ToolsManager } from '../tools-manager';
 
+const normalizeEOL = (value: string) => value.replace(/\r\n?/g, '\n');
+
 describe('Tools loader test cases', () => {
   const basePath = path.join(process.cwd(), 'packages/core/ai/src/__tests__/resource/ai');
   let app: MockServer;
@@ -59,7 +61,7 @@ describe('Tools loader test cases', () => {
     const tools = await toolsManager.getTools('desc');
     expect(tools).toBeDefined();
     expect(tools.definition.name).eq('desc');
-    expect(tools.definition.description).eq('# DESC\n');
+    expect(normalizeEOL(tools.definition.description)).eq('# DESC\n');
     expect(await tools.invoke(null, null, null)).toEqual({ status: 'success' });
     expect(await tools.invoke(null, null, null)).toEqual({ status: 'success' });
   });
@@ -78,7 +80,7 @@ describe('Tools loader test cases', () => {
     const tools = await toolsManager.getTools('search');
     expect(tools).toBeDefined();
     expect(tools.definition.name).eq('search');
-    expect(tools.definition.description).eq('# SEARCH\n');
+    expect(normalizeEOL(tools.definition.description)).eq('# SEARCH\n');
     expect(await tools.invoke(null, null, null)).toEqual({ status: 'success' });
   });
 
@@ -99,7 +101,7 @@ describe('Tools loader test cases', () => {
     const group3 = await toolsManager.getTools('group3');
     expect(group3).toBeDefined();
     expect(group3.definition.name).eq('group3');
-    expect(group3.definition.description).eq('# GROUP3\n');
+    expect(normalizeEOL(group3.definition.description)).eq('# GROUP3\n');
     expect(await group3.invoke(null, null, null)).toEqual({ status: 'success' });
   });
 

@@ -1,0 +1,18 @@
+{
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "equalsAny": "is any of",
+  "errorParsingExcel": "Error parsing Excel file:",
+  "excelFileEmpty": "Excel file is empty",
+  "failedToParseExcel": "Failed to parse Excel file",
+  "importExcel": "Batch import keywords from Excel",
+  "importSuccess": "Successfully imported {{count}} keywords",
+  "keywordsInputPlaceholder": "Multiple keywords separated by line breaks",
+  "noValidKeywords": "No valid keywords found",
+  "notEqualsAny": "is none of",
+  "providedByPlugin": "Provided by @nocobase/plugin-multi-keyword-filter plugin",
+  "selectAtLeastOneColumn": "Please select at least one column",
+  "selectColumnsPlaceholder": "Please select columns to import",
+  "selectExcelColumns": "Select Excel columns to import",
+  "tips": "Effect of selecting a single column: All non-empty values in that column will be imported as keywords.\nEffect of selecting multiple columns: Non-empty values from multiple columns will be merged as keywords, duplicate values will be removed."
+}
