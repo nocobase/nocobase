@@ -20,7 +20,8 @@ import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
-import Database, { Collection } from '@nocobase/database';
+import Database from '@nocobase/database';
+import { ICollection } from '@nocobase/data-source-manager';
 
 export interface CanResult {
   role: string;
@@ -642,7 +643,7 @@ export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateO
 /**
  * @internal
  */
-export function checkFilterParams(collection: Collection, filter: any) {
+export function checkFilterParams(collection: ICollection, filter: any) {
   if (!filter) {
     return;
   }
