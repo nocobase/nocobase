@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.48](https://github.com/nocobase/nocobase/compare/v2.0.2...v1.9.48) - 2026-02-24
+
+### 🚀 优化
+
+- **[权限控制]** 权限插件提供过滤关系字段值的 API ([#8601](https://github.com/nocobase/nocobase/pull/8601)) by @2013xile
+
+### 🐛 修复
+
+- **[工作流：审批]** 在审批操作中过滤关系字段的值，以避免越权的数据操作 by @mytharcher
+
 ## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
 
 ### 🐛 修复
