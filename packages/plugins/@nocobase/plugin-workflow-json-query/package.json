@@ -18,11 +18,11 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
+    "@nocobase/plugin-workflow-test": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
-    "@nocobase/utils": "2.x",
-    "@nocobase/plugin-workflow": "2.x",
-    "@nocobase/plugin-workflow-test": "2.x"
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "nocobase": {

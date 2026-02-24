@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表字段：代码",
   "description": "For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.",
   "description.zh-CN": "用于代码编辑和高亮显示，支持 Java、JavaScript、Python、SQL 等语言。",
-  "version": "2.0.2",
+  "version": "2.1.0-beta.2",
   "main": "dist/server/index.js",
   "nocobase": {
     "supportedVersions": [

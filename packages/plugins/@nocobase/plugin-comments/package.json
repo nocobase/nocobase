@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-comments",
-  "version": "2.0.2",
+  "version": "2.1.0-beta.2",
   "displayName": "Comments",
   "displayName.zh-CN": "评论",
   "description": "Provides comment collection template and block to add commenting functionality for any collection.",

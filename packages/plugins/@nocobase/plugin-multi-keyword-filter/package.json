@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-keyword-filter",
-  "version": "2.0.2",
+  "version": "2.1.0-beta.2",
   "main": "dist/server/index.js",
   "displayName": "Multi-keyword filter",
   "displayName.zh-CN": "多关键词筛选",
