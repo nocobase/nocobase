@@ -9,3 +9,4 @@
 
 export * from './blockUtils';
 export * from './dispatchEventDeep';
+export * from './pagination';
