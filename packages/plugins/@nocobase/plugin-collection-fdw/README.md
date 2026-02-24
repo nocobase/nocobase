@@ -1,37 +1,99 @@
-# Foreign Data Wrapper Collection
+# NocoBase
 
-基于数据库的 foreign data wrapper 实现的连接远程数据表的功能插件。
+<video width="100%" controls>
+  <source src="https://github.com/user-attachments/assets/4d11a87b-00e2-48f3-9bf7-389d21072d13" type="video/mp4">
+</video>
 
-## 介绍
+<p align="center">
+<a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+</p>
 
-在 MySQL 和 PostgreSQL 中，都提供了通过 foreign data wrapper 连接外部数据的能力，本插件整合了这些能力，使得可以在 NocoBase 系统中，连接远程数据表，实现数据的同步和共享。
+## What is NocoBase
 
+NocoBase is the most extensible AI-powered no-code platform.   
+Total control. Infinite extensibility. AI collaboration.  
+Enable your team to adapt quickly and cut costs dramatically.  
+No years of development. No millions wasted.  
+Deploy NocoBase in minutes — and take control of everything.
 
-## 使用前提
+Homepage:  
+https://www.nocobase.com/  
 
-已支持的远程数据类型根据数据库类型不同而不同，目前支持情况如下：
+Online Demo:  
+https://demo.nocobase.com/new
 
-### MySQL
+Documents:  
+https://docs.nocobase.com/
 
-MySQL 通过 `federated` 引擎， 支持连接远程 MySQL 及其协议兼容数据库，如 MariaDB。在使用前需要开启 `federated` 引擎支持，可参照文档 [Federated Storage Engine](https://dev.mysql.com/doc/refman/8.0/en/federated-storage-engine.html)。
+Forum:  
+https://forum.nocobase.com/
 
-### PostgreSQL 
+Use Cases:  
+https://www.nocobase.com/en/blog/tags/customer-stories
 
-在 PostgreSQL 中，可通过不同类型的 `fdw` 扩展来支持不同的远程数据类型，目前支持的扩展有：
+## Release Notes
 
-- [postgres_fdw](https://www.postgresql.org/docs/current/postgres-fdw.html)：在 PostgreSQL 中连接远程 PostgreSQL 数据库。
-- [mysql_fdw(开发中)](https://github.com/EnterpriseDB/mysql_fdw)：在 PostgreSQL 中连接远程 MySQL 数据库。
-- 其余类型的 fdw 扩展，可参考 [PostgreSQL Foreign Data Wrappers](https://wiki.postgresql.org/wiki/Foreign_data_wrappers)，接入 NocoBase 需要在代码中实现相应的适配接口。
+Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with release notes and provides a weekly summary.
 
-在 NocoBase 中使用前需要确保数据库系统已支持以上插件的开启。
+## Distinctive features
 
-## 使用
+### 1. Data model-driven, not form/table–driven
 
-1. 开启插件之后，在「数据表管理->创建数据表」 下拉中，选择「连接外部数据」。
-2. 填写本地数据表的名称。
-3. 在「数据库服务」下拉选项中，选择已存在的数据库服务，或者选择「创建数据库服务」填写数据库连接信息，创建一个新的数据库服务。
-4. 在「远程表」的下拉选项中，选择需要连接的数据表。
-5. 在字段列表中，手动配置字段的 interface 信息。
-6. 点击「创建」按钮，完成数据表的创建。
+Instead of being constrained by forms or tables, NocoBase adopts a data model–driven approach, separating data structure from user interface to unlock unlimited possibilities.
 
-在数据表创建完成之后， 可以在前端区块中使用该数据表。
+- UI and data structure are fully decoupled
+- Multiple blocks and actions can be created for the same table or record in any quantity or form
+- Supports the main database, external databases, and third-party APIs as data sources
+
+![model](https://static-docs.nocobase.com/model.png)
+
+### 2. AI employees, integrated into your business systems
+Unlike standalone AI demos, NocoBase allows you to embed AI capabilities seamlessly into your interfaces, workflows, and data context, making AI truly useful in real business scenarios.
+
+- Define AI employees for roles such as translator, analyst, researcher, or assistant
+- Seamless AI–human collaboration in interfaces and workflows
+- Ensure AI usage is secure, transparent, and customizable for your business needs
+
+![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+
+### 3. What you see is what you get, incredibly easy to use
+
+While enabling the development of complex business systems, NocoBase keeps the experience simple and intuitive.
+
+- One-click switch between usage mode and configuration mode
+- Pages serve as a canvas to arrange blocks and actions, similar to Notion
+- Configuration mode is designed for ordinary users, not just programmers
+
+![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
+
+### 4. Everything is a plugin, designed for extension
+Adding more no-code features will never cover every business case. NocoBase is built for extension through its plugin-based microkernel architecture.
+
+- All functionalities are plugins, similar to WordPress
+- Plugins are ready to use upon installation
+- Pages, blocks, actions, APIs, and data sources can all be extended through custom plugins
+
+![plugins](https://static-docs.nocobase.com/plugins.png)
+
+## Installation
+
+NocoBase supports three installation methods:
+
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
+
+  Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
+
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
+
+  The business code of the project is completely independent and supports low-code development.
+
+- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installing from Git source code</a>
+
+  If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
+
+## How NocoBase works
+
+<video width="100%" controls>
+  <source src="https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf" type="video/mp4">
+</video>
