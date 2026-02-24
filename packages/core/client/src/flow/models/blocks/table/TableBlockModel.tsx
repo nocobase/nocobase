@@ -36,6 +36,13 @@ import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import {
+  applyMobilePaginationProps,
+  createCompactSimpleItemRender,
+  getSimpleModePaginationClassName,
+  getUnknownCountPaginationTotal,
+  mergePaginationClassName,
+} from '../../../utils';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
 import {
   SortHandle,
@@ -434,8 +441,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     const hasNext = this.resource.getMeta('hasNext');
     const current = this.resource.getPage();
     const data = this.resource.getData();
+    const isMobileLayout = !!this.context.isMobileLayout;
     if (totalCount) {
-      return {
+      const result = {
         current,
         pageSize,
         total: totalCount,
@@ -444,39 +452,30 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         },
         showSizeChanger: true,
       };
+      return applyMobilePaginationProps(result, isMobileLayout);
     } else {
-      return {
+      const nextPageSize = pageSize || 10;
+      const nextCurrent = current || 1;
+      const result = {
         // showTotal: false,
         simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
-        pageSize,
-        total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
-        className: css`
-          .ant-pagination-simple-pager {
-            display: none !important;
-          }
-        `,
-        itemRender: (_, type, originalElement) => {
-          if (type === 'prev') {
-            return (
-              <div
-                style={{ display: 'flex' }}
-                className={css`
-                  .ant-pagination-item-link {
-                    min-width: ${this.context.themeToken.controlHeight}px;
-                  }
-                `}
-              >
-                {originalElement} <div>{this.resource.getPage()}</div>
-              </div>
-            );
-          } else {
-            return originalElement;
-          }
-        },
+        pageSize: nextPageSize,
+        total: getUnknownCountPaginationTotal({
+          dataLength: data?.length,
+          pageSize: nextPageSize,
+          current: nextCurrent,
+          hasNext,
+        }),
+        className: mergePaginationClassName(getSimpleModePaginationClassName(), undefined),
+        itemRender: createCompactSimpleItemRender({
+          current: nextCurrent,
+          controlHeight: this.context.themeToken.controlHeight,
+        }),
       };
+      return applyMobilePaginationProps(result, isMobileLayout);
     }
   }
 
