@@ -5,16 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.9.48](https://github.com/nocobase/nocobase/compare/v2.0.2...v1.9.48) - 2026-02-24
-
-### 🚀 Improvements
-
-- **[Access control]** Provide sanitize API to filter association values in action ([#8601](https://github.com/nocobase/nocobase/pull/8601)) by @2013xile
-
-### 🐛 Bug Fixes
-
-- **[Workflow: Approval]** Sanitize association values in approval actions, to avoid any data manipulation beyond permission by @mytharcher
-
 ## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
 
 ### 🐛 Bug Fixes
