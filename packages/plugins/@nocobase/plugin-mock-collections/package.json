@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mock-collections",
-  "version": "2.1.0-alpha.5",
+  "version": "2.1.0-alpha.6",
   "main": "./dist/server/index.js",
   "license": "Apache-2.0",
   "peerDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-duplicate",
-  "version": "2.1.0-alpha.5",
+  "version": "2.1.0-alpha.6",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-duplicate",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-duplicate",

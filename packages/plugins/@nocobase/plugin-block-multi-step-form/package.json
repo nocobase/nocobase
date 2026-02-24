@@ -4,7 +4,7 @@
   "displayName.zh-CN": "区块：分步表单",
   "description": "Break the form with many fields into multiple steps to ease the burden on users.",
   "description.zh-CN": "将包含很多字段的表单分成多个步骤填写，以减轻用户的负担。",
-  "version": "2.1.0-alpha.5",
+  "version": "2.1.0-alpha.6",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-steps-from",

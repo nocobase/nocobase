@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "2.1.0-alpha.5",
+  "version": "2.1.0-alpha.6",
   "license": "Apache-2.0",
   "displayName": "Collection field: Sort",
   "displayName.ru-RU": "Поле коллекции: Сортировка",
