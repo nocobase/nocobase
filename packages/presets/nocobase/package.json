@@ -100,6 +100,7 @@
     "@nocobase/plugin-custom-variables": "2.0.2",
     "@nocobase/plugin-collection-fdw": "2.0.2",
     "@nocobase/plugin-block-tree": "2.0.2",
+    "@nocobase/plugin-comments": "2.0.2",
     "@nocobase/server": "2.0.2",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
