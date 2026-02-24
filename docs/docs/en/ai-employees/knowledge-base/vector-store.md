@@ -18,7 +18,7 @@ Click the `Add new` button in the top right corner to add a new vector store:
 
 - In the `Name` input box, enter the vector store name;
 - In `Vector store`, select an already configured vector database. Refer to: [Vector Database](/ai-employees/knowledge-base/vector-database);
-- In `LLM service`, select an already configured LLM service. Refer to: [LLM Service Management](/ai-employees/quick-start/llm-service);
+- In `LLM service`, select an already configured LLM service. Refer to: [LLM Service Management](/ai-employees/features/llm-service);
 - In the `Embedding model` input box, enter the name of the `Embedding` model to be used;
   
 Click the `Submit` button to save the vector store information.

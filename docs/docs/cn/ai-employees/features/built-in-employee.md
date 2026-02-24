@@ -2,7 +2,7 @@
 
 NocoBase 预置了多个针对特定场景的 AI 员工。
 
-你只需要为它配置好 模型（Model）即可开始投入工作。
+你只需要配置好 LLM 服务并启用对应员工，即可开始投入工作；模型可在会话中按需切换。
 
 
 ## 介绍
@@ -70,15 +70,17 @@ NocoBase 预置了多个针对特定场景的 AI 员工。
 **页面入口**
 
 * **右上角按钮（推荐）**
+  
   在 Leads、Opportunities、Accounts 等页面右上角，点击 **Viz 图标**，即可选择预置任务，如：
 
   * 阶段转化与趋势
   * 来源渠道对比
   * 月度盘点分析
 
-  ![Leads页面示例](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+  ![clipboard-image-1771913319](https://static-docs.nocobase.com/clipboard-image-1771913319.png)
 
 * **右下角全局面板**
+  
   无论在哪个页面，都可以呼出全局 AI 面板，对 Viz 直接说话：
 
   ```
@@ -128,8 +130,6 @@ Hi Viz，生成本月线索趋势。
 
 `Dex` 是数据整理专家，从非结构化的数据或文件中提取所需的信息整理成结构化的信息，并且可以调用工具将信息填写到表单中。
 
-![20251022155210](https://static-docs.nocobase.com/20251022155210.png)
-
 ### 使用方式
 
 在表单页面唤起 `Dex`，打开对话窗口。
@@ -178,8 +178,6 @@ Hi Viz，生成本月线索趋势。
 ![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
 
 向 `Orin` 描述你的建模需求，发送后等待回复。 
-
-![20251022161749](https://static-docs.nocobase.com/20251022161749.png)
 
 当 `Orin` 确认你的需求后，会使用技能并回复给你数据建模的预览。
 

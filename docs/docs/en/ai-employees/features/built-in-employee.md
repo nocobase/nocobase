@@ -2,7 +2,7 @@
 
 NocoBase provides several built-in AI Employees for specific scenarios.
 
-You just need to configure the Model for them to start working.
+You only need to configure LLM services and enable target employees; models can be switched in chat when needed.
 
 
 ## Introduction
@@ -76,7 +76,7 @@ Whether it's monthly business inventory, channel ROI, or sales funnel, you can l
   * Source channel comparison
   * Monthly review analysis
 
-  ![Leads Page Example](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+  ![clipboard-image-1771913319](https://static-docs.nocobase.com/clipboard-image-1771913319.png)
 
 * **Bottom Right Global Panel**
   You can call out the global AI panel on any page and speak directly to Viz:
@@ -128,8 +128,6 @@ Each follow-up will delve deeper based on the previous analysis results, without
 
 `Dex` is a Data Organizer expert who extracts required information from unstructured data or files into structured information and can call Tools to fill the information into forms.
 
-![20251022155210](https://static-docs.nocobase.com/20251022155210.png)
-
 ### How to Use
 
 Summon `Dex` on the form page to open the chat window.
@@ -178,8 +176,6 @@ Click the `Orin` Avatar in the top right corner to open the AI Employee Chatbox.
 ![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
 
 Describe your modeling needs to `Orin`, send it, and wait for a reply.
-
-![20251022161749](https://static-docs.nocobase.com/20251022161749.png)
 
 When `Orin` confirms your needs, he will use Skills and reply to you with a preview of the data modeling.
 
