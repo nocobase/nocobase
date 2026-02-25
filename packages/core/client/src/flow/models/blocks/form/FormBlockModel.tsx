@@ -8,6 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
@@ -44,6 +45,29 @@ const GRID_DELEGATED_STEP_KEYS: Record<string, Set<string>> = {
   formModelSettings: new Set(['layout', 'assignRules']),
   eventSettings: new Set(['linkageRules']),
 };
+
+const FLOW_KEEP_MOBILE_HORIZONTAL_CLASS = 'nb-flow-keep-mobile-horizontal';
+
+const flowKeepMobileHorizontalClassName = css`
+  &.${FLOW_KEEP_MOBILE_HORIZONTAL_CLASS} {
+    @media (max-width: 575px) {
+      .ant-form-item {
+        flex-wrap: nowrap !important;
+      }
+
+      .ant-form-item .ant-form-item-label {
+        flex: 0 0 auto !important;
+        max-width: none !important;
+      }
+
+      .ant-form-item .ant-form-item-control {
+        flex: 1 1 0 !important;
+        max-width: none !important;
+        min-width: 0;
+      }
+    }
+  }
+`;
 
 function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
   return !!GRID_DELEGATED_STEP_KEYS[flowKey]?.has(stepKey);
@@ -417,6 +441,15 @@ export function FormComponent({
   onFinish?: (values: any) => void;
   [key: string]: any;
 }) {
+  const keepMobileHorizontalLayout = !!(model?.context?.isMobileLayout && layoutProps?.layout === 'horizontal');
+  const className = [
+    rest.className,
+    keepMobileHorizontalLayout ? FLOW_KEEP_MOBILE_HORIZONTAL_CLASS : '',
+    keepMobileHorizontalLayout ? flowKeepMobileHorizontalClassName : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <Form
       form={model.form}
@@ -441,6 +474,7 @@ export function FormComponent({
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
       {...rest}
+      className={className || undefined}
     >
       {children}
     </Form>
