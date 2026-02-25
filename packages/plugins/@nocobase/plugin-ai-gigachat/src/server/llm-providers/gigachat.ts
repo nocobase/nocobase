@@ -23,13 +23,11 @@ type GigaChatOptions = {
 class GigaChatModelInternal extends GigaChatModel {
   bindTools(tools, kwargs) {
     return this.withConfig({
-      tools: this.formatStructuredToolToGigaChat(
-        tools.map((t) => ({
-          name: t.name,
-          description: t.description,
-          parameters: t.schema.type === 'object' ? t.schema : t.schema.toJSONSchema(),
-        })),
-      ),
+      tools: tools?.map((t) => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.schema.toJSONSchema?.() ?? t.schema,
+      })),
       ...kwargs,
     });
   }
@@ -66,7 +64,13 @@ export class GigaChatProvider extends LLMProvider {
     errMsg?: string;
   }> {
     try {
-      const { credentials, baseURL, authURL, scope, enableSSL } = (this.serviceOptions as GigaChatOptions) || {};
+      const {
+        apiKey: credentials,
+        baseURL,
+        authURL,
+        scope,
+        enableSSL,
+      } = (this.serviceOptions as GigaChatOptions) || {};
       const baseUrl = this.isUrlEmpty(baseURL) ? this.baseURL : baseURL;
       const authUrl = this.isUrlEmpty(authURL) ? this.authURL : authURL;
       const httpsAgent = new Agent({
@@ -98,6 +102,13 @@ export class GigaChatProvider extends LLMProvider {
 
   private isUrlEmpty(baseURL: string) {
     return !baseURL || baseURL === null || baseURL.trim().length === 0;
+  }
+
+  parseResponseError(err) {
+    if (err?.name === 'AuthenticationError' || err?.name === 'ResponseError') {
+      return `GigaChat service error: ${err.response?.status} ${err.response?.statusText}`;
+    }
+    return err?.message ?? 'Unexpected LLM service error';
   }
 }
 
