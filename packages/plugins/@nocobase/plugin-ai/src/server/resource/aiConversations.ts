@@ -400,7 +400,24 @@ export default {
           model,
           legacy,
         );
-        await aiEmployee.cancelToolCall();
+
+        if (!editingMessageId) {
+          const toolMessages = await aiEmployee.cancelToolCall();
+          if (toolMessages?.length) {
+            for (let i = toolMessages.length - 1; i >= 0; i--) {
+              const toolMessage = toolMessages[i];
+              messages.unshift({
+                role: toolMessage.role,
+                content: toolMessage.content,
+                toolCalls: toolMessage.toolCalls,
+                attachments: toolMessage.attachments,
+                workContext: toolMessage.workContext,
+                metadata: toolMessage.metadata,
+              });
+            }
+          }
+        }
+
         if (shouldStream) {
           await aiEmployee.stream({ userMessages: messages, messageId: editingMessageId });
         } else {
