@@ -28,6 +28,7 @@ export interface RoutePageMeta {
   active: boolean;
   currentRoute?: Record<string, any>;
   refreshDesktopRoutes?: () => void;
+  layoutContentElement?: HTMLElement | null;
 }
 
 interface ViewRuntimeState {
@@ -77,6 +78,7 @@ export class AdminLayoutRouteCoordinator {
         active: !!meta.active,
         currentRoute: meta.currentRoute || {},
         refreshDesktopRoutes: meta.refreshDesktopRoutes,
+        layoutContentElement: meta.layoutContentElement || null,
       },
       viewState: {},
       prevViewList: [],
@@ -87,6 +89,7 @@ export class AdminLayoutRouteCoordinator {
     this.ensureRouteModelContext(runtime);
     this.runtimes.set(pageUid, runtime);
     this.syncPageMeta(pageUid, meta);
+    this.syncRoute(this.flowEngine.context.route || {});
 
     return runtime.routeModel;
   }
@@ -102,6 +105,10 @@ export class AdminLayoutRouteCoordinator {
       ...meta,
       active: typeof meta.active === 'boolean' ? meta.active : runtime.meta.active,
       currentRoute: meta.currentRoute ?? runtime.meta.currentRoute ?? {},
+      layoutContentElement:
+        typeof meta.layoutContentElement === 'undefined'
+          ? runtime.meta.layoutContentElement
+          : meta.layoutContentElement,
     };
 
     if (runtime.routeModel.context.pageActive?.value !== runtime.meta.active) {
@@ -260,7 +267,7 @@ export class AdminLayoutRouteCoordinator {
     );
 
     viewItem.model.dispatchEvent('click', {
-      target: this.layoutContentElement,
+      target: runtime.meta.layoutContentElement || this.layoutContentElement,
       collectionName: openViewParams?.collectionName,
       associationName: openViewParams?.associationName,
       dataSourceKey: openViewParams?.dataSourceKey,

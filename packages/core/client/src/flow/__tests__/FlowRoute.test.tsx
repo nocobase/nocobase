@@ -79,6 +79,7 @@ describe('FlowRoute', () => {
           active: true,
           currentRoute: hookState.currentRoute,
           refreshDesktopRoutes: hookState.refresh,
+          layoutContentElement: expect.any(HTMLDivElement),
         }),
       );
     });
@@ -90,6 +91,7 @@ describe('FlowRoute', () => {
         expect.objectContaining({
           currentRoute: hookState.currentRoute,
           refreshDesktopRoutes: hookState.refresh,
+          layoutContentElement: expect.any(HTMLDivElement),
         }),
       );
     });
@@ -115,6 +117,7 @@ describe('FlowRoute', () => {
         expect.objectContaining({
           currentRoute: hookState.currentRoute,
           refreshDesktopRoutes: hookState.refresh,
+          layoutContentElement: expect.any(HTMLDivElement),
         }),
       );
     });

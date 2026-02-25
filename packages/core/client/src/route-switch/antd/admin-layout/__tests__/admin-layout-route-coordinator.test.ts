@@ -79,6 +79,24 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(loadSpy).not.toHaveBeenCalled();
   });
 
+  it('should sync current route immediately after page registration', () => {
+    const engine = createEngine();
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: 'page-1' },
+        pathname: '/admin/page-1/view/popup-1',
+      },
+    });
+    const coordinator = new AdminLayoutRouteCoordinator(engine);
+
+    coordinator.registerPage('page-1', {
+      active: true,
+      currentRoute: { title: 'Page 1' },
+    });
+
+    expect(navigateToSpy).toHaveBeenCalledTimes(2);
+  });
+
   it('should cleanup opened views and remove models', async () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
@@ -182,5 +200,34 @@ describe('AdminLayoutRouteCoordinator', () => {
 
     expect(popupDispatchSpy).not.toHaveBeenCalled();
     expect(page1RouteModel.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('should prefer page specific layout content element as target', async () => {
+    const engine = createEngine();
+    const coordinator = new AdminLayoutRouteCoordinator(engine);
+    const globalElement = document.createElement('div');
+    const pageElement = document.createElement('div');
+    coordinator.setLayoutContentElement(globalElement);
+
+    coordinator.registerPage('page-1', {
+      active: true,
+      currentRoute: { title: 'Page 1' },
+      layoutContentElement: pageElement,
+    });
+
+    const routeModel = engine.getModel<RouteModel>('page-1') as RouteModel;
+    const dispatchSpy = vi.fn(async (_eventName: string, args: any) => {
+      args.destroyRef.current = vi.fn();
+    });
+    routeModel.dispatchEvent = dispatchSpy as any;
+
+    coordinator.syncRoute({
+      params: { name: 'page-1' },
+      pathname: '/admin/page-1',
+    });
+    await flushPromises();
+
+    expect(dispatchSpy).toHaveBeenCalled();
+    expect(dispatchSpy.mock.calls[0][1]?.target).toBe(pageElement);
   });
 });

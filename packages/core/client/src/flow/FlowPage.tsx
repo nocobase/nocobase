@@ -48,6 +48,7 @@ export const FlowRoute = () => {
   const pageUidRef = useRef(route?.params?.name);
   const { designable } = useDesignable();
   const { active } = useKeepAlive();
+  const layoutContentRef = useRef<HTMLDivElement>(null);
   const pageUid = pageUidRef.current;
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
   const activeRef = useRef(active);
@@ -115,6 +116,7 @@ export const FlowRoute = () => {
       active: activeRef.current,
       currentRoute: currentRouteRef.current,
       refreshDesktopRoutes: refreshRef.current,
+      layoutContentElement: layoutContentRef.current,
     });
     return () => {
       adminLayoutModel.unregisterRoutePage(pageUid);
@@ -131,10 +133,11 @@ export const FlowRoute = () => {
     adminLayoutModel.updateRoutePage(pageUid, {
       currentRoute,
       refreshDesktopRoutes: refresh,
+      layoutContentElement: layoutContentRef.current,
     });
   }, [adminLayoutModel, pageUid, currentRoute, refresh]);
 
-  return null;
+  return <div ref={layoutContentRef} />;
 };
 
 type FlowPageProps = {
