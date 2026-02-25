@@ -21,5 +21,8 @@
   "devDependencies": {
     "langchain-gigachat": "^0.0.14"
   },
+  "keywords": [
+    "AI"
+  ],
   "license": "Apache-2.0"
 }

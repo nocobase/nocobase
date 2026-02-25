@@ -535,7 +535,7 @@ export class AIEmployee {
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
       } else {
-        this.sendErrorResponse(err.message);
+        this.sendErrorResponse(provider.parseResponseError(err));
       }
     } finally {
       this.ctx.res.end();
