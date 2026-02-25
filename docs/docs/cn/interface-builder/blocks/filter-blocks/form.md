@@ -85,6 +85,18 @@
 
 `操作符` 用于定义“筛选表单字段值”与“目标区块字段值”的匹配关系。
 
+### 默认筛选条件（字段值）
+
+你可以通过「字段值」为筛选表单设置默认值，用于在打开页面时自动填充筛选条件，例如默认只查看“当前用户”的数据。
+
+入口：筛选表单区块设置 → **表单设置** → **字段值**。
+
+更多内容参考 [字段值](/interface-builder/blocks/block-settings/field-values)。
+
+![筛选表单设置-表单设置-字段值入口](https://static-docs.nocobase.com/placeholder.png)
+
+![筛选表单-默认筛选字段值示例（当前用户）](https://static-docs.nocobase.com/placeholder.png)
+
 ### 折叠
 
 添加一个折叠按钮，可以将筛选表单内容进行折叠和展开，节省页面空间。

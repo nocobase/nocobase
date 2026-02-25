@@ -33,7 +33,7 @@ The values of the current form, used only in form blocks. Use cases include:
 - Linkage rules for the current form
 - Default values for form fields (only effective when adding new data)
 - Data scope settings for association fields
-- Field value assignment configuration for submit actions
+- Field values configuration
 
 #### Linkage rules for the current form
 
@@ -79,29 +79,30 @@ Used to dynamically filter the options of a downstream field based on an upstrea
 
  -->
 
-<!-- ### Current Object
+### Current item
 
-Currently used only for field configuration in sub-forms and sub-tables within a form block, representing the value of each item:
+`Current item` is used in sub-forms/sub-tables and other “list item” scenarios. It represents the data object of the current row/item.
 
-- Default value for sub-fields
+Common use cases:
+
+- Field values configuration in sub-forms/sub-tables (e.g. default values / fixed values)
+- Linkage rules inside sub-forms
 - Data scope for sub-association fields
 
-#### Default value for sub-fields
+You can also use `Index (starts from 0)` to get the position of the current item in the list, which is useful for calculations or distinguishing items.
 
+![Variables - Current item & Index (starts from 0)](https://static-docs.nocobase.com/placeholder.png)
 
-![20240416172933_rec_](https://static-docs.nocobase.com/20240416172933_rec_.gif)
+### Parent item
 
+`Parent item` represents the parent object of the current item (such as the parent form record, or the upper-level association object).
 
-#### Data scope for sub-association fields
+Common use cases:
 
+- Inherit values from the parent form to sub-form fields (e.g. `Parent item/Customer`, `Parent item/Project`)
+- Read parent information in sub-form linkage rules
 
-![20240416173043_rec_](https://static-docs.nocobase.com/20240416173043_rec_.gif)
-
- -->
-
-<!-- ### Parent Object
-
-Similar to "Current Object", it represents the parent object of the current object. Supported in NocoBase v1.3.34-beta and above. -->
+![Variables - Parent item](https://static-docs.nocobase.com/placeholder.png)
 
 ### Current Record
 
@@ -124,7 +125,7 @@ Blocks within a popup can use the "Current Popup Record" variable. Related use c
 
 - Configuring the data scope of a block
 - Configuring the data scope of an association field
-- Configuring default values for fields (in a form for adding new data)
+- Configuring field values (such as default values) in forms for adding new data
 - Configuring linkage rules for actions
 
 <!-- #### Configuring the data scope of a block

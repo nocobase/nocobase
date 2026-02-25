@@ -31,10 +31,21 @@ In a Details block, linkage rules are mainly used to dynamically control the vis
 
 ### Assign Value
 
+The `Assign value` action supports two modes:
+
+- **Default value**: used to pre-fill values. Users can still edit it, and it typically takes effect only for new entries or when the field is empty.
+- **Fixed value**: written by the system. When the rule runs, it may overwrite the current value, which is suitable for system-controlled fields like status.
+
+:::info{title=Tip}
+If the same field is configured in both `Field values` (Form block) and linkage rule assignments, linkage rule assignments take precedence. For more details, see [Field values](/interface-builder/blocks/block-settings/field-values).
+:::
+
 Example: When an order is checked as a supplementary order, the order status is automatically assigned the value 'Pending Review'.
 
 
 ![20251029115348](https://static-docs.nocobase.com/20251029115348.png)
+
+![Linkage rule assign value - mode switch & value editor](https://static-docs.nocobase.com/placeholder.png)
 
 
 ### Required

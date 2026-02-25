@@ -17,7 +17,7 @@
 
 ### 区块联动规则
 
-通过联动规则控制区块行为（如是否显示或执行javaScript）。
+通过联动规则控制区块行为（如是否显示或执行 JavaScript）。
 
 ![20251023191703](https://static-docs.nocobase.com/20251023191703.png)
 
@@ -31,11 +31,19 @@
 
 更多内容参考 [字段联动规则](/interface-builder/blocks/block-settings/field-linkage-rule)
 
+### 字段值
+
+通过「字段值」可以为表单字段设置**默认值**或**固定值**，并支持按条件生效，用于实现更灵活的表单预填与自动写入逻辑。
+
+更多内容参考 [字段值](/interface-builder/blocks/block-settings/field-values)。
+
+![表单区块设置-表单设置-字段值入口](https://static-docs.nocobase.com/placeholder.png)
+
 ### 布局
 
 表单区块支持两种布局方式，通过 `layout` 属性进行设置：
 
-- **horizontal**（水平布局）：该布局使标签内容在一行内展示，节省垂直空间，适合简单的表单或信息较少的情况。。
+- **horizontal**（水平布局）：该布局使标签内容在一行内展示，节省垂直空间，适合简单的表单或信息较少的情况。
 - **vertical**（垂直布局）（默认）：标签位于字段上方，该布局使表单更加易于阅读和填写，尤其适用于包含多个字段或复杂输入项的表单。
 
 ![20251023193638](https://static-docs.nocobase.com/20251023193638.png)
@@ -67,7 +75,7 @@
 
 ![20251023192559](https://static-docs.nocobase.com/20251023192559.png)
 
-- 编写 javaScript 可以实现自定义显示内容，实现复杂内容的展示。
+- 编写 JavaScript 可以实现自定义显示内容，实现复杂内容的展示。
 
 ![20251023192935](https://static-docs.nocobase.com/20251023192935.png)
 

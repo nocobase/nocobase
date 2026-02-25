@@ -2,7 +2,12 @@
 
 ## Introduction
 
-A default value is the initial value of a field when a new record is created. You can set a default value for a field when configuring it in a collection, or specify a default value for a field in an Add Form block. It can be set as a constant or a variable.
+A default value is the initial value of a field when a new record is created. You can:
+
+- Set a default value when configuring a field in a collection.
+- Configure default values in Form/Filter form blocks through **Field values**, using either constants or variables.
+
+For more details, see [Field values](/interface-builder/blocks/block-settings/field-values).
 
 ## Where to Set Default Values
 
@@ -14,10 +19,15 @@ A default value is the initial value of a field when a new record is created. Yo
 
 ### Fields in an Add Form
 
-Most fields in an Add Form support setting a default value.
+Default values for fields in an Add Form are configured in the Form block’s **Field values**.
 
+Path: Form block settings → **Form settings** → **Field values**.
 
-![20251028161801](https://static-docs.nocobase.com/20251028161801.png)
+:::info{title=Tip}
+The legacy `Default value` entry in field settings has been moved to `Form block settings → Field values`. It remains only for backward compatibility.
+:::
+
+![Form block Field values (Default value)](https://static-docs.nocobase.com/placeholder.png)
 
 
 ### Adding in a Sub-form
@@ -31,12 +41,19 @@ Add new in a sub-form
 
 When editing existing data, an empty field will not be populated with the default value. Only newly added data will be filled with the default value.
 
-### Default Values for Association Fields
+### Field Values for Association Fields
 
-Only **Many-to-One** and **Many-to-Many** type relationships have default values when using selector components (Select, RecordPicker).
+Association fields can also be preset through **Field values**, but the behavior differs by scenario:
 
+- **Form block**: supports **Default value** and **Fixed value**, with optional conditions.
+- **Filter form**: used as default filter values, and only supports **Default value**.
+- **Update record** action: writes values when the action runs (equivalent to a fixed write).
 
-![20251028164128](https://static-docs.nocobase.com/20251028164128.png)
+For more details, see [Field values](/interface-builder/blocks/block-settings/field-values).
+
+For One-to-One or One-to-Many relationships, read the notes below to make sure your business can accept the risk of association being taken over or changed.
+
+![Association field - Field values example](https://static-docs.nocobase.com/placeholder.png)
 
 
 ## Default Value Variables
@@ -47,6 +64,7 @@ Only **Many-to-One** and **Many-to-Many** type relationships have default values
 - Current record; this only applies to existing records;
 - Current form, ideally only lists the fields in the form;
 - Current item, a concept within sub-forms (the data object for each row in the sub-form);
+- Parent item, the parent object of the current item (e.g. the parent form record or upper-level association object);
 - URL parameters
   For more information on variables, see [Variables](/interface-builder/variables)
 
@@ -71,7 +89,7 @@ Divided into two categories: non-association fields and association fields.
 [{id: 2}, {id: 3}]
 
 // Table selected records/to-many:
-[{toMany: [{id: 1}, {id:2}]}, {toMany: {[id:3}, {id:4}]}]
+[{toMany: [{id: 1}, {id:2}]}, {toMany: [{id:3}, {id:4}]}]
 // Flatten
 [{id:1},{id:2},{id:3},{id:4}]
 ```
@@ -107,14 +125,33 @@ Model
 ![20240411101558](https://static-docs.nocobase.com/20240411101558.png)
 
 
-### Why Don't One-to-One and One-to-Many Have Default Values?
+### Why Should You Be Cautious When Configuring Field Values for One-to-One and One-to-Many?
 
-For example, in an A.B relationship, if b1 is associated with a1, it cannot be associated with a2. If b1 becomes associated with a2, its association with a1 will be removed. In this case, the data is not shared, whereas the default value is a shared mechanism (all can be associated). Therefore, One-to-One and One-to-Many relationships cannot have default values.
+The current version allows you to configure field values (default value or fixed value) for One-to-One / One-to-Many association fields via **Field values** in a Form block. However, these associations are usually **exclusive**: the same associated record can only belong to one record at a time.
 
-### Why Can't Many-to-One and Many-to-Many Sub-forms or Sub-tables Have Default Values?
+When you configure field values for these fields, you may run into:
 
-Because the focus of sub-forms and sub-tables is to directly edit the association data (including adding and removing), while the association default value is a shared mechanism where all can be associated, but the association data cannot be modified. Therefore, it is not suitable to provide default values in this scenario.
+- **Association “takeover”**: if multiple new records point to the same associated record, the record saved later may take the association, causing earlier records to be unlinked or overwritten;
+- **Hard-to-notice changes**: field values may change associations unintentionally, especially with concurrent edits or bulk creation;
+- **Fixed value is riskier**: when conditions match, fixed values may overwrite the association chosen by users.
 
-Additionally, sub-forms or sub-tables have sub-fields, and it would be unclear whether the default value for a sub-form or sub-table is a row default or a column default.
+Recommendations:
 
-Considering all factors, it is more appropriate that sub-forms or sub-tables cannot have default values set directly, regardless of the relationship type.
+- For association fields that require an explicit user choice, avoid configuring a fixed field value;
+- If you must prefill, prefer variables (e.g., current user / parent item) over pointing to a single fixed record;
+- After enabling it, double-check the association field before submitting.
+
+### Sub-forms / Sub-tables: Notes on Field Values for Association Fields
+
+Sub-forms and sub-tables also support field values through **Field values**. A default value is applied only when you add a new row/item—it won’t backfill existing data.
+
+Notes:
+
+- If you configure a “fixed field value” for an association field (e.g., always linking to the same customer/tag), each new row may inherit the same association, which can lead to duplicate or incorrect links;
+- Since sub-forms/sub-tables contain multiple columns, it’s best to treat field values as the initial/fixed value of a field in a new row, not a global setting for the whole sub-table;
+- With fixed values, users’ manual selections may also be overwritten.
+
+Recommendations:
+
+- Use it only when you truly want every new row to start with the same default/fixed association;
+- More commonly, use variables (e.g., parent item) to derive context-aware values, or let users choose when adding a row.

@@ -39,6 +39,14 @@ Control form field behavior through linkage rules.
 
 For more details, see [Field Linkage Rule](/interface-builder/blocks/block-settings/field-linkage-rule)
 
+### Field values
+
+Use `Field values` to configure **Default value** or **Fixed value** for form fields. You can also make rules effective only when conditions are met, which helps with flexible pre-filling and system-driven writes.
+
+For more details, see [Field values](/interface-builder/blocks/block-settings/field-values).
+
+![Form block settings → Form settings → Field values](https://static-docs.nocobase.com/placeholder.png)
+
 ### Layout
 
 The Form block supports two layout modes, which can be set via the `layout` attribute:

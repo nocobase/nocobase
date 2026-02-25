@@ -121,6 +121,11 @@
           },
           {
             "type": "custom-link",
+            "label": "字段值",
+            "link": "/interface-builder/blocks/block-settings/field-values"
+          },
+          {
+            "type": "custom-link",
             "label": "排序规则",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
           },

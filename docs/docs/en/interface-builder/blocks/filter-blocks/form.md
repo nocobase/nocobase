@@ -109,6 +109,18 @@ Recommended setup:
 
 `Operator` defines the matching relationship between the filter form field value and the target block field value.
 
+### Default filter values (Field values)
+
+You can use `Field values` to set default values for the filter form, so filter conditions are auto-filled when the page is opened. For example, you can default a filter field to the current user.
+
+Path: Filter form settings → **Form settings** → **Field values**.
+
+For more details, see [Field values](/interface-builder/blocks/block-settings/field-values).
+
+![Filter form settings → Form settings → Field values](https://static-docs.nocobase.com/placeholder.png)
+
+![Default filter value example (Current user)](https://static-docs.nocobase.com/placeholder.png)
+
 ### Collapse
 
 Add a collapse button to fold and expand the filter form content, saving page space.

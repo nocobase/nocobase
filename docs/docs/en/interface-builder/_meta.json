@@ -116,6 +116,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Field values",
+            "link": "/interface-builder/blocks/block-settings/field-values"
+          },
+          {
+            "type": "custom-link",
             "label": "Sorting Rules",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
           },
