@@ -31,7 +31,7 @@ import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
 import { usersSchema, usersSettingsSchema } from './schemas/users';
-import { PluginUsersClient } from './index';
+import type { PluginUsersClient } from './index';
 import _ from 'lodash';
 
 const useCancelActionProps = () => {
@@ -148,7 +148,7 @@ const UsersManagementTab: React.FC = () => {
       return usersSchema;
     }
 
-    const clonedSchema = JSON.parse(JSON.stringify(usersSchema));
+    const clonedSchema = _.cloneDeep(usersSchema);
     const tableProperties = clonedSchema.properties.block1.properties.table.properties;
 
     const actionsColumnKey = _.last(Object.keys(tableProperties));
