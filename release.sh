@@ -106,12 +106,15 @@ echo "Releasing version: $new_version"
 
 lerna version "$new_version" --preid alpha --force-publish=* --no-git-tag-version -y
 
-maybe_commit_and_tag() {
+VERSION=$(jq -r '.version' lerna.json)
+
+commit_and_tag_if_changed() {
   # `git commit` exits 1 when there is nothing to commit; with `set -e` that would abort release.
   # Also, if there are no changes, we should NOT create a new version tag pointing at an old commit.
   # So we only commit+tag when there are staged changes.
-  local msg="$1"
-  local tag="$2"
+  local version="$1"
+  local msg="chore(versions): 😊 publish v${version}"
+  local tag="v${version}"
 
   if ! git diff --cached --quiet; then
     git commit -m "$msg"
@@ -124,29 +127,21 @@ maybe_commit_and_tag() {
 echo $PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add package.json
-  maybe_commit_and_tag \
-    "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)" \
-    "v$(jq -r '.version' ../../../../lerna.json)"
+  commit_and_tag_if_changed "$VERSION"
   cd ../../../../
 done
 echo $CUSTOM_PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add package.json
-  maybe_commit_and_tag \
-    "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)" \
-    "v$(jq -r '.version' ../../../../lerna.json)"
+  commit_and_tag_if_changed "$VERSION"
   cd ../../../../
 done
 cd ./packages/pro-plugins
 git add .
-maybe_commit_and_tag \
-  "chore(versions): 😊 publish v$(jq -r '.version' ../../lerna.json)" \
-  "v$(jq -r '.version' ../../lerna.json)"
-#git push --atomic origin main v$(jq -r '.version' ../../lerna.json)
+commit_and_tag_if_changed "$VERSION"
+#git push --atomic origin main v$VERSION
 cd ../../
 git add .
-maybe_commit_and_tag \
-  "chore(versions): 😊 publish v$(jq -r '.version' lerna.json)" \
-  "v$(jq -r '.version' lerna.json)"
-# git push --atomic origin main v$(jq -r '.version' lerna.json)
+commit_and_tag_if_changed "$VERSION"
+# git push --atomic origin main v$VERSION
 
