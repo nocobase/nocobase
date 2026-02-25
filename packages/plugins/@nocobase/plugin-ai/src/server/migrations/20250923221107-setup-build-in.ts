@@ -12,7 +12,7 @@ import PluginAIServer from '../plugin';
 
 export default class extends Migration {
   on = 'afterSync'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<2.0.0';
+  appVersion = '<2.1.0';
 
   async up() {
     await (this.plugin as PluginAIServer).setupBuiltIn();
