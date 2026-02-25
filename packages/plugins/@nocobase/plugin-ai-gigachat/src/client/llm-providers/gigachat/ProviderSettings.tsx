@@ -18,7 +18,7 @@ export const ProviderSettingsForm: React.FC = () => {
       schema={{
         type: 'void',
         properties: {
-          credentials: {
+          apiKey: {
             title: tval('Authorization key', { ns: namespace }),
             type: 'string',
             required: true,
@@ -47,12 +47,6 @@ export const ProviderSettingsForm: React.FC = () => {
                 },
               ],
             },
-          },
-          baseURL: {
-            title: tval('Base URL', { ns: namespace }),
-            type: 'string',
-            'x-decorator': 'FormItem',
-            'x-component': 'TextAreaWithGlobalScope',
           },
           authURL: {
             title: tval('Auth URL', { ns: namespace }),
