@@ -4,7 +4,7 @@
   "displayName.zh-CN": "自定义变量",
   "description": "Support for adding and using custom variables",
   "description.zh-CN": "支持新增和使用自定义变量",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/custom-variables",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/custom-variables",
