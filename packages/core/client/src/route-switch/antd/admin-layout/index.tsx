@@ -435,17 +435,23 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
 
   const handleClickMenuItem = useCallback(
     (event: React.MouseEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (!props.options?.isMobile) {
-        navigate(path);
+      // Allow modified clicks (Ctrl/Cmd/Alt/Shift + click) and non-left-button clicks
+      // (e.g. middle-click to open in new tab) to proceed with default browser behavior.
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.button !== 0) {
         return;
       }
 
+      if (!props.options?.isMobile) {
+        // Let the <Link> component handle regular desktop left-click navigation.
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
       // 移动端先收起菜单，再跳转，避免返回时菜单残留在打开态。
       runAfterMobileMenuClosed({
-        isMobile: !!props.options?.isMobile,
+        isMobile: true,
         closeMobileMenu,
         callback: () => {
           navigate(path);
