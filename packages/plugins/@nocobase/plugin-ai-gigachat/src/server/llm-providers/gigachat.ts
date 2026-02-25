@@ -13,16 +13,31 @@ import { GigaChat as GigaChatModel } from 'langchain-gigachat';
 import { LLMProvider, LLMProviderMeta } from '@nocobase/plugin-ai';
 
 type GigaChatOptions = {
-  credentials: string;
+  apiKey: string;
   baseURL?: string;
   authURL?: string;
   scope?: 'GIGACHAT_API_PERS' | 'GIGACHAT_API_B2B' | 'GIGACHAT_API_CORP';
   enableSSL?: boolean;
 };
 
+class GigaChatModelInternal extends GigaChatModel {
+  bindTools(tools, kwargs) {
+    return this.withConfig({
+      tools: this.formatStructuredToolToGigaChat(
+        tools.map((t) => ({
+          name: t.name,
+          description: t.description,
+          parameters: t.schema.type === 'object' ? t.schema : t.schema.toJSONSchema(),
+        })),
+      ),
+      ...kwargs,
+    });
+  }
+}
+
 export class GigaChatProvider extends LLMProvider {
   createModel() {
-    const { credentials, baseURL, authURL, scope, enableSSL } = (this.serviceOptions as GigaChatOptions) || {};
+    const { apiKey: credentials, baseURL, authURL, scope, enableSSL } = (this.serviceOptions as GigaChatOptions) || {};
     const { responseFormat } = this.modelOptions || {};
     const baseUrl = this.isUrlEmpty(baseURL) ? this.baseURL : baseURL;
     const authUrl = this.isUrlEmpty(authURL) ? this.authURL : authURL;
@@ -30,7 +45,7 @@ export class GigaChatProvider extends LLMProvider {
       rejectUnauthorized: enableSSL ?? false,
     });
 
-    return new GigaChatModel({
+    return new GigaChatModelInternal({
       credentials,
       baseUrl,
       authUrl,
