@@ -106,28 +106,38 @@ echo "Releasing version: $new_version"
 
 lerna version "$new_version" --preid alpha --force-publish=* --no-git-tag-version -y
 
+maybe_commit() {
+  # git commit exits 1 when there is nothing to commit; with `set -e` that would abort release.
+  # Only commit when there are staged changes.
+  if ! git diff --cached --quiet; then
+    git commit -m "$1"
+  else
+    echo "Skip commit (no staged changes): $(pwd)"
+  fi
+}
+
 echo $PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add package.json
-  git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
+  maybe_commit "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
   git tag v$(jq -r '.version' ../../../../lerna.json)
   cd ../../../../
 done
 echo $CUSTOM_PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add package.json
-  git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
+  maybe_commit "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
   git tag v$(jq -r '.version' ../../../../lerna.json)
   cd ../../../../
 done
 cd ./packages/pro-plugins
 git add .
-git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../lerna.json)"
+maybe_commit "chore(versions): 😊 publish v$(jq -r '.version' ../../lerna.json)"
 git tag v$(jq -r '.version' ../../lerna.json)
 #git push --atomic origin main v$(jq -r '.version' ../../lerna.json)
 cd ../../
 git add .
-git commit -m "chore(versions): 😊 publish v$(jq -r '.version' lerna.json)"
+maybe_commit "chore(versions): 😊 publish v$(jq -r '.version' lerna.json)"
 git tag v$(jq -r '.version' lerna.json)
 # git push --atomic origin main v$(jq -r '.version' lerna.json)
 
