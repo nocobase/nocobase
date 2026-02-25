@@ -1070,28 +1070,35 @@ If information is missing, clearly state it in the summary.</Important>`;
             content = workContextStr + '\n' + content;
           }
         }
-        const contents = [];
+        const contentBlocks = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
             const parsed = await provider.parseAttachment(this.ctx, attachment);
-            contents.push(parsed);
+            contentBlocks.push(parsed);
           }
           if (content) {
-            contents.push({
+            contentBlocks.push({
               type: 'text',
               text: content,
             });
           }
         }
-        formattedMessages.push({
-          role: 'user',
-          content: contents.length ? contents : content,
-          additional_kwargs: {
-            userContent,
-            attachments,
-            workContext,
-          },
-        });
+        const role = 'user';
+        const additional_kwargs = { userContent, attachments, workContext };
+        if (contentBlocks.length) {
+          formattedMessages.push({
+            role,
+            additional_kwargs,
+            contentBlocks,
+          });
+        } else {
+          formattedMessages.push({
+            role,
+            additional_kwargs,
+            content,
+          });
+        }
+
         continue;
       }
       if (msg.role === 'tool') {
