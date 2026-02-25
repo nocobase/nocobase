@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "",
   "displayName.ru-RU": "Уведомления",
   "description.ru-RU": "Пакет плагинов для отправки и тестирования уведомлений.",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@types/nodemailer": "6.4.4",

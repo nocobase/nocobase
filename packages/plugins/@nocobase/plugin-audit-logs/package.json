@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "private": true,
   "displayName": "Audit logs (deprecated)",
   "displayName.ru-RU": "Журнал аудита (устарел)",
@@ -12,7 +12,7 @@
   "homepage": "https://docs.nocobase.com/handbook/audit-logs",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/audit-logs",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/audit-logs",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",

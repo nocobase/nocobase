@@ -1,18 +1,18 @@
 {
   "name": "@nocobase/plugin-block-markdown",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/server/index.js",
   "displayName": "Block: Markdown",
   "displayName.zh-CN": "Markdown",
   "description": "Provide Markdown block",
   "description.zh-CN": "提供Markdown 区块",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "homepage": "https://docs.nocobase.com/handbook/block-markdown",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-markdown",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "Blocks"

@@ -1,0 +1,29 @@
+{
+  "name": "@nocobase/plugin-custom-variables",
+  "displayName": "Custom variables",
+  "displayName.zh-CN": "自定义变量",
+  "description": "Support for adding and using custom variables",
+  "description.zh-CN": "支持新增和使用自定义变量",
+  "version": "2.0.3",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/custom-variables",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/custom-variables",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "antd-style": "3.x"
+  },
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "keywords": [
+    "Custom variables"
+  ],
+  "license": "Apache-2.0"
+}

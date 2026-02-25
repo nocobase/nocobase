@@ -54,7 +54,7 @@ JS Field 的脚本编辑器支持语法高亮、错误提示与内置代码片�
 
 可结合 AI 员工生成代码：
 
-- [AI 员工 · Nathan：前端工程师](/ai-employees/built-in-employee)
+- [AI 员工 · Nathan：前端工程师](/ai-employees/features/built-in-employee)
 
 ## 常见用法
 

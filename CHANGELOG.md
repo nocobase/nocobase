@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.3](https://github.com/nocobase/nocobase/compare/v1.9.51...v2.0.3) - 2026-02-24
+
+### 🎉 New Features
+
+- **[Core]** Open source commercial plugins and update license from AGPL-3.0 to Apache-2.0 ([#8682](https://github.com/nocobase/nocobase/pull/8682)) by @chenos
+
+### 🚀 Improvements
+
+- **[AI employees]** Update ai employee docs ([#8690](https://github.com/nocobase/nocobase/pull/8690)) by @heziqiang
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Unify mobile pagination behavior for table and grid card ([#8691](https://github.com/nocobase/nocobase/pull/8691)) by @zhangzhonghe
+
+  - chart block filter not working ([#8671](https://github.com/nocobase/nocobase/pull/8671)) by @chenos
+
+- **[AI employees]** aiTools:list API returns 403 ([#8672](https://github.com/nocobase/nocobase/pull/8672)) by @chenos
+
+- **[Localization]** improve handling of missing i18n keys ([#8673](https://github.com/nocobase/nocobase/pull/8673)) by @chenos
+
 ## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
 
 ### 🐛 Bug Fixes

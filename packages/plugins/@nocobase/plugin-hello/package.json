@@ -1,10 +1,11 @@
 {
   "name": "@nocobase/plugin-hello",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
-  }
+  },
+  "license": "Apache-2.0"
 }

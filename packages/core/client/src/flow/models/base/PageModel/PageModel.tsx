@@ -28,7 +28,6 @@ import {
   VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
-import _ from 'lodash';
 import React, { ReactNode } from 'react';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { BasePageTabModel } from './PageTabModel';
@@ -335,9 +334,18 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   render() {
+    const token = this.context.themeToken;
+    const headerStyle = { ...this.props.headerStyle } as Record<string, any>;
+    if (token) {
+      headerStyle.paddingBlock = token.paddingSM;
+      headerStyle.paddingInline = token.paddingLG;
+    }
+    if (this.props.enableTabs) {
+      headerStyle.paddingBottom = 0;
+    }
     return (
       <>
-        {this.props.displayTitle && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
+        {this.props.displayTitle && <PageHeader title={this.props.title} style={headerStyle} />}
         {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>
     );
@@ -398,6 +406,8 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
+        const token = ctx.themeToken;
+        const tabPaddingInline = token?.paddingLG ?? 16;
         ctx.model.setProps('displayTitle', params.displayTitle);
         if (ctx.model.context.closable) {
           ctx.model.setProps('title', ctx.t(params.title, { ns: 'lm-desktop-routes' }));
@@ -413,7 +423,7 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgContainer)',
-            paddingInline: 16,
+            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         } else {
@@ -422,7 +432,7 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgLayout)',
-            paddingInline: 16,
+            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         }

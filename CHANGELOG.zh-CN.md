@@ -5,6 +5,28 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.3](https://github.com/nocobase/nocobase/compare/v1.9.51...v2.0.3) - 2026-02-24
+
+### 🎉 新特性
+
+- **[core]** 将多个商业插件开源，并将协议由 AGPL-3.0 调整为 Apache-2.0 ([#8682](https://github.com/nocobase/nocobase/pull/8682)) by @chenos
+
+### 🚀 优化
+
+- **[docs]**
+  - 更新 AI 员工手册文档 ([#8690](https://github.com/nocobase/nocobase/pull/8690)) by @heziqiang
+
+### 🐛 修复
+
+- **[client]**
+  - Unify mobile pagination behavior for table and grid card ([#8691](https://github.com/nocobase/nocobase/pull/8691)) by @zhangzhonghe
+
+  - chart block filter not working ([#8671](https://github.com/nocobase/nocobase/pull/8671)) by @chenos
+
+- **[AI employees]** aiTools:list API returns 403 ([#8672](https://github.com/nocobase/nocobase/pull/8672)) by @chenos
+
+- **[Localization]** improve handling of missing i18n keys ([#8673](https://github.com/nocobase/nocobase/pull/8673)) by @chenos
+
 ## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
 
 ### 🐛 修复

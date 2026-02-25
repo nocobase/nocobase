@@ -1,0 +1,39 @@
+{
+  "name": "@nocobase/plugin-field-code",
+  "displayName": "Collection field: Code",
+  "displayName.zh-CN": "数据表字段：代码",
+  "description": "For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.",
+  "description.zh-CN": "用于代码编辑和高亮显示，支持 Java、JavaScript、Python、SQL 等语言。",
+  "version": "2.0.3",
+  "main": "dist/server/index.js",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "@codemirror/lang-java": "^6.0.1",
+    "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/lang-python": "^6.1.7",
+    "@codemirror/lang-sql": "^6.8.0",
+    "@codemirror/language": "^6.11.0",
+    "@codemirror/legacy-modes": "^6.5.0",
+    "@codemirror/lint": "^6.8.3",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.37.2",
+    "@uiw/react-codemirror": "4.23.10",
+    "codemirror": "^6.0.1",
+    "jshint": "^2.13.6"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "Collection fields"
+  ],
+  "license": "Apache-2.0"
+}

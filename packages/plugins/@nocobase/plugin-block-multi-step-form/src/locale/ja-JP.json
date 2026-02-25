@@ -1,0 +1,14 @@
+{
+  "AddStep": "ステップを追加",
+  "Delete": "削除",
+  "Edit step title": "ステップタイトルを編集",
+  "Next": "次へ",
+  "Previous": "前へ",
+  "Step": "ステップ",
+  "Step title": "ステップタイトル",
+  "StepsForm": "マルチステップフォーム",
+  "StepsForm(Add new)": "マルチステップフォーム（新規追加）",
+  "StepsForm(Edit)": "マルチステップフォーム（編集）",
+  "The last step cannot be deleted": "最終ステップは削除できません",
+  "Whether to delete this step": "このステップを削除しますか？"
+}

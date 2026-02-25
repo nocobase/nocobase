@@ -34,7 +34,7 @@ JS Block 的脚本编辑器支持语法高亮、错误提示与内置代码片�
 
 并且，编辑器右上角可直接唤起 AI 员工“前端工程师 · Nathan”，让他基于当前上下文帮你编写或修改脚本，一键“Apply to editor”应用到编辑器后再运行查看效果。详见：
 
-- [AI 员工 · Nathan：前端工程师](/ai-employees/built-in-employee)
+- [AI 员工 · Nathan：前端工程师](/ai-employees/features/built-in-employee)
 
 ## 运行环境与安全
 

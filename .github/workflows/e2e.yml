@@ -10,7 +10,6 @@ on:
       - 'main'
       - 'develop'
       - 'next'
-      - 'v1'
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
@@ -27,9 +26,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    env:
-      # Use the PR base branch when available (e.g. v1), otherwise use current ref name.
-      BASE_REF: ${{ github.event.pull_request.base.ref || github.ref_name }}
     steps:
       - uses: actions/create-github-app-token@v1
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
@@ -45,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: ${{ env.BASE_REF }}
+          ref: main
           path: packages/pro-plugins
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
@@ -54,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: nocobase/plugin-workflow-approval
-          ref: ${{ env.BASE_REF }}
+          ref: main
           path: packages/pro-plugins/@nocobase/plugin-workflow-approval
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
