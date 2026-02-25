@@ -12,7 +12,7 @@ import { render, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
-import { FormBlockContent, FormBlockModel } from '../../../..';
+import { FormBlockContent, FormBlockModel, FormComponent } from '../../../..';
 import { Application } from '../../../../../application/Application';
 import {
   InputFieldInterface,
@@ -721,5 +721,54 @@ describe('FormBlockModel block height', () => {
     await waitFor(() => {
       expect(gridModel.setProps).toHaveBeenCalledWith({ height: undefined });
     });
+  });
+});
+
+describe('FormComponent mobile horizontal layout class', () => {
+  const createModel = (isMobileLayout: boolean) => {
+    return {
+      form: undefined,
+      context: {
+        isMobileLayout,
+        view: { inputArgs: {} },
+        record: {},
+      },
+      markUserModifiedFields: vi.fn(),
+      dispatchEvent: vi.fn(),
+      emitter: { emit: vi.fn() },
+    } as any;
+  };
+
+  it('adds mobile horizontal keep class when mobile + horizontal', () => {
+    const model = createModel(true);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'horizontal' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className).toContain('nb-flow-keep-mobile-horizontal');
+  });
+
+  it('does not add keep class when layout is vertical', () => {
+    const model = createModel(true);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'vertical' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className || '').not.toContain('nb-flow-keep-mobile-horizontal');
+  });
+
+  it('does not add keep class when desktop + horizontal', () => {
+    const model = createModel(false);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'horizontal' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className || '').not.toContain('nb-flow-keep-mobile-horizontal');
   });
 });
