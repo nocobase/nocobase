@@ -4,7 +4,7 @@
   "displayName.zh-CN": "AI LLM：GigaChat",
   "description": "Support integration with GigaChat LLM service.",
   "description.zh-CN": "支持接入 GigaChat LLM 服务。",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "main": "dist/server/index.js",
   "nocobase": {
     "supportedVersions": [
@@ -21,5 +21,8 @@
   "devDependencies": {
     "langchain-gigachat": "^0.0.14"
   },
+  "keywords": [
+    "AI"
+  ],
   "license": "Apache-2.0"
 }
