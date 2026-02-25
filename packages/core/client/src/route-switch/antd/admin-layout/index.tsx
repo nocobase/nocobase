@@ -11,7 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { FlowModel, FlowModelRenderer, useFlowEngine, useFlowEngineContext } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, reaction, useFlowEngine, useFlowEngineContext } from '@nocobase/flow-engine';
 import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -63,6 +63,7 @@ import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSe
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
+import { AdminLayoutRouteCoordinator, type RoutePageMeta } from './AdminLayoutRouteCoordinator';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -268,10 +269,24 @@ function isDvhSupported() {
 
 export const LayoutContent = () => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+  const flowEngine = useFlowEngine();
+  const layoutContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+    model?.setLayoutContentElement(layoutContentRef.current);
+    return () => {
+      model?.setLayoutContentElement(null);
+    };
+  }, [flowEngine]);
 
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
+    <div
+      ref={layoutContentRef}
+      className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}
+      style={style}
+    >
       <div style={pageContentStyle}>
         <Outlet />
         <ShowTipWhenNoPages />
@@ -988,6 +1003,89 @@ export const AdminProvider = (props) => {
 };
 
 export class AdminLayoutModel extends FlowModel {
+  private routeCoordinator?: AdminLayoutRouteCoordinator;
+  private routeDisposer?: () => void;
+  private activePageUid = '';
+  private layoutContentElement: HTMLElement | null = null;
+  private routePageMetaMap = new Map<string, RoutePageMeta>();
+
+  private getCoordinator() {
+    if (!this.routeCoordinator) {
+      this.routeCoordinator = new AdminLayoutRouteCoordinator(this.flowEngine);
+    }
+    return this.routeCoordinator;
+  }
+
+  private getCurrentRouteByActivePage() {
+    return this.routePageMetaMap.get(this.activePageUid)?.currentRoute || {};
+  }
+
+  registerRoutePage(pageUid: string, meta: RoutePageMeta) {
+    this.routePageMetaMap.set(pageUid, {
+      ...meta,
+      currentRoute: meta.currentRoute || {},
+    });
+    return this.getCoordinator().registerPage(pageUid, meta);
+  }
+
+  updateRoutePage(pageUid: string, meta: Partial<RoutePageMeta>) {
+    const prev = this.routePageMetaMap.get(pageUid) || { active: false, currentRoute: {} };
+    const next = {
+      ...prev,
+      ...meta,
+      active: typeof meta.active === 'boolean' ? meta.active : prev.active,
+      currentRoute: meta.currentRoute ?? prev.currentRoute ?? {},
+    };
+    this.routePageMetaMap.set(pageUid, next);
+    this.getCoordinator().syncPageMeta(pageUid, next);
+  }
+
+  unregisterRoutePage(pageUid: string) {
+    this.routePageMetaMap.delete(pageUid);
+    if (this.activePageUid === pageUid) {
+      this.activePageUid = '';
+    }
+    this.getCoordinator().unregisterPage(pageUid);
+  }
+
+  setLayoutContentElement(element: HTMLElement | null) {
+    this.layoutContentElement = element;
+    this.getCoordinator().setLayoutContentElement(element);
+  }
+
+  protected onMount(): void {
+    super.onMount();
+    if (!this.routeDisposer) {
+      this.flowEngine.context.defineProperty('currentRoute', {
+        get: () => this.getCurrentRouteByActivePage(),
+      });
+      this.flowEngine.context.defineProperty('layoutContentElement', {
+        get: () => this.layoutContentElement,
+      });
+      this.routeDisposer = reaction(
+        () => this.flowEngine.context.route,
+        (route) => {
+          this.activePageUid = route?.params?.name || '';
+          this.getCoordinator().syncRoute(route || {});
+        },
+        {
+          fireImmediately: true,
+        },
+      );
+    }
+  }
+
+  protected onUnmount(): void {
+    this.routeDisposer?.();
+    this.routeDisposer = undefined;
+    this.routeCoordinator?.destroy();
+    this.routeCoordinator = undefined;
+    this.routePageMetaMap.clear();
+    this.activePageUid = '';
+    this.layoutContentElement = null;
+    super.onUnmount();
+  }
+
   render() {
     return (
       <AdminProvider>
