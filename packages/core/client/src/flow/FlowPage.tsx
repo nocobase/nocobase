@@ -11,16 +11,11 @@ import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext 
 import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useRef } from 'react';
-import {
-  AdminLayoutModel,
-  useAllAccessDesktopRoutes,
-  useCurrentRoute,
-  useKeepAlive,
-  useMobileLayout,
-} from '../route-switch';
+import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { useDesignable } from '../schema-component';
 import { deviceType } from 'react-device-detect';
+import { AdminLayoutModel } from '../route-switch/antd/admin-layout/AdminLayoutModel';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
