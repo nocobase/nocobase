@@ -14,8 +14,7 @@ import { avatars } from '../../avatars';
 import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
-import { RemoteSelect, TextAreaWithContextSelector, useToken } from '@nocobase/client';
-import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
+import { RemoteSelect, TextAreaWithContextSelector, useRequest, useToken } from '@nocobase/client';
 import { AddContextButton } from '../../AddContextButton';
 import { Schema, useField } from '@formily/react';
 import { ArrayField, ObjectField, Field } from '@formily/core';
@@ -29,6 +28,7 @@ import { useLLMServiceCatalog } from '../../../llm-services/hooks/useLLMServiceC
 import { useLLMProviders } from '../../../llm-services/llm-providers';
 import { useT } from '../../../locale';
 import { buildProviderGroupedModelOptions, getServiceByOverride } from '../../../llm-services/utils';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 
 const { Meta } = Card;
 
@@ -58,8 +58,11 @@ const Shortcut: React.FC<ShortcutProps> = ({
 }) => {
   const { size, mask } = style;
   const [focus, setFocus] = useState(false);
-
-  const { loading, aiEmployeesMap } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { loading } = useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
+  const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
   const aiEmployee = aiEmployeesMap[username];
 
   const { triggerTask } = useChatBoxActions();
@@ -104,7 +107,6 @@ const Shortcut: React.FC<ShortcutProps> = ({
           }}
           onMouseLeave={() => setFocus(false)}
           onClick={() => {
-            setWebSearch(true);
             triggerTask({ aiEmployee, tasks, auto });
             if (context?.workContext?.length) {
               addContextItems(context.workContext);
@@ -321,7 +323,8 @@ AIEmployeeShortcutModel.registerFlow({
         };
       },
       uiSchema: async (ctx) => {
-        const { aiEmployeesMap } = await ctx.aiEmployeesData;
+        await ctx.aiConfigRepository.getAIEmployees();
+        const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
         return {
           profile: {
             type: 'void',

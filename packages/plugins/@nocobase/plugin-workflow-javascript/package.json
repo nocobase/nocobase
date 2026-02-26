@@ -1,0 +1,39 @@
+{
+  "name": "@nocobase/plugin-workflow-javascript",
+  "version": "2.0.6",
+  "displayName": "Workflow: JavaScript",
+  "displayName.zh-CN": "工作流：JavaScript 节点",
+  "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
+  "description.zh-CN": "在隔离环境中执行一段 JavaScript 代码。",
+  "main": "dist/server/index.js",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "devDependencies": {
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/lint": "^6.8.3",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.37.2",
+    "codemirror": "^6.0.2",
+    "jshint": "^2.13.6",
+    "node-gyp": "^10.2.0"
+  },
+  "resolutions": {
+    "nan": "2.18.0",
+    "node-gyp": "^10.2.0"
+  },
+  "keywords": [
+    "Workflow"
+  ],
+  "license": "Apache-2.0"
+}

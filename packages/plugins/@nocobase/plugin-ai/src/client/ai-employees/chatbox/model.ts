@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMServiceItem } from '../../llm-services/LLMServicesRepository';
-import type { LLMServicesRepository } from '../../llm-services/LLMServicesRepository';
+import { AIConfigRepository, LLMServiceItem } from '../../repositories/AIConfigRepository';
 import { ModelRef } from './stores/chat-box';
 
 export const MODEL_PREFERENCE_STORAGE_KEY = 'ai_model_preference_';
@@ -56,19 +55,18 @@ export const resolveModel = (api: any, username: string, allModels: ModelRef[], 
 
 export const ensureModel = async ({
   api,
-  llmServicesRepository,
+  aiConfigRepository,
   username,
   currentOverride,
   onResolved,
 }: {
   api: any;
-  llmServicesRepository: LLMServicesRepository;
+  aiConfigRepository: AIConfigRepository;
   username: string;
   currentOverride?: ModelRef | null;
   onResolved?: (override: ModelRef | null) => void;
 }): Promise<ModelRef | null> => {
-  await llmServicesRepository.load();
-  const allModels = getAllModels(llmServicesRepository.services);
+  const allModels = getAllModels(await aiConfigRepository.getLLMServices());
   const resolvedOverride = resolveModel(api, username, allModels, currentOverride);
   if (!isSameModel(currentOverride, resolvedOverride)) {
     onResolved?.(resolvedOverride);

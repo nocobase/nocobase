@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "2.0.2",
+  "version": "2.0.6",
   "main": "dist/server/index.js",
   "displayName": "License settings",
   "displayName.ru-RU": "Настройки лицензии",
@@ -15,5 +15,6 @@
   },
   "scripts": {
     "ts:env": "tsc -p tsconfig.env.json"
-  }
+  },
+  "license": "Apache-2.0"
 }

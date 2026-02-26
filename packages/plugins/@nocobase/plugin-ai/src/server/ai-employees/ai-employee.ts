@@ -535,7 +535,7 @@ export class AIEmployee {
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
       } else {
-        this.sendErrorResponse(err.message);
+        this.sendErrorResponse(provider.parseResponseError(err));
       }
     } finally {
       this.ctx.res.end();
@@ -928,71 +928,62 @@ If information is missing, clearly state it in the summary.</Important>`;
     } else {
       return;
     }
-    const toolCalls: AIToolMessage[] = await this.aiToolMessagesRepo.find({
-      filter: {
-        messageId,
-        invokeStatus: {
-          $ne: 'confirmed',
+    const toolMessages: AIToolMessage[] = (
+      await this.aiToolMessagesModel.findAll<Model<AIToolMessage>>({
+        where: {
+          sessionId: this.sessionId,
+          messageId,
+          invokeStatus: {
+            [Op.ne]: 'confirmed',
+          },
         },
-      },
-    });
-    if (!toolCalls || _.isEmpty(toolCalls)) {
+      })
+    ).map((it) => it.toJSON());
+    if (!toolMessages || _.isEmpty(toolMessages)) {
       return;
     }
 
     const { model, service } = await this.getLLMService();
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
-    const toolMessageContent = 'The user rejected this tool invocation and needs to continue modifying the parameters.';
-    await this.db.sequelize.transaction(async (transaction) => {
-      for (const toolCall of toolCalls) {
-        const [updated] = await this.aiToolMessagesModel.update(
+    const toolMessageContent = 'The user ignored the application for tools usage and will continued to ask questions';
+    return await this.db.sequelize.transaction(async (transaction) => {
+      for (const toolMessage of toolMessages) {
+        await this.aiToolMessagesModel.update(
           {
-            invokeStatus: 'done',
-            status: 'error',
+            invokeStatus: 'confirmed',
+            status: 'success',
             content: toolMessageContent,
-            invokeStartTime: toolCall.invokeStartTime ?? now,
-            invokeEndTime: toolCall.invokeEndTime ?? now,
+            invokeStartTime: toolMessage.invokeStartTime ?? now,
+            invokeEndTime: toolMessage.invokeEndTime ?? now,
           },
           {
             where: {
-              id: toolCall.id,
-              invokeStatus: toolCall.invokeStatus,
+              id: toolMessage.id,
+              invokeStatus: toolMessage.invokeStatus,
             },
             transaction,
           },
         );
-        if (updated === 0) {
-          continue;
-        }
-        await this.db.getRepository('aiConversations.messages', this.sessionId).create({
-          values: toolCalls.map((toolCall) => ({
-            messageId: this.plugin.snowflake.generate(),
-            role: 'tool',
-            content: {
-              type: 'text',
-              content: toolMessageContent,
-            },
-            metadata: {
-              model,
-              provider: service.provider,
-              toolCall: toolCallMap.get(toolCall.toolCallId),
-              autoCall: toolCall.auto,
-            },
-            transaction,
-          })),
-        });
-        await this.aiToolMessagesRepo.update({
-          filter: {
-            messageId,
-            toolCallId: toolCall.toolCallId,
+      }
+      return await this.db.getRepository('aiConversations.messages', this.sessionId).create({
+        values: toolMessages.map((toolMessage) => ({
+          messageId: this.plugin.snowflake.generate(),
+          role: 'tool',
+          content: {
+            type: 'text',
+            content: toolMessageContent,
           },
-          values: {
-            invokeStatus: 'confirmed',
+          metadata: {
+            model,
+            provider: service.provider,
+            toolCall: toolCallMap.get(toolMessage.toolCallId),
+            toolCallId: toolMessage.toolCallId,
+            autoCall: toolMessage.auto,
           },
           transaction,
-        });
-      }
+        })),
+      });
     });
   }
 
@@ -1079,28 +1070,35 @@ If information is missing, clearly state it in the summary.</Important>`;
             content = workContextStr + '\n' + content;
           }
         }
-        const contents = [];
+        const contentBlocks = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
             const parsed = await provider.parseAttachment(this.ctx, attachment);
-            contents.push(parsed);
+            contentBlocks.push(parsed);
           }
           if (content) {
-            contents.push({
+            contentBlocks.push({
               type: 'text',
               text: content,
             });
           }
         }
-        formattedMessages.push({
-          role: 'user',
-          content: contents.length ? contents : content,
-          additional_kwargs: {
-            userContent,
-            attachments,
-            workContext,
-          },
-        });
+        const role = 'user';
+        const additional_kwargs = { userContent, attachments, workContext };
+        if (contentBlocks.length) {
+          formattedMessages.push({
+            role,
+            additional_kwargs,
+            contentBlocks,
+          });
+        } else {
+          formattedMessages.push({
+            role,
+            additional_kwargs,
+            content,
+          });
+        }
+
         continue;
       }
       if (msg.role === 'tool') {

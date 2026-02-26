@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "2.0.2",
+  "version": "2.0.6",
   "displayName": "Notification: In-app message",
   "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",
@@ -28,5 +28,6 @@
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "react-router-dom": "^6.x"
-  }
+  },
+  "license": "Apache-2.0"
 }

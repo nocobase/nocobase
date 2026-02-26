@@ -1,52 +1,33 @@
 # 与 AI 员工协作
 
-在创建 AI 员工后，我们就可以在 NocoBase 任意页面中与我们的 AI 员工进行协作了。
+创建并启用 AI 员工后，可在页面中与其进行协作。
 
-我们可以点击页面右下角的员工列表中员工头像唤醒他们，然后开始协作。
+## 入口
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+常用入口有两类：
 
-也可以让 AI 员工驻扎在我们需要他们的任何地方，比如表格上，表单上，点击他们直接唤起。
+1. **右下角主入口**：在业务页面右下角唤起 AI 对话面板，适合通用问答与跨区块协作。
+2. **区块 Action 入口**：在支持 `Actions` 的区块中，通过 `Actions -> AI employees` 进入，适合针对当前区块执行任务（例如 JSBlock 等场景）。
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+### 右下角主入口
 
+![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
 
-## 对话框中的基本操作
+### 区块 Action 入口
 
-唤起 AI 员工后，输入对话内容，点击发送按钮，即可开始对话。
+![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-![20251021234541](https://static-docs.nocobase.com/20251021234541.png)
+## 对话基础操作
 
-鼠标悬停在用户消息上时将会复现快捷操作图标：
-- 编辑并重新发送消息
-- 复制用户消息内容
-  
-![20251021235715](https://static-docs.nocobase.com/20251021235715.png)
+对话框支持发送消息、上传附件、查看历史会话、新建会话和编辑系统提示词等常见操作。
 
-鼠标悬停在 AI 消息上时将会复现快捷操作图标：
-- 让 AI 重新回复
-- 复制 AI 消息内容
+## 会话内切换
 
-![20251021235847](https://static-docs.nocobase.com/20251021235847.png)
+在输入区域底部可直接切换：
 
-点击“上传”图标，可以上传文件发送给 AI 员工。
+- `AI Employee Switcher`：切换当前员工。
+- `Model Switcher`：切换当前会话模型。
 
-![20251022000327](https://static-docs.nocobase.com/20251022000327.png)
+模型会按员工维度保存偏好，下一次进入时优先恢复。
 
-对话框左上角是历史对话列表，点击展开列表，可以查看历史对话。
-
-![20251021234640](https://static-docs.nocobase.com/20251021234640.png)
-
-点击右上角"铅笔"图标，可以开启新的会话。
-
-![20251021234841](https://static-docs.nocobase.com/20251021234841.png)
-
-点击右上角“i”图标，可以编辑自定义的系统提示词
-
-![20251021235314](https://static-docs.nocobase.com/20251021235314.png)
-
-点击右上角“扩展”图标，可以全屏展示 AI 员工对话框。
-
-![20251021235427](https://static-docs.nocobase.com/20251021235427.png)
-
-![20251021235525](https://static-docs.nocobase.com/20251021235525.png)
+![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

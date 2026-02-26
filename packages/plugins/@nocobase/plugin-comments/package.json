@@ -1,0 +1,32 @@
+{
+  "name": "@nocobase/plugin-comments",
+  "version": "2.0.6",
+  "displayName": "Comments",
+  "displayName.zh-CN": "评论",
+  "description": "Provides comment collection template and block to add commenting functionality for any collection.",
+  "description.zh-CN": "提供评论数据表模板和区块，为任意数据表的数据添加评论功能。",
+  "main": "dist/server/index.js",
+  "license": "Apache-2.0",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "antd": "5.x",
+    "dayjs": "^1.11.8"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4"
+}

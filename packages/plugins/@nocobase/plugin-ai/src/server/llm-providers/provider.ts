@@ -21,6 +21,7 @@ import { tool } from 'langchain';
 import '@langchain/core/utils/stream';
 import { ToolsEntry } from '@nocobase/ai';
 import { LLMResult } from '@langchain/core/outputs';
+import { ContentBlock } from '@langchain/core/messages';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -142,10 +143,13 @@ export abstract class LLMProvider {
       };
     } else {
       return {
-        type: 'input_file',
-        filename: attachment.filename,
-        file_data: data,
-      };
+        type: 'file',
+        mimeType: attachment.mimetype,
+        metadata: {
+          filename: attachment.filename,
+        },
+        data,
+      } as ContentBlock.Multimodal.File;
     }
   }
 
@@ -176,6 +180,7 @@ export abstract class LLMProvider {
       options,
     };
   }
+
   async testFlight(): Promise<{ status: 'success' | 'error'; code: number; message?: string }> {
     try {
       const result = await this.chatModel.invoke('hello');
@@ -214,6 +219,10 @@ export abstract class LLMProvider {
 
   parseResponseMetadata(output: LLMResult): any {
     return [null, null];
+  }
+
+  parseResponseError(err) {
+    return err?.message ?? 'Unexpected LLM service error';
   }
 }
 

@@ -38,7 +38,7 @@ The JS Block's script editor supports syntax highlighting, error hints, and buil
 
 Additionally, you can directly summon the AI employee "Frontend Engineer · Nathan" from the top-right corner of the editor. Nathan can help you write or modify scripts based on the current context. You can then "Apply to editor" with one click and run the code to see the effect. For details, see:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Runtime Environment and Security
 

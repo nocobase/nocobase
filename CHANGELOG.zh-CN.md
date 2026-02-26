@@ -5,15 +5,50 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
-## [v1.9.48](https://github.com/nocobase/nocobase/compare/v2.0.2...v1.9.48) - 2026-02-24
-
-### 🚀 优化
-
-- **[权限控制]** 权限插件提供过滤关系字段值的 API ([#8601](https://github.com/nocobase/nocobase/pull/8601)) by @2013xile
+## [v2.0.6](https://github.com/nocobase/nocobase/compare/v2.0.5...v2.0.6) - 2026-02-26
 
 ### 🐛 修复
 
-- **[工作流：审批]** 在审批操作中过滤关系字段的值，以避免越权的数据操作 by @mytharcher
+- **[AI 员工]** 修复使用 mysql 数据库时 AI 对话报错问题 ([#8708](https://github.com/nocobase/nocobase/pull/8708)) by @cgyrock
+
+## [v2.0.5](https://github.com/nocobase/nocobase/compare/v2.0.3...v2.0.5) - 2026-02-26
+
+### 🐛 修复
+
+- **[client]** 移动端中，先关闭菜单再执行页面跳转 ([#8699](https://github.com/nocobase/nocobase/pull/8699)) by @zhangzhonghe
+
+- **[AI LLM：GigaChat]** 修复 GigaChat 插件在2.0中无法使用的问题 ([#8707](https://github.com/nocobase/nocobase/pull/8707)) by @cgyrock
+
+- **[AI 员工]**
+  - 使用 ContentBlock 对象统一 chatGPT API 文件输入 ([#8696](https://github.com/nocobase/nocobase/pull/8696)) by @cgyrock
+
+  - 修复用户忽略 ai agent 工具执行确认请求直接发送新消息导致的接口错误 ([#8697](https://github.com/nocobase/nocobase/pull/8697)) by @cgyrock
+
+- **[AI: 知识库]** 修复AI知识库启动报错问题 by @cgyrock
+
+- **[邮件管理]** 图像查看错误 by @jiannx
+
+## [v2.0.3](https://github.com/nocobase/nocobase/compare/v1.9.51...v2.0.3) - 2026-02-24
+
+### 🎉 新特性
+
+- **[core]** 将多个商业插件开源，并将协议由 AGPL-3.0 调整为 Apache-2.0 ([#8682](https://github.com/nocobase/nocobase/pull/8682)) by @chenos
+
+### 🚀 优化
+
+- **[docs]**
+  - 更新 AI 员工手册文档 ([#8690](https://github.com/nocobase/nocobase/pull/8690)) by @heziqiang
+
+### 🐛 修复
+
+- **[client]**
+  - Unify mobile pagination behavior for table and grid card ([#8691](https://github.com/nocobase/nocobase/pull/8691)) by @zhangzhonghe
+
+  - chart block filter not working ([#8671](https://github.com/nocobase/nocobase/pull/8671)) by @chenos
+
+- **[AI employees]** aiTools:list API returns 403 ([#8672](https://github.com/nocobase/nocobase/pull/8672)) by @chenos
+
+- **[Localization]** improve handling of missing i18n keys ([#8673](https://github.com/nocobase/nocobase/pull/8673)) by @chenos
 
 ## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
 

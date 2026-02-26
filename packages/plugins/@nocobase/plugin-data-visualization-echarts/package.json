@@ -1,0 +1,33 @@
+{
+  "name": "@nocobase/plugin-data-visualization-echarts",
+  "displayName": "Data visualization: ECharts",
+  "displayName.zh-CN": "数据可视化：ECharts",
+  "description": "Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.",
+  "description.zh-CN": "使用 ECharts 实现数据可视化，支持漏斗图、雷达图等更多图表类型，并提供更友好的可视化配置。",
+  "homepage": "https://docs.nocobase.com/handbook/data-visualization/echarts",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-visualization/echarts",
+  "version": "2.0.6",
+  "main": "dist/server/index.js",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "echarts": "^5.5.0",
+    "echarts-for-react": "3.0.2",
+    "echarts-wordcloud": "^2.1.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-data-visualization": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "Blocks"
+  ],
+  "license": "Apache-2.0"
+}

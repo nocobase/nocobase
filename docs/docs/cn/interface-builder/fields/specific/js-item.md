@@ -28,7 +28,7 @@ JS Item 用于表单中的“自定义项”（非字段绑定）。你可以用
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- 可结合 AI 员工生成/修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/built-in-employee)
+- 可结合 AI 员工生成/修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/features/built-in-employee)
 
 ## 常见用法（精简示例）
 
