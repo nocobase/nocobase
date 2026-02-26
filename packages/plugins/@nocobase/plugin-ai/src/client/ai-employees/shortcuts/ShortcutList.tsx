@@ -10,14 +10,13 @@
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowModelRenderer } from '@nocobase/flow-engine';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useShortcuts } from './useShortcuts';
-import { useDesignable, useRequest } from '@nocobase/client';
+import { useDesignable } from '@nocobase/client';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { observer } from '@nocobase/flow-engine';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { isHide } from '../built-in/utils';
-import { AIEmployee } from '../types';
 
 export const ShortcutList: React.FC = observer(() => {
   const { designable } = useDesignable();
@@ -26,10 +25,12 @@ export const ShortcutList: React.FC = observer(() => {
   const hasShortcuts = model?.subModels?.shortcuts?.length > 0;
 
   const aiConfigRepository = useAIConfigRepository();
-  const { loading, data } = useRequest<AIEmployee[]>(async () => {
-    return aiConfigRepository.getAIEmployees();
-  });
-  const aiEmployees = data || [];
+  const loading = aiConfigRepository.aiEmployeesLoading;
+  const aiEmployees = aiConfigRepository.aiEmployees;
+
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   return (
     <>

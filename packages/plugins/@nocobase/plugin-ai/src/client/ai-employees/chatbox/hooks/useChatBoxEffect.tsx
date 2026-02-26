@@ -11,15 +11,12 @@ import { useEffect } from 'react';
 import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
 import { useChatConversationActions } from './useChatConversationActions';
-import { useRequest } from '@nocobase/client';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { AIEmployee } from '../../types';
 
 export const useChatBoxEffect = () => {
   const aiConfigRepository = useAIConfigRepository();
-  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
-    return aiConfigRepository.getAIEmployees();
-  });
+  const aiEmployees = aiConfigRepository.aiEmployees;
+  const aiEmployeesDigest = JSON.stringify(aiEmployees || []);
 
   const open = useChatBoxStore.use.open();
   const senderRef = useChatBoxStore.use.senderRef();
@@ -27,6 +24,10 @@ export const useChatBoxEffect = () => {
   const setRoles = useChatBoxStore.use.setRoles();
 
   const { conversationsService } = useChatConversationActions();
+
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   useEffect(() => {
     if (!aiEmployees) {
@@ -47,7 +48,7 @@ export const useChatBoxEffect = () => {
       ...defaultRoles,
       ...roles,
     }));
-  }, [aiEmployees]);
+  }, [aiEmployeesDigest]);
 
   useEffect(() => {
     senderRef?.current?.focus();
