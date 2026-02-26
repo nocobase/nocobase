@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { getAllModelsWithLabel } from '../utils';
 
@@ -21,8 +21,18 @@ export const useLLMServiceCatalog = () => {
   const services = repo.llmServices;
   const loading = repo.llmServicesLoading;
 
-  const allModelsWithLabel = getAllModelsWithLabel(services);
-  const allModels = allModelsWithLabel.map(({ llmService, model }) => ({ llmService, model }));
+  const servicesDigest = services
+    .map((service) => {
+      const modelsDigest = service.enabledModels.map((model) => `${model.value}:${model.label}`).join(',');
+      return `${service.llmService}:${service.llmServiceTitle}:${modelsDigest}`;
+    })
+    .join('|');
+
+  const allModelsWithLabel = useMemo(() => getAllModelsWithLabel(services), [servicesDigest]);
+  const allModels = useMemo(
+    () => allModelsWithLabel.map(({ llmService, model }) => ({ llmService, model })),
+    [allModelsWithLabel],
+  );
 
   return {
     repo,
