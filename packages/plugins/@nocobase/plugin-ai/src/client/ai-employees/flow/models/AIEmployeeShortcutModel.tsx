@@ -107,7 +107,6 @@ const Shortcut: React.FC<ShortcutProps> = ({
           }}
           onMouseLeave={() => setFocus(false)}
           onClick={() => {
-            setWebSearch(true);
             triggerTask({ aiEmployee, tasks, auto });
             if (context?.workContext?.length) {
               addContextItems(context.workContext);

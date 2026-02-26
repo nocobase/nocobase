@@ -16,7 +16,6 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 export const useChatBoxEffect = () => {
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
-  const aiEmployeesDigest = JSON.stringify(aiEmployees || []);
 
   const open = useChatBoxStore.use.open();
   const senderRef = useChatBoxStore.use.senderRef();
@@ -48,7 +47,7 @@ export const useChatBoxEffect = () => {
       ...defaultRoles,
       ...roles,
     }));
-  }, [aiEmployeesDigest]);
+  }, [aiEmployees]);
 
   useEffect(() => {
     senderRef?.current?.focus();

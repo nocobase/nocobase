@@ -164,11 +164,10 @@ export class AIConfigRepository {
     try {
       const res = await this.apiClient.resource('ai').listAllEnabledModels();
       const data = Array.isArray(res?.data?.data) ? (res.data.data as LLMServiceItem[]) : [];
-      this.llmServices.splice(0, this.llmServices.length);
-      this.llmServices.push(...data);
+      this.llmServices = data;
       this.llmServicesLoaded = true;
     } catch {
-      this.llmServices.splice(0, this.llmServices.length);
+      this.llmServices = [];
       this.llmServicesLoaded = false;
     } finally {
       this.llmServicesLoading = false;
@@ -182,11 +181,10 @@ export class AIConfigRepository {
         .resource('aiEmployees')
         .listByUser()
         .then((res) => res?.data?.data);
-      this.aiEmployees.splice(0, this.aiEmployees.length);
-      this.aiEmployees.push(...(aiEmployees || []));
+      this.aiEmployees = aiEmployees || [];
       this.aiEmployeesLoaded = true;
     } catch {
-      this.aiEmployees.splice(0, this.aiEmployees.length);
+      this.aiEmployees = [];
       this.aiEmployeesLoaded = false;
     } finally {
       this.aiEmployeesLoading = false;
@@ -203,11 +201,10 @@ export class AIConfigRepository {
         const { data: res } = await this.apiClient.resource('aiTools').list({});
         tools = Array.isArray(res?.data) ? res.data : [];
       }
-      this.aiTools.splice(0, this.aiTools.length);
-      this.aiTools.push(...tools);
+      this.aiTools = tools;
       this.aiToolsLoaded = true;
     } catch {
-      this.aiTools.splice(0, this.aiTools.length);
+      this.aiTools = [];
       this.aiToolsLoaded = false;
     } finally {
       this.aiToolsLoading = false;

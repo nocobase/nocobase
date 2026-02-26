@@ -21,14 +21,7 @@ export const useLLMServiceCatalog = () => {
   const services = repo.llmServices;
   const loading = repo.llmServicesLoading;
 
-  const servicesDigest = services
-    .map((service) => {
-      const modelsDigest = service.enabledModels.map((model) => `${model.value}:${model.label}`).join(',');
-      return `${service.llmService}:${service.llmServiceTitle}:${modelsDigest}`;
-    })
-    .join('|');
-
-  const allModelsWithLabel = useMemo(() => getAllModelsWithLabel(services), [servicesDigest]);
+  const allModelsWithLabel = useMemo(() => getAllModelsWithLabel(services), [services]);
   const allModels = useMemo(
     () => allModelsWithLabel.map(({ llmService, model }) => ({ llmService, model })),
     [allModelsWithLabel],
