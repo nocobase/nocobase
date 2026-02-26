@@ -40,4 +40,3 @@ export class DefaultToolsManager implements ToolsManager {
 }
 
 export * from './types';
-export * from './hooks';
