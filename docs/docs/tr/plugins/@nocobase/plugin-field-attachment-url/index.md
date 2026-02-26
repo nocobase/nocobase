@@ -1,14 +1,12 @@
 ---
-displayName: "Koleksiyon alanı: Ek (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  URL formatındaki ekleri destekler.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Koleksiyon alanı: Ek (URL)
+# Collection field: Attachment(URL)

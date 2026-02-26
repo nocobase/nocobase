@@ -23,6 +23,7 @@ import type { FlowModel } from './models';
 import { ParamObject, StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
+  FlowCancelSaveException,
   FlowExitException,
   getT,
   resolveDefaultParams,
@@ -31,6 +32,7 @@ import {
   setupRuntimeContextSteps,
   shouldHideStepInSettings,
 } from './utils';
+import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
 
@@ -903,7 +905,10 @@ export class FlowSettings {
               console.error('FlowSettings.open: onSaved callback error', cbErr);
             }
           } catch (err) {
-            if (err instanceof FlowExitException) {
+            if (err instanceof FlowCancelSaveException) {
+              return;
+            }
+            if (err instanceof FlowExitException || err instanceof FlowExitAllException) {
               currentView.close();
               return;
             }

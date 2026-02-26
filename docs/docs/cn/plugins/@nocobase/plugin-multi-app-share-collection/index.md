@@ -7,6 +7,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # 多应用数据表共享

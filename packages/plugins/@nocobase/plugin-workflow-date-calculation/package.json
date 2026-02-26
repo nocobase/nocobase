@@ -1,0 +1,29 @@
+{
+  "name": "@nocobase/plugin-workflow-date-calculation",
+  "displayName": "Workflow: date calculation node",
+  "displayName.zh-CN": "工作流: 日期计算节点",
+  "description": "Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.",
+  "description.zh-CN": "可用于在工作流中对日期进行操作求值，如加减、比较操作，格式化等。",
+  "version": "2.1.0-beta.5",
+  "main": "dist/server/index.js",
+  "devDependencies": {
+    "moment-timezone": "0.5.48"
+  },
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "Workflow"
+  ],
+  "license": "Apache-2.0"
+}

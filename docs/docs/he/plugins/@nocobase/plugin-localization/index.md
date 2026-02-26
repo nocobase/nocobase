@@ -1,14 +1,12 @@
 ---
-displayName: "לוקליזציה"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  מאפשר לנהל את משאבי הלוקליזציה של היישום.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# לוקליזציה
+# Localization

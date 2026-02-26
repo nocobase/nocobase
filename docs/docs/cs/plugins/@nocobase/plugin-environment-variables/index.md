@@ -1,14 +1,12 @@
 ---
-displayName: "Proměnné a klíče"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  Centralizovaná správa proměnných prostředí a klíčů, používaná pro ukládání citlivých dat, opakované použití konfiguračních dat, izolaci více prostředí a další.
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Proměnné a klíče
+# Variables and secrets

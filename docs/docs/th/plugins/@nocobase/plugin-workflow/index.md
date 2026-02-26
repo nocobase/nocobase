@@ -1,14 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  เครื่องมือ BPM ที่ทรงพลัง ซึ่งเป็นรากฐานสำคัญสำหรับการทำงานอัตโนมัติทางธุรกิจ และสามารถขยายการทำงานด้วยทริกเกอร์และโหนดได้ไม่จำกัด
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์
+# Workflow

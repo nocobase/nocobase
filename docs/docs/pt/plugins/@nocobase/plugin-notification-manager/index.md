@@ -1,14 +1,12 @@
 ---
-displayName: "Gerenciamento de Notificações"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Oferece um serviço de gerenciamento unificado que abrange a configuração de canais, registro de logs e outras funcionalidades, com suporte para diversos canais de notificação, incluindo mensagens no aplicativo e e-mail.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Gerenciamento de Notificações
+# Notification manager

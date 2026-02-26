@@ -20,6 +20,12 @@ export default defineCollection({
       primaryKey: true,
     },
     {
+      name: 'thread',
+      type: 'integer',
+      defaultValue: 0,
+      allowNull: false,
+    },
+    {
       name: 'topicId',
       type: 'string',
     },

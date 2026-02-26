@@ -1,18 +1,15 @@
 ---
-displayName: 'เวิร์กโฟลว์: เหตุการณ์ก่อนการดำเนินการ'
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  จะทำงานก่อนการดำเนินการของคำขอที่เริ่มต้นผ่านปุ่มดำเนินการหรือ API เช่น ก่อนการเพิ่ม, อัปเดต หรือลบข้อมูล เหมาะสำหรับการตรวจสอบข้อมูลและการตัดสินใจเชิงตรรกะก่อนการดำเนินการ และสามารถปฏิเสธคำขอได้โดยใช้โหนด 'สิ้นสุดกระบวนการ"
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: เหตุการณ์ก่อนการดำเนินการ
+# Workflow: Pre-action event

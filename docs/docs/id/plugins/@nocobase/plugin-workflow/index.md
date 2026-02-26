@@ -1,14 +1,12 @@
 ---
-displayName: "Alur Kerja"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  Alat BPM yang canggih, menyediakan dukungan dasar untuk otomatisasi bisnis, serta dapat diperluas dengan pemicu dan node tanpa batas.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja
+# Workflow

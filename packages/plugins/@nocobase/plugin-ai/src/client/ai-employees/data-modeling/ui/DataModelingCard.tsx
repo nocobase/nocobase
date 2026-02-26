@@ -11,18 +11,17 @@ import React, { useEffect, useState } from 'react';
 import { Card, Spin } from 'antd';
 import { DatabaseOutlined, ExclamationCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
 import { useT } from '../../../locale';
-import { useToken } from '@nocobase/client';
+import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolCall } from '../../types';
 import { CollectionDataType } from '../types';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 
-export const DataModelingCard: React.FC<{
-  messageId: string;
-  tool: ToolCall<{
+export const DataModelingCard: React.FC<
+  ToolsUIProperties<{
     collections: CollectionDataType[];
-  }>;
-}> = ({ messageId, tool }) => {
+  }>
+> = ({ messageId, toolCall }) => {
   const t = useT();
   const { token } = useToken();
 
@@ -32,7 +31,7 @@ export const DataModelingCard: React.FC<{
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
-  const version = toolsByMessageId[messageId]?.[tool.id]?.version;
+  const version = toolsByMessageId[messageId]?.[toolCall.id]?.version;
   const generating = responseLoading && messages[length - 1]?.content.messageId === messageId;
 
   let description = <>{t('Please review and finish the process')}</>;
@@ -42,8 +41,8 @@ export const DataModelingCard: React.FC<{
         <Spin indicator={<LoadingOutlined spin />} size="small" /> {t('Generating...')}
       </>
     );
-  } else if (!tool.args.collections) {
-    console.error('Invalid definition', tool.args);
+  } else if (!toolCall.args.collections) {
+    console.error('Invalid definition', toolCall.args);
     description = (
       <>
         <ExclamationCircleTwoTone twoToneColor="#eb2f96" /> {t('Invalid definition')}
@@ -55,14 +54,14 @@ export const DataModelingCard: React.FC<{
     <>
       <Card
         style={{
-          marginBottom: '16px',
+          margin: '16px 0',
           cursor: 'pointer',
         }}
         onClick={() => {
-          if (generating || !tool.args.collections) {
+          if (generating || !toolCall.args.collections) {
             return;
           }
-          setActiveTool(tool);
+          setActiveTool(toolCall);
           setActiveMessageId(messageId);
           setOpen(true);
         }}

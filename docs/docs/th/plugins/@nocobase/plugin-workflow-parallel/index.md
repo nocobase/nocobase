@@ -1,14 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: โหนดสาขาแบบขนาน"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  ใช้สำหรับกระบวนการสาขาที่ต้องการให้ทำงานแบบขนานในเวิร์กโฟลว์
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: โหนดสาขาแบบขนาน
+# Workflow: Parallel node

@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolOptions } from '../../../manager/ai-manager';
-import { Echarts } from '../ui/ECharts';
+import { ToolsOptions, lazy } from '@nocobase/client';
 
-export const chartGeneratorTool: [string, string, ToolOptions] = [
-  'others',
+const { Echarts } = lazy(() => import('../ui/ECharts'), 'Echarts');
+
+export const chartGeneratorTool: [string, ToolsOptions] = [
   'chartGenerator',
   {
     ui: {

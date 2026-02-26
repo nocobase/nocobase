@@ -1,18 +1,15 @@
 ---
-displayName: "การยืนยันตัวตน: OIDC"
+displayName: "Auth: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  การยืนยันตัวตน OIDC (OpenID Connect)
+  OIDC (OpenID Connect) authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การยืนยันตัวตน: OIDC
+# Auth: OIDC

@@ -1,17 +1,14 @@
 ---
-displayName: "Çoklu Anahtar Kelime Filtreleme"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  Yaygın alanlar için çoklu anahtar kelime filtrelemeyi destekler. Anahtar kelimeleri hızlıca girebilir veya Excel'den toplu olarak içe aktarabilirsiniz.
+  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Çoklu Anahtar Kelime Filtreleme
+# Multi-keyword filter

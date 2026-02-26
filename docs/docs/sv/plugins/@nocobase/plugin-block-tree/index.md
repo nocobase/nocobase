@@ -1,18 +1,14 @@
 ---
-displayName: "Block: Träd"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Tillhandahåller ett filterblock med trädstruktur.
+  Provides tree structure filter block
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Block: Träd
+# Block: Tree

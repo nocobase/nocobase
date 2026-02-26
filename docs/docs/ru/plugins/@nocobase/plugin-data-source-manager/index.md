@@ -1,14 +1,12 @@
 ---
-displayName: "Управление источниками данных"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Позволяет управлять источниками данных, включая встроенную базу данных Master, внешние базы данных, API и прочее.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Управление источниками данных
+# Data source manager

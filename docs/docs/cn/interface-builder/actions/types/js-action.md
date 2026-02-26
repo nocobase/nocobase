@@ -32,7 +32,7 @@ JS Action 用于按钮点击时执行 JavaScript，自定义任意业务行为�
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- 可结合 AI 员工生成/修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/built-in-employee)
+- 可结合 AI 员工生成/修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/features/built-in-employee)
 
 ## 常见用法（精简示例）
 

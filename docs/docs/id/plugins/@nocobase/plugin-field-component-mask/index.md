@@ -1,17 +1,14 @@
 ---
-displayName: "Komponen Bidang: Masker"
+displayName: "Field component: mask"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:
   - 1.x
 description: |
-  Secara otomatis menampilkan nilai bidang sebagai masker berdasarkan aturan yang dikonfigurasi, mendukung tipe data dasar.
+  Automatically show field value as mask based on configured rules, supporting basic fields.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Komponen Bidang: Masker
+# Field component: mask

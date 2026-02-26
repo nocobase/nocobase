@@ -1,18 +1,15 @@
 ---
-displayName: "Aangepast merk"
+displayName: "Custom brand"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Pas de merknaam en meer merkgerelateerde informatie aan.
+  Customize the brand name and more brand-related information.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Aangepast merk
+# Custom brand

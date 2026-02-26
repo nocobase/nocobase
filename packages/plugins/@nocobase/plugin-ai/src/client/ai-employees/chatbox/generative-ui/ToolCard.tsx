@@ -7,50 +7,91 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { ComponentType, useEffect } from 'react';
 import { DefaultToolCard } from './DefaultToolCard';
-import { usePlugin } from '@nocobase/client';
-import { PluginAIClient } from '../../../';
+import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
 import { ToolCall } from '../../types';
 import { jsonrepair } from 'jsonrepair';
+import { useToolCallActions } from '../hooks/useToolCallActions';
 
 export const ToolCard: React.FC<{
   messageId: string;
-  tools: ToolCall<unknown>[];
-}> = ({ tools, messageId }) => {
-  const plugin = usePlugin('ai') as PluginAIClient;
-  const toolsWithUI = [];
-  const toolsWithoutUI = [];
-  for (const t of tools) {
-    const tool = { ...t };
-    if (typeof tool.args === 'string') {
-      const trimmed = tool.args.trim();
+  toolCalls: ToolCall[];
+  inlineActions?: React.ReactNode;
+}> = ({ toolCalls, messageId, inlineActions }) => {
+  const { tools, loading } = useTools();
+  const toolsMap = toToolsMap(tools);
+  const { getDecisionActions } = useToolCallActions({ messageId });
+  const toolsWithUI: ({ C: ComponentType<ToolsUIProperties> } & ToolsUIProperties)[] = [];
+  const toolsWithoutUI: ToolCall[] = [];
+  for (const t of toolCalls) {
+    const toolCall = { ...t };
+    if (typeof toolCall.args === 'string') {
+      const trimmed = toolCall.args.trim();
       if (trimmed.length > 0) {
         try {
           const repaired = jsonrepair(trimmed);
-          tool.args = JSON.parse(repaired);
+          toolCall.args = JSON.parse(repaired);
         } catch (err) {
-          console.error(err, tool.args);
-          tool.args = {};
+          console.error(err, toolCall.args);
+          toolCall.args = {};
         }
       } else {
-        tool.args = {};
+        toolCall.args = {};
       }
     }
-    const toolOption = plugin.aiManager.tools.get(tool.name);
-    const C = toolOption?.ui?.card;
+    const toolEntry = toolsMap.get(toolCall.name);
+    const C = toolEntry?.ui?.card;
     if (C) {
-      toolsWithUI.push({ tool, C });
+      toolsWithUI.push({
+        C,
+        messageId,
+        tools: toolEntry,
+        toolCall,
+        decisions: getDecisionActions(toolCall),
+      });
     } else {
-      toolsWithoutUI.push(tool);
+      toolsWithoutUI.push(toolCall);
     }
   }
+
+  useEffect(() => {
+    if (!messageId) {
+      return;
+    }
+    if (!toolCalls?.length) {
+      return;
+    }
+    const task = async () => {
+      for (const toolCall of toolCalls) {
+        if (toolCall.invokeStatus === 'interrupted' && toolCall.auto === true) {
+          const decision = getDecisionActions(toolCall);
+          await decision.approve();
+        }
+      }
+    };
+    task();
+  }, [messageId, toolCalls]);
+
   return (
     <>
-      {toolsWithoutUI.length > 0 ? <DefaultToolCard tools={toolsWithoutUI} messageId={messageId} /> : null}
-      {toolsWithUI.map(({ tool, C }, index) => (
-        <C key={index} messageId={messageId} tool={tool} />
-      ))}
+      {loading ? (
+        <></>
+      ) : (
+        <>
+          {toolsWithoutUI.length > 0 ? (
+            <DefaultToolCard
+              messageId={messageId}
+              tools={tools}
+              toolCalls={toolsWithoutUI}
+              inlineActions={toolsWithoutUI.length === 1 && toolsWithUI.length === 0 ? inlineActions : null}
+            />
+          ) : null}
+          {toolsWithUI.map(({ C, messageId, tools, toolCall, decisions }, index) => (
+            <C key={index} messageId={messageId} tools={tools} toolCall={toolCall} decisions={decisions} />
+          ))}
+        </>
+      )}
     </>
   );
 };

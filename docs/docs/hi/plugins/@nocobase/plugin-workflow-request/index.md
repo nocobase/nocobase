@@ -1,14 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: HTTP अनुरोध नोड"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  वर्कफ़्लो में किसी भी HTTP सेवा को अनुरोध भेजने और डेटा इंटरैक्शन करने के लिए इसका उपयोग किया जा सकता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Send HTTP requests to any HTTP service for data interaction in workflow.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: HTTP अनुरोध नोड
+# Workflow: HTTP request node

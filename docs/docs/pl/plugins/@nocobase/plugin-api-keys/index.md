@@ -1,14 +1,12 @@
 ---
-displayName: "Uwierzytelnianie: Klucze API"
+displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  Umożliwia użytkownikom korzystanie z klucza API w celu dostępu do API HTTP aplikacji.
+  Allows users to use API key to access application's HTTP API
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Uwierzytelnianie: Klucze API
+# Auth: API keys

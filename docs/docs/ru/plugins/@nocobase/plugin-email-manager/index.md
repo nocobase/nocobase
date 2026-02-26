@@ -1,18 +1,15 @@
 ---
-displayName: "Управление почтой"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Подключите корпоративные почтовые ящики, такие как Gmail и Outlook, чтобы получать и отправлять письма прямо в NocoBase, как это делается в других CRM-продуктах.
+  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 3
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Управление почтой
+# Email manager

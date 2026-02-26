@@ -1,14 +1,12 @@
 ---
-displayName: "حقل المجموعة: التشفير التلقائي"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  يُنشئ رموزًا تلقائيًا بناءً على قواعد مُحددة، ويدعم تركيبات من التواريخ والأرقام والنصوص.
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# حقل المجموعة: التشفير التلقائي
+# Collection field: Sequence

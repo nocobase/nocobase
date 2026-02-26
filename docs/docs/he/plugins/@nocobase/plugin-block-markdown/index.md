@@ -1,14 +1,12 @@
 ---
-displayName: "בלוק: מרקדאון"
+displayName: "Block: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
-  מספק בלוק מרקדאון
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
+  Provide Markdown block
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# בלוק: מרקדאון
+# Block: Markdown

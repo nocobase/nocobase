@@ -1,14 +1,12 @@
 ---
-displayName: "בלוק: רשימה"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  מציג נתונים בצורת רשימה, עם תמיכה בריבוי עמודים (פגינציה).
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# בלוק: רשימה
+# Block: List

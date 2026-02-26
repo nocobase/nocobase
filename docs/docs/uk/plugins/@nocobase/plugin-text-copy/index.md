@@ -1,14 +1,12 @@
 ---
-displayName: "Копіювання тексту"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Додає кнопку копіювання до текстових полів
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Копіювання тексту
+# Text copy

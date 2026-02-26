@@ -1,17 +1,14 @@
 ---
-displayName: "Blok: Boom"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Biedt een filterblok met een boomstructuur.
+  Provides tree structure filter block
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Blok: Boom
+# Block: Tree

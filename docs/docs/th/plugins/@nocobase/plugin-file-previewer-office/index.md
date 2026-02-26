@@ -1,14 +1,12 @@
 ---
-displayName: "ตัวแสดงตัวอย่างไฟล์ Office"
+displayName: "Office File Previewer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  ปลั๊กอินสำหรับแสดงตัวอย่างไฟล์ Office ผ่านบริการแสดงตัวอย่างออนไลน์ของ Microsoft
+  A plugin for previewing office files via Microsoft live preview service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวแสดงตัวอย่างไฟล์ Office
+# Office File Previewer

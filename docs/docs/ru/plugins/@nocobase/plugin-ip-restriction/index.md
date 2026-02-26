@@ -1,18 +1,15 @@
 ---
-displayName: "IP ограничение"
+displayName: "IP restriction"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Контролируйте доступ к системе, настраивая черные и белые списки IP-адресов для обеспечения безопасности.
+  Control system access by configuring IP blacklists and whitelists to ensure security.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# IP ограничение
+# IP restriction

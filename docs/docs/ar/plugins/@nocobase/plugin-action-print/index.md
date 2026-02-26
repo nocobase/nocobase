@@ -1,14 +1,12 @@
 ---
-displayName: "الإجراء: طباعة"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  يستدعي وظيفة الطباعة في المتصفح لطباعة سجل بيانات واحد.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# الإجراء: طباعة
+# Action: Print

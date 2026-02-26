@@ -1,17 +1,14 @@
 ---
-displayName: "المتغيرات المخصصة"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  دعم إضافة واستخدام المتغيرات المخصصة
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# المتغيرات المخصصة
+# Custom variables

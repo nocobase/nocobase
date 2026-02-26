@@ -1,16 +1,12 @@
 ---
-displayName: "Kolom Koleksi: Urutkan"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Digunakan untuk mengurutkan data dalam sebuah koleksi.
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-
-# Kolom Koleksi: Urutkan
+# Collection field: Sort

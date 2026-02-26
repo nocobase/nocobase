@@ -12,18 +12,19 @@ import { Avatar, Dropdown, FloatButton } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { useMobileLayout } from '@nocobase/client';
+import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
-import { useChatConversationOptions } from './hooks/useChatConversationOptions';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const { isMobileLayout } = useMobileLayout();
-  const isV2Page = ctx.pageInfo.version === 'v2';
+  const isV1Page = ctx?.pageInfo?.version === 'v1';
+  const { token } = useToken();
 
   const { aiEmployees } = useAIEmployeesData();
 
@@ -31,10 +32,11 @@ export const ChatButton: React.FC = observer(() => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const { resetDefaultWebSearch } = useChatConversationOptions();
+  const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
   const items = useMemo(() => {
     return aiEmployees
@@ -45,7 +47,7 @@ export const ChatButton: React.FC = observer(() => {
           <AIEmployeeListItem
             aiEmployee={employee}
             onClick={() => {
-              resetDefaultWebSearch();
+              setWebSearch(true);
               setOpen(true);
               switchAIEmployee(employee);
             }}
@@ -54,22 +56,27 @@ export const ChatButton: React.FC = observer(() => {
       }));
   }, [aiEmployees]);
 
-  if (open || !aiEmployees?.length) {
+  if (open || !aiEmployees?.length || isV1Page) {
     return null;
   }
 
+  const buttonShadow = token.boxShadowSecondary || token.boxShadow;
+
   return (
-    !isMobileLayout &&
-    isV2Page && (
+    !isMobileLayout && (
       <Dropdown
         menu={{ items }}
         placement="topRight"
         trigger={['hover']}
-        align={{ offset: [-36, -12] }}
+        align={{ offset: [-16, -6] }}
         open={dropdownOpen}
         onOpenChange={(nextOpen) => setDropdownOpen(nextOpen)}
       >
         <div
+          onClick={() => {
+            setDropdownOpen(false);
+            setOpen(true);
+          }}
           className={css`
             z-index: 1050;
             position: fixed;
@@ -80,13 +87,11 @@ export const ChatButton: React.FC = observer(() => {
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
 
             opacity: 0.7;
-            background: rgba(255, 255, 255);
-            box-shadow:
-              0 3px 6px -4px rgba(0, 0, 0, 0.12),
-              0 6px 16px 0px rgba(0, 0, 0, 0.08),
-              0 9px 28px 8px rgba(0, 0, 0, 0.05);
+            background: ${token.colorBgElevated};
+            box-shadow: ${buttonShadow};
             transform: translateX(0);
             will-change: transform;
             transition:

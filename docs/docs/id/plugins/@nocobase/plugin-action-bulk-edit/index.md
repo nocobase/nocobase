@@ -1,14 +1,15 @@
 ---
-displayName: "Aksi: Edit Massal"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Mengedit secara massal semua data atau data yang dipilih.
+  Batch edit all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Edit Massal
+# Action: Batch edit

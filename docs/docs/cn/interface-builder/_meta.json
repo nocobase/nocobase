@@ -101,6 +101,11 @@
           },
           {
             "type": "custom-link",
+            "label": "数据加载方式",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "布局",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
@@ -121,6 +126,11 @@
           },
           {
             "type": "custom-link",
+            "label": "拖拽排序",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "区块删除",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -131,6 +141,11 @@
           },
           {
             "type": "custom-link",
+            "label": "区块高度",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
             "label": "表单草稿",
             "link": "/interface-builder/form-drafts"
           }
@@ -138,7 +153,6 @@
       }
     ]
   },
-
   {
     "type": "custom-link",
     "label": "字段",
@@ -212,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "子表格",
+            "label": "子表格（行内编辑）",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "子表格（弹窗编辑）",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -384,6 +403,11 @@
           },
           {
             "type": "custom-link",
+            "label": "复制",
+            "link": "/interface-builder/actions/types/duplicate"
+          },
+          {
+            "type": "custom-link",
             "label": "导入",
             "link": "/interface-builder/actions/types/import"
           },
@@ -446,6 +470,11 @@
             "type": "custom-link",
             "label": "批量更新",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "批量编辑",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",

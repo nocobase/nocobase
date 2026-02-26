@@ -30,6 +30,8 @@
     "packages/**/dist",
     "packages/**/public",
     "packages/core/build/bin",
+    "packages/core/cli/src",
+    "packages/core/cli/bin",
     "packages/**/lib",
     "packages/**/es",
     "docs/**/*"

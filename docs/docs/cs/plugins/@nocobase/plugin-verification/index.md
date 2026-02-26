@@ -1,14 +1,12 @@
 ---
-displayName: "Ověření"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  Správa ověřování identity uživatelů, zahrnující SMS a TOTP autentifikátor, s možností rozšíření.
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Ověření
+# Verification

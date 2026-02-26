@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
 
 # 数据源：外部 MariaDB

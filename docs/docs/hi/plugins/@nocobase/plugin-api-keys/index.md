@@ -1,14 +1,12 @@
 ---
-displayName: "प्रमाणीकरण: API कुंजियाँ"
+displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  यह उपयोगकर्ताओं को API कुंजी का उपयोग करके एप्लिकेशन के HTTP API तक पहुँचने की अनुमति देता है।
+  Allows users to use API key to access application's HTTP API
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# प्रमाणीकरण: API कुंजियाँ
+# Auth: API keys

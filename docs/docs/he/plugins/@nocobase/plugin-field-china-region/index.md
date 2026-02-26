@@ -1,14 +1,12 @@
 ---
-displayName: "שדה אוסף: חלוקה מנהלית של סין"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  מספק נתונים וסוג שדה עבור החלוקה המנהלית של סין.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: חלוקה מנהלית של סין
+# Collection field: administrative divisions of China

@@ -1,16 +1,12 @@
 ---
-displayName: "Колекція: Дерево"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Надає шаблон деревовидної колекції
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Колекція: Дерево
+# Collection: Tree

@@ -1,18 +1,15 @@
 ---
-displayName: "Veri kaynağı: Harici Oracle"
+displayName: "Data source: External Oracle"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Harici Oracle veritabanlarını veri kaynağı olarak kullanın.
+  Use external Oracle databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Veri kaynağı: Harici Oracle
+# Data source: External Oracle

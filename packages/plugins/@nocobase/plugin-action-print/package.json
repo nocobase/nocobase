@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-print",
-  "version": "2.0.0-beta.22",
+  "version": "2.1.0-beta.5",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-print",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-print",
@@ -11,7 +11,7 @@
   "description": "Calls the browser's print function to print a record.",
   "description.ru-RU": "Вызов функции для печати выбранной записи или для быстрого экспорта в формат .pdf.",
   "description.zh-CN": "调用浏览器的打印功能实现单条数据的打印。",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

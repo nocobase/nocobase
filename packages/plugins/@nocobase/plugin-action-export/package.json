@@ -6,12 +6,19 @@
   "description": "Export filtered records to excel, you can configure which fields to export.",
   "description.ru-RU": "Экспорт в Excel: можно настроить, какие поля будут экспортироваться.",
   "description.zh-CN": "导出筛选后的记录到 Excel 中，可以配置导出哪些字段。",
-  "version": "2.0.0-beta.22",
-  "license": "AGPL-3.0",
+  "version": "2.1.0-beta.5",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-export",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-export",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-export",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
   "devDependencies": {
     "@formily/antd-v5": "1.x",
     "@formily/react": "2.x",

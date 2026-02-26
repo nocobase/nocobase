@@ -1,14 +1,12 @@
 ---
-displayName: "Asynchronní správce úloh"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  Spravuje a monitoruje asynchronní úlohy, jako je import/export dat. Podporuje sledování průběhu úloh a notifikace.
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Asynchronní správce úloh
+# Async task manager

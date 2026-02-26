@@ -1,14 +1,12 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: รหัสลำดับ"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  สร้างรหัสโดยอัตโนมัติตามกฎที่กำหนดค่าไว้ รองรับการผสมผสานระหว่างวันที่ ตัวเลข และข้อความ
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟิลด์คอลเลกชัน: รหัสลำดับ
+# Collection field: Sequence

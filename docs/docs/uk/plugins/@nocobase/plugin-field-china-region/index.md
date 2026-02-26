@@ -1,16 +1,12 @@
 ---
-displayName: "Поле колекції: Адміністративно-територіальний поділ Китаю"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Надає дані та тип поля для адміністративно-територіального поділу Китаю.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Поле колекції: Адміністративно-територіальний поділ Китаю
+# Collection field: administrative divisions of China

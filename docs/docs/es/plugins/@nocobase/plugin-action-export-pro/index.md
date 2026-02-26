@@ -1,18 +1,15 @@
 ---
-displayName: "Acción: Exportar registros Pro"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Mejora las capacidades de exportación de datos con exportaciones asíncronas para manejar grandes volúmenes. También soporta la exportación de archivos adjuntos.
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Acción: Exportar registros Pro
+# Action: Export records Pro

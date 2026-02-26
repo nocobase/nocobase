@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: iframe"
+displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  Harici web sayfalarını veya içeriği gömmek ve görüntülemek için sayfada bir iframe bloğu oluşturun ve yönetin.
+  Create an iframe block on the page to embed and display external web pages or content.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Blok: iframe
+# Block: iframe

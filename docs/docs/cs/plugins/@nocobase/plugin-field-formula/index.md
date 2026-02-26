@@ -1,14 +1,12 @@
 ---
-displayName: "Pole kolekce: Vzorec"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Můžete konfigurovat a ukládat výsledky výpočtů mezi hodnotami více polí v rámci stejného záznamu, s podporou funkcí Math.js a vzorců Excelu.
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pole kolekce: Vzorec
+# Collection field: Formula

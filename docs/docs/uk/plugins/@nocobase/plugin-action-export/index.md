@@ -1,16 +1,15 @@
 ---
-displayName: "Дія: Експорт записів"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Експортує відфільтровані записи в Excel, можна налаштувати, які поля експортувати.
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Дія: Експорт записів
+# Action: Export records

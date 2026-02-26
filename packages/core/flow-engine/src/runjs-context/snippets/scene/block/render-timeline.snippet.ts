@@ -24,7 +24,7 @@ const snippet: SnippetModule = {
   content: `
 const { Timeline, Card } = ctx.libs.antd;
 
-const res = await ctx.api.request({
+const res = await ctx.request({
   url: 'users:list',
   method: 'get',
   params: {

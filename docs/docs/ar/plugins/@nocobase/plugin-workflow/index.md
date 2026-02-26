@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  أداة BPM قوية توفر دعمًا أساسيًا لأتمتة الأعمال، مع إمكانية توسيعها بعدد لا محدود من المشغلات والعُقد.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل
+# Workflow

@@ -1,5 +1,5 @@
 ---
-displayName: "Berbagi Koleksi Antar-Aplikasi"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,12 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Multi-app share collection
 
-# Berbagi Koleksi Antar-Aplikasi
-
-> Catatan: Plugin ini sudah usang (deprecated).
+> Note: This plugin is deprecated.

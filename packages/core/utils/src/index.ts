@@ -38,6 +38,7 @@ export * from './parsedValue';
 export * from './perf-hooks';
 export * from './registry';
 export * from './requireModule';
+export * from './ses';
 export * from './toposort';
 export * from './uid';
 export * from './url';

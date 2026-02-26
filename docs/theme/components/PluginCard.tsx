@@ -1,7 +1,7 @@
 import { Badge } from '@rspress/core/theme';
 import { useLang, useNavigate } from '@rspress/runtime';
 import React from 'react';
-import { EditionLevels, EditionLevelsEN } from './EditionLevels';
+import { EditionLevels, EditionLevelsEN, EditionLevelsTypes } from './EditionLevels';
 
 export interface PluginCardProps {
   name: string;
@@ -133,11 +133,11 @@ export const PluginCard: React.FC<PluginCardProps> = ({
         </div>
 
         <div style={{ marginTop: '1rem' }}>
-          {isFree && (
+          {/* {isFree && (
             <Badge type="tip">Free</Badge>
-          )}
-          {editionLevel && (
-            <Badge type="danger">
+          )} */}
+          {editionLevel >= 0 && (
+            <Badge type={EditionLevelsTypes[editionLevel as number]}>
               {lang === 'cn' ? EditionLevels[editionLevel as number] : EditionLevelsEN[editionLevel as number]}+
             </Badge>
           )}

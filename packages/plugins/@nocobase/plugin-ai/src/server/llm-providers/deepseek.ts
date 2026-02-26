@@ -22,14 +22,19 @@ export class DeepSeekProvider extends LLMProvider {
     const { baseURL, apiKey } = this.serviceOptions || {};
     const { responseFormat } = this.modelOptions || {};
 
+    const modelKwargs: Record<string, any> = {};
+
+    // Only set response_format when responseFormat is explicitly provided
+    if (responseFormat) {
+      modelKwargs['response_format'] = {
+        type: responseFormat,
+      };
+    }
+
     return new ChatDeepSeek({
       apiKey,
       ...this.modelOptions,
-      modelKwargs: {
-        response_format: {
-          type: responseFormat,
-        },
-      },
+      modelKwargs,
       configuration: {
         baseURL: baseURL || this.baseURL,
       },

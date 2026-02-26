@@ -1,14 +1,12 @@
 ---
-displayName: "लाइसेंस सेटिंग्स"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  इंस्टेंस आईडी और लाइसेंस कुंजी सेटिंग्स
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# लाइसेंस सेटिंग्स
+# License settings

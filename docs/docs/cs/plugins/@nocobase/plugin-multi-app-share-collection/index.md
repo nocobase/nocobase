@@ -1,5 +1,5 @@
 ---
-displayName: "Sdílení kolekcí napříč aplikacemi"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,13 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
+# Multi-app share collection
 
-
-# Sdílení kolekcí napříč aplikacemi
-
-> Upozornění: Tento plugin je zastaralý (deprecated).
+> Note: This plugin is deprecated.

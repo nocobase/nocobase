@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { parseErrorLineColumn } from '../errorHelpers';
+import { parseErrorLineColumn, WRAPPER_PRELUDE_LINES } from '../errorHelpers';
 import {
   FlowModelContext,
   JSRunner,
@@ -20,6 +20,15 @@ import {
 
 export type RunLog = { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number };
 type RunResult = Awaited<ReturnType<JSRunner['run']>>;
+
+const LOGGER_LEVEL_TO_RUNLOG_LEVEL: Record<string, RunLog['level']> = {
+  trace: 'log',
+  debug: 'log',
+  info: 'info',
+  warn: 'warn',
+  error: 'error',
+  fatal: 'error',
+};
 
 function safeToString(x: any): string {
   try {
@@ -41,6 +50,66 @@ function createConsoleCapture(push: (level: RunLog['level'], args: any[]) => voi
     warn: (...args: any[]) => push('warn', args),
     error: (...args: any[]) => push('error', args),
   };
+}
+function parseInlineLineColumn(msg: string): { line: number; column: number } | null {
+  const text = String(msg || '');
+  const m = text.match(/[（(]line\s*(\d+)(?::(\d+))?[）)]/i);
+  if (!m) return null;
+  const line = Number(m[1]);
+  const column = Number(m[2] || 1);
+  if (!Number.isFinite(line) || line <= 0) return null;
+  if (!Number.isFinite(column) || column <= 0) return { line, column: 1 };
+  return { line, column };
+}
+function createLoggerWrapperFactory(append: (level: RunLog['level'], args: any[]) => void) {
+  const originalToWrapped = new WeakMap<object, any>();
+  const wrappedToOriginal = new WeakMap<object, any>();
+
+  const wrap = (logger: any): any => {
+    if (!logger || (typeof logger !== 'object' && typeof logger !== 'function')) return logger;
+    if (wrappedToOriginal.has(logger as any)) return logger;
+    const existing = originalToWrapped.get(logger as any);
+    if (existing) return existing;
+
+    const wrapped = new Proxy(logger as any, {
+      get(target, prop, receiver) {
+        if (prop === 'child' && typeof (target as any).child === 'function') {
+          return (...args: any[]) => {
+            const childLogger = (target as any).child.apply(target, args);
+            return wrap(childLogger);
+          };
+        }
+
+        if (
+          typeof prop === 'string' &&
+          prop in LOGGER_LEVEL_TO_RUNLOG_LEVEL &&
+          typeof (target as any)[prop] === 'function'
+        ) {
+          const mapped = LOGGER_LEVEL_TO_RUNLOG_LEVEL[prop];
+          return (...args: any[]) => {
+            try {
+              append(mapped, args);
+            } catch (_) {
+              // ignore log capture failures
+            }
+            return (target as any)[prop].apply(target, args);
+          };
+        }
+
+        const value = Reflect.get(target, prop, receiver);
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+        return value;
+      },
+    });
+
+    originalToWrapped.set(logger as any, wrapped);
+    wrappedToOriginal.set(wrapped, logger as any);
+    return wrapped;
+  };
+
+  return wrap;
 }
 
 export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
@@ -70,12 +139,24 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           warn: (...args) => console.warn(...args),
           error: (...args) => console.error(...args),
         };
-        const push = (level: RunLog['level'], args: any[]) => {
+        const append = (level: RunLog['level'], args: any[]) => {
           const msg = args.map((x: any) => safeToString(x)).join(' ');
-          setLogs((prev) => [...prev, { level, msg }]);
+          // For RunJS deprecation warnings we embed "(line x:y)" in the message (user line numbers).
+          // Convert it to raw line numbers (+ wrapper prelude) so the editor jump uses the same contract as errors.
+          const pos = level === 'warn' ? parseInlineLineColumn(msg) : null;
+          if (pos) {
+            setLogs((prev) => [...prev, { level, msg, line: pos.line + WRAPPER_PRELUDE_LINES, column: pos.column }]);
+          } else {
+            setLogs((prev) => [...prev, { level, msg }]);
+          }
+          // nativeConsole[level]?.(...args);
+        };
+        const push = (level: RunLog['level'], args: any[]) => {
+          append(level, args);
           nativeConsole[level]?.(...args);
         };
         const captureConsole = createConsoleCapture(push);
+        const wrapLogger = createLoggerWrapperFactory(append);
 
         // 选择一个可用的设置流：优先 jsSettings，不存在则尝试 clickSettings
         const preferFlowKeys = ['jsSettings', 'clickSettings'] as const;
@@ -102,11 +183,33 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           // Be tolerant to flows that run either the raw source or the prepared (preprocessed/compiled) code.
           const isPreviewCode = jsCode === preparedForPreview || jsCode === code;
           const prevConsole = this?.globals?.console;
+          const prevLoggerDescriptor = this?.globals?.ctx
+            ? Object.getOwnPropertyDescriptor(this.globals.ctx, 'logger')
+            : undefined;
           try {
             if (!this.globals) this.globals = {};
-            this.globals.console = captureConsole;
+            try {
+              this.globals.console = captureConsole;
+            } catch (e) {
+              console.warn('[useCodeRunner] inject console failed:', e);
+            }
+
+            try {
+              if (this.globals.ctx) {
+                const originalLogger = this.globals.ctx.logger;
+                const wrappedLogger = wrapLogger(originalLogger);
+                Object.defineProperty(this.globals.ctx, 'logger', {
+                  configurable: true,
+                  enumerable: true,
+                  writable: false,
+                  value: wrappedLogger,
+                });
+              }
+            } catch (e) {
+              console.warn('[useCodeRunner] inject logger failed:', e);
+            }
           } catch (e) {
-            console.warn('[useCodeRunner] inject console failed:', e);
+            console.warn('[useCodeRunner] inject globals failed:', e);
           }
           try {
             const res = await originalRun.call(this, jsCode);
@@ -123,6 +226,14 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
               else this.globals.console = prevConsole;
             } catch (e) {
               console.warn('[useCodeRunner] restore console failed:', e);
+            }
+            try {
+              if (this.globals?.ctx) {
+                if (typeof prevLoggerDescriptor === 'undefined') delete this.globals.ctx.logger;
+                else Object.defineProperty(this.globals.ctx, 'logger', prevLoggerDescriptor);
+              }
+            } catch (e) {
+              console.warn('[useCodeRunner] restore logger failed:', e);
             }
           }
         } as JSRunner['run'];

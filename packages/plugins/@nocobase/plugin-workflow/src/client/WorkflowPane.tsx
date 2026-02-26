@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext, useEffect } from 'react';
-import { App, Tooltip } from 'antd';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { App, Switch, Tooltip } from 'antd';
 import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
@@ -35,6 +35,7 @@ import { RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
+import { lang } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
 import { useWorkflowFilterActionProps } from './hooks/useWorkflowFilterActionProps';
@@ -123,6 +124,56 @@ function useRevisionAction() {
   };
 }
 
+function WorkflowEnabledSwitch() {
+  const { message } = App.useApp();
+  const { t } = useTranslation();
+  const record = useRecord();
+  const { resource } = useResourceContext();
+  const { refresh } = useResourceActionContext();
+
+  const [loading, setLoading] = useState(false);
+
+  const onChange = useCallback(
+    async (nextChecked: boolean) => {
+      if (!record?.id) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await resource.update({
+          filterByTk: record.id,
+          values: {
+            enabled: nextChecked,
+          },
+        });
+        // message.success(t('Operation succeeded'));
+        // refresh later to avoid blocking the interaction
+        setTimeout(() => refresh?.(), 0);
+      } catch (error) {
+        console.error(error);
+        // fail -> do not refresh, keep current list state
+        message.error(t('Operation failed'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [message, record, refresh, resource, t],
+  );
+
+  return (
+    <Switch
+      checked={Boolean(record?.enabled)}
+      checkedChildren={lang('On')}
+      unCheckedChildren={lang('Off')}
+      disabled={loading || !record?.id}
+      loading={loading}
+      onClick={(val, e) => e?.stopPropagation?.()}
+      onChange={onChange}
+    />
+  );
+}
+
 export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
   const { useTriggersOptions } = usePlugin(WorkflowPlugin);
@@ -141,6 +192,7 @@ export function WorkflowPane() {
           Tooltip,
           CategoryTabs,
           EnumerationField,
+          WorkflowEnabledSwitch,
         }}
         scope={{
           useTriggersOptions,

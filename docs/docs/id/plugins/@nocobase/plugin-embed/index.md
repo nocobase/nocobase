@@ -1,17 +1,14 @@
 ---
-displayName: "Sematkan NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Sematkan NocoBase ke dalam sistem atau halaman eksternal, menjadikannya bagian dari sistem atau halaman tersebut.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Sematkan NocoBase
+# Embed NocoBase

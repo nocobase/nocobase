@@ -1,17 +1,15 @@
 ---
-displayName: "تصور البيانات: ECharts"
+displayName: "Data visualization: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  استخدم ECharts لتصور البيانات، ويدعم أنواعًا إضافية من الرسوم البيانية مثل الرسوم البيانية القمعية والرادارية، ويوفر إعدادات تصور مرئي سهلة الاستخدام.
+  Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# تصور البيانات: ECharts
+# Data visualization: ECharts

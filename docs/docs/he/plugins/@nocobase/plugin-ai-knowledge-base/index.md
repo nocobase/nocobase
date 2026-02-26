@@ -1,17 +1,14 @@
 ---
-displayName: "AI: מאגר ידע"
+displayName: "AI: Knowledge base"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  תומך בשילוב עם מסדי נתונים וקטוריים כדי לווקטור מסמכים, ומספק לעובדי AI יכולות חיפוש חכמות ותמיכה בידע.
+  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# AI: מאגר ידע
+# AI: Knowledge base

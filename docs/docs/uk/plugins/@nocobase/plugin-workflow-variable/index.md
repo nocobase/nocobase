@@ -1,20 +1,15 @@
 ---
-displayName: "Робочий процес: Користувацька змінна"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Використовується для створення користувацьких змінних або присвоєння їм значень у робочих процесах, щоб зберігати тимчасові дані.
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Робочий процес: Користувацька змінна
+# Workflow: Custom variable

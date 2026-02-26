@@ -1,14 +1,12 @@
 ---
-displayName: "Acción: Imprimir"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Llama a la función de impresión del navegador para imprimir un registro.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Acción: Imprimir
+# Action: Print

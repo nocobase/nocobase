@@ -1,14 +1,12 @@
 ---
-displayName: "Người dùng"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  Cung cấp mô hình người dùng cơ bản, cũng như các trường người tạo và người cập nhật cuối cùng.
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Người dùng
+# Users

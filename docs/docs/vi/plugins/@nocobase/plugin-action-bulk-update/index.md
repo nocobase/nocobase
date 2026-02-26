@@ -1,14 +1,15 @@
 ---
-displayName: "Thao tác: Cập nhật hàng loạt"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Thực hiện cập nhật hàng loạt cho tất cả các bản ghi hoặc các bản ghi đã chọn.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Cập nhật hàng loạt
+# Action: Batch update

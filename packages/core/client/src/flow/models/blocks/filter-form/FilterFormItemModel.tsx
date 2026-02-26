@@ -16,7 +16,7 @@ import {
   FormItem,
 } from '@nocobase/flow-engine';
 import { Empty } from 'antd';
-import _, { debounce } from 'lodash';
+import _, { cloneDeep, debounce, isEqual } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
@@ -25,59 +25,280 @@ import { FilterFormFieldModel } from './fields';
 import { FilterManager } from '../filter-manager';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
-const getModelFields = async (model: CollectionBlockModel) => {
+const getAssociationTargetCollection = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
+  if (field?.targetCollection) {
+    return field.targetCollection;
+  }
+  const targetName = field?.target;
+  if (!targetName) {
+    return;
+  }
+  if (collection?.dataSource?.getCollection) {
+    return collection.dataSource.getCollection(targetName);
+  }
+  const dataSourceKey = collection?.dataSourceKey;
+  if (dataSourceKey && model?.context?.dataSourceManager?.getCollection) {
+    return model.context.dataSourceManager.getCollection(dataSourceKey, targetName);
+  }
+};
+
+const getTargetFilterableFields = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
+  const targetCollection = getAssociationTargetCollection(field, collection, model);
+  if (!targetCollection?.getFields) {
+    return [];
+  }
+  return (targetCollection.getFields() || []).filter((childField: any) => childField?.filterable);
+};
+
+const MAX_ASSOCIATION_DEPTH = 5;
+
+const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
+  const collectionField = fieldModel?.context?.collectionField;
+  if (!collectionField?.isAssociationField?.()) {
+    return value;
+  }
+
+  const fieldNames = fieldModel?.props?.fieldNames || collectionField?.fieldNames || {};
+  const valueKey =
+    fieldNames?.value ||
+    collectionField?.targetKey ||
+    collectionField?.targetCollection?.filterTargetKey ||
+    collectionField?.collection?.filterTargetKey ||
+    'id';
+  const pickValue = (item: any) => {
+    const target = item && typeof item === 'object' && typeof item?.data !== 'undefined' ? item.data : item;
+    if (!target || typeof target !== 'object') {
+      return target;
+    }
+    if (typeof target?.[valueKey] !== 'undefined') {
+      return target[valueKey];
+    }
+    if (typeof target?.id !== 'undefined') {
+      return target.id;
+    }
+    if (typeof target?.value !== 'undefined') {
+      return target.value;
+    }
+    return target;
+  };
+
+  if (Array.isArray(value)) {
+    return value.map(pickValue);
+  }
+
+  return pickValue(value);
+};
+
+const buildFilterFormFieldItem = ({
+  model,
+  collection,
+  ctxWithFlags,
+  field,
+  fieldPath,
+  labelPrefix,
+}: {
+  model: CollectionBlockModel;
+  collection: Collection | undefined;
+  ctxWithFlags: FlowModelContext;
+  field: any;
+  fieldPath: string;
+  labelPrefix?: string;
+}) => {
+  const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
+  if (!binding) {
+    return;
+  }
+  const isAssociation =
+    typeof field?.isAssociationField === 'function' ? field.isAssociationField() : Boolean(field?.target);
+  const fieldModel =
+    isAssociation && ctxWithFlags.engine?.getModelClass?.('FilterFormRecordSelectFieldModel')
+      ? 'FilterFormRecordSelectFieldModel'
+      : binding.modelName;
+  const label = field.title || field.name;
+  const displayLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
+  return {
+    key: fieldPath,
+    label: displayLabel,
+    useModel: 'FilterFormItemModel',
+    refreshTargets: ['FilterFormCustomItemModel'],
+    createModelOptions: () => ({
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: collection?.dataSourceKey,
+            collectionName: collection?.name,
+            fieldPath,
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
+            defaultTargetUid: model.uid,
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: fieldModel,
+          props:
+            typeof binding.defaultProps === 'function'
+              ? binding.defaultProps(model.context, field)
+              : binding.defaultProps,
+        },
+      },
+    }),
+  };
+};
+
+const buildAssociationFieldMenuItem = ({
+  model,
+  collection,
+  ctxWithFlags,
+  field,
+  fieldPath,
+  depth,
+}: {
+  model: CollectionBlockModel;
+  collection: Collection | undefined;
+  ctxWithFlags: FlowModelContext;
+  field: any;
+  fieldPath: string;
+  depth: number;
+}) => {
+  const targetCollection = getAssociationTargetCollection(field, collection, model);
+  if (!targetCollection) {
+    return;
+  }
+  if (depth > MAX_ASSOCIATION_DEPTH) {
+    return;
+  }
+
+  const label = field.title || field.name;
+  const t = model.context?.t || ctxWithFlags?.t || ((value: string) => value);
+
+  return {
+    key: `${fieldPath}-associationField`,
+    label,
+    children: async () => {
+      const targetFields = getTargetFilterableFields(field, collection, model);
+      const fieldItems: any[] = [];
+      const associationItems: any[] = [];
+
+      targetFields.forEach((targetField: any) => {
+        const targetFieldPath = `${fieldPath}.${targetField.name}`;
+        if (targetField?.targetCollection) {
+          const associationItem = buildAssociationFieldMenuItem({
+            model,
+            collection,
+            ctxWithFlags,
+            field: targetField,
+            fieldPath: targetFieldPath,
+            depth: depth + 1,
+          });
+          if (associationItem) {
+            associationItems.push(associationItem);
+          }
+          return;
+        }
+
+        const targetItem = buildFilterFormFieldItem({
+          model,
+          collection,
+          ctxWithFlags,
+          field: targetField,
+          fieldPath: targetFieldPath,
+        });
+        if (targetItem) {
+          fieldItems.push(targetItem);
+        }
+      });
+
+      const groups: any[] = [];
+
+      if (fieldItems.length) {
+        groups.push({
+          key: `${fieldPath}-fields`,
+          label: t('Fields'),
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: t('Search fields'),
+          children: fieldItems,
+        });
+      }
+
+      if (associationItems.length) {
+        groups.push({
+          key: `${fieldPath}-relation-fields`,
+          label: t('Association fields'),
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: t('Search association fields'),
+          children: associationItems,
+        });
+      }
+
+      if (groups.length) {
+        return groups;
+      }
+
+      return [
+        {
+          key: `${fieldPath}-empty`,
+          label: <Empty style={{ width: 140 }} description={t('No data')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+          disabled: true,
+        },
+      ];
+    },
+  };
+};
+
+const getModelFieldGroups = async (model: CollectionBlockModel) => {
   // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
   const collection = (model as any).collection || (model.context.collection as Collection);
   const fields = (await model?.getFilterFields?.()) || [];
-  return fields
-    .map((field: any) => {
-      // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
-      const ctxWithFlags = new FlowModelContext(model);
-      ctxWithFlags.addDelegate(model.context);
-      ctxWithFlags.defineProperty('flags', {
-        value: { ...model.context?.flags, isInFilterFormBlock: true },
+  // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
+  const ctxWithFlags = new FlowModelContext(model);
+  ctxWithFlags.addDelegate(model.context);
+  ctxWithFlags.defineProperty('flags', {
+    value: { ...model.context?.flags, isInFilterFormBlock: true },
+  });
+
+  const baseItems: any[] = [];
+  const relationItems: any[] = [];
+
+  fields.forEach((field: any) => {
+    const baseFieldPath = field.name;
+    const baseItem = buildFilterFormFieldItem({
+      model,
+      collection,
+      ctxWithFlags,
+      field,
+      fieldPath: baseFieldPath,
+    });
+    if (baseItem) {
+      baseItems.push(baseItem);
+    }
+
+    if (field?.targetCollection) {
+      const associationItem = buildAssociationFieldMenuItem({
+        model,
+        collection,
+        ctxWithFlags,
+        field,
+        fieldPath: baseFieldPath,
+        depth: 1,
       });
-      const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
-      if (!binding) {
-        return;
+      if (associationItem) {
+        relationItems.push(associationItem);
       }
-      const fieldModel = binding.modelName;
-      const fieldPath = field.name;
-      return {
-        key: field.name,
-        label: field.title,
-        useModel: 'FilterFormItemModel',
-        refreshTargets: ['FilterFormCustomItemModel'],
-        createModelOptions: () => ({
-          use: 'FilterFormItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection?.dataSourceKey,
-                collectionName: collection?.name,
-                fieldPath,
-              },
-            },
-            filterFormItemSettings: {
-              init: {
-                filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
-                defaultTargetUid: model.uid,
-              },
-            },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
-              props:
-                typeof binding.defaultProps === 'function'
-                  ? binding.defaultProps(model.context, field)
-                  : binding.defaultProps,
-            },
-          },
-        }),
-      };
-    })
-    .filter(Boolean);
+    }
+  });
+
+  return {
+    baseItems: baseItems.filter(Boolean),
+    relationItems: relationItems.filter(Boolean),
+  };
 };
 
 export class FilterFormItemModel extends FilterableItemModel<{
@@ -132,16 +353,30 @@ export class FilterFormItemModel extends FilterableItemModel<{
           >{`${model.title} #${model.uid.substring(0, 4)}`}</span>
         ),
         children: async () => {
-          return [
+          const { baseItems, relationItems } = await getModelFieldGroups(model);
+          const groups: any[] = [
             {
               key: 'fields',
-              label: 'Fields',
+              label: ctx.t('Fields'),
               type: 'group' as const,
               searchable: true,
-              searchPlaceholder: 'Search fields',
-              children: await getModelFields(model),
+              searchPlaceholder: ctx.t('Search fields'),
+              children: baseItems,
             },
           ];
+
+          if (relationItems.length) {
+            groups.push({
+              key: 'relation-fields',
+              label: ctx.t('Association fields'),
+              type: 'group' as const,
+              searchable: true,
+              searchPlaceholder: ctx.t('Search association fields'),
+              children: relationItems,
+            });
+          }
+
+          return [...groups];
         },
       };
     });
@@ -151,6 +386,8 @@ export class FilterFormItemModel extends FilterableItemModel<{
   mounted = false;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
+  private lastAutoTriggerValue: any;
+  private autoTriggerInitialized = false;
 
   get defaultTargetUid(): string {
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
@@ -209,9 +446,8 @@ export class FilterFormItemModel extends FilterableItemModel<{
     let rawValue = fieldValue;
 
     if (!this.mounted) {
-      if (_.isEmpty(fieldValue)) {
-        rawValue = this.getDefaultValue();
-      }
+      const sourceValue = _.isEmpty(fieldValue) ? this.getDefaultValue() : fieldValue;
+      rawValue = normalizeAssociationDefaultFilterValue(sourceValue, this.subModels?.field);
     }
 
     const operator = getDefaultOperator(this);
@@ -268,7 +504,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
 
   getValueProps(value) {
     if (this.context.blockModel.autoTriggerFilter) {
-      this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+      if (!this.autoTriggerInitialized) {
+        this.autoTriggerInitialized = true;
+        this.lastAutoTriggerValue = cloneDeep(value);
+      } else if (!isEqual(this.lastAutoTriggerValue, value)) {
+        this.lastAutoTriggerValue = cloneDeep(value);
+        this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+      }
     }
 
     return {

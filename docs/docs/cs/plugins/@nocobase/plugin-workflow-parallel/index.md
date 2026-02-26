@@ -1,16 +1,12 @@
 ---
-displayName: "Pracovní postup: Paralelní uzel"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Slouží k paralelnímu spouštění větví procesů v pracovním postupu.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Pracovní postup: Paralelní uzel
+# Workflow: Parallel node

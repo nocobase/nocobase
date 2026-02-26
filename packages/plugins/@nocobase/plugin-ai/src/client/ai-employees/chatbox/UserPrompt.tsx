@@ -7,181 +7,165 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
-import { SchemaComponent, useAPIClient, useActionContext, useToken } from '@nocobase/client';
+import React, { useEffect, useState } from 'react';
+import { useAPIClient, useMobileLayout, useToken } from '@nocobase/client';
 import { useT } from '../../locale';
-import { Button, Popover, Card, Alert, App, Typography } from 'antd';
+import { Button, Popover, Card, App, Typography, Tooltip, Input, Space, Modal } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { useForm } from '@formily/react';
-import { uid } from '@formily/shared';
 import { useChatBoxStore } from './stores/chat-box';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
-
-const useCancelActionProps = () => {
-  const { setVisible } = useActionContext();
-  const form = useForm();
-  return {
-    type: 'default',
-    onClick() {
-      setVisible(false);
-      form.reset();
-    },
-  };
-};
-
-const useEditActionProps = () => {
-  const { setVisible } = useActionContext();
-  const { message } = App.useApp();
-  const form = useForm();
-  const api = useAPIClient();
-  const t = useT();
-
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-
-  const { refresh } = useAIEmployeesData();
-
-  return {
-    type: 'primary',
-    async onClick() {
-      await form.submit();
-      await api.resource('aiEmployees').updateUserPrompt({
-        values: {
-          aiEmployee: currentEmployee.username,
-          prompt: form.values?.prompt,
-        },
-      });
-      refresh();
-      setCurrentEmployee((prev) => ({
-        ...prev,
-        userConfig: {
-          ...prev.userConfig,
-          prompt: form.values?.prompt,
-        },
-      }));
-      message.success(t('Saved successfully'));
-      setVisible(false);
-      form.reset();
-    },
-  };
-};
-
-const Edit: React.FC = () => {
-  const t = useT();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-
-  return (
-    <SchemaComponent
-      scope={{ useCancelActionProps, useEditActionProps }}
-      schema={{
-        type: 'void',
-        name: uid(),
-        'x-component': 'Action',
-        title: '{{t("Edit")}}',
-        'x-component-props': {
-          variant: 'link',
-          color: 'primary',
-        },
-        properties: {
-          modal: {
-            type: 'void',
-            'x-component': 'Action.Modal',
-            'x-component-props': {
-              styles: {
-                wrapper: {
-                  zIndex: 1200,
-                },
-                mask: {
-                  zIndex: 1200,
-                },
-              },
-            },
-            title: t('Edit personalized prompt'),
-            'x-decorator': 'FormV2',
-            'x-decorator-props': 'useEditFormProps',
-            properties: {
-              prompt: {
-                type: 'string',
-                title: t('Personalized prompt'),
-                'x-decorator': 'FormItem',
-                'x-component': 'Input.TextArea',
-                default: currentEmployee?.userConfig?.prompt,
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  close: {
-                    title: t('Cancel'),
-                    'x-component': 'Action',
-                    'x-use-component-props': 'useCancelActionProps',
-                  },
-                  submit: {
-                    title: t('Submit'),
-                    'x-component': 'Action',
-                    'x-use-component-props': 'useEditActionProps',
-                  },
-                },
-              },
-            },
-          },
-        },
-      }}
-    />
-  );
-};
 
 export const UserPrompt: React.FC = () => {
   const t = useT();
   const { token } = useToken();
+  const { isMobileLayout } = useMobileLayout();
+  const { message } = App.useApp();
+  const api = useAPIClient();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
+  const { refresh } = useAIEmployeesData();
+  const [desktopOpen, setDesktopOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [prompt, setPrompt] = useState('');
 
-  return (
-    <Popover
-      zIndex={1101}
+  const open = isMobileLayout ? mobileOpen : desktopOpen;
+
+  useEffect(() => {
+    if (open) {
+      setPrompt(currentEmployee?.userConfig?.prompt ?? '');
+    }
+  }, [open, currentEmployee?.userConfig?.prompt]);
+
+  const closeEditor = () => {
+    if (isMobileLayout) {
+      setMobileOpen(false);
+      return;
+    }
+    setDesktopOpen(false);
+  };
+
+  const savePrompt = async () => {
+    if (!currentEmployee) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.resource('aiEmployees').updateUserPrompt({
+        values: {
+          aiEmployee: currentEmployee.username,
+          prompt,
+        },
+      });
+      await refresh();
+      setCurrentEmployee((prev) => ({
+        ...prev,
+        userConfig: {
+          ...prev.userConfig,
+          prompt,
+        },
+      }));
+      message.success(t('Saved successfully'));
+      closeEditor();
+    } catch (error: any) {
+      message.error(error?.message || t('Request failed'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const editorCard = (
+    <Card
+      variant="borderless"
+      size="small"
       styles={{
         body: {
-          padding: 0,
-          marginRight: '8px',
+          width: isMobileLayout ? 'auto' : '420px',
+          maxWidth: 'calc(100vw - 32px)',
+          padding: '16px',
         },
       }}
-      arrow={false}
-      content={
-        <Card
-          styles={{
-            body: {
-              width: '400px',
-            },
-          }}
-          variant="borderless"
-          size="small"
-          title={
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: token.fontSize,
-              }}
-            >
-              {t('Personalized prompt')}
-            </div>
-          }
-          extra={<Edit />}
-        >
-          {currentEmployee?.userConfig?.prompt ? (
-            <div
-              style={{
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {currentEmployee.userConfig.prompt}
-            </div>
-          ) : (
-            <Alert message={t('Personalized prompt description')} type="info" />
-          )}
-        </Card>
-      }
     >
-      <Button icon={<InfoCircleOutlined />} type="text" />
-    </Popover>
+      <Typography.Title
+        level={5}
+        style={{
+          margin: 0,
+          marginBottom: 12,
+          fontSize: token.fontSizeLG,
+          fontWeight: 500,
+        }}
+      >
+        {t('Personalized prompt')}
+      </Typography.Title>
+      <Typography.Paragraph
+        style={{
+          marginBottom: 12,
+          color: token.colorTextSecondary,
+        }}
+      >
+        {t('Personalized prompt description')}
+      </Typography.Paragraph>
+      <Input.TextArea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        autoSize={{ minRows: 4, maxRows: 8 }}
+        placeholder={t('Personalized prompt')}
+      />
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginTop: 12,
+        }}
+      >
+        <Space>
+          <Button onClick={closeEditor}>{t('Cancel')}</Button>
+          <Button type="primary" loading={saving} onClick={savePrompt}>
+            {t('Submit')}
+          </Button>
+        </Space>
+      </div>
+    </Card>
+  );
+
+  return (
+    <>
+      {isMobileLayout ? (
+        <Tooltip arrow={false} title={t('Personalized prompt')}>
+          <Button icon={<InfoCircleOutlined />} type="text" onClick={() => setMobileOpen(true)} />
+        </Tooltip>
+      ) : (
+        <Tooltip arrow={false} title={t('Personalized prompt')}>
+          <Popover
+            zIndex={1101}
+            placement="bottomRight"
+            open={desktopOpen}
+            onOpenChange={setDesktopOpen}
+            trigger="click"
+            styles={{
+              body: {
+                padding: 0,
+                marginRight: '8px',
+              },
+            }}
+            arrow={false}
+            content={editorCard}
+          >
+            <Button icon={<InfoCircleOutlined />} type="text" />
+          </Popover>
+        </Tooltip>
+      )}
+      <Modal
+        open={isMobileLayout && mobileOpen}
+        onCancel={closeEditor}
+        footer={null}
+        centered
+        width="calc(100vw - 32px)"
+        styles={{ body: { padding: 0 } }}
+        destroyOnClose
+      >
+        {editorCard}
+      </Modal>
+    </>
   );
 };

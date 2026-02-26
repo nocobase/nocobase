@@ -1,14 +1,12 @@
 ---
-displayName: "ブロック：看板"
+displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |
-  看板ブロックを提供します
+  Provides kanban block.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ブロック：看板
+# Block: Kanban

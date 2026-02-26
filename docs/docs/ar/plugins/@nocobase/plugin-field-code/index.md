@@ -1,15 +1,15 @@
 ---
-displayName: "حقل المجموعة: كود"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
----
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-  يُستخدم لتحرير الكود وتمييزه، ويدعم لغات مثل Java و JavaScript و Python و SQL وغيرها.
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
+---
 
-# حقل المجموعة: كود
+# Collection field: Code

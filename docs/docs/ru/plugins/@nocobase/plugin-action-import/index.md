@@ -1,14 +1,15 @@
 ---
-displayName: "Действие: Импорт записей"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Импортируйте записи с помощью шаблонов Excel. Вы можете настроить поля для импорта, и шаблоны будут сгенерированы автоматически.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Действие: Импорт записей
+# Action: Import records

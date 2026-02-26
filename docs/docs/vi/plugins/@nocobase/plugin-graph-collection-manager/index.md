@@ -1,14 +1,12 @@
 ---
-displayName: "Quản lý bộ sưu tập trực quan"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  Một công cụ tương tự sơ đồ ER. Hiện tại chỉ hỗ trợ cơ sở dữ liệu chính.
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Quản lý bộ sưu tập trực quan
+# Graph collection manager

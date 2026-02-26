@@ -1,17 +1,14 @@
 ---
-displayName: "Wieloprzestrzeń"
+displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Umożliwia tworzenie wielu niezależnych przestrzeni danych w ramach jednej instancji aplikacji, wykorzystując logiczną izolację.
-isFree: fałsz
-builtIn: fałsz
-defaultEnabled: fałsz
-editionLevel: 2
+  Implements multiple independent data spaces within a single application instance through logical isolation.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 3
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Wieloprzestrzeń
+# Multi-space

@@ -1,17 +1,14 @@
 ---
-displayName: "Form Taslakları"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Form doldururken taslakları kaydetme ve daha sonra düzenlemeye devam etme imkanı sunar.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Form Taslakları
+# Form drafts

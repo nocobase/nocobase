@@ -1,14 +1,12 @@
 ---
-displayName: "アクション：印刷"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  ブラウザの印刷機能を呼び出し、単一のレコードを印刷します
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# アクション：印刷
+# Action: Print

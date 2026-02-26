@@ -8,7 +8,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
 
 # 字段组件：掩码

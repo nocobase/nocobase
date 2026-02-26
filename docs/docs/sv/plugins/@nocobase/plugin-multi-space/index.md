@@ -1,18 +1,14 @@
 ---
-displayName: "Multiutrymme"
+displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Möjliggör flera oberoende datautrymmen inom en enda applikationsinstans genom logisk isolering.
+  Implements multiple independent data spaces within a single application instance through logical isolation.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Multiutrymme
+# Multi-space

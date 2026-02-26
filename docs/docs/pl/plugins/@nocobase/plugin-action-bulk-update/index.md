@@ -1,14 +1,15 @@
 ---
-displayName: "Akcja: Aktualizacja zbiorcza"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Zbiorczo aktualizuje wszystkie dane lub wybrane dane.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Akcja: Aktualizacja zbiorcza
+# Action: Batch update

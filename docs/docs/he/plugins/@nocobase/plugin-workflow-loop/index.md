@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת לולאה"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  מאפשר לבצע תהליך משנה חוזר עבור כל ערך במערך, וכן לבצע תהליך משנה מספר קבוע של פעמים.
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת לולאה
+# Workflow: Loop node

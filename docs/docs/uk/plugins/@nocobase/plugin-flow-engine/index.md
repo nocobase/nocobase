@@ -1,13 +1,12 @@
 ---
-displayName: "Рушій робочих процесів"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Рушій робочих процесів
+# Flow engine

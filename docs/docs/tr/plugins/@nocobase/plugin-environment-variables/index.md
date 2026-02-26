@@ -1,14 +1,12 @@
 ---
-displayName: "Değişkenler ve Anahtarlar"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  Hassas veri depolama, yapılandırma verisi yeniden kullanımı, çoklu ortam izolasyonu ve benzeri amaçlarla kullanılan ortam değişkenleri ve anahtarların merkezi yönetimi.
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Değişkenler ve Anahtarlar
+# Variables and secrets

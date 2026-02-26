@@ -1,14 +1,12 @@
 ---
-displayName: "المصادقة: الرسائل النصية القصيرة"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  تتيح المصادقة على الهوية باستخدام رمز التحقق عبر الرسائل النصية القصيرة.
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# المصادقة: الرسائل النصية القصيرة
+# Auth: SMS

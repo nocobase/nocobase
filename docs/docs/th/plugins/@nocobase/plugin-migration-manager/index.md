@@ -1,18 +1,15 @@
 ---
-displayName: "ตัวจัดการการย้ายข้อมูล"
+displayName: "Migration manager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  ใช้สำหรับย้ายเนื้อหาการตั้งค่าระหว่างสภาพแวดล้อมแอปพลิเคชัน
+  Used to migrate configuration content between application environments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวจัดการการย้ายข้อมูล
+# Migration manager

@@ -11,51 +11,59 @@ import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
-import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
-import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
-import { deepseekProviderOptions } from './llm-providers/deepseek';
-import { LLMInstruction } from './workflow/nodes/llm';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { googleGenAIProviderOptions } from './llm-providers/google-genai';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
+import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { deepseekProviderOptions } from './llm-providers/deepseek';
+import { googleGenAIProviderOptions } from './llm-providers/google-genai';
+import { ollamaProviderOptions } from './llm-providers/ollama';
+import { kimiProviderOptions } from './llm-providers/kimi';
+import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
+import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
+import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import {
   AIEmployeeShortcutListModel,
   AIEmployeeShortcutModel,
   AIEmployeeButtonModel,
 } from './ai-employees/flow/models';
-import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
-import { FlowModelsContext } from './ai-employees/context/flow-models';
-import { formFillerTool } from './ai-employees/form-filler/tools';
 import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
-import { dashscopeProviderOptions } from './llm-providers/dashscope';
-import { ollamaProviderOptions } from './llm-providers/ollama';
-import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
-import { DatasourceSettingPage } from './ai-employees/admin/datasource';
+import { LLMServicesRepository } from './llm-services/LLMServicesRepository';
+import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { DatasourceContext } from './ai-employees/context/datasource';
+import { CodeEditorContext } from './ai-employees/context/code-editor';
+import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
+import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
+import { formFillerTool } from './ai-employees/form-filler/tools';
+import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
+import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
+import {
+  getContextApisTool,
+  getContextEnvsTool,
+  getContextVarsTool,
+  lintAndTestJSTool,
+} from './ai-employees/ai-coding/tools/context-tools';
+import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
+import { suggestionsTool } from './ai-employees/suggestions/tools';
+import { setupAICoding } from './ai-employees/ai-coding/setup';
+import { setupDataModeling } from './ai-employees/data-modeling/setup';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
 const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
+const { DatasourceSettingPage } = lazy(() => import('./ai-employees/admin/datasource'), 'DatasourceSettingPage');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
 );
-import { CodeEditorContext } from './ai-employees/context/code-editor';
-import { setupAICoding } from './ai-employees/ai-coding/setup';
-import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
-import { setupDataModeling } from './ai-employees/data-modeling/setup';
-import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
-import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
-import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
-import { suggestionsTool } from './ai-employees/suggestions/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -84,7 +92,6 @@ export class PluginAIClient extends Plugin {
     this.addPluginSettings();
     this.setupAIFeatures();
     this.setupWorkflow();
-
     setupDataModeling(this);
     setupAICoding();
   }
@@ -130,16 +137,20 @@ export class PluginAIClient extends Plugin {
     }
   }
 
-  setupAIFeatures() {
+  async setupAIFeatures() {
     this.app.flowEngine.context.defineProperty(...aiEmployeesData);
 
+    const llmServicesRepository = new LLMServicesRepository(this.app.apiClient);
+    this.app.flowEngine.context.defineProperty('llmServicesRepository', { value: llmServicesRepository });
+
+    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
+    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
-    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
-    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
@@ -153,20 +164,21 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
-
     // 使用可视化员工的工作上下文参数
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
 
-    // 使用可视化员工的工具参数
-    this.aiManager.registerTool(...vizSwitchModesTool);
-    this.aiManager.registerTool(...vizRunQueryTool);
-
-    this.aiManager.registerTool(...defineCollectionsTool);
-    this.aiManager.registerTool(...formFillerTool);
-    this.aiManager.registerTool(...chartGeneratorTool);
-    this.aiManager.registerTool(...listCodeSnippetTool);
-    this.aiManager.registerTool(...getCodeSnippetTool);
-    this.aiManager.registerTool(...suggestionsTool);
+    this.ai.toolsManager.registerTools(...vizSwitchModesTool);
+    this.ai.toolsManager.registerTools(...vizRunQueryTool);
+    this.ai.toolsManager.registerTools(...defineCollectionsTool);
+    this.ai.toolsManager.registerTools(...formFillerTool);
+    this.ai.toolsManager.registerTools(...chartGeneratorTool);
+    this.ai.toolsManager.registerTools(...listCodeSnippetTool);
+    this.ai.toolsManager.registerTools(...getCodeSnippetTool);
+    this.ai.toolsManager.registerTools(...suggestionsTool);
+    this.ai.toolsManager.registerTools(...getContextApisTool);
+    this.ai.toolsManager.registerTools(...getContextEnvsTool);
+    this.ai.toolsManager.registerTools(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 
   setupWorkflow() {

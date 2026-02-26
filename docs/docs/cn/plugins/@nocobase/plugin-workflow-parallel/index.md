@@ -6,6 +6,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 工作流：并行分支节点

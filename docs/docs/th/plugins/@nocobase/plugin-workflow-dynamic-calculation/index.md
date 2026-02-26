@@ -1,16 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: โหนดคำนวณแบบไดนามิก"
+displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  ใช้สำหรับคำนวณนิพจน์แบบไดนามิกในเวิร์กโฟลว์ โดยอิงตามข้อมูลแต่ละแถว
+  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
+# Workflow: Dynamic calculation node
 
-
-# เวิร์กโฟลว์: โหนดคำนวณแบบไดนามิก
+> Note: This plugin is deprecated.

@@ -1,17 +1,12 @@
 ---
-displayName: "Рабочий процесс: Сопоставление JSON-переменных"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  Используется для сопоставления любых JSON-данных со структурированными переменными для их дальнейшего использования в последующих узлах.
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Сопоставление JSON-переменных
+# Workflow: JSON variable mapping

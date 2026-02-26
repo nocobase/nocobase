@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: węzeł wysyłania e-maili"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Służy do wysyłania wiadomości e-mail w przepływie pracy.
+  Send email in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: węzeł wysyłania e-maili
+# Workflow: mailer node

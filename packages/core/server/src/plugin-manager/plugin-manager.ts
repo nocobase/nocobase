@@ -463,6 +463,7 @@ export class PluginManager {
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       this.app.logger.trace(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.loadCollections();
+      await plugin.loadAI();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
@@ -603,6 +604,7 @@ export class PluginManager {
           continue;
         }
         await plugin.loadCollections();
+        await plugin.loadAI();
         await plugin.load();
       }
     } catch (error) {

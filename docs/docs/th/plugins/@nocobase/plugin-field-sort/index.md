@@ -1,14 +1,12 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: เรียงลำดับ"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  ใช้สำหรับเรียงลำดับข้อมูลในคอลเลกชันครับ
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟิลด์คอลเลกชัน: เรียงลำดับ
+# Collection field: Sort

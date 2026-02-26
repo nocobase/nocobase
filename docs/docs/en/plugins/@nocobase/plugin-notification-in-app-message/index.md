@@ -6,6 +6,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Notification: In-app message

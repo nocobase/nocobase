@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: Uzel zpoždění"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Lze použít v paralelní větvi pracovního postupu pro čekání na dokončení ostatních větví.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Uzel zpoždění
+# Workflow: Delay node

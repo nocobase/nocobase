@@ -1,18 +1,15 @@
 ---
-displayName: "Yorumlar"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Herhangi bir koleksiyondaki verilere yorum ekleme işlevselliği sağlamak amacıyla yorum koleksiyonu şablonu ve bloğu sunar.
+  Provides comment collection template and block to add commenting functionality for any collection.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+points: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Yorumlar
+# Comments

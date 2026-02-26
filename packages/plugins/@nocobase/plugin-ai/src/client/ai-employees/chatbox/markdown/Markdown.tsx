@@ -14,9 +14,11 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Message } from '../../types';
+import { lazy } from '@nocobase/client';
 import { Code } from './Code';
-import { Echarts } from './ECharts';
 import { Form } from './Form';
+
+const { Echarts } = lazy(() => import('./ECharts'), 'Echarts');
 
 export const Markdown: React.FC<{
   message: Message['content'];

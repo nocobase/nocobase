@@ -1,17 +1,15 @@
 ---
-displayName: "Blok: szablon (przestarzały)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Tworzenie i zarządzanie szablonami bloków do ponownego wykorzystania na stronach.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Blok: szablon (przestarzały)
+# Block: template (deprecated)
 
-> Uwaga: Ta wtyczka jest przestarzała.
+> Note: This plugin is deprecated.

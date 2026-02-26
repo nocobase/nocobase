@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: Harita"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  Harita bloğu, Gaode Haritası ve Google Haritalar'ı destekler; ayrıca daha fazla harita türünü de genişletebilirsiniz.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Blok: Harita
+# Block: Map

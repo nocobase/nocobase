@@ -1,14 +1,12 @@
 ---
-displayName: "محرر السمات"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  تخصيص ألوان الواجهة الرسومية (UI) وأحجامها وغيرها، وحفظ النتيجة كسمة للتبديل بين سمات متعددة.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# محرر السمات
+# Theme editor

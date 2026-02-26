@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-tree",
-  "version": "2.0.0-beta.22",
+  "version": "2.1.0-beta.5",
   "displayName": "Collection: Tree",
   "displayName.ru-RU": "Древовидная Коллекция",
   "displayName.zh-CN": "数据表：树",
@@ -15,5 +15,6 @@
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
-  }
+  },
+  "license": "Apache-2.0"
 }

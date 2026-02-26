@@ -1,14 +1,12 @@
 ---
-displayName: "אימות"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  ניהול אימות זהות משתמשים, הכולל אימות באמצעות SMS, TOTP, וניתן להרחבה.
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# אימות
+# Verification

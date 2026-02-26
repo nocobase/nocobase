@@ -30,6 +30,9 @@ export class MissingKeyHandler {
     i18n.options.saveMissing = true;
     // i18n.options.saveMissingTo = 'current';
     this.missingKeyHandler = (lngs: readonly string[], ns: string, key: string) => {
+      if (!this.context.auth.token) {
+        return;
+      }
       if (!this.context.flowSettingsEnabled) {
         return;
       }

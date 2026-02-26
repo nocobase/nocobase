@@ -13,6 +13,7 @@ import {
   formatPathToValue,
   loadMetaTreeChildren,
   searchInLoadedNodes,
+  filterLoadedContextSelectorItems,
   buildContextSelectorItems,
   isVariableValue,
   createDefaultConverters,
@@ -150,6 +151,83 @@ describe('Variable Utils', () => {
     });
   });
 
+  describe('filterLoadedContextSelectorItems', () => {
+    const loadedChildren = [
+      {
+        label: 'Org Name',
+        value: 'org_name',
+        paths: ['org', 'org_name'],
+        isLeaf: true,
+      },
+      {
+        label: 'Org Code',
+        value: 'org_code',
+        paths: ['org', 'org_code'],
+        isLeaf: true,
+      },
+    ] satisfies ContextSelectorItem[];
+
+    const asyncChildLoader = async () => [];
+
+    const mockOptions: ContextSelectorItem[] = [
+      {
+        label: 'Organization',
+        value: 'org',
+        paths: ['org'],
+        children: loadedChildren,
+      },
+      {
+        label: 'Staff',
+        value: 'staff',
+        paths: ['staff'],
+        meta: {
+          name: 'staff',
+          title: 'Staff',
+          type: 'object',
+          paths: ['staff'],
+          children: asyncChildLoader,
+        } satisfies MetaTreeNode,
+      },
+      {
+        label: 'Config',
+        value: 'config',
+        paths: ['config'],
+        isLeaf: true,
+      },
+    ];
+
+    it('should keep original tree when keyword is empty', () => {
+      const result = filterLoadedContextSelectorItems(mockOptions, '  ');
+      expect(result).toBe(mockOptions);
+    });
+
+    it('should keep parent node reference when parent matches', () => {
+      const result = filterLoadedContextSelectorItems(mockOptions, 'orga');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(mockOptions[0]);
+      expect(result[0].children).toBe(loadedChildren);
+    });
+
+    it('should keep tree shape and trim children when only child matches', () => {
+      const result = filterLoadedContextSelectorItems(mockOptions, 'code');
+      expect(result).toHaveLength(1);
+      expect(result[0]).not.toBe(mockOptions[0]);
+      expect(result[0].value).toBe('org');
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].children?.[0]).toBe(loadedChildren[1]);
+    });
+
+    it('should not recurse into unloaded children', () => {
+      const result = filterLoadedContextSelectorItems(mockOptions, 'staff child');
+      expect(result).toHaveLength(0);
+    });
+
+    it('should return empty array when no node matches', () => {
+      const result = filterLoadedContextSelectorItems(mockOptions, 'not-exists');
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('buildContextSelectorItems', () => {
     it('should convert MetaTreeNode[] to ContextSelectorItem[]', () => {
       const metaTree: MetaTreeNode[] = [
@@ -234,9 +312,9 @@ describe('Variable Utils', () => {
     it('should handle invalid metaTree input', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(buildContextSelectorItems(null as any)).toEqual([]);
-      expect(buildContextSelectorItems(undefined as any)).toEqual([]);
-      expect(buildContextSelectorItems({} as any)).toEqual([]);
+      expect(buildContextSelectorItems(null as unknown as MetaTreeNode[])).toEqual([]);
+      expect(buildContextSelectorItems(undefined as unknown as MetaTreeNode[])).toEqual([]);
+      expect(buildContextSelectorItems({} as unknown as MetaTreeNode[])).toEqual([]);
 
       expect(consoleSpy).toHaveBeenCalledTimes(3);
       consoleSpy.mockRestore();

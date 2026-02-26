@@ -1,16 +1,12 @@
 ---
-displayName: "แจ้งเตือน: ข้อความในแอป"
+displayName: "Notification: In-app message"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |
-  รองรับผู้ใช้ให้สามารถรับการแจ้งเตือนข้อความได้แบบเรียลไทม์ภายในแอปพลิเคชัน NocoBase ครับ/ค่ะ
+  It supports users in receiving real-time message notifications within the NocoBase application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# แจ้งเตือน: ข้อความในแอป
+# Notification: In-app message

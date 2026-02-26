@@ -8,7 +8,9 @@
  */
 
 import React from 'react';
-import { Input } from 'antd';
+import { css } from '@emotion/css';
+import { Divider, Input, InputNumber, Select, Space, theme } from 'antd';
+import { dayjs } from '@nocobase/utils/client';
 import {
   FlowModelRenderer,
   VariableInput,
@@ -16,6 +18,9 @@ import {
   isVariableExpression,
   parseValueToPath,
   isRunJSValue,
+  isCtxDateExpression,
+  parseCtxDateExpression,
+  serializeCtxDateValue,
   type CollectionField,
   type MetaTreeNode,
   useFlowContext,
@@ -32,6 +37,282 @@ import { RunJSValueEditor } from './RunJSValueEditor';
 import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
+import { FieldAssignExactDatePicker, type ExactDatePickerMode } from './FieldAssignExactDatePicker';
+
+const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
+
+const TZ_AWARE_DATE_INTERFACES = new Set(['datetime', 'createdAt', 'updatedAt', 'unixTimestamp']);
+
+const DATE_ONLY_OUTPUT_FORMAT = 'YYYY-MM-DD';
+const DATETIME_NO_TZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+
+export type DateVariableExactNormalizeMode = 'none' | 'date' | 'datetimeNoTz' | 'iso';
+
+const DATE_DYNAMIC_OPTION_KEYS = [
+  'exact',
+  'past',
+  'next',
+  'today',
+  'yesterday',
+  'tomorrow',
+  'thisWeek',
+  'lastWeek',
+  'nextWeek',
+  'thisMonth',
+  'lastMonth',
+  'nextMonth',
+  'thisQuarter',
+  'lastQuarter',
+  'nextQuarter',
+  'thisYear',
+  'lastYear',
+  'nextYear',
+] as const;
+
+type DateDynamicOptionValue = (typeof DATE_DYNAMIC_OPTION_KEYS)[number] | 'now';
+
+const DATE_DYNAMIC_OPTION_LABELS: Record<(typeof DATE_DYNAMIC_OPTION_KEYS)[number], string> = {
+  exact: 'Exact day',
+  past: 'Past',
+  next: 'Next',
+  today: 'Today',
+  yesterday: 'Yesterday',
+  tomorrow: 'Tomorrow',
+  thisWeek: 'This Week',
+  lastWeek: 'Last Week',
+  nextWeek: 'Next Week',
+  thisMonth: 'This Month',
+  lastMonth: 'Last Month',
+  nextMonth: 'Next Month',
+  thisQuarter: 'This Quarter',
+  lastQuarter: 'Last Quarter',
+  nextQuarter: 'Next Quarter',
+  thisYear: 'This Year',
+  lastYear: 'Last Year',
+  nextYear: 'Next Year',
+};
+
+function buildDateDynamicOptions(t?: (key: string) => string, includeNow = false) {
+  const options: Array<{ value: DateDynamicOptionValue; label: string }> = DATE_DYNAMIC_OPTION_KEYS.map((key) => ({
+    value: key,
+    label: t?.(DATE_DYNAMIC_OPTION_LABELS[key]) ?? DATE_DYNAMIC_OPTION_LABELS[key],
+  }));
+
+  if (includeNow) {
+    options.splice(3, 0, { value: 'now', label: t?.('Now') ?? 'Now' });
+  }
+
+  return options;
+}
+
+function parseDateByFormat(value: string, format: string): dayjs.Dayjs | null {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(raw);
+  if (hasTimezone) {
+    const parsed = dayjs(raw);
+    if (parsed.isValid()) {
+      return parsed;
+    }
+  }
+
+  if (format) {
+    const strict = dayjs(raw, format, true);
+    if (strict.isValid()) {
+      return strict;
+    }
+  }
+
+  const fallback = dayjs(raw);
+  if (fallback.isValid()) {
+    return fallback;
+  }
+
+  if (format) {
+    const loose = dayjs(raw, format);
+    if (loose.isValid()) {
+      return loose;
+    }
+  }
+
+  return null;
+}
+
+function parseDateFromRawValue(value: unknown, format: string): dayjs.Dayjs | null {
+  if (dayjs.isDayjs(value)) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    const parsedDate = dayjs(value);
+    return parsedDate.isValid() ? parsedDate : null;
+  }
+
+  if (typeof value === 'string') {
+    return parseDateByFormat(value, format);
+  }
+
+  return null;
+}
+
+function normalizeExactDateValue(
+  value: unknown,
+  options: {
+    format: string;
+    showTime: boolean;
+    exactNormalizeMode: DateVariableExactNormalizeMode;
+  },
+): unknown {
+  const parsed = parseDateFromRawValue(value, options.format);
+  if (!parsed?.isValid()) {
+    return value;
+  }
+
+  switch (options.exactNormalizeMode) {
+    case 'date':
+      return parsed.format(DATE_ONLY_OUTPUT_FORMAT);
+    case 'datetimeNoTz':
+      return parsed.format(options.showTime ? DATETIME_NO_TZ_OUTPUT_FORMAT : DATE_ONLY_OUTPUT_FORMAT);
+    case 'iso':
+      return parsed.toISOString();
+    default:
+      return value;
+  }
+}
+
+function toExactPickerSingleValue(rawValue: unknown, format: string): dayjs.Dayjs | null {
+  const parsed = parseDateFromRawValue(rawValue, format);
+  return parsed?.isValid() ? parsed : null;
+}
+
+function toExactPickerRangeValue(rawValue: unknown, format: string): [dayjs.Dayjs, dayjs.Dayjs] | null {
+  if (!Array.isArray(rawValue)) return null;
+  const left = toExactPickerSingleValue(rawValue[0], format);
+  const right = toExactPickerSingleValue(rawValue[1], format);
+  if (!left || !right) return null;
+  return [left, right];
+}
+
+export function toExactPickerDisplayValue(
+  rawValue: unknown,
+  options: {
+    format: string;
+    isRange: boolean;
+  },
+): dayjs.Dayjs | [dayjs.Dayjs, dayjs.Dayjs] | null {
+  if (options.isRange) {
+    return toExactPickerRangeValue(rawValue, options.format);
+  }
+  return toExactPickerSingleValue(rawValue, options.format);
+}
+
+function getDateVariableExactNormalizeMode(fieldInterface: string): DateVariableExactNormalizeMode {
+  if (fieldInterface === 'date') {
+    return 'date';
+  }
+
+  if (fieldInterface === 'datetimeNoTz') {
+    return 'datetimeNoTz';
+  }
+
+  if (TZ_AWARE_DATE_INTERFACES.has(fieldInterface)) {
+    return 'iso';
+  }
+
+  return 'none';
+}
+
+export function normalizeDateVariableExactValue(
+  rawValue: any,
+  options: {
+    exactNormalizeMode: DateVariableExactNormalizeMode;
+    format: string;
+    showTime: boolean;
+  },
+): any {
+  if (options.exactNormalizeMode === 'none') {
+    return rawValue;
+  }
+
+  if (typeof rawValue === 'string') {
+    return normalizeExactDateValue(rawValue, options);
+  }
+
+  if (dayjs.isDayjs(rawValue) || rawValue instanceof Date) {
+    return normalizeExactDateValue(rawValue, options);
+  }
+
+  if (Array.isArray(rawValue)) {
+    return rawValue.map((item) => {
+      if (typeof item === 'string' || dayjs.isDayjs(item) || item instanceof Date) {
+        return normalizeExactDateValue(item, options);
+      }
+      return item;
+    });
+  }
+
+  return rawValue;
+}
+
+type DateVariableComponentProps = {
+  picker: ExactDatePickerMode;
+  showTime: boolean;
+  timeFormat: string;
+  format: string;
+  exactNormalizeMode: DateVariableExactNormalizeMode;
+};
+
+function normalizeExactDatePickerMode(value: unknown): ExactDatePickerMode {
+  if (value === 'year' || value === 'quarter' || value === 'month' || value === 'date') {
+    return value;
+  }
+
+  return 'date';
+}
+
+const DEFAULT_DATE_VARIABLE_COMPONENT_PROPS: DateVariableComponentProps = {
+  picker: 'date',
+  showTime: false,
+  timeFormat: 'HH:mm:ss',
+  format: 'YYYY-MM-DD',
+  exactNormalizeMode: 'none',
+};
+
+function getFieldInterface(field: any): string {
+  return typeof field?.interface === 'string' ? field.interface : '';
+}
+
+function getFieldComponentProps(field: any): Record<string, any> {
+  return (
+    (typeof field?.getComponentProps === 'function' ? field.getComponentProps() : null) ||
+    field?.uiSchema?.['x-component-props'] ||
+    {}
+  );
+}
+
+export function normalizeDateVariableOutput(rawValue: any, options: DateVariableComponentProps): any {
+  if (rawValue === null || isRunJSValue(rawValue)) {
+    return rawValue;
+  }
+
+  if (typeof rawValue === 'string' && isVariableExpression(rawValue) && !isCtxDateExpression(rawValue)) {
+    return rawValue;
+  }
+
+  if (rawValue === '' || typeof rawValue === 'undefined') {
+    return '';
+  }
+
+  const normalized = normalizeDateVariableExactValue(rawValue, {
+    exactNormalizeMode: options.exactNormalizeMode,
+    format: options.format || 'YYYY-MM-DD HH:mm:ss',
+    showTime: options.showTime,
+  });
+
+  const serialized = serializeCtxDateValue(normalized);
+  return serialized || normalized;
+}
 
 interface Props {
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
@@ -47,6 +328,16 @@ interface Props {
   operatorMetaList?: Array<any>;
   /** 可选：当字段已存在于表单时，优先复用表单字段的模型（用于筛选表单默认值等场景） */
   preferFormItemFieldModel?: boolean;
+  /** 可选：关系字段显示映射覆盖（用于值编辑器内预览 title field） */
+  associationFieldNamesOverride?: {
+    label?: string;
+    value?: string;
+  };
+  /**
+   * 在日期字段场景下，用日期变量编辑器替换 Constant 位。
+   * 默认 false，保持历史行为。
+   */
+  enableDateVariableAsConstant?: boolean;
 }
 
 type ResolvedFieldContext = {
@@ -177,6 +468,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   operator,
   operatorMetaList,
   preferFormItemFieldModel,
+  associationFieldNamesOverride,
+  enableDateVariableAsConstant = false,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -310,12 +603,19 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   }, [flowCtx.model, itemModel, resolveNestedAssociationField, targetPath]);
 
   const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
+  const itemCollectionField = (resolved?.itemModel as any)?.context?.collectionField;
+
+  const sourceInterface = React.useMemo(() => {
+    return getFieldInterface(cf) || getFieldInterface(itemCollectionField);
+  }, [cf, itemCollectionField]);
+
+  const sourceCollectionField = (cf as any) || itemCollectionField;
 
   const isArrayValueField = React.useMemo(() => {
     if (isToManyAssociationField(cf)) return true;
 
     // 部分字段组件（如 Cascader / CascadeSelectList）期望 array 值；若 uiSchema 明确声明为 array，则视为 array 值字段
-    const fieldInterface = typeof (cf as any)?.interface === 'string' ? ((cf as any).interface as string) : undefined;
+    const fieldInterface = getFieldInterface(cf);
     if (fieldInterface === 'multipleSelect' || fieldInterface === 'checkboxGroup') return true;
 
     const schemaType = cf?.uiSchema?.type;
@@ -323,6 +623,71 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
     return false;
   }, [cf]);
+
+  const isDateLikeField = React.useMemo(() => {
+    if (sourceInterface && DATE_FIELD_INTERFACES.has(sourceInterface)) {
+      return true;
+    }
+
+    const leaf =
+      (typeof fieldName === 'string' && fieldName) ||
+      (typeof targetPath === 'string' ? targetPath.split('.').filter(Boolean).slice(-1)[0] : '');
+
+    return leaf === 'createdAt' || leaf === 'updatedAt';
+  }, [fieldName, sourceInterface, targetPath]);
+
+  const useDateVariableConstant = enableDateVariableAsConstant && isDateLikeField;
+
+  const dateVariableComponentProps = React.useMemo(() => {
+    if (!useDateVariableConstant) {
+      return DEFAULT_DATE_VARIABLE_COMPONENT_PROPS;
+    }
+
+    const componentProps = getFieldComponentProps(sourceCollectionField);
+
+    const picker = normalizeExactDatePickerMode(componentProps?.picker);
+    const inferredShowTime = ['datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(
+      sourceInterface,
+    );
+    const showTime = typeof componentProps?.showTime === 'boolean' ? componentProps.showTime : inferredShowTime;
+
+    const dateFormat =
+      typeof componentProps?.dateFormat === 'string' && componentProps.dateFormat
+        ? componentProps.dateFormat
+        : typeof componentProps?.format === 'string' && componentProps.format
+          ? componentProps.format.split(' ')[0]
+          : 'YYYY-MM-DD';
+    const timeFormat =
+      typeof componentProps?.timeFormat === 'string' && componentProps.timeFormat
+        ? componentProps.timeFormat
+        : 'HH:mm:ss';
+
+    const format =
+      typeof componentProps?.format === 'string' && componentProps.format
+        ? componentProps.format
+        : showTime
+          ? `${dateFormat} ${timeFormat}`
+          : dateFormat;
+
+    return {
+      picker,
+      showTime,
+      timeFormat,
+      format,
+      exactNormalizeMode: getDateVariableExactNormalizeMode(sourceInterface),
+    };
+  }, [sourceCollectionField, sourceInterface, useDateVariableConstant]);
+
+  const dateVariableDisplayProps = React.useMemo(() => {
+    const { exactNormalizeMode, ...rest } = dateVariableComponentProps;
+    return rest;
+  }, [dateVariableComponentProps]);
+
+  const dateVariableDisplayPropsRef = React.useRef(dateVariableDisplayProps);
+  dateVariableDisplayPropsRef.current = dateVariableDisplayProps;
+
+  const dateVariableTranslateRef = React.useRef(flowCtx.t);
+  dateVariableTranslateRef.current = flowCtx.t;
 
   const coerceEmptyValueForRenderer = React.useCallback(
     (v: any) => {
@@ -407,6 +772,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const fm = created?.subModels?.fields?.[0];
     const multiple = isToManyAssociationField(cf);
     const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
+    const overrideLabel =
+      typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label
+        ? associationFieldNamesOverride.label
+        : undefined;
+    if (overrideLabel && typeof fm?.setStepParams === 'function') {
+      fm.setStepParams('selectSettings', 'fieldNames', { label: overrideLabel });
+    }
     fm?.setProps?.({
       disabled: false,
       readPretty: false,
@@ -433,14 +805,32 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!modePropExists && nextMode) {
       fm?.setProps?.({ mode: nextMode });
     }
-    if (!fm?.props?.fieldNames && cf?.targetCollection) {
+    if (cf?.targetCollection) {
       const targetCol = cf.targetCollection;
-      const valueKey = cf?.targetKey || targetCol?.filterTargetKey || 'id';
-      const labelKey =
+      const prevFieldNames = (fm?.props?.fieldNames as { label?: unknown; value?: unknown } | undefined) || {};
+      const valueKey =
+        (typeof associationFieldNamesOverride?.value === 'string' && associationFieldNamesOverride.value) ||
+        (typeof prevFieldNames?.value === 'string' && prevFieldNames.value) ||
+        cf?.targetKey ||
+        targetCol?.filterTargetKey ||
+        'id';
+      const inheritedLabel =
+        typeof prevFieldNames?.label === 'string' && prevFieldNames.label ? prevFieldNames.label : undefined;
+      const collectionTitleField =
         typeof (targetCol as { titleField?: unknown } | null | undefined)?.titleField === 'string'
           ? (targetCol as { titleField?: string }).titleField
           : undefined;
-      fm?.setProps?.({ fieldNames: { label: labelKey, value: valueKey } });
+      const labelKey =
+        (typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label) ||
+        inheritedLabel ||
+        collectionTitleField;
+      fm?.setProps?.({
+        fieldNames: {
+          ...prevFieldNames,
+          ...(labelKey ? { label: labelKey } : {}),
+          value: valueKey,
+        },
+      });
     }
 
     setTempRoot(created);
@@ -460,6 +850,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     cf,
     itemModel,
     preferFormItemFieldModel,
+    associationFieldNamesOverride?.label,
+    associationFieldNamesOverride?.value,
   ]);
 
   // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。
@@ -553,6 +945,158 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return C;
   }, [placeholder, tempRoot, coerceEmptyValueForRenderer, normalizeEventValue]);
 
+  const DateVariableConstantEditor = React.useMemo(() => {
+    const C: React.FC<any> = (inputProps) => {
+      const wrapperStyle = pickStyle(inputProps?.style);
+      const raw = inputProps?.value;
+      const parsed = isCtxDateExpression(raw) ? parseCtxDateExpression(raw) : raw;
+      const parsedValue = typeof parsed === 'undefined' ? undefined : parsed;
+      const { token } = theme.useToken();
+      const [open, setOpen] = React.useState(false);
+      const t = dateVariableTranslateRef.current;
+      const datePickerProps = dateVariableDisplayPropsRef.current;
+      const options = React.useMemo(() => buildDateDynamicOptions(t, true), [t]);
+
+      const dynamicType =
+        parsedValue && typeof parsedValue === 'object' && !Array.isArray(parsedValue)
+          ? (parsedValue as any)?.type
+          : undefined;
+      const selectedType = typeof dynamicType === 'string' && dynamicType ? dynamicType : 'exact';
+      const isRange = Array.isArray(parsedValue);
+      const exactSingleValue = toExactPickerDisplayValue(parsedValue, {
+        format: datePickerProps.format,
+        isRange: false,
+      });
+      const exactRangeValue = toExactPickerDisplayValue(parsedValue, {
+        format: datePickerProps.format,
+        isRange: true,
+      });
+
+      const handleSelect = (val: string) => {
+        setOpen(false);
+        if (val === 'exact') {
+          inputProps?.onChange?.('');
+          return;
+        }
+        const next: any = { type: val };
+        if (val === 'past' || val === 'next') {
+          next.number = 1;
+          next.unit = 'day';
+        }
+        inputProps?.onChange?.(next);
+      };
+
+      const handleExactSingleChange = (nextValue: any) => {
+        inputProps?.onChange?.(nextValue || '');
+      };
+
+      const handleExactRangeChange = (nextValue: any) => {
+        inputProps?.onChange?.(nextValue || '');
+      };
+
+      const dropdownRender = () => {
+        const firstPart = options.slice(0, 3);
+        const secondPart = options.slice(3);
+        const optionStyle = css`
+          padding: 3px 10px;
+          cursor: pointer;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          &:hover {
+            background-color: ${token.colorFillSecondary};
+          }
+        `;
+        return (
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            {firstPart.map((opt) => (
+              <div key={opt.value} role="option" onClick={() => handleSelect(opt.value)} className={optionStyle}>
+                {opt.label}
+              </div>
+            ))}
+            <Divider style={{ margin: '4px 0' }} />
+            {secondPart.map((opt) => (
+              <div
+                key={opt.value}
+                role="option"
+                className={optionStyle}
+                onClick={() => handleSelect(opt.value)}
+                title={opt.label}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        );
+      };
+
+      return (
+        <Space.Compact style={withFullWidthStyle(wrapperStyle)}>
+          <Select
+            options={options}
+            open={open}
+            onDropdownVisibleChange={setOpen}
+            allowClear={false}
+            style={{
+              width: '100%',
+              minWidth: 100,
+              maxWidth: ['past', 'next', 'exact', undefined].includes(dynamicType) ? 100 : null,
+            }}
+            value={selectedType}
+            onChange={handleSelect}
+            dropdownRender={dropdownRender}
+          />
+          {['past', 'next'].includes(selectedType) && [
+            <InputNumber
+              key="number"
+              style={{ flex: 1 }}
+              value={(parsedValue as any)?.number}
+              onChange={(nextNumber) => {
+                inputProps?.onChange?.({
+                  ...(parsedValue as any),
+                  type: selectedType,
+                  number: nextNumber,
+                  unit: (parsedValue as any)?.unit || 'day',
+                });
+              }}
+            />,
+            <Select
+              key="unit"
+              value={(parsedValue as any)?.unit}
+              style={{ minWidth: 130, maxWidth: 140 }}
+              onChange={(nextUnit) => {
+                inputProps?.onChange?.({
+                  ...(parsedValue as any),
+                  type: selectedType,
+                  unit: nextUnit,
+                  number: (parsedValue as any)?.number || 1,
+                });
+              }}
+              options={[
+                { value: 'day', label: t?.('Day') ?? 'Day' },
+                { value: 'week', label: t?.('Calendar week') ?? 'Calendar week' },
+                { value: 'month', label: t?.('Calendar Month') ?? 'Calendar Month' },
+                { value: 'year', label: t?.('Calendar Year') ?? 'Calendar Year' },
+              ]}
+              popupMatchSelectWidth
+            />,
+          ]}
+          {(selectedType === 'exact' || !selectedType) && (
+            <FieldAssignExactDatePicker
+              {...datePickerProps}
+              isRange={isRange}
+              value={isRange ? exactRangeValue : exactSingleValue}
+              onChange={isRange ? handleExactRangeChange : handleExactSingleChange}
+              style={{ flex: 1 }}
+            />
+          )}
+        </Space.Compact>
+      );
+    };
+
+    return C;
+  }, []);
+
   const NullComponent = React.useMemo(() => {
     const N: React.FC = () => (
       <Input placeholder={`<${flowCtx.t?.('Null') ?? 'Null'}>`} readOnly style={{ width: '100%' }} />
@@ -567,6 +1111,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return C;
   }, [flowCtx]);
 
+  const ConstantEditor = useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
+
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
     return async () => {
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
@@ -579,14 +1125,39 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           name: 'constant',
           type: 'string',
           paths: ['constant'],
-          render: ConstantValueEditor,
+          render: ConstantEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
         ...mergedBase,
       ];
     };
-  }, [flowCtx, ConstantValueEditor, NullComponent, RunJSComponent]);
+  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent]);
+
+  const displayValue = React.useMemo(() => {
+    if (!useDateVariableConstant) {
+      return value;
+    }
+
+    if (isCtxDateExpression(value)) {
+      const parsed = parseCtxDateExpression(value);
+      return typeof parsed === 'undefined' ? '' : parsed;
+    }
+
+    return value;
+  }, [useDateVariableConstant, value]);
+
+  const handleVariableInputChange = React.useCallback(
+    (nextValue: any) => {
+      if (!useDateVariableConstant) {
+        onChange(nextValue);
+        return;
+      }
+
+      onChange(normalizeDateVariableOutput(nextValue, dateVariableComponentProps));
+    },
+    [dateVariableComponentProps, onChange, useDateVariableConstant],
+  );
 
   if (!fieldPath) {
     // 不可用占位
@@ -595,22 +1166,24 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   return (
     <VariableInput
-      value={value}
-      onChange={onChange}
+      value={displayValue}
+      onChange={handleVariableInputChange}
       metaTree={metaTree}
       style={{ width: '100%' }}
       clearValue={''}
       converters={{
         renderInputComponent: (meta) => {
           const firstPath = meta?.paths?.[0];
-          if (firstPath === 'constant') return ConstantValueEditor;
+          if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
           if (firstPath === 'runjs') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
           const firstPath = item?.paths?.[0];
-          if (firstPath === 'constant') return '';
+          if (firstPath === 'constant') {
+            return useDateVariableConstant ? { type: 'today' } : '';
+          }
           if (firstPath === 'null') return null;
           if (firstPath === 'runjs') return { code: '', version: 'v1' };
           return undefined;
@@ -618,6 +1191,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
           if (isRunJSValue(currentValue)) return ['runjs'];
+          if (useDateVariableConstant && isCtxDateExpression(currentValue)) {
+            return ['constant'];
+          }
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
       }}

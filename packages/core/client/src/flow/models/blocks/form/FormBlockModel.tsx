@@ -8,6 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
@@ -18,6 +19,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
+import { getValuesByPath } from '@nocobase/shared';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
@@ -43,6 +45,29 @@ const GRID_DELEGATED_STEP_KEYS: Record<string, Set<string>> = {
   formModelSettings: new Set(['layout', 'assignRules']),
   eventSettings: new Set(['linkageRules']),
 };
+
+const FLOW_KEEP_MOBILE_HORIZONTAL_CLASS = 'nb-flow-keep-mobile-horizontal';
+
+const flowKeepMobileHorizontalClassName = css`
+  &.${FLOW_KEEP_MOBILE_HORIZONTAL_CLASS} {
+    @media (max-width: 575px) {
+      .ant-form-item {
+        flex-wrap: nowrap !important;
+      }
+
+      .ant-form-item .ant-form-item-label {
+        flex: 0 0 auto !important;
+        max-width: none !important;
+      }
+
+      .ant-form-item .ant-form-item-control {
+        flex: 1 1 0 !important;
+        max-width: none !important;
+        min-width: 0;
+      }
+    }
+  }
+`;
 
 function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
   return !!GRID_DELEGATED_STEP_KEYS[flowKey]?.has(stepKey);
@@ -306,6 +331,18 @@ export class FormBlockModel<
           const topValue = this.form?.getFieldValue?.(top);
           if (topValue == null) return false;
           if (Array.isArray(topValue) && topValue.length === 0) return false;
+
+          // 本地优先：支持对多关系的 dot 聚合路径（例如 assignees.name）。
+          // lodash.get 对数组聚合路径会返回 undefined（如 _.get({ assignees:[{name:'A'}] }, 'assignees.name')），
+          // 因而这里先用 getValuesByPath 做一次前端可解析性检查，命中则直接前端解析。
+          const formValuesSnapshot = runtime.getFormValuesSnapshot();
+          if (formValuesSnapshot && typeof formValuesSnapshot === 'object') {
+            const localResolved = getValuesByPath(formValuesSnapshot as Record<string, any>, subPath);
+            if (typeof localResolved !== 'undefined') {
+              return false;
+            }
+          }
+
           // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
           const assocResolver = createAssociationSubpathResolver(
             () => this.collection,
@@ -404,6 +441,15 @@ export function FormComponent({
   onFinish?: (values: any) => void;
   [key: string]: any;
 }) {
+  const keepMobileHorizontalLayout = !!(model?.context?.isMobileLayout && layoutProps?.layout === 'horizontal');
+  const className = [
+    rest.className,
+    keepMobileHorizontalLayout ? FLOW_KEEP_MOBILE_HORIZONTAL_CLASS : '',
+    keepMobileHorizontalLayout ? flowKeepMobileHorizontalClassName : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <Form
       form={model.form}
@@ -428,6 +474,7 @@ export function FormComponent({
         model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
       {...rest}
+      className={className || undefined}
     >
       {children}
     </Form>

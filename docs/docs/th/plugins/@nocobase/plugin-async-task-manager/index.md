@@ -1,14 +1,12 @@
 ---
-displayName: "ตัวจัดการงานอะซิงค์"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  จัดการและตรวจสอบงานแบบอะซิงโครนัส เช่น การนำเข้า/ส่งออกข้อมูล รองรับการติดตามความคืบหน้าของงานและการแจ้งเตือน
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวจัดการงานอะซิงค์
+# Async task manager

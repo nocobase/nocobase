@@ -1,17 +1,15 @@
 ---
-displayName: "Mobil istemci (Kullanımdan kaldırıldı)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Mobil sayfaları yapılandırma yeteneği sunar.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Mobil istemci (Kullanımdan kaldırıldı)
+# Mobile client(Deprecated)
 
-> Not: Bu eklenti kullanımdan kaldırılmıştır.
+> Note: This plugin is deprecated.

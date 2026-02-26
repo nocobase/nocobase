@@ -1,17 +1,14 @@
 ---
-displayName: "Aangepaste variabelen"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Ondersteuning voor het toevoegen en gebruiken van aangepaste variabelen
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Aangepaste variabelen
+# Custom variables

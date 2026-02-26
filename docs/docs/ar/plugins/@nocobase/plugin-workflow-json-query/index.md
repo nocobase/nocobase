@@ -1,17 +1,12 @@
 ---
-displayName: "سير العمل: حساب JSON"
+displayName: "Workflow: JSON calculation"
 packageName: '@nocobase/plugin-workflow-json-query'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  يُستخدم لتحويل أو حساب قيم من بيانات JSON المعقدة (مثل نتائج طلبات HTTP أو استعلامات SQL).
+  Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: حساب JSON
+# Workflow: JSON calculation

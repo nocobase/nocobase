@@ -1,18 +1,15 @@
 ---
-displayName: "Przepływ pracy: Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Odbiera wywołania HTTP z systemów zewnętrznych i wyzwala zdarzenia. Jest to idealne rozwiązanie do przesyłania danych i powiadomień o zdarzeniach inicjowanych przez systemy zewnętrzne, takich jak potwierdzenia płatności (callbacki) czy powiadomienia o wiadomościach.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Webhook
+# Workflow: Webhook

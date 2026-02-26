@@ -1,18 +1,15 @@
 ---
-displayName: "Actie: Records importeren Pro"
+displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Verbetert de mogelijkheden voor gegevensimport met asynchrone imports voor het verwerken van grote hoeveelheden data. Ondersteunt functies zoals het herkennen van gegevensverwerking, het bijwerken van gegevens en het activeren van workflows.
+  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Actie: Records importeren Pro
+# Action: Import records Pro

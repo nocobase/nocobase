@@ -1,18 +1,15 @@
 ---
-displayName: "Adattatore coda di messaggi Redis"
+displayName: "Redis queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permette di gestire le code di messaggi dell'applicazione basandosi su Redis.
+  Used for hanlding message queue with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Adattatore coda di messaggi Redis
+# Redis queue adapter

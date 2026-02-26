@@ -1,17 +1,14 @@
 ---
-displayName: "Користувацькі змінні"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Підтримка додавання та використання користувацьких змінних
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Користувацькі змінні
+# Custom variables

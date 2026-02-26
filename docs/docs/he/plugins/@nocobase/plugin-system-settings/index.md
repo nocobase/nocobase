@@ -1,14 +1,12 @@
 ---
-displayName: "הגדרות מערכת"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  משמש להתאמת כותרת המערכת, הלוגו, השפה ועוד.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# הגדרות מערכת
+# System settings

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "2.0.0-beta.22",
+  "version": "2.1.0-beta.5",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth",
@@ -34,5 +34,6 @@
   "keywords": [
     "Authentication",
     "Security"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

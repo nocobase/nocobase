@@ -1,0 +1,30 @@
+{
+  "name": "@nocobase/plugin-workflow-variable",
+  "version": "2.1.0-beta.5",
+  "displayName": "Workflow: Custom variable",
+  "displayName.zh-CN": "工作流：自定义变量节点",
+  "description": "Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.",
+  "description.zh-CN": "用于在工作流中创建自定义变量或对其赋值，来保存流程中的临时数据。",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/workflow-variable",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-variable",
+  "keywords": [
+    "Workflow"
+  ],
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-workflow": ">=0.18.0-alpha.2",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
+  },
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "license": "Apache-2.0"
+}

@@ -1,17 +1,15 @@
 ---
-displayName: "Collectieveld: Momentopname"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  Wanneer u een nieuw record toevoegt, wordt er een momentopname gemaakt van de gerelateerde gegevens en deze wordt opgeslagen in het huidige record. De momentopname wordt niet bijgewerkt wanneer de gerelateerde gegevens worden gewijzigd.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Collectieveld: Momentopname
+# Collection field: Snapshot
 
-> Let op: Deze plugin is verouderd.
+> Note: This plugin is deprecated.

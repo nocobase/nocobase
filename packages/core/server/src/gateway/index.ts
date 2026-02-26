@@ -9,6 +9,7 @@
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { lockdownSes } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
@@ -105,6 +106,9 @@ export class Gateway extends EventEmitter {
     try {
       for (const app of apps) {
         try {
+          if (!app) {
+            continue;
+          }
           await app.destroy({ signal });
         } catch (error) {
           const logger = app?.log ?? console;
@@ -262,7 +266,23 @@ export class Gateway extends EventEmitter {
       return;
     }
 
+    const supervisor = AppSupervisor.getInstance();
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    } catch (error) {
+      this.getLogger('main', res).error('Failed to get handle app name', { error });
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
+
     if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
@@ -274,6 +294,12 @@ export class Gateway extends EventEmitter {
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       await compress(req, res);
       const packageName = getPackageNameByExposeUrl(pathname);
       // /static/plugins/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
@@ -292,6 +318,12 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      if (handleApp !== 'main') {
+        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
@@ -300,21 +332,19 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    let handleApp = 'main';
-    try {
-      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
-    } catch (error) {
-      console.log(error);
-      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
-      return;
+    if (handleApp !== 'main') {
+      const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+      if (isProxy) {
+        return;
+      }
     }
-    const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
+    const hasApp = supervisor.hasApp(handleApp);
 
     if (!hasApp) {
-      void AppSupervisor.getInstance().bootStrapApp(handleApp);
+      void supervisor.bootstrapApp(handleApp);
     }
 
-    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');
+    let appStatus = await supervisor.getAppStatus(handleApp, 'preparing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
@@ -332,12 +362,21 @@ export class Gateway extends EventEmitter {
     }
 
     if (appStatus === 'initialized') {
-      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
-      appInstance.runCommand('start', '--quickstart');
-      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
+      const appInstance = await supervisor.getApp(handleApp);
+      if (!appInstance) {
+        this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+        return;
+      }
+      supervisor.startApp(handleApp);
+      appStatus = await supervisor.getAppStatus(handleApp);
     }
 
-    const app = await AppSupervisor.getInstance().getApp(handleApp);
+    const app = await supervisor.getApp(handleApp);
+
+    if (!app) {
+      this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
 
     if (appStatus !== 'running') {
       this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });
@@ -351,7 +390,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (handleApp !== 'main') {
-      AppSupervisor.getInstance().touchApp(handleApp);
+      await supervisor.setAppLastSeenAt(handleApp);
     }
 
     const ctx: GatewayRequestContext = { req, res, appName: handleApp };
@@ -439,6 +478,16 @@ export class Gateway extends EventEmitter {
     // NOTE: to avoid listener number warning (default to 10)
     // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
     mainApp.setMaxListeners(50);
+
+    // Delay SES lockdown until the app has finished starting to avoid breaking late-loaded modules.
+    mainApp.once('afterStart', () => {
+      lockdownSes({
+        consoleTaming: 'unsafe',
+        errorTaming: 'unsafe',
+        overrideTaming: 'moderate',
+        stackFiltering: 'verbose',
+      });
+    });
 
     let runArgs: any = [process.argv, { throwError: true, from: 'node' }];
 
@@ -531,6 +580,10 @@ export class Gateway extends EventEmitter {
 
     this.wsServer = new WSServer();
     this.server.on('upgrade', async (request, socket, head) => {
+      const isProxy = await AppSupervisor.getInstance().proxyWs(request, socket, head);
+      if (isProxy) {
+        return;
+      }
       const appInstance = await AppSupervisor.getInstance().getApp('main');
       for (const handle of Gateway.wsServers) {
         const result = await handle(request, socket, head, appInstance);

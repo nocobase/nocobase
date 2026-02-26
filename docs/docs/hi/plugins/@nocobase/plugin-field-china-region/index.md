@@ -1,14 +1,12 @@
 ---
-displayName: "संग्रह फ़ील्ड: चीन के प्रशासनिक प्रभाग"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  यह चीन के प्रशासनिक प्रभागों के लिए डेटा और फ़ील्ड प्रकार प्रदान करता है।
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: चीन के प्रशासनिक प्रभाग
+# Collection field: administrative divisions of China

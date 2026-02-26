@@ -1,14 +1,12 @@
 ---
-displayName: "Datenquelle: Hauptdatenbank"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  Die NocoBase-Hauptdatenbank unterstützt relationale Datenbanken wie PostgreSQL, MySQL, MariaDB und andere.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Datenquelle: Hauptdatenbank
+# Data source: Main

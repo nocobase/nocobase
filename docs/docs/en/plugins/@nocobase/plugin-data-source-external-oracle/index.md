@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
 
 # Data source: External Oracle

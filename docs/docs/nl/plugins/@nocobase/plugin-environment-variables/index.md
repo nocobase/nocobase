@@ -1,14 +1,12 @@
 ---
-displayName: "Variabelen en geheimen"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  Gecentraliseerd beheer van omgevingsvariabelen en geheimen, gebruikt voor het opslaan van gevoelige gegevens, hergebruik van configuratiegegevens, isolatie van meerdere omgevingen en meer.
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Variabelen en geheimen
+# Variables and secrets

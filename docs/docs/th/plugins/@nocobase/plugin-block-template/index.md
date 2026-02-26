@@ -1,17 +1,15 @@
 ---
-displayName: "บล็อก: เทมเพลต (เลิกใช้งานแล้ว)"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  สร้างและจัดการเทมเพลตบล็อกเพื่อนำกลับมาใช้ซ้ำบนหน้าต่างๆ
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# บล็อก: เทมเพลต (เลิกใช้งานแล้ว)
+# Block: template (deprecated)
 
-> หมายเหตุ: ปลั๊กอินนี้เลิกใช้งานแล้ว
+> Note: This plugin is deprecated.

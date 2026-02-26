@@ -1,17 +1,14 @@
 ---
-displayName: "Datensatzverlauf"
+displayName: "Record history"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  Verfolgt und speichert den Änderungsverlauf von Sammlungsdatensätzen.
+  Tracks and stores the change history of collection records.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Datensatzverlauf
+# Record history

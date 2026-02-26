@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת ידני"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  ניתן להשתמש בו בתהליכי עבודה שבהם חלק מההחלטות מתקבלות באופן ידני על ידי משתמשים.
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
+  Could be used for workflows which some of decisions are made by users.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת ידני
+# Workflow: Manual node

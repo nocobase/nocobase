@@ -1,17 +1,14 @@
 ---
-displayName: "Bản nháp biểu mẫu"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Hỗ trợ lưu bản nháp khi điền biểu mẫu, cho phép tiếp tục chỉnh sửa và gửi đi sau.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Bản nháp biểu mẫu
+# Form drafts

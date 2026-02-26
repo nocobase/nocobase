@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: העתק"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  מספק תכונת העתק (CC) בתהליכי עבודה לשליחת אישורים, או כל סוג מידע אחר, למשתמשים ספציפיים.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: העתק
+# Workflow: CC

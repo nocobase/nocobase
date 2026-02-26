@@ -9,19 +9,29 @@
 
 import { App, ConfigProvider } from 'antd';
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../FieldAssignRulesEditor';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 
+const { mockFieldAssignValueInput } = vi.hoisted(() => ({
+  mockFieldAssignValueInput: vi.fn((props: any) => (
+    <div
+      data-testid="mock-value-input"
+      data-extra={Array.isArray(props?.extraMetaTree) ? 'yes' : 'no'}
+      data-assoc-label={String(props?.associationFieldNamesOverride?.label || '')}
+      data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
+      data-date-constant={props?.enableDateVariableAsConstant ? 'yes' : 'no'}
+    />
+  )),
+}));
+
 vi.mock('../FieldAssignValueInput', async () => {
   const actual = await vi.importActual<typeof import('../FieldAssignValueInput')>('../FieldAssignValueInput');
   return {
     ...actual,
-    FieldAssignValueInput: (props: any) => (
-      <div data-testid="mock-value-input" data-extra={Array.isArray(props?.extraMetaTree) ? 'yes' : 'no'} />
-    ),
+    FieldAssignValueInput: mockFieldAssignValueInput,
   };
 });
 
@@ -42,6 +52,438 @@ describe('FieldAssignRulesEditor', () => {
       <App>{ui}</App>
     </ConfigProvider>
   );
+
+  beforeEach(() => {
+    mockFieldAssignValueInput.mockClear();
+  });
+
+  const createAssociationFixture = () => {
+    const profileCollection = {
+      titleField: 'name',
+      filterTargetKey: 'id',
+      getFields: () => [
+        {
+          name: 'name',
+          title: 'Name',
+          interface: 'input',
+        },
+        {
+          name: 'nickname',
+          title: 'Nickname',
+          interface: 'input',
+        },
+      ],
+    };
+
+    const profileField: any = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      targetKey: 'id',
+      isAssociationField: () => true,
+      targetCollection: profileCollection,
+    };
+
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile',
+        enable: true,
+        targetPath: 'profile',
+        mode: 'assign',
+      },
+    ];
+
+    return {
+      profileCollection,
+      rootCollection,
+      value,
+    };
+  };
+
+  const openAdvancedPanel = async () => {
+    await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
+    await screen.findByText('Title field');
+  };
+
+  const getAdvancedPopover = (): HTMLElement => {
+    const popover = screen.getByText('Title field').closest('.ant-popover') as HTMLElement | null;
+    expect(popover).not.toBeNull();
+    return popover as HTMLElement;
+  };
+
+  const selectTitleFieldOption = async (label: string) => {
+    const selector = getAdvancedPopover().querySelector('.ant-select-selector') as HTMLElement | null;
+    expect(selector).not.toBeNull();
+    await userEvent.click(selector as HTMLElement);
+    await userEvent.click(await screen.findByText(label));
+  };
+
+  const getSyncTitleFieldButtons = (): HTMLButtonElement[] =>
+    Array.from(document.body.querySelectorAll('button[aria-label="Sync title field"]')) as HTMLButtonElement[];
+
+  it('shows title field quick controls for association target and supports preview override', async () => {
+    const { rootCollection, value } = createAssociationFixture();
+
+    const onSyncAssociationTitleField = vi.fn().mockResolvedValue(undefined);
+
+    const { container } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+          onSyncAssociationTitleField={onSyncAssociationTitleField}
+        />,
+      ),
+    );
+
+    expect(container.textContent).toContain('Advanced');
+    expect(screen.queryByText('Title field')).toBeNull();
+
+    const initialCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(initialCall?.associationFieldNamesOverride).toEqual({ label: 'name', value: 'id' });
+
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
+
+    const afterSelectCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(afterSelectCall?.associationFieldNamesOverride).toEqual({ label: 'nickname', value: 'id' });
+
+    const syncButtons = getSyncTitleFieldButtons();
+    expect(syncButtons.length).toBeGreaterThan(0);
+    await userEvent.click(syncButtons[0] as HTMLElement);
+    await userEvent.click(await screen.findByRole('button', { name: 'OK' }));
+
+    await waitFor(() => {
+      expect(onSyncAssociationTitleField).toHaveBeenCalledWith(
+        expect.objectContaining({
+          titleField: 'nickname',
+          targetPath: 'profile',
+        }),
+      );
+    });
+  });
+
+  it('saves selected title field into current assign rule without syncing', async () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const onChange = vi.fn();
+
+    const ControlledEditor = () => {
+      const [rules, setRules] = React.useState<FieldAssignRuleItem[]>(value);
+      return (
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={rules}
+          onChange={(next) => {
+            setRules(next);
+            onChange(next);
+          }}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+        />
+      );
+    };
+
+    render(wrap(<ControlledEditor />));
+
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
+
+    await waitFor(() => {
+      const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+      expect(lastCall?.[0]?.valueTitleField).toBe('nickname');
+    });
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'nickname', value: 'id' });
+  });
+
+  it('restores preview from persisted valueTitleField on rerender', () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const persistedValue: FieldAssignRuleItem[] = [
+      {
+        ...value[0],
+        valueTitleField: 'nickname',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={persistedValue}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+        />,
+      ),
+    );
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'nickname', value: 'id' });
+  });
+
+  it('falls back to current title field when persisted valueTitleField is stale', async () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const onSyncAssociationTitleField = vi.fn().mockResolvedValue(undefined);
+
+    const staleValue: FieldAssignRuleItem[] = [
+      {
+        ...value[0],
+        valueTitleField: 'deletedField',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={staleValue}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+          onSyncAssociationTitleField={onSyncAssociationTitleField}
+        />,
+      ),
+    );
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'name', value: 'id' });
+
+    await openAdvancedPanel();
+    const syncButtons = getSyncTitleFieldButtons();
+    expect(syncButtons.length).toBeGreaterThan(0);
+    expect((syncButtons[0] as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(syncButtons[0] as HTMLElement);
+
+    expect(onSyncAssociationTitleField).not.toHaveBeenCalled();
+  });
+
+  it('clears rule-level valueTitleField when sync succeeds', async () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const onChange = vi.fn();
+    const onSyncAssociationTitleField = vi.fn().mockImplementation(async ({ targetCollection, titleField }) => {
+      targetCollection.titleField = titleField;
+    });
+
+    const ControlledEditor = () => {
+      const [rules, setRules] = React.useState<FieldAssignRuleItem[]>(value);
+      return (
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={rules}
+          onChange={(next) => {
+            setRules(next);
+            onChange(next);
+          }}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+          onSyncAssociationTitleField={onSyncAssociationTitleField}
+        />
+      );
+    };
+
+    render(wrap(<ControlledEditor />));
+
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
+
+    const syncButtons = getSyncTitleFieldButtons();
+    await userEvent.click(syncButtons[0] as HTMLElement);
+    await userEvent.click(await screen.findByRole('button', { name: 'OK' }));
+
+    await waitFor(() => {
+      expect(onSyncAssociationTitleField).toHaveBeenCalledWith(
+        expect.objectContaining({
+          titleField: 'nickname',
+          targetPath: 'profile',
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+      expect(lastCall?.[0]?.valueTitleField).toBeUndefined();
+    });
+  });
+
+  it('keeps rule-level title field override when sync fails', async () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const onChange = vi.fn();
+
+    const onSyncAssociationTitleField = vi.fn().mockRejectedValue(new Error('sync failed'));
+
+    const ControlledEditor = () => {
+      const [rules, setRules] = React.useState<FieldAssignRuleItem[]>(value);
+      return (
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={rules}
+          onChange={(next) => {
+            setRules(next);
+            onChange(next);
+          }}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+          onSyncAssociationTitleField={onSyncAssociationTitleField}
+        />
+      );
+    };
+
+    render(wrap(<ControlledEditor />));
+
+    await openAdvancedPanel();
+    await selectTitleFieldOption('Nickname');
+
+    let lastCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(lastCall?.associationFieldNamesOverride?.label).toBe('nickname');
+
+    const syncButtons = getSyncTitleFieldButtons();
+    await userEvent.click(syncButtons[0] as HTMLElement);
+    await userEvent.click(await screen.findByRole('button', { name: 'OK' }));
+
+    await waitFor(() => {
+      expect(onSyncAssociationTitleField).toHaveBeenCalled();
+    });
+
+    const latestRule = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    expect(latestRule?.[0]?.valueTitleField).toBe('nickname');
+
+    lastCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(lastCall?.associationFieldNamesOverride?.label).toBe('nickname');
+  });
+
+  it('uses collection options titleField as default value', () => {
+    const profileCollection = {
+      options: {
+        titleField: 'nickname',
+      },
+      filterTargetKey: 'id',
+      getFields: () => [
+        {
+          name: 'name',
+          title: 'Name',
+          interface: 'input',
+        },
+        {
+          name: 'nickname',
+          title: 'Nickname',
+          interface: 'input',
+        },
+      ],
+    };
+
+    const profileField: any = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      targetKey: 'id',
+      isAssociationField: () => true,
+      targetCollection: profileCollection,
+    };
+
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile',
+        enable: true,
+        targetPath: 'profile',
+        mode: 'assign',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+        />,
+      ),
+    );
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.associationFieldNamesOverride).toEqual({ label: 'nickname', value: 'id' });
+  });
+
+  it('shows no Advanced button for variable expression value', () => {
+    const { rootCollection, value } = createAssociationFixture();
+    const variableValue: FieldAssignRuleItem[] = [
+      {
+        ...value[0],
+        value: '{{ ctx.user.name }}',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={variableValue}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+        />,
+      ),
+    );
+
+    expect(screen.queryByRole('button', { name: /Advanced/i })).toBeNull();
+  });
+
+  it('does not show title field quick controls for non-association field', () => {
+    const titleField: any = {
+      name: 'title',
+      title: 'Title',
+      interface: 'input',
+      isAssociationField: () => false,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'title' ? titleField : null),
+      getFields: () => [titleField],
+    };
+
+    const value: FieldAssignRuleItem[] = [{ key: 'rule-title', enable: true, targetPath: 'title', mode: 'assign' }];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    expect(screen.queryByRole('button', { name: /Advanced/i })).toBeNull();
+  });
 
   it('defaults to expand the last enabled item', () => {
     const value: FieldAssignRuleItem[] = [
@@ -287,5 +729,30 @@ describe('FieldAssignRulesEditor', () => {
 
     const merged = mergeItemMetaTreeForAssignValue(base, extra);
     expect(merged).toEqual(base);
+  });
+
+  it('passes enableDateVariableAsConstant to value input', () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'createdAt',
+        mode: 'assign',
+      },
+    ];
+
+    const { getByTestId } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          showCondition={false}
+          enableDateVariableAsConstant
+        />,
+      ),
+    );
+
+    expect(getByTestId('mock-value-input').getAttribute('data-date-constant')).toBe('yes');
   });
 });

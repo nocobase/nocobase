@@ -1,17 +1,15 @@
 ---
-displayName: "Мобільний клієнт (Застарілий)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Надає можливість налаштовувати мобільні сторінки.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Мобільний клієнт (Застарілий)
+# Mobile client(Deprecated)
 
-> Примітка: Цей плагін застарів.
+> Note: This plugin is deprecated.

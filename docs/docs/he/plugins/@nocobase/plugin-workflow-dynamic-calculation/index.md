@@ -1,14 +1,15 @@
 ---
-displayName: "תהליך עבודה: צומת חישוב דינמי"
+displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  תוסף שימושי לביצוע חישוב ביטויים דינמי, המבוסס על רשומות נתונים, בתוך תהליך העבודה.
+  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת חישוב דינמי
+# Workflow: Dynamic calculation node
+
+> Note: This plugin is deprecated.

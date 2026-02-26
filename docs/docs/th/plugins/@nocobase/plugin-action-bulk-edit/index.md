@@ -1,16 +1,15 @@
 ---
-displayName: "แอคชัน: แก้ไขข้อมูลเป็นชุด"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  แก้ไขข้อมูลทั้งหมดหรือข้อมูลที่เลือกไว้เป็นชุด
+  Batch edit all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# แอคชัน: แก้ไขข้อมูลเป็นชุด
+# Action: Batch edit

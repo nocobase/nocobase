@@ -1,18 +1,15 @@
 ---
-displayName: "Akcja: Importowanie rekordów Pro"
+displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Rozszerza funkcjonalność importu danych o asynchroniczne operacje, umożliwiając obsługę dużych wolumenów. Obsługuje rozpoznawanie przetwarzania danych, aktualizację danych oraz wyzwalanie przepływów pracy.
+  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Akcja: Importowanie rekordów Pro
+# Action: Import records Pro

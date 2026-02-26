@@ -1,15 +1,12 @@
 ---
-displayName: "Alur Kerja: Node Agregat"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Digunakan untuk melakukan kueri agregat pada basis data dalam alur kerja, seperti: menghitung jumlah, menjumlahkan, mencari rata-rata, dan lain-lain.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Alur Kerja: Node Agregat
+# Workflow: Aggregate node

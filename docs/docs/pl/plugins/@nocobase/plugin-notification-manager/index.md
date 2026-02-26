@@ -1,14 +1,12 @@
 ---
-displayName: "Zarządzanie powiadomieniami"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Zapewnia ujednoliconą usługę zarządzania, obejmującą konfigurację kanałów, rejestrowanie zdarzeń i inne funkcje. Obsługuje konfigurację różnych kanałów powiadomień, w tym wiadomości w aplikacji i e-mail.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Zarządzanie powiadomieniami
+# Notification manager

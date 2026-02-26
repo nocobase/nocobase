@@ -1,20 +1,15 @@
 ---
-displayName: 'İş Akışı: İşlem Öncesi Olay'
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Bir işlem düğmesi veya API aracılığıyla başlatılan bir isteğin yürütülmesinden önce, örneğin veri ekleme, güncelleme veya silme işlemlerinden önce tetiklenir. İşlem öncesinde veri doğrulama ve mantık kontrolü yapmak için uygundur; istek, 'Süreci Bitir" düğümü kullanılarak reddedilebilir.
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-
-
-# İş Akışı: İşlem Öncesi Olay
+# Workflow: Pre-action event

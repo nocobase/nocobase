@@ -1,18 +1,15 @@
 ---
-displayName: "تشفير طلبات HTTP"
+displayName: "HTTP request encryption"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يُستخدم لتشفير مُعاملات الطلب (Query Parameters) قبل إرسال طلب HTTP.
+  Encrypts request parameters (Query Parameters) before sending an HTTP request.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# تشفير طلبات HTTP
+# HTTP request encryption

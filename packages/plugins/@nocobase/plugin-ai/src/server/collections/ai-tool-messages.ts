@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { defineCollection, CollectionOptions } from '@nocobase/database';
 
 export default defineCollection({
@@ -60,6 +69,21 @@ export default defineCollection({
     {
       name: 'execution',
       type: 'string',
+      allowNull: true,
+    },
+    {
+      name: 'interruptActionOrder',
+      type: 'integer',
+      allowNull: true,
+    },
+    {
+      name: 'interruptAction',
+      type: 'jsonb',
+      allowNull: true,
+    },
+    {
+      name: 'userDecision',
+      type: 'jsonb',
       allowNull: true,
     },
   ],

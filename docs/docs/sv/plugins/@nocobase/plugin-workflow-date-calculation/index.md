@@ -1,19 +1,15 @@
 ---
-displayName: "Arbetsflöde: nod för datumberäkning"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Används för att utföra datumberäkningar i arbetsflöden, till exempel att lägga till eller dra ifrån datum, jämföra dem eller formatera dem.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Nod för datumberäkning
+# Workflow: date calculation node

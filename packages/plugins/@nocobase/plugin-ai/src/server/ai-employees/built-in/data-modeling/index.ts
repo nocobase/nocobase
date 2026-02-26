@@ -16,35 +16,23 @@ export default {
   skillSettings: {
     skills: [
       {
-        name: 'dataModeling-intentRouter',
+        name: 'intentRouter',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getDataSources',
+        name: 'getDataSources',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionNames',
+        name: 'getCollectionNames',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionMetadata',
+        name: 'getCollectionMetadata',
         autoCall: true,
       },
       {
-        name: 'dataModeling-defineCollections',
-        autoCall: false,
-      },
-      {
-        name: 'dataSource-dataSourceCounting',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceQuery',
-        autoCall: true,
-      },
-      {
-        name: 'dataModeling-suggestions',
+        name: 'defineCollections',
         autoCall: false,
       },
     ],

@@ -1,18 +1,15 @@
 ---
-displayName: "E-posta Yönetimi"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  NocoBase'i Gmail ve Outlook gibi kurumsal e-posta hesaplarına bağlayarak, diğer CRM ürünlerinde olduğu gibi e-posta alıp göndermenizi sağlar.
+  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 3
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# E-posta Yönetimi
+# Email manager

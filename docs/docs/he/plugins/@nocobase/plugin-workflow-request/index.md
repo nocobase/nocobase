@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת בקשת HTTP"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  ניתן להשתמש בו לשליחת בקשות HTTP לכל שירות HTTP, לצורך אינטראקציה עם נתונים בתוך תהליך עבודה.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: לא נכון
+  Send HTTP requests to any HTTP service for data interaction in workflow.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת בקשת HTTP
+# Workflow: HTTP request node

@@ -1,16 +1,12 @@
 ---
-displayName: "Block: Rutnätskort"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Visar data i en rutnätslista med stöd för paginering.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-
-# Block: Rutnätskort
+# Block: GridCard

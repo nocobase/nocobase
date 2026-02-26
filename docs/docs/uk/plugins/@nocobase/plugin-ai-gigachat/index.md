@@ -1,16 +1,14 @@
 ---
-displayName: "ШІ LLM: GigaChat"
+displayName: "AI LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:
   - 2.x
 description: |
-  Підтримує інтеграцію з сервісом LLM GigaChat.
+  Support integration with GigaChat LLM service.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# ШІ LLM: GigaChat
+# AI LLM: GigaChat

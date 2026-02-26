@@ -1,13 +1,12 @@
 ---
-displayName: "Çeviri Test Aracı"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Çeviri Test Aracı
+# Locale tester

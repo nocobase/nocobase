@@ -1,18 +1,15 @@
 ---
-displayName: 'Workflow: Pre-actiegebeurtenis'
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Wordt geactiveerd vóór de uitvoering van een verzoek dat is geïnitieerd via een actieknop of API, zoals vóór het toevoegen, bijwerken of verwijderen van gegevens. Dit is handig voor gegevensvalidatie en logische controles vóór een actie, en het verzoek kan worden geweigerd met behulp van het 'Proces beëindigen"-knooppunt.
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: Pre-actiegebeurtenis
+# Workflow: Pre-action event

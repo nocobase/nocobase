@@ -5,14 +5,11 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  WeCom entegrasyonu için kimlik doğrulama, bildirim kanalı ve kullanıcı verilerini senkronize etmek için bir veri kaynağı dahil olmak üzere yetenekler sunar.
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
 # WeCom

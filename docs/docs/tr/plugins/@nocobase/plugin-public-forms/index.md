@@ -1,14 +1,12 @@
 ---
-displayName: "Herkese Açık Formlar"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Anonim kullanıcılardan bilgi toplamak amacıyla herkese açık formları dışarıdan paylaşın.
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Herkese Açık Formlar
+# Public forms

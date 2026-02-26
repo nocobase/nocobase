@@ -8,9 +8,11 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext, FlowRuntimeContext } from '../flowContext';
+import { FlowContext, FlowRuntimeContext, FlowRunJSContext, type PropertyMetaFactory } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
+import { RunJSContextRegistry } from '../runjs-context/registry';
+import { setupRunJSContexts } from '../runjs-context/setup';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -752,6 +754,590 @@ describe('FlowContext properties and methods', () => {
   });
 });
 
+describe('FlowContext.getApiInfos', () => {
+  it('should support defineMethod info (string as description)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('foo', () => 1, 'do something');
+    expect(ctx.foo()).toBe(1);
+
+    const infos = await ctx.getApiInfos();
+    expect(infos.foo?.description).toBe('do something');
+    expect(infos.foo?.type).toBe('function');
+  });
+
+  it('should support defineMethod info object (completion/ref)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('bar', () => 2, {
+      description: 'Bar',
+      completion: { insertText: 'ctx.bar()' },
+      ref: { url: 'https://example.com', title: 'Docs' },
+    });
+
+    const infos = await ctx.getApiInfos();
+    expect((infos.bar as any)?.completion).toBeUndefined();
+    expect((infos.bar?.ref as any)?.url).toBe('https://example.com');
+  });
+
+  it('should return property infos with completion/ref/examples', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('token', {
+      value: 't',
+      meta: {
+        type: 'string',
+        title: 'Token',
+      },
+      info: {
+        description: 'Token string',
+        completion: { insertText: 'ctx.token' },
+        ref: 'docs/token',
+        examples: ['const t = ctx.token'],
+      },
+    });
+
+    const infos = await ctx.getApiInfos();
+    expect((infos.token as any)?.completion).toBeUndefined();
+    expect(infos.token?.title).toBeUndefined();
+    expect(infos.token?.type).toBeUndefined();
+    expect(infos.token?.ref).toBe('docs/token');
+    expect(infos.token?.examples).toContain('const t = ctx.token');
+  });
+
+  it('should not return meta-only properties and should not trigger meta factory', async () => {
+    const ctx = new FlowContext();
+    const metaFactory = vi.fn(() => ({ type: 'string', title: 'MetaOnly' })) as any;
+    ctx.defineProperty('metaOnly', { meta: metaFactory });
+
+    const infos = await ctx.getApiInfos();
+    expect(infos.metaOnly).toBeUndefined();
+    expect(metaFactory).not.toHaveBeenCalled();
+  });
+
+  it('should not return keys starting with underscore', async () => {
+    class TestRunJSContext extends FlowRunJSContext {}
+    TestRunJSContext.define({
+      properties: {
+        _internal: 'internal',
+        pub: {
+          type: 'object',
+          description: 'pub',
+          properties: {
+            _secret: 'secret',
+            visible: 'visible',
+          },
+        },
+      },
+      methods: {
+        _m: 'hidden method',
+        m: 'visible method',
+      },
+    });
+    RunJSContextRegistry.register('test-private', '*', TestRunJSContext as any);
+
+    const ctx = new FlowContext();
+    ctx.defineProperty('_runtimeSecret', {
+      info: { description: '_runtimeSecret' },
+    });
+    ctx.defineMethod('_runtimeMethod', () => 1, 'runtime hidden');
+
+    const infos = await ctx.getApiInfos({ version: 'test-private' as any });
+    expect(infos._internal).toBeUndefined();
+    expect(infos._runtimeSecret).toBeUndefined();
+    expect(infos._m).toBeUndefined();
+    expect(infos._runtimeMethod).toBeUndefined();
+
+    expect(infos.pub).toBeTruthy();
+    expect(infos.pub?.properties).toBeUndefined();
+    expect(infos.m).toBeTruthy();
+  });
+
+  it('should only return top-level keys and no completion', async () => {
+    class TestRunJSContext extends FlowRunJSContext {}
+    TestRunJSContext.define({
+      properties: {
+        api: {
+          type: 'object',
+          description: 'api',
+          properties: {
+            request: { type: 'function', description: 'request' },
+          },
+        },
+      },
+    });
+    RunJSContextRegistry.register('test-layer', '*', TestRunJSContext as any);
+
+    const ctx = new FlowContext();
+    const infos = await ctx.getApiInfos({ version: 'test-layer' as any });
+    expect(infos.api).toBeTruthy();
+    expect(infos.api?.properties).toBeUndefined();
+    expect((infos.api as any)?.completion).toBeUndefined();
+    expect((infos as any).request).toBeUndefined();
+  });
+
+  it('should exclude variable-like roots and expose libs docs under libs.*', async () => {
+    class TestRunJSContext extends FlowRunJSContext {}
+    TestRunJSContext.define({
+      properties: {
+        record: 'Current record (var-like).',
+        formValues: 'Form values (var-like).',
+        popup: {
+          description: 'Popup context (var-like).',
+          detail: 'Promise<any>',
+        },
+        React: 'React namespace. Recommended access path: `ctx.libs.React`.',
+        ReactDOM: 'ReactDOM API. Recommended access path: `ctx.libs.ReactDOM`.',
+        antd: 'Ant Design. Recommended access path: `ctx.libs.antd`.',
+        libs: {
+          description: 'Libraries namespace.',
+          properties: {
+            antdIcons: 'Ant Design icons library. Example: `ctx.libs.antdIcons.PlusOutlined`.',
+          },
+        },
+      },
+    });
+    RunJSContextRegistry.register('test-api-libs' as any, '*', TestRunJSContext as any);
+
+    const ctx = new FlowContext();
+    const infos = await ctx.getApiInfos({ version: 'test-api-libs' as any });
+
+    // Variable-like roots documented in RunJS doc should be served by getVarInfos/getEnvInfos.
+    expect(infos.record).toBeUndefined();
+    expect(infos.formValues).toBeUndefined();
+    expect(infos.popup).toBeUndefined();
+
+    // Avoid exposing global lib aliases; document them under ctx.libs.* instead.
+    expect((infos as any).React).toBeUndefined();
+    expect((infos as any).ReactDOM).toBeUndefined();
+    expect((infos as any).antd).toBeUndefined();
+
+    expect(infos['libs.React']?.description).toContain('ctx.libs.React');
+    expect(infos['libs.ReactDOM']?.description).toContain('ctx.libs.ReactDOM');
+    expect(infos['libs.antd']?.description).toContain('ctx.libs.antd');
+    expect(infos['libs.antdIcons']?.description).toContain('antdIcons');
+  });
+
+  it('should include getApiInfos/getVarInfos/getEnvInfos in api infos output', async () => {
+    await setupRunJSContexts();
+    const ctx = new FlowContext();
+    const infos = await ctx.getApiInfos();
+
+    expect(infos.getApiInfos?.type).toBe('function');
+    expect(String(infos.getApiInfos?.description || '')).toMatch(/\S/);
+
+    expect(infos.getVarInfos?.type).toBe('function');
+    expect(String(infos.getVarInfos?.description || '')).toMatch(/\S/);
+
+    expect(infos.getEnvInfos?.type).toBe('function');
+    expect(String(infos.getEnvInfos?.description || '')).toMatch(/\S/);
+  });
+});
+
+describe('FlowContext.getVarInfos', () => {
+  it('should respect maxDepth when expanding properties', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('deep', {
+      meta: {
+        type: 'object',
+        title: 'deep',
+        properties: {
+          level1: {
+            type: 'object',
+            title: 'l1',
+            properties: {
+              level2: {
+                type: 'object',
+                title: 'l2',
+                properties: {
+                  level3: { type: 'string', title: 'l3' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const vars = await ctx.getVarInfos({ path: 'deep', maxDepth: 2 });
+    expect(vars.deep?.properties?.level1).toBeTruthy();
+    expect(vars.deep?.properties?.level1?.properties?.level2).toBeUndefined();
+  });
+
+  it('should support deep path pruning (root key is the path string)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('deep', {
+      meta: {
+        type: 'object',
+        title: 'deep',
+        properties: {
+          level1: {
+            type: 'object',
+            title: 'l1',
+            properties: {
+              level2: { type: 'string', title: 'l2' },
+            },
+          },
+        },
+      },
+    });
+
+    const vars = await ctx.getVarInfos({ path: 'deep.level1', maxDepth: 2 });
+    expect(vars['deep.level1']?.title).toBe('l1');
+    expect(vars['deep.level1']?.properties?.level2).toBeTruthy();
+  });
+
+  it('should expand PropertyMetaFactory nodes in path pruning', async () => {
+    const ctx = new FlowContext();
+
+    const recordFactory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: 'Record',
+      properties: {
+        id: { type: 'string', title: 'id' },
+      },
+    });
+    recordFactory.title = 'Record';
+    recordFactory.hasChildren = true;
+
+    ctx.defineProperty('popup', {
+      meta: () => ({
+        type: 'object',
+        title: 'popup',
+        properties: async () => ({
+          record: recordFactory as any,
+        }),
+      }),
+    });
+
+    const vars = await ctx.getVarInfos({ path: 'popup.record', maxDepth: 3 });
+    expect(vars['popup.record']?.title).toBe('Record');
+    expect(vars['popup.record']?.properties?.id).toBeTruthy();
+  });
+
+  it('should support deep path pruning through PropertyMetaFactory nodes', async () => {
+    const ctx = new FlowContext();
+
+    const recordFactory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: 'Record',
+      properties: {
+        id: { type: 'string', title: 'id' },
+      },
+    });
+    recordFactory.title = 'Record';
+    recordFactory.hasChildren = true;
+
+    ctx.defineProperty('popup', {
+      meta: () => ({
+        type: 'object',
+        title: 'popup',
+        properties: async () => ({
+          record: recordFactory as any,
+        }),
+      }),
+    });
+
+    const vars = await ctx.getVarInfos({ path: 'popup.record.id', maxDepth: 2 });
+    expect(vars['popup.record.id']?.title).toBe('id');
+    expect(vars['popup.record.id']?.type).toBe('string');
+  });
+
+  it('should expand PropertyMetaFactory children in full output', async () => {
+    const ctx = new FlowContext();
+
+    const recordFactory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: 'Record',
+      properties: {
+        id: { type: 'string', title: 'id' },
+      },
+    });
+    recordFactory.title = 'Record';
+    recordFactory.hasChildren = true;
+
+    ctx.defineProperty('popup', {
+      meta: () => ({
+        type: 'object',
+        title: 'popup',
+        properties: async () => ({
+          record: recordFactory as any,
+        }),
+      }),
+    });
+
+    const vars = await ctx.getVarInfos({ maxDepth: 3 });
+    expect(vars.popup?.properties?.record?.properties?.id).toBeTruthy();
+  });
+
+  it('should compute/skip hidden nodes and compute disabled/disabledReason', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('secret', {
+      meta: { type: 'string', title: 'secret', hidden: () => true },
+    });
+    ctx.defineProperty('disabledProp', {
+      meta: {
+        type: 'string',
+        title: 'disabledProp',
+        disabled: async () => true,
+        disabledReason: async () => 'not available',
+      },
+    });
+
+    const vars = await ctx.getVarInfos();
+    expect(vars.secret).toBeUndefined();
+    expect(vars.disabledProp?.disabled).toBe(true);
+    expect(vars.disabledProp?.disabledReason).toBe('not available');
+  });
+
+  it('should not return empty property infos (no meta)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('plainProp', { value: 1 });
+    ctx.defineMethod('plainMethod', () => 1);
+
+    const vars = await ctx.getVarInfos();
+    expect(vars.plainProp).toBeUndefined();
+    expect(vars.plainMethod).toBeUndefined();
+  });
+
+  it('should not return keys starting with underscore (including nested)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('_runtimeSecret', {
+      meta: { type: 'string', title: '_runtimeSecret' },
+    });
+    ctx.defineProperty('runtime', {
+      meta: {
+        type: 'object',
+        title: 'runtime',
+        properties: {
+          _child: { type: 'string', title: '_child' },
+          child: { type: 'string', title: 'child' },
+        },
+      },
+    });
+
+    const vars = await ctx.getVarInfos({ maxDepth: 3 });
+    expect(vars._runtimeSecret).toBeUndefined();
+    expect(vars.runtime?.properties?._child).toBeUndefined();
+    expect(vars.runtime?.properties?.child).toBeTruthy();
+  });
+});
+
+describe('FlowContext.getEnvInfos', () => {
+  it('should return envs nodes (popup/block/resource/record)', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('blockModel', { value: { uid: 'b1' } });
+    ctx.defineProperty('popup', {
+      value: Promise.resolve({
+        uid: 'p1',
+        resource: {
+          collectionName: 'posts',
+          dataSourceKey: 'main',
+          associationName: 'comments',
+          filterByTk: 1,
+          sourceId: 2,
+        },
+      }),
+    });
+
+    const envs = await ctx.getEnvInfos();
+
+    expect(envs.resource?.getVar).toBe('ctx.popup.resource');
+    expect(envs.resource?.properties?.collectionName?.value).toBe('posts');
+    expect(envs.resource?.properties?.filterByTk?.value).toBeUndefined();
+    expect(envs.record?.getVar).toBe('ctx.record');
+    expect(envs.record?.value).toBeUndefined();
+    expect(envs.block?.properties?.uid?.getVar).toBe('ctx.blockModel.uid');
+    expect(envs.popup?.properties?.uid?.value).toBe('p1');
+  });
+
+  it('should include block/flowModel/resource envs when blockModel exists', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', {
+      value: {
+        uid: 'm1',
+        constructor: { name: 'MyFlowModel', meta: { label: 'MyModel' } },
+      },
+    });
+    ctx.defineProperty('blockModel', {
+      value: {
+        uid: 'b1',
+        constructor: { name: 'TableBlockModel', meta: { label: 'MyBlock' } },
+        resource: {
+          collectionName: 'posts',
+          dataSourceKey: 'main',
+          associationName: 'comments',
+          filterByTk: 1,
+          sourceId: 2,
+        },
+      },
+    });
+
+    const envs = await ctx.getEnvInfos();
+
+    expect(envs.block?.getVar).toBe('ctx.blockModel');
+    expect(envs.block?.properties?.modelClass?.value).toBe('TableBlockModel');
+    expect(envs.flowModel?.getVar).toBe('ctx.model');
+    expect(envs.flowModel?.properties?.label?.value).toBe('MyModel');
+    expect(envs.flowModel?.properties?.modelClass?.value).toBe('MyFlowModel');
+    expect(envs.resource?.getVar).toBe('ctx.blockModel.resource');
+    expect(envs.resource?.properties?.collectionName?.value).toBe('posts');
+    expect(envs.resource?.properties?.filterByTk?.value).toBeUndefined();
+    expect(envs.record?.getVar).toBe('ctx.record');
+  });
+
+  it('should omit popup env section when popup is not available', async () => {
+    const ctx = new FlowContext();
+    const envs = await ctx.getEnvInfos();
+    expect(envs.popup).toBeUndefined();
+  });
+
+  it('should omit optional resource fields and record env when missing', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('popup', {
+      value: Promise.resolve({
+        uid: 'p1',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'posts',
+          // filterByTk/sourceId intentionally omitted
+        },
+      }),
+    });
+
+    const envs = await ctx.getEnvInfos();
+
+    expect(envs.record).toBeUndefined();
+    expect(envs.resource?.properties?.filterByTk).toBeUndefined();
+    expect(envs.resource?.properties?.sourceId).toBeUndefined();
+    expect(envs.popup?.properties?.resource?.properties?.filterByTk).toBeUndefined();
+    expect(envs.popup?.properties?.resource?.properties?.sourceId).toBeUndefined();
+  });
+
+  it('should return currentViewBlocks for page view (BlockModel only)', async () => {
+    const engine = new FlowEngine();
+
+    class ViewModel extends FlowModel {}
+    class BlockModelLike extends FlowModel {
+      onInit(options: any): void {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+    }
+    class NonBlockModel extends FlowModel {}
+
+    BlockModelLike.define({ label: 'MyBlock' } as any);
+    NonBlockModel.define({ label: 'NotBlock' } as any);
+
+    engine.registerModels({ ViewModel, BlockModelLike, NonBlockModel });
+
+    engine.createModel({
+      uid: 'view1',
+      use: 'ViewModel',
+      subModels: {
+        blocks: [
+          { uid: 'b1', use: 'BlockModelLike' },
+          { uid: 'b2', use: 'BlockModelLike' },
+        ],
+        other: { uid: 'x1', use: 'NonBlockModel' },
+      },
+    });
+
+    (engine.getModel('b1') as any).resource = { dataSourceKey: 'main', collectionName: 'posts' };
+    (engine.getModel('b2') as any).resource = {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      associationName: 'roles',
+    };
+
+    engine.context.defineProperty('view', { value: { inputArgs: { viewUid: 'view1' } } });
+
+    const envs = await engine.context.getEnvInfos();
+
+    const blocks = (envs.currentViewBlocks?.value || []) as any[];
+    const uids = blocks.map((b) => b.uid);
+
+    expect(envs.currentViewBlocks?.getVar).toBeUndefined();
+    expect(uids).toEqual(expect.arrayContaining(['b1', 'b2']));
+    expect(uids).not.toContain('x1');
+
+    const b1 = blocks.find((b) => b.uid === 'b1');
+    expect(b1?.label).toBeTruthy();
+    expect(b1).not.toHaveProperty('use');
+    expect(b1?.modelClass).toBe('BlockModelLike');
+    expect(b1?.resource?.collectionName).toBe('posts');
+  });
+
+  it('should prefer current popup view for currentViewBlocks', async () => {
+    const engine = new FlowEngine();
+
+    class ViewModel extends FlowModel {}
+    class BlockModelLike extends FlowModel {
+      onInit(options: any): void {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+    }
+
+    BlockModelLike.define({ label: 'MyBlock' } as any);
+    engine.registerModels({ ViewModel, BlockModelLike });
+
+    engine.createModel({
+      uid: 'page1',
+      use: 'ViewModel',
+      subModels: { blocks: [{ uid: 'pageBlock1', use: 'BlockModelLike' }] },
+    });
+    engine.createModel({
+      uid: 'popup1',
+      use: 'ViewModel',
+      subModels: { blocks: [{ uid: 'popupBlock1', use: 'BlockModelLike' }] },
+    });
+
+    engine.context.defineProperty('view', { value: { inputArgs: { viewUid: 'page1' } } });
+    engine.context.defineProperty('popup', { value: { uid: 'popup1' } });
+
+    const envs = await engine.context.getEnvInfos();
+    const blocks = (envs.currentViewBlocks?.value || []) as any[];
+    const uids = blocks.map((b) => b.uid);
+
+    expect(uids).toContain('popupBlock1');
+    expect(uids).not.toContain('pageBlock1');
+  });
+
+  it('should include hidden blocks in currentViewBlocks', async () => {
+    const engine = new FlowEngine();
+
+    class ViewModel extends FlowModel {}
+    class BlockModelLike extends FlowModel {
+      onInit(options: any): void {
+        super.onInit(options);
+        this.context.defineProperty('blockModel', { value: this });
+      }
+    }
+
+    BlockModelLike.define({ label: 'MyBlock' } as any);
+    engine.registerModels({ ViewModel, BlockModelLike });
+
+    engine.createModel({
+      uid: 'view1',
+      use: 'ViewModel',
+      subModels: { blocks: [{ uid: 'b1', use: 'BlockModelLike' }] },
+    });
+
+    const b1 = engine.getModel('b1') as any;
+    b1.hidden = true;
+
+    engine.context.defineProperty('view', { value: { inputArgs: { viewUid: 'view1' } } });
+
+    const envs = await engine.context.getEnvInfos();
+    const blocks = (envs.currentViewBlocks?.value || []) as any[];
+    expect(blocks.map((b) => b.uid)).toContain('b1');
+  });
+
+  it('should omit currentViewBlocks when view is not available', async () => {
+    const engine = new FlowEngine();
+    const envs = await engine.context.getEnvInfos();
+    expect(envs.currentViewBlocks).toBeUndefined();
+  });
+});
+
 describe('FlowEngine context', () => {
   it('should support defineProperty on FlowEngine.context', () => {
     const engine = new FlowEngine();
@@ -1222,6 +1808,22 @@ describe('getPropertyMetaTree with deep delegate meta', () => {
 });
 
 describe('FlowContext resolveOnServer selective server resolution', () => {
+  it('resolves ctx.date expressions on client context', async () => {
+    const engine = new FlowEngine();
+    const out = await (engine.context as any).resolveJsonTemplate({
+      today: '{{ ctx.date.preset.today }}',
+      next12: '{{ ctx.date.relative.next.day.n12 }}',
+      now: '{{ ctx.date.preset.now }}',
+    });
+
+    expect(typeof out.today).toBe('string');
+    expect(out.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(typeof out.next12).toBe('string');
+    expect(out.next12).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(typeof out.now).toBe('string');
+    expect(out.now.length).toBeGreaterThan(0);
+  });
+
   it('does not call server by default (no resolveOnServer set)', async () => {
     const engine = new FlowEngine();
     const api = { request: vi.fn() } as any;

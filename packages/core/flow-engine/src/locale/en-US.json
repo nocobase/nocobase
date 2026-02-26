@@ -70,5 +70,11 @@
   "Template name is required": "Template name is required",
   "UID copied to clipboard": "UID copied to clipboard",
   "createModelOptions must specify use property": "createModelOptions must specify \"use\" property",
-  "here": "here"
+  "here": "here",
+  "RunJS deprecated warning": "[RunJS][Deprecated] {{api}} is deprecated{{location}}",
+  "RunJS deprecated warning with message": "[RunJS][Deprecated] {{api}} {{message}}{{location}}",
+  "RunJS deprecated separator": "; ",
+  "RunJS deprecated replacedBy": "Use {{replacedBy}} instead",
+  "RunJS deprecated since": "since {{since}}",
+  "RunJS deprecated removedIn": "will be removed in {{removedIn}}"
 }

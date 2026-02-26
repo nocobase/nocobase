@@ -31,6 +31,7 @@ export const useCreateFormProps = () => {
       createForm({
         initialValues: {
           username: `${uid()}`,
+          enabled: true,
           enableKnowledgeBase: false,
           knowledgeBase: {
             knowledgeBaseIds: [],
@@ -86,11 +87,6 @@ export const useCreateActionProps = () => {
     type: 'primary',
     async onClick() {
       const values = form.values;
-      const modelSettings = values?.modelSettings;
-      if (!modelSettings?.llmService || !modelSettings?.model) {
-        message.warning(t('Please complete model setting before submitting'));
-        return;
-      }
       await form.submit();
       await api.resource('aiEmployees').create({
         values,
@@ -126,12 +122,9 @@ export const useEditActionProps = () => {
       }
       // Remove temporary field before submitting
       delete values._aboutMode;
+      // Remove enabled field to prevent editing it via form submission
+      delete values.enabled;
 
-      const modelSettings = values?.modelSettings;
-      if (!modelSettings?.llmService || !modelSettings?.model) {
-        message.warning(t('Please complete model settings before submitting'));
-        return;
-      }
       await form.submit();
       await resource.update({
         values,

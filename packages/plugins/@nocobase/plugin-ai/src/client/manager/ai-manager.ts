@@ -20,6 +20,7 @@ export type LLMProviderOptions = {
       msg: any;
     }>;
   };
+  formatModelLabel?: (id: string) => string;
 };
 
 export type ToolOptions = {
@@ -53,23 +54,10 @@ export class AIManager {
       Component: ComponentType;
     }
   >();
-  tools = new Registry<ToolOptions>();
   workContext = new Registry<WorkContextOptions>();
 
   registerLLMProvider(name: string, options: LLMProviderOptions) {
     this.llmProviders.register(name, options);
-  }
-
-  registerTool(group: string, name: string, options: ToolOptions) {
-    this.tools.register(`${group}-${name}`, options);
-  }
-
-  useTools() {
-    const result = new Registry<ToolOptions>();
-    for (const [key, tool] of this.tools.getEntities()) {
-      result.register(key, tool?.useHooks?.() ?? tool);
-    }
-    return result;
   }
 
   registerWorkContext(name: string, options: WorkContextOptions) {

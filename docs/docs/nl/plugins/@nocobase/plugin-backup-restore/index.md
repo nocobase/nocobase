@@ -1,17 +1,15 @@
 ---
-displayName: "Back-up en herstel van apps (verouderd)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Maak back-ups van apps en herstel deze. Dit is handig voor scenario's zoals het repliceren, migreren en upgraden van apps.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Back-up en herstel van apps (verouderd)
+# App backup & restore (deprecated)
 
-> Let op: Deze plugin is verouderd.
+> Note: This plugin is deprecated.

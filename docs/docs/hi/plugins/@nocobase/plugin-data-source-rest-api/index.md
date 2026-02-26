@@ -1,18 +1,15 @@
 ---
-displayName: "डेटा स्रोत: REST API"
+displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  बाहरी REST API डेटा स्रोतों का उपयोग करें।
-isFree: नहीं
-builtIn: नहीं
-defaultEnabled: नहीं
-points: 4
+  Use external REST API data sources.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 1
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# डेटा स्रोत: REST API
+# Data source: REST API

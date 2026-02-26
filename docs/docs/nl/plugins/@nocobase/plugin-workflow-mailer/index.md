@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: e-mailverzender knooppunt"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Kan worden gebruikt om e-mails te verzenden binnen een workflow.
+  Send email in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: e-mailverzender knooppunt
+# Workflow: mailer node

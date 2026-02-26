@@ -5,14 +5,11 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Poskytuje funkce pro integraci s WeCom, včetně metod ověřování, notifikačních kanálů a zdroje dat pro synchronizaci uživatelských dat.
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
 # WeCom

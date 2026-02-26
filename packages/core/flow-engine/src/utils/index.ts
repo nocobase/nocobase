@@ -22,7 +22,7 @@ export {
 export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
-export { FlowExitException } from './exceptions';
+export { FlowCancelSaveException, FlowExitException } from './exceptions';
 
 // 流程定义相关
 export { defineAction } from './flow-definitions';
@@ -65,6 +65,16 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
+export {
+  decodeBase64Url,
+  encodeBase64Url,
+  isCompleteCtxDatePath,
+  isCtxDatePathPrefix,
+  isCtxDateExpression,
+  parseCtxDateExpression,
+  resolveCtxDatePath,
+  serializeCtxDateValue,
+} from './dateVariable';
 
 // 安全全局对象（window/document）
 export {

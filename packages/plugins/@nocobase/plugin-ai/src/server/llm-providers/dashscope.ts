@@ -25,28 +25,34 @@ export class DashscopeProvider extends LLMProvider {
     const { baseURL, apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
-      type: responseFormat,
-    };
-    if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+
+    const modelKwargs: Record<string, any> = {};
+
+    // Only set response_format when responseFormat is explicitly provided
+    // Dashscope API rejects { type: undefined }
+    if (responseFormat) {
+      const responseFormatOptions: Record<string, any> = {
+        type: responseFormat,
+      };
+      if (responseFormat === 'json_schema' && schema) {
+        responseFormatOptions['json_schema'] = schema;
+      }
+      modelKwargs['response_format'] = responseFormatOptions;
+    } else {
+      modelKwargs['response_format'] = { type: 'text' };
     }
 
-    const additionalArgs = {};
     if (this.modelOptions?.builtIn?.webSearch === true) {
       // enable platform's web search ability
       // ref: https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867560
-      additionalArgs['enable_search'] = true;
-      additionalArgs['search_options'] = { forced_search: true };
+      modelKwargs['enable_search'] = true;
+      modelKwargs['search_options'] = { forced_search: true };
     }
 
     return new ChatOpenAI({
       apiKey,
       ...this.modelOptions,
-      modelKwargs: {
-        response_format: responseFormatOptions,
-        ...additionalArgs,
-      },
+      modelKwargs,
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
@@ -74,6 +80,7 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
 export const dashscopeProviderOptions = {
   title: '{{t("Dashscope", {ns: "ai"})}}',
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
+  supportWebSearch: true,
   models: {
     [SupportedModel.LLM]: [
       'qwen-long',

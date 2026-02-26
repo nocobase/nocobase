@@ -1,18 +1,15 @@
 ---
-displayName: "عملية: تصدير السجلات المحترف"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  تعزيز قدرات تصدير البيانات من خلال التصدير غير المتزامن لمعالجة كميات كبيرة. يدعم تصدير المرفقات.
-isFree: لا
-builtIn: لا
-defaultEnabled: لا
-points: 2
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 1
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# عملية: تصدير السجلات المحترف
+# Action: Export records Pro

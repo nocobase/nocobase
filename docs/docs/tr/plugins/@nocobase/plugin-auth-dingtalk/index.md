@@ -1,18 +1,15 @@
 ---
-displayName: "Kimlik Doğrulama: DingTalk"
+displayName: "Auth: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  DingTalk hesabı üzerinden kimlik doğrulaması sağlar.
+  DingTalk authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Kimlik Doğrulama: DingTalk
+# Auth: DingTalk

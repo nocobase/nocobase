@@ -1,14 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: โหนดหน่วงเวลา"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  ใช้สำหรับรอให้สาขาอื่น ๆ ทำงานเสร็จสิ้นในสาขาคู่ขนานของเวิร์กโฟลว์
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: โหนดหน่วงเวลา
+# Workflow: Delay node

@@ -6,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
 
 # Workflow: Dynamic calculation node
+
+> Note: This plugin is deprecated.

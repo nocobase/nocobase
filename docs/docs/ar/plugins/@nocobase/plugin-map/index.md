@@ -1,14 +1,12 @@
 ---
-displayName: "كتلة: الخريطة"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  كتلة الخريطة، تدعم خرائط Gaode وخرائط Google، ويمكنك أيضًا توسيعها لتشمل أنواع خرائط أخرى.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# كتلة: الخريطة
+# Block: Map

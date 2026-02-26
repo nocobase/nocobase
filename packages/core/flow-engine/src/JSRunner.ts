@@ -8,6 +8,7 @@
  */
 
 import 'ses';
+import { FlowExitAllException, FlowExitException } from './utils/exceptions';
 
 export interface JSRunnerOptions {
   timeoutMs?: number;
@@ -111,6 +112,12 @@ export class JSRunner {
       const result = await Promise.race([task, timeoutPromise]);
       return { success: true, value: result };
     } catch (err) {
+      if (err instanceof FlowExitException) {
+        throw err;
+      }
+      if (err instanceof FlowExitAllException) {
+        throw err;
+      }
       console.error(err);
       return {
         success: false,

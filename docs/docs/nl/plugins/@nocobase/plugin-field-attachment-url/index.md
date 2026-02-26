@@ -1,14 +1,12 @@
 ---
-displayName: "Collectieveld: Bijlage (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  Ondersteunt bijlagen in URL-formaat.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Collectieveld: Bijlage (URL)
+# Collection field: Attachment(URL)

@@ -1,18 +1,15 @@
 ---
-displayName: "IP प्रतिबंध"
+displayName: "IP restriction"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-   IP ब्लैकलिस्ट और व्हाइटलिस्ट सेट करके, आप सिस्टम तक पहुँच को नियंत्रित कर सकते हैं और सुरक्षा सुनिश्चित कर सकते हैं।
+  Control system access by configuring IP blacklists and whitelists to ensure security.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# IP प्रतिबंध
+# IP restriction

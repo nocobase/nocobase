@@ -1,14 +1,12 @@
 ---
-displayName: "การแจ้งเตือน: อีเมล"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  ใช้สำหรับส่งการแจ้งเตือนทางอีเมล โดยปัจจุบันรองรับเฉพาะการส่งผ่าน SMTP เท่านั้นครับ/ค่ะ
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การแจ้งเตือน: อีเมล
+# Notification: Email

@@ -1,17 +1,14 @@
 ---
-displayName: "ฟอร์มฉบับร่าง"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  รองรับการบันทึกฉบับร่างขณะกรอกฟอร์ม ช่วยให้ผู้ใช้สามารถกลับมาแก้ไขและส่งฟอร์มได้ในภายหลังครับ/ค่ะ
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟอร์มฉบับร่าง
+# Form drafts

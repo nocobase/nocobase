@@ -1,15 +1,12 @@
 ---
-displayName: "Datavisualisering"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  Ger funktioner för datavisualisering, inklusive diagramblock och diagramfilterblock. Stöder linjediagram, ytdiagram, stapeldiagram och över ett dussin andra diagramtyper. Ni kan också utöka med fler diagramtyper.
+  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Datavisualisering
+# Data visualization

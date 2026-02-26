@@ -5,14 +5,11 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Wordt gebruikt om andere workflows aan te roepen vanuit een workflow. U kunt de variabelen van de huidige workflow gebruiken als invoer voor de subflow, en de uitvoer van de subflow gebruiken als variabelen voor de huidige workflow.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
 # Workflow: Subflow

@@ -1,14 +1,12 @@
 ---
-displayName: "Alur Kerja: Node Paralel"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Digunakan untuk menjalankan proses cabang secara paralel dalam alur kerja.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Paralel
+# Workflow: Parallel node

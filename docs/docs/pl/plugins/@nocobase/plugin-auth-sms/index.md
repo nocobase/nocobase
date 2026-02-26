@@ -1,14 +1,12 @@
 ---
-displayName: "Uwierzytelnianie: SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  Uwierzytelnianie tożsamości za pomocą kodu weryfikacyjnego SMS.
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Uwierzytelnianie: SMS
+# Auth: SMS

@@ -1,16 +1,12 @@
 ---
-displayName: "워크플로우: 테스트 툴킷"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-
-
-# 워크플로우: 테스트 툴킷
+# Workflow: test kit

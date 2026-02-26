@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 1
 ---
 
 # 数据源：REST API

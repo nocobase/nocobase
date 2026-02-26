@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة SQL"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  تُستخدم لتنفيذ أوامر SQL على قاعدة البيانات ضمن سير العمل.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة SQL
+# Workflow: SQL node

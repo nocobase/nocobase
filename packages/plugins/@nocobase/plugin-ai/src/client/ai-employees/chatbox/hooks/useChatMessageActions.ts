@@ -18,15 +18,21 @@ import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxStore } from '../stores/chat-box';
 import { parseWorkContext } from '../utils';
+import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
+import { useChatToolCallStore } from '../stores/chat-tool-call';
+import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
+import { ensureModel } from '../model';
 
 export const useChatMessageActions = () => {
   const app = useApp();
   const t = useT();
   const api = useAPIClient();
   const plugin = usePlugin('ai') as PluginAIClient;
+  const llmServicesRepository = useLLMServicesRepository();
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
+  const setModel = useChatBoxStore.use.setModel();
 
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
@@ -40,6 +46,27 @@ export const useChatMessageActions = () => {
   const setWebSearching = useChatMessagesStore.use.setWebSearching();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentWebSearch = useChatConversationsStore.use.webSearch();
+
+  const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
+
+  const ensureModelFromStore = useCallback(
+    async (username?: string) => {
+      const state = useChatBoxStore.getState();
+      const targetUsername = username || state.currentEmployee?.username;
+      if (!targetUsername) {
+        return state.model;
+      }
+      return ensureModel({
+        api,
+        llmServicesRepository,
+        username: targetUsername,
+        currentOverride: state.model,
+        onResolved: setModel,
+      });
+    },
+    [api, llmServicesRepository, setModel],
+  );
 
   const messagesService = useRequest<{
     data: Message[];
@@ -62,6 +89,32 @@ export const useChatMessageActions = () => {
             return;
           }
           const newMessages = [...data.data].reverse();
+
+          // [AI_DEBUG] backend tool results
+          for (const msg of newMessages) {
+            const toolCalls = msg.content?.tool_calls;
+            if (toolCalls?.length) {
+              for (const tc of toolCalls) {
+                if (tc.willInterrupt) {
+                  updateToolCallInvokeStatus(msg.content.messageId, tc.id, tc.invokeStatus);
+                }
+                if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
+                  const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
+                  aiDebugLogger.log(sessionId, 'tool_result', {
+                    toolCallId: tc.id,
+                    toolName: tc.name,
+                    args: tc.args,
+                    status: tc.status,
+                    invokeStatus: tc.invokeStatus,
+                    auto: tc.auto,
+                    execution: 'backend',
+                    contentPreview: contentStr?.slice(0, 500),
+                  });
+                }
+              }
+            }
+          }
+
           setMessages((prev) => {
             const last = prev[prev.length - 1];
             const result = cursor ? [...newMessages, ...prev] : newMessages;
@@ -78,23 +131,15 @@ export const useChatMessageActions = () => {
   const messagesServiceRef = useRef<any>();
   messagesServiceRef.current = messagesService;
 
-  const employeeTools = plugin.aiManager.useTools();
-
   const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
     let result = '';
     let error = false;
-    let tools: {
-      id: string;
-      name: string;
-      args: unknown;
-    }[];
 
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const content = '';
         const { done, value } = await reader.read();
         if (done || error) {
           setResponseLoading(false);
@@ -108,7 +153,17 @@ export const useChatMessageActions = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
+            if (data.type === 'stream_start') {
+              console.log('stream_start', sessionId);
+            }
+            if (data.type === 'stream_end') {
+              console.log('stream_end', sessionId);
+            }
             if (data.type === 'content' && data.body && typeof data.body === 'string') {
+              // [AI_DEBUG] stream_text
+              aiDebugLogger.log(sessionId, 'stream_text', {
+                preview: data.body?.slice?.(0, 100) || '',
+              });
               updateLastMessage((last) => ({
                 ...last,
                 content: {
@@ -119,12 +174,16 @@ export const useChatMessageActions = () => {
               }));
             }
             if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
+              // [AI_DEBUG] stream_delta
+              aiDebugLogger.log(sessionId, 'stream_delta', {
+                chunk: (data.body.toolCalls ?? [])[0],
+              });
               updateLastMessage((last) => {
                 const toolCalls = last.content.tool_calls || [];
                 const toolCallChunk = data.body[0];
                 if (toolCallChunk.name) {
                   toolCalls.push(toolCallChunk);
-                } else {
+                } else if (toolCalls.length > 0) {
                   toolCalls[toolCalls.length - 1].args += data.body[0].args;
                 }
                 return {
@@ -137,12 +196,59 @@ export const useChatMessageActions = () => {
                 };
               });
             }
+            if (data.type === 'tool_calls' && data.body?.toolCalls?.length > 0) {
+              updateLastMessage((last) => {
+                return {
+                  ...last,
+                  content: {
+                    ...last.content,
+                    tool_calls: data.body.toolCalls,
+                  },
+                  loading: false,
+                };
+              });
+            }
+            if (data.type === 'tool_call_status') {
+              if (data.body?.toolCall) {
+                const { toolCall, invokeStatus } = data.body;
+                if (toolCall.willInterrupt) {
+                  updateToolCallInvokeStatus(toolCall.messageId, toolCall.id, invokeStatus);
+                }
+              }
+              updateLastMessage((last) => {
+                const toolCalls = last.content.tool_calls || [];
+                const toolCallId = data.body?.toolCall?.id;
+                const nextToolCalls = toolCalls.map((t) =>
+                  t.id === toolCallId
+                    ? {
+                        ...t,
+                        invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
+                        status: data.body?.status ?? t.status,
+                      }
+                    : t,
+                );
+                return {
+                  ...last,
+                  content: {
+                    ...last.content,
+                    tool_calls: nextToolCalls,
+                  },
+                  loading: false,
+                };
+              });
+            }
             if (data.type === 'web_search' && data.body?.length) {
+              // [AI_DEBUG] stream_search
+              aiDebugLogger.log(sessionId, 'stream_search', {
+                actions: data.body,
+              });
               for (const item of data.body) {
                 setWebSearching(item);
               }
             }
             if (data.type === 'new_message') {
+              // [AI_DEBUG] stream_start
+              aiDebugLogger.log(sessionId, 'stream_start', {});
               addMessage({
                 key: uid(),
                 role: aiEmployee.username,
@@ -151,11 +257,12 @@ export const useChatMessageActions = () => {
               });
             }
             if (data.type === 'error') {
+              // [AI_DEBUG] stream_error
+              aiDebugLogger.log(sessionId, 'stream_error', {
+                message: data.body,
+              });
               error = true;
-              result = data.body;
-            }
-            if (data.type === 'tool_calls') {
-              tools = data.body;
+              result = data.errorName ? data.errorName : data.body;
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -167,6 +274,13 @@ export const useChatMessageActions = () => {
       if (err.name !== 'AbortError') {
         error = true;
         result = err.message;
+
+        // [AI_DEBUG] error
+        aiDebugLogger.log(sessionId, 'error', {
+          message: err.message,
+          stack: err.stack?.slice(0, 500),
+          context: { phase: 'stream_processing' },
+        });
       }
     }
 
@@ -183,29 +297,6 @@ export const useChatMessageActions = () => {
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
-    if (!error && tools && tools.length > 0) {
-      const toolCallIds: string[] = [];
-      const toolCallResults = [];
-      for (const tool of tools) {
-        toolCallIds.push(tool.id);
-        const t = employeeTools.get(tool.name);
-        if (t && t.invoke) {
-          const result = await t.invoke(app, tool.args);
-          if (result) {
-            toolCallResults.push({
-              id: tool.id,
-              result,
-            });
-          }
-        }
-      }
-      await confirmToolCall({
-        sessionId,
-        aiEmployee,
-        toolCallIds,
-        toolCallResults,
-      });
-    }
   };
 
   const sendMessages = async ({
@@ -219,10 +310,30 @@ export const useChatMessageActions = () => {
     onConversationCreate,
     skillSettings,
     webSearch,
+    model: inputModel,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;
+
+    // Read model from store at call time to avoid stale closure
+    const model = inputModel ?? useChatBoxStore.getState().model;
+
+    // [AI_DEBUG] request
+    aiDebugLogger.log(
+      sessionId || 'pending',
+      'request',
+      {
+        action: 'sendMessages',
+        employeeId: aiEmployee?.username,
+        model: model?.model,
+        messagesCount: sendMsgs.length,
+        hasAttachments: attachments?.length > 0,
+        hasContext: workContext?.length > 0,
+        editingMessageId,
+      },
+      { employeeId: aiEmployee?.username, employeeName: aiEmployee?.nickname },
+    );
 
     const last = messages[messages.length - 1];
     if (last?.role === 'error') {
@@ -251,7 +362,7 @@ export const useChatMessageActions = () => {
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee, systemMessage, skillSettings, conversationSettings: { webSearch } },
+        values: { aiEmployee, systemMessage, skillSettings },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;
@@ -280,6 +391,8 @@ export const useChatMessageActions = () => {
           messages: msgs,
           systemMessage,
           editingMessageId,
+          model,
+          webSearch,
         },
         responseType: 'stream',
         adapter: 'fetch',
@@ -304,7 +417,7 @@ export const useChatMessageActions = () => {
     }
   };
 
-  const resendMessages = async ({ sessionId, messageId, aiEmployee }: ResendOptions) => {
+  const resendMessages = async ({ sessionId, messageId, aiEmployee, important }: ResendOptions) => {
     const index = messages.findIndex((msg) => msg.key === messageId);
     setResponseLoading(true);
     setMessages((prev) => [
@@ -320,6 +433,13 @@ export const useChatMessageActions = () => {
       },
     ]);
 
+    // Read model from store at call time to avoid stale closure.
+    // If not ready yet, resolve it through shared model rules.
+    let model = useChatBoxStore.getState().model;
+    if (!model) {
+      model = await ensureModelFromStore(aiEmployee?.username);
+    }
+
     const controller = new AbortController();
     setAbortController(controller);
     try {
@@ -327,7 +447,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId },
+        data: { sessionId, messageId, model, important, webSearch: currentWebSearch },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -369,51 +489,7 @@ export const useChatMessageActions = () => {
     setResponseLoading(false);
   }, [currentConversation]);
 
-  const callTool = useCallback(
-    async ({
-      sessionId,
-      messageId,
-      aiEmployee,
-      args,
-    }: {
-      sessionId: string;
-      messageId?: string;
-      aiEmployee: AIEmployee;
-      args?: Record<string, any>;
-    }) => {
-      setResponseLoading(true);
-      addMessage({
-        key: uid(),
-        role: aiEmployee.username,
-        content: { type: 'text', content: '' },
-        loading: true,
-      });
-
-      try {
-        const sendRes = await api.request({
-          url: 'aiConversations:callTool',
-          method: 'POST',
-          headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, args },
-          responseType: 'stream',
-          adapter: 'fetch',
-        });
-
-        if (!sendRes?.data) {
-          setResponseLoading(false);
-          return;
-        }
-
-        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-      } catch (err) {
-        setResponseLoading(false);
-        throw err;
-      }
-    },
-    [],
-  );
-
-  const confirmToolCall = useCallback(
+  const resumeToolCall = useCallback(
     async ({
       sessionId,
       messageId,
@@ -422,27 +498,29 @@ export const useChatMessageActions = () => {
       toolCallResults,
     }: {
       sessionId: string;
-      messageId?: string;
+      messageId: string;
       aiEmployee: AIEmployee;
       toolCallIds?: string[];
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
-      addMessage({
-        key: uid(),
-        role: aiEmployee.username,
-        content: { type: 'text', content: '' },
-        loading: true,
-      });
-
+      // Read model from store at call time to avoid stale closure.
+      // If not ready yet, resolve it through shared model rules.
+      let model = useChatBoxStore.getState().model;
+      if (!model) {
+        model = await ensureModelFromStore(aiEmployee?.username);
+      }
+      const controller = new AbortController();
+      setAbortController(controller);
       try {
         const sendRes = await api.request({
-          url: 'aiConversations:confirmToolCall',
+          url: 'aiConversations:resumeToolCall',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults },
+          data: { sessionId, messageId, toolCallIds, toolCallResults, model, webSearch: currentWebSearch },
           responseType: 'stream',
           adapter: 'fetch',
+          signal: controller?.signal,
         });
 
         if (!sendRes?.data) {
@@ -452,11 +530,16 @@ export const useChatMessageActions = () => {
 
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       } catch (err) {
+        if (err.name === 'CanceledError') {
+          return;
+        }
         setResponseLoading(false);
         throw err;
+      } finally {
+        setAbortController(null);
       }
     },
-    [],
+    [currentWebSearch, ensureModelFromStore],
   );
 
   const loadMoreMessages = useCallback(async () => {
@@ -505,8 +588,7 @@ export const useChatMessageActions = () => {
     sendMessages,
     resendMessages,
     cancelRequest,
-    callTool,
-    confirmToolCall,
+    resumeToolCall,
     updateToolArgs,
     lastMessageRef,
     startEditingMessage,

@@ -1,17 +1,14 @@
 ---
-displayName: "تضمين NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  قم بتضمين NocoBase في نظام خارجي أو صفحة ويب، لجعله جزءًا لا يتجزأ من ذلك النظام أو الصفحة.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# تضمين NocoBase
+# Embed NocoBase

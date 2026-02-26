@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  Ett kraftfullt BPM-verktyg som ger grundläggande stöd för affärsautomatisering och kan utökas med obegränsat antal utlösare och noder.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde
+# Workflow

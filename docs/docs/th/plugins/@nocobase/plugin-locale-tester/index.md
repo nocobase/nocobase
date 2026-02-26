@@ -1,13 +1,12 @@
 ---
-displayName: "เครื่องมือทดสอบภาษา"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เครื่องมือทดสอบภาษา
+# Locale tester

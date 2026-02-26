@@ -1,14 +1,12 @@
 ---
-displayName: "Sammlung: Baum"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Bietet eine Vorlage für Baum-Sammlungen.
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Sammlung: Baum
+# Collection: Tree

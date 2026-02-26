@@ -1,18 +1,15 @@
 ---
-displayName: "Gegevensbron: Externe MariaDB"
+displayName: "Data source: External MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Gebruik externe MariaDB-databases als gegevensbronnen.
+  Use external MariaDB databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Gegevensbron: Externe MariaDB
+# Data source: External MariaDB

@@ -1,14 +1,12 @@
 ---
-displayName: "Zpracovatel chyb"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Zpracovává chyby a výjimky v aplikaci.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Zpracovatel chyb
+# Error handler

@@ -1,14 +1,12 @@
 ---
-displayName: "マルチアプリマネージャー (非推奨)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  マルチアプリはプロセス共有方式で動作します。テスト環境やデモ環境でのみご利用ください。本番環境での使用は避けてください
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# マルチアプリマネージャー (非推奨)
+# Multi-app manager (deprecated)

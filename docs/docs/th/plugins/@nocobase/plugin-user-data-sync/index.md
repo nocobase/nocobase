@@ -1,14 +1,12 @@
 ---
-displayName: "การซิงค์ข้อมูลผู้ใช้"
+displayName: "User data synchronization"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  ลงทะเบียนและจัดการแหล่งที่มาของการซิงค์ข้อมูลผู้ใช้ที่สามารถขยายได้ โดยมี HTTP API ให้ใช้งานเป็นค่าเริ่มต้น รองรับการซิงค์ข้อมูลไปยังทรัพยากรต่างๆ เช่น ผู้ใช้และแผนก
+  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การซิงค์ข้อมูลผู้ใช้
+# User data synchronization

@@ -1,17 +1,15 @@
 ---
-displayName: "Gegevensvisualisatie: ECharts"
+displayName: "Data visualization: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  Gebruik ECharts voor gegevensvisualisatie, ondersteunt trechter-, radar- en meer grafiektypen, en biedt gebruiksvriendelijke configuraties.
+  Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Gegevensvisualisatie: ECharts
+# Data visualization: ECharts

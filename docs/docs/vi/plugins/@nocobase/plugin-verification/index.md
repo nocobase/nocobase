@@ -1,14 +1,12 @@
 ---
-displayName: "Xác thực"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  Quản lý xác thực danh tính người dùng, bao gồm SMS, trình xác thực TOTP, v.v., có khả năng mở rộng.
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Xác thực
+# Verification

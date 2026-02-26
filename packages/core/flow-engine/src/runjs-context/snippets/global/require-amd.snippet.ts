@@ -22,7 +22,7 @@ const snippet: SnippetModule = {
   },
   content: `
 // Load an external library (AMD/RequireJS)
-const dayjs = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js');
+const dayjs = await ctx.requireAsync('dayjs@1/dayjs.min.js');
 console.log('dayjs loaded:', dayjs?.default || dayjs);
 `,
 };

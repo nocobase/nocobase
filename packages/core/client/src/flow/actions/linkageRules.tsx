@@ -42,6 +42,7 @@ import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
+import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import _ from 'lodash';
 import { SubFormFieldModel, SubFormListFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
@@ -877,6 +878,7 @@ const FieldAssignRulesActionComponent: React.FC<
   const ctx = useFlowContext();
 
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+  const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
 
   const fieldOptions = React.useMemo(() => {
     return collectFieldAssignCascaderOptions({
@@ -891,8 +893,7 @@ const FieldAssignRulesActionComponent: React.FC<
   const handleChange = React.useCallback(
     (next: FieldAssignRuleItem[]) => {
       if (typeof onChange !== 'function') return;
-      if (!Array.isArray(next)) return onChange(next);
-      return onChange(next);
+      onChange(next);
     },
     [onChange],
   );
@@ -905,6 +906,9 @@ const FieldAssignRulesActionComponent: React.FC<
       value={normalized}
       onChange={handleChange}
       fixedMode={fixedMode}
+      isTitleFieldCandidate={isTitleFieldCandidate}
+      onSyncAssociationTitleField={onSyncAssociationTitleField}
+      enableDateVariableAsConstant
     />
   );
 };

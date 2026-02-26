@@ -1,14 +1,12 @@
 ---
-displayName: "Alur Kerja: Node Penundaan"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Dapat digunakan dalam cabang paralel alur kerja untuk menunggu cabang lain selesai dieksekusi.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Penundaan
+# Workflow: Delay node

@@ -18,17 +18,25 @@ export const useChatConversationActions = () => {
   const setConversations = useChatConversationsStore.use.setConversations();
   const keyword = useChatConversationsStore.use.keyword();
   const conversationsService = useRequest<Conversation[]>(
-    (page = 1, keyword = '') =>
-      api
+    (page = 1, keyword = '') => {
+      const filter: any = {};
+
+      // Filter by keyword
+      if (keyword) {
+        filter.title = { $includes: keyword };
+      }
+
+      return api
         .resource('aiConversations')
         .list({
           sort: ['-updatedAt'],
           appends: ['aiEmployee'],
           page,
           pageSize: 15,
-          filter: keyword ? { title: { $includes: keyword } } : {},
+          filter,
         })
-        .then((res) => res?.data),
+        .then((res) => res?.data);
+    },
     {
       manual: true,
       onSuccess: (data, params) => {

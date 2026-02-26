@@ -100,16 +100,6 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.t).toBe('undefined');
   });
 
-  it('resolves date variables (shape existence)', async () => {
-    const { req } = makeCtx(1);
-    const tpl = { today: '{{ ctx.date.today }}', thisMonth: '{{ ctx.date.thisMonth }}' } as any;
-    const out = await resolveJsonTemplate(tpl, req);
-    expect(typeof out.today).toBe('string');
-    expect(out.today.length).toBeGreaterThan(0);
-    expect(typeof out.thisMonth).toBe('string');
-    expect(out.thisMonth.length).toBeGreaterThan(0);
-  });
-
   it('supports custom ctx methods attached via registry', async () => {
     if (!variables.get('twice')) {
       variables.register({

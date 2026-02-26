@@ -1,14 +1,12 @@
 ---
-displayName: "Dokumentace API"
+displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
-  Generátor OpenAPI dokumentace pro NocoBase HTTP API.
+  An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Dokumentace API
+# API documentation

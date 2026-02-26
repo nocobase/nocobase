@@ -1,14 +1,12 @@
 ---
-displayName: "Sumber Data: Basis Data Utama"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  Basis data utama NocoBase, mendukung basis data relasional seperti PostgreSQL, MySQL, MariaDB, dan lain-lain.
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Sumber Data: Basis Data Utama
+# Data source: Main

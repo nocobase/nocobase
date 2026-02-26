@@ -11,18 +11,21 @@ import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   DeleteOutlined,
+  DownOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
+  SyncOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import type { FilterGroupType } from '@nocobase/utils/client';
-import { Button, Cascader, Collapse, Empty, Radio, Space, Switch, Tooltip } from 'antd';
+import { Button, Cascader, Collapse, Empty, Popconfirm, Popover, Radio, Select, Space, Switch, Tooltip } from 'antd';
 import type { CascaderProps, CollapseProps } from 'antd';
 import React from 'react';
 import { ConditionBuilder } from './ConditionBuilder';
 import { FieldAssignValueInput } from './FieldAssignValueInput';
 import type { FieldAssignCascaderOption } from './fieldAssignOptions';
-import type { MetaTreeNode } from '@nocobase/flow-engine';
+import { isRunJSValue, isVariableExpression, type MetaTreeNode } from '@nocobase/flow-engine';
 import { isToManyAssociationField } from '../internal/utils/modelUtils';
 
 export type AssignMode = 'default' | 'assign';
@@ -32,8 +35,32 @@ type CollectionFieldLike = {
   title?: unknown;
   type?: unknown;
   interface?: unknown;
+  targetKey?: unknown;
+  targetCollectionTitleFieldName?: unknown;
   targetCollection?: any;
   isAssociationField?: () => boolean;
+};
+
+type AssociationTitleFieldCandidate = {
+  label: string;
+  value: string;
+};
+
+type AssociationFieldQuickContext = {
+  associationField: CollectionFieldLike;
+  targetCollection: any;
+  currentTitleField?: string;
+  valueKey: string;
+  candidates: AssociationTitleFieldCandidate[];
+};
+
+export type SyncAssociationTitleFieldParams = {
+  ruleItem: FieldAssignRuleItem;
+  ruleIndex: number;
+  targetPath?: string;
+  associationField: CollectionFieldLike;
+  targetCollection: any;
+  titleField: string;
 };
 
 export interface FieldAssignRuleItem {
@@ -41,6 +68,8 @@ export interface FieldAssignRuleItem {
   enable?: boolean;
   /** 赋值目标路径，例如 `title` / `users.nickname` / `user.name` */
   targetPath?: string;
+  /** 仅当前规则生效的 title field 覆盖（不改 collection 全局配置） */
+  valueTitleField?: string;
   mode?: AssignMode;
   condition?: FilterGroupType;
   value?: any;
@@ -69,6 +98,12 @@ export interface FieldAssignRulesEditorProps {
     item: FieldAssignRuleItem,
     index: number,
   ) => Partial<React.ComponentProps<typeof FieldAssignValueInput>>;
+  /** 可选：用于筛选关系集合中可作为 Title field 的候选字段 */
+  isTitleFieldCandidate?: (field: any, targetCollection: any) => boolean;
+  /** 可选：点击同步按钮后，将选中的 title field 持久化到关系集合 */
+  onSyncAssociationTitleField?: (params: SyncAssociationTitleFieldParams) => Promise<void> | void;
+  /** 在日期字段下启用“日期变量替换 Constant 位”。 */
+  enableDateVariableAsConstant?: boolean;
 }
 
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
@@ -84,6 +119,9 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     showEnable = true,
     showValueEditorWhenNoField = false,
     getValueInputProps,
+    isTitleFieldCandidate,
+    onSyncAssociationTitleField,
+    enableDateVariableAsConstant = false,
   } = props;
 
   const value = Array.isArray(rawValue) ? rawValue : [];
@@ -94,6 +132,43 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   React.useEffect(() => {
     setCascaderOptions(Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : []);
   }, [fieldOptions]);
+
+  const getRuleKey = React.useCallback((item: FieldAssignRuleItem, index: number) => item?.key || String(index), []);
+  const [titleFieldDraftMap, setTitleFieldDraftMap] = React.useState<Record<string, string | undefined>>({});
+  const [advancedOpenMap, setAdvancedOpenMap] = React.useState<Record<string, boolean>>({});
+  const [syncingRuleKey, setSyncingRuleKey] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const validKeys = new Set(value.map((item, index) => getRuleKey(item, index)));
+    setTitleFieldDraftMap((prev) => {
+      const next: Record<string, string | undefined> = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(prev)) {
+        if (validKeys.has(k)) {
+          next[k] = v;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setAdvancedOpenMap((prev) => {
+      const next: Record<string, boolean> = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(prev)) {
+        if (validKeys.has(k)) {
+          next[k] = !!v;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+
+    if (syncingRuleKey && !validKeys.has(syncingRuleKey)) {
+      setSyncingRuleKey(null);
+    }
+  }, [getRuleKey, syncingRuleKey, value]);
 
   const buildCollectionMetaTreeNodes = React.useCallback(
     (collection: any, basePaths: string[], visited: Set<any>): MetaTreeNode[] => {
@@ -223,6 +298,23 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   };
 
   const removeItem = (index: number) => {
+    const item = value[index];
+    const ruleKey = getRuleKey(item, index);
+    setTitleFieldDraftMap((prev) => {
+      if (!(ruleKey in prev)) return prev;
+      const next = { ...prev };
+      delete next[ruleKey];
+      return next;
+    });
+    setAdvancedOpenMap((prev) => {
+      if (!(ruleKey in prev)) return prev;
+      const next = { ...prev };
+      delete next[ruleKey];
+      return next;
+    });
+    if (syncingRuleKey === ruleKey) {
+      setSyncingRuleKey(null);
+    }
     const next = value.filter((_, i) => i !== index);
     onChange?.(next);
   };
@@ -325,6 +417,99 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     }
     return labels.filter(Boolean).join(' / ');
   };
+
+  const resolveAssociationFieldQuickContext = React.useCallback(
+    (targetPath?: string): AssociationFieldQuickContext | null => {
+      const segs = parseTargetPathToSegments(targetPath);
+      if (!segs.length) return null;
+      if (!rootCollection?.getField) return null;
+
+      let collection = rootCollection;
+      let field: CollectionFieldLike | null = null;
+      for (let i = 0; i < segs.length; i++) {
+        const seg = String(segs[i]);
+        field = (collection?.getField?.(seg) as CollectionFieldLike | null) || null;
+        if (!field) return null;
+
+        const isLast = i === segs.length - 1;
+        if (isLast) {
+          if (!field?.isAssociationField?.() || !field?.targetCollection) return null;
+
+          const targetCollection = field.targetCollection;
+          const targetFields =
+            typeof targetCollection?.getFields === 'function' ? (targetCollection.getFields() as any[]) || [] : [];
+          const candidates = targetFields
+            .filter((rawField) => {
+              if (!rawField) return false;
+              if (typeof isTitleFieldCandidate === 'function') {
+                return !!isTitleFieldCandidate(rawField, targetCollection);
+              }
+              const iface = typeof rawField.interface === 'string' ? rawField.interface : undefined;
+              return !!iface && iface !== 'formula';
+            })
+            .map((rawField) => {
+              const name = String(rawField?.name || '');
+              if (!name) return null;
+              return {
+                value: name,
+                label: t(typeof rawField?.title === 'string' ? rawField.title : name),
+              } as AssociationTitleFieldCandidate;
+            })
+            .filter(Boolean) as AssociationTitleFieldCandidate[];
+
+          const titleFromCollection =
+            typeof (targetCollection as { titleField?: unknown } | null | undefined)?.titleField === 'string' &&
+            (targetCollection as { titleField?: string }).titleField
+              ? (targetCollection as { titleField?: string }).titleField
+              : undefined;
+          const titleFromCollectionOptions =
+            typeof (targetCollection as { options?: { titleField?: unknown } } | null | undefined)?.options
+              ?.titleField === 'string' &&
+            (targetCollection as { options?: { titleField?: string } }).options?.titleField
+              ? (targetCollection as { options?: { titleField?: string } }).options?.titleField
+              : undefined;
+          const titleFromAssociationField =
+            typeof field?.targetCollectionTitleFieldName === 'string' && field.targetCollectionTitleFieldName
+              ? field.targetCollectionTitleFieldName
+              : undefined;
+          const currentTitleField = titleFromCollection || titleFromCollectionOptions || titleFromAssociationField;
+
+          if (currentTitleField && !candidates.some((option) => option.value === currentTitleField)) {
+            const currentFieldTitle =
+              typeof targetCollection?.getField === 'function'
+                ? targetCollection.getField(currentTitleField)?.title || currentTitleField
+                : currentTitleField;
+            candidates.unshift({
+              value: currentTitleField,
+              label: t(typeof currentFieldTitle === 'string' ? currentFieldTitle : currentTitleField),
+            });
+          }
+
+          const valueKey =
+            (typeof field?.targetKey === 'string' && field.targetKey) ||
+            targetCollection?.filterTargetKey ||
+            targetCollection?.filterByTk ||
+            'id';
+
+          return {
+            associationField: field,
+            targetCollection,
+            currentTitleField,
+            valueKey,
+            candidates,
+          };
+        }
+
+        if (!field?.isAssociationField?.() || !field?.targetCollection) {
+          return null;
+        }
+        collection = field.targetCollection;
+      }
+
+      return null;
+    },
+    [isTitleFieldCandidate, parseTargetPathToSegments, rootCollection, t],
+  );
 
   const resolveTargetCollectionBySegments = React.useCallback(
     (segments: string[]): any | null => {
@@ -519,6 +704,121 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   const collapseItems: CollapseProps['items'] = value.map((item, index) => {
     const mode = getEffectiveMode(item);
     const extraMetaTree = buildItemMetaTree(item.targetPath);
+    const ruleKey = getRuleKey(item, index);
+    const associationQuickContext = resolveAssociationFieldQuickContext(item.targetPath);
+    const draftTitleField = titleFieldDraftMap[ruleKey];
+    const rawPreviewTitleField =
+      (typeof draftTitleField === 'string' && draftTitleField) ||
+      (typeof item?.valueTitleField === 'string' && item.valueTitleField) ||
+      associationQuickContext?.currentTitleField ||
+      undefined;
+    const isPreviewTitleFieldValid =
+      !rawPreviewTitleField ||
+      !associationQuickContext ||
+      !!associationQuickContext.candidates.some((option) => option.value === rawPreviewTitleField);
+    const previewTitleField = isPreviewTitleFieldValid
+      ? rawPreviewTitleField
+      : associationQuickContext?.currentTitleField || undefined;
+    const hasQuickSync = !!associationQuickContext;
+    const hasCandidate = !!associationQuickContext?.candidates?.length;
+    const isSyncing = syncingRuleKey === ruleKey;
+    const canSync =
+      !!onSyncAssociationTitleField &&
+      hasQuickSync &&
+      hasCandidate &&
+      isPreviewTitleFieldValid &&
+      !!previewTitleField &&
+      previewTitleField !== associationQuickContext?.currentTitleField &&
+      !isSyncing;
+    const isConstantValue = !isVariableExpression(item?.value) && !isRunJSValue(item?.value) && item?.value !== null;
+    const shouldShowAdvanced = hasQuickSync && isConstantValue;
+    const isAdvancedOpen = shouldShowAdvanced && !!advancedOpenMap[ruleKey];
+
+    const quickSyncControl = hasQuickSync ? (
+      <Space.Compact size="small" onClick={(e) => e.stopPropagation()}>
+        <Select
+          size="small"
+          style={{ minWidth: 160 }}
+          value={previewTitleField}
+          placeholder={hasCandidate ? t('Please select field') : t('No available title fields')}
+          options={associationQuickContext?.candidates || []}
+          disabled={!hasCandidate || isSyncing}
+          allowClear={false}
+          onChange={(nextValue) => {
+            const next = String(nextValue || '');
+            const normalized = !next || next === associationQuickContext?.currentTitleField ? undefined : next;
+            setTitleFieldDraftMap((prev) => {
+              const hasPrev = Object.prototype.hasOwnProperty.call(prev, ruleKey);
+              if (!normalized) {
+                if (!hasPrev) return prev;
+                const changed = { ...prev };
+                delete changed[ruleKey];
+                return changed;
+              }
+              if (prev[ruleKey] === normalized) return prev;
+              return { ...prev, [ruleKey]: normalized };
+            });
+            patchItem(index, { valueTitleField: normalized });
+          }}
+        />
+        <Tooltip
+          title={
+            canSync
+              ? t('Sync selected title field to collection')
+              : t('Please choose a different title field before syncing')
+          }
+        >
+          <Popconfirm
+            title={t('Sync title field')}
+            description={t('This will update the collection title field globally. Continue?')}
+            okText={t('OK')}
+            cancelText={t('Cancel')}
+            disabled={!canSync}
+            onConfirm={async () => {
+              if (!associationQuickContext || !previewTitleField || typeof onSyncAssociationTitleField !== 'function') {
+                return;
+              }
+              const isValidSelection = associationQuickContext.candidates.some(
+                (option) => option.value === previewTitleField,
+              );
+              if (!isValidSelection) {
+                return;
+              }
+              setSyncingRuleKey(ruleKey);
+              try {
+                await onSyncAssociationTitleField({
+                  ruleItem: item,
+                  ruleIndex: index,
+                  targetPath: item.targetPath,
+                  associationField: associationQuickContext.associationField,
+                  targetCollection: associationQuickContext.targetCollection,
+                  titleField: previewTitleField,
+                });
+                setTitleFieldDraftMap((prev) => {
+                  if (!(ruleKey in prev)) return prev;
+                  const next = { ...prev };
+                  delete next[ruleKey];
+                  return next;
+                });
+                patchItem(index, { valueTitleField: undefined });
+              } catch (error) {
+                console.warn('[FieldAssignRulesEditor] Failed to sync title field', error);
+              } finally {
+                setSyncingRuleKey((prev) => (prev === ruleKey ? null : prev));
+              }
+            }}
+          >
+            <Button
+              size="small"
+              icon={<SyncOutlined spin={isSyncing} />}
+              disabled={!canSync}
+              aria-label={t('Sync title field')}
+            />
+          </Popconfirm>
+        </Tooltip>
+      </Space.Compact>
+    ) : null;
+
     return {
       key: item.key || String(index),
       label: renderPanelHeader(item, index),
@@ -555,8 +855,23 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 const arr = Array.isArray(segments) ? segments.map((s) => String(s)).filter(Boolean) : [];
                 const targetPath = arr.length ? arr.join('.') : undefined;
                 const changed = targetPath !== item.targetPath;
+                if (changed) {
+                  setTitleFieldDraftMap((prev) => {
+                    if (!(ruleKey in prev)) return prev;
+                    const next = { ...prev };
+                    delete next[ruleKey];
+                    return next;
+                  });
+                  setAdvancedOpenMap((prev) => {
+                    if (!(ruleKey in prev)) return prev;
+                    const next = { ...prev };
+                    delete next[ruleKey];
+                    return next;
+                  });
+                }
                 patchItem(index, {
                   targetPath,
+                  valueTitleField: changed ? undefined : item.valueTitleField,
                   value: changed ? undefined : item.value,
                 });
               }}
@@ -567,13 +882,55 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
             <div>
               <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Value')}</div>
               <FieldAssignValueInput
-                key={item.targetPath || 'no-field'}
+                key={`${item.targetPath || 'no-field'}::${previewTitleField || ''}`}
                 targetPath={item.targetPath || ''}
                 value={item.value}
                 onChange={(v) => patchItem(index, { value: v })}
                 extraMetaTree={extraMetaTree}
                 {...(getValueInputProps?.(item, index) || {})}
+                enableDateVariableAsConstant={enableDateVariableAsConstant}
+                associationFieldNamesOverride={
+                  associationQuickContext && previewTitleField
+                    ? {
+                        label: previewTitleField,
+                        value: associationQuickContext.valueKey,
+                      }
+                    : undefined
+                }
               />
+              {shouldShowAdvanced && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                  <Popover
+                    trigger="click"
+                    open={isAdvancedOpen}
+                    onOpenChange={(open) => {
+                      setAdvancedOpenMap((prev) => ({
+                        ...prev,
+                        [ruleKey]: open,
+                      }));
+                    }}
+                    placement="bottomRight"
+                    title={t('Advanced')}
+                    content={
+                      <div style={{ minWidth: 280 }}>
+                        <Space size={8} align="center" wrap>
+                          <span style={{ fontSize: 12, opacity: 0.75 }}>{t('Title field')}</span>
+                          {quickSyncControl}
+                        </Space>
+                      </div>
+                    }
+                  >
+                    <Button
+                      type="link"
+                      size="small"
+                      style={{ paddingInline: 0, height: 'auto' }}
+                      icon={isAdvancedOpen ? <UpOutlined /> : <DownOutlined />}
+                    >
+                      {t('Advanced')}
+                    </Button>
+                  </Popover>
+                </div>
+              )}
             </div>
           )}
 

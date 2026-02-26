@@ -167,7 +167,7 @@ var loadOptions = async function() {
   // 简单的加载态
   selectEl.innerHTML = '<option>加载中...</option>';
   try {
-    var res = await ctx.api.request({ url: 'categories:list', method: 'get', params: {} });
+    var res = await ctx.request({ url: 'categories:list', method: 'get', params: {} });
     var items = (res && res.data) || [];
     renderOptions(Array.isArray(items) ? items : (items.data || []));
   } catch (e) {
@@ -219,7 +219,7 @@ var renderOptions = function(items) {
 var doSearch = async function(keyword) {
   selectEl.innerHTML = '<option>搜索中...</option>';
   try {
-    var res = await ctx.api.request({ url: 'categories:search', method: 'get', params: { q: keyword || '' } });
+    var res = await ctx.request({ url: 'categories:search', method: 'get', params: { q: keyword || '' } });
     var items = (res && res.data) || [];
     renderOptions(Array.isArray(items) ? items : (items.data || []));
   } catch (e) {
@@ -291,7 +291,7 @@ var renderData = function(items){
 
 var doSearch = async function(keyword){
   list.innerHTML = '<div style="padding:8px;color:#999;">加载中...</div>';
-  try { var res = await ctx.api.request({ url: 'biglist:search', method: 'get', params: { q: keyword || '' } }); var items = (res && res.data) || []; renderData(Array.isArray(items) ? items : (items.data || [])); } catch(e) { renderData([]); }
+  try { var res = await ctx.request({ url: 'biglist:search', method: 'get', params: { q: keyword || '' } }); var items = (res && res.data) || []; renderData(Array.isArray(items) ? items : (items.data || [])); } catch(e) { renderData([]); }
 };
 
 // 事件绑定
@@ -326,7 +326,7 @@ var renderOptions = function(items) {
 };
 var loadParents = async function(){
   el.innerHTML = '<option>加载中...</option>';
-  try { var res = await ctx.api.request({ url: 'categories:parents', method: 'get', params: {} }); var items = (res && res.data) || []; renderOptions(Array.isArray(items) ? items : (items.data || [])); } catch(e) { renderOptions([]); }
+  try { var res = await ctx.request({ url: 'categories:parents', method: 'get', params: {} }); var items = (res && res.data) || []; renderOptions(Array.isArray(items) ? items : (items.data || [])); } catch(e) { renderOptions([]); }
 };
 el && el.addEventListener('change', function(e){ ctx.setValue(e.target.value); });
 ctx.element.addEventListener('js-field:value-change', function(ev){ if (el) el.value = String(ev.detail == null ? '' : ev.detail); });
@@ -375,7 +375,7 @@ var renderOptions = function(items){
 var loadParents = async function(){
   selectEl.innerHTML = '<option>加载中...</option>';
   try {
-    var res = await ctx.api.request({ url: 'categories:parents', method: 'get', params: {} });
+    var res = await ctx.request({ url: 'categories:parents', method: 'get', params: {} });
     var items = (res && res.data) || [];
     renderOptions(Array.isArray(items) ? items : (items.data || []));
   } catch (err) {
@@ -459,7 +459,7 @@ var hideSuggest = function(){ if (!suggest) return; suggest.style.display = 'non
 
 var search = async function(q){
   if (!q) { hideSuggest(); return; }
-  try { var res = await ctx.api.request({ url: 'tags:search', method: 'get', params: { q: q } }); var items = (res && res.data) || []; showSuggest(Array.isArray(items) ? items : (items.data || [])); } catch(e) { hideSuggest(); }
+  try { var res = await ctx.request({ url: 'tags:search', method: 'get', params: { q: q } }); var items = (res && res.data) || []; showSuggest(Array.isArray(items) ? items : (items.data || [])); } catch(e) { hideSuggest(); }
 };
 
 // 初始化标签

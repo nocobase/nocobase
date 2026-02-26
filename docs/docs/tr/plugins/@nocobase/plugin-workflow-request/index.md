@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: HTTP İstek Düğümü"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  İş akışında herhangi bir HTTP hizmetine istek göndererek veri alışverişi yapmanızı sağlar.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: HTTP İstek Düğümü
+# Workflow: HTTP request node

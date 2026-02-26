@@ -1,18 +1,15 @@
 ---
-displayName: "वर्कफ़्लो: सबफ़्लो"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  यह एक वर्कफ़्लो के भीतर अन्य वर्कफ़्लो को कॉल करने के लिए उपयोग किया जाता है। आप वर्तमान वर्कफ़्लो के वेरिएबल्स को सबफ़्लो के इनपुट के रूप में उपयोग कर सकते हैं, और सबफ़्लो के आउटपुट को वर्तमान वर्कफ़्लो के वेरिएबल्स के रूप में उपयोग कर सकते हैं।
-isFree: नहीं
-builtIn: नहीं
-defaultEnabled: नहीं
-points: 4
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 2
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: सबफ़्लो
+# Workflow: Subflow

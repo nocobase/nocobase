@@ -1,46 +1,43 @@
-
 # 新建 AI 员工
 
-如果内置的 AI 员工不能满足你的需求，你也可以新建并定制自己的 AI 员工。
+如果内置 AI 员工不能满足你的需求，可以创建并定制自己的 AI 员工。
 
 ## 开始新建
 
-进入 AI 员工插件配置页面，点击 `AI employees` 标签页，进入 AI 员工管理页。
-
-![20251021225643](https://static-docs.nocobase.com/20251021225643.png)
-
-点击 `New AI employee` 按钮，进入 AI 员工创建页面。
+进入 `AI employees` 管理页，点击 `New AI employee`。
 
 ## 基本信息配置
 
-首先在 `Profile` 标签页中，我们可以配置 AI 员工的基本信息：
+在 `Profile` 标签页配置：
 
-- 在 `Username` 输入框中输入 AI 员工唯一标识；
-- 在 `Nickname` 输入框中输入 AI 员工昵称；
-- 在 `Position` 输入框中输入 AI 员工职位，用于简单描述 AI 员工的职责；
-- 在 `Avatar` 为 AI 员工选择一个头像。
+- `Username`：唯一标识。
+- `Nickname`：显示名称。
+- `Position`：岗位描述。
+- `Avatar`：员工头像。
+- `Bio`：简介。
+- `About me`：系统提示词。
+- `Greeting message`：会话欢迎语。
 
-![20251021232246](https://static-docs.nocobase.com/20251021232246.png)
+![ai-employee-create-without-model-settings-tab.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-create-without-model-settings-tab.png)
 
-- 在 `Bio` 输入框中输入 AI 员工的介绍文字，描述他的技能和职能，这里的文字将展示在 AI 员工简介中；
-- 在 `About me` 输入框中输入 AI 员工职能的详细描述，这里的文字将在与 AI 员工对话时被用作系统提示词。
-- 在 `Greeting message` 输入框中输入 AI 员工的打招呼消息，每当用户与 AI 员工开始新的对话时，系统将自动发送该消息给用户。
-  
-![20251021232712](https://static-docs.nocobase.com/20251021232712.png)
+## 角色设定（Role setting）
 
-## 模型选择
+在 `Role setting` 标签页中配置员工的系统提示词（System Prompt）。这段内容会定义员工在对话中的身份、目标、工作边界与输出风格。
 
-在`Model settings`标签页中，我们可以配置 AI 员工的模型设置：
+建议至少包含：
 
-- 选择 LLM 服务；
-- 选择要使用的大模型。推荐（已验证）：**gemini-3**、**deepseek-chat**、**qwen3-max**。
+- 角色定位与职责范围。
+- 任务处理原则与回答结构。
+- 禁止事项、信息边界与语气风格。
 
-![20251021231727](https://static-docs.nocobase.com/20251021231727.png)
+可按需插入变量（如当前用户、当前角色、当前语言、时间），让提示词在不同会话中自动适配上下文。
+
+![ai-employee-role-setting-system-prompt.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-role-setting-system-prompt.png)
+
+## 技能与知识配置
+
+在 `Skills` 标签页配置技能权限；如果已启用知识库能力，可在知识库相关标签页继续配置。
 
 ## 完成创建
 
-输入所有创建 AI 员工的必要信息后，点击 `Submit` 按钮完成创建。
-
-然后我们可以在 AI 员工列表中看到刚创建的 AI 员工。并且在页面右下角的 AI 员工快捷唤起按钮中可以看到我们刚刚创建的 AI 员工。
-
-![20251021232836](https://static-docs.nocobase.com/20251021232836.png)
+点击 `Submit` 完成创建。

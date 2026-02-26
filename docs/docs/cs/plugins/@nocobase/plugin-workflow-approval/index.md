@@ -1,15 +1,15 @@
 ---
-displayName: "Pracovní postup: Schvalování"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Spouští se, když je požadavek na schválení iniciován prostřednictvím akčního tlačítka nebo API. Je určen pro schvalovací proces, s exkluzivním schvalovacím uzlem a blokem pro správu dokumentů a sledování průběhu zpracování.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Schvalování
+# Workflow: Approval

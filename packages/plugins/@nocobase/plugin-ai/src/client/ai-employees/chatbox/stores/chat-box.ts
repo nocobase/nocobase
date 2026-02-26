@@ -15,9 +15,15 @@ import { createSelectors } from './create-selectors';
 
 type RolesType = GetProp<typeof Bubble.List, 'roles'>;
 
+export interface ModelRef {
+  llmService: string;
+  model: string;
+}
+
 interface ChatBoxState {
   open: boolean;
   expanded: boolean;
+  collapsed: boolean;
   showConversations: boolean;
   minimize: boolean;
 
@@ -36,11 +42,17 @@ interface ChatBoxState {
   chatBoxRef: React.MutableRefObject<HTMLDivElement> | null;
   senderRef: React.MutableRefObject<GetRef<typeof Sender>> | null;
   showCodeHistory: boolean;
+
+  model?: ModelRef | null;
+
+  // [AI_DEBUG]
+  showDebugPanel: boolean;
 }
 
 interface ChatBoxActions {
   setOpen: (open: boolean) => void;
   setExpanded: (expanded: boolean) => void;
+  setCollapsed: (collapsed: boolean) => void;
   setShowConversations: (show: boolean) => void;
   setMinimize: (minus: boolean) => void;
 
@@ -57,11 +69,17 @@ interface ChatBoxActions {
   setChatBoxRef: (ref: React.MutableRefObject<HTMLDivElement> | null) => void;
   setSenderRef: (ref: React.MutableRefObject<GetRef<typeof Sender>> | null) => void;
   setShowCodeHistory: (show: boolean) => void;
+
+  setModel: (model: ModelRef | null) => void;
+
+  // [AI_DEBUG]
+  setShowDebugPanel: (show: boolean) => void;
 }
 
 const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   open: false,
   expanded: false,
+  collapsed: false,
   showConversations: false,
   minimize: false,
 
@@ -81,9 +99,13 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
     current: null,
   },
   showCodeHistory: false,
+  model: null,
+  // [AI_DEBUG]
+  showDebugPanel: false,
 
-  setOpen: (open) => set({ open }),
-  setExpanded: (expanded) => set({ expanded }),
+  setOpen: (open) => set({ open, ...(open ? {} : { collapsed: false }) }),
+  setExpanded: (expanded) => set({ expanded, ...(expanded ? { collapsed: false } : {}) }),
+  setCollapsed: (collapsed) => set({ collapsed }),
   setShowConversations: (show) => set({ showConversations: show }),
   setMinimize: (minus) => set({ minimize: minus }),
 
@@ -107,6 +129,9 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   setChatBoxRef: (ref) => set({ chatBoxRef: ref }),
   setSenderRef: (ref) => set({ senderRef: ref }),
   setShowCodeHistory: (show) => set({ showCodeHistory: show }),
+  setModel: (model) => set({ model }),
+  // [AI_DEBUG]
+  setShowDebugPanel: (show) => set({ showDebugPanel: show }),
 }));
 
 export const useChatBoxStore = createSelectors(store);

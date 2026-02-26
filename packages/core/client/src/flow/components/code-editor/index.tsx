@@ -45,6 +45,7 @@ interface CodeEditorProps {
 
 export * from './types';
 export * from './extension';
+export * from './runjsDiagnostics';
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = '',

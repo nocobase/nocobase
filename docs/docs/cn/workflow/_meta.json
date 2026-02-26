@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "执行记录",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

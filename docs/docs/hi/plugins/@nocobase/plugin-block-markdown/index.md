@@ -1,14 +1,12 @@
 ---
-displayName: "मार्क्सडाउन"
+displayName: "Block: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
-  यह मार्क्सडाउन ब्लॉक उपलब्ध कराता है।
+  Provide Markdown block
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# मार्क्सडाउन
+# Block: Markdown

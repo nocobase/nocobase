@@ -1,16 +1,15 @@
 ---
-displayName: "פעולה: ייבוא רשומות"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  ייבוא נתונים באמצעות תבניות אקסל. ניתן להגדיר אילו שדות לייבא, והתבניות ייווצרו אוטומטית.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-
-
-# פעולה: ייבוא רשומות
+# Action: Import records

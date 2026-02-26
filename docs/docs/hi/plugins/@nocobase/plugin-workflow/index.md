@@ -1,16 +1,12 @@
 ---
-displayName: "वर्कफ़्लो"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  एक शक्तिशाली BPM टूल जो व्यावसायिक स्वचालन के लिए मूलभूत सहायता प्रदान करता है, और असीमित ट्रिगर तथा नोड्स के साथ विस्तार योग्य है।
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# वर्कफ़्लो
+# Workflow

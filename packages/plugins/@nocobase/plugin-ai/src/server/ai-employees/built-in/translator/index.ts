@@ -20,23 +20,15 @@ export default {
         autoCall: true,
       },
       {
-        name: 'dataModeling-getDataSources',
+        name: 'getDataSources',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionNames',
+        name: 'getCollectionNames',
         autoCall: true,
       },
       {
-        name: 'dataModeling-getCollectionMetadata',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceCounting',
-        autoCall: true,
-      },
-      {
-        name: 'dataSource-dataSourceQuery',
+        name: 'getCollectionMetadata',
         autoCall: true,
       },
     ],

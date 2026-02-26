@@ -18,6 +18,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
+import { ToolsLoader } from '@nocobase/ai';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -73,6 +74,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   get name() {
     return this.options.name as string;
+  }
+
+  get ai() {
+    return this.app.aiManager;
   }
 
   get pm() {
@@ -204,6 +209,28 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   /**
+   * @internal
+   */
+  async loadAI() {
+    const pluginRoot = await this.getPluginBasePath();
+    if (!pluginRoot) {
+      return;
+    }
+    const basePath = resolve(pluginRoot, 'ai');
+    if (!(await fsExists(basePath))) {
+      return;
+    }
+    const toolsLoader = new ToolsLoader(this.ai, {
+      scan: {
+        basePath,
+        pattern: ['**/tools/**/*.ts', '**/tools/**/*.js', '!**/tools/**/*.d.ts', '**/tools/**/*/description.md'],
+      },
+      log: this.log,
+    });
+    await toolsLoader.load();
+  }
+
+  /**
    * @deprecated
    */
   requiredPlugins() {
@@ -226,6 +253,21 @@ export abstract class Plugin<O = any> implements PluginInterface {
       };
     }
 
+    const langMap = {
+      'zh-CN': 'cn/',
+      'en-US': '',
+      'ja-JP': 'ja/',
+      'ko-KR': 'ko/',
+      'es-ES': 'es/',
+      'pt-PT': 'pt/',
+      'de-DE': 'de',
+      'fr-FR': 'fr/',
+    };
+
+    if (packageName.startsWith('@nocobase/plugin-')) {
+      packageJson.homepage = `https://v2.docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
+    }
+
     const results = {
       ...this.options,
       keywords: packageJson.keywords,
@@ -233,7 +275,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       changelogUrl: getExposeChangelogUrl(packageName),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
-      homepage: packageJson[`homepage.${locale}`] || packageJson.homepage,
+      homepage: packageJson.homepage,
     };
 
     if (!options.withOutOpenFile) {

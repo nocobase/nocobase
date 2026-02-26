@@ -1,18 +1,15 @@
 ---
-displayName: "سجلات التدقيق (مهملة)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  هذه الإضافة مهملة، يرجى عدم استخدامها. ستتوفر إضافة جديدة لسجلات التدقيق في المستقبل.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
+# Audit logs (deprecated)
 
-# سجلات التدقيق (مهملة)
-
-> ملاحظة: هذه الإضافة مهملة.
+> Note: This plugin is deprecated.

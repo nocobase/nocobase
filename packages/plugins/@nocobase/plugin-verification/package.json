@@ -6,8 +6,8 @@
   "description": "User identity verification management, including SMS, TOTP authenticator, with extensibility.",
   "description.ru-RU": "Управление проверкой личности пользователя, включая SMS, TOTP-авторизацию, с возможностью расширения.",
   "description.zh-CN": "用户身份验证管理，包含短信、TOTP 认证器等，可扩展。",
-  "version": "2.0.0-beta.22",
-  "license": "AGPL-3.0",
+  "version": "2.1.0-beta.5",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/verification",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/verification",
@@ -23,7 +23,7 @@
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
-    "tencentcloud-sdk-nodejs": "^4.0.525"
+    "tencentcloud-sdk-nodejs-sms": "^4.1.171"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",

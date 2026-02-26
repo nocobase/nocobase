@@ -1,18 +1,15 @@
 ---
-displayName: "Fluxo de trabalho: Gatilho Webhook"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Recebe chamadas HTTP de sistemas externos e dispara eventos. É ideal para o envio de dados e notificações de eventos iniciados por sistemas de terceiros, como callbacks de pagamento e notificações de mensagens.
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Fluxo de trabalho: Gatilho Webhook
+# Workflow: Webhook

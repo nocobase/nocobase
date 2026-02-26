@@ -1,14 +1,12 @@
 ---
-displayName: "Campo de colección: Ordenar"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Se utiliza para ordenar los datos en una colección.
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Campo de colección: Ordenar
+# Collection field: Sort

@@ -186,6 +186,9 @@ export const CardUpload = (props) => {
                   justifyContent: 'center',
                 }}
                 onClick={(e) => {
+                  if (disabled) {
+                    return;
+                  }
                   e.stopPropagation();
                   e.preventDefault();
                   onSelectExitRecordClick();

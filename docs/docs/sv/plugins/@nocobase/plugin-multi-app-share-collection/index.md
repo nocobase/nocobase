@@ -1,5 +1,5 @@
 ---
-displayName: "Delad samling för flera appar"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,13 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+# Multi-app share collection
 
-
-# Delad samling för flera appar
-
-> Observera: Detta plugin är föråldrat.
+> Note: This plugin is deprecated.

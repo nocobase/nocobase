@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: Döngü düğümü"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Bir dizideki her değer için alt süreçleri tekrarlamak veya belirli sayıda alt süreç işlemini yinelemek için kullanılır.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Döngü düğümü
+# Workflow: Loop node

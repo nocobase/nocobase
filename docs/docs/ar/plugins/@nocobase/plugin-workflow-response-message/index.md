@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: رسالة الاستجابة"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  يُستخدم لتجميع رسائل الاستجابة وعرضها للعميل ضمن سير عمل أحداث النماذج واعتراض الطلبات.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: رسالة الاستجابة
+# Workflow: Response message

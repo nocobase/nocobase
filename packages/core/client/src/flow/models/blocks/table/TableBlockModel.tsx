@@ -36,7 +36,22 @@ import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import {
+  applyMobilePaginationProps,
+  createCompactSimpleItemRender,
+  getSimpleModePaginationClassName,
+  getUnknownCountPaginationTotal,
+  mergePaginationClassName,
+} from '../../../utils';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
+import {
+  SortHandle,
+  initDragSortParams,
+  useDragSortBodyWrapper,
+  useDragSortRowComponent,
+  dragSortSettings,
+  dragSortBySettings,
+} from './dragSort';
 
 const MemoizedTable = React.memo(Table);
 
@@ -50,7 +65,11 @@ type TableBlockModelStructure = {
 const TableIndex = (props) => {
   const { index, ...otherProps } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
+    <div
+      className={classNames('nb-table-index')}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+      {...otherProps}
+    >
       {index}
     </div>
   );
@@ -60,8 +79,8 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
-  padding-right: 8px;
+  justify-content: center;
+  padding-right: 0px;
   .nb-table-index {
     opacity: 0;
   }
@@ -73,6 +92,7 @@ const rowSelectCheckboxWrapperClass = css`
 `;
 
 const rowSelectCheckboxWrapperClassHover = css`
+  min-height: 16px;
   &:hover {
     .nb-table-index {
       opacity: 0;
@@ -86,7 +106,8 @@ const rowSelectCheckboxContentClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const rowSelectCheckboxCheckedClassHover = css`
@@ -95,6 +116,12 @@ const rowSelectCheckboxCheckedClassHover = css`
   transform: translateX(50%);
   &:not(.checked) {
     display: none;
+  }
+`;
+
+const rowSelectCheckboxWrapperNoIndexClass = css`
+  .nb-origin-node {
+    display: block;
   }
 `;
 
@@ -177,6 +204,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     this.disposeAutorun = autorun(() => {
       this.columns.value = this.getColumns();
     });
+
+    // 初始化拖拽排序参数
+    initDragSortParams(this);
   }
 
   onUnmount() {
@@ -357,14 +387,30 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     if (record.__index) {
       index = extractIndex(record.__index);
     }
+    const rowKey = getRowKey(record, this.collection.filterTargetKey);
+    const rowKeyString = rowKey == null ? rowKey : String(rowKey);
+    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
     return (
       <div
         role="button"
         aria-label={`table-index-${index}`}
         className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
           [rowSelectCheckboxWrapperClassHover]: true,
+          [rowSelectCheckboxWrapperNoIndexClass]: !this.props.showIndex,
         })}
       >
+        {showDragHandle && (
+          <SortHandle
+            id={rowKeyString}
+            style={{
+              position: 'absolute',
+              left: -24,
+              top: '50%',
+              justifyContent: 'center',
+              transform: 'translateY(-50%)',
+            }}
+          />
+        )}
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
           {this.props.showIndex && <TableIndex index={index} />}
         </div>
@@ -395,8 +441,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     const hasNext = this.resource.getMeta('hasNext');
     const current = this.resource.getPage();
     const data = this.resource.getData();
+    const isMobileLayout = !!this.context.isMobileLayout;
     if (totalCount) {
-      return {
+      const result = {
         current,
         pageSize,
         total: totalCount,
@@ -405,39 +452,30 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         },
         showSizeChanger: true,
       };
+      return applyMobilePaginationProps(result, isMobileLayout);
     } else {
-      return {
+      const nextPageSize = pageSize || 10;
+      const nextCurrent = current || 1;
+      const result = {
         // showTotal: false,
         simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
-        pageSize,
-        total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
-        className: css`
-          .ant-pagination-simple-pager {
-            display: none !important;
-          }
-        `,
-        itemRender: (_, type, originalElement) => {
-          if (type === 'prev') {
-            return (
-              <div
-                style={{ display: 'flex' }}
-                className={css`
-                  .ant-pagination-item-link {
-                    min-width: ${this.context.themeToken.controlHeight}px;
-                  }
-                `}
-              >
-                {originalElement} <div>{this.resource.getPage()}</div>
-              </div>
-            );
-          } else {
-            return originalElement;
-          }
-        },
+        pageSize: nextPageSize,
+        total: getUnknownCountPaginationTotal({
+          dataLength: data?.length,
+          pageSize: nextPageSize,
+          current: nextCurrent,
+          hasNext,
+        }),
+        className: mergePaginationClassName(getSimpleModePaginationClassName(), undefined),
+        itemRender: createCompactSimpleItemRender({
+          current: nextCurrent,
+          controlHeight: this.context.themeToken.controlHeight,
+        }),
       };
+      return applyMobilePaginationProps(result, isMobileLayout);
     }
   }
 
@@ -718,6 +756,8 @@ TableBlockModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
+    dragSort: dragSortSettings,
+    dragSortBy: dragSortBySettings,
     // virtualScrolling: {
     //   title: tExpr('Enable virtual scrolling'),
     //   uiSchema: {
@@ -795,9 +835,20 @@ const HighPerformanceTable = React.memo(
       expandedRowKeys,
       tableScroll,
     } = props;
+    const dataSourceRef = useRef(dataSource);
+    dataSourceRef.current = dataSource;
+
     const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
       model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
     );
+
+    const getRowKeyFunc = useCallback(
+      (record) => {
+        return getRowKey(record, model.collection.filterTargetKey);
+      },
+      [model.collection.filterTargetKey],
+    );
+
     const rowSelection = useMemo(() => {
       return {
         columnWidth: 50,
@@ -811,10 +862,13 @@ const HighPerformanceTable = React.memo(
         ...model.rowSelectionProps,
       };
     }, [model, selectedRowKeys]);
+
     const handleChange = useCallback(
       async (pagination, filters, sorter) => {
         const globalSort = model.props.globalSort;
-        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+        const resourceSort = model.resource.getSort();
+        const currentSort = resourceSort?.length ? resourceSort : globalSort;
+        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : currentSort;
         if (sorter) {
           model.resource.setSort(sort);
         }
@@ -833,16 +887,20 @@ const HighPerformanceTable = React.memo(
       },
       [model, defaultExpandAllRows],
     );
+
     const rowClassName = useCallback(
       (record) => {
         return getRowKey(record, model.collection?.filterTargetKey) === highlightedRowKey ? highlightedRowClass : '';
       },
       [highlightedRowKey, model.collection?.filterTargetKey],
     );
+
     const pagination = useMemo(() => _pagination, [dataSource]);
+
     const onRow = useCallback(
       (record, rowIndex) => {
         const rowKey = getRowKey(record, model.collection.filterTargetKey);
+        const rowKeyString = rowKey == null ? rowKey : String(rowKey);
 
         return {
           onClick: async (event) => {
@@ -854,6 +912,8 @@ const HighPerformanceTable = React.memo(
               await model.dispatchEvent('rowClick', { record, rowIndex, event });
             }
           },
+          rowIndex,
+          'data-row-key': rowKeyString,
         };
       },
       [highlightedRowKey, model],
@@ -864,6 +924,7 @@ const HighPerformanceTable = React.memo(
     useEffect(() => {
       setExpandedRowKeys(expandedRowKeys);
     }, [expandedRowKeys]);
+
     const expandable = useMemo(() => {
       return {
         expandedRowKeys: rowKeys,
@@ -881,12 +942,52 @@ const HighPerformanceTable = React.memo(
       };
     }, [rowKeys]);
 
+    // 拖拽相关的 Body Wrapper 组件
+    const BodyWrapperComponent = useDragSortBodyWrapper(model, dataSourceRef, getRowKeyFunc);
+
+    // 行组件
+    const RowComponent = useDragSortRowComponent(model.props.dragSort);
+
+    const components = useMemo(() => {
+      return {
+        ...model.components,
+        body: {
+          ...model.components.body,
+          wrapper: BodyWrapperComponent,
+          row: RowComponent,
+        },
+      };
+    }, [model.components, BodyWrapperComponent, RowComponent]);
+
+    const tableClassName = useMemo(() => {
+      const baseClass = css`
+        .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+          display: inline;
+        }
+        .ant-table-column-sorters .ant-table-column-title {
+          overflow: visible;
+        }
+      `;
+
+      const selectionPaddingClass =
+        model.props.dragSort && model.props.dragSortBy
+          ? css`
+              .ant-table-thead > tr > th.ant-table-selection-column,
+              .ant-table-tbody > tr > td.ant-table-selection-column {
+                padding-left: 32px !important;
+              }
+            `
+          : undefined;
+
+      return classNames(baseClass, selectionPaddingClass);
+    }, [model.props.dragSort, model.props.dragSortBy]);
+
     return (
       <MemoizedTable
-        components={model.components}
+        components={components}
         tableLayout="fixed"
         size={size}
-        rowKey={(record) => getRowKey(record, model.collection.filterTargetKey)}
+        rowKey={getRowKeyFunc}
         rowSelection={rowSelection as any}
         virtual={virtual}
         scroll={tableScroll}
@@ -896,14 +997,7 @@ const HighPerformanceTable = React.memo(
         onChange={handleChange}
         rowClassName={rowClassName}
         onRow={onRow}
-        className={css`
-          .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
-            display: inline;
-          }
-          .ant-table-column-sorters .ant-table-column-title {
-            overflow: visible;
-          }
-        `}
+        className={tableClassName}
         defaultExpandAllRows={defaultExpandAllRows}
         expandable={expandable}
         indentSize={15}

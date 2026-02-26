@@ -1,18 +1,15 @@
 ---
-displayName: "الإجراء: استيراد السجلات الاحترافي"
+displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يعزز هذا الإجراء إمكانيات استيراد البيانات. يدعم الاستيراد غير المتزامن للتعامل مع كميات كبيرة من البيانات، ويتضمن ميزات مثل التعرف على معالجة البيانات، وتحديثها، وتشغيل سير العمل.
+  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# الإجراء: استيراد السجلات الاحترافي
+# Action: Import records Pro

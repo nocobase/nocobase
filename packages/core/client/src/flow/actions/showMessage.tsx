@@ -8,9 +8,11 @@
  */
 
 import { ActionScene, defineAction, tExpr, useFlowContext } from '@nocobase/flow-engine';
-import { Radio, Input, InputNumber, message } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
+import { Radio, Input, InputNumber } from 'antd';
 import type { RadioChangeEvent } from 'antd/es/radio';
 import React from 'react';
+import { uid } from '@nocobase/utils/client';
 
 type MessageType = 'success' | 'error' | 'info' | 'warning' | 'loading';
 
@@ -19,6 +21,21 @@ type MessageValue = {
   content: string;
   duration?: number;
 };
+
+const DEFAULT_DURATION = 3;
+
+function normalizeDuration(duration: number | null | undefined, fallback = DEFAULT_DURATION) {
+  if (duration === null || typeof duration === 'undefined') {
+    return fallback;
+  }
+
+  const numeric = Number(duration);
+  if (Number.isNaN(numeric)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.trunc(numeric));
+}
 
 export const showMessage = defineAction({
   name: 'showMessage',
@@ -37,7 +54,7 @@ export const showMessage = defineAction({
         const mergedValue: MessageValue = {
           type: rawValue.type ?? 'info',
           content: rawValue.content || '',
-          duration: rawValue.duration ?? 3,
+          duration: normalizeDuration(rawValue.duration),
         };
 
         const updateValue = (partial: Partial<MessageValue>) => {
@@ -56,7 +73,7 @@ export const showMessage = defineAction({
         };
 
         const handleDurationChange = (value: number | null) => {
-          updateValue({ duration: value ?? 3 });
+          updateValue({ duration: normalizeDuration(value) });
         };
 
         const renderSectionLabel = (text: string) => (
@@ -91,7 +108,8 @@ export const showMessage = defineAction({
                 value={mergedValue.duration}
                 onChange={handleDurationChange}
                 min={0}
-                step={0.5}
+                step={1}
+                precision={0}
                 style={{ width: '100%' }}
               />
             </div>
@@ -101,17 +119,37 @@ export const showMessage = defineAction({
     },
   },
   handler: async (ctx, { value }) => {
-    const params: MessageValue = value || { type: 'info', content: '', duration: 3 };
-    const { type = 'info', content, duration = 3 } = params;
+    const params: MessageValue = value || { type: 'info', content: '', duration: DEFAULT_DURATION };
+    const { type = 'info', content, duration = DEFAULT_DURATION } = params;
+    const normalizedDuration = normalizeDuration(duration);
 
     if (!content) {
       return;
     }
 
-    ctx.message.open({
+    const messageKey = `flow-message-${uid()}`;
+    const contentNode =
+      normalizedDuration === 0 ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <span>{content}</span>
+          <CloseOutlined
+            role="button"
+            aria-label="close message"
+            style={{ color: 'rgba(0, 0, 0, 0.45)', cursor: 'pointer', fontSize: '12px' }}
+            onClick={() => ctx.message.destroy?.(messageKey)}
+          />
+        </span>
+      ) : (
+        content
+      );
+
+    const options = {
+      key: messageKey,
       type,
-      content,
-      duration,
-    });
+      content: contentNode,
+      duration: normalizedDuration,
+    };
+
+    ctx.message.open(options);
   },
 });

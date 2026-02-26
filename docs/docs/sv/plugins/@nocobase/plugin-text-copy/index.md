@@ -1,15 +1,12 @@
 ---
-displayName: "Textkopiering"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Lägger till en kopieringsknapp för textfält.
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Textkopiering
+# Text copy

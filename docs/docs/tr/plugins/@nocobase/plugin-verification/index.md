@@ -1,14 +1,12 @@
 ---
-displayName: "Doğrulama"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  Kullanıcı kimlik doğrulama yönetimi; SMS, TOTP doğrulayıcı gibi yöntemleri içerir ve genişletilebilir bir yapıya sahiptir.
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Doğrulama
+# Verification

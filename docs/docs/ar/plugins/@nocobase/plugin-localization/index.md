@@ -1,14 +1,12 @@
 ---
-displayName: "التعريب"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  يتيح إدارة موارد التعريب للتطبيق.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# التعريب
+# Localization

@@ -1,18 +1,15 @@
 ---
-displayName: "مصادقة: دينغ توك"
+displayName: "Auth: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  توثيق الهوية باستخدام حساب دينغ توك.
+  DingTalk authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# مصادقة: دينغ توك
+# Auth: DingTalk

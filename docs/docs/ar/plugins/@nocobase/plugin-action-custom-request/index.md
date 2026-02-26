@@ -1,14 +1,14 @@
 ---
-displayName: "الإجراء: طلب مخصص"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  يرسل طلبًا إلى أي خدمة HTTP، ويدعم إرسال بيانات السياق إلى الخدمة المستهدفة.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# الإجراء: طلب مخصص
+# Action: Custom request

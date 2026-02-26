@@ -1,14 +1,12 @@
 ---
-displayName: "Робочий процес: SQL вузол"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Дозволяє виконувати довільні SQL-запити до бази даних у робочому процесі.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Робочий процес: SQL вузол
+# Workflow: SQL node

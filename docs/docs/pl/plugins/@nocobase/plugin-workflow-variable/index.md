@@ -1,18 +1,15 @@
 ---
-displayName: "Przepływ pracy: Zmienna niestandardowa"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Służy do tworzenia zmiennych niestandardowych lub przypisywania im wartości w przepływach pracy, aby przechowywać tymczasowe dane w procesie.
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Zmienna niestandardowa
+# Workflow: Custom variable

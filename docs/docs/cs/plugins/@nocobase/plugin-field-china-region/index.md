@@ -1,16 +1,12 @@
 ---
-displayName: "Pole kolekce: Administrativní členění Číny"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Poskytuje data a typ pole pro administrativní členění Číny.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Pole kolekce: Administrativní členění Číny
+# Collection field: administrative divisions of China

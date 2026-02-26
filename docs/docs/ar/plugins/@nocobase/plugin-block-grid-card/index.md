@@ -1,14 +1,12 @@
 ---
-displayName: "الكتلة: بطاقة الشبكة"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  لعرض البيانات في قائمة شبكية مع دعم للترقيم الصفحات.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# الكتلة: بطاقة الشبكة
+# Block: GridCard

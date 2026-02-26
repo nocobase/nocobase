@@ -18,13 +18,10 @@ export default {
       // 可视化工具：模式切换 + 运行查询
       { name: 'viz-switchModes', autoCall: true },
       { name: 'viz-runQuery', autoCall: true },
-      // 查询数据源
-      { name: 'dataSource-dataSourceCounting', autoCall: true },
-      { name: 'dataSource-dataSourceQuery', autoCall: true },
       // 了解数据结构
-      { name: 'dataModeling-getDataSources', autoCall: true },
-      { name: 'dataModeling-getCollectionNames', autoCall: true },
-      { name: 'dataModeling-getCollectionMetadata', autoCall: true },
+      { name: 'getDataSources', autoCall: true },
+      { name: 'getCollectionNames', autoCall: true },
+      { name: 'getCollectionMetadata', autoCall: true },
     ],
   },
 };

@@ -1,14 +1,12 @@
 ---
-displayName: "Vizualizovaný správce kolekcí"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  Nástroj podobný ER diagramům. V současné době je podporována pouze hlavní databáze.
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Vizualizovaný správce kolekcí
+# Graph collection manager

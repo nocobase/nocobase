@@ -14,9 +14,9 @@ features:
         details: The no-code/low-code frontend development engine for NocoBase 2.0.
         link: /flow-engine
         showOnHome: true
-      - title: Database
-        details: The database module of the NocoBase core, providing a unified API for data access, modeling, and operations for plugins. It is the core foundation for data interaction between plugins.
-        link: /database
+      - title: Frontend RunJS
+        details: JavaScript execution environment for JS block, JS field, JS action, and similar scenarios.
+        link: /runjs
         showOnHome: true
   - title: Interface & Interaction
     details: Learn how to extend and customize the frontend interface, build components, fields, and action logic that meet business needs, and enhance the system's visualization and interactive experience.

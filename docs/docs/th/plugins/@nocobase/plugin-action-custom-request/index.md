@@ -1,14 +1,14 @@
 ---
-displayName: "แอคชัน: คำขอที่กำหนดเอง"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  ส่งคำขอไปยังบริการ HTTP ใดก็ได้ พร้อมรองรับการส่งข้อมูลบริบทไปยังบริการเป้าหมาย
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แอคชัน: คำขอที่กำหนดเอง
+# Action: Custom request

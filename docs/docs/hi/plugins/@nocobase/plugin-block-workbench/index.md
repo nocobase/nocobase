@@ -1,14 +1,12 @@
 ---
-displayName: "ब्लॉक: एक्शन पैनल"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  यह ब्लॉक विभिन्न एक्शन को एक ही जगह पर प्रबंधित और प्रदर्शित करता है, जिससे आप अपने काम तेज़ी से कर सकें। इसे और भी बढ़ाया जा सकता है, और अभी यह पॉप-अप, लिंक, स्कैनिंग और कस्टम अनुरोध जैसे एक्शन प्रकारों को सपोर्ट करता है।
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ब्लॉक: एक्शन पैनल
+# Block: Action panel

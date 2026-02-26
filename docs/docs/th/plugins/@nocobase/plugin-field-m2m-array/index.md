@@ -1,14 +1,12 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: หลายต่อหลาย (อาร์เรย์)"
+displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  ช่วยให้สามารถสร้างความสัมพันธ์แบบหลายต่อหลายระหว่างสองคอลเลกชันได้ โดยจัดเก็บคีย์เฉพาะของคอลเลกชันเป้าหมายในรูปแบบอาร์เรย์
+  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟิลด์คอลเลกชัน: หลายต่อหลาย (อาร์เรย์)
+# Collection field: Many to many (array)

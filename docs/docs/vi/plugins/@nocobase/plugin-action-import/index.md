@@ -1,14 +1,15 @@
 ---
-displayName: "Thao tác: Nhập bản ghi"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Sử dụng mẫu Excel để nhập dữ liệu. Bạn có thể cấu hình các trường cần nhập và mẫu sẽ được tạo tự động.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Nhập bản ghi
+# Action: Import records

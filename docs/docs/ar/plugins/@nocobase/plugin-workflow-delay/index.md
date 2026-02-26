@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة التأخير"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  يمكن استخدامها في الفروع المتوازية لسير العمل لانتظار اكتمال تنفيذ الفروع الأخرى.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة التأخير
+# Workflow: Delay node

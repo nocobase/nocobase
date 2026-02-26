@@ -61,6 +61,69 @@ describe('FlowRunJSContext.define() and getDoc() deep tests', () => {
       expect(apiProp.properties?.auth?.description).toBe('Auth info');
     });
 
+    it('should treat string doc as description when overriding object docs', () => {
+      class BaseDocContext extends FlowRunJSContext {}
+      class ChildDocContext extends BaseDocContext {}
+
+      BaseDocContext.define({
+        properties: {
+          foo: {
+            description: 'Base foo',
+            detail: 'FooDetail',
+            hidden: true,
+            completion: { insertText: 'ctx.foo' },
+            properties: {
+              bar: { description: 'Bar desc' },
+            },
+          },
+        },
+      });
+
+      ChildDocContext.define({
+        properties: {
+          foo: 'Child foo',
+        },
+      });
+
+      const doc = ChildDocContext.getDoc();
+      const foo: any = doc.properties?.foo;
+      expect(foo).toBeTruthy();
+      expect(typeof foo).toBe('object');
+      expect(foo.description).toBe('Child foo');
+      expect(foo.hidden).toBe(true);
+      expect(foo.detail).toBe('FooDetail');
+      expect(foo.completion?.insertText).toBe('ctx.foo');
+      expect(foo.properties?.bar?.description).toBe('Bar desc');
+    });
+
+    it('should preserve base string description when patch adds object doc', () => {
+      class BaseStringDocContext extends FlowRunJSContext {}
+      class ChildObjectDocContext extends BaseStringDocContext {}
+
+      BaseStringDocContext.define({
+        properties: {
+          foo: 'Base foo',
+        },
+      });
+
+      ChildObjectDocContext.define({
+        properties: {
+          foo: {
+            properties: {
+              bar: 'Bar',
+            },
+          },
+        },
+      });
+
+      const doc = ChildObjectDocContext.getDoc();
+      const foo: any = doc.properties?.foo;
+      expect(foo).toBeTruthy();
+      expect(typeof foo).toBe('object');
+      expect(foo.description).toBe('Base foo');
+      expect(foo.properties?.bar).toBe('Bar');
+    });
+
     it('should deep merge method documentation', () => {
       class MethodMergeContext extends FlowRunJSContext {}
 

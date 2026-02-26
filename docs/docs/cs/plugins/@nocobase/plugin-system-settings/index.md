@@ -1,14 +1,12 @@
 ---
-displayName: "Systémová nastavení"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Umožňuje upravit název systému, logo, jazyk apod.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Systémová nastavení
+# System settings

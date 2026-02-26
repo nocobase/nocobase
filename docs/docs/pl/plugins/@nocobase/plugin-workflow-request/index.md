@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: Węzeł żądania HTTP"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Umożliwia wysyłanie żądań HTTP do dowolnej usługi HTTP w przepływie pracy, w celu wymiany danych.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Węzeł żądania HTTP
+# Workflow: HTTP request node

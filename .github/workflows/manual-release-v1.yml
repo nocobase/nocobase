@@ -1,0 +1,215 @@
+name: Manual release v1.x
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'specify a version (e.g. 1.9.48)'
+        type: string
+        required: false
+      is_feat:
+        description: 'is feat (minor bump behavior, see release.sh)'
+        type: boolean
+        required: false
+      dry_run:
+        description: 'If true, do not build, commit, tag, or push. Only compute version + validate tag conflicts and print a plan.'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    with:
+      require_branch: v1
+    secrets: inherit
+
+  update-version:
+    needs:
+      - get-plugins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }}
+          skip-token-revoke: true
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api /users/${{ steps.app-token.outputs.app-slug }}[bot] --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Checkout (v1)
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          ref: v1
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Checkout pro-plugins (v1)
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          ref: v1
+          path: packages/pro-plugins
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Clone pro repos (v1)
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          do
+            git clone -b v1 https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+
+      - name: Set Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Prepare git excludes + identity
+        shell: bash
+        run: |
+          cd ./packages/pro-plugins
+          git checkout v1
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          do
+            echo "@nocobase/$repo" >> .git/info/exclude
+          done
+          cd ./../..
+
+          git checkout v1
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+          echo "packages/pro-plugins" >> .git/info/exclude
+
+      - name: Compute version (v1.x)
+        id: compute-version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ inputs.version }}" ]]; then
+            v=$(bash release.sh --only-version --version "${{ inputs.version }}")
+          else
+            v=$(bash release.sh --only-version $IS_FEAT)
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $v"
+        env:
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+
+      - name: Check tag status (v1.x)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.compute-version.outputs.version }}"
+          echo "Checking tag across repos (supports resume): $TAG"
+
+          exist=()
+          missing=()
+          shas=()
+
+          repos=("nocobase" "pro-plugins")
+          for r in $(echo '${{ needs.get-plugins.outputs.all-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
+
+          for repo in "${repos[@]}"; do
+            if sha=$(gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" --jq '.object.sha' 2>/dev/null); then
+              exist+=("$repo")
+              shas+=("$sha")
+            else
+              missing+=("$repo")
+            fi
+          done
+
+          # If the tag exists, ensure it points to the same object everywhere it exists.
+          if [[ ${#shas[@]} -gt 0 ]]; then
+            uniq_shas=$(printf '%s\n' "${shas[@]}" | sort -u)
+            uniq_count=$(printf '%s\n' "$uniq_shas" | sed '/^$/d' | wc -l | tr -d ' ')
+            if [[ "$uniq_count" -gt 1 ]]; then
+              echo "ERROR: Tag $TAG exists but points to different objects across repos (unsafe to continue)." >&2
+              echo "Distinct tag object SHAs:" >&2
+              printf '%s\n' "$uniq_shas" >&2
+              echo "Repos where tag exists:" >&2
+              printf '%s\n' "${exist[@]}" >&2
+              exit 1
+            fi
+          fi
+
+          if [[ ${#exist[@]} -gt 0 && ${#missing[@]} -gt 0 ]]; then
+            echo "WARNING: Tag $TAG already exists in some repos. Treating as resume and continuing." >&2
+            echo "  exists:" >&2
+            printf '  - %s\n' "${exist[@]}" >&2
+            echo "  missing:" >&2
+            printf '  - %s\n' "${missing[@]}" >&2
+          elif [[ ${#exist[@]} -gt 0 && ${#missing[@]} -eq 0 ]]; then
+            echo "INFO: Tag $TAG already exists in all repos. Continuing (idempotent)."
+          else
+            echo "OK: Tag $TAG does not exist in any repo."
+          fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Dry run plan (v1.x)
+        if: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ inputs.version }}" ]]; then
+            bash release.sh --dry-run --version "${{ inputs.version }}"
+          else
+            bash release.sh --dry-run $IS_FEAT
+          fi
+        env:
+          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+
+      - name: yarn install and build
+        if: ${{ !inputs.dry_run }}
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+
+      - name: Install Lerna
+        if: ${{ !inputs.dry_run }}
+        run: npm install -g lerna@4
+
+      - name: Run release.sh (v1.x)
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.version }}" ]]; then
+            bash release.sh --version "${{ inputs.version }}"
+          else
+            bash release.sh $IS_FEAT
+          fi
+        env:
+          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+
+      - name: Push tags/commits (v1)
+        if: ${{ !inputs.dry_run }}
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git push origin v1 --atomic --tags
+            cd ../../../../
+          done
+
+          cd ./packages/pro-plugins
+          git push origin v1 --atomic --tags
+          cd ../../
+          git push origin v1 --atomic --tags

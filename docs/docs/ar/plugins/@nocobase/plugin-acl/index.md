@@ -1,14 +1,15 @@
 ---
-displayName: "التحكم بالوصول"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  نظام للتحكم بالوصول يعتمد على الأدوار والموارد والإجراءات، ويوفر تحكمًا دقيقًا في صلاحيات تهيئة الواجهة، وصلاحيات عمليات البيانات، وصلاحيات الوصول إلى القوائم، وصلاحيات الإضافات.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# التحكم بالوصول
+# Access control

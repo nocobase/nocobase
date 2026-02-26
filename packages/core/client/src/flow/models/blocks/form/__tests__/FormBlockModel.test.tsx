@@ -12,7 +12,7 @@ import { render, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
-import { FormBlockContent, FormBlockModel } from '../../../..';
+import { FormBlockContent, FormBlockModel, FormComponent } from '../../../..';
 import { Application } from '../../../../../application/Application';
 import {
   InputFieldInterface,
@@ -435,6 +435,48 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(api.request).toHaveBeenCalledTimes(1);
   });
 
+  it('configured toMany dot aggregation path uses local value and skips server', async () => {
+    const model = await setupFormModel();
+
+    const api = {
+      request: vi.fn(async () => {
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({
+      assignees: [
+        { id: 3, name: 'A' },
+        { id: 5, name: 'B' },
+      ],
+    });
+    mockFormGridEnabledFields(model, ['assignees']);
+
+    const tpl = { names: '{{ ctx.formValues.assignees.name }}' } as any;
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ names: ['A', 'B'] });
+    expect(api.request).toHaveBeenCalledTimes(0);
+
+    const names = await (model.context as any).getVar('ctx.formValues.assignees.name');
+    expect(names).toEqual(['A', 'B']);
+    expect(api.request).toHaveBeenCalledTimes(0);
+  });
+
   it('unconfigured field: new record returns undefined and does not call server', async () => {
     const model = await setupFormModel();
 
@@ -679,5 +721,54 @@ describe('FormBlockModel block height', () => {
     await waitFor(() => {
       expect(gridModel.setProps).toHaveBeenCalledWith({ height: undefined });
     });
+  });
+});
+
+describe('FormComponent mobile horizontal layout class', () => {
+  const createModel = (isMobileLayout: boolean) => {
+    return {
+      form: undefined,
+      context: {
+        isMobileLayout,
+        view: { inputArgs: {} },
+        record: {},
+      },
+      markUserModifiedFields: vi.fn(),
+      dispatchEvent: vi.fn(),
+      emitter: { emit: vi.fn() },
+    } as any;
+  };
+
+  it('adds mobile horizontal keep class when mobile + horizontal', () => {
+    const model = createModel(true);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'horizontal' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className).toContain('nb-flow-keep-mobile-horizontal');
+  });
+
+  it('does not add keep class when layout is vertical', () => {
+    const model = createModel(true);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'vertical' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className || '').not.toContain('nb-flow-keep-mobile-horizontal');
+  });
+
+  it('does not add keep class when desktop + horizontal', () => {
+    const model = createModel(false);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'horizontal' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className || '').not.toContain('nb-flow-keep-mobile-horizontal');
   });
 });

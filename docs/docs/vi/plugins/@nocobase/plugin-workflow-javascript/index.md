@@ -1,18 +1,15 @@
 ---
-displayName: "Luồng công việc: JavaScript"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Thực thi một đoạn mã JavaScript trong một môi trường biệt lập.
+  Execute a piece of JavaScript in an isolated Node.js environment.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: JavaScript
+# Workflow: JavaScript

@@ -1,17 +1,15 @@
 ---
-displayName: "Dzienniki audytu (przestarzałe)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Ta wtyczka jest przestarzała. Proszę jej nie używać. W przyszłości pojawi się nowa wtyczka do dzienników audytu.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Dzienniki audytu (przestarzałe)
+# Audit logs (deprecated)
 
-> Uwaga: Ta wtyczka jest przestarzała.
+> Note: This plugin is deprecated.

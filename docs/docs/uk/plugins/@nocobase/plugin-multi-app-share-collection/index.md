@@ -1,16 +1,15 @@
 ---
-displayName: "Спільне використання колекцій між застосунками"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Спільне використання колекцій між застосунками
+# Multi-app share collection
 
-> Примітка: Цей плагін застарів.
+> Note: This plugin is deprecated.

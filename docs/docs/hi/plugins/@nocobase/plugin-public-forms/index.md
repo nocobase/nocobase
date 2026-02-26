@@ -1,14 +1,12 @@
 ---
-displayName: "सार्वजनिक फ़ॉर्म"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  गुमनाम उपयोगकर्ताओं से जानकारी एकत्र करने के लिए सार्वजनिक फ़ॉर्म बाहर साझा करें।
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# सार्वजनिक फ़ॉर्म
+# Public forms

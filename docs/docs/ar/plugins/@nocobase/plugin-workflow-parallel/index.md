@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة متوازية"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  تُستخدم لتنفيذ الفروع المتوازية ضمن سير العمل.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة متوازية
+# Workflow: Parallel node

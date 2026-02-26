@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: Komunikat odpowiedzi"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Służy do składania komunikatu odpowiedzi i wyświetlania go klientowi w przepływach pracy zdarzeń formularza oraz przechwytywania żądań.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Komunikat odpowiedzi
+# Workflow: Response message

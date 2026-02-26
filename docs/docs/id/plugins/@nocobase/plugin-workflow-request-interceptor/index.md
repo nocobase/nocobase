@@ -1,18 +1,15 @@
 ---
-displayName: "Alur Kerja: Kejadian Pra-tindakan"
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Dipicu sebelum permintaan dieksekusi yang dimulai melalui tombol tindakan atau API, misalnya, sebelum menambah, memperbarui, atau menghapus data. Sesuai untuk melakukan validasi data dan penentuan logika sebelum tindakan, dan permintaan dapat ditolak menggunakan node 'Akhiri Proses'.
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Kejadian Pra-tindakan
+# Workflow: Pre-action event

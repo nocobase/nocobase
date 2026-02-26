@@ -1,14 +1,12 @@
 ---
-displayName: "מנהל משימות אסינכרוניות"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  ניהול וניטור משימות אסינכרוניות כמו ייבוא/ייצוא נתונים. תומך במעקב אחר התקדמות משימות ובהתראות.
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מנהל משימות אסינכרוניות
+# Async task manager

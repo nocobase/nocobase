@@ -1,18 +1,15 @@
 ---
-displayName: "פעולה: ייבוא רשומות פרו"
+displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  משפר את יכולות ייבוא הנתונים. מאפשר ייבוא אסינכרוני ותומך בכמויות נתונים גדולות. כולל תכונות כמו זיהוי ועיבוד נתונים, עדכון נתונים והפעלת תהליכי עבודה.
-isFree: לא נכון
-builtIn: לא נכון
-defaultEnabled: לא נכון
-points: 2
+  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 1
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# פעולה: ייבוא רשומות פרו
+# Action: Import records Pro

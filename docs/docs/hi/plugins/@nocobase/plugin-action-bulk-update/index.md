@@ -1,14 +1,15 @@
 ---
-displayName: "एक्शन: बल्क अपडेट"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  सभी डेटा या चुने गए डेटा को एक साथ अपडेट करें।
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# एक्शन: बल्क अपडेट
+# Action: Batch update

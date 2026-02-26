@@ -10,6 +10,7 @@
 import { isObservable, reaction, toJS } from '@formily/reactive';
 import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { dayjs } from '@nocobase/utils/client';
 import { evaluateCondition } from './conditions';
 import { collectStaticDepsFromRunJSValue, collectStaticDepsFromTemplateValue, DepCollector, recordDep } from './deps';
 import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
@@ -19,6 +20,7 @@ import { isToManyAssociationField } from '../../../../internal/utils/modelUtils'
 
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
+const UNRESOLVED_ASSOCIATION_IDENTITY = Symbol('UNRESOLVED_ASSOCIATION_IDENTITY');
 
 // default 规则的优先级：
 // - step 初始值（editItemSettings/formItemSettings.initialValue）：priority=0（低于表单赋值）
@@ -1111,35 +1113,44 @@ export class RuleEngine {
     const ruleContext = this.prepareRuleContext(rule);
     const { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
 
-    // Check if rule should be skipped
     if (!this.shouldRunRule(rule, targetNamePath, targetKey, baseCtx)) {
       clearDeps(state);
       disposeBinding();
       return;
     }
+    if (!targetNamePath || !targetKey) {
+      clearDeps(state);
+      disposeBinding();
+      return;
+    }
+    const ensuredTargetNamePath = targetNamePath;
+    const ensuredTargetKey = targetKey;
 
     const { collector, evalCtx } = this.createRuleCollectorAndContext(rule, ruleContext);
 
-    // Evaluate condition if present
     if (rule.getCondition) {
       const shouldContinue = await this.evaluateRuleCondition(rule, state, seq, evalCtx, collector);
       if (!shouldContinue) return;
     }
 
-    // Resolve rule value
     const resolved = await this.resolveRuleValue(rule, state, seq, evalCtx, collector);
     if (resolved === SKIP_RULE_VALUE) return;
     if (seq !== state.runSeq) return;
 
-    // Update dependencies
     this.commitRuleDeps(rule, state, collector);
 
-    // Apply default rule specific logic
+    const normalizedResolved = this.normalizeResolvedValueForTarget(baseCtx, resolved);
+    const normalizedResolvedForTarget = this.normalizeResolvedValueForAssociationTarget(
+      baseCtx,
+      ensuredTargetNamePath,
+      normalizedResolved,
+    );
+
     if (rule.source === 'default') {
       const shouldApply = this.checkDefaultRuleCanApply(
-        resolved,
-        targetNamePath!,
-        targetKey!,
+        normalizedResolvedForTarget,
+        ensuredTargetNamePath,
+        ensuredTargetKey,
         clearDeps,
         disposeBinding,
         state,
@@ -1147,10 +1158,8 @@ export class RuleEngine {
       if (!shouldApply) return;
     }
 
-    // 优先级：default 规则之间也需要避免“低优先级默认值”反复覆盖“高优先级默认值”导致振荡。
-    // 若 target 在本次 rule 被调度之后已被更高优先级的 default 写入，则跳过当前 default 写入。
-    if (rule.source === 'default' && targetKey) {
-      const lastWrite = this.lastRuleWriteByTargetKey.get(targetKey);
+    if (rule.source === 'default') {
+      const lastWrite = this.lastRuleWriteByTargetKey.get(ensuredTargetKey);
       if (
         lastWrite?.source === 'default' &&
         lastWrite.priority > rule.priority &&
@@ -1161,64 +1170,227 @@ export class RuleEngine {
       }
     }
 
-    // 优先级：联动赋值（source=linkage）应覆盖“表单赋值”（source=system）。
-    // 当 target 在本次 rule 被调度之后已被 linkage 写入，则跳过 system 写入以避免回写覆盖。
-    if (rule.source === 'system' && targetKey) {
-      const lastWrite = this.options.lastWriteMetaByPathKey.get(targetKey);
+    if (rule.source === 'system') {
+      const lastWrite = this.options.lastWriteMetaByPathKey.get(ensuredTargetKey);
       if (lastWrite?.source === 'linkage' && lastWrite.writeSeq >= scheduledAtWriteSeq) {
         disposeBinding();
         return;
       }
     }
 
-    // 关联字段嵌套属性：默认避免在关联对象为空时隐式创建；但对 updateAssociation（子表单/子表格）允许自动创建以支持首次渲染落值。
-    if (this.shouldSkipAssociationNestedWrite(baseCtx, targetNamePath!)) {
-      return;
-    }
+    if (this.shouldSkipAssociationNestedWrite(baseCtx, ensuredTargetNamePath)) return;
 
-    // 对多关联的子属性：缺少 index 时跳过，避免把数组字段写成对象，导致 Form.List add 报错
-    if (this.shouldSkipToManyAssociationWriteWithoutIndex(baseCtx, targetNamePath!)) {
-      return;
-    }
+    if (this.shouldSkipToManyAssociationWriteWithoutIndex(baseCtx, ensuredTargetNamePath)) return;
 
-    // 若目标值本身无变化，则不应为了“初始化子表单对象/行”而产生额外写入
-    // （典型场景：assign 规则解析为 undefined，但当前值也是 undefined）
-    const currentValue = this.options.getFormValueAtPath(targetNamePath!);
-    const nextSnapshot = isObservable(resolved) ? toJS(resolved) : resolved;
-    if (_.isEqual(currentValue, nextSnapshot)) {
-      return;
-    }
+    const nextSnapshot = normalizedResolvedForTarget;
+    const currentValue = this.options.getFormValueAtPath(ensuredTargetNamePath);
+    const semanticallyEqual = this.isAssociationTargetSemanticallyEqual(
+      baseCtx,
+      ensuredTargetNamePath,
+      currentValue,
+      nextSnapshot,
+    );
+    if (semanticallyEqual) return;
 
-    const initPatches = this.collectUpdateAssociationInitPatches(baseCtx, targetNamePath!);
-    if (initPatches == null) {
-      return;
-    }
+    const initPatches = this.collectUpdateAssociationInitPatches(baseCtx, ensuredTargetNamePath);
+    if (initPatches == null) return;
 
-    // mode=assign（source=system）需要强制把值回写到字段模型 props，确保 UI（如 vditor）在“写回旧值”时也会同步更新。
-    if (rule.source === 'system' && targetKey) {
+    if (rule.source === 'system') {
       const modelForUi = baseCtx?.model;
       if (modelForUi?.subModels?.field) {
         const modelTarget = this.getModelTargetNamePath(modelForUi);
-        if (modelTarget && namePathToPathKey(modelTarget) === targetKey) {
-          modelForUi.setProps({ value: resolved });
+        if (modelTarget && namePathToPathKey(modelTarget) === ensuredTargetKey) {
+          modelForUi.setProps({ value: normalizedResolvedForTarget });
         }
       }
     }
 
     const beforeWriteSeq = this.options.getWriteSeq();
-    const patches = [...initPatches, { path: targetNamePath, value: resolved }];
+    const patches = [...initPatches, { path: ensuredTargetNamePath, value: normalizedResolvedForTarget }];
     await this.options.setFormValues(evalCtx, patches, {
       source: rule.source,
       txId: this.currentRuleTxId || undefined,
     });
     const afterWriteSeq = this.options.getWriteSeq();
-    if (targetKey && afterWriteSeq !== beforeWriteSeq) {
-      this.lastRuleWriteByTargetKey.set(targetKey, {
+    if (afterWriteSeq !== beforeWriteSeq) {
+      this.lastRuleWriteByTargetKey.set(ensuredTargetKey, {
         source: rule.source,
         priority: rule.priority,
         writeSeq: afterWriteSeq,
       });
     }
+  }
+
+  private isTzAwareTargetInterface(targetInterface: unknown): boolean {
+    if (typeof targetInterface !== 'string') {
+      return false;
+    }
+
+    return ['datetime', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(targetInterface);
+  }
+
+  private normalizeDateOnlyToStartOfDayIso(value: string): string {
+    const raw = String(value || '').trim();
+    if (!raw) return value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return value;
+
+    const parsed = dayjs(raw, 'YYYY-MM-DD', true);
+    if (!parsed.isValid()) return value;
+    return parsed.startOf('day').toISOString();
+  }
+
+  private normalizeResolvedValueForTarget(baseCtx: any, resolved: any): any {
+    const targetInterface = baseCtx?.model?.context?.collectionField?.interface;
+    if (!this.isTzAwareTargetInterface(targetInterface)) {
+      return resolved;
+    }
+
+    if (typeof resolved === 'string') {
+      return this.normalizeDateOnlyToStartOfDayIso(resolved);
+    }
+
+    if (Array.isArray(resolved)) {
+      return resolved.map((item) => (typeof item === 'string' ? this.normalizeDateOnlyToStartOfDayIso(item) : item));
+    }
+
+    return resolved;
+  }
+
+  private isPrimitiveAssociationTargetValue(value: unknown): value is string | number | boolean {
+    return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+  }
+
+  private extractAssociationIdentity(associationField: any, value: any): any | typeof UNRESOLVED_ASSOCIATION_IDENTITY {
+    const targetKeys = this.getAssociationTargetKeyFields(associationField);
+    const singleTargetKey = targetKeys.length === 1 ? targetKeys[0] : null;
+
+    const toIdentity = (item: any): any | typeof UNRESOLVED_ASSOCIATION_IDENTITY => {
+      if (item == null) return item;
+
+      if (this.isPrimitiveAssociationTargetValue(item)) {
+        if (!singleTargetKey) return UNRESOLVED_ASSOCIATION_IDENTITY;
+        return item;
+      }
+
+      if (!item || typeof item !== 'object') {
+        return UNRESOLVED_ASSOCIATION_IDENTITY;
+      }
+
+      if (singleTargetKey) {
+        if (typeof item[singleTargetKey] === 'undefined') {
+          return UNRESOLVED_ASSOCIATION_IDENTITY;
+        }
+        return item[singleTargetKey];
+      }
+
+      const compositeIdentity: Record<string, any> = {};
+      for (const key of targetKeys) {
+        if (typeof item[key] === 'undefined') {
+          return UNRESOLVED_ASSOCIATION_IDENTITY;
+        }
+        compositeIdentity[key] = item[key];
+      }
+      return compositeIdentity;
+    };
+
+    if (isToManyAssociationField(associationField)) {
+      const arr = Array.isArray(value) ? value : [value];
+      const identities: any[] = [];
+      for (const item of arr) {
+        if (item == null) continue;
+        const identity = toIdentity(item);
+        if (identity === UNRESOLVED_ASSOCIATION_IDENTITY) {
+          return UNRESOLVED_ASSOCIATION_IDENTITY;
+        }
+        identities.push(identity);
+      }
+      return identities;
+    }
+
+    const toOneValue = Array.isArray(value) ? value.find((item) => item != null) : value;
+    if (toOneValue == null) return toOneValue;
+    return toIdentity(toOneValue);
+  }
+
+  private isAssociationTargetSemanticallyEqual(
+    baseCtx: any,
+    targetNamePath: NamePath,
+    currentValue: any,
+    nextValue: any,
+  ): boolean {
+    const targetField = this.resolveCollectionFieldByNamePath(baseCtx, targetNamePath);
+    if (!targetField?.isAssociationField?.()) {
+      return _.isEqual(currentValue, nextValue);
+    }
+
+    const currentIdentity = this.extractAssociationIdentity(targetField, currentValue);
+    const nextIdentity = this.extractAssociationIdentity(targetField, nextValue);
+    if (currentIdentity === UNRESOLVED_ASSOCIATION_IDENTITY || nextIdentity === UNRESOLVED_ASSOCIATION_IDENTITY) {
+      return _.isEqual(currentValue, nextValue);
+    }
+
+    return _.isEqual(currentIdentity, nextIdentity);
+  }
+
+  private resolveCollectionFieldByNamePath(baseCtx: any, targetNamePath: NamePath): any | null {
+    if (!Array.isArray(targetNamePath) || !targetNamePath.length) return null;
+
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    if (!collection?.getField) return null;
+
+    for (let i = 0; i < targetNamePath.length; i++) {
+      const seg = targetNamePath[i];
+      if (typeof seg !== 'string' || !seg) return null;
+
+      const field = collection?.getField?.(seg);
+      if (!field) return null;
+
+      const isLast = i === targetNamePath.length - 1;
+      if (isLast) return field;
+
+      if (!field?.isAssociationField?.() || !field?.targetCollection) {
+        return null;
+      }
+
+      if (isToManyAssociationField(field)) {
+        const nextSeg = targetNamePath[i + 1];
+        if (typeof nextSeg !== 'number') {
+          return null;
+        }
+        i += 1;
+      }
+
+      collection = field.targetCollection;
+      if (!collection?.getField) return null;
+    }
+
+    return null;
+  }
+
+  private normalizeResolvedValueForAssociationTarget(baseCtx: any, targetNamePath: NamePath, resolved: any): any {
+    const targetField = this.resolveCollectionFieldByNamePath(baseCtx, targetNamePath);
+    if (!targetField?.isAssociationField?.()) return resolved;
+
+    const targetKeys = this.getAssociationTargetKeyFields(targetField);
+    const singleTargetKey = targetKeys.length === 1 ? targetKeys[0] : null;
+    const normalizeItem = (item: any) => {
+      if (item == null) return undefined;
+      if (singleTargetKey && this.isPrimitiveAssociationTargetValue(item)) {
+        return { [singleTargetKey]: item };
+      }
+      return item;
+    };
+
+    if (isToManyAssociationField(targetField)) {
+      const rawItems = Array.isArray(resolved) ? resolved : [resolved];
+      return rawItems.map((item) => normalizeItem(item)).filter((item) => typeof item !== 'undefined' && item !== null);
+    }
+
+    const toOneValue = Array.isArray(resolved) ? resolved.find((item) => item != null) : resolved;
+    if (toOneValue == null) return toOneValue;
+
+    const normalizedOne = normalizeItem(toOneValue);
+    return normalizedOne;
   }
 
   private prepareRuleContext(rule: RuntimeRule) {
@@ -1319,7 +1491,9 @@ export class RuleEngine {
     evalCtx: any,
     collector: DepCollector,
   ): Promise<boolean> {
-    const cond = rule.getCondition!();
+    const getCondition = rule.getCondition;
+    if (!getCondition) return true;
+    const cond = getCondition();
     let resolvedCond = cond;
     if (cond) {
       try {

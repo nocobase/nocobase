@@ -1,16 +1,15 @@
 ---
-displayName: "แอคชัน: ส่งออกเรคคอร์ด"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  ส่งออกเรคคอร์ดที่ถูกกรองไปยัง Excel คุณสามารถกำหนดค่าได้ว่าจะส่งออกฟิลด์ใดบ้าง
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# แอคชัน: ส่งออกเรคคอร์ด
+# Action: Export records

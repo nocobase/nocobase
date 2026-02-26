@@ -1,16 +1,12 @@
 ---
-displayName: "คัดลอกข้อความ"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  เพิ่มปุ่มคัดลอกสำหรับฟิลด์ข้อความ
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# คัดลอกข้อความ
+# Text copy

@@ -1,17 +1,14 @@
 ---
-displayName: "คอมโพเนนต์ฟิลด์: มาสก์"
+displayName: "Field component: mask"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:
   - 1.x
 description: |
-  แสดงค่าฟิลด์เป็นมาสก์โดยอัตโนมัติตามกฎที่กำหนดค่าไว้ รองรับข้อมูลประเภทพื้นฐาน
+  Automatically show field value as mask based on configured rules, supporting basic fields.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# คอมโพเนนต์ฟิลด์: มาสก์
+# Field component: mask

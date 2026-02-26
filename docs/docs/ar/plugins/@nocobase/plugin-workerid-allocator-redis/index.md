@@ -1,15 +1,15 @@
 ---
-displayName: "موزع معرف العامل (Worker ID) لـ Redis"
+displayName: "Redis worker ID allocator"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  موزع لمعرفات العمال (Worker IDs) يعتمد على Redis.
+  Worker id allocator based on Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# موزع معرف العامل (Worker ID) لـ Redis
+# Redis worker ID allocator

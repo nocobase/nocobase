@@ -10,15 +10,14 @@
 import React, { useCallback } from 'react';
 import { Modal, Select, message } from 'antd';
 import { useChatToolsStore } from '../stores/chat-tools';
-import { usePlugin } from '@nocobase/client';
-import PluginAIClient from '../../..';
-import { ToolCall } from '../../types';
+import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { useT } from '../../../locale';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useToolCallActions } from '../hooks/useToolCallActions';
 
-const useDefaultOnOk = () => {
+const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   return {
     onOk: async () => {},
   };
@@ -26,7 +25,8 @@ const useDefaultOnOk = () => {
 
 export const ToolModal: React.FC = () => {
   const t = useT();
-  const plugin = usePlugin('ai') as PluginAIClient;
+  const { tools } = useTools();
+  const toolsMap = toToolsMap(tools);
 
   const open = useChatToolsStore.use.openToolModal();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
@@ -40,15 +40,18 @@ export const ToolModal: React.FC = () => {
 
   const { updateToolArgs, messagesService } = useChatMessageActions();
 
-  const toolOption = plugin.aiManager.tools.get(activeTool?.name);
+  const toolOption = toolsMap.get(activeTool?.name);
   const modal = toolOption?.ui?.modal;
   const useOnOk = toolOption?.ui?.modal?.useOnOk || useDefaultOnOk;
   const C = modal?.Component;
 
-  const { onOk } = useOnOk();
+  const adjustArgs = useChatToolsStore.use.adjustArgs();
+  const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
+  const decisions = getDecisionActions(activeTool);
+  const { onOk } = useOnOk(decisions, adjustArgs);
 
-  const tools = toolsByName[activeTool?.name] || [];
-  const versions = tools.map((tool, index) => {
+  const toolCalls = toolsByName[activeTool?.name] || [];
+  const versions = toolCalls.map((tool, index) => {
     return {
       key: tool.id,
       value: tool.id,
@@ -92,9 +95,9 @@ export const ToolModal: React.FC = () => {
                 marginLeft: '8px',
               }}
               onChange={(value) => {
-                const tool = tools.find((tool) => tool.id === value);
-                setActiveMessageId(tool?.messageId || '');
-                setActiveTool(tool);
+                const toolCall = toolCalls.find((tool) => tool.id === value);
+                setActiveMessageId(toolCall?.messageId || '');
+                setActiveTool(toolCall);
               }}
             />
           )}
@@ -112,7 +115,7 @@ export const ToolModal: React.FC = () => {
         setOpen(false);
       }}
       okButtonProps={{
-        disabled: !['init', 'pending'].includes(activeTool.invokeStatus),
+        disabled: !['init', 'interrupted', 'pending'].includes(activeTool.invokeStatus),
       }}
       footer={(_, { OkBtn }) => (
         <>

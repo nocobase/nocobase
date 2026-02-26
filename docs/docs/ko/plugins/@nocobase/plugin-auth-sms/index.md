@@ -1,14 +1,12 @@
 ---
-displayName: "인증: SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  SMS 인증 코드를 사용하여 신원을 인증합니다.
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 인증: SMS
+# Auth: SMS

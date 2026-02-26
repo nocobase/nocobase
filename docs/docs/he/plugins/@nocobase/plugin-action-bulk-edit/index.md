@@ -1,14 +1,15 @@
 ---
-displayName: "פעולה: עריכה קבוצתית"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  עריכה קבוצתית של כל הרשומות או של רשומות נבחרות.
-isFree: אמת
-builtIn: אמת
-defaultEnabled: שקר
+  Batch edit all records or selected records.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# פעולה: עריכה קבוצתית
+# Action: Batch edit

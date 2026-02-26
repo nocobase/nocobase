@@ -12,6 +12,7 @@
 import fs from 'fs-extra';
 import { resolve } from 'path';
 import Application from '../application';
+import { createDocsIndex } from '../ai/create-docs-index';
 import { ApplicationNotInstall } from '../errors/application-not-install';
 
 export default (app: Application) => {
@@ -27,6 +28,8 @@ export default (app: Application) => {
       if (upgrading) {
         if (!process.env.VITEST) {
           if (await app.isInstalled()) {
+            await createDocsIndex(app);
+
             await app.upgrade();
           }
         }
@@ -36,6 +39,8 @@ export default (app: Application) => {
           // skip
         }
       } else if (options.quickstart) {
+        await createDocsIndex(app);
+
         if (await app.isInstalled()) {
           await app.upgrade({ quickstart: true });
         } else {

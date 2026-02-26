@@ -19,10 +19,13 @@ import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
-import { useApp } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
+import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
+import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 
 export const useChatBoxActions = () => {
-  const app = useApp();
+  const api = useAPIClient();
+  const llmServicesRepository = useLLMServicesRepository();
   const t = useT();
 
   const open = useChatBoxStore.use.open();
@@ -34,9 +37,11 @@ export const useChatBoxActions = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
   const senderRef = useChatBoxStore.use.senderRef();
+  const setModel = useChatBoxStore.use.setModel();
 
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
   const setSystemMessage = useChatMessagesStore.use.setSystemMessage();
   const setAttachments = useChatMessagesStore.use.setAttachments();
@@ -84,6 +89,41 @@ export const useChatBoxActions = () => {
     }
   };
 
+  const ensureModel = useCallback(
+    async (aiEmployee: AIEmployee) => {
+      await llmServicesRepository.load();
+      const allModels = getAllModels(llmServicesRepository.services);
+      const currentModel = useChatBoxStore.getState().model;
+      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      if (!isSameModel(currentModel, resolvedModel)) {
+        setModel(resolvedModel);
+      }
+      return resolvedModel;
+    },
+    [api, llmServicesRepository, setModel],
+  );
+
+  const resolveTaskModel = useCallback(
+    async (aiEmployee: AIEmployee, taskModel?: { llmService: string; model: string } | null) => {
+      await llmServicesRepository.load();
+      const allModels = getAllModels(llmServicesRepository.services);
+      if (isValidModel(taskModel, allModels)) {
+        const currentModel = useChatBoxStore.getState().model;
+        if (!isSameModel(currentModel, taskModel)) {
+          setModel(taskModel);
+        }
+        return taskModel;
+      }
+      const currentModel = useChatBoxStore.getState().model;
+      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      if (!isSameModel(currentModel, resolvedModel)) {
+        setModel(resolvedModel);
+      }
+      return resolvedModel;
+    },
+    [api, llmServicesRepository, setModel],
+  );
+
   const startNewConversation = useCallback(() => {
     const greetingMsg = {
       key: uid(),
@@ -104,6 +144,7 @@ export const useChatBoxActions = () => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
       clear();
+      setModel(null);
       if (aiEmployee) {
         const greetingMsg = {
           key: uid(),
@@ -135,6 +176,7 @@ export const useChatBoxActions = () => {
         setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
+      await ensureModel(aiEmployee);
       senderRef.current?.focus();
       const msgs: Message[] = [
         {
@@ -153,7 +195,20 @@ export const useChatBoxActions = () => {
       if (tasks.length === 1 && options.auto !== false) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, systemMessage, attachments, workContext, skillSettings } = await parseTask(task);
+        const {
+          userMessage,
+          systemMessage,
+          attachments,
+          workContext,
+          skillSettings,
+          webSearch,
+          model: taskModel,
+        } = await parseTask(task);
+        const resolvedModel = await resolveTaskModel(aiEmployee, taskModel);
+        const service = llmServicesRepository.services.find((s) => s.llmService === resolvedModel?.llmService);
+        const resolvedWebSearch =
+          service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
+        setWebSearch(resolvedWebSearch);
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {
@@ -179,7 +234,8 @@ export const useChatBoxActions = () => {
             attachments,
             workContext,
             skillSettings,
-            webSearch: true,
+            webSearch: resolvedWebSearch,
+            model: resolvedModel,
           });
         }
         return;
@@ -193,7 +249,7 @@ export const useChatBoxActions = () => {
       });
       setMessages(msgs);
     },
-    [open, currentConversation],
+    [open, currentConversation, ensureModel, llmServicesRepository, resolveTaskModel, setWebSearch],
   );
 
   return {

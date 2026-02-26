@@ -1,14 +1,12 @@
 ---
-displayName: "טפסים ציבוריים"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  שתפו טפסים ציבוריים באופן חיצוני כדי לאסוף מידע ממשתמשים אנונימיים.
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# טפסים ציבוריים
+# Public forms

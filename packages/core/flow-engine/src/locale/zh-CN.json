@@ -70,5 +70,11 @@
   "Try again": "重试",
   "UID copied to clipboard": "UID 已复制到剪贴板",
   "createModelOptions must specify use property": "createModelOptions 必须指定 \"use\" 属性",
-  "here": "这里"
+  "here": "这里",
+  "RunJS deprecated warning": "[RunJS][已废弃] {{api}}{{location}}",
+  "RunJS deprecated warning with message": "[RunJS][已废弃] {{api}} {{message}}{{location}}",
+  "RunJS deprecated separator": "；",
+  "RunJS deprecated replacedBy": "建议使用：{{replacedBy}}",
+  "RunJS deprecated since": "自 {{since}} 起",
+  "RunJS deprecated removedIn": "将在 {{removedIn}} 移除"
 }

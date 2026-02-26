@@ -7,54 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
-import { Button, Dropdown, Tag, Avatar, Popover, Flex, Divider } from 'antd';
-import { useT } from '../../locale';
-import { useToken } from '@nocobase/client';
-import { UserAddOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { avatars } from '../avatars';
-import { ProfileCard } from '../ProfileCard';
+import React from 'react';
 import { AttachmentsHeader } from './AttachmentsHeader';
 import { ContextItemsHeader } from './ContextItemsHeader';
+import { EditMessageHeader } from './EditMessageHeader';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
-import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { EditMessageHeader } from './EditMessageHeader';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const SenderHeader: React.FC = () => {
-  const { aiEmployees } = useAIEmployeesData();
-  const { token } = useToken();
-  const t = useT();
-
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
+  const contextItems = useChatMessagesStore.use.contextItems();
+  const attachments = useChatMessagesStore.use.attachments();
 
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const hasContextItems = !!contextItems?.length;
+  const hasAttachments = !!attachments?.length;
 
-  const { switchAIEmployee } = useChatBoxActions();
-
-  const items = useMemo(() => {
-    return aiEmployees?.map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
-  }, [aiEmployees]);
-
-  const avatar = useMemo(() => {
-    if (!currentEmployee) {
-      return null;
-    }
-    return avatars(currentEmployee.avatar);
-  }, [currentEmployee]);
+  if (!isEditingMessage && (!currentEmployee || (!hasContextItems && !hasAttachments))) {
+    return null;
+  }
 
   return (
     <div
@@ -62,80 +33,11 @@ export const SenderHeader: React.FC = () => {
         padding: '8px 8px 0 8px',
       }}
     >
-      <div>
-        {isEditingMessage ? (
-          <div style={{ marginBottom: 8 }}>
-            <EditMessageHeader />
-          </div>
-        ) : null}
-        {!currentEmployee ? (
-          <Button variant="dashed" color="default" size="small">
-            <span
-              style={{
-                color: token.colorTextDescription,
-              }}
-            >
-              <UserAddOutlined />
-              {t('Select an')}
-            </span>
-            <Dropdown menu={{ items }} placement="topLeft" overlayStyle={{ zIndex: 1200 }}>
-              {t('AI employee')}
-            </Dropdown>
-          </Button>
-        ) : (
-          <Tag
-            closeIcon={
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: '4px',
-                }}
-              >
-                <CloseCircleOutlined />
-              </div>
-            }
-            onClose={() => {
-              switchAIEmployee(null);
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: token.colorBgContainer,
-            }}
-          >
-            <Flex align="center">
-              <Popover content={<ProfileCard aiEmployee={currentEmployee} />} placement="leftTop">
-                <Avatar
-                  style={{
-                    margin: '4px 0',
-                  }}
-                  shape="circle"
-                  size={35}
-                  src={avatar}
-                />
-              </Popover>
-              <Flex
-                style={{
-                  margin: '4px 12px',
-                }}
-                align="center"
-              >
-                <div>{currentEmployee.nickname}</div>
-                <Divider type="vertical" />
-                <div
-                  style={{
-                    fontSize: token.fontSizeSM,
-                    color: token.colorTextSecondary,
-                  }}
-                >
-                  {currentEmployee.position}
-                </div>
-              </Flex>
-            </Flex>
-          </Tag>
-        )}
-      </div>
+      {isEditingMessage ? (
+        <div>
+          <EditMessageHeader />
+        </div>
+      ) : null}
       {currentEmployee ? <ContextItemsHeader /> : null}
       {currentEmployee ? <AttachmentsHeader /> : null}
     </div>

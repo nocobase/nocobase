@@ -84,9 +84,11 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineMethod('refreshTargets', async () => {
       const gridModel = this.subModels.grid;
       const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
-      fieldModels.forEach((fieldModel) => {
-        fieldModel?.doFilter();
-      });
+      if (fieldModels) {
+        fieldModels.forEach((fieldModel) => {
+          fieldModel?.doFilter?.();
+        });
+      }
     });
   }
 

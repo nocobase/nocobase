@@ -1,15 +1,12 @@
 ---
-displayName: "UI-schemalagringstjänst"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  Tillhandahåller en centraliserad lagringstjänst för UI-scheman.
+  Provides centralized UI schema storage service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# UI-schemalagringstjänst
+# UI schema storage

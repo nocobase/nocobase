@@ -1,14 +1,12 @@
 ---
-displayName: "Campo della collezione: Allegato (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  Supporta allegati in formato URL.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Campo della collezione: Allegato (URL)
+# Collection field: Attachment(URL)

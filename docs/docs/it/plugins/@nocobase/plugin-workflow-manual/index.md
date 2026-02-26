@@ -1,14 +1,12 @@
 ---
-displayName: "Flusso di lavoro: Nodo manuale"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Utilizzabile per flussi di lavoro in cui alcune decisioni sono prese manualmente dagli utenti.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Flusso di lavoro: Nodo manuale
+# Workflow: Manual node

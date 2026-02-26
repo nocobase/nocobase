@@ -1,15 +1,12 @@
 ---
-displayName: "Lokale tester"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-
-# Lokale tester
+# Locale tester

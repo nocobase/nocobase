@@ -1,14 +1,12 @@
 ---
-displayName: "Benachrichtigungsverwaltung"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Bietet einen einheitlichen Verwaltungsdienst, der Funktionen wie Kanal-Konfiguration und Protokollierung umfasst. Er unterstützt die Konfiguration verschiedener Benachrichtigungskanäle, einschließlich In-App-Nachrichten und E-Mail.
+  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Benachrichtigungsverwaltung
+# Notification manager

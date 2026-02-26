@@ -1,16 +1,12 @@
 ---
-displayName: "Tester di localizzazione"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-
-
-# Tester di localizzazione
+# Locale tester

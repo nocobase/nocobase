@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة الإشعارات"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  تُستخدم لإرسال أنواع مختلفة من الإشعارات ضمن سير العمل.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة الإشعارات
+# Workflow: notification node

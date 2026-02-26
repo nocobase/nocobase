@@ -1,17 +1,14 @@
 ---
-displayName: "Blok: Vícekrokový formulář"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Rozdělte formulář s mnoha poli na více kroků pro usnadnění uživatelům.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Blok: Vícekrokový formulář
+# Block: Multi-step form

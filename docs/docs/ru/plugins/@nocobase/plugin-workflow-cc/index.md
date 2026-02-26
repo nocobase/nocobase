@@ -1,14 +1,12 @@
 ---
-displayName: "Рабочий процесс: Копия"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Добавляет функцию отправки копии (CC) в рабочие процессы, позволяя отправлять согласования или любую другую информацию указанным пользователям.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Копия
+# Workflow: CC

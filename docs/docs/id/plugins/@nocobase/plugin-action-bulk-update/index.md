@@ -1,14 +1,15 @@
 ---
-displayName: "Aksi: Pembaruan Massal"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Melakukan pembaruan massal pada semua data atau data yang dipilih.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Pembaruan Massal
+# Action: Batch update

@@ -1,16 +1,12 @@
 ---
-displayName: "सूचना: ईमेल"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  ईमेल के ज़रिए सूचनाएँ भेजने के लिए उपयोग किया जाता है, जिसमें बिल्ट-इन SMTP ट्रांसपोर्ट शामिल है।
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# सूचना: ईमेल
+# Notification: Email

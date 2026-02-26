@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolOptions } from '../../../manager/ai-manager';
-import { FormBlockModel } from '@nocobase/client';
+import { FormBlockModel, ToolsOptions } from '@nocobase/client';
 
-export const formFillerTool: [string, string, ToolOptions] = [
-  'frontend',
+export const formFillerTool: [string, ToolsOptions] = [
   'formFiller',
   {
     invoke: (app, params) => {

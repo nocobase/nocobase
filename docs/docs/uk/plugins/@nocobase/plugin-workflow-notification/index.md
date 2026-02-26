@@ -1,14 +1,12 @@
 ---
-displayName: "Робочий процес: вузол сповіщень"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Дозволяє надсилати різноманітні сповіщення в робочому процесі.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Робочий процес: вузол сповіщень
+# Workflow: notification node

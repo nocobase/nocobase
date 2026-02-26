@@ -1,17 +1,15 @@
 ---
-displayName: "監査ログ（非推奨）"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  このプラグインは非推奨です。使用しないでください。将来的には新しい監査ログプラグインが提供される予定です
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# 監査ログ（非推奨）
+# Audit logs (deprecated)
 
-> 注意：このプラグインは非推奨です
+> Note: This plugin is deprecated.

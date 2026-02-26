@@ -8,11 +8,10 @@
  */
 
 import React from 'react';
-import { Avatar, Divider, Typography, Flex, Button } from 'antd';
+import { Avatar, Divider, Typography, Flex, Tag } from 'antd';
 import { useToken } from '@nocobase/client';
 import { AIEmployee, Task } from './types';
 import { avatars } from './avatars';
-import { useT } from '../locale';
 import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 
 export const ProfileCard: React.FC<{
@@ -20,97 +19,92 @@ export const ProfileCard: React.FC<{
   tasks?: Task[];
 }> = ({ aiEmployee, tasks }) => {
   const { token } = useToken();
-  const t = useT();
   tasks = tasks?.filter((task) => task.title) || [];
 
   const { triggerTask } = useChatBoxActions();
 
+  if (!aiEmployee) {
+    return null;
+  }
+
   return (
     <div
       style={{
-        width: '300px',
-        padding: '8px',
+        width: '260px',
+        padding: '4px 8px',
       }}
     >
-      {aiEmployee ? (
+      <Flex align="center" gap={10}>
+        <Avatar
+          src={avatars(aiEmployee.avatar)}
+          size={40}
+          style={{
+            flexShrink: 0,
+          }}
+        />
+        <Flex vertical>
+          <span
+            style={{
+              fontSize: token.fontSize,
+              color: token.colorText,
+              lineHeight: 1.4,
+            }}
+          >
+            {aiEmployee.nickname}
+          </span>
+          <span
+            style={{
+              fontSize: token.fontSizeSM,
+              color: token.colorTextTertiary,
+              lineHeight: 1.4,
+            }}
+          >
+            {aiEmployee.position}
+          </span>
+        </Flex>
+      </Flex>
+      {aiEmployee.bio ? (
         <>
-          <div
+          <Divider style={{ margin: '8px 0' }} />
+          <Typography.Paragraph
             style={{
-              width: '100%',
-              textAlign: 'center',
+              marginBottom: 0,
+              fontSize: token.fontSizeSM,
+              color: token.colorTextSecondary,
+              lineHeight: 1.6,
             }}
           >
-            <Avatar
-              src={avatars(aiEmployee.avatar)}
-              size={60}
-              style={{
-                boxShadow: `0px 0px 2px ${token.colorBorder}`,
-              }}
-            />
-            <div
-              style={{
-                fontSize: token.fontSizeLG,
-                fontWeight: token.fontWeightStrong,
-                marginTop: '8px',
-              }}
-            >
-              {aiEmployee.nickname}
-            </div>
-            <div
-              style={{
-                fontSize: token.fontSize,
-                color: token.colorTextSecondary,
-                marginBottom: '8px',
-              }}
-            >
-              {aiEmployee.position}
-            </div>
-          </div>
-          <Divider
-            orientation="left"
-            plain
-            style={{
-              fontStyle: 'italic',
-            }}
-          >
-            {t('Bio')}
-          </Divider>
-          <Typography.Paragraph>{aiEmployee.bio}</Typography.Paragraph>
-          {tasks.length ? (
-            <>
-              <Divider
-                orientation="left"
-                plain
-                style={{
-                  fontStyle: 'italic',
-                }}
-              >
-                {t('Tasks')}
-              </Divider>
-              <Flex align="flex-start" gap="middle" wrap={true}>
-                {tasks.map((task, index) => (
-                  <Button
-                    key={index}
-                    style={{
-                      whiteSpace: 'normal',
-                      textAlign: 'left',
-                      height: 'auto',
-                    }}
-                    variant="outlined"
-                    onClick={() =>
-                      triggerTask({
-                        aiEmployee,
-                        tasks: [task],
-                      })
-                    }
-                  >
-                    <div>{task.title || `${t('Task')} ${index + 1}`}</div>
-                  </Button>
-                ))}
-              </Flex>
-            </>
-          ) : null}
+            {aiEmployee.bio}
+          </Typography.Paragraph>
         </>
+      ) : null}
+      {tasks.length ? (
+        <Flex
+          gap="4px 4px"
+          wrap={true}
+          style={{
+            marginTop: '8px',
+          }}
+        >
+          {tasks.map((task, index) => (
+            <Tag
+              key={index}
+              style={{
+                cursor: 'pointer',
+                maxWidth: '100%',
+                whiteSpace: 'normal',
+              }}
+              onClick={() =>
+                triggerTask({
+                  aiEmployee,
+                  tasks: [task],
+                })
+              }
+            >
+              {task.title}
+            </Tag>
+          ))}
+        </Flex>
       ) : null}
     </div>
   );

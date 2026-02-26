@@ -1,18 +1,15 @@
 ---
-displayName: "Workflow: Unter-Workflow"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Dieses Plugin ermöglicht es Ihnen, andere Workflows innerhalb eines Workflows aufzurufen. Sie können die Variablen des aktuellen Workflows als Eingabe für den Unter-Workflow verwenden und dessen Ausgabe wiederum als Variablen für den aktuellen Workflow nutzen.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Workflow: Unter-Workflow
+# Workflow: Subflow

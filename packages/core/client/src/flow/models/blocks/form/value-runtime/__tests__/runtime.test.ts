@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { EventEmitter } from 'events';
+import dayjs from 'dayjs';
 import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
@@ -309,6 +310,64 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     expect(rules.has(instanceId)).toBe(false);
     expect(rules.has(blockId)).toBe(true);
+  });
+
+  it('normalizes date-only value for unixTimestamp target to start-of-day datetime', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-unix-ts-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '2026-02-12',
+      },
+    ]);
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('collectionField', { value: { interface: 'unixTimestamp' } });
+
+    const fieldModel: any = {
+      uid: 'field-a-unix-ts-1',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'a' };
+        }
+        return undefined;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+    fieldModel.context = fieldCtx;
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    await waitFor(() => {
+      const assigned = formStub.getFieldValue(['a']);
+      expect(typeof assigned).toBe('string');
+      expect(assigned).not.toBe('2026-02-12');
+      expect(dayjs(assigned).isValid()).toBe(true);
+      expect(dayjs(assigned).format('YYYY-MM-DD')).toBe('2026-02-12');
+    });
   });
 
   it('supports RunJSValue and updates on formValues dependency change', async () => {
@@ -1978,6 +2037,200 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     await waitFor(() => expect(formStub.getFieldValue(['user', 'id'])).toBe(123));
     expect(formStub.getFieldValue(['user'])).toEqual({ id: 123 });
+  });
+
+  it('normalizes primitive value to to-one association object by targetKey', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-normalize-to-one',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('user', { value: { mainDepartment: { id: 9, name: 'Dept 9' } } });
+
+    const departmentCollection: any = { getField: () => null, filterTargetKey: 'id' };
+    const mainDepartmentField: any = {
+      isAssociationField: () => true,
+      type: 'belongsTo',
+      targetCollection: departmentCollection,
+    };
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'mainDepartment') return mainDepartmentField;
+        return null;
+      },
+    };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'mainDepartment',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.user.mainDepartment.id }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['mainDepartment'])).toEqual({ id: 9 }));
+  });
+
+  it('normalizes to-many association value to array when source is a single record object', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-normalize-to-many',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('user', { value: { mainDepartment: { id: 9, name: 'Dept 9' } } });
+
+    const departmentCollection: any = { getField: () => null, filterTargetKey: 'id' };
+    const departmentsField: any = {
+      isAssociationField: () => true,
+      type: 'belongsToMany',
+      targetCollection: departmentCollection,
+    };
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'departments') return departmentsField;
+        return null;
+      },
+    };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'departments',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.user.mainDepartment }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['departments'])).toEqual([{ id: 9, name: 'Dept 9' }]));
+  });
+
+  it('keeps rich to-many association value when assign result is semantically equal by targetKey', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ roles: [{ name: 'root', title: 'Root role' }] });
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-semantic-to-many',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('role', { value: 'root' });
+
+    const rolesCollection: any = { getField: () => null, filterTargetKey: 'name' };
+    const rolesField: any = {
+      isAssociationField: () => true,
+      type: 'belongsToMany',
+      targetCollection: rolesCollection,
+    };
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'roles') return rolesField;
+        return null;
+      },
+    };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'roles',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.role }}',
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(formStub.getFieldValue(['roles'])).toEqual([{ name: 'root', title: 'Root role' }]);
+  });
+
+  it('keeps rich to-one association value when assign result is semantically equal by targetKey', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ mainDepartment: { id: 9, name: 'Dept 9' } });
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-semantic-to-one',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('user', { value: { mainDepartment: { id: 9 } } });
+
+    const departmentCollection: any = { getField: () => null, filterTargetKey: 'id' };
+    const mainDepartmentField: any = {
+      isAssociationField: () => true,
+      type: 'belongsTo',
+      targetCollection: departmentCollection,
+    };
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'mainDepartment') return mainDepartmentField;
+        return null;
+      },
+    };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'mainDepartment',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.user.mainDepartment.id }}',
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(formStub.getFieldValue(['mainDepartment'])).toEqual({ id: 9, name: 'Dept 9' });
   });
 
   it('applies nested association write for updateAssociation field when association value is empty', async () => {

@@ -254,7 +254,7 @@
   {
     "type": "custom-link",
     "label": "Execution History",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

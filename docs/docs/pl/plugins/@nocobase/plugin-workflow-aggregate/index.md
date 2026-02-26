@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: Węzeł agregujący"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Służy do wykonywania zapytań agregujących na bazie danych w ramach przepływu pracy, np. zliczania, sumowania czy uśredniania danych.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Węzeł agregujący
+# Workflow: Aggregate node

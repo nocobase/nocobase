@@ -1,14 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: ईमेल भेजने वाला नोड"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  इसका उपयोग वर्कफ़्लो में ईमेल भेजने के लिए किया जा सकता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Send email in workflow.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: ईमेल भेजने वाला नोड
+# Workflow: mailer node

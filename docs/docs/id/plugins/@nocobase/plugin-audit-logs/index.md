@@ -1,17 +1,15 @@
 ---
-displayName: "Log Audit (Usang)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Plugin ini sudah usang, jangan gunakan. Akan ada plugin log audit yang baru di masa mendatang.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Log Audit (Usang)
+# Audit logs (deprecated)
 
-> Catatan: Plugin ini sudah usang.
+> Note: This plugin is deprecated.

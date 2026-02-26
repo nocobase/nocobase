@@ -1,17 +1,15 @@
 ---
-displayName: "ऑडिट लॉग (अप्रचलित)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  यह प्लगइन अप्रचलित हो चुका है। कृपया इसका उपयोग न करें। भविष्य में एक नया ऑडिट लॉग प्लगइन उपलब्ध होगा।
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ऑडिट लॉग (अप्रचलित)
+# Audit logs (deprecated)
 
-> ध्यान दें: यह प्लगइन अप्रचलित हो चुका है (deprecated)।
+> Note: This plugin is deprecated.

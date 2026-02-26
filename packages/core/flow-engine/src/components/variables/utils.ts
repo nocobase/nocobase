@@ -13,6 +13,18 @@ import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
 import { isVariableExpression } from '../../utils';
 
+const getContextSelectorLabelText = (node: ContextSelectorItem) => {
+  if (typeof node.label === 'string') {
+    return node.label;
+  }
+
+  if (typeof node.meta?.title === 'string') {
+    return node.meta.title;
+  }
+
+  return node.value;
+};
+
 export const parseValueToPath = (value: string): string[] | undefined => {
   if (typeof value !== 'string') return undefined;
 
@@ -66,12 +78,7 @@ export const searchInLoadedNodes = (
       const nodePath = [...currentPath, node.value];
 
       // 计算可搜索的纯文本标签
-      const labelText =
-        typeof node.label === 'string'
-          ? node.label
-          : typeof node.meta?.title === 'string'
-            ? node.meta!.title
-            : String(node.value);
+      const labelText = getContextSelectorLabelText(node);
 
       // 检查节点标签是否匹配搜索文本
       if (labelText.toLowerCase().includes(lowerSearchText)) {
@@ -87,6 +94,60 @@ export const searchInLoadedNodes = (
 
   searchRecursive(options, []);
   return results;
+};
+
+/**
+ * 仅在“已加载节点”范围内按关键字过滤 options（保留树结构）。
+ * - 匹配父节点：保留原节点引用（含原 children），避免不必要的实体重建。
+ * - 匹配子节点：返回裁剪后的父节点副本，children 仅包含命中分支。
+ * - 未加载 children（即 children 不为数组）不会递归搜索。
+ */
+export const filterLoadedContextSelectorItems = (
+  options: ContextSelectorItem[] | undefined,
+  keyword: string,
+): ContextSelectorItem[] => {
+  if (!Array.isArray(options) || options.length === 0) return [];
+
+  const normalizedKeyword = keyword.trim().toLowerCase();
+  if (!normalizedKeyword) {
+    return options;
+  }
+
+  const filterNode = (node: ContextSelectorItem): ContextSelectorItem | null => {
+    const labelText = getContextSelectorLabelText(node).toLowerCase();
+    const selfMatched = labelText.includes(normalizedKeyword);
+
+    if (selfMatched) {
+      return node;
+    }
+
+    if (!Array.isArray(node.children) || node.children.length === 0) {
+      return null;
+    }
+
+    const filteredChildren = node.children
+      .map((child) => filterNode(child))
+      .filter((item): item is ContextSelectorItem => item !== null);
+
+    if (filteredChildren.length === 0) {
+      return null;
+    }
+
+    // 所有子节点都保留原引用时，直接复用父节点对象。
+    if (
+      filteredChildren.length === node.children.length &&
+      filteredChildren.every((child, idx) => child === node.children![idx])
+    ) {
+      return node;
+    }
+
+    return {
+      ...node,
+      children: filteredChildren,
+    };
+  };
+
+  return options.map((node) => filterNode(node)).filter((item): item is ContextSelectorItem => item !== null);
 };
 
 export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSelectorItem[] => {
