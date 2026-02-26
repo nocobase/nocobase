@@ -35,9 +35,7 @@ export async function getPlugins({ keyData, ctx }: { keyData: KeyData; ctx: any 
       enabled: p.options.enabled,
     });
   }
-  // key的商业插件清单
   let licensedPlugins = keyData?.plugins || [];
-  // v2.0 忽略open_source插件的授权状态
   const isVer2 = await ctx?.app?.version?.satisfies('>=2.0.0');
   if (isVer2) {
     licensedPlugins = licensedPlugins.filter((plugin) => {
