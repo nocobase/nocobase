@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.6](https://github.com/nocobase/nocobase/compare/v2.0.5...v2.0.6) - 2026-02-26
+
+### 🐛 修复
+
+- **[AI 员工]** 修复使用 mysql 数据库时 AI 对话报错问题 ([#8708](https://github.com/nocobase/nocobase/pull/8708)) by @cgyrock
+
 ## [v2.0.5](https://github.com/nocobase/nocobase/compare/v2.0.3...v2.0.5) - 2026-02-26
 
 ### 🐛 修复
