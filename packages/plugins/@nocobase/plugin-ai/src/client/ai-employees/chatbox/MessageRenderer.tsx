@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from 'antd';
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
@@ -115,7 +115,7 @@ export const AIMessage: React.FC<{
   const aiConfigRepository = useAIConfigRepository();
   const toolsLoading = aiConfigRepository.aiToolsLoading;
   const tools = aiConfigRepository.aiTools;
-  const toolsMap = toToolsMap(tools || []);
+  const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
   useEffect(() => {
     aiConfigRepository.getAITools();
   }, [aiConfigRepository]);
