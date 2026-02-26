@@ -36,9 +36,8 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
     aiConfigRepository.getAIEmployees();
   }, [aiConfigRepository]);
 
-  const menuItems = useMemo(() => {
-    if (!aiEmployees.length) {
-      return [
+  const menuItems = !aiEmployees.length
+    ? [
         {
           key: 'empty',
           label: (
@@ -47,23 +46,20 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
           disabled: true,
           style: { cursor: 'default', padding: '16px 12px', height: 'auto', minHeight: 0 },
         },
-      ];
-    }
-
-    return aiEmployees.map((employee) => {
-      const isSelected = currentEmployee?.username === employee.username;
-      return {
-        key: employee.username,
-        label: (
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <AIEmployeeListItem aiEmployee={employee} />
-            {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
-          </span>
-        ),
-        onClick: () => switchAIEmployee(employee),
-      };
-    });
-  }, [aiEmployees, currentEmployee?.username, switchAIEmployee, t, token.colorPrimary, token.colorTextSecondary]);
+      ]
+    : aiEmployees.map((employee) => {
+        const isSelected = currentEmployee?.username === employee.username;
+        return {
+          key: employee.username,
+          label: (
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <AIEmployeeListItem aiEmployee={employee} />
+              {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
+            </span>
+          ),
+          onClick: () => switchAIEmployee(employee),
+        };
+      });
 
   const hasEmployees = aiEmployees.length > 0;
   const currentLabel = currentEmployee ? currentEmployee.nickname : `${t('Select an')} ${t('AI employee')}`;
@@ -128,19 +124,17 @@ export const SenderHeader: React.FC = observer(() => {
     aiConfigRepository.getAIEmployees();
   }, [aiConfigRepository]);
 
-  const items = useMemo(() => {
-    return aiEmployees?.map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
-  }, [aiEmployees, switchAIEmployee]);
+  const items = aiEmployees?.map((employee) => ({
+    key: employee.username,
+    label: (
+      <AIEmployeeListItem
+        aiEmployee={employee}
+        onClick={() => {
+          switchAIEmployee(employee);
+        }}
+      />
+    ),
+  }));
 
   const avatar = useMemo(() => {
     if (!currentEmployee) {

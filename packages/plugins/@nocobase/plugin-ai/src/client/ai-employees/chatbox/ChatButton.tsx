@@ -7,19 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Avatar, Dropdown, FloatButton } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { useMobileLayout, useRequest, useToken } from '@nocobase/client';
+import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
 import { useChatConversationsStore } from './stores/chat-conversations';
-import { AIEmployee } from '../types';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -28,9 +27,10 @@ export const ChatButton: React.FC = observer(() => {
   const { token } = useToken();
 
   const aiConfigRepository = useAIConfigRepository();
-  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
-    return aiConfigRepository.getAIEmployees();
-  });
+  const aiEmployees = aiConfigRepository.aiEmployees;
+  React.useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -42,23 +42,21 @@ export const ChatButton: React.FC = observer(() => {
 
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
-  const items = useMemo(() => {
-    return aiEmployees
-      ?.filter((employee) => !isHide(employee))
-      .map((employee) => ({
-        key: employee.username,
-        label: (
-          <AIEmployeeListItem
-            aiEmployee={employee}
-            onClick={() => {
-              setWebSearch(true);
-              setOpen(true);
-              switchAIEmployee(employee);
-            }}
-          />
-        ),
-      }));
-  }, [aiEmployees]);
+  const items = aiEmployees
+    ?.filter((employee) => !isHide(employee))
+    .map((employee) => ({
+      key: employee.username,
+      label: (
+        <AIEmployeeListItem
+          aiEmployee={employee}
+          onClick={() => {
+            setWebSearch(true);
+            setOpen(true);
+            switchAIEmployee(employee);
+          }}
+        />
+      ),
+    }));
 
   if (open || !aiEmployees?.length || isV1Page) {
     return null;

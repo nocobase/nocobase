@@ -9,22 +9,21 @@
 
 import React, { ComponentType, useEffect } from 'react';
 import { DefaultToolCard } from './DefaultToolCard';
-import { ToolsEntry, ToolsUIProperties, toToolsMap, useRequest } from '@nocobase/client';
+import { ToolsUIProperties, toToolsMap } from '@nocobase/client';
 import { ToolCall } from '../../types';
 import { jsonrepair } from 'jsonrepair';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
 
 export const ToolCard: React.FC<{
   messageId: string;
   toolCalls: ToolCall[];
   inlineActions?: React.ReactNode;
-}> = ({ toolCalls, messageId, inlineActions }) => {
+}> = observer(({ toolCalls, messageId, inlineActions }) => {
   const aiConfigRepository = useAIConfigRepository();
-  const { loading, data } = useRequest<ToolsEntry[]>(async () => {
-    return aiConfigRepository.getAITools();
-  });
-  const tools = data || [];
+  const loading = aiConfigRepository.aiToolsLoading;
+  const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
   const { getDecisionActions } = useToolCallActions({ messageId });
   const toolsWithUI: ({ C: ComponentType<ToolsUIProperties> } & ToolsUIProperties)[] = [];
@@ -59,6 +58,10 @@ export const ToolCard: React.FC<{
       toolsWithoutUI.push(toolCall);
     }
   }
+
+  useEffect(() => {
+    aiConfigRepository.getAITools();
+  }, [aiConfigRepository]);
 
   useEffect(() => {
     if (!messageId) {
@@ -99,4 +102,4 @@ export const ToolCard: React.FC<{
       )}
     </>
   );
-};
+});

@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect, useMemo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from 'antd';
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { lazy, ToolsEntry, usePlugin, useToken, toToolsMap, useRequest } from '@nocobase/client';
+import { lazy, usePlugin, useToken, toToolsMap } from '@nocobase/client';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
@@ -25,6 +25,7 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
 
 const { Markdown } = lazy(() => import('./markdown/Markdown'), 'Markdown');
 
@@ -107,16 +108,17 @@ const AIMessageRenderer: React.FC<{
 
 export const AIMessage: React.FC<{
   msg: Message['content'];
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const { token } = useToken();
   const { message } = App.useApp();
   const aiConfigRepository = useAIConfigRepository();
-  const { loading: toolsLoading, data } = useRequest<ToolsEntry[]>(async () => {
-    return aiConfigRepository.getAITools();
-  });
-  const tools = data || [];
-  const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
+  const toolsLoading = aiConfigRepository.aiToolsLoading;
+  const tools = aiConfigRepository.aiTools;
+  const toolsMap = toToolsMap(tools || []);
+  useEffect(() => {
+    aiConfigRepository.getAITools();
+  }, [aiConfigRepository]);
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
   const hasCustomRenderer = !!provider?.components?.MessageRenderer;
