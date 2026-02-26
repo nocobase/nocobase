@@ -581,7 +581,7 @@ export class Application {
   getRootComponent() {
     const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
       // 第一阶段仅切换根渲染宿主，保持 AppComponent 现有语义不变。
-      React.useEffect(() => {
+      React.useLayoutEffect(() => {
         this.model.setProps({ children });
       }, [children]);
 
