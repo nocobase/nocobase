@@ -149,6 +149,7 @@ export class AdminLayoutRouteCoordinator {
       return;
     }
 
+    runtime.forceStop = true;
     runtime.prevViewList.forEach((viewItem) => {
       this.flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
       runtime.viewState[getKey(viewItem)]?.destroy?.();
@@ -156,7 +157,6 @@ export class AdminLayoutRouteCoordinator {
     });
     runtime.prevViewList = [];
     runtime.hasStepNavigated = false;
-    runtime.forceStop = false;
   }
 
   destroy() {
