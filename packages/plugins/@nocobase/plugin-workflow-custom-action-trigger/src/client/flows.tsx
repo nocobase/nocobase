@@ -7,12 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ActionModel,
-  ActionSceneEnum,
-  CollectionActionModel,
-  FormActionModel,
-} from '@nocobase/client';
+import { ActionModel, ActionSceneEnum, CollectionActionModel, FormActionModel } from '@nocobase/client';
 import { tExpr, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { createTriggerWorkflowsSchema, TriggerWorkflowSelect } from '@nocobase/plugin-workflow/client';
 import { ButtonProps } from 'antd';
@@ -65,12 +60,13 @@ FormTriggerWorkflowActionModel.registerFlow({
             return await ctx.blockModel.resource.runAction('trigger', {
               params: {
                 ...(filterByTk != null ? { filterByTk } : {}),
-                triggerWorkflows: params.group?.length ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',') : undefined,
+                triggerWorkflows: params.group?.length
+                  ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+                  : undefined,
               },
               data: values,
             });
           });
-          ctx.message.success(ctx.t('Operation succeeded'));
           ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
@@ -79,10 +75,12 @@ FormTriggerWorkflowActionModel.registerFlow({
         } finally {
           ctx.model.setProps('loading', false);
         }
-
-        if (ctx.view) {
-          ctx.view.close();
-        }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
       },
     },
   },
@@ -137,10 +135,17 @@ RecordTriggerWorkflowActionModel.registerFlow({
               filterByTk: getRecordKey(ctx.record, collection),
             },
           });
-          ctx.message.success(ctx.t('Operation succeeded'));
         } catch (error) {
           console.error('Error triggering workflows:', error);
+          ctx.exit();
         }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'stay',
       },
     },
   },
@@ -291,8 +296,13 @@ CollectionTriggerWorkflowActionModel.registerFlow({
         } else {
           throw new Error('Invalid context type');
         }
-
-        ctx.message.success(ctx.t('Operation succeeded'));
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'stay',
       },
     },
   },
@@ -339,10 +349,17 @@ CollectionGlobalTriggerWorkflowActionModel.registerFlow({
                 : undefined,
             },
           });
-          ctx.message.success(ctx.t('Workflow triggered on selected records successfully'));
         } catch (error) {
           console.error('Error triggering workflows:', error);
+          ctx.exit();
         }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'stay',
       },
     },
   },
