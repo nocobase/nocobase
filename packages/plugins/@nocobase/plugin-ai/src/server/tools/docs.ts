@@ -229,7 +229,8 @@ export async function readDocEntry(docPath: string): Promise<DocEntryResult> {
   };
 }
 
-export function createDocsSearchTool(options?: { description?: string }): ToolsOptions {
+export function createDocsSearchTool(): ToolsOptions {
+  const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
   return {
     scope: 'GENERAL',
     defaultPermission: 'ALLOW',
@@ -241,7 +242,7 @@ export function createDocsSearchTool(options?: { description?: string }): ToolsO
       name: 'searchDocs',
       description: `Search indexed documentation using a FlexSearch-based keyword index.
 Provide a small keyword list (identifiers, API names, module terms). The tool will search them concurrently with limited parallelism.
-Return matching document paths only. ${options.description}`,
+Return matching document paths only. ${docsModulesDescription}`,
       schema: z.object({
         module: z.string().min(1, 'module is required').describe('Module key, e.g. runjs'),
         keywords: z
@@ -332,8 +333,8 @@ export function createReadDocEntryTool(): ToolsOptions {
           content: 'No document indexes available.',
         };
       }
-      const rawPaths = Array.isArray(args?.paths) ? args.paths : [];
-      const paths = Array.from(
+      const rawPaths: unknown[] = Array.isArray(args?.paths) ? args.paths : [];
+      const paths: string[] = Array.from(
         new Set(
           rawPaths
             .map((p) => String(p ?? '').trim())
