@@ -266,6 +266,7 @@ export const InternalAdminSettingsLayout = () => {
 export const AdminSettingsLayout = (props) => {
   const flowEngine = useFlowEngine();
   const modelRef = useRef<AdminSettingsLayoutModel>(null);
+  const modelChildren = <InternalAdminSettingsLayout {...props} />;
 
   if (!modelRef.current) {
     modelRef.current =
@@ -273,15 +274,15 @@ export const AdminSettingsLayout = (props) => {
       flowEngine.createModel<AdminSettingsLayoutModel>({
         uid: ADMIN_SETTINGS_LAYOUT_MODEL_UID,
         use: AdminSettingsLayoutModel,
-        props,
+        props: { ...props, children: modelChildren },
       });
   }
 
   const model = modelRef.current;
 
   useEffect(() => {
-    model.setProps(props);
-  }, [model, props]);
+    model.setProps({ ...props, children: modelChildren });
+  }, [model, modelChildren, props]);
 
   return <FlowModelRenderer model={model} />;
 };

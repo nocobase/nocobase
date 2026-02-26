@@ -9,10 +9,9 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { InternalAdminSettingsLayout } from './PluginSetting';
 
 export class AdminSettingsLayoutModel extends FlowModel {
   render() {
-    return <InternalAdminSettingsLayout {...this.props} />;
+    return <>{this.props.children}</>;
   }
 }
