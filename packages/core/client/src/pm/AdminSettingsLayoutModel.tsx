@@ -9,10 +9,18 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { InternalAdminSettingsLayout } from './PluginSetting';
+
+const LazyInternalAdminSettingsLayout = React.lazy(async () => {
+  const module = await import('./PluginSetting');
+  return { default: module.InternalAdminSettingsLayout };
+});
 
 export class AdminSettingsLayoutModel extends FlowModel {
   render() {
-    return <InternalAdminSettingsLayout {...this.props} />;
+    return (
+      <React.Suspense fallback={null}>
+        <LazyInternalAdminSettingsLayout {...this.props} />
+      </React.Suspense>
+    );
   }
 }

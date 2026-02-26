@@ -10,8 +10,19 @@
 import { reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { AdminProvider, InternalAdminLayout } from '.';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from './AdminLayoutRouteCoordinator';
+
+const LazyAdminLayoutView = React.lazy(async () => {
+  const module = await import('.');
+  const AdminLayoutView = (props: React.ComponentProps<typeof module.InternalAdminLayout>) => (
+    <module.AdminProvider>
+      <module.InternalAdminLayout {...props} />
+    </module.AdminProvider>
+  );
+  return {
+    default: AdminLayoutView,
+  };
+});
 
 export class AdminLayoutModel extends FlowModel {
   private routeCoordinator?: AdminLayoutRouteCoordinator;
@@ -99,9 +110,9 @@ export class AdminLayoutModel extends FlowModel {
 
   render() {
     return (
-      <AdminProvider>
-        <InternalAdminLayout {...this.props} />
-      </AdminProvider>
+      <React.Suspense fallback={null}>
+        <LazyAdminLayoutView {...this.props} />
+      </React.Suspense>
     );
   }
 }

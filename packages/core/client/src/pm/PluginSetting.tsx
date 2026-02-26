@@ -39,9 +39,6 @@ function getMenuItems(list: PluginSettingsPageType[]) {
   if (otherList.length) {
     items.push(...otherList);
   }
-  if (items.length === 0) {
-    return undefined;
-  }
   return items.map((item: any) => {
     if (item.type === 'divider') {
       return { type: 'divider' };
