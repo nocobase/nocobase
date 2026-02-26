@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/client-v2",
-  "version": "2.1.0-beta.4",
+  "version": "2.1.0-beta.5",
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
   "dependencies": {
-    "@nocobase/flow-engine": "2.1.0-beta.4",
-    "@nocobase/sdk": "2.1.0-beta.4",
-    "@nocobase/shared": "2.1.0-beta.4",
+    "@nocobase/flow-engine": "2.1.0-beta.5",
+    "@nocobase/sdk": "2.1.0-beta.5",
+    "@nocobase/shared": "2.1.0-beta.5",
     "i18next": "^22.4.9",
     "react-router-dom": "^6.30.1"
   }
