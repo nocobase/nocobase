@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar, Button, Divider, Dropdown, Flex, Popover, Tag } from 'antd';
 import { UserAddOutlined, CloseCircleOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
-import { useRequest, useToken } from '@nocobase/client';
+import { useToken } from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { avatars } from '../avatars';
@@ -21,18 +22,19 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { EditMessageHeader } from './EditMessageHeader';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
-import { AIEmployee } from '../types';
 
-export const AIEmployeeSwitcher: React.FC = () => {
+export const AIEmployeeSwitcher: React.FC = observer(() => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const aiConfigRepository = useAIConfigRepository();
-  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
-    return aiConfigRepository.getAIEmployees();
-  });
+  const aiEmployees = aiConfigRepository.aiEmployees;
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
   const { token } = useToken();
+
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   const menuItems = useMemo(() => {
     if (!aiEmployees.length) {
@@ -109,13 +111,11 @@ export const AIEmployeeSwitcher: React.FC = () => {
       {dropdownContent}
     </Dropdown>
   );
-};
+});
 
-export const SenderHeader: React.FC = () => {
+export const SenderHeader: React.FC = observer(() => {
   const aiConfigRepository = useAIConfigRepository();
-  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
-    return aiConfigRepository.getAIEmployees();
-  });
+  const aiEmployees = aiConfigRepository.aiEmployees;
   const { token } = useToken();
   const t = useT();
 
@@ -123,6 +123,10 @@ export const SenderHeader: React.FC = () => {
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
 
   const { switchAIEmployee } = useChatBoxActions();
+
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
@@ -229,4 +233,4 @@ export const SenderHeader: React.FC = () => {
       {currentEmployee ? <AttachmentsHeader /> : null}
     </div>
   );
-};
+});
