@@ -51,57 +51,59 @@ export class AIConfigRepository {
   }
 
   async getLLMServices(): Promise<LLMServiceItem[]> {
+    if (this.llmServicesInFlight) {
+      return this.llmServicesInFlight;
+    }
     if (this.llmServicesLoaded) {
       return this.llmServices;
     }
-    if (this.llmServicesInFlight) {
-      return this.llmServicesInFlight;
-    }
-    this.llmServicesInFlight = this.doRefreshLLMServices()
-      .then(() => this.llmServices)
-      .finally(() => {
-        this.llmServicesInFlight = null;
-      });
-    return this.llmServicesInFlight;
+    return this.startRefresh(
+      this.llmServicesInFlight,
+      (promise) => {
+        this.llmServicesInFlight = promise;
+      },
+      () => this.doRefreshLLMServices(),
+      () => this.llmServices,
+    );
   }
 
   async refreshLLMServices(): Promise<LLMServiceItem[]> {
-    if (this.llmServicesInFlight) {
-      return this.llmServicesInFlight;
-    }
-    this.llmServicesInFlight = this.doRefreshLLMServices()
-      .then(() => this.llmServices)
-      .finally(() => {
-        this.llmServicesInFlight = null;
-      });
-    return this.llmServicesInFlight;
+    return this.startRefresh(
+      this.llmServicesInFlight,
+      (promise) => {
+        this.llmServicesInFlight = promise;
+      },
+      () => this.doRefreshLLMServices(),
+      () => this.llmServices,
+    );
   }
 
   async getAIEmployees(): Promise<AIEmployee[]> {
+    if (this.aiEmployeesInFlight) {
+      return this.aiEmployeesInFlight;
+    }
     if (this.aiEmployeesLoaded) {
       return this.aiEmployees;
     }
-    if (this.aiEmployeesInFlight) {
-      return this.aiEmployeesInFlight;
-    }
-    this.aiEmployeesInFlight = this.doRefreshAIEmployees()
-      .then(() => this.aiEmployees)
-      .finally(() => {
-        this.aiEmployeesInFlight = null;
-      });
-    return this.aiEmployeesInFlight;
+    return this.startRefresh(
+      this.aiEmployeesInFlight,
+      (promise) => {
+        this.aiEmployeesInFlight = promise;
+      },
+      () => this.doRefreshAIEmployees(),
+      () => this.aiEmployees,
+    );
   }
 
   async refreshAIEmployees(): Promise<AIEmployee[]> {
-    if (this.aiEmployeesInFlight) {
-      return this.aiEmployeesInFlight;
-    }
-    this.aiEmployeesInFlight = this.doRefreshAIEmployees()
-      .then(() => this.aiEmployees)
-      .finally(() => {
-        this.aiEmployeesInFlight = null;
-      });
-    return this.aiEmployeesInFlight;
+    return this.startRefresh(
+      this.aiEmployeesInFlight,
+      (promise) => {
+        this.aiEmployeesInFlight = promise;
+      },
+      () => this.doRefreshAIEmployees(),
+      () => this.aiEmployees,
+    );
   }
 
   getAIEmployeesMap(): Record<string, AIEmployee> {
@@ -112,30 +114,49 @@ export class AIConfigRepository {
   }
 
   async getAITools(): Promise<ToolsEntry[]> {
+    if (this.aiToolsInFlight) {
+      return this.aiToolsInFlight;
+    }
     if (this.aiToolsLoaded) {
       return this.aiTools;
     }
-    if (this.aiToolsInFlight) {
-      return this.aiToolsInFlight;
-    }
-    this.aiToolsInFlight = this.doRefreshAITools()
-      .then(() => this.aiTools)
-      .finally(() => {
-        this.aiToolsInFlight = null;
-      });
-    return this.aiToolsInFlight;
+    return this.startRefresh(
+      this.aiToolsInFlight,
+      (promise) => {
+        this.aiToolsInFlight = promise;
+      },
+      () => this.doRefreshAITools(),
+      () => this.aiTools,
+    );
   }
 
   async refreshAITools(): Promise<ToolsEntry[]> {
-    if (this.aiToolsInFlight) {
-      return this.aiToolsInFlight;
+    return this.startRefresh(
+      this.aiToolsInFlight,
+      (promise) => {
+        this.aiToolsInFlight = promise;
+      },
+      () => this.doRefreshAITools(),
+      () => this.aiTools,
+    );
+  }
+
+  private startRefresh<T>(
+    inFlight: Promise<T> | null,
+    setInFlight: (promise: Promise<T> | null) => void,
+    refresh: () => Promise<void>,
+    getData: () => T,
+  ): Promise<T> {
+    if (inFlight) {
+      return inFlight;
     }
-    this.aiToolsInFlight = this.doRefreshAITools()
-      .then(() => this.aiTools)
+    const promise = refresh()
+      .then(() => getData())
       .finally(() => {
-        this.aiToolsInFlight = null;
+        setInFlight(null);
       });
-    return this.aiToolsInFlight;
+    setInFlight(promise);
+    return promise;
   }
 
   private async doRefreshLLMServices() {
