@@ -21,6 +21,7 @@ export interface KeyData {
     displayName: string;
     packageName: string;
     updateExpirationDate?: string;
+    openSource?: boolean;
   }>;
   instanceData: {
     timestamp: string;
