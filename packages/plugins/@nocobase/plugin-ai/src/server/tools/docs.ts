@@ -41,6 +41,8 @@ let docsBaseDir = DEFAULT_DOCS_DIR;
 let docsMeta: Record<string, { description?: string }> = {};
 const DOCS_INDEX_TTL_MS = 5 * 60 * 1000;
 const DOCS_INDEX_MAX_CACHE = 5;
+const DOCS_SEARCH_MAX_KEYWORDS = 5;
+const DOCS_READ_MAX_PATHS = 3;
 const docsIndexCache = new Map<
   string,
   {
@@ -124,7 +126,7 @@ export function describeDocModules(emptyMessage = 'No document modules available
   return `Available modules: ${items.join(', ')}`;
 }
 
-export async function searchDocsModule(moduleKey: string, query: string, limit = 5) {
+export async function searchDocsModule(moduleKey: string, keywords: string[], limit = 5) {
   const key = normalizeModuleKey(moduleKey);
   const entry = docsModules.get(key);
   if (!entry) {
@@ -132,21 +134,55 @@ export async function searchDocsModule(moduleKey: string, query: string, limit =
   }
 
   const { index: flexIndex, fileMap } = await getOrLoadDocsIndex(entry);
+  const searchTerms = buildSearchTerms(keywords);
+  if (!searchTerms.length) {
+    throw new Error('At least one valid keyword is required.');
+  }
 
   const boundedLimit = Math.min(Math.max(limit ?? 5, 1), 20);
-  const hits = ((await flexIndex.searchAsync(query, { limit: boundedLimit })) as (string | number)[]) || [];
-  const seen = new Set<string>();
-  const matches: string[] = [];
-  for (const hit of hits) {
-    const filePath = fileMap[String(hit)];
-    if (filePath && !seen.has(filePath)) {
-      seen.add(filePath);
-      matches.push(filePath);
+  const perKeywordLimit = Math.min(Math.max(boundedLimit * 2, 4), 20);
+  const keywordHits = await Promise.all(
+    searchTerms.map(async (keyword) =>
+      (((await flexIndex.searchAsync(keyword, { limit: perKeywordLimit })) as (string | number)[]) || []).map((id) =>
+        String(id),
+      ),
+    ),
+  );
+
+  const aggregate = new Map<string, { score: number; bestRank: number }>();
+  for (const hits of keywordHits) {
+    for (let i = 0; i < hits.length; i++) {
+      const filePath = fileMap[hits[i]];
+      if (!filePath) {
+        continue;
+      }
+      const rankScore = perKeywordLimit - i;
+      const record = aggregate.get(filePath);
+      if (record) {
+        record.score += rankScore;
+        record.bestRank = Math.min(record.bestRank, i);
+      } else {
+        aggregate.set(filePath, { score: rankScore, bestRank: i });
+      }
     }
   }
 
+  const matches = Array.from(aggregate.entries())
+    .sort((a, b) => {
+      if (b[1].score !== a[1].score) {
+        return b[1].score - a[1].score;
+      }
+      if (a[1].bestRank !== b[1].bestRank) {
+        return a[1].bestRank - b[1].bestRank;
+      }
+      return a[0].localeCompare(b[0]);
+    })
+    .slice(0, boundedLimit)
+    .map(([filePath]) => filePath);
+
   return {
     key,
+    keywords: searchTerms,
     matches,
   };
 }
@@ -193,7 +229,8 @@ export async function readDocEntry(docPath: string): Promise<DocEntryResult> {
   };
 }
 
-export function createDocsSearchTool(options?: { description?: string }): ToolsOptions {
+export function createDocsSearchTool(): ToolsOptions {
+  const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
   return {
     scope: 'GENERAL',
     defaultPermission: 'ALLOW',
@@ -204,12 +241,15 @@ export function createDocsSearchTool(options?: { description?: string }): ToolsO
     definition: {
       name: 'searchDocs',
       description: `Search indexed documentation using a FlexSearch-based keyword index.
-The index is built from module identifiers (e.g. "runjs") and English technical terms.
-Use concise, exact keywords (module names, API names, identifiers). Avoid natural language queries or vague wording.
-Return matching document paths only. ${options.description}`,
+Provide a small keyword list (identifiers, API names, module terms). The tool will search them concurrently with limited parallelism.
+Return matching document paths only. ${docsModulesDescription}`,
       schema: z.object({
         module: z.string().min(1, 'module is required').describe('Module key, e.g. runjs'),
-        query: z.string().min(1, 'query is required').describe('Search keyword or phrase in English'),
+        keywords: z
+          .array(z.string().min(1))
+          .min(1, 'keywords is required')
+          .max(DOCS_SEARCH_MAX_KEYWORDS, `keywords can contain up to ${DOCS_SEARCH_MAX_KEYWORDS} items`)
+          .describe('Keywords to search, e.g. ["router", "ctx.state", "runjs"]'),
         limit: z.number().int().min(1).max(20).optional().describe('Maximum number of hits (default 5, max 20)'),
       }),
     },
@@ -223,22 +263,23 @@ Return matching document paths only. ${options.description}`,
       }
 
       const moduleKey = args?.module?.trim();
-      const query = args?.query?.trim();
+      const keywords = Array.isArray(args?.keywords) ? args.keywords : [];
       const limit = typeof args?.limit === 'number' ? args.limit : undefined;
 
-      if (!moduleKey || !query) {
+      if (!moduleKey || !keywords.length) {
         return {
           status: 'error',
-          content: `Both module and query are required. Available modules: ${available.join(', ')}`,
+          content: `Both module and keywords are required. Available modules: ${available.join(', ')}`,
         };
       }
 
       try {
-        const result = await searchDocsModule(moduleKey, query, limit);
+        const result = await searchDocsModule(moduleKey, keywords, limit);
         return {
           status: 'success',
           content: JSON.stringify({
             module: result.key,
+            keywords: result.keywords,
             matches: result.matches,
             availableModules: available,
           }),
@@ -268,42 +309,61 @@ export function createReadDocEntryTool(): ToolsOptions {
     },
     definition: {
       name: 'readDocEntry',
-      description: 'Read files or list directories inside storage/ai/docs using canonical module-based paths.',
+      description:
+        'Read files or list directories inside storage/ai/docs using canonical module-based paths. Supports up to 3 paths per call.',
       schema: z.object({
-        path: z
-          .string()
-          .min(1, 'path is required')
-          .describe(
-            'Canonical path like runjs/context/router/index.md or /runjs/context/router/index.md. No wildcards, relative segments, or globbing.',
-          ),
+        paths: z
+          .array(
+            z
+              .string()
+              .min(1, 'path is required')
+              .describe(
+                'Canonical path like runjs/context/router/index.md or /runjs/context/router/index.md. No wildcards, relative segments, or globbing.',
+              ),
+          )
+          .min(1, 'paths is required')
+          .max(DOCS_READ_MAX_PATHS, `paths can contain up to ${DOCS_READ_MAX_PATHS} items`),
       }),
     },
     invoke: async (ctx, args) => {
       const available = getDocModuleKeys();
-      const targetPath = args?.path?.trim();
-      if (!targetPath) {
+      if (!available.length) {
         return {
           status: 'error',
-          content: `Path is required. Available indexes: ${available.join(', ')}`,
+          content: 'No document indexes available.',
+        };
+      }
+      const rawPaths: unknown[] = Array.isArray(args?.paths) ? args.paths : [];
+      const paths: string[] = Array.from(
+        new Set(
+          rawPaths
+            .map((p) => String(p ?? '').trim())
+            .filter((p) => !!p)
+            .slice(0, DOCS_READ_MAX_PATHS),
+        ),
+      );
+      if (!paths.length) {
+        return {
+          status: 'error',
+          content: `Paths are required. Available indexes: ${available.join(', ')}`,
         };
       }
 
       try {
-        const entry = await readDocEntry(targetPath);
-        if (entry.type === 'directory') {
-          const listing = entry.entries
-            .map((item) => `${item.type === 'directory' ? 'DIR ' : 'FILE'} ${item.path}`)
-            .join('\n');
-          return {
-            status: 'success',
-            content: `DIRECTORY ${entry.path}\n${listing}`,
-          };
-        }
-
-        const clean = entry.content.replace(/\r\n/g, '\n');
+        const entries = await Promise.all(paths.map((targetPath) => readDocEntry(targetPath)));
+        const blocks = entries.map((entry) => {
+          if (entry.type === 'directory') {
+            const listing = entry.entries
+              .map((item) => `${item.type === 'directory' ? 'DIR ' : 'FILE'} ${item.path}`)
+              .join('\n');
+            return `DIRECTORY ${entry.path}\n${listing}`;
+          }
+          const clean = entry.content.replace(/\r\n/g, '\n');
+          return `FILE ${entry.path}\n\`\`\`\n${clean}\n\`\`\``;
+        });
         return {
           status: 'success',
-          content: `FILE ${entry.path}\n\`\`\`\n${clean}\n\`\`\``,
+          content: blocks.join('\n\n'),
         };
       } catch (error) {
         ctx.log?.error?.(error, {
@@ -458,4 +518,23 @@ function enforceDocsIndexCacheLimit() {
   for (let i = 0; i < overflow; i++) {
     docsIndexCache.delete(entries[i][0]);
   }
+}
+
+function buildSearchTerms(keywords: string[]) {
+  const seen = new Set<string>();
+  const terms: string[] = [];
+  for (const raw of keywords) {
+    const keyword = String(raw ?? '')
+      .trim()
+      .replace(/\s+/g, ' ');
+    if (!keyword || seen.has(keyword)) {
+      continue;
+    }
+    seen.add(keyword);
+    terms.push(keyword);
+    if (terms.length >= DOCS_SEARCH_MAX_KEYWORDS) {
+      break;
+    }
+  }
+  return terms;
 }
