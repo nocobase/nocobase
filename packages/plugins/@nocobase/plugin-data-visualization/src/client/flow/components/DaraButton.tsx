@@ -19,9 +19,8 @@ import {
   avatars,
 } from '@nocobase/plugin-ai/client';
 import type { AIEmployee } from '@nocobase/plugin-ai/client';
-import { useRequest } from 'ahooks';
 import type { EditorRef } from '@nocobase/client';
-import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY, useRequest } from '@nocobase/client';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 
 export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx }) => {
