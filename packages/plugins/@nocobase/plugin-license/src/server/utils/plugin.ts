@@ -36,7 +36,14 @@ export async function getPlugins({ keyData, ctx }: { keyData: KeyData; ctx: any 
     });
   }
   // key的商业插件清单
-  const licensedPlugins = keyData?.plugins || [];
+  let licensedPlugins = keyData?.plugins || [];
+  // v2.0 忽略open_source插件的授权状态
+  const isVer2 = await ctx?.app?.version?.satisfies('>=2.0.0');
+  if (isVer2) {
+    licensedPlugins = licensedPlugins.filter((plugin) => {
+      return !plugin?.openSource;
+    });
+  }
   // 所有的商业插件，包含key中清单和本地 __isCommercial 标志的清单
   const allCommericalPluginNames = [...licensedPlugins.map((p) => p.packageName)];
   localPlugins.forEach((p) => {
