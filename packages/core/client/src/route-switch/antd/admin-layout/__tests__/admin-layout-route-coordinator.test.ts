@@ -202,6 +202,54 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(page1RouteModel.dispatchEvent).not.toHaveBeenCalled();
   });
 
+  it('should not open views after page is unregistered while model loading is in flight', async () => {
+    const engine = createEngine();
+    const coordinator = new AdminLayoutRouteCoordinator(engine);
+
+    coordinator.registerPage('page-1', {
+      active: true,
+      currentRoute: { title: 'Page 1' },
+    });
+
+    const page1RouteModel = engine.getModel<RouteModel>('page-1') as RouteModel;
+    page1RouteModel.dispatchEvent = vi.fn() as any;
+
+    let resolveLoad: (model: FlowModel) => void;
+    const loadPromise = new Promise<FlowModel>((resolve) => {
+      resolveLoad = resolve;
+    });
+    vi.spyOn(engine, 'loadModel').mockImplementation(async ({ uid }: { uid: string }) => {
+      if (uid === 'popup-1') {
+        return loadPromise;
+      }
+      return undefined;
+    });
+
+    coordinator.syncRoute({
+      params: { name: 'page-1' },
+      pathname: '/admin/page-1/view/popup-1',
+    });
+
+    // Unregister the page while model loading is still in flight
+    coordinator.unregisterPage('page-1');
+
+    const popupModel = engine.createModel<FlowModel>({
+      uid: 'popup-1',
+      use: 'FlowModel',
+    });
+    const popupDispatchSpy = vi.fn();
+    popupModel.dispatchEvent = popupDispatchSpy as any;
+
+    if (!resolveLoad) {
+      throw new Error('resolveLoad should be initialized');
+    }
+    resolveLoad(popupModel);
+    await flushPromises(5);
+
+    expect(popupDispatchSpy).not.toHaveBeenCalled();
+    expect(page1RouteModel.dispatchEvent).not.toHaveBeenCalled();
+  });
+
   it('should prefer page specific layout content element as target', async () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
