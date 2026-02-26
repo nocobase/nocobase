@@ -29,7 +29,8 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 });
 
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { AdminLayout, AdminLayoutModel } from '..';
+import { AdminLayout } from '..';
+import { AdminLayoutModel } from '../AdminLayoutModel';
 
 describe('AdminLayout (phase-1 host)', () => {
   beforeEach(() => {
