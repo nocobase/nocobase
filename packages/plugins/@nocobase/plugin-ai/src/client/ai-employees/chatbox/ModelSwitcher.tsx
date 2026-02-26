@@ -37,6 +37,10 @@ export const ModelSwitcher: React.FC = observer(
 
     const { repo, services: llmServices, loading, allModelsWithLabel, allModels } = useLLMServiceCatalog();
 
+    const servicesWithModels = llmServices.filter(
+      (service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0,
+    );
+
     // Initialize: cache >> first model
     useEffect(() => {
       if (!currentEmployeeUsername || !allModels.length) return;
@@ -101,12 +105,12 @@ export const ModelSwitcher: React.FC = observer(
     if (!currentEmployee) return null;
     if (loading && !llmServices.length) return <Spin size="small" />;
 
-    const hasModels = allModels.length > 0;
+    const hasModels = servicesWithModels.length > 0;
 
     // Build dropdown menu items
     const menuItems: any[] = [];
 
-    llmServices.forEach((service, sIndex) => {
+    servicesWithModels.forEach((service, sIndex) => {
       if (sIndex > 0) {
         menuItems.push({ type: 'divider', key: `divider-${sIndex}` });
       }
@@ -211,7 +215,11 @@ export const ModelSwitcher: React.FC = observer(
           {dropdownContent}
         </Dropdown>
         {hasConfigPermission && (
-          <AddLLMModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onSuccess={() => repo.refresh()} />
+          <AddLLMModal
+            open={addModalOpen}
+            onClose={() => setAddModalOpen(false)}
+            onSuccess={() => repo.refreshLLMServices()}
+          />
         )}
       </>
     );

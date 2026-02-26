@@ -30,7 +30,7 @@ describe('workflow > instructions > script', () => {
 
   beforeEach(async () => {
     originalEnv = process.env.WORKFLOW_SCRIPT_MODULES;
-    const mathjsPath = Path.resolve(process.env.PWD, 'node_modules', 'mathjs');
+    const mathjsPath = Path.resolve(process.cwd(), 'node_modules', 'mathjs');
     const testModulePath = '.' + Path.sep + 'node_modules' + Path.sep + 'mathjs';
     process.env.WORKFLOW_SCRIPT_MODULES = `path,crypto,lodash,dayjs,http,axios,node:timers,node:process,fs,@nocobase/utils,${mathjsPath},${testModulePath}`;
 
@@ -321,7 +321,7 @@ describe('workflow > instructions > script', () => {
       const script = `
         const process = require('node:process');
         const Path = require('path');
-        const math = require(Path.resolve(process.env.PWD, 'node_modules', 'mathjs'));
+        const math = require(Path.resolve(process.cwd(), 'node_modules', 'mathjs'));
         return math.evaluate('1+1');
       `;
       const result = await ScriptInstruction.run(script, [], { logger });
@@ -334,7 +334,7 @@ describe('workflow > instructions > script', () => {
       const script = `
         const process = require('node:process');
         const Path = require('path');
-        const { ABS } = require(Path.resolve(process.env.PWD, 'node_modules', '@formulajs', 'formulajs'));
+        const { ABS } = require(Path.resolve(process.cwd(), 'node_modules', '@formulajs', 'formulajs'));
         return ABS(-1);
       `;
       const result = await ScriptInstruction.run(script, [], { logger });

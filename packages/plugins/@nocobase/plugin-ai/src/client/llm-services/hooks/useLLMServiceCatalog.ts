@@ -8,18 +8,18 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { useLLMServicesRepository } from './useLLMServicesRepository';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { getAllModelsWithLabel } from '../utils';
 
 export const useLLMServiceCatalog = () => {
-  const repo = useLLMServicesRepository();
+  const repo = useAIConfigRepository();
 
   useEffect(() => {
-    repo.load();
+    repo.getLLMServices();
   }, [repo]);
 
-  const services = repo.services;
-  const loading = repo.loading;
+  const services = repo.llmServices;
+  const loading = repo.llmServicesLoading;
 
   const allModelsWithLabel = useMemo(() => getAllModelsWithLabel(services), [services]);
   const allModels = useMemo(
