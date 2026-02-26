@@ -10,7 +10,6 @@
 import { reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { AdminProvider, InternalAdminLayout } from '.';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from './AdminLayoutRouteCoordinator';
 
 export class AdminLayoutModel extends FlowModel {
@@ -98,10 +97,6 @@ export class AdminLayoutModel extends FlowModel {
   }
 
   render() {
-    return (
-      <AdminProvider>
-        <InternalAdminLayout {...this.props} />
-      </AdminProvider>
-    );
+    return <>{this.props.children}</>;
   }
 }

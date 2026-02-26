@@ -1005,6 +1005,11 @@ export const AdminProvider = (props) => {
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();
   const modelRef = useRef<AdminLayoutModel>(null);
+  const modelChildren = (
+    <AdminProvider>
+      <InternalAdminLayout {...props} />
+    </AdminProvider>
+  );
 
   if (!modelRef.current) {
     modelRef.current =
@@ -1012,15 +1017,15 @@ export const AdminLayout = (props) => {
       flowEngine.createModel<AdminLayoutModel>({
         uid: ADMIN_LAYOUT_MODEL_UID,
         use: AdminLayoutModel,
-        props,
+        props: { ...props, children: modelChildren },
       });
   }
 
   const model = modelRef.current;
 
   useEffect(() => {
-    model.setProps(props);
-  }, [model, props]);
+    model.setProps({ ...props, children: modelChildren });
+  }, [model, modelChildren, props]);
 
   return <FlowModelRenderer model={model} />;
 };
