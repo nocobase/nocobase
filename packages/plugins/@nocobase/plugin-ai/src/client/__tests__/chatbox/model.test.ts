@@ -12,15 +12,14 @@ import { ensureModel } from '../../ai-employees/chatbox/model';
 
 describe('chatbox model recovery', () => {
   it('resolves model when current selection is missing (historical conversation case)', async () => {
-    const llmServicesRepository = {
-      services: [
+    const aiConfigRepository = {
+      getLLMServices: vi.fn(() => [
         {
           llmService: 'svc-openai',
           llmServiceTitle: 'OpenAI',
           enabledModels: [{ label: 'GPT-4o', value: 'gpt-4o' }],
         },
-      ],
-      load: vi.fn(async () => undefined),
+      ]),
     };
     const api = {
       storage: {
@@ -31,27 +30,26 @@ describe('chatbox model recovery', () => {
 
     const result = await ensureModel({
       api,
-      llmServicesRepository: llmServicesRepository as any,
+      aiConfigRepository: aiConfigRepository as any,
       username: 'orin',
       currentOverride: null,
       onResolved,
     });
 
     expect(result).toEqual({ llmService: 'svc-openai', model: 'gpt-4o' });
-    expect(llmServicesRepository.load).toHaveBeenCalledTimes(1);
+    expect(aiConfigRepository.getLLMServices).toHaveBeenCalledTimes(1);
     expect(onResolved).toHaveBeenCalledWith({ llmService: 'svc-openai', model: 'gpt-4o' });
   });
 
   it('keeps current model when it is still valid', async () => {
-    const llmServicesRepository = {
-      services: [
+    const aiConfigRepository = {
+      getLLMServices: vi.fn(() => [
         {
           llmService: 'svc-openai',
           llmServiceTitle: 'OpenAI',
           enabledModels: [{ label: 'GPT-4o', value: 'gpt-4o' }],
         },
-      ],
-      load: vi.fn(async () => undefined),
+      ]),
     };
     const api = {
       storage: {
@@ -63,7 +61,7 @@ describe('chatbox model recovery', () => {
 
     const result = await ensureModel({
       api,
-      llmServicesRepository: llmServicesRepository as any,
+      aiConfigRepository: aiConfigRepository as any,
       username: 'orin',
       currentOverride,
       onResolved,

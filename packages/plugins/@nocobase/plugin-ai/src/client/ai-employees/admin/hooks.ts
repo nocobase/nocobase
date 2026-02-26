@@ -22,7 +22,7 @@ import { useT } from '../../locale';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
 export const useCreateFormProps = () => {
   const t = useT();
@@ -80,7 +80,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { refresh } = useDataBlockRequest();
-  const { refresh: refreshAIEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const t = useT();
 
   return {
@@ -95,7 +95,7 @@ export const useCreateActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
-      refreshAIEmployees();
+      await aiConfigRepository.refreshAIEmployees();
     },
   };
 };
@@ -106,7 +106,7 @@ export const useEditActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
-  const { refresh: refreshAIEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();
@@ -134,7 +134,7 @@ export const useEditActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
-      refreshAIEmployees();
+      await aiConfigRepository.refreshAIEmployees();
     },
   };
 };

@@ -10,12 +10,13 @@
 import React, { useCallback } from 'react';
 import { Modal, Select, message } from 'antd';
 import { useChatToolsStore } from '../stores/chat-tools';
-import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
+import { ToolsEntry, ToolsUIProperties, toToolsMap, useRequest } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { useT } from '../../../locale';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 
 const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   return {
@@ -25,7 +26,11 @@ const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
 
 export const ToolModal: React.FC = () => {
   const t = useT();
-  const { tools } = useTools();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data } = useRequest<ToolsEntry[]>(async () => {
+    return aiConfigRepository.getAITools();
+  });
+  const tools = data || [];
   const toolsMap = toToolsMap(tools);
 
   const open = useChatToolsStore.use.openToolModal();

@@ -12,19 +12,22 @@ import { useT } from '../../locale';
 import { Avatar, Popover } from 'antd';
 import {
   useChatMessagesStore,
-  useAIEmployeesData,
+  useAIConfigRepository,
   useChatBoxStore,
   useChatBoxActions,
   ProfileCard,
   avatars,
 } from '@nocobase/plugin-ai/client';
+import type { AIEmployee } from '@nocobase/plugin-ai/client';
+import { useRequest } from 'ahooks';
 import type { EditorRef } from '@nocobase/client';
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 
 export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx }) => {
   const t = useT();
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => aiConfigRepository.getAIEmployees());
   const aiEmployee = aiEmployees?.find((e) => e.username === 'dara');
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();

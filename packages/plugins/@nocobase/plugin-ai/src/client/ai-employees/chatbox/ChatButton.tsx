@@ -12,13 +12,14 @@ import { Avatar, Dropdown, FloatButton } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { useMobileLayout, useToken } from '@nocobase/client';
+import { useMobileLayout, useRequest, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
 import { useChatConversationsStore } from './stores/chat-conversations';
+import { AIEmployee } from '../types';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -26,7 +27,10 @@ export const ChatButton: React.FC = observer(() => {
   const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { token } = useToken();
 
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 

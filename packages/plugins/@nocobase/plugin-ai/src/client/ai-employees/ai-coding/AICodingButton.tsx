@@ -8,17 +8,17 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
 import { Avatar, Popover, Tooltip } from 'antd';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
-import { EditorRef } from '@nocobase/client';
+import { EditorRef, useRequest } from '@nocobase/client';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { isEngineer } from '../built-in/utils';
-import { Task } from '../types';
+import { AIEmployee, Task } from '../types';
 import { useT } from '../../locale';
 import prompts from './prompts';
 
@@ -32,7 +32,10 @@ export interface AICodingButtonProps {
 
 export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef, setActive }) => {
   const t = useT();
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
   const open = useChatBoxStore.use.open();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { triggerTask } = useChatBoxActions();

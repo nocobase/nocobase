@@ -10,7 +10,7 @@
 import React, { useMemo, useState } from 'react';
 import { Avatar, Button, Divider, Dropdown, Flex, Popover, Tag } from 'antd';
 import { UserAddOutlined, CloseCircleOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
-import { useToken } from '@nocobase/client';
+import { useRequest, useToken } from '@nocobase/client';
 import { useT } from '../../locale';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { avatars } from '../avatars';
@@ -20,12 +20,16 @@ import { ContextItemsHeader } from './ContextItemsHeader';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { EditMessageHeader } from './EditMessageHeader';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { AIEmployee } from '../types';
 
 export const AIEmployeeSwitcher: React.FC = () => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
   const { token } = useToken();
@@ -108,7 +112,10 @@ export const AIEmployeeSwitcher: React.FC = () => {
 };
 
 export const SenderHeader: React.FC = () => {
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
   const { token } = useToken();
   const t = useT();
 

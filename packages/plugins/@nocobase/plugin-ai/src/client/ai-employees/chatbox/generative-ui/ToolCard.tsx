@@ -9,17 +9,22 @@
 
 import React, { ComponentType, useEffect } from 'react';
 import { DefaultToolCard } from './DefaultToolCard';
-import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
+import { ToolsEntry, ToolsUIProperties, toToolsMap, useRequest } from '@nocobase/client';
 import { ToolCall } from '../../types';
 import { jsonrepair } from 'jsonrepair';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 
 export const ToolCard: React.FC<{
   messageId: string;
   toolCalls: ToolCall[];
   inlineActions?: React.ReactNode;
 }> = ({ toolCalls, messageId, inlineActions }) => {
-  const { tools, loading } = useTools();
+  const aiConfigRepository = useAIConfigRepository();
+  const { loading, data } = useRequest<ToolsEntry[]>(async () => {
+    return aiConfigRepository.getAITools();
+  });
+  const tools = data || [];
   const toolsMap = toToolsMap(tools);
   const { getDecisionActions } = useToolCallActions({ messageId });
   const toolsWithUI: ({ C: ComponentType<ToolsUIProperties> } & ToolsUIProperties)[] = [];

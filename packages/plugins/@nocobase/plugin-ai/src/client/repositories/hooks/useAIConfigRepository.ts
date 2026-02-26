@@ -8,8 +8,8 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { LLMServicesRepository } from '../LLMServicesRepository';
+import { AIConfigRepository } from '../AIConfigRepository';
 
-export const useLLMServicesRepository = (): LLMServicesRepository => {
-  return useFlowEngine().context.llmServicesRepository;
+export const useAIConfigRepository = (): AIConfigRepository => {
+  return useFlowEngine().context.aiConfigRepository;
 };

@@ -11,9 +11,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { List, Button, Dropdown, Tooltip, Space, Segmented, Flex, Collapse, Switch } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { SchemaComponent, useCollectionRecordData, useToken, useTools } from '@nocobase/client';
+import { SchemaComponent, ToolsEntry, useCollectionRecordData, useRequest, useToken } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { Field } from '@formily/core';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
 export const SkillsListItem: React.FC<{
   name: string;
@@ -57,7 +58,11 @@ export const Skills: React.FC = () => {
   const t = useT();
   const { token } = useToken();
   const field = useField<Field>();
-  const { tools = [], loading } = useTools();
+  const aiConfigRepository = useAIConfigRepository();
+  const { loading, data } = useRequest<ToolsEntry[]>(async () => {
+    return aiConfigRepository.getAITools();
+  });
+  const tools = data || [];
   const record = useCollectionRecordData();
   const isBuiltIn = record?.builtIn;
 
