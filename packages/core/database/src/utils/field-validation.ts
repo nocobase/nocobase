@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Joi, { AnySchema, Root } from 'joi';
+import Joi, { AnySchema } from 'joi';
 import { ValidationOptions } from '../fields';
 import _ from 'lodash';
 
