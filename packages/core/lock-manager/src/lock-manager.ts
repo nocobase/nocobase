@@ -88,16 +88,63 @@ class LocalLockAdapter implements ILockAdapter {
   }
 
   async tryAcquire(key: string) {
-    const lock = this.getLock(key);
-    if (lock.isLocked()) {
+    const mutex = this.getLock(key);
+    if (mutex.isLocked()) {
       throw new LockAcquireError('lock is locked');
     }
+    // Call mutex.acquire() synchronously (before any await boundary) so that
+    // _locked=true is set atomically within the current JS execution slice.
+    // This prevents TOCTOU races when simulating a multi-node cluster in a
+    // single process (e.g. tests using createMockCluster).
+    const releasePromise = mutex.acquire();
+    const preAcquiredRelease = (await releasePromise) as Releaser;
+    let preAcquiredConsumed = false;
+
     return {
-      acquire: async (ttl) => {
-        return this.acquire(key, ttl);
+      acquire: async (ttl: number): Promise<Releaser> => {
+        let release: Releaser;
+        if (!preAcquiredConsumed) {
+          preAcquiredConsumed = true;
+          release = preAcquiredRelease;
+        } else {
+          release = (await mutex.acquire()) as Releaser;
+        }
+        const timer = setTimeout(() => {
+          if (mutex.isLocked()) {
+            release();
+          }
+        }, ttl);
+        return () => {
+          release();
+          clearTimeout(timer);
+        };
       },
-      runExclusive: async (fn: () => Promise<any>, ttl) => {
-        return this.runExclusive(key, fn, ttl);
+      runExclusive: async <T>(fn: () => Promise<T>, ttl: number): Promise<T> => {
+        let release: Releaser;
+        if (!preAcquiredConsumed) {
+          preAcquiredConsumed = true;
+          release = preAcquiredRelease;
+        } else {
+          release = (await mutex.acquire()) as Releaser;
+        }
+        let timer;
+        try {
+          timer = setTimeout(() => {
+            if (mutex.isLocked()) {
+              release();
+            }
+          }, ttl);
+          return await fn();
+        } catch (e) {
+          if (e === E_CANCELED) {
+            throw new LockAbortError('Lock aborted', { cause: E_CANCELED });
+          } else {
+            throw e;
+          }
+        } finally {
+          clearTimeout(timer);
+          release();
+        }
       },
     };
   }
