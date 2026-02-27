@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/shared",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
