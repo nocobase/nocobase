@@ -78,6 +78,8 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
         '.ant-dropdown',
         '.ant-picker',
         '.ant-switch',
+        '.ant-modal',
+        '.ant-drawer',
       ].join(','),
     ),
   );
