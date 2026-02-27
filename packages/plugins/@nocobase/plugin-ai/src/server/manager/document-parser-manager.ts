@@ -47,12 +47,11 @@ export class DocumentParserManager {
         documents: [],
         meta: {
           sourceFileId: sourceFile.id,
-          extname,
         },
       };
     }
 
-    const cached = await this.loadFromCache(sourceFile, extname);
+    const cached = await this.loadFromCache(sourceFile);
     if (cached) {
       return cached;
     }
@@ -78,7 +77,6 @@ export class DocumentParserManager {
         meta: {
           sourceFileId: sourceFile.id,
           parsedFileId: parsedFile.id,
-          extname,
         },
       };
     } catch (error) {
@@ -92,10 +90,7 @@ export class DocumentParserManager {
     }
   }
 
-  private async loadFromCache(
-    sourceFile: ParseableFile,
-    extname: SupportedDocumentExtname,
-  ): Promise<ParsedDocumentResult | null> {
+  private async loadFromCache(sourceFile: ParseableFile): Promise<ParsedDocumentResult | null> {
     const meta = this.getParseMeta(sourceFile.meta);
     if (!meta || meta.status !== 'ready' || meta.parserVersion !== DOCUMENT_PARSER_VERSION || !meta.parsedFileId) {
       return null;
@@ -117,7 +112,6 @@ export class DocumentParserManager {
       meta: {
         sourceFileId: sourceFile.id,
         parsedFileId: parsedFile.id,
-        extname,
       },
     };
   }

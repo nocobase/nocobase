@@ -11,7 +11,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
-import { createMockPlugin } from './helpers/document-parser-mocks';
+import { createMockPlugin, createTextStream } from './helpers/document-parser-mocks';
 import { DashscopeProvider } from '../llm-providers/dashscope';
 import { DeepSeekProvider } from '../llm-providers/deepseek';
 import { KimiProvider } from '../llm-providers/kimi';
@@ -42,7 +42,7 @@ describe('Provider document routing', () => {
     await fs.rm(localFilePath, { force: true });
   });
 
-  it('routes dashscope/deepseek/kimi attachments to parsed document system messages', async () => {
+  it('routes dashscope/deepseek attachments to parsed document system messages', async () => {
     const parserLoad = vi.fn().mockResolvedValue({
       supported: true,
       text: 'parsed contract content',
@@ -53,7 +53,6 @@ describe('Provider document routing', () => {
     const providers = [
       new DashscopeProvider({ app: app as any, serviceOptions: {} }),
       new DeepSeekProvider({ app: app as any, serviceOptions: {} }),
-      new KimiProvider({ app: app as any, serviceOptions: {} }),
     ];
 
     for (const provider of providers) {
@@ -63,7 +62,45 @@ describe('Provider document routing', () => {
       expect(parsed.content).toContain('parsed contract content');
     }
 
-    expect(parserLoad).toHaveBeenCalledTimes(3);
+    expect(parserLoad).toHaveBeenCalledTimes(2);
+  });
+
+  it('routes kimi attachments to parsed document system messages via cached json', async () => {
+    const parsedFileId = 22;
+    const cachedParsedFile = {
+      id: parsedFileId,
+      filename: 'parsed.json',
+      extname: '.json',
+      mimetype: 'application/json',
+      storageId: 1,
+    };
+    const { app } = createMockPlugin({
+      findById: async (id) => (id === parsedFileId ? cachedParsedFile : null),
+      getFileStream: async () => ({
+        stream: createTextStream(JSON.stringify({ text: 'parsed contract content from kimi cache' })),
+        contentType: 'application/json',
+      }),
+    });
+
+    const kimiProvider = new KimiProvider({ app: app as any, serviceOptions: { apiKey: 'test-key' } });
+    const kimiAttachment = {
+      ...docAttachment,
+      meta: {
+        documentParse: {
+          status: 'ready',
+          parserVersion: 'kimi-v1',
+          parsedFileId,
+          parsedFilename: 'parsed.json',
+          parsedMimetype: 'application/json',
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    };
+
+    const parsed = await kimiProvider.parseAttachment({} as any, kimiAttachment as any);
+    expect(parsed.placement).toBe('system');
+    expect(parsed.content).toContain('<parsed_document filename="contract.pdf">');
+    expect(parsed.content).toContain('parsed contract content from kimi cache');
   });
 
   it('keeps openai/google/anthropic file attachment behavior as base64-style blocks', async () => {
