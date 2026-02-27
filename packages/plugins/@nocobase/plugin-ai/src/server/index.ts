@@ -11,5 +11,7 @@ export { default } from './plugin';
 export { LLMProvider, LLMProviderOptions } from './llm-providers/provider';
 export { LLMProviderMeta } from './manager/ai-manager';
 export { ToolOptions } from './manager/tool-manager';
+export { DocumentParserManager } from './manager/document-parser-manager';
+export type { ParsedDocumentResult, ParseableFile, DocumentParseMeta } from './document-parser';
 export type * from './features';
 export type * from './types';

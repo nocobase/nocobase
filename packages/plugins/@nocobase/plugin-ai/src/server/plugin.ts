@@ -41,6 +41,7 @@ import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { DocumentParserManager } from './manager/document-parser-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -51,6 +52,7 @@ export class PluginAIServer extends Plugin {
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
   aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
+  documentParserManager = new DocumentParserManager(this);
   snowflake: Snowflake;
 
   /**

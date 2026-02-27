@@ -1074,9 +1074,16 @@ If information is missing, clearly state it in the summary.</Important>`;
         if (attachments?.length) {
           for (const attachment of attachments) {
             const parsed = await provider.parseAttachment(this.ctx, attachment);
-            contentBlocks.push(parsed);
+            if (parsed.placement === 'system') {
+              formattedMessages.push({
+                role: 'system',
+                content: parsed.content,
+              });
+            } else {
+              contentBlocks.push(parsed.content);
+            }
           }
-          if (content) {
+          if (content && contentBlocks.length > 0) {
             contentBlocks.push({
               type: 'text',
               text: content,

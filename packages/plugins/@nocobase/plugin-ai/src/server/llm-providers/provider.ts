@@ -23,6 +23,11 @@ import { ToolsEntry } from '@nocobase/ai';
 import { LLMResult } from '@langchain/core/outputs';
 import { ContentBlock } from '@langchain/core/messages';
 
+export type ParsedAttachmentResult = {
+  placement: string;
+  content: any;
+};
+
 export interface LLMProviderOptions {
   app: Application;
   serviceOptions?: Record<string, any>;
@@ -130,26 +135,32 @@ export abstract class LLMProvider {
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
+  async parseAttachment(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
     const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
-        type: 'image_url',
-        image_url: {
-          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        placement: 'contentBlocks',
+        content: {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+          },
         },
-      };
+      } as ParsedAttachmentResult;
     } else {
       return {
-        type: 'file',
-        mimeType: attachment.mimetype,
-        metadata: {
-          filename: attachment.filename,
-        },
-        data,
-      } as ContentBlock.Multimodal.File;
+        placement: 'contentBlocks',
+        content: {
+          type: 'file',
+          mimeType: attachment.mimetype,
+          metadata: {
+            filename: attachment.filename,
+          },
+          data,
+        } as ContentBlock.Multimodal.File,
+      } as ParsedAttachmentResult;
     }
   }
 
