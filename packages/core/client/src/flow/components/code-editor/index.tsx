@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { useFlowContext, getRunJSScenesForContext } from '@nocobase/flow-engine';
+import { uid } from '@nocobase/utils/client';
 import { useRunJSDocCompletions } from './hooks/useRunJSDocCompletions';
 import { clearDiagnostics, parseErrorLineColumn, markErrorAt, jumpTo } from './errorHelpers';
 import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
@@ -25,6 +26,7 @@ import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../hooks/useFullscreenOverlay';
 import { createRunJSCompletionSource } from './runjsCompletionSource';
+import { CodeEditorExtension } from './extension/CodeEditorExtension';
 interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -70,6 +72,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
+  const editorUid = useMemo(() => {
+    const modelUid = hostCtx?.model?.uid ? String(hostCtx.model.uid) : uid();
+    const flowKey = hostCtx?.flowKey ? String(hostCtx.flowKey) : uid();
+    const currentStep = hostCtx?.currentStep ? String(hostCtx.currentStep) : uid();
+    const editorName = String(name || 'code');
+    return `${modelUid}-${flowKey}-${currentStep}-${editorName}`;
+  }, [hostCtx?.model?.uid, hostCtx?.flowKey, hostCtx?.currentStep, name]);
   const resolvedScene = useMemo(() => {
     if (scene && (Array.isArray(scene) ? scene.length : true)) return scene;
     if (!hostCtx) return undefined;
@@ -152,6 +161,33 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   });
   extraEditorRef.current.snippetEntries = snippetEntries;
   extraEditorRef.current.logs = logs;
+
+  useEffect(() => {
+    const payload = {
+      editorUid,
+      name,
+      scene: resolvedScene,
+      language,
+      editorRef: extraEditorRef.current,
+      hostCtx,
+    };
+    CodeEditorExtension.notifyMount(payload);
+    return () => {
+      CodeEditorExtension.notifyUnmount(payload);
+    };
+  }, [editorUid]);
+
+  useEffect(() => {
+    const payload = {
+      editorUid,
+      name,
+      scene: resolvedScene,
+      language,
+      editorRef: extraEditorRef.current,
+      hostCtx,
+    };
+    CodeEditorExtension.notifyUpdate(payload);
+  }, [editorUid, name, resolvedScene, language, hostCtx]);
 
   // snippet group display handled in SnippetsDrawer
 

@@ -1,0 +1,34 @@
+{
+  "name": "@nocobase/plugin-mcp",
+  "displayName": "MCP",
+  "displayName.zh-CN": "MCP",
+  "description": "Native MCP (SSE/HTTP) server at /api/mcp, with a frontend WS bridge for FlowContext/CodeEditor.",
+  "description.zh-CN": "原生 MCP（SSE/HTTP）服务（固定 /api/mcp），并通过 WS 前端桥接提供 FlowContext/CodeEditor 上下文能力。",
+  "version": "2.1.0-beta.5",
+  "license": "Apache-2.0",
+  "main": "./dist/server/index.js",
+  "nocobase": {
+    "defaultEnabled": true,
+    "supportedVersions": [
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.0.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/data-source-manager": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/resourcer": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/plugins/@nocobase/plugin-mcp"
+  }
+}
