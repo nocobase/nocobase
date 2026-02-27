@@ -124,7 +124,7 @@ const PreviewTable: React.FC<{
         dataIndex: field.name,
         width: 'auto',
         render: (value) => {
-          if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(field.type)) {
+          if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field.type)) {
             return (
               <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={true}>
                 {value ? JSON.stringify(value) : ''}
@@ -141,9 +141,9 @@ const PreviewTable: React.FC<{
             return (
               <Text
                 style={{ minWidth: 100, maxWidth: 300 }}
-                ellipsis={{ tooltip: typeof value === 'string' ? compile(value) : value }}
+                ellipsis={{ tooltip: typeof value === 'string' ? compile(value) : JSON.stringify(value) }}
               >
-                {typeof value === 'string' ? compile(value) : value}
+                {typeof value === 'string' ? compile(value) : JSON.stringify(value)}
               </Text>
             );
           }
