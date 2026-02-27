@@ -618,7 +618,38 @@ FilterFormItemModel.registerFlow({
     // },
     init: {
       async handler(ctx, params) {
-        const collectionField = ctx.model.collectionField;
+        const normalizedFilterField = params.filterField
+          ? {
+              ...params.filterField,
+              title: params.filterField?.title || params.filterField?.name,
+            }
+          : params.filterField;
+        ctx.model.context.defineProperty('filterField', {
+          value: normalizedFilterField,
+        });
+
+        ctx.model.setProps({
+          name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
+        });
+
+        let collectionField = ctx.model.collectionField;
+        // SQL 图表筛选等场景下没有 collectionName/dataSourceKey，无法解析真实 collectionField。
+        // 此时用 filterField 元数据注入一个虚拟字段，避免误显示“字段已删除”占位。
+        const fieldSettingsInitParams = ctx.model.getFieldSettingsInitParams?.() || {};
+        const hasCollectionContext = !!(
+          // @ts-ignore
+          (fieldSettingsInitParams?.dataSourceKey && fieldSettingsInitParams?.collectionName)
+        );
+        if (!hasCollectionContext && !collectionField && normalizedFilterField) {
+          const virtualField = buildVirtualFilterCollectionField(ctx, normalizedFilterField);
+          if (virtualField) {
+            ctx.model.context.defineProperty('collectionField', {
+              value: virtualField,
+            });
+            collectionField = virtualField as any;
+          }
+        }
+
         if (collectionField?.getComponentProps) {
           const componentProps = collectionField.getComponentProps();
           const fieldModel = ctx.model.subModels?.field;
@@ -631,34 +662,6 @@ FilterFormItemModel.registerFlow({
             rules: undefined,
             required: undefined,
           });
-        }
-        ctx.model.setProps({
-          name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
-        });
-        const normalizedFilterField = params.filterField
-          ? {
-              ...params.filterField,
-              title: params.filterField?.title || params.filterField?.name,
-            }
-          : params.filterField;
-        ctx.model.context.defineProperty('filterField', {
-          value: normalizedFilterField,
-        });
-
-        // SQL 图表筛选等场景下没有 collectionName/dataSourceKey，无法解析真实 collectionField。
-        // 此时用 filterField 元数据注入一个虚拟字段，避免误显示“字段已删除”占位。
-        const fieldSettingsInitParams = ctx.model.getFieldSettingsInitParams?.() || {};
-        const hasCollectionContext = !!(
-          // @ts-ignore
-          (fieldSettingsInitParams?.dataSourceKey && fieldSettingsInitParams?.collectionName)
-        );
-        if (!hasCollectionContext && !ctx.model.collectionField && normalizedFilterField) {
-          const virtualField = buildVirtualFilterCollectionField(ctx, normalizedFilterField);
-          if (virtualField) {
-            ctx.model.context.defineProperty('collectionField', {
-              value: virtualField,
-            });
-          }
         }
       },
     },

@@ -277,4 +277,53 @@ describe('FilterFormItemModel defineChildren association fields', () => {
 
     expect(filterItem.props.label).toBe('id');
   });
+
+  it('applies getComponentProps from fallback sql field metadata', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel,
+      NumberFieldModel,
+    });
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'sql-filter-item-component-props',
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'id',
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: {
+              name: 'id',
+              interface: 'number',
+              type: 'integer',
+              getComponentProps: () => ({
+                placeholder: 'sql-id',
+                allowMultiple: true,
+                multiple: true,
+                required: true,
+                rules: [{ required: true }],
+              }),
+            },
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: 'NumberFieldModel',
+        },
+      },
+    } as any);
+
+    await filterItem.dispatchEvent('beforeRender');
+
+    expect(filterItem.props.placeholder).toBe('sql-id');
+    expect(filterItem.props.allowMultiple).toBe(true);
+    expect(filterItem.props.multiple).toBe(true);
+    expect(filterItem.props.required).toBeUndefined();
+    expect(filterItem.props.rules).toBeUndefined();
+  });
 });
