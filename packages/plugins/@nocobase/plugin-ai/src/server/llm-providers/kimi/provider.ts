@@ -22,37 +22,7 @@ const KIMI_PARSED_FILE_MIMETYPE = 'application/json';
 
 export class KimiProvider extends LLMProvider {
   declare chatModel: ChatOpenAI;
-  private readonly documentLoader: CachedDocumentLoader;
-
-  constructor(opts: LLMProviderOptions) {
-    super(opts);
-    const loader = new KimiDocumentLoader(this.aiPlugin.fileManager, {
-      apiKey: this.serviceOptions?.apiKey,
-      baseURL: this.serviceOptions?.baseURL || this.baseURL,
-    });
-    this.documentLoader = new CachedDocumentLoader(this.aiPlugin, {
-      loader,
-      parserVersion: KIMI_DOCUMENT_PARSER_VERSION,
-      parsedMimetype: KIMI_PARSED_FILE_MIMETYPE,
-      parsedFileExtname: 'json',
-      supports: () => true,
-      resolveSupported: (_documents, text) => Boolean(text),
-      toDocumentsFromText: (text, sourceFile, extname) => {
-        if (!text) {
-          return [];
-        }
-        return [
-          new Document({
-            pageContent: text,
-            metadata: {
-              source: sourceFile.filename,
-              extname,
-            },
-          }),
-        ];
-      },
-    });
-  }
+  private _documentLoader: CachedDocumentLoader;
 
   get baseURL() {
     return 'https://api.moonshot.cn/v1';
@@ -101,6 +71,39 @@ export class KimiProvider extends LLMProvider {
 
   private get aiPlugin(): PluginAIServer {
     return this.app.pm.get('ai');
+  }
+
+  private get documentLoader() {
+    if (!this._documentLoader) {
+      const loader = new KimiDocumentLoader(this.aiPlugin.fileManager, {
+        apiKey: this.serviceOptions?.apiKey,
+        baseURL: this.serviceOptions?.baseURL || this.baseURL,
+      });
+      this._documentLoader = new CachedDocumentLoader(this.aiPlugin, {
+        loader,
+        parserVersion: KIMI_DOCUMENT_PARSER_VERSION,
+        parsedMimetype: KIMI_PARSED_FILE_MIMETYPE,
+        parsedFileExtname: 'json',
+        supports: () => true,
+        resolveSupported: (_documents, text) => Boolean(text),
+        toDocumentsFromText: (text, sourceFile, extname) => {
+          if (!text) {
+            return [];
+          }
+          return [
+            new Document({
+              pageContent: text,
+              metadata: {
+                source: sourceFile.filename,
+                extname,
+              },
+            }),
+          ];
+        },
+      });
+    }
+
+    return this._documentLoader;
   }
 }
 
