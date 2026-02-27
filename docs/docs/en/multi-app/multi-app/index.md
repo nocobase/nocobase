@@ -4,9 +4,6 @@ pkg: '@nocobase/plugin-app-supervisor'
 
 # Multi-Application Management
 
-:::info 🚀 Coming soon
-:::
-
 ## Overview
 
 Multi-application management is a unified application management solution provided by NocoBase. It allows you to create and manage multiple **physically isolated** NocoBase application instances across one or more runtime environments. With **AppSupervisor**, users can create and maintain multiple applications from a single entry point, supporting different business needs and growth stages.

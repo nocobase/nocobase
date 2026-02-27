@@ -1,13 +1,24 @@
 [
   {
     "type": "custom-link",
-    "label": "Přehled",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
     "label": "Více aplikací",
-    "link": "/multi-app/multi-app"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Režim sdílené paměti",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Režim více prostředí",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
