@@ -6,7 +6,7 @@
   "description.zh-CN": "使用 ECharts 实现数据可视化，支持漏斗图、雷达图等更多图表类型，并提供更友好的可视化配置。",
   "homepage": "https://docs.nocobase.com/handbook/data-visualization/echarts",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-visualization/echarts",
-  "version": "2.1.0-beta.5",
+  "version": "2.1.0-beta.6",
   "main": "dist/server/index.js",
   "nocobase": {
     "supportedVersions": [

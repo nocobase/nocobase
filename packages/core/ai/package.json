@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/ai",
-  "version": "2.1.0-beta.5",
+  "version": "2.1.0-beta.6",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/logger": "2.1.0-beta.5",
-    "@nocobase/resourcer": "2.1.0-beta.5",
-    "@nocobase/utils": "2.1.0-beta.5",
+    "@nocobase/logger": "2.1.0-beta.6",
+    "@nocobase/resourcer": "2.1.0-beta.6",
+    "@nocobase/utils": "2.1.0-beta.6",
     "fast-glob": "^3.3.2",
     "flexsearch": "^0.8.2"
   },
