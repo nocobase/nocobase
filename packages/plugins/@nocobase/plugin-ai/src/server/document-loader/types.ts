@@ -42,3 +42,7 @@ export type ParseableFile = {
   storageId?: number;
   meta?: Record<string, any>;
 };
+
+export type DocumentLoaderLike = {
+  load(file: ParseableFile): Promise<Document[]>;
+};

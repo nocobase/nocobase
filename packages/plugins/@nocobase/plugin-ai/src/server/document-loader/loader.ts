@@ -17,12 +17,13 @@ import { SUPPORTED_DOCUMENT_EXTNAMES } from './constants';
 import { ParseableFile, SupportedDocumentExtname } from './types';
 import path from 'node:path';
 import { TextLoader } from './vendor/langchain/document_loaders/fs/text';
+import { resolveExtname } from './utils';
 
 export class DocumentLoader {
   constructor(private readonly fileManager: PluginFileManagerServer) {}
 
   async load(file: ParseableFile): Promise<Document[]> {
-    const extname = this.resolveExtname(file);
+    const extname = resolveExtname(file) as SupportedDocumentExtname;
     if (!SUPPORTED_DOCUMENT_EXTNAMES.includes(extname)) {
       return [];
     }
@@ -45,10 +46,6 @@ export class DocumentLoader {
       default:
         return [];
     }
-  }
-
-  resolveExtname(file: Pick<ParseableFile, 'extname' | 'filename'>): SupportedDocumentExtname {
-    return (file.extname ?? path.extname(file.filename ?? '') ?? '').toLowerCase() as SupportedDocumentExtname;
   }
 
   private async streamToBlob(stream: Readable, mimeType = 'application/octet-stream') {

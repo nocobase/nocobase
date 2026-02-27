@@ -15,12 +15,8 @@ import { Model } from '@nocobase/database';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import PluginAIServer from '../plugin';
 import { DOCUMENT_PARSE_META_KEY } from './constants';
-import { DocumentParseMeta, ParseableFile, ParsedDocumentResult } from './types';
-
-export type DocumentLoaderLike = {
-  load(file: ParseableFile): Promise<Document[]>;
-  resolveExtname(file: Pick<ParseableFile, 'extname' | 'filename'>): string;
-};
+import { DocumentLoaderLike, DocumentParseMeta, ParseableFile, ParsedDocumentResult } from './types';
+import { resolveExtname } from './utils';
 
 export type CachedDocumentLoaderOptions = {
   loader: DocumentLoaderLike;
@@ -28,8 +24,6 @@ export type CachedDocumentLoaderOptions = {
   parsedMimetype: string;
   parsedFileExtname: string;
   supports: (file: ParseableFile) => boolean;
-  resolveSupported: (documents: Document[], text: string) => boolean;
-  toDocumentsFromText?: (text: string, sourceFile: ParseableFile, extname: string) => Document[];
 };
 
 export class CachedDocumentLoader {
@@ -72,7 +66,7 @@ export class CachedDocumentLoader {
       });
 
       return {
-        supported: this.options.resolveSupported(documents, text),
+        supported: true,
         fromCache: false,
         text,
         documents,
@@ -105,11 +99,11 @@ export class CachedDocumentLoader {
 
     const parsedFile = this.toPlainObject(parsedModel);
     const text = await this.readTextFile(parsedFile);
-    const extname = this.options.loader.resolveExtname(sourceFile);
+    const extname = resolveExtname(sourceFile);
     const documents = this.toDocumentsFromText(text, sourceFile, extname);
 
     return {
-      supported: this.options.resolveSupported(documents, text),
+      supported: true,
       fromCache: true,
       text,
       documents,
@@ -193,8 +187,8 @@ export class CachedDocumentLoader {
   }
 
   private toDocumentsFromText(text: string, sourceFile: ParseableFile, extname: string) {
-    if (this.options.toDocumentsFromText) {
-      return this.options.toDocumentsFromText(text, sourceFile, extname);
+    if (!text) {
+      return [];
     }
 
     return [

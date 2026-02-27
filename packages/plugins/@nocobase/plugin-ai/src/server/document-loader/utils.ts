@@ -7,15 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SupportedDocumentExtname } from './types';
+import path from 'node:path';
+import { ParseableFile } from './types';
 
-export const DOCUMENT_PARSE_META_KEY = 'documentParse';
-
-export const SUPPORTED_DOCUMENT_EXTNAMES: SupportedDocumentExtname[] = [
-  '.pdf',
-  '.ppt',
-  '.pptx',
-  '.doc',
-  '.docx',
-  '.txt',
-];
+export function resolveExtname(file: Pick<ParseableFile, 'extname' | 'filename'>): string {
+  return (file.extname ?? path.extname(file.filename ?? '') ?? '').toLowerCase();
+}

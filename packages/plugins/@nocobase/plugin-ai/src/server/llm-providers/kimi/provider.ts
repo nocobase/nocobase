@@ -15,10 +15,6 @@ import { LLMProvider, LLMProviderOptions } from '../provider';
 import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
 import { CachedDocumentLoader } from '../../document-loader';
 import { KimiDocumentLoader } from './document-loader';
-import { Document } from '@langchain/core/documents';
-
-const KIMI_DOCUMENT_PARSER_VERSION = 'kimi-v1';
-const KIMI_PARSED_FILE_MIMETYPE = 'application/json';
 
 export class KimiProvider extends LLMProvider {
   declare chatModel: ChatOpenAI;
@@ -81,25 +77,10 @@ export class KimiProvider extends LLMProvider {
       });
       this._documentLoader = new CachedDocumentLoader(this.aiPlugin, {
         loader,
-        parserVersion: KIMI_DOCUMENT_PARSER_VERSION,
-        parsedMimetype: KIMI_PARSED_FILE_MIMETYPE,
+        parserVersion: 'kimi-v1',
+        parsedMimetype: 'application/json',
         parsedFileExtname: 'json',
         supports: () => true,
-        resolveSupported: (_documents, text) => Boolean(text),
-        toDocumentsFromText: (text, sourceFile, extname) => {
-          if (!text) {
-            return [];
-          }
-          return [
-            new Document({
-              pageContent: text,
-              metadata: {
-                source: sourceFile.filename,
-                extname,
-              },
-            }),
-          ];
-        },
       });
     }
 

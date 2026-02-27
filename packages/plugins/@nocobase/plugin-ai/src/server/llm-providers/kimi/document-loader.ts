@@ -16,6 +16,7 @@ import { Document } from '@langchain/core/documents';
 import { OpenAIClient } from '@langchain/openai';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { ParseableFile } from '../../document-loader/types';
+import { resolveExtname } from '../../document-loader/utils';
 
 export class KimiDocumentLoader {
   private readonly client: OpenAIClient;
@@ -41,14 +42,10 @@ export class KimiDocumentLoader {
         pageContent: text,
         metadata: {
           source: file.filename,
-          extname: this.resolveExtname(file),
+          extname: resolveExtname(file),
         },
       }),
     ];
-  }
-
-  resolveExtname(file: Pick<ParseableFile, 'extname' | 'filename'>): string {
-    return (file.extname ?? path.extname(file.filename ?? '')).toLowerCase();
   }
 
   private async parseByApi(sourceFile: ParseableFile): Promise<string> {

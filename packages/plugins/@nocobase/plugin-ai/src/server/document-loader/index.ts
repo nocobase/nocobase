@@ -8,8 +8,10 @@
  */
 import PluginAIServer from '../plugin';
 import { DocumentLoader } from './loader';
-import { DOCUMENT_PARSER_VERSION, PARSED_FILE_MIMETYPE, SUPPORTED_DOCUMENT_EXTNAMES } from './constants';
+import { SUPPORTED_DOCUMENT_EXTNAMES } from './constants';
 import { CachedDocumentLoader } from './cached';
+import { resolveExtname } from './utils';
+import { SupportedDocumentExtname } from './types';
 
 export class DocumentLoaders {
   readonly raw: DocumentLoader;
@@ -19,11 +21,10 @@ export class DocumentLoaders {
     this.raw = new DocumentLoader(this.plugin.fileManager);
     this.cached = new CachedDocumentLoader(this.plugin, {
       loader: this.raw,
-      parserVersion: DOCUMENT_PARSER_VERSION,
-      parsedMimetype: PARSED_FILE_MIMETYPE,
+      parserVersion: 'v1',
+      parsedMimetype: 'text/plain',
       parsedFileExtname: 'txt',
-      supports: (file) => SUPPORTED_DOCUMENT_EXTNAMES.includes(this.raw.resolveExtname(file)),
-      resolveSupported: () => true,
+      supports: (file) => SUPPORTED_DOCUMENT_EXTNAMES.includes(resolveExtname(file) as SupportedDocumentExtname),
     });
   }
 }
@@ -32,3 +33,4 @@ export * from './constants';
 export * from './types';
 export * from './loader';
 export * from './cached';
+export * from './utils';
