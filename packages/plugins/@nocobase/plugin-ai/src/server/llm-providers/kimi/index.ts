@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './constants';
-export * from './types';
-export * from './document-loader';
+export { KimiProvider, kimiProviderOptions } from './provider';

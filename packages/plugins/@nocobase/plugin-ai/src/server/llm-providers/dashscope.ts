@@ -67,7 +67,7 @@ export class DashscopeProvider extends LLMProvider {
     if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
       return super.parseAttachment(ctx, attachment);
     }
-    const parsed = await this.aiPlugin.documentParserManager.load(attachment);
+    const parsed = await this.aiPlugin.documentLoaders.cached.load(attachment);
     const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
     if (!parsed.supported || !parsed.text) {
       return {

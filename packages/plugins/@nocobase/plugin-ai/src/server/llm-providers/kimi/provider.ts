@@ -1,0 +1,114 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import path from 'node:path';
+import { ChatOpenAI } from '@langchain/openai';
+import { Context } from '@nocobase/actions';
+import PluginAIServer from '../../plugin';
+import { LLMProvider, LLMProviderOptions } from '../provider';
+import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
+import { CachedDocumentLoader } from '../../document-loader';
+import { KimiDocumentLoader } from './document-loader';
+import { Document } from '@langchain/core/documents';
+
+const KIMI_DOCUMENT_PARSER_VERSION = 'kimi-v1';
+const KIMI_PARSED_FILE_MIMETYPE = 'application/json';
+
+export class KimiProvider extends LLMProvider {
+  declare chatModel: ChatOpenAI;
+  private readonly documentLoader: CachedDocumentLoader;
+
+  constructor(opts: LLMProviderOptions) {
+    super(opts);
+    const loader = new KimiDocumentLoader(this.aiPlugin.fileManager, {
+      apiKey: this.serviceOptions?.apiKey,
+      baseURL: this.serviceOptions?.baseURL || this.baseURL,
+    });
+    this.documentLoader = new CachedDocumentLoader(this.aiPlugin, {
+      loader,
+      parserVersion: KIMI_DOCUMENT_PARSER_VERSION,
+      parsedMimetype: KIMI_PARSED_FILE_MIMETYPE,
+      parsedFileExtname: 'json',
+      supports: () => true,
+      resolveSupported: (_documents, text) => Boolean(text),
+      toDocumentsFromText: (text, sourceFile, extname) => {
+        if (!text) {
+          return [];
+        }
+        return [
+          new Document({
+            pageContent: text,
+            metadata: {
+              source: sourceFile.filename,
+              extname,
+            },
+          }),
+        ];
+      },
+    });
+  }
+
+  get baseURL() {
+    return 'https://api.moonshot.cn/v1';
+  }
+
+  createModel() {
+    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { responseFormat, structuredOutput } = this.modelOptions || {};
+    const { schema } = structuredOutput || {};
+    const responseFormatOptions = {
+      type: responseFormat ?? 'text',
+    };
+    if (responseFormat === 'json_schema' && schema) {
+      responseFormatOptions['json_schema'] = schema;
+    }
+    return new ChatOpenAI({
+      apiKey,
+      ...this.modelOptions,
+      modelKwargs: {
+        response_format: responseFormatOptions,
+        thinking: { type: 'disabled' },
+      },
+      configuration: {
+        baseURL: baseURL || this.baseURL,
+      },
+    });
+  }
+
+  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
+    if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
+      return super.parseAttachment(ctx, attachment);
+    }
+    const parsed = await this.documentLoader.load(attachment);
+    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
+    if (!parsed.supported || !parsed.text) {
+      return {
+        placement: 'system',
+        content: `File ${safeFilename} is not a supported document type for text parsing.`,
+      };
+    }
+    return {
+      placement: 'system',
+      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
+    };
+  }
+
+  private get aiPlugin(): PluginAIServer {
+    return this.app.pm.get('ai');
+  }
+}
+
+export const kimiProviderOptions: LLMProviderMeta = {
+  title: 'Kimi',
+  supportedModel: [SupportedModel.LLM],
+  models: {
+    [SupportedModel.LLM]: ['kimi-k2.5', 'kimi-k2-0905-Preview', 'kimi-k2-turbo-preview'],
+  },
+  provider: KimiProvider,
+};
