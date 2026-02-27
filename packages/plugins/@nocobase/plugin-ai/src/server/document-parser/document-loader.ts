@@ -21,10 +21,6 @@ import { TextLoader } from './vendor/langchain/document_loaders/fs/text';
 export class DocumentLoader {
   constructor(private readonly fileManager: PluginFileManagerServer) {}
 
-  isSupported(file: ParseableFile) {
-    return SUPPORTED_DOCUMENT_EXTNAMES.includes(this.resolveExtname(file));
-  }
-
   async load(file: ParseableFile): Promise<Document[]> {
     const extname = this.resolveExtname(file);
     if (!SUPPORTED_DOCUMENT_EXTNAMES.includes(extname)) {

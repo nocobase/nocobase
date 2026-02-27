@@ -35,11 +35,6 @@ export class DocumentParserManager {
     this.loader = new DocumentLoader(this.fileManager);
   }
 
-  isSupported(file: ParseableFile) {
-    const extname = this.resolveExtname(file);
-    return SUPPORTED_DOCUMENT_EXTNAMES.includes(extname);
-  }
-
   async load(file: ParseableFile): Promise<ParsedDocumentResult> {
     const sourceFile = this.toPlainObject(file);
     const extname = this.resolveExtname(sourceFile);
