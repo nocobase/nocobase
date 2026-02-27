@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Genel Bakış",
-    "link": "/multi-app/"
+    "label": "Çoklu uygulama",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel bakış",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Paylaşımlı bellek modu",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Çoklu ortam modu",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Çoklu Uygulama",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Çoklu Alan",
+    "label": "Çoklu alan",
     "link": "/multi-app/multi-space"
   }
 ]

@@ -12,7 +12,7 @@ import { RenderProps } from '@nocobase/plugin-data-visualization/client';
 
 echarts.registerTransform({
   type: 'data-visualization:transform',
-  transform: function(params: any) {
+  transform: function (params: any) {
     const fieldProps = params.config.fieldProps as RenderProps['fieldProps'];
     const data = params.upstream.cloneRawData();
     return {
@@ -30,7 +30,7 @@ echarts.registerTransform({
 
 echarts.registerTransform({
   type: 'data-visualization:toSeries',
-  transform: function(params: any) {
+  transform: function (params: any) {
     const data = params.upstream.cloneRawData();
     const { xField, yField, seriesField } = params.config || {};
     if (!seriesField) {
@@ -58,7 +58,7 @@ echarts.registerTransform({
 
 echarts.registerTransform({
   type: 'data-visualization:toPercent',
-  transform: function(params: any) {
+  transform: function (params: any) {
     const data = params.upstream.cloneRawData();
     const { xField, stack, seriesField, yFields } = params.config || {};
     if (stack !== 'percent') {

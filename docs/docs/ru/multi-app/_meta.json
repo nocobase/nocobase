@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Обзор",
-    "link": "/multi-app/"
+    "label": "Мульти-приложения",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Режим общей памяти",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Мультисреда",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Мульти-приложение",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Мульти-пространство",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]

@@ -1,13 +1,24 @@
 [
   {
     "type": "custom-link",
-    "label": "Overzicht",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
-    "label": "Multi-applicatie",
-    "link": "/multi-app/multi-app"
+    "label": "Multi-app",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overzicht",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gedeeld geheugenmodus",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Multi-omgevingsmodus",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",

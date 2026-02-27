@@ -20,9 +20,21 @@ export class PluginBlockTreeClient extends Plugin {
     this.app.schemaSettingsManager.add(treeSettings);
     this.app.addScopes({ useTreeProps });
 
-    this.app.schemaInitializerManager.addItem('page:addBlock', `filterBlocks.${treeInitializerItem.name}`, treeInitializerItem);
-    this.app.schemaInitializerManager.addItem('popup:common:addBlock', `filterBlocks.${treeInitializerItem.name}`, treeInitializerItem);
-    this.app.schemaInitializerManager.addItem('popup:tableSelector:addBlock', `filterBlocks.${treeInitializerItem.name}`, treeInitializerItem);
+    this.app.schemaInitializerManager.addItem(
+      'page:addBlock',
+      `filterBlocks.${treeInitializerItem.name}`,
+      treeInitializerItem,
+    );
+    this.app.schemaInitializerManager.addItem(
+      'popup:common:addBlock',
+      `filterBlocks.${treeInitializerItem.name}`,
+      treeInitializerItem,
+    );
+    this.app.schemaInitializerManager.addItem(
+      'popup:tableSelector:addBlock',
+      `filterBlocks.${treeInitializerItem.name}`,
+      treeInitializerItem,
+    );
   }
 }
 
