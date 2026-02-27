@@ -4,9 +4,6 @@ pkg: '@nocobase/plugin-app-supervisor'
 
 # 多应用管理
 
-:::info🚀 即将发布
-:::
-
 ## 功能概述
 
 多应用管理是 NocoBase 提供的统一应用管理方案，用于在一个或多个运行环境中创建和管理多个物理隔离的 NocoBase 应用实例。通过应用监管器 (AppSupervisor)，用户可以在统一入口中创建和维护多个应用，满足不同业务、不同规模阶段的需求。

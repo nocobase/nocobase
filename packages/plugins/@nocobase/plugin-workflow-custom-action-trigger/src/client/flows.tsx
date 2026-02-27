@@ -7,12 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ActionModel,
-  ActionSceneEnum,
-  CollectionActionModel,
-  FormActionModel,
-} from '@nocobase/client';
+import { ActionModel, ActionSceneEnum, CollectionActionModel, FormActionModel } from '@nocobase/client';
 import { tExpr, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { createTriggerWorkflowsSchema, TriggerWorkflowSelect } from '@nocobase/plugin-workflow/client';
 import { ButtonProps } from 'antd';
@@ -65,7 +60,9 @@ FormTriggerWorkflowActionModel.registerFlow({
             return await ctx.blockModel.resource.runAction('trigger', {
               params: {
                 ...(filterByTk != null ? { filterByTk } : {}),
-                triggerWorkflows: params.group?.length ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',') : undefined,
+                triggerWorkflows: params.group?.length
+                  ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+                  : undefined,
               },
               data: values,
             });
