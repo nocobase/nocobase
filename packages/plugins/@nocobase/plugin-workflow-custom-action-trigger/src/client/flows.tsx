@@ -47,10 +47,12 @@ FormTriggerWorkflowActionModel.registerFlow({
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
 
         if (!ctx.blockModel) {
+          ctx.exit();
           return;
         }
 
@@ -118,12 +120,14 @@ RecordTriggerWorkflowActionModel.registerFlow({
       async handler(ctx, params) {
         const { resource, collection } = ctx.blockModel;
         if (!resource || !collection) {
+          ctx.exit();
           return;
         }
         if (!params.group?.length) {
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
         try {
@@ -252,16 +256,19 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
         if (type === CONTEXT_TYPE.MULTIPLE_RECORDS) {
           if (!ctx.blockModel?.resource) {
             ctx.message.error(ctx.t('No resource selected for deletion'));
+            ctx.exit();
             return;
           }
           const resource = ctx.blockModel.resource as MultiRecordResource;
           if (resource.getSelectedRows().length === 0) {
             ctx.message.warning(ctx.t('Please select at least one record.', { ns: NAMESPACE }));
+            ctx.exit();
             return;
           }
           try {
@@ -276,6 +283,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             resource.setSelectedRows([]);
           } catch (error) {
             console.error('Error triggering workflows:', error);
+            ctx.exit();
             return;
           }
         } else if (type === CONTEXT_TYPE.GLOBAL) {
@@ -291,6 +299,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
+            ctx.exit();
             return;
           }
         } else {

@@ -214,6 +214,11 @@ export default class CustomActionTrigger extends Trigger {
     context: Context;
     next: Next;
   }) {
+    if (!syncGroup.length && !asyncGroup.length) {
+      context.logger.warn('No workflow triggered');
+      return context.throw(500, 'No action done, please contact the administrator');
+    }
+
     for (const event of syncGroup) {
       const processor = await this.workflow.trigger(event[0], event[1], { httpContext: context });
       // NOTE: workflow trigger failed
