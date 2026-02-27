@@ -6,10 +6,12 @@ import { useFieldSchema, ISchema } from '@formily/react';
 function ShowSchema({ children, schemaKey }) {
   const filedSchema = useFieldSchema();
   const key = schemaKey ? `properties.schema.${schemaKey}` : `properties.schema`;
-  return <>
-    <pre>{JSON.stringify(_.get(filedSchema.toJSON(), key), null, 2)}</pre>
-    {children}
-  </>
+  return (
+    <>
+      <pre>{JSON.stringify(_.get(filedSchema.toJSON(), key), null, 2)}</pre>
+      {children}
+    </>
+  );
 }
 
 export function schemaViewer(schema: ISchema, schemaKey?: string) {
@@ -18,10 +20,10 @@ export function schemaViewer(schema: ISchema, schemaKey?: string) {
     name: 'schema-viewer',
     'x-component': ShowSchema,
     'x-component-props': {
-      schemaKey
+      schemaKey,
     },
     properties: {
-      schema
+      schema,
     },
-  }
+  };
 }
