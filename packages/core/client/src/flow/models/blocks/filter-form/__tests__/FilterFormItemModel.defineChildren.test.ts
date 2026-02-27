@@ -150,4 +150,180 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     expect(filterItem.fieldPath).toBe('department.manager.name');
     expect(filterItem.collectionField).toBeTruthy();
   });
+
+  it('provides fallback field metadata for sql fields without collection context', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel,
+      NumberFieldModel,
+    });
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'sql-filter-item',
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'id',
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: {
+              name: 'id',
+              title: 'id',
+              interface: 'number',
+              type: 'integer',
+            },
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: 'NumberFieldModel',
+        },
+      },
+    } as any);
+
+    await filterItem.dispatchEvent('beforeRender');
+
+    expect(filterItem.collectionField).toBeTruthy();
+    expect(filterItem.collectionField?.name).toBe('id');
+    expect(filterItem.collectionField?.interface).toBe('number');
+  });
+
+  it('keeps deleted-field detection when collection context exists', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel,
+      NumberFieldModel,
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'users',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } }],
+    });
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'deleted-field-item',
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'not_exists',
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: {
+              name: 'not_exists',
+              title: 'not_exists',
+              interface: 'number',
+              type: 'integer',
+            },
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: 'NumberFieldModel',
+        },
+      },
+    } as any);
+
+    await filterItem.dispatchEvent('beforeRender');
+
+    expect(filterItem.collectionField).toBeFalsy();
+  });
+
+  it('uses field name as fallback label when sql filter field title is missing', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel,
+      NumberFieldModel,
+    });
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'sql-filter-item-no-title',
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'id',
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: {
+              name: 'id',
+              interface: 'number',
+              type: 'integer',
+            },
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: 'NumberFieldModel',
+        },
+      },
+    } as any);
+
+    await filterItem.dispatchEvent('beforeRender');
+
+    expect(filterItem.props.label).toBe('id');
+  });
+
+  it('applies getComponentProps from fallback sql field metadata', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel,
+      NumberFieldModel,
+    });
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'sql-filter-item-component-props',
+      use: 'FilterFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'id',
+          },
+        },
+        filterFormItemSettings: {
+          init: {
+            filterField: {
+              name: 'id',
+              interface: 'number',
+              type: 'integer',
+              getComponentProps: () => ({
+                placeholder: 'sql-id',
+                allowMultiple: true,
+                multiple: true,
+                required: true,
+                rules: [{ required: true }],
+              }),
+            },
+          },
+        },
+      },
+      subModels: {
+        field: {
+          use: 'NumberFieldModel',
+        },
+      },
+    } as any);
+
+    await filterItem.dispatchEvent('beforeRender');
+
+    expect(filterItem.props.placeholder).toBe('sql-id');
+    expect(filterItem.props.allowMultiple).toBe(true);
+    expect(filterItem.props.multiple).toBe(true);
+    expect(filterItem.props.required).toBeUndefined();
+    expect(filterItem.props.rules).toBeUndefined();
+  });
 });
