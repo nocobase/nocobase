@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Tổng quan",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
     "label": "Đa ứng dụng",
-    "link": "/multi-app/multi-app"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chế độ bộ nhớ dùng chung",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chế độ đa môi trường",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Đa không gian",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]

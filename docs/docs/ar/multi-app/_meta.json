@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "نظرة عامة",
-    "link": "/multi-app/"
+    "label": "تعدد التطبيقات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "نظرة عامة",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "وضع الذاكرة المشتركة",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "وضع البيئات المتعددة",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "تطبيقات متعددة",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "مساحات متعددة",
+    "label": "المساحات المتعددة",
     "link": "/multi-app/multi-space"
   }
 ]

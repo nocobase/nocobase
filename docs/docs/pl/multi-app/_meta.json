@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Przegląd",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
     "label": "Wiele aplikacji",
-    "link": "/multi-app/multi-app"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tryb współdzielonej pamięci",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tryb wielu środowisk",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Wiele przestrzeni",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]
