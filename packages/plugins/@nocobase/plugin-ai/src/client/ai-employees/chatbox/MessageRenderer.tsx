@@ -182,7 +182,7 @@ export const AIMessage: React.FC<{
     ) : null;
   return (
     <MessageWrapper ref={msg.ref} footer={messageActions && !useInlineToolActions ? messageActions : null}>
-      {msg.reference?.length && <Reference references={msg.reference} />}
+      {msg.reference?.length ? <Reference references={msg.reference} /> : null}
       <AIMessageRenderer msg={msg} toolInlineActions={useInlineToolActions ? messageActions : null} />
     </MessageWrapper>
   );
