@@ -65,7 +65,6 @@ const AITextMessageRenderer: React.FC<{
       <Collapse
         size="small"
         bordered={false}
-        style={{ marginBottom: 8 }}
         defaultActiveKey="thinking"
         items={[
           {
@@ -93,6 +92,7 @@ const AITextMessageRenderer: React.FC<{
         style={{
           display: 'flex',
           flexDirection: 'column',
+          gap: 14,
         }}
       >
         {reasoningPanel}
