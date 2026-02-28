@@ -141,7 +141,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
         tabModel.context.tabActive.value = isPageActive && method === 'onActive';
       }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
-        item[method]?.(forceReresh);
+        item[method]?.(forceRefresh);
       });
     }
 
