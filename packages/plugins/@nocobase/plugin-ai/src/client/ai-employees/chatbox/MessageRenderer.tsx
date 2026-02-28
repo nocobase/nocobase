@@ -55,8 +55,38 @@ const AITextMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
 }> = ({ msg, toolInlineActions }) => {
+  const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
+  const reasoningText = msg.reasoning?.content;
+  const reasoningStatus = msg.reasoning?.status;
+  const reasoningPanel =
+    reasoningText && reasoningStatus ? (
+      <Collapse
+        size="small"
+        bordered={false}
+        style={{ marginBottom: 8 }}
+        defaultActiveKey="thinking"
+        items={[
+          {
+            key: 'thinking',
+            label: reasoningStatus === 'streaming' ? t('Thinking in progress') : t('Thinking completed'),
+            children: (
+              <div
+                className={css`
+                  white-space: pre-wrap;
+                  color: rgba(0, 0, 0, 0.65);
+                  font-size: 12px;
+                `}
+              >
+                {reasoningText}
+              </div>
+            ),
+          },
+        ]}
+      />
+    ) : null;
+
   if (!provider?.components?.MessageRenderer) {
     return (
       <div
@@ -65,6 +95,7 @@ const AITextMessageRenderer: React.FC<{
           flexDirection: 'column',
         }}
       >
+        {reasoningPanel}
         {typeof msg.content === 'string' && <Markdown message={msg} />}
         {msg.tool_calls?.length ? (
           <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />

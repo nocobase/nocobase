@@ -8,8 +8,11 @@
  */
 
 import { ChatDeepSeek } from '@langchain/deepseek';
+import { AIMessageChunk } from '@langchain/core/messages';
 import { LLMProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
+import { Model } from '@nocobase/database';
+import _ from 'lodash';
 
 export class DeepSeekProvider extends LLMProvider {
   declare chatModel: ChatDeepSeek;
@@ -40,6 +43,34 @@ export class DeepSeekProvider extends LLMProvider {
       },
       verbose: false,
     });
+  }
+
+  parseResponseMessage(message: Model) {
+    const result = super.parseResponseMessage(message);
+    if (['user', 'tool'].includes(result?.role)) {
+      return result;
+    }
+    const { metadata } = message?.toJSON() ?? {};
+    if (!_.isEmpty(metadata?.additional_kwargs?.reasoning_content)) {
+      result.content = {
+        ...(result.content ?? {}),
+        reasoning: {
+          status: 'stop',
+          content: metadata?.additional_kwargs.reasoning_content,
+        },
+      };
+    }
+    return result;
+  }
+
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+    if (!_.isEmpty(chunk?.additional_kwargs?.reasoning_content)) {
+      return {
+        status: 'streaming',
+        content: chunk.additional_kwargs.reasoning_content as string,
+      };
+    }
+    return null;
   }
 }
 

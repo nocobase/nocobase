@@ -35,6 +35,7 @@ const LOG_TYPE_COLORS: Record<LogType, string> = {
   stream_start: 'geekblue',
   stream_tools: 'orange',
   stream_delta: 'lime',
+  stream_reasoning: 'magenta',
   stream_error: 'volcano',
   tool_call: 'gold',
   tool_result: 'purple',
@@ -49,6 +50,7 @@ const LOG_TYPE_OPTIONS = [
   { value: 'stream_start', label: 'Stream Start' },
   { value: 'stream_tools', label: 'Stream Tools' },
   { value: 'stream_delta', label: 'Stream Delta' },
+  { value: 'stream_reasoning', label: 'Stream Reasoning' },
   { value: 'stream_error', label: 'Stream Error' },
   { value: 'tool_call', label: 'Tool Call' },
   { value: 'tool_result', label: 'Tool Result' },
@@ -236,10 +238,7 @@ export const DebugPanel: React.FC = () => {
     });
   }, []);
 
-  const getItemKey = useCallback(
-    (log: LogEntry) => (expandedIds.has(log.id) ? `${log.id}-e` : log.id),
-    [expandedIds],
-  );
+  const getItemKey = useCallback((log: LogEntry) => (expandedIds.has(log.id) ? `${log.id}-e` : log.id), [expandedIds]);
 
   const handleExport = () => {
     if (!currentConversation || logs.length === 0) return;
@@ -325,11 +324,7 @@ export const DebugPanel: React.FC = () => {
         ) : (
           <VirtualList ref={virtualListRef} data={filteredLogs} itemKey={getItemKey} itemHeight={40}>
             {(log) => (
-              <LogItem
-                log={log}
-                expanded={expandedIds.has(log.id)}
-                onToggleExpand={() => toggleExpand(log.id)}
-              />
+              <LogItem log={log} expanded={expandedIds.has(log.id)} onToggleExpand={() => toggleExpand(log.id)} />
             )}
           </VirtualList>
         )}

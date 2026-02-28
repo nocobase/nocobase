@@ -217,6 +217,10 @@ export abstract class LLMProvider {
     return [];
   }
 
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+    return null;
+  }
+
   parseResponseMetadata(output: LLMResult): any {
     return [null, null];
   }
