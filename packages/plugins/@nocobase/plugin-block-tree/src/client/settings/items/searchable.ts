@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSwitchSettingsItem } from "@nocobase/client";
-import { generateNTemplate } from "../../locale";
+import { createSwitchSettingsItem } from '@nocobase/client';
+import { generateNTemplate } from '../../locale';
 
 export const searchableSchemaSettingsItem = createSwitchSettingsItem({
   name: 'searchable',

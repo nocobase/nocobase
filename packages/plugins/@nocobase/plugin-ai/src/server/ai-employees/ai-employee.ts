@@ -371,6 +371,7 @@ export class AIEmployee {
     let toolCalls: AIToolCall[];
     const { signal, providerName, model, provider, responseMetadata, allowEmpty = false } = options;
 
+    let isReasoning = false;
     let gathered: any;
     signal.addEventListener('abort', async () => {
       if (gathered?.type === 'ai') {
@@ -401,6 +402,10 @@ export class AIEmployee {
           if (chunk.type === 'ai') {
             gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
             if (chunk.content) {
+              if (isReasoning) {
+                isReasoning = false;
+                this.protocol.stopReasoning();
+              }
               const parsedContent = provider.parseResponseChunk(chunk.content);
               if (parsedContent) {
                 this.protocol.content(parsedContent);
@@ -414,6 +419,12 @@ export class AIEmployee {
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
               this.protocol.webSearch(webSearch);
+            }
+
+            const reasoningContent = provider.parseReasoningContent(chunk);
+            if (reasoningContent) {
+              isReasoning = true;
+              this.protocol.reasoning(reasoningContent);
             }
           }
         } else if (mode === 'updates') {
@@ -1374,6 +1385,20 @@ class ChatStreamProtocol {
 
   webSearch(content: { type: string; query: string }[]) {
     this.write({ type: 'web_search', body: content });
+  }
+
+  reasoning(content: { status: string; content: string }) {
+    this.write({ type: 'reasoning', body: content });
+  }
+
+  stopReasoning() {
+    this.write({
+      type: 'reasoning',
+      body: {
+        status: 'stop',
+        content: '',
+      },
+    });
   }
 
   toolCallChunks(content: unknown) {

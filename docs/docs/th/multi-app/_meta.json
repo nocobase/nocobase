@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "ภาพรวม",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
     "label": "หลายแอปพลิเคชัน",
-    "link": "/multi-app/multi-app"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "โหมดหน่วยความจำร่วม",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "โหมดหลายสภาพแวดล้อม",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "หลายพื้นที่ทำงาน",
+    "label": "มัลติสเปซ",
     "link": "/multi-app/multi-space"
   }
 ]

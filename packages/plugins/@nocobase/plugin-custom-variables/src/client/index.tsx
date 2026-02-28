@@ -7,7 +7,14 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-import { isVariable, Plugin, useAPIClient, useApp, useLocalVariablesWithoutCustomVariable, useVariables } from '@nocobase/client';
+import {
+  isVariable,
+  Plugin,
+  useAPIClient,
+  useApp,
+  useLocalVariablesWithoutCustomVariable,
+  useVariables,
+} from '@nocobase/client';
 import { flatten } from '@nocobase/utils/client';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { AddVariableButton } from './AddVariableButton';
@@ -45,7 +52,7 @@ class PluginCustomVariablesClient extends Plugin {
         const { t } = useTranslation(NAMESPACE);
         const option = useMemo(() => {
           return {
-            label: t("Custom Variables"),
+            label: t('Custom Variables'),
             value: '$customVariables',
             children: [
               ...options,
@@ -53,7 +60,7 @@ class PluginCustomVariablesClient extends Plugin {
                 label: <AddVariableButton onSuccess={refresh} />,
                 disabled: true,
                 value: 'none',
-              }
+              },
             ],
           };
         }, [options, refresh]);
@@ -78,40 +85,45 @@ class PluginCustomVariablesClient extends Plugin {
           setRefreshId((id) => id + 1);
         }, []);
 
-        const getFilterCtx = useCallback(async (filter) => {
-          const ctx = {};
-          flatten(filter, {
-            breakOn({ key }) {
-              return key.startsWith('$') && key !== '$and' && key !== '$or';
-            },
-            transformValue(value) {
-              if (!isVariable(value)) {
-                return value;
-              }
-              const result = variables?.parseVariable(value, localVariablesWithoutCustomVariable).then(({ value }) => value);
-              ctx[value] = result;
-              return result;
-            },
-          });
+        const getFilterCtx = useCallback(
+          async (filter) => {
+            const ctx = {};
+            flatten(filter, {
+              breakOn({ key }) {
+                return key.startsWith('$') && key !== '$and' && key !== '$or';
+              },
+              transformValue(value) {
+                if (!isVariable(value)) {
+                  return value;
+                }
+                const result = variables
+                  ?.parseVariable(value, localVariablesWithoutCustomVariable)
+                  .then(({ value }) => value);
+                ctx[value] = result;
+                return result;
+              },
+            });
 
-          const keys = Object.keys(ctx);
-          const values = await Promise.all(keys.map((key) => ctx[key]));
+            const keys = Object.keys(ctx);
+            const values = await Promise.all(keys.map((key) => ctx[key]));
 
-          values.forEach((value, index) => {
-            ctx[keys[index]] = value;
-          });
+            values.forEach((value, index) => {
+              ctx[keys[index]] = value;
+            });
 
-          return ctx;
-        }, [localVariablesWithoutCustomVariable, variables?.parseVariable]);
+            return ctx;
+          },
+          [localVariablesWithoutCustomVariable, variables?.parseVariable],
+        );
 
         // Clean up all registered event listeners
         useEffect(() => {
           return () => {
             // Remove all event listeners when component unmounts
-            eventNamesRef.current.forEach(eventName => {
+            eventNamesRef.current.forEach((eventName) => {
               app.eventBus.removeEventListener(eventName, refresh);
             });
-          }
+          };
         }, []);
 
         return useMemo(() => {
@@ -133,21 +145,25 @@ class PluginCustomVariablesClient extends Plugin {
             const eventNames = [
               `collection:${variable.options.collection}:create`,
               `collection:${variable.options.collection}:update`,
-              `collection:${variable.options.collection}:destroy`
+              `collection:${variable.options.collection}:destroy`,
             ];
 
             // Remove previously added event listeners first
-            eventNamesRef.current.forEach(eventName => {
+            eventNamesRef.current.forEach((eventName) => {
               app.eventBus.removeEventListener(eventName, refresh);
             });
 
             // Add new event listeners
-            eventNames.forEach(eventName => {
+            eventNames.forEach((eventName) => {
               eventNamesRef.current.add(eventName);
               app.eventBus.addEventListener(eventName, refresh);
             });
 
-            const { data } = await api.request({ url: `customVariables:parse?name=${name}`, method: 'POST', data: { filterCtx } });
+            const { data } = await api.request({
+              url: `customVariables:parse?name=${name}`,
+              method: 'POST',
+              data: { filterCtx },
+            });
 
             return data?.data;
           };

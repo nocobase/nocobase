@@ -6,89 +6,83 @@ describe('parseFilter', () => {
     const filter = '{"name": "{{$name}}", "age": "{{$age}}"}';
     const ctx = {
       '{{$name}}': 'John',
-      '{{$age}}': 30
+      '{{$age}}': 30,
     };
 
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
       name: 'John',
-      age: 30
+      age: 30,
     });
   });
 
   it('should correctly parse object format filter conditions', () => {
     const filter = {
       name: '$name',
-      age: '$age'
+      age: '$age',
     };
     const ctx = {
       $name: 'John',
-      $age: 30
+      $age: 30,
     };
 
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
       name: 'John',
-      age: 30
+      age: 30,
     });
   });
 
   it('should handle nested object format filter conditions', () => {
     const filter = {
-      $and: [
-        { name: '$name' },
-        { age: { $gt: '$minAge' } }
-      ]
+      $and: [{ name: '$name' }, { age: { $gt: '$minAge' } }],
     };
     const ctx = {
       $name: 'John',
-      $minAge: 25
+      $minAge: 25,
     };
 
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
-      $and: [
-        { name: 'John' },
-        { age: { $gt: 25 } }
-      ]
+      $and: [{ name: 'John' }, { age: { $gt: 25 } }],
     });
   });
 
   it('should handle filter conditions with arrays', () => {
     const filter = {
-      status: { $in: '$statuses' }
+      status: { $in: '$statuses' },
     };
     const ctx = {
-      $statuses: ['active', 'pending']
+      $statuses: ['active', 'pending'],
     };
 
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
-      status: { $in: ['active', 'pending'] }
+      status: { $in: ['active', 'pending'] },
     });
   });
 
   it('should handle variable names with special characters', () => {
     const filter = '{"email": "$user.email"}';
     const ctx = {
-      '$user.email': 'john@example.com'
+      '$user.email': 'john@example.com',
     };
 
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
-      email: 'john@example.com'
+      email: 'john@example.com',
     });
   });
 
   it('should keep original value when variable does not exist in context', () => {
     const filter = '{"name": "$name", "status": "$status"}';
     const ctx = {
-      $name: 'John'
+      $name: 'John',
       // $status variable is not defined
     };
 
@@ -96,32 +90,32 @@ describe('parseFilter', () => {
 
     expect(result).toEqual({
       name: 'John',
-      status: '$status'
+      status: '$status',
     });
   });
 
   it('should handle non-string types such as boolean and number', () => {
     const filter = {
       active: '$isActive',
-      count: '$count'
+      count: '$count',
     };
     const ctx = {
       $isActive: true,
-      $count: 5
+      $count: 5,
     };
 
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
       active: true,
-      count: 5
+      count: 5,
     });
   });
 
   it('should handle empty object case', () => {
     const filter = {};
     const ctx = {
-      $name: 'John'
+      $name: 'John',
     };
 
     const result = parseFilter(filter, ctx);
@@ -136,7 +130,7 @@ describe('parseFilter', () => {
     const result = parseFilter(filter, ctx);
 
     expect(result).toEqual({
-      name: '$name'
+      name: '$name',
     });
   });
 });

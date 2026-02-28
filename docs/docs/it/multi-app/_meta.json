@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Panoramica",
-    "link": "/multi-app/"
+    "label": "Multi-app",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Panoramica",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modalità memoria condivisa",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modalità multi-ambiente",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Multi-applicazione",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Multi-spazio",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]

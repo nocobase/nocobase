@@ -286,5 +286,7 @@
   "Please contact the administrator to configure models": "请联系管理员配置模型",
   "Recommended for third-party OpenAI-compatible APIs (OpenRouter, Groq, Together AI, etc.)": "推荐第三方 OpenAI 兼容 API（OpenRouter、Groq、Together AI 等）",
   "Qwen (Tongyi)": "Qwen（通义千问）",
-  "Local models": "本地模型"
+  "Local models": "本地模型",
+  "Thinking in progress": "深度思考中",
+  "Thinking completed": "已完成思考"
 }

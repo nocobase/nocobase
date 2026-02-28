@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
 import { useChatConversationActions } from './useChatConversationActions';
-import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
-import { useTools } from '@nocobase/client';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 
 export const useChatBoxEffect = () => {
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const aiEmployees = aiConfigRepository.aiEmployees;
 
   const open = useChatBoxStore.use.open();
   const senderRef = useChatBoxStore.use.senderRef();
@@ -24,7 +24,9 @@ export const useChatBoxEffect = () => {
 
   const { conversationsService } = useChatConversationActions();
 
-  const { refresh } = useTools();
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   useEffect(() => {
     if (!aiEmployees) {
@@ -55,7 +57,7 @@ export const useChatBoxEffect = () => {
     if (open) {
       conversationsService.run();
       senderRef?.current?.focus();
-      refresh();
+      aiConfigRepository.refreshAITools();
     }
   }, [open]);
 

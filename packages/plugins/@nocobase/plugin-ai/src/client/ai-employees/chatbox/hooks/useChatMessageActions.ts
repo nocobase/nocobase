@@ -20,7 +20,7 @@ import { useChatBoxStore } from '../stores/chat-box';
 import { parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
-import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { ensureModel } from '../model';
 
 export const useChatMessageActions = () => {
@@ -28,7 +28,7 @@ export const useChatMessageActions = () => {
   const t = useT();
   const api = useAPIClient();
   const plugin = usePlugin('ai') as PluginAIClient;
-  const llmServicesRepository = useLLMServicesRepository();
+  const aiConfigRepository = useAIConfigRepository();
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
@@ -59,13 +59,13 @@ export const useChatMessageActions = () => {
       }
       return ensureModel({
         api,
-        llmServicesRepository,
+        aiConfigRepository,
         username: targetUsername,
         currentOverride: state.model,
         onResolved: setModel,
       });
     },
-    [api, llmServicesRepository, setModel],
+    [api, aiConfigRepository, setModel],
   );
 
   const messagesService = useRequest<{
@@ -158,6 +158,24 @@ export const useChatMessageActions = () => {
             }
             if (data.type === 'stream_end') {
               console.log('stream_end', sessionId);
+            }
+            if (data.type === 'reasoning' && data.body?.content && typeof data.body.content === 'string') {
+              // [AI_DEBUG] stream_reasoning
+              aiDebugLogger.log(sessionId, 'stream_reasoning', {
+                phase: 'delta',
+                preview: data.body.content?.slice?.(0, 120) || '',
+              });
+              updateLastMessage((last) => ({
+                ...last,
+                content: {
+                  ...last.content,
+                  reasoning: {
+                    status: data.body.status,
+                    content: `${last.content.reasoning?.content ?? ''}${data.body.content}`,
+                  },
+                },
+                loading: false,
+              }));
             }
             if (data.type === 'content' && data.body && typeof data.body === 'string') {
               // [AI_DEBUG] stream_text
