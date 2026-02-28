@@ -10,47 +10,6 @@ export default defineConfig({
   },
 
   afterBuild: async (log) => {
-    log('copying deps');
-    const deps = [
-      'decamelize',
-      'zod',
-      // 'zod-to-json-schema',
-      'langsmith',
-      'p-retry',
-      'p-queue',
-      'p-timeout',
-      'p-finally',
-      'mustache',
-      // 'js-tiktoken/lite',
-      '@cfworker/json-schema',
-    ];
-    for (const dep of deps) {
-      const depPath = path.resolve(process.cwd(), 'node_modules', dep);
-      if (!fs.existsSync(depPath)) {
-        console.warn(`depPath not existed skip: ${depPath}`);
-        continue;
-      }
-      await fs.promises.cp(depPath, path.resolve(__dirname, 'dist/node_modules/@langchain/core/node_modules', dep), {
-        recursive: true,
-        force: true,
-        filter: (src) => !src.includes(`${path.sep}.bin${path.sep}`) && !src.endsWith(`${path.sep}.bin`),
-      });
-    }
-    log('copying js-tiktoken/lite');
-    const files = ['lite.d.ts', 'lite.js', 'lite.cjs'];
-    for (const file of files) {
-      const depPath = path.dirname(require.resolve('js-tiktoken/lite'));
-      const filePath = path.resolve(depPath, file);
-      await fs.promises.cp(
-        filePath,
-        path.resolve(__dirname, 'dist/node_modules/@langchain/core/node_modules/js-tiktoken', file),
-        {
-          recursive: true,
-          force: true,
-        },
-      );
-    }
-
     log('copying markdown files from src/server to dist/server');
     await fs.copy(
       path.resolve(__dirname, 'src/server/ai-employees'),
@@ -71,8 +30,6 @@ export default defineConfig({
       'officeparser',
       'pdf-parse',
       'word-extractor',
-      'langchain',
-      '@langchain/classic',
       // officeparser dependency
       'peek-readable',
       // pdf-parse dependency
@@ -134,15 +91,6 @@ export default defineConfig({
       .filter((file) => !(file.startsWith('pdf-parse/lib/pdf.js/v1.10.100/build') || file == 'pdf-parse/package.json'))
       .forEach((file) => fs.unlinkSync(path.resolve(__dirname, 'dist', 'node_modules', file)));
 
-    log('remove @langchain/langgraph-sdk');
-    fg.sync('**/@langchain/langgraph-sdk', {
-      cwd: path.resolve(__dirname, 'dist', 'node_modules'),
-      absolute: true,
-      onlyDirectories: true,
-    })
-      .filter((dir) => dir.endsWith('/node_modules/@langchain/langgraph-sdk'))
-      .forEach((dir) => fs.rmSync(dir, { recursive: true, force: true }));
-
     log('remove zod src dir');
     fg.sync('**/zod/src', {
       cwd: path.resolve(__dirname, 'dist', 'node_modules'),
@@ -150,15 +98,6 @@ export default defineConfig({
       onlyDirectories: true,
     })
       .filter((dir) => dir.endsWith('/node_modules/zod/src'))
-      .forEach((dir) => fs.rmSync(dir, { recursive: true, force: true }));
-
-    log('remove openai src dir');
-    fg.sync('**/openai/src', {
-      cwd: path.resolve(__dirname, 'dist', 'node_modules'),
-      absolute: true,
-      onlyDirectories: true,
-    })
-      .filter((dir) => dir.endsWith('/node_modules/openai/src'))
       .forEach((dir) => fs.rmSync(dir, { recursive: true, force: true }));
   },
 });
