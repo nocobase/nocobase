@@ -35,9 +35,20 @@ class PackageUrls {
       if (distExists) {
         const fsState = await fse.stat(distExists ? dist : pkgPath);
         const appKey = process.env.APP_KEY || '';
-        const pkgJson = await fse.readJson(path.resolve(pkgPath, 'package.json'));
-        const version = pkgJson.version;
-        const hash = crypto.createHash('sha256').update(fsState.mtime.getTime() + appKey + version).digest('hex').slice(0, 8);
+        let version = '';
+        try {
+          const pkgJson = await fse.readJson(path.resolve(pkgPath, 'package.json'));
+          if (pkgJson && typeof pkgJson.version === 'string') {
+            version = pkgJson.version;
+          }
+        } catch (error) {
+          // Ignore errors reading package.json and fall back to empty version
+        }
+        const hash = crypto
+          .createHash('sha256')
+          .update(fsState.mtime.getTime() + appKey + version)
+          .digest('hex')
+          .slice(0, 8);
         t = `?hash=${hash}`;
       }
       const cdnBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
