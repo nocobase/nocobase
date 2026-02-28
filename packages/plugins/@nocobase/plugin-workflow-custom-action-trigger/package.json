@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-custom-action-trigger",
-  "version": "2.1.0-beta.6",
+  "version": "2.1.0-alpha.7",
   "displayName": "Workflow: Custom action event",
   "displayName.zh-CN": "工作流：自定义操作事件",
   "description": "Triggers after click a custom action button.",
