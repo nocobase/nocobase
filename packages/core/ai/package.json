@@ -21,7 +21,11 @@
     "@langchain/langgraph": "^1.1.4",
     "@langchain/langgraph-checkpoint": "^1.0.0",
     "@langchain/ollama": "^1.2.2",
-    "@langchain/openai": "^1.2.7"
+    "@langchain/openai": "^1.2.7",
+    "mammoth": "^1.10.0",
+    "officeparser": "^5.2.0",
+    "pdf-parse": "^1.1.1",
+    "word-extractor": "^1.0.4"
   },
   "repository": {
     "type": "git",
