@@ -55,7 +55,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return this.props.tabActiveKey || this.getFirstTab()?.uid;
   }
 
-  private scheduleActiveLifecycleRefresh(): void {
+  private scheduleActiveLifecycleRefresh(forceRefresh = false): void {
     if (this.dirtyRefreshScheduled) return;
     this.dirtyRefreshScheduled = true;
     Promise.resolve()
@@ -66,7 +66,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
         if (getPageActive(this.context) === false) return;
         const activeKey = this.getActiveTabKey();
         if (activeKey) {
-          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+          this.invokeTabModelLifecycleMethod(activeKey, 'onActive', forceRefresh);
         }
       })
       .catch(() => {
@@ -128,7 +128,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     super.onUnmount();
   }
 
-  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive') {
+  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive', forceRefresh = false) {
     if (method === 'onActive' && this.context?.pageInfo) {
       this.context.pageInfo.version = 'v2';
     }
@@ -141,7 +141,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
         tabModel.context.tabActive.value = isPageActive && method === 'onActive';
       }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
-        item[method]?.();
+        item[method]?.(forceReresh);
       });
     }
 
