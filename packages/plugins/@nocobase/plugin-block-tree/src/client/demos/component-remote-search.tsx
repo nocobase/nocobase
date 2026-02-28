@@ -17,9 +17,7 @@ const App: React.FC = () => {
     }, 1000);
   }
 
-  return (
-    <Tree loading={loading} treeData={data} onSearch={onSearch} />
-  );
+  return <Tree loading={loading} treeData={data} onSearch={onSearch} />;
 };
 
 export default App;

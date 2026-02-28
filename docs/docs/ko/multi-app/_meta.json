@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "개요",
-    "link": "/multi-app/"
+    "label": "멀티 애플리케이션",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "공유 메모리 모드",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "멀티 환경 모드",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "다중 앱",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "다중 스페이스",
+    "label": "멀티 스페이스",
     "link": "/multi-app/multi-space"
   }
 ]

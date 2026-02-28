@@ -7,4 +7,4 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-export { default } from "./server";
+export { default } from './server';

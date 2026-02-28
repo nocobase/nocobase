@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Огляд",
-    "link": "/multi-app/"
+    "label": "Мультизастосунки",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Огляд",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Режим спільної пам’яті",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Режим мультисередовища",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Мульти-додаток",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Мульти-простір",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]
