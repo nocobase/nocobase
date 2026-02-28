@@ -42,7 +42,7 @@ export class PluginErrorHandlerServer extends Plugin {
       const title = lodash.get(fieldOptions, 'uiSchema.title', path);
       const re = /{{\s*t\(\s*(['"`])([^'"`]+)\1\s*\)\s*}}/g;
       const parsed = re.exec(title);
-      return parsed?.[2];
+      return parsed?.[2] || title;
     };
 
     this.errorHandler.register(
