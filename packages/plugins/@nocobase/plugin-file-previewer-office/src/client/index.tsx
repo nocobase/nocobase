@@ -74,9 +74,13 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(file.url, `${file.title}${file.extname}`);
+      let filename = file.title || file.name || 'download';
+      if (file.extname && !filename.toLowerCase().endsWith(file.extname.toLowerCase())) {
+        filename = `${filename}${file.extname}`;
+      }
+      saveAs(file.url, filename);
     },
-    [file.extname, file.title, file.url],
+    [file.extname, file.name, file.title, file.url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);

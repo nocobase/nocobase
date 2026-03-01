@@ -146,6 +146,12 @@ http://your-kkfileview-server:8012/onlinePreview?url=<encoded-url>
 - **代码**：JS、CSS、HTML、XML、JSON、SQL、JAVA、PYTHON 等
 - **文本**：TXT、MD、CSV
 
+## 更新日志
+
+### v2.1.0-beta.5
+- 修复了在某些预览模式下下载按钮失效的问题，改为使用本地实现的 `saveAs` 下载。
+- 修复了下载文件时由于文件名重复拼接导致出现双后缀（例如 `file.pdf.pdf`）的问题。
+
 ## 许可证
 
 本项目采用双许可证模式：AGPL-3.0 和 NocoBase 商业许可证。

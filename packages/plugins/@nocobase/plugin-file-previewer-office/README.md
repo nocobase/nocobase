@@ -146,6 +146,12 @@ http://your-kkfileview-server:8012/onlinePreview?url=<encoded-url>
 - **Code**: JS, CSS, HTML, XML, JSON, SQL, JAVA, PYTHON, etc.
 - **Text**: TXT, MD, CSV
 
+## Changelog
+
+### v2.1.0-beta.5
+- Fixed an issue where the download button failed to work under certain preview modes by implementing a local `saveAs` function.
+- Fixed an issue where the downloaded file name incorrectly contained duplicated file extensions (e.g., `file.pdf.pdf`).
+
 ## License
 
 This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.

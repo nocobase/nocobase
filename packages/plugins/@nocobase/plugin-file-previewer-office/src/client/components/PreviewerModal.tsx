@@ -69,7 +69,11 @@ export const PreviewerModal: React.FC<PreviewerModalProps> = ({
       e.preventDefault();
       e.stopPropagation();
       if (!file) return;
-      saveAs(file.url, `${file.title}${file.extname}`);
+      let filename = file.title || file.name || 'download';
+      if (file.extname && !filename.toLowerCase().endsWith(file.extname.toLowerCase())) {
+        filename = `${filename}${file.extname}`;
+      }
+      saveAs(file.url, filename);
     },
     [file],
   );
