@@ -10,7 +10,7 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-cc",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-cc",
   "license": "Apache-2.0",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/actions": "2.x",
