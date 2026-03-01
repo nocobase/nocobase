@@ -1,14 +1,12 @@
 ---
-displayName: "Empleados de IA"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
 description: |
-  Cree empleados de IA con diversas habilidades para colaborar con humanos, construir sistemas y gestionar operaciones de negocio.
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Empleados de IA
+# AI employees

@@ -1,19 +1,15 @@
 ---
-displayName: "Kommentarer"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Tillhandahåller en mall för kommentarsamlingar och ett block för att lägga till kommentarsfunktion för valfri samling.
+  Provides comment collection template and block to add commenting functionality for any collection.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+points: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Kommentarer
+# Comments

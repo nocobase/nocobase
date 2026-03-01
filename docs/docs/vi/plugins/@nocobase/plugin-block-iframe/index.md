@@ -1,16 +1,12 @@
 ---
-displayName: "Khối: iframe"
+displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  Tạo và quản lý khối iframe trên trang, dùng để nhúng và hiển thị các trang web hoặc nội dung bên ngoài.
+  Create an iframe block on the page to embed and display external web pages or content.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-
-
-# Khối: iframe
+# Block: iframe

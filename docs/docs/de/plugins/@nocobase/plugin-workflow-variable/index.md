@@ -1,18 +1,15 @@
 ---
-displayName: "Workflow: Benutzerdefinierte Variable"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Wird in Workflows verwendet, um benutzerdefinierte Variablen zu erstellen oder ihnen Werte zuzuweisen, um temporäre Daten im Prozess zu speichern.
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Workflow: Benutzerdefinierte Variable
+# Workflow: Custom variable

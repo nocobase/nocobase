@@ -12,6 +12,7 @@ import { LLMProvider } from '../provider';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../../utils';
 import { AIMessageChunk } from '@langchain/core/messages';
+import { LLMResult } from '@langchain/core/outputs';
 
 export class OpenAIResponsesProvider extends LLMProvider {
   declare chatModel: ChatOpenAI;
@@ -25,7 +26,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
     const responseFormatOptions = {
-      type: responseFormat,
+      type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
       responseFormatOptions['name'] = 'default';
@@ -85,6 +86,19 @@ export class OpenAIResponsesProvider extends LLMProvider {
         }
       }
     }
+    if (metadata?.response_metadata?.output?.length) {
+      content.reference = content.reference ?? [];
+      const output = metadata.response_metadata.output.find((it) => it.type === 'message');
+      if (output?.content?.length) {
+        const outputContent = output.content.find((it) => it.type === 'output_text');
+        for (const annotation of outputContent?.annotations ?? []) {
+          content.reference.push({
+            title: annotation.title,
+            url: annotation.url,
+          });
+        }
+      }
+    }
 
     return {
       key: messageId,
@@ -103,7 +117,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
     return [];
   }
 
-  protected isToolConflict(): boolean {
+  isToolConflict(): boolean {
     return false;
   }
 

@@ -1,18 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: เหตุการณ์การทำงานแบบกำหนดเอง"
+displayName: "Workflow: Custom action event"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  จะทำงานเมื่อมีการคลิกปุ่มที่ผูกกับเหตุการณ์การทำงานแบบกำหนดเอง เหมาะสำหรับการจัดลำดับการทำงานแบบกำหนดเองสำหรับแถวข้อมูลครับ
+  Triggers after click a custom action button.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: เหตุการณ์การทำงานแบบกำหนดเอง
+# Workflow: Custom action event

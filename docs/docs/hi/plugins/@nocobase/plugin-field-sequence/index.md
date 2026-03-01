@@ -1,14 +1,12 @@
 ---
-displayName: "संग्रह फ़ील्ड: अनुक्रम"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  कॉन्फ़िगर किए गए नियमों के अनुसार स्वचालित रूप से कोड जनरेट करता है, जो दिनांक, संख्या और टेक्स्ट के संयोजन का समर्थन करता है।
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# संग्रह फ़ील्ड: अनुक्रम
+# Collection field: Sequence

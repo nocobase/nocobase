@@ -1,8 +1,8 @@
 import { Badge } from '@rspress/core/theme';
 import { Link, useFrontmatter } from "@rspress/runtime";
-import { PluginPrice } from './PluginPrice';
-import { EditionLevels, EditionLevelsEN } from './EditionLevels';
 import { transformHref, useLangPrefix } from '../utils';
+import { EditionLevels, EditionLevelsEN, EditionLevelsTypes } from './EditionLevels';
+import { Related } from './Related';
 
 export type PluginInfoFrontmatter = {
   displayName?: string;
@@ -73,24 +73,24 @@ export function PluginInfo() {
               {frontmatter.defaultEnabled ? <code>Yes</code> : <code>No</code>}
             </td>
           </tr>
-          {frontmatter.isFree && (
+          {/* {frontmatter.isFree && (
             <tr style={trStyle}>
               <td style={firstTdStyle}>Pricing</td>
               <td style={tdStyle}><Badge>Free</Badge></td>
             </tr>
-          )}
-          {frontmatter.points && (
+          )} */}
+          {/* {frontmatter.points && (
             <tr style={trStyle}>
               <td style={firstTdStyle}>Pricing</td>
               <td style={tdStyle}><PluginPrice points={Number(frontmatter.points)} /></td>
             </tr>
-          )}
-          {frontmatter.editionLevel && Number(frontmatter.editionLevel) > 0 && (
+          )} */}
+          {Number(frontmatter.editionLevel) >= 0 && (
             <tr style={trStyle}>
-              <td style={firstTdStyle}>Pricing</td>
+              <td style={firstTdStyle}>Edition</td>
               <td style={tdStyle}>
                 <div style={{ display: "inline-flex", gap: "2px" }}>
-                  <Badge type="danger">
+                  <Badge type={EditionLevelsTypes[frontmatter.editionLevel as number] as 'tip'}>
                     {lang === 'cn' ? EditionLevels[frontmatter.editionLevel] : EditionLevelsEN[frontmatter.editionLevel]}+
                   </Badge>
                 </div>
@@ -99,6 +99,7 @@ export function PluginInfo() {
           )}
         </tbody>
       </table>
+      <Related pkg={frontmatter.packageName} />
       {/* <p>{frontmatter.description}</p> */}
     </>
   );

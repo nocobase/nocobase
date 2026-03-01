@@ -1,14 +1,12 @@
 ---
-displayName: "コレクションフィールド：添付ファイル（URL）"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  URL形式の添付ファイルに対応しています
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# コレクションフィールド：添付ファイル（URL）
+# Collection field: Attachment(URL)

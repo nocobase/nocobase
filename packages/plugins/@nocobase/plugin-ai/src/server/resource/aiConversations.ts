@@ -9,9 +9,10 @@
 
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
-import { Model } from '@nocobase/database';
+import { Model, Op } from '@nocobase/database';
 import { parseResponseMessage, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
+import { AIMessageInput } from '../types';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -73,6 +74,7 @@ export default {
             skillSettings,
             conversationSettings,
           },
+          thread: 1,
         },
       });
       await next();
@@ -219,18 +221,30 @@ export default {
           },
         },
       });
+      const toolMessageKey = (messageId: string, toolCallId: string) => `${messageId}:${toolCallId}`;
       const toolMessageMap = new Map<string, any>(
-        toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
+        toolMessages.map((toolMessage: Model) => [
+          toolMessageKey(toolMessage.messageId, toolMessage.toolCallId),
+          toolMessage,
+        ]),
       );
+
+      const toolsList = await plugin.ai.toolsManager.listTools();
+      const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
 
       ctx.body = {
         rows: data.map((row: Model) => {
           if (row?.toolCalls?.length ?? 0 > 0) {
             for (const toolCall of row.toolCalls) {
-              const toolMessage = toolMessageMap.get(toolCall.id);
+              const tools = toolsMap.get(toolCall.name);
+              const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
               toolCall.invokeStatus = toolMessage?.invokeStatus;
               toolCall.auto = toolMessage?.auto;
               toolCall.status = toolMessage?.status;
+              toolCall.content = toolMessage?.content; // [AI_DEBUG] tool execution result
+              toolCall.execution = tools?.execution;
+              toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
+              toolCall.defaultPermission = tools?.defaultPermission;
             }
           }
 
@@ -302,17 +316,37 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
-      setupSSEHeaders(ctx);
-
-      const { sessionId, aiEmployee: employeeName, messages, editingMessageId } = ctx.action.params.values || {};
+      const {
+        sessionId,
+        aiEmployee: employeeName,
+        messages,
+        editingMessageId,
+        model,
+        webSearch,
+        stream = true,
+      } = ctx.action.params.values || {};
+      const shouldStream = stream !== false;
+      if (shouldStream) {
+        setupSSEHeaders(ctx);
+      }
       if (!sessionId) {
-        sendErrorResponse(ctx, 'sessionId is required');
+        if (shouldStream) {
+          sendErrorResponse(ctx, 'sessionId is required');
+        } else {
+          ctx.status = 400;
+          ctx.body = { error: 'sessionId is required' };
+        }
         return next();
       }
 
       const userMessage = messages.find((message: any) => message.role === 'user');
       if (!userMessage) {
-        sendErrorResponse(ctx, 'user message is required');
+        if (shouldStream) {
+          sendErrorResponse(ctx, 'user message is required');
+        } else {
+          ctx.status = 400;
+          ctx.body = { error: 'user message is required' };
+        }
         return next();
       }
 
@@ -322,7 +356,12 @@ export default {
         });
 
         if (!conversation) {
-          sendErrorResponse(ctx, 'conversation not found');
+          if (shouldStream) {
+            sendErrorResponse(ctx, 'conversation not found');
+          } else {
+            ctx.status = 404;
+            ctx.body = { error: 'conversation not found' };
+          }
           return next();
         }
 
@@ -340,9 +379,16 @@ export default {
 
         const employee = await getAIEmployee(ctx, employeeName);
         if (!employee) {
-          sendErrorResponse(ctx, 'AI employee not found');
+          if (shouldStream) {
+            sendErrorResponse(ctx, 'AI employee not found');
+          } else {
+            ctx.status = 404;
+            ctx.body = { error: 'AI employee not found' };
+          }
           return next();
         }
+
+        const legacy = conversation.thread === 0;
 
         const aiEmployee = new AIEmployee(
           ctx,
@@ -350,13 +396,41 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
+          webSearch,
+          model,
+          legacy,
         );
-        await aiEmployee.cancelToolCall();
-        await aiEmployee.processMessages(messages, editingMessageId);
+
+        if (!editingMessageId) {
+          const toolMessages = await aiEmployee.cancelToolCall();
+          if (toolMessages?.length) {
+            for (let i = toolMessages.length - 1; i >= 0; i--) {
+              const toolMessage = toolMessages[i];
+              messages.unshift({
+                role: toolMessage.role,
+                content: toolMessage.content,
+                toolCalls: toolMessage.toolCalls,
+                attachments: toolMessage.attachments,
+                workContext: toolMessage.workContext,
+                metadata: toolMessage.metadata,
+              });
+            }
+          }
+        }
+
+        if (shouldStream) {
+          await aiEmployee.stream({ userMessages: messages, messageId: editingMessageId });
+        } else {
+          ctx.body = await aiEmployee.invoke({ userMessages: messages, messageId: editingMessageId });
+        }
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Tool call error');
+        if (shouldStream) {
+          sendErrorResponse(ctx, err.message || 'Tool call error');
+        } else {
+          ctx.status = 500;
+          ctx.body = { error: err.message || 'Tool call error' };
+        }
       }
 
       await next();
@@ -372,7 +446,8 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId } = ctx.action.params.values || {};
+      const { sessionId, webSearch, model } = ctx.action.params.values || {};
+      let { messageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -390,6 +465,7 @@ export default {
           return next();
         }
 
+        const resendMessages: AIMessageInput[] = [];
         if (messageId) {
           const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
             filter: {
@@ -400,6 +476,28 @@ export default {
           if (!message) {
             sendErrorResponse(ctx, 'message not found');
             return next();
+          }
+        } else {
+          const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            filter: {
+              sessionId,
+            },
+            sort: ['-messageId'],
+          });
+          if (!message) {
+            sendErrorResponse(ctx, 'No messages to resend');
+            return next();
+          }
+          messageId = message.messageId;
+          if (['user', 'tool'].includes(message.role)) {
+            resendMessages.push({
+              role: message.role,
+              content: message.content,
+              toolCalls: message.toolCalls,
+              attachments: message.attachments,
+              workContext: message.workContext,
+              metadata: message.metadata,
+            });
           }
         }
 
@@ -415,9 +513,10 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
+          webSearch,
+          model,
         );
-        await aiEmployee.resendMessages(messageId);
+        await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Chat error warning');
@@ -426,47 +525,107 @@ export default {
       await next();
     },
 
-    async getTools(ctx: Context, next: Next) {
+    async updateUserDecision(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const { sessionId, messageId } = ctx.action.params.values || {};
-      if (!sessionId || !messageId) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const { sessionId, messageId, toolCallId, userDecision } = ctx.action.params.values || {};
+      if (!sessionId) {
         ctx.throw(400);
       }
+
       const conversation = await ctx.db.getRepository('aiConversations').findOne({
         filter: {
           sessionId,
-          userId: ctx.auth?.user.id,
+          userId,
         },
       });
+
       if (!conversation) {
         ctx.throw(400);
       }
+
       const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
         filter: {
           messageId,
         },
       });
-      const tools = message?.toolCalls || [];
-      const toolNames = tools.map((tool: any) => tool.name);
-      const result = {};
-      for (const toolName of toolNames) {
-        const tool = await plugin.aiManager.toolManager.getTool(toolName);
-        if (tool) {
-          result[toolName] = {
-            name: tool.name,
-            title: tool.title,
-            description: tool.description,
-          };
-        }
+      if (!message) {
+        ctx.throw(400);
       }
-      ctx.body = result;
+
+      const toolCalls = message.toolCalls;
+      if (!toolCalls?.length) {
+        ctx.throw(400);
+      }
+
+      const aiToolMessagesModel = ctx.db.getModel('aiToolMessages');
+      const toolCall = await aiToolMessagesModel.findOne({
+        where: { sessionId, messageId, toolCallId },
+      });
+      if (!toolCall) {
+        ctx.throw(400);
+      }
+
+      const [updated] = await aiToolMessagesModel.update(
+        {
+          userDecision,
+          invokeStatus: 'waiting',
+        },
+        {
+          where: {
+            sessionId,
+            messageId,
+            toolCallId,
+            invokeStatus: 'interrupted',
+          },
+        },
+      );
+
+      const toolCallIds = toolCalls.map((x) => x.id);
+      const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
+        filter: {
+          sessionId,
+          messageId,
+          toolCallId: {
+            $in: toolCallIds,
+          },
+        },
+      });
+      const toolMessageMap = new Map<string, any>(
+        toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
+      );
+
+      const toolsList = await plugin.ai.toolsManager.listTools();
+      const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
+
+      for (const toolCall of toolCalls) {
+        const tools = toolsMap.get(toolCall.name);
+        const toolMessage = toolMessageMap.get(toolCall.id);
+        toolCall.invokeStatus = toolMessage?.invokeStatus;
+        toolCall.auto = toolMessage?.auto;
+        toolCall.status = toolMessage?.status;
+        toolCall.content = toolMessage?.content;
+        toolCall.execution = tools?.execution;
+        toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
+        toolCall.defaultPermission = tools?.defaultPermission;
+      }
+
+      ctx.body = {
+        updated,
+        toolCalls,
+      };
+
       await next();
     },
 
-    async callTool(ctx: Context, next: Next) {
+    async resumeToolCall(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
-      const { sessionId, messageId } = ctx.action.params.values || {};
+      const { sessionId, messageId, model, webSearch } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -519,71 +678,17 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
+          webSearch,
+          model,
         );
-        await aiEmployee.callTool(message.messageId, false);
+
+        const userDecisions = await aiEmployee.getUserDecisions(messageId);
+        await aiEmployee.stream({
+          userDecisions,
+        });
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Tool call error');
-      }
-      await next();
-    },
-    async confirmToolCall(ctx: Context, next: Next) {
-      setupSSEHeaders(ctx);
-
-      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
-      if (!sessionId) {
-        sendErrorResponse(ctx, 'sessionId is required');
-        return next();
-      }
-      try {
-        const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId: ctx.auth?.user.id,
-          },
-        });
-        if (!conversation) {
-          sendErrorResponse(ctx, 'conversation not found');
-          return next();
-        }
-
-        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
-        if (!employee) {
-          sendErrorResponse(ctx, 'AI employee not found');
-          return next();
-        }
-
-        let message: Model;
-        if (messageId) {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-            filter: {
-              messageId,
-            },
-          });
-        } else {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-            sort: ['-messageId'],
-          });
-        }
-
-        if (!message) {
-          sendErrorResponse(ctx, 'message not found');
-          return next();
-        }
-
-        const aiEmployee = new AIEmployee(
-          ctx,
-          employee,
-          sessionId,
-          conversation.options?.systemMessage,
-          conversation.options?.skillSettings,
-          conversation.options?.conversationSettings?.webSearch,
-        );
-        await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
-      } catch (err) {
-        ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Tool call confirm error');
       }
       await next();
     },

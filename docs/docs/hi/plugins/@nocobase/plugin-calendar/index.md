@@ -1,14 +1,12 @@
 ---
-displayName: "कैलेंडर"
+displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  कैलेंडर संग्रह टेम्पलेट और ब्लॉक प्रदान करता है, जो दिनांक डेटा को प्रबंधित करने के लिए उपयोग किया जाता है। आमतौर पर इसका उपयोग इवेंट, अपॉइंटमेंट, टास्क और इसी तरह की दिनांक/समय-संबंधी जानकारी के लिए होता है।
+  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# कैलेंडर
+# Calendar

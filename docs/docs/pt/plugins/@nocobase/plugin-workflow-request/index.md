@@ -1,14 +1,12 @@
 ---
-displayName: "Fluxo de trabalho: Nó de requisição HTTP"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Permite enviar requisições HTTP para qualquer serviço HTTP em um fluxo de trabalho, facilitando a interação de dados.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Fluxo de trabalho: Nó de requisição HTTP
+# Workflow: HTTP request node

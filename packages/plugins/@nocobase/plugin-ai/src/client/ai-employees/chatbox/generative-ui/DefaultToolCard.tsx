@@ -7,210 +7,248 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Button, Card, Collapse, Tooltip, Tag, Flex } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Button, Tooltip, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
-  CheckCircleTwoTone,
-  ClockCircleTwoTone,
-  CloseCircleTwoTone,
-  PlayCircleTwoTone,
+  CheckCircleFilled,
+  ClockCircleFilled,
+  CloseCircleFilled,
+  MinusCircleFilled,
   QuestionCircleOutlined,
-  PlaySquareOutlined,
-  ToolOutlined,
+  CheckOutlined,
+  RightOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
-import ReactMarkdown from 'react-markdown';
-import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { useAPIClient, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
+import { ToolCall, ToolsEntry, toToolsMap, useToken, lazy } from '@nocobase/client';
 import { Schema } from '@formily/react';
-import PluginAIClient from '../../..';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatMessageActions } from '../hooks/useChatMessageActions';
-import _ from 'lodash';
-import { ToolCall } from '../../types';
+import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { css, keyframes } from '@emotion/css';
 
-const useDefaultAction = (messageId: string) => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-
-  const { callTool } = useChatMessageActions();
-
-  return {
-    invoke: () => {
-      callTool({
-        sessionId: currentConversation,
-        messageId,
-        aiEmployee: currentEmployee,
-      });
-    },
-  };
-};
+const loadingTextShimmer = keyframes`
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+`;
 
 const CallButton: React.FC<{
   messageId: string;
-}> = ({ messageId }) => {
+  toolCalls: ToolCall[];
+}> = ({ messageId, toolCalls }) => {
   const t = useT();
-  const { invoke: invokeDefault } = useDefaultAction(messageId);
-  const invoke = async () => {
-    invokeDefault();
-  };
-
+  const { token } = useToken();
+  const { getDecisionActions } = useToolCallActions({ messageId });
+  const [loading, setLoading] = useState(false);
   return (
-    <Button
-      onClick={(e) => {
-        e.stopPropagation();
-        invoke();
-      }}
-      variant="link"
-      color="primary"
-      size="small"
-      icon={<PlaySquareOutlined />}
-    >
-      {t('Call')}
-    </Button>
+    <Flex align="center" gap={8}>
+      <Button
+        loading={loading}
+        onClick={async (e) => {
+          e.stopPropagation();
+          setLoading(true);
+          for (const toolCall of toolCalls) {
+            const decision = getDecisionActions(toolCall);
+            await decision.approve();
+          }
+          setLoading(false);
+        }}
+        variant="text"
+        color="primary"
+        size="small"
+        icon={<CheckOutlined />}
+        style={{
+          height: token.controlHeightSM,
+          paddingInline: token.paddingSM,
+          fontSize: token.fontSizeSM + 1,
+        }}
+      >
+        {t('Allow use')}
+      </Button>
+    </Flex>
   );
 };
 
-const InvokeStatus: React.FC<{ tool: ToolCall<unknown> }> = ({ tool }) => {
+const InvokeStatus: React.FC<{ toolCall: ToolCall<unknown> }> = ({ toolCall }) => {
   const t = useT();
-  switch (tool.invokeStatus) {
+  const { token } = useToken();
+  const { invokeStatus } = toolCall;
+
+  switch (invokeStatus) {
     case 'init':
+    case 'interrupted':
+    case 'waiting':
       return (
         <Tooltip title={t('invoke-status-init')}>
-          <PlayCircleTwoTone />
+          <MinusCircleFilled style={{ color: token.colorTextQuaternary }} />
         </Tooltip>
       );
     case 'pending':
       return (
         <Tooltip title={t('invoke-status-pending')}>
-          <ClockCircleTwoTone />
+          <ClockCircleFilled style={{ color: token.colorTextSecondary }} />
         </Tooltip>
       );
     case 'done':
     case 'confirmed':
-      return tool.status === 'error' ? (
+      return toolCall.status === 'error' ? (
         <Tooltip title={t('invoke-status-error')}>
-          <CloseCircleTwoTone twoToneColor="#eb2f96" />
+          <CloseCircleFilled style={{ color: token.colorError }} />
         </Tooltip>
       ) : (
         <Tooltip title={t('invoke-status-success')}>
-          <CheckCircleTwoTone twoToneColor="#52c41a" />
+          <CheckCircleFilled style={{ color: token.colorSuccess }} />
         </Tooltip>
       );
   }
 };
 
-export const DefaultToolCard: React.FC<{
-  messageId: string;
-  tools: ToolCall<unknown>[];
-}> = ({ tools, messageId }) => {
+const ToolCallRow: React.FC<{
+  toolCall: ToolCall;
+  toolsMap: Map<string, ToolsEntry>;
+  generating: boolean;
+  defaultExpanded?: boolean;
+  rightExtra?: React.ReactNode;
+}> = ({ toolCall, toolsMap, generating, defaultExpanded, rightExtra }) => {
   const t = useT();
   const { token } = useToken();
-  const { isDarkTheme } = useGlobalTheme();
-  const api = useAPIClient();
-
-  const currentConversation = useChatConversationsStore((s) => s.currentConversation);
-
-  const { data } = useRequest<{
-    [name: string]: {
-      title: string;
-      description: string;
-    };
-  }>(
-    () =>
-      api
-        .resource('aiConversations')
-        .getTools({
-          values: {
-            sessionId: currentConversation,
-            messageId,
-          },
-        })
-        .then((res) => res?.data?.data),
-    {
-      ready: !!messageId,
-    },
-  );
-
-  const items = tools.map((tool) => {
-    let args = tool.args;
-    try {
-      args = JSON.stringify(args, null, 2);
-    } catch (err) {
-      // ignore
+  const [expanded, setExpanded] = useState(!!defaultExpanded);
+  useEffect(() => {
+    if (defaultExpanded) {
+      setExpanded(true);
     }
-    return {
-      key: tool.id,
-      label: (
-        <div
-          style={{
-            fontSize: token.fontSize,
-          }}
-        >
-          <Flex justify="space-between">
-            <Tag
-              style={{
-                marginLeft: 8,
-              }}
-            >
-              {data?.[tool.name]?.title ? Schema.compile(data[tool.name].title, { t }) : tool.name}{' '}
-              {data?.[tool.name]?.description && (
-                <Tooltip title={Schema.compile(data[tool.name].description, { t })}>
-                  <QuestionCircleOutlined />
-                </Tooltip>
-              )}
-            </Tag>
-            <InvokeStatus tool={tool} />
-          </Flex>
-        </div>
-      ),
-      children: (
-        <ReactMarkdown
-          components={{
-            code(props) {
-              const { children, className, node, ...rest } = props;
-              const match = /language-(\w+)/.exec(className || '');
-              return match ? (
-                <SyntaxHighlighter {...rest} PreTag="div" language={match[1]} style={isDarkTheme ? dark : defaultStyle}>
-                  {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-              ) : (
-                <code {...rest} className={className}>
-                  {children}
-                </code>
-              );
-            },
-          }}
-        >
-          {'```json\n' + args + '\n```'}
-        </ReactMarkdown>
-      ),
-      style: {
-        fontSize: token.fontSizeSM,
-      },
-    };
+  }, [defaultExpanded]);
+
+  let args = toolCall.args;
+  try {
+    args = JSON.stringify(args, null, 2);
+  } catch (err) {
+    // ignore
+  }
+  const toolsEntry = toolsMap.get(toolCall.name);
+  const title = toolsEntry?.introduction?.title
+    ? Schema.compile(toolsEntry?.introduction?.title, { t })
+    : toolCall.name;
+  const description = toolsEntry?.introduction?.about
+    ? Schema.compile(toolsEntry?.introduction?.about, { t })
+    : toolCall.name;
+
+  const titleLoadingClass = css({
+    backgroundImage: `linear-gradient(90deg, ${token.colorTextTertiary} 0%, ${token.colorText} 45%, ${token.colorTextTertiary} 100%)`,
+    backgroundSize: '160% 100%',
+    WebkitBackgroundClip: 'text',
+    color: 'transparent',
+    opacity: 0.98,
+    animation: `${loadingTextShimmer} 1.6s linear infinite`,
+    willChange: 'background-position',
   });
+
+  const showLoadingTitle = generating && toolCall.invokeStatus !== 'done' && toolCall.invokeStatus !== 'confirmed';
+
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 12px 0 4px',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+        onClick={() => {
+          if (args === '{}') {
+            return;
+          }
+          setExpanded(!expanded);
+        }}
+      >
+        <Flex align="center" gap={8}>
+          <InvokeStatus toolCall={toolCall} />
+          <span style={{ fontSize: token.fontSizeSM + 1, color: token.colorTextSecondary }}>
+            <span className={showLoadingTitle ? titleLoadingClass : undefined}>{title}</span>
+            {toolsEntry?.introduction?.about && (
+              <>
+                {' '}
+                <Tooltip title={description}>
+                  <QuestionCircleOutlined style={{ color: token.colorTextQuaternary }} />
+                </Tooltip>
+              </>
+            )}
+          </span>
+        </Flex>
+        <Flex align="center" gap={8}>
+          {args !== '{}' ? (
+            expanded ? (
+              <UpOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+            ) : (
+              <RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+            )
+          ) : null}
+          {rightExtra ? (
+            <div
+              onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              {rightExtra}
+            </div>
+          ) : null}
+        </Flex>
+      </div>
+      {expanded && (
+        <div style={{ padding: '4px 12px', fontSize: token.fontSizeSM }}>
+          <CodeHighlight language="json" value={args as string} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const DefaultToolCard: React.FC<{
+  messageId: string;
+  tools: ToolsEntry[];
+  toolCalls: ToolCall[];
+  inlineActions?: React.ReactNode;
+}> = ({ messageId, tools, toolCalls, inlineActions }) => {
+  const toolsMap = toToolsMap(tools);
+  const messages = useChatMessagesStore.use.messages();
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const generating = responseLoading && messages[messages.length - 1]?.content?.messageId === messageId;
+  const hasAutoExpanded = useRef(false);
 
   const showCallButton =
     messageId &&
-    !tools.every((tool) => tool.auto) &&
-    !tools.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
+    !toolCalls.every((tool) => tool.auto) &&
+    !toolCalls.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed' || !tool.invokeStatus);
+  const shouldAutoExpand = showCallButton && !hasAutoExpanded.current;
+
+  useEffect(() => {
+    if (showCallButton) {
+      hasAutoExpanded.current = true;
+    }
+  }, [showCallButton]);
+
+  const singleInlineActions = inlineActions && toolCalls.length === 1 ? inlineActions : null;
 
   return (
-    <Card
-      variant="borderless"
-      size="small"
-      title={
-        <span>
-          <ToolOutlined /> {t('Use skills')}
-        </span>
-      }
-      extra={showCallButton && <CallButton messageId={messageId} />}
-    >
-      <Collapse items={items} size="small" bordered={false} />
-    </Card>
+    <Flex vertical>
+      {toolCalls.map((toolCall) => (
+        <ToolCallRow
+          key={toolCall.id}
+          toolCall={toolCall}
+          toolsMap={toolsMap}
+          generating={generating}
+          defaultExpanded={shouldAutoExpand}
+          rightExtra={singleInlineActions}
+        />
+      ))}
+      {showCallButton && <CallButton messageId={messageId} toolCalls={toolCalls} />}
+    </Flex>
   );
 };

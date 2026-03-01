@@ -1,17 +1,15 @@
 ---
-displayName: "العميل المحمول (مهمل)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  يتيح إمكانية تهيئة صفحات الأجهزة المحمولة.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# العميل المحمول (مهمل)
+# Mobile client(Deprecated)
 
-> ملاحظة: هذه الإضافة مهملة.
+> Note: This plugin is deprecated.

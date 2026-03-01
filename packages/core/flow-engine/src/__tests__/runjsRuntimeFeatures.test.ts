@@ -13,6 +13,7 @@ import { FlowEngine } from '../flowEngine';
 import { FlowContext } from '../flowContext';
 import { setupRunJSContexts } from '../runjs-context/setup';
 import { createJSRunnerWithVersion } from '..';
+import { RunJSContextRegistry } from '../runjs-context/registry';
 
 describe('RunJS Runtime Features', () => {
   let engine: FlowEngine;
@@ -456,6 +457,171 @@ describe('RunJS Runtime Features', () => {
 
       expect(result?.success).toBe(false);
       expect(result?.error).toBeTruthy();
+    });
+  });
+
+  describe('Deprecation warnings', () => {
+    const version = 'test-deprecation-warnings';
+    const dynamicDefineVersion = 'test-deprecation-dynamic-defineProperty';
+
+    beforeAll(() => {
+      class TestDeprecatedRunJSContext extends FlowRunJSContext {}
+      TestDeprecatedRunJSContext.define({
+        label: 'RunJS deprecated test',
+        properties: {
+          resource: {
+            properties: {
+              getData: {
+                type: 'function',
+                description: 'Deprecated deep-path method for testing.',
+                deprecated: {
+                  message: 'Use refresh instead.',
+                  replacedBy: 'ctx.resource.refresh',
+                  since: '0.0.0-test',
+                },
+              },
+            },
+          },
+        },
+      });
+      RunJSContextRegistry.register(version as any, '*', TestDeprecatedRunJSContext);
+
+      class TestDynamicDefineRunJSContext extends FlowRunJSContext {}
+      TestDynamicDefineRunJSContext.define({
+        label: 'RunJS deprecated dynamic defineProperty test',
+      });
+      RunJSContextRegistry.register(dynamicDefineVersion as any, '*', TestDynamicDefineRunJSContext);
+    });
+
+    it('should warn when calling a deprecated deep-path API', async () => {
+      const ctx = new FlowContext();
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } });
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+      ctx.defineProperty('resource', { value: { getData: () => 123 } });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version });
+      const result = await runner.run('return ctx.resource.getData()');
+
+      expect(result?.success).toBe(true);
+      expect(result?.value).toBe(123);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain('[RunJS][Deprecated] ctx.resource.getData');
+      expect(warn.mock.calls[0]?.[0]).toContain('Use refresh instead.');
+      expect(warn.mock.calls[0]?.[0]).toContain('Use ctx.resource.refresh instead');
+    });
+
+    it('should only warn on invoke (accessing should not warn)', async () => {
+      const ctx = new FlowContext();
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } });
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+      ctx.defineProperty('resource', { value: { getData: () => 1 } });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version });
+      const result = await runner.run(`
+        const fn = ctx.resource.getData;
+        return typeof fn === 'function';
+      `);
+
+      expect(result?.success).toBe(true);
+      expect(result?.value).toBe(true);
+      expect(warn).toHaveBeenCalledTimes(0);
+    });
+
+    it('should warn once per RunJS execution for the same API path', async () => {
+      const ctx = new FlowContext();
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } });
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+      ctx.defineProperty('resource', { value: { getData: () => 1 } });
+
+      const runner1 = createJSRunnerWithVersion.call(ctx, { version });
+      const r1 = await runner1.run(`
+        ctx.resource.getData();
+        ctx.resource.getData();
+        return true;
+      `);
+      expect(r1?.success).toBe(true);
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      const runner2 = createJSRunnerWithVersion.call(ctx, { version });
+      const r2 = await runner2.run('ctx.resource.getData(); return true;');
+      expect(r2?.success).toBe(true);
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('should warn when accessing a deprecated property defined via FlowContext info', async () => {
+      const ctx = new FlowContext();
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } });
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+      ctx.defineProperty('element', {
+        value: { innerHTML: '<div />' },
+        info: { deprecated: { message: 'it is deprecated!' } },
+      });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version: 'v1' });
+      const result = await runner.run('return ctx.element.innerHTML');
+
+      expect(result?.success).toBe(true);
+      expect(result?.value).toBe('<div />');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain('[RunJS][Deprecated] ctx.element it is deprecated!');
+      expect(warn.mock.calls[0]?.[0]).not.toContain('已废弃');
+      expect(warn.mock.calls[0]?.[0]).toContain('line');
+    });
+
+    it('should warn for deprecated APIs defined via ctx.defineProperty during execution', async () => {
+      const ctx = new FlowContext();
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } });
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version: dynamicDefineVersion });
+      const result = await runner.run(`
+        ctx.defineProperty('element', {
+          value: { innerHTML: '<div />' },
+          info: { deprecated: { message: 'it is deprecated!' } },
+        });
+        return ctx.element.innerHTML;
+      `);
+
+      expect(result?.success).toBe(true);
+      expect(result?.value).toBe('<div />');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain('[RunJS][Deprecated] ctx.element it is deprecated!');
+      expect(warn.mock.calls[0]?.[0]).not.toContain('已废弃');
+    });
+
+    it('should support deprecated deep-path defined via FlowContext info.properties', async () => {
+      const ctx = new FlowContext();
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } });
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+      ctx.defineProperty('element', {
+        value: { innerHTML: '<div />' },
+        info: {
+          properties: {
+            innerHTML: {
+              deprecated: {
+                message: 'Use append instead.',
+                replacedBy: 'ctx.element.append',
+              },
+            },
+          },
+        },
+      });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version: 'v1' });
+      const result = await runner.run('return ctx.element.innerHTML');
+
+      expect(result?.success).toBe(true);
+      expect(result?.value).toBe('<div />');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain('[RunJS][Deprecated] ctx.element.innerHTML');
+      expect(warn.mock.calls[0]?.[0]).toContain('Use append instead.');
+      expect(warn.mock.calls[0]?.[0]).toContain('Use ctx.element.append instead');
     });
   });
 });

@@ -1,17 +1,12 @@
 ---
-displayName: "Pracovní postup: Mapování JSON proměnných"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  Slouží k mapování libovolných JSON dat na strukturované proměnné pro použití v následných uzlech.
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: Mapování JSON proměnných
+# Workflow: JSON variable mapping

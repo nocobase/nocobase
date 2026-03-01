@@ -1,14 +1,12 @@
 ---
-displayName: "AI Çalışanları"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
 description: |
-  İnsanlarla iş birliği yapacak, sistemler kuracak ve iş süreçlerini yönetecek çeşitli becerilere sahip yapay zeka çalışanları oluşturun.
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# AI Çalışanları
+# AI employees

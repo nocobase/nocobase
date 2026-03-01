@@ -1,14 +1,12 @@
 ---
-displayName: "مدير التطبيقات المتعددة (مهمل)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  يعمل مدير التطبيقات المتعددة على تشغيل التطبيقات بطريقة مشاركة العمليات، وهو مناسب لبيئات الاختبار والعرض التوضيحي فقط. يرجى عدم استخدامه في بيئات الإنتاج.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# مدير التطبيقات المتعددة (مهمل)
+# Multi-app manager (deprecated)

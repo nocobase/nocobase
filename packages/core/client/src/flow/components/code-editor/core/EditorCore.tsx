@@ -13,15 +13,15 @@ import {
   type Completion,
   type CompletionContext,
   type CompletionResult,
+  type CompletionSource,
 } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
-import { EditorView, tooltips } from '@codemirror/view';
+import { EditorView, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
-import { createJavascriptCompletion } from '../javascriptCompletion';
 import { createJavaScriptLinter } from '../linter';
 
 export const EditorCore: React.FC<{
@@ -33,7 +33,9 @@ export const EditorCore: React.FC<{
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
+  completionSource?: CompletionSource;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -44,7 +46,9 @@ export const EditorCore: React.FC<{
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  knownCtxMemberRoots,
   extraCompletions,
+  completionSource,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -89,15 +93,17 @@ export const EditorCore: React.FC<{
         override: [
           createHtmlCompletion(),
           createJsxCompletion(),
-          createJavascriptCompletion(),
-          ...(Array.isArray(extraCompletions) && extraCompletions.length
-            ? [staticCompletionSource(extraCompletions)]
-            : []),
+          ...(typeof completionSource === 'function'
+            ? [completionSource]
+            : Array.isArray(extraCompletions) && extraCompletions.length
+              ? [staticCompletionSource(extraCompletions)]
+              : []),
         ],
         closeOnBlur: false,
         activateOnTyping: true,
       }),
-      ...(enableLinter ? [lintGutter(), createJavaScriptLinter()] : []),
+      ...(placeholder ? [cmPlaceholder(placeholder)] : []),
+      ...(enableLinter ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })] : []),
       // Force CM tooltips to render under the app container that doesn't clip (closer to Edit event flows behavior)
       tooltips({
         parent:
@@ -123,6 +129,12 @@ export const EditorCore: React.FC<{
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
           overflow: 'auto',
+        },
+        '.cm-placeholder': {
+          color: '#999',
+          fontStyle: 'normal',
+          whiteSpace: 'pre',
+          pointerEvents: 'none',
         },
         '.cm-diagnostic': {
           padding: '4px 8px',
@@ -184,7 +196,7 @@ export const EditorCore: React.FC<{
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [extraCompletions, enableLinter, height, minHeight, theme, readonly]);
+  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly, placeholder]);
 
   // Update editor content when value changes
   useEffect(() => {
@@ -195,25 +207,9 @@ export const EditorCore: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // placeholder overlay
-  const showPlaceholder = placeholder && !value;
   return (
     <>
       <div style={{ flex: 1, minHeight: 120 }} ref={editorRef} />
-      {showPlaceholder && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: '#999',
-            pointerEvents: 'none',
-            fontSize: '14px',
-          }}
-        >
-          {placeholder}
-        </div>
-      )}
     </>
   );
 };

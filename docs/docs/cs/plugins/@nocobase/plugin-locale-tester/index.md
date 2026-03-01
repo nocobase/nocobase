@@ -1,16 +1,12 @@
 ---
-displayName: "Nástroj pro testování lokalizace"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Nástroj pro testování lokalizace
+# Locale tester

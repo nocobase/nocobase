@@ -1,14 +1,15 @@
 ---
-displayName: "アクセス制御"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  ロール、リソース、操作に基づいたアクセス制御により、UI設定、データ操作、メニューアクセス、プラグインの各権限をきめ細かく制御できます
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# アクセス制御
+# Access control

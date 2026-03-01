@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  İş otomasyonu için temel destek sağlayan, sınırsız tetikleyici ve düğümle genişletilebilen güçlü bir BPM aracıdır.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı
+# Workflow

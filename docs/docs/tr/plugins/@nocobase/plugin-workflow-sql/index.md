@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: SQL düğümü"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  İş akışları içinde veritabanında herhangi bir SQL ifadesini çalıştırmanızı sağlar.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: SQL düğümü
+# Workflow: SQL node

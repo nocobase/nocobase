@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde: Loop-nod"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Används för att köra en delprocess upprepade gånger för varje värde i en array, eller för att köra en delprocess ett fast antal gånger.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Loop-nod
+# Workflow: Loop node

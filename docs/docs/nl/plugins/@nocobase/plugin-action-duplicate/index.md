@@ -1,14 +1,15 @@
 ---
-displayName: "Actie: Record dupliceren"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Dupliceer een record. U kunt het naar een formulier kopiëren om het te bewerken voordat u het opslaat, of u kunt het direct dupliceren om een nieuw record te genereren.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Actie: Record dupliceren
+# Action: Duplicate record

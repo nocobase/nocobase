@@ -1,16 +1,12 @@
 ---
-displayName: "Gebruikers"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  Biedt een basis gebruikersmodel, evenals velden voor 'aangemaakt door' en 'laatst bijgewerkt door'.
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-
-
-# Gebruikers
+# Users

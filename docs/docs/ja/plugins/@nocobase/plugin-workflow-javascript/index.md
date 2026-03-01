@@ -1,18 +1,15 @@
 ---
-displayName: "ワークフロー：JavaScript ノード"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  隔離されたNode.js環境でJavaScriptコードを実行します
+  Execute a piece of JavaScript in an isolated Node.js environment.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ワークフロー：JavaScript ノード
+# Workflow: JavaScript

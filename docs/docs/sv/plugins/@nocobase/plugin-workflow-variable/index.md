@@ -1,19 +1,15 @@
 ---
-displayName: "Arbetsflöde: Anpassad variabel"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Används för att skapa anpassade variabler eller tilldela dem värden i arbetsflöden, för att spara temporär data under processen.
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Anpassad variabel
+# Workflow: Custom variable

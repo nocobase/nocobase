@@ -1,14 +1,12 @@
 ---
-displayName: "מחלקות"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  מאפשר לארגן משתמשים לפי מחלקות, להגדיר יחסי כפיפות, לקשר תפקידים לשליטה בהרשאות, ולתמוך בשימוש במחלקות כמשתנים בתהליכי עבודה וביטויים.
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מחלקות
+# Departments

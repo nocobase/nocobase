@@ -1,16 +1,12 @@
 ---
-displayName: "แอคชัน: พิมพ์"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  เรียกใช้ฟังก์ชันพิมพ์ของเบราว์เซอร์เพื่อพิมพ์ข้อมูลทีละรายการครับ/ค่ะ
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# แอคชัน: พิมพ์
+# Action: Print

@@ -1,18 +1,15 @@
 ---
-displayName: "Pracovní postup: uzel pro výpočet data"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Slouží k provádění operací s daty v pracovních postupech, jako je sčítání, odčítání, porovnávání nebo formátování.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: uzel pro výpočet data
+# Workflow: date calculation node

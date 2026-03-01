@@ -1,16 +1,12 @@
 ---
-displayName: "फ्लो इंजन"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# फ्लो इंजन
+# Flow engine

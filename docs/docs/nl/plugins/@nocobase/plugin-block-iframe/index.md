@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: iframe"
+displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  Maak een iframe-blok aan op de pagina om externe webpagina's of inhoud in te sluiten en weer te geven.
+  Create an iframe block on the page to embed and display external web pages or content.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Blok: iframe
+# Block: iframe

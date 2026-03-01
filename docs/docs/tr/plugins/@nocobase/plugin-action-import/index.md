@@ -1,14 +1,15 @@
 ---
-displayName: "İşlem: Kayıtları İçe Aktar"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Excel şablonlarını kullanarak kayıtları içe aktarın. Hangi alanların içe aktarılacağını yapılandırabilir ve şablonların otomatik olarak oluşturulmasını sağlayabilirsiniz.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İşlem: Kayıtları İçe Aktar
+# Action: Import records

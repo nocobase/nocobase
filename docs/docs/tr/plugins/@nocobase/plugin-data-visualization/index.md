@@ -1,14 +1,12 @@
 ---
-displayName: "Veri görselleştirme"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  Veri görselleştirme özelliği sunar. Grafik bloğu ve grafik filtreleme bloğu içerir. Çizgi, alan, çubuk grafikler gibi ondan fazla farklı grafik türünü destekler; ayrıca siz de daha fazla grafik türü ekleyebilirsiniz.
+  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Veri görselleştirme
+# Data visualization

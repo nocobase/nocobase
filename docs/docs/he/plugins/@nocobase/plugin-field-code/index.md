@@ -1,14 +1,15 @@
 ---
-displayName: "שדה אוסף: קוד"
+displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  מיועד לעריכת קוד והדגשתו, ותומך בשפות כמו Java, JavaScript, Python, SQL ועוד.
+  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: קוד
+# Collection field: Code

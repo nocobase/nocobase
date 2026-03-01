@@ -1,16 +1,12 @@
 ---
-displayName: "Správce souborů"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Poskytuje služby pro ukládání souborů a nabízí šablonu kolekce souborů a pole pro přílohy.
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Správce souborů
+# File manager

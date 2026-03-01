@@ -353,7 +353,7 @@ describe('FlowModel', () => {
         }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
-      test('should handle FlowExitException correctly', async () => {
+      test('should handle ctx.exit() as FlowExitAllException in applyFlow', async () => {
         const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
@@ -374,14 +374,14 @@ describe('FlowModel', () => {
 
         const result = await model.applyFlow('exitFlow');
 
-        expect(result).toEqual({});
+        expect(result).toBeInstanceOf(FlowExitAllException);
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
 
         consoleSpy.mockRestore();
       });
 
-      test('should handle FlowExitException correctly', async () => {
+      test('should handle ctx.exit() as FlowExitAllException in beforeRender dispatch', async () => {
         const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
@@ -413,7 +413,7 @@ describe('FlowModel', () => {
         await model.dispatchEvent('beforeRender');
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
+        expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
         expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 
         loggerSpy.mockRestore();

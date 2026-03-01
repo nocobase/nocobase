@@ -39,10 +39,12 @@ import { DateOnlyFieldOptions } from './date-only-field';
 import { DatetimeNoTzField, DatetimeNoTzFieldOptions } from './datetime-no-tz-field';
 import { DatetimeTzFieldOptions } from './datetime-tz-field';
 import { SnowflakeIdFieldOptions } from './snowflake-id-field';
+import { BlobFieldOptions } from './blob-field';
 
 export * from './array-field';
 export * from './belongs-to-field';
 export * from './belongs-to-many-field';
+export * from './blob-field';
 export * from './boolean-field';
 export * from './context-field';
 export * from './date-field';
@@ -79,6 +81,7 @@ export type FieldOptions =
   | RealFieldOptions
   | JsonFieldOptions
   | JsonbFieldOptions
+  | BlobFieldOptions
   | BooleanFieldOptions
   | RadioFieldOptions
   | TextFieldOptions

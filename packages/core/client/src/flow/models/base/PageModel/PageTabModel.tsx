@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, FlowModel, FlowModelRenderer, observable } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, observable, tExpr } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { Icon } from '../../../../icon';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
+import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { RemoteFlowModelRenderer } from '../../../FlowPage';
 import { BlockGridModel } from '../BlockGridModel';
 
@@ -42,11 +43,17 @@ export class BasePageTabModel extends FlowModel<{
     super.onInit(options);
     this.context.defineProperty('tabActive', {
       value: observable.ref(true), // TODO: 默认值应该是 false，且需要在 onMount 中设置为 true。但现在 onMount 有 BUG，会在每次切换 tab 时触发
+      info: {
+        description: 'Whether current tab is active (observable.ref).',
+        detail: 'observable.ref<boolean>',
+      },
     });
   }
 
   getTabTitle(defaultTitle = 'Untitled') {
-    return this.context.t(this.stepParams.pageTabSettings?.tab?.title || defaultTitle);
+    const translatedDefaultTitle = this.context.t(defaultTitle, { ns: 'client' });
+    const translatedTitle = this.context.t(this.stepParams.pageTabSettings?.tab?.title, { ns: 'lm-desktop-routes' });
+    return translatedTitle || translatedDefaultTitle;
   }
 
   getTabIcon() {
@@ -90,6 +97,19 @@ BasePageTabModel.registerFlow({
           'x-decorator': 'FormItem',
           required: true,
         },
+        documentTitle: {
+          type: 'string',
+          title: tExpr('Document title'),
+          description: tExpr(
+            'Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.',
+          ),
+          'x-decorator': 'FormItem',
+          'x-component': TextAreaWithContextSelector,
+          'x-component-props': {
+            rows: 1,
+            maxRows: 6,
+          },
+        },
         icon: {
           title: tExpr('Icon'),
           'x-decorator': 'FormItem',
@@ -97,8 +117,11 @@ BasePageTabModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        const translate = typeof ctx?.t === 'function' ? ctx.t.bind(ctx) : (value: string) => value;
+        ctx.model.setProps('title', translate(params.title, { ns: 'lm-desktop-routes' }));
         ctx.model.setProps('icon', params.icon);
+        const pageModel = ctx.engine.getModel(ctx.model.parentId) as { updateDocumentTitle?: () => Promise<void> };
+        void pageModel?.updateDocumentTitle?.();
       },
     },
   },
@@ -126,6 +149,7 @@ export class RootPageTabModel extends BasePageTabModel {
 
   async save() {
     const json = this.serialize();
+    const documentTitle = this.stepParams?.pageTabSettings?.tab?.documentTitle;
     await this.context.api.request({
       method: 'post',
       url: 'desktopRoutes:updateOrCreate',
@@ -138,6 +162,7 @@ export class RootPageTabModel extends BasePageTabModel {
         icon: this.getTabIcon(),
         options: {
           flowRegistry: json.flowRegistry,
+          documentTitle,
         },
       },
     });

@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: E-posta Gönderme Düğümü"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  İş akışlarında e-posta göndermek için kullanılabilir.
+  Send email in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: E-posta Gönderme Düğümü
+# Workflow: mailer node

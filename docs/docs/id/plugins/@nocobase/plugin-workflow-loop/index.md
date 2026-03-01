@@ -1,14 +1,12 @@
 ---
-displayName: "Alur Kerja: Node Perulangan"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Digunakan untuk memproses sub-alur kerja secara berulang untuk setiap nilai dalam sebuah array, atau untuk memproses sub-alur kerja secara berulang dalam jumlah tetap.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Perulangan
+# Workflow: Loop node

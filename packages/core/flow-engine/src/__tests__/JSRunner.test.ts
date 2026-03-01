@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JSRunner } from '../JSRunner';
+import { createSafeWindow } from '../utils';
 
 describe('JSRunner', () => {
   let originalSearch: string;
@@ -46,6 +47,69 @@ describe('JSRunner', () => {
     const res2 = await runner.run('return bar');
     expect(res2.success).toBe(true);
     expect(res2.value).toBe('baz');
+  });
+
+  it('auto-lifts Blob from injected window to top-level globals', async () => {
+    if (typeof Blob === 'undefined') {
+      return;
+    }
+
+    const runner = new JSRunner({
+      globals: {
+        window: createSafeWindow(),
+      },
+    });
+
+    const result = await runner.run('return new Blob(["x"]).size');
+    expect(result.success).toBe(true);
+    expect(result.value).toBe(1);
+  });
+
+  it('keeps explicit globals.Blob higher priority than auto-lifted Blob', async () => {
+    const explicitBlob = function ExplicitBlob(this: any, chunks: any[]) {
+      this.size = Array.isArray(chunks) ? chunks.length : 0;
+    } as any;
+
+    const runner = new JSRunner({
+      globals: {
+        window: createSafeWindow(),
+        Blob: explicitBlob,
+      },
+    });
+
+    const result = await runner.run('const b = new Blob([1,2,3]); return b.size;');
+    expect(result.success).toBe(true);
+    expect(result.value).toBe(3);
+  });
+
+  it('auto-lifts URL from injected window to top-level globals', async () => {
+    const runner = new JSRunner({
+      globals: {
+        window: createSafeWindow(),
+      },
+    });
+
+    const result = await runner.run('return typeof URL.createObjectURL === "function"');
+    expect(result.success).toBe(true);
+    expect(result.value).toBe(true);
+  });
+
+  it('keeps explicit globals.URL higher priority than auto-lifted URL', async () => {
+    const explicitURL = {
+      createObjectURL: () => 'explicit://url',
+      revokeObjectURL: (_url: string) => undefined,
+    };
+
+    const runner = new JSRunner({
+      globals: {
+        window: createSafeWindow(),
+        URL: explicitURL,
+      },
+    });
+
+    const result = await runner.run('return URL.createObjectURL(new Blob(["x"]))');
+    expect(result.success).toBe(true);
+    expect(result.value).toBe('explicit://url');
   });
 
   it('exposes console in sandbox by default', async () => {

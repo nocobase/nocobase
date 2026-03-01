@@ -1,18 +1,15 @@
 ---
-displayName: "เวิร์กโฟลว์: Webhook ทริกเกอร์"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  รับการเรียกใช้ HTTP จากระบบภายนอกเพื่อทริกเกอร์เหตุการณ์ เหมาะสำหรับกรณีที่ระบบบุคคลที่สามส่งข้อมูลหรือแจ้งเตือนเหตุการณ์เข้ามา เช่น การเรียกกลับการชำระเงิน (payment callback) หรือการแจ้งเตือนข้อความ (message notification) เป็นต้น
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: Webhook ทริกเกอร์
+# Workflow: Webhook

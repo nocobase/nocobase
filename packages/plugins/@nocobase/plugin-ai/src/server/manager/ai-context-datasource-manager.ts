@@ -12,6 +12,7 @@ import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
 import { WorkContext, WorkContextResolveStrategy } from '../types';
 import { Context } from '@nocobase/actions';
+import { checkFilterParams, parseJsonTemplate } from '@nocobase/acl';
 
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
@@ -76,8 +77,8 @@ export class AIContextDatasourceManager {
         };
       }
 
-      const filteredParams = ds.acl.filterParams(ctx, collectionName, can.params);
-      const parsedParams = filteredParams ? await ds.acl.parseJsonTemplate(filteredParams, ctx) : {};
+      checkFilterParams(collection, can.params?.filter);
+      const parsedParams = can.params ? await parseJsonTemplate(can.params, ctx) : {};
 
       if (parsedParams.appends && options.fields) {
         for (const queryField of options.fields) {

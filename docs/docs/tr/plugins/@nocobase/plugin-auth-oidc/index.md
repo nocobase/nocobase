@@ -1,18 +1,15 @@
 ---
-displayName: "Kimlik Doğrulama: OIDC"
+displayName: "Auth: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  OIDC (OpenID Connect) protokolünü kullanarak kimlik doğrulaması sağlar.
+  OIDC (OpenID Connect) authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Kimlik Doğrulama: OIDC
+# Auth: OIDC

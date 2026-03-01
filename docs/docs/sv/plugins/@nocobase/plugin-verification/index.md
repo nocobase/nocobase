@@ -1,15 +1,12 @@
 ---
-displayName: "Verifiering"
+displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |
-  Hantering av användaridentitetsverifiering, inklusive SMS och TOTP-autentiserare, som kan utökas.
+  User identity verification management, including SMS, TOTP authenticator, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Verifiering
+# Verification

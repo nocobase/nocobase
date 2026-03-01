@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useMemo } from 'react';
-import { Layout, Input, Empty, Spin, App } from 'antd';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
+import { Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
-import { SchemaComponent, useAPIClient, useActionContext, useToken } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
+import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -23,7 +23,8 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { AIEmployee } from '../types';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -131,13 +132,17 @@ export const Conversations: React.FC = memo(() => {
   const t = useT();
   const api = useAPIClient();
   const { modal, message } = App.useApp();
-  const { token } = useToken();
-  const { aiEmployeesMap } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
+  const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-  const expanded = useChatBoxStore.use.expanded();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
+  const setModel = useChatBoxStore.use.setModel();
+  const expanded = useChatBoxStore.use.expanded();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
@@ -155,13 +160,13 @@ export const Conversations: React.FC = memo(() => {
   const { startNewConversation, clear } = useChatBoxActions();
 
   const items = useMemo(() => {
-    const result: ConversationsProps['items'] = conversations.map((item, index) => {
+    const result: ConversationsProps['items'] = conversations.map((item) => {
       const title = item.title || t('New conversation');
       return {
         key: item.sessionId,
         title,
         timestamp: new Date(item.updatedAt).getTime(),
-        label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{title}</div> : title,
+        label: title,
       };
     });
     if (conversationsLoading) {
@@ -178,7 +183,16 @@ export const Conversations: React.FC = memo(() => {
       });
     }
     return result;
-  }, [conversations, conversationsLoading, lastConversationRef]);
+  }, [conversations, conversationsLoading]);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!listRef.current || !conversations.length) return;
+    const lastLi = listRef.current.querySelector('.ant-conversations-item:last-child');
+    if (lastLi) {
+      lastConversationRef(lastLi as HTMLElement);
+    }
+  }, [conversations, lastConversationRef]);
 
   const deleteConversation = async (sessionId: string) => {
     await api.resource('aiConversations').destroy({
@@ -200,6 +214,7 @@ export const Conversations: React.FC = memo(() => {
     setCurrentEmployee(aiEmployeesMap[conversation?.aiEmployee?.username]);
     setMessages([]);
     clear();
+    setModel(null);
     messagesService.run(sessionId);
     if (!expanded) {
       setShowConversations(false);
@@ -207,19 +222,17 @@ export const Conversations: React.FC = memo(() => {
   };
 
   return (
-    <Layout
+    <div
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         height: '100%',
-        paddingLeft: '16px',
-        paddingRight: '8px',
       }}
     >
-      <Header
+      <div
         style={{
-          backgroundColor: token.colorBgContainer,
-          height: '48px',
-          lineHeight: '48px',
-          padding: '0 5px',
+          padding: '8px 12px',
+          flexShrink: 0,
         }}
       >
         <Input.Search
@@ -227,21 +240,34 @@ export const Conversations: React.FC = memo(() => {
           onChange={(e) => {
             setKeyword(e.target.value);
           }}
-          style={{ verticalAlign: 'middle' }}
           placeholder={t('Search')}
           onSearch={(val) => conversationsService.run(1, val)}
           onClear={() => conversationsService.run(1)}
           allowClear={true}
         />
-      </Header>
-      <Content
+      </div>
+      <div
+        ref={listRef}
         style={{
-          height: '100%',
-          overflow: 'auto',
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         {conversations && conversations.length ? (
           <AntConversations
+            className={css`
+              .ant-conversations-item {
+                .ant-conversations-label {
+                  display: block !important;
+                  overflow: hidden !important;
+                  text-overflow: ellipsis !important;
+                  white-space: nowrap !important;
+                  max-width: calc(100% - 30px);
+                }
+              }
+            `}
             activeKey={currentConversation}
             onActiveChange={selectConversation}
             items={items}
@@ -276,7 +302,7 @@ export const Conversations: React.FC = memo(() => {
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )}
-      </Content>
-    </Layout>
+      </div>
+    </div>
   );
 });

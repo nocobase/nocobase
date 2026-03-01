@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة إرسال البريد الإلكتروني"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  تُستخدم لإرسال رسائل البريد الإلكتروني ضمن سير العمل.
+  Send email in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة إرسال البريد الإلكتروني
+# Workflow: mailer node

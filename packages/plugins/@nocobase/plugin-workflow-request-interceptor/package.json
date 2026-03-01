@@ -1,0 +1,32 @@
+{
+  "name": "@nocobase/plugin-workflow-request-interceptor",
+  "version": "2.1.0-beta.6",
+  "displayName": "Workflow: Pre-action event",
+  "displayName.zh-CN": "工作流：操作前事件",
+  "description": "Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the \"End process\" node.",
+  "description.zh-CN": "通过操作按钮或 API 发起请求并在执行前触发，比如新增、更新、删除数据之前。适用于在操作前进行数据验证、逻辑判断，并可通过“结束节点”来拦截请求。",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/workflow-request-interceptor",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-request-interceptor",
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-error-handler": "2.x",
+    "@nocobase/plugin-users": "2.x",
+    "@nocobase/plugin-workflow": ">= 0.19.0-alpha.3",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
+  },
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "keywords": [
+    "Workflow"
+  ],
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "license": "Apache-2.0"
+}

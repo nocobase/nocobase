@@ -1,14 +1,12 @@
 ---
-displayName: "การยืนยันตัวตน: SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  ยืนยันตัวตนด้วยรหัสยืนยันทาง SMS
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การยืนยันตัวตน: SMS
+# Auth: SMS

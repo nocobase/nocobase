@@ -1,17 +1,14 @@
 ---
-displayName: "הטמעת NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  הטמיעו את NocoBase במערכת חיצונית או בדף אינטרנט, ושילבו אותו כחלק מאותה מערכת או דף.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# הטמעת NocoBase
+# Embed NocoBase

@@ -14,9 +14,9 @@ features:
         details: NocoBase 2.0 的前端无代码、低代码开发引擎。
         link: /flow-engine
         showOnHome: true
-      - title: 数据库（Database）
-        details: NocoBase 内核的数据库模块，为插件提供统一的数据访问、建模与操作 API，是插件间数据交互的核心基础。
-        link: /database
+      - title: 前端 RunJS
+        details: 用于 JS 区块、JS 字段、JS 操作等场景的 JavaScript 执行环境。
+        link: /runjs
         showOnHome: true
   - title: 界面与交互
     details: 学习如何扩展与定制前端界面，构建符合业务需求的组件、字段与操作逻辑，提升系统的可视化与交互体验。

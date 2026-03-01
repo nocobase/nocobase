@@ -1,17 +1,14 @@
 ---
-displayName: "Özel Değişkenler"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Özel değişkenler ekleme ve kullanma desteği sunar.
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Özel Değişkenler
+# Custom variables

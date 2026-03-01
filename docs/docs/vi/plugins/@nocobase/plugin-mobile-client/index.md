@@ -1,17 +1,15 @@
 ---
-displayName: "Ứng dụng di động (Đã ngừng phát triển)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Cung cấp khả năng cấu hình các trang dành cho thiết bị di động.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Ứng dụng di động (Đã ngừng phát triển)
+# Mobile client(Deprecated)
 
-> Lưu ý: Plugin này đã ngừng phát triển.
+> Note: This plugin is deprecated.

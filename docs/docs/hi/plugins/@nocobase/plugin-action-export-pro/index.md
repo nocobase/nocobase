@@ -1,18 +1,15 @@
 ---
-displayName: "एक्शन: रिकॉर्ड निर्यात करें प्रो"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  यह डेटा निर्यात क्षमताओं को बेहतर बनाता है। यह बड़ी मात्रा में डेटा को अतुल्यकालिक रूप से निर्यात करने की सुविधा देता है और अटैचमेंट निर्यात करने का भी समर्थन करता है।
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# एक्शन: रिकॉर्ड निर्यात करें प्रो
+# Action: Export records Pro

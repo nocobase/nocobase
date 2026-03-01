@@ -1,18 +1,15 @@
 ---
-displayName: "Tweefactorauthenticatie (2FA)"
+displayName: "Two-factor authentication (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Maakt het mogelijk om tweefactorauthenticatie (2FA) in te schakelen voor het inloggen met een wachtwoord.
+  Support enabling two-factor authentication (2FA) for password sign-in.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Tweefactorauthenticatie (2FA)
+# Two-factor authentication (2FA)

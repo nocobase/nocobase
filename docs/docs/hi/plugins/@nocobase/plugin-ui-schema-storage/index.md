@@ -1,14 +1,12 @@
 ---
-displayName: "UI स्कीमा स्टोरेज सेवा"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  केंद्रीकृत UI स्कीमा स्टोरेज सेवा प्रदान करता है।
+  Provides centralized UI schema storage service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# UI स्कीमा स्टोरेज सेवा
+# UI schema storage

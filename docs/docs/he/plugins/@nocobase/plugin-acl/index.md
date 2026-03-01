@@ -1,14 +1,15 @@
 ---
-displayName: "בקרת הרשאות"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  בקרת הרשאות, המבוססת על תפקידים, משאבים ופעולות, מאפשרת לכם לשלוט באופן מדויק על הרשאות תצורת הממשק, הרשאות פעולות הנתונים, הרשאות גישה לתפריטים והרשאות תוספים.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: נכון
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
+isFree: true
+builtIn: true
+defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# בקרת הרשאות
+# Access control

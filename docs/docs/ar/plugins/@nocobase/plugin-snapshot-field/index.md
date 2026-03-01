@@ -1,18 +1,15 @@
 ---
-displayName: "حقل المجموعة: لقطة العلاقة"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  عند إضافة سجل جديد، يتم إنشاء لقطة لبياناته المرتبطة وحفظها مع السجل الحالي. لن يتم تحديث هذه اللقطة عند تحديث البيانات المرتبطة.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
+# Collection field: Snapshot
 
-# حقل المجموعة: لقطة العلاقة
-
-> ملاحظة: تم إهمال هذه الإضافة.
+> Note: This plugin is deprecated.

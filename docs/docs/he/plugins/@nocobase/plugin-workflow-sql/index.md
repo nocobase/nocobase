@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת SQL"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  מאפשר לבצע פקודות SQL שרירותיות על מסד הנתונים במסגרת תהליך עבודה.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת SQL
+# Workflow: SQL node

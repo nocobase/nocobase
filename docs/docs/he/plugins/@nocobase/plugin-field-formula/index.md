@@ -1,14 +1,12 @@
 ---
-displayName: "שדה אוסף: נוסחה"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  מאפשר להגדיר ולאחסן את תוצאות החישובים בין ערכי שדות מרובים באותה רשומה, עם תמיכה במנועי Math.js ו-Excel formula functions.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: לא נכון
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: נוסחה
+# Collection field: Formula

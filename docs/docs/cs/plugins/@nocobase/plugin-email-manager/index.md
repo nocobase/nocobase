@@ -1,18 +1,15 @@
 ---
-displayName: "Správa e-mailů"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Propojte NocoBase s firemními e-mailovými účty, jako je Gmail a Outlook, a budete moci přijímat a odesílat e-maily přímo v NocoBase, stejně jako v jiných CRM produktech.
+  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 3
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Správa e-mailů
+# Email manager

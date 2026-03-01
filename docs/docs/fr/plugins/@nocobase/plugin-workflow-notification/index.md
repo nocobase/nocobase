@@ -1,14 +1,12 @@
 ---
-displayName: "Flux de travail : nœud de notification"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Permet d'envoyer des notifications de divers types au sein d'un flux de travail.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Flux de travail : nœud de notification
+# Workflow: notification node

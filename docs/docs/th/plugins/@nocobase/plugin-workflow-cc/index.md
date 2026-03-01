@@ -1,14 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: CC"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  เพิ่มฟีเจอร์ CC (สำเนาถึง) เข้าไปในเวิร์กโฟลว์ เพื่อส่งการอนุมัติ หรือข้อมูลประเภทอื่น ๆ ไปยังผู้ใช้ที่ระบุ
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: CC
+# Workflow: CC

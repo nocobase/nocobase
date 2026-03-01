@@ -1,14 +1,12 @@
 ---
-displayName: "Thema-editor"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Pas de kleuren, afmetingen en andere aspecten van de gebruikersinterface aan, en sla het resultaat op als een thema. U kunt vervolgens eenvoudig schakelen tussen verschillende thema's.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Thema-editor
+# Theme editor

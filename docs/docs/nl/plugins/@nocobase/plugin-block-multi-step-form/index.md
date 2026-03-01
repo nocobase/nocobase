@@ -1,17 +1,14 @@
 ---
-displayName: "Blok: Meerstapformulier"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Deel een formulier met veel velden op in meerdere stappen om de gebruiker te ontlasten.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Blok: Meerstapformulier
+# Block: Multi-step form

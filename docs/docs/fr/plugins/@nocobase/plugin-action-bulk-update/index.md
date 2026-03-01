@@ -1,14 +1,15 @@
 ---
-displayName: "Action : Mise à jour en masse"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Permet de mettre à jour en masse toutes les données ou uniquement celles sélectionnées.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Action : Mise à jour en masse
+# Action: Batch update

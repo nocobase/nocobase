@@ -1,14 +1,15 @@
 ---
-displayName: "Thao tác: Xuất bản ghi"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Xuất các bản ghi đã lọc ra Excel, bạn có thể cấu hình các trường cần xuất.
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Xuất bản ghi
+# Action: Export records

@@ -1,18 +1,15 @@
 ---
-displayName: "Granskningsloggar (föråldrad)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Detta plugin är föråldrat. Använd det inte, ett nytt plugin för granskningsloggar kommer att släppas i framtiden.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+# Audit logs (deprecated)
 
-# Granskningsloggar (föråldrad)
-
-> Observera: Detta plugin är föråldrat.
+> Note: This plugin is deprecated.

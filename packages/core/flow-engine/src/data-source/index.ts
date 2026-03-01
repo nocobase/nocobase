@@ -99,7 +99,7 @@ export class DataSource {
   }
 
   get displayName() {
-    return this.options.displayName ? this.flowEngine.translate(this.options.displayName) : this.key;
+    return this.flowEngine.translate(this.options.displayName, { ns: 'lm-collections' }) || this.key;
   }
 
   get key() {
@@ -186,6 +186,9 @@ export interface CollectionOptions {
 
 export class CollectionManager {
   collections: Map<string, Collection>;
+
+  allCollectionsInheritChain: string[];
+  protected childrenCollectionsName: { supportView?: string[]; notSupportView?: string[] } = {};
 
   constructor(public dataSource: DataSource) {
     this.collections = observable.shallow<Map<string, Collection>>(new Map());
@@ -339,117 +342,80 @@ export class CollectionManager {
     };
     return getChildrens(name);
   }
-
-  getCollectionFieldsOptions(
-    collectionName: string,
-    type?: string | string[],
-    interfaces?: string | string[],
-    opts?: {
-      dataSource?: string;
-      cached?: Record<string, any>;
-      collectionNames?: string[];
-      /**
-       * 为 true 时允许查询所有关联字段
-       * 为 Array<string> 时仅允许查询指定的关联字段
-       */
-      association?: boolean | string[];
-      /**
-       * Max depth of recursion
-       */
-      maxDepth?: number;
-      allowAllTypes?: boolean;
-      /**
-       * 排除这些接口的字段
-       */
-      exceptInterfaces?: string[];
-      /**
-       * field value 的前缀，用 . 连接，比如 a.b.c
-       */
-      prefixFieldValue?: string;
-      /**
-       * 是否使用 prefixFieldValue 作为 field value
-       */
-      usePrefix?: boolean;
-    },
-  ) {
-    const {
-      association = false,
-      cached = {},
-      collectionNames = [collectionName],
-      maxDepth = 1,
-      allowAllTypes = false,
-      exceptInterfaces = [],
-      prefixFieldValue = '',
-      usePrefix = false,
-      dataSource: customDataSourceNameValue,
-    } = opts || {};
-
-    if (collectionNames.length - 1 > maxDepth) {
-      return;
+  getChildrenCollectionsName(name, isSupportView = false) {
+    const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
+    if (this.childrenCollectionsName[cacheKey]) {
+      return this.childrenCollectionsName[cacheKey].slice();
     }
 
-    if (cached[collectionName]) {
-      // avoid infinite recursion
-      return _.cloneDeep(cached[collectionName]);
+    const children: string[] = [];
+    const collections = [...this.getCollections()];
+    const getChildrenCollectionsInner = (collectionName: string) => {
+      const inheritCollections = collections.filter((v: any) => {
+        return [...v.inherits]?.includes(collectionName);
+      });
+      inheritCollections.forEach((v) => {
+        const collectionKey = v.name;
+        children.push(collectionKey);
+        return getChildrenCollectionsInner(collectionKey);
+      });
+      if (isSupportView) {
+        const sourceCollections = collections.filter((v: any) => {
+          return [...v.sources]?.length === 1 && v?.sources[0] === collectionName;
+        });
+        sourceCollections.forEach((v) => {
+          const collectionKey = v.name;
+          children.push(v.name);
+          return getChildrenCollectionsInner(collectionKey);
+        });
+      }
+      return _.uniq(children);
+    };
+
+    this.childrenCollectionsName[cacheKey] = getChildrenCollectionsInner(name);
+    return this.childrenCollectionsName[cacheKey];
+  }
+
+  getAllCollectionsInheritChain(name) {
+    if (this.allCollectionsInheritChain) {
+      return this.allCollectionsInheritChain.slice();
     }
 
-    // Fetch the collection
-    const collection = this.getCollection(collectionName);
-    if (!collection) {
-      throw new Error(`Collection ${collectionName} not found`);
-    }
-
-    // Get the fields of the collection
-    const fields = collection.getFields(); // Assuming `getFields` returns an array of fields for the collection.
-
-    const options = fields
-      ?.filter(
-        (field) =>
-          field.interface &&
-          !exceptInterfaces.includes(field.interface) &&
-          (allowAllTypes ||
-            (type && type.includes(field.type)) ||
-            (interfaces && interfaces.includes(field.interface)) ||
-            (association && field.target && field.target !== collectionName && Array.isArray(association)
-              ? association.includes(field.interface)
-              : false)),
-      )
-      ?.map((field) => {
-        const result: CascaderProps<any>['options'][0] = {
-          value: usePrefix && prefixFieldValue ? `${prefixFieldValue}.${field.name}` : field.name,
-          label: field?.uiSchema?.title || field.name,
-          ...field,
-        };
-
-        if (association && field.target) {
-          result.children = collectionNames.includes(field.target)
-            ? []
-            : this.getCollectionFieldsOptions(field.target, type, interfaces, {
-                ...opts,
-                cached,
-                dataSource: customDataSourceNameValue,
-                collectionNames: [...collectionNames, field.target],
-                prefixFieldValue: usePrefix
-                  ? prefixFieldValue
-                    ? `${prefixFieldValue}.${field.name}`
-                    : field.name
-                  : '',
-                usePrefix,
-              });
-
-          // If no children are found, don't return the field
-          if (!result.children?.length) {
-            return null;
+    const collectionsInheritChain = [name];
+    const getInheritChain = (name: string) => {
+      const collection = this.getCollection(name);
+      if (collection) {
+        const { inherits } = collection as any;
+        const children = this.getChildrenCollectionsName(name);
+        // 搜寻祖先表
+        if (inherits) {
+          for (let index = 0; index < inherits.length; index++) {
+            const collectionKey = inherits[index];
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
           }
         }
-        return result;
-      })
-      // Filter out null values (i.e., fields with no valid options)
-      .filter(Boolean);
+        // 搜寻后代表
+        if (children) {
+          for (let index = 0; index < children.length; index++) {
+            const collection = this.getCollection(children[index]);
+            const collectionKey = collection.name;
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
+          }
+        }
+      }
+      return collectionsInheritChain;
+    };
 
-    // Cache the result to avoid infinite recursion
-    cached[collectionName] = options;
-    return options;
+    this.allCollectionsInheritChain = getInheritChain(name);
+    return this.allCollectionsInheritChain || [];
   }
 }
 
@@ -530,7 +496,7 @@ export class Collection {
     return this.options.storage || 'local';
   }
   get title() {
-    return this.options.title ? this.flowEngine.translate(this.options.title) : this.name;
+    return this.flowEngine.translate(this.options.title, { ns: 'lm-collections' }) || this.name;
   }
 
   get titleCollectionField() {
@@ -803,8 +769,8 @@ export class CollectionField {
   }
 
   get title() {
-    const titleValue = this.options?.uiSchema?.title || this.options?.title || this.options.name;
-    return this.flowEngine.translate(titleValue);
+    const titleValue = this.options?.uiSchema?.title || this.options?.title;
+    return this.flowEngine.translate(titleValue, { ns: 'lm-collections' }) || this.options.name;
   }
 
   set title(value: string) {
@@ -823,11 +789,17 @@ export class CollectionField {
         }
         return {
           ...v,
+          label: v.label ? this.flowEngine.translate(v.label, { ns: 'lm-collections' }) : v.label,
           value: Number(v.value),
         };
       });
     }
-    return options;
+    return options.map((v) => {
+      return {
+        ...v,
+        label: this.flowEngine.translate(v.label, { ns: 'lm-collections' }),
+      };
+    });
   }
 
   get defaultValue() {

@@ -1,14 +1,15 @@
 ---
-displayName: "การดำเนินการ: นำเข้ารายการ"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  นำเข้ารายการโดยใช้เทมเพลต Excel คุณสามารถกำหนดค่าได้ว่าจะนำเข้าฟิลด์ใดบ้าง และระบบจะสร้างเทมเพลตให้โดยอัตโนมัติ
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การดำเนินการ: นำเข้ารายการ
+# Action: Import records

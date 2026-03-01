@@ -1,18 +1,15 @@
 ---
-displayName: "Gegevensbron: REST API"
+displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Gebruik externe REST API gegevensbronnen.
+  Use external REST API data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 1
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Gegevensbron: REST API
+# Data source: REST API

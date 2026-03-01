@@ -71,6 +71,11 @@ export const FlowRoute = () => {
   useEffect(() => {
     routeModel.context.defineProperty('pageActive', {
       value: observable.ref(false),
+      info: {
+        description:
+          'Whether current page route is active (keep-alive). This is an observable.ref<boolean> (use ctx.pageActive.value to read/write).',
+        detail: 'observable.ref<boolean>',
+      },
     });
   }, [routeModel]);
 
@@ -81,6 +86,10 @@ export const FlowRoute = () => {
   useEffect(() => {
     flowEngine.context.defineProperty('isMobileLayout', {
       get: () => isMobileLayout,
+      info: {
+        description: 'Whether current layout is mobile layout.',
+        detail: 'boolean',
+      },
     });
     flowEngine.context.defineProperty('deviceType', {
       get: () => (deviceType === 'browser' ? 'computer' : deviceType),
@@ -101,6 +110,10 @@ export const FlowRoute = () => {
           ],
           'x-component': 'Select',
         },
+      },
+      info: {
+        description: 'Current device type (computer/mobile/tablet/...).',
+        detail: 'string',
       },
     });
   }, [isMobileLayout, flowEngine]);

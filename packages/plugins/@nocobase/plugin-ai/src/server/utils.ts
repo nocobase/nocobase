@@ -14,7 +14,7 @@ import axios from 'axios';
 import { getDateVars, parse, parseFilter } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 
-export function sendSSEError(ctx: Context, error: Error | string) {
+export function sendSSEError(ctx: Context, error: Error | string, errorName?: string) {
   const body = typeof error === 'string' ? error : error.message || 'Unknown error';
   if (!ctx.res.headersSent) {
     ctx.set({
@@ -24,7 +24,7 @@ export function sendSSEError(ctx: Context, error: Error | string) {
     });
     ctx.status = 200;
   }
-  ctx.res.write(`data: ${JSON.stringify({ type: 'error', body })}\n\n`);
+  ctx.res.write(`data: ${JSON.stringify({ type: 'error', body, errorName })}\n\n`);
   ctx.res.end();
 }
 

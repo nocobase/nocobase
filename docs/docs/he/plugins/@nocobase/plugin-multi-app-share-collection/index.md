@@ -1,18 +1,15 @@
 ---
-displayName: "שיתוף אוסף בין יישומים מרובים"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
-
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
-deprecated: כן
+  
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
+# Multi-app share collection
 
-# שיתוף אוסף בין יישומים מרובים
-
-> שימו לב: תוסף זה הוצא משימוש (deprecated).
+> Note: This plugin is deprecated.

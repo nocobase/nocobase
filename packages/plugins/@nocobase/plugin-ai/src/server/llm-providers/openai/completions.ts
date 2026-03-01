@@ -22,7 +22,7 @@ export class OpenAICompletionsProvider extends LLMProvider {
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
     const responseFormatOptions = {
-      type: responseFormat,
+      type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
       responseFormatOptions['json_schema'] = schema;

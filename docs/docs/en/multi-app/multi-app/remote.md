@@ -4,9 +4,6 @@ pkg: '@nocobase/plugin-app-supervisor'
 
 # Multi-Environment Mode
 
-:::info 🚀 Coming soon
-:::
-
 ## Introduction
 
 The shared-memory multi-application mode provides clear advantages in deployment and operations. However, as the number of applications and business complexity increase, a single instance may gradually face challenges such as resource contention and reduced stability. For these scenarios, a **multi-environment hybrid deployment** can be adopted to support more complex business requirements.
@@ -81,6 +78,8 @@ APP_COMMAND_REDIS_URL=
 ENVIRONMENT_NAME=
 # Environment access URL
 ENVIRONMENT_URL=
+# Environment proxy URL
+ENVIRONMENT_PROXY_URL=
 ```
 
 ### Docker Compose Example
@@ -152,6 +151,7 @@ services:
       - APP_COMMAND_REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT_NAME=env_a
       - ENVIRONMENT_URL=http://localhost:15000
+      - ENVIRONMENT_PROXY_URL=http://worker_a
       - APPEND_PRESET_BUILT_IN_PLUGINS=@nocobase/plugin-app-supervisor
     volumes:
       - ./storage-worker-a:/app/nocobase/storage
@@ -183,6 +183,7 @@ services:
       - APP_COMMAND_REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT_NAME=env_b
       - ENVIRONMENT_URL=http://localhost:16000
+      - ENVIRONMENT_PROXY_URL=http://worker_b
       - APPEND_PRESET_BUILT_IN_PLUGINS=@nocobase/plugin-app-supervisor
     volumes:
       - ./storage-worker-b:/app/nocobase/storage
@@ -220,4 +221,12 @@ Since application startup may write initialization data to the database, applica
 
 ### Application Access Proxy
 
-To be added.
+Worker applications can be accessed through the entry application via the sub-path `/apps/:appName/admin`.
+
+![](https://static-docs.nocobase.com/202601082154230.png)
+
+When an application is deployed across multiple environments, a specific target environment must be selected for proxy access.
+
+![](https://static-docs.nocobase.com/202601082155146.png)
+
+By default, the proxy uses the worker application’s access address defined by the `ENVIRONMENT_URL` environment variable. This address must be reachable from the network where the entry application is running. If a different proxy access address is required, it can be overridden using the `ENVIRONMENT_PROXY_URL` environment variable.

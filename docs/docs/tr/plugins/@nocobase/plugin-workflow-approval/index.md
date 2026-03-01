@@ -1,15 +1,15 @@
 ---
-displayName: "İş Akışı: Onay"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Bir aksiyon butonu veya API aracılığıyla bir onay talebi başlatıldığında tetiklenir. Onay süreçlerine özel olarak tasarlanmıştır; belgeleri yönetmek ve işlem süreçlerini takip etmek için özel onay düğümleri ve blokları bulunur.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Onay
+# Workflow: Approval

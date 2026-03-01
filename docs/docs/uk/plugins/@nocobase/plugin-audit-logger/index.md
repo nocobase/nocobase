@@ -1,18 +1,15 @@
 ---
-displayName: "Журнали аудиту"
+displayName: "Audit logs"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Відстежуйте та документуйте дії користувачів і операції з ресурсами в системі.
+  Track and document user activities and resource actions across the system
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Журнали аудиту
+# Audit logs

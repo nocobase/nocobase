@@ -1,14 +1,12 @@
 ---
-displayName: "Logy"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Serverové logy, zahrnující především logy API požadavků a logy běhu systému, s podporou balení a stahování souborů s logy.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Logy
+# Logger

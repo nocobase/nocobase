@@ -1,17 +1,14 @@
 ---
-displayName: "בלוק: טופס רב-שלבי"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  פצלו טופס המכיל שדות רבים למספר שלבים כדי להקל על המשתמשים.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# בלוק: טופס רב-שלבי
+# Block: Multi-step form

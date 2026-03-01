@@ -1,16 +1,15 @@
 ---
-displayName: "פעולה: ייצוא רשומות"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  מייצא רשומות מסוננות לקובץ Excel. ניתן להגדיר אילו שדות לייצא.
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-
-
-# פעולה: ייצוא רשומות
+# Action: Export records

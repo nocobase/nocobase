@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة طلب HTTP"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  تُستخدم لإرسال طلبات HTTP إلى أي خدمة HTTP والتفاعل مع البيانات ضمن سير العمل.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة طلب HTTP
+# Workflow: HTTP request node

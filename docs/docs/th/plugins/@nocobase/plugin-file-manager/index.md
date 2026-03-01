@@ -1,16 +1,12 @@
 ---
-displayName: "ตัวจัดการไฟล์"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  ให้บริการจัดเก็บไฟล์ พร้อมด้วยเทมเพลตคอลเลกชันไฟล์และฟิลด์แนบไฟล์ครับ
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# ตัวจัดการไฟล์
+# File manager

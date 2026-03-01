@@ -1,14 +1,12 @@
 ---
-displayName: "نماذج عامة"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  شارك النماذج العامة خارجيًا لجمع المعلومات من المستخدمين المجهولين.
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# نماذج عامة
+# Public forms

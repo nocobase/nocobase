@@ -1,14 +1,12 @@
 ---
-displayName: "Akce: Tisk"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Vyvolá funkci tisku prohlížeče pro tisk jednoho záznamu.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Akce: Tisk
+# Action: Print

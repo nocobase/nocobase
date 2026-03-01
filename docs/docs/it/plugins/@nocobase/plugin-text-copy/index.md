@@ -1,16 +1,12 @@
 ---
-displayName: "Copia testo"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Aggiunge un pulsante di copia ai campi di testo
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-
-
-# Copia testo
+# Text copy

@@ -141,7 +141,12 @@ export class TableColumnModel extends DisplayItemModel {
           key: fieldPath,
           label: field.title,
           refreshTargets: ['TableCustomColumnModel/TableJSFieldItemModel'],
-          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
+          toggleable: (subModel) => {
+            return (
+              subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath &&
+              subModel.use === 'TableColumnModel'
+            );
+          },
           useModel: this.name,
           createModelOptions: () => ({
             use: this.name,
@@ -297,7 +302,9 @@ export class TableColumnModel extends DisplayItemModel {
           fork.context.defineProperty('recordIndex', {
             get: () => record?.__index || index,
           });
-          const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
+          const namePath = this.context.prefixFieldPath
+            ? this.fieldPath.replace(`${this.context.prefixFieldPath}.`, '')
+            : this.fieldPath;
           const value = get(record, namePath);
           return (
             <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
@@ -347,7 +354,7 @@ TableColumnModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+                extra: model.context.t('Original field title: ') + originTitle,
               };
             },
           },
@@ -357,8 +364,8 @@ TableColumnModel.registerFlow({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
-        const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title || ctx.fieldPath);
+        const options = { ns: 'lm-flow-engine', compareWith: ctx.model.collectionField?.title };
+        ctx.model.setProps({ title: ctx.t(params.title, options) || ctx.fieldPath });
       },
     },
 
@@ -371,7 +378,7 @@ TableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', params.tooltip);
+        ctx.model.setProps('tooltip', ctx.t(params.tooltip, { ns: 'lm-flow-engine' }));
       },
     },
     width: {

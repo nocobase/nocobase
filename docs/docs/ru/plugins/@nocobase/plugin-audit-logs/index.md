@@ -1,17 +1,15 @@
 ---
-displayName: "Журналы аудита (устаревший)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Этот плагин устарел и не рекомендуется к использованию. В будущем появится новый плагин для журналов аудита.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Журналы аудита (устаревший)
+# Audit logs (deprecated)
 
-> Внимание: Этот плагин устарел.
+> Note: This plugin is deprecated.

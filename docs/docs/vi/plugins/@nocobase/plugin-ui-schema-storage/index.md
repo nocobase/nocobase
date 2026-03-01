@@ -1,14 +1,12 @@
 ---
-displayName: "Dịch vụ lưu trữ UI schema"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  Cung cấp dịch vụ lưu trữ UI schema tập trung.
+  Provides centralized UI schema storage service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Dịch vụ lưu trữ UI schema
+# UI schema storage

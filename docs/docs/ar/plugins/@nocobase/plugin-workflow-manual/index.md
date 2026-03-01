@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: عقدة المعالجة اليدوية"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  تُستخدم لسير العمل التي تتطلب اتخاذ بعض القرارات يدويًا.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: عقدة المعالجة اليدوية
+# Workflow: Manual node

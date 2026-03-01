@@ -1,17 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: การคำนวณ JSON"
+displayName: "Workflow: JSON calculation"
 packageName: '@nocobase/plugin-workflow-json-query'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  ใช้สำหรับแปลงหรือคำนวณค่าจากข้อมูล JSON ที่ซับซ้อน (เช่น ผลลัพธ์จากโหนด HTTP request หรือโหนด SQL เป็นต้น)
+  Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: การคำนวณ JSON
+# Workflow: JSON calculation

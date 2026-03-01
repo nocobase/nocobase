@@ -1,14 +1,15 @@
 ---
-displayName: "Flujo de trabajo: Nodo de cálculo dinámico"
+displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  Plugin útil para realizar cálculos de expresiones dinámicas basados en filas de datos en flujos de trabajo.
+  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Flujo de trabajo: Nodo de cálculo dinámico
+# Workflow: Dynamic calculation node
+
+> Note: This plugin is deprecated.

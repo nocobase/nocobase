@@ -1,18 +1,14 @@
 ---
-displayName: "Incorporar NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Incorpore o NocoBase em outro sistema ou página da web, tornando-o parte integrante desse sistema ou página.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-
-# Incorporar NocoBase
+# Embed NocoBase

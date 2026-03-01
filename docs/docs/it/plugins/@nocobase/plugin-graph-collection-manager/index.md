@@ -1,14 +1,12 @@
 ---
-displayName: "Gestione visuale delle collezioni"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  Uno strumento simile a un diagramma ER. Attualmente è supportato solo il database principale.
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Gestione visuale delle collezioni
+# Graph collection manager

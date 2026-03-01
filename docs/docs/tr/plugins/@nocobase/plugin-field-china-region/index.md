@@ -1,14 +1,12 @@
 ---
-displayName: "Koleksiyon Alanı: Çin İdari Bölge Birimleri"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Çin idari bölge birimleri için veri ve alan tipi sağlar.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Koleksiyon Alanı: Çin İdari Bölge Birimleri
+# Collection field: administrative divisions of China

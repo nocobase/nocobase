@@ -1,14 +1,15 @@
 ---
-displayName: "Thao tác: Sao chép bản ghi"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Sao chép một bản ghi. Bạn có thể sao chép bản ghi này vào một biểu mẫu để chỉnh sửa trước khi gửi, hoặc sao chép trực tiếp để tạo một bản ghi mới.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Sao chép bản ghi
+# Action: Duplicate record

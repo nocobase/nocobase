@@ -1,14 +1,12 @@
 ---
-displayName: "ऑफिस फ़ाइल प्रीव्यूअर"
+displayName: "Office File Previewer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  यह एक प्लगइन है जो माइक्रोसॉफ्ट की ऑनलाइन प्रीव्यू सेवा के माध्यम से ऑफिस फ़ाइलों का पूर्वावलोकन करने में मदद करता है।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  A plugin for previewing office files via Microsoft live preview service.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ऑफिस फ़ाइल प्रीव्यूअर
+# Office File Previewer

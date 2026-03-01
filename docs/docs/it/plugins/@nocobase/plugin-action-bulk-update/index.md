@@ -1,14 +1,15 @@
 ---
-displayName: "Azione: Aggiornamento in blocco"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Aggiorna in blocco tutti i record o quelli selezionati.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Azione: Aggiornamento in blocco
+# Action: Batch update

@@ -43,18 +43,18 @@ const formatRelativeTime = (date) => {
 
 const dateStr = ctx.value;
 if (!dateStr) {
-  ctx.element.innerHTML = '-';
+  ctx.render('-');
   return;
 }
 
 const relativeTime = formatRelativeTime(dateStr);
 const fullDate = new Date(dateStr).toLocaleString();
 
-ctx.element.innerHTML = \`
+ctx.render(\`
   <span title="\${fullDate}" style="cursor: help; color: #666;">
     \${relativeTime}
   </span>
-\`;
+\`);
 `,
 };
 

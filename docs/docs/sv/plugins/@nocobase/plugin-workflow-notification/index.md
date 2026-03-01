@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde: notifikationsnod"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Används för att skicka notifikationer i ett arbetsflöde.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: notifikationsnod
+# Workflow: notification node

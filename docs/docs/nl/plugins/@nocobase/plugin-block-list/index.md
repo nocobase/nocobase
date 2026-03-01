@@ -1,16 +1,12 @@
 ---
-displayName: "Blok: Lijst"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Gegevens weergeven in een lijst, met ondersteuning voor paginering.
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-
-
-# Blok: Lijst
+# Block: List

@@ -1,14 +1,15 @@
 ---
-displayName: "アクション：レコードのエクスポート"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  フィルターされたレコードをExcelにエクスポートします。どのフィールドをエクスポートするか設定できます
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# アクション：レコードのエクスポート
+# Action: Export records

@@ -1,15 +1,12 @@
 ---
-displayName: "كتلة: لوحة الإجراءات"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  يدير ويعرض بشكل مركزي مختلف الإجراءات، مما يسهل على المستخدمين تنفيذ المهام بسرعة. يدعم قابلية التوسع، وتشمل أنواع الإجراءات المدعومة حاليًا: النوافذ المنبثقة، الروابط، المسح الضوئي، والطلبات المخصصة.
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# كتلة: لوحة الإجراءات
+# Block: Action panel

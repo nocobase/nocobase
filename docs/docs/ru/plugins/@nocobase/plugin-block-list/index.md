@@ -1,16 +1,12 @@
 ---
-displayName: "Блок: Список"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Отображает данные в виде списка с поддержкой пагинации.
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-
-
-# Блок: Список
+# Block: List

@@ -1,18 +1,15 @@
 ---
-displayName: "מדיניות סיסמאות"
+displayName: "Password policy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  הגדרת כללי סיסמה ומדיניות נעילת התחברות עבור כל המשתמשים.
+  Set the password rules and sign in lockout policy for all users
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מדיניות סיסמאות
+# Password policy

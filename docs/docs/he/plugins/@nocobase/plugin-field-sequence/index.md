@@ -1,14 +1,12 @@
 ---
-displayName: "שדה אוסף: קידוד אוטומטי"
+displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  מייצר קידודים אוטומטיים בהתאם לכללים מוגדרים, ותומך בשילובים של תאריכים, מספרים וטקסט.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: לא נכון
+  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: קידוד אוטומטי
+# Collection field: Sequence

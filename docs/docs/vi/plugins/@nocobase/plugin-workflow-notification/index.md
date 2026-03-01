@@ -1,14 +1,12 @@
 ---
-displayName: "Luồng công việc: Nút thông báo"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Có thể dùng để gửi các loại thông báo trong luồng công việc.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút thông báo
+# Workflow: notification node

@@ -15,29 +15,37 @@ import { FilterRangePicker } from './FilterRangePicker';
 import { FilterDatePicker } from './FilterDatePicker';
 import { useFlowEngine } from '@nocobase/flow-engine';
 
-const getOptions = (t) => [
-  {
-    value: 'exact',
-    label: t('Exact day'),
-  },
-  { value: 'past', label: t('Past') },
-  { value: 'next', label: t('Next') },
-  { value: 'today', label: t('Today') },
-  { value: 'yesterday', label: t('Yesterday') },
-  { value: 'tomorrow', label: t('Tomorrow') },
-  { value: 'thisWeek', label: t('This Week') },
-  { value: 'lastWeek', label: t('Last Week') },
-  { value: 'nextWeek', label: t('Next Week') },
-  { value: 'thisMonth', label: t('This Month') },
-  { value: 'lastMonth', label: t('Last Month') },
-  { value: 'nextMonth', label: t('Next Month') },
-  { value: 'thisQuarter', label: t('This Quarter') },
-  { value: 'lastQuarter', label: t('Last Quarter') },
-  { value: 'nextQuarter', label: t('Next Quarter') },
-  { value: 'thisYear', label: t('This Year') },
-  { value: 'lastYear', label: t('Last Year') },
-  { value: 'nextYear', label: t('Next Year') },
-];
+const getOptions = (t, includeNow = false) => {
+  const options = [
+    {
+      value: 'exact',
+      label: t('Exact day'),
+    },
+    { value: 'past', label: t('Past') },
+    { value: 'next', label: t('Next') },
+    { value: 'today', label: t('Today') },
+    { value: 'yesterday', label: t('Yesterday') },
+    { value: 'tomorrow', label: t('Tomorrow') },
+    { value: 'thisWeek', label: t('This Week') },
+    { value: 'lastWeek', label: t('Last Week') },
+    { value: 'nextWeek', label: t('Next Week') },
+    { value: 'thisMonth', label: t('This Month') },
+    { value: 'lastMonth', label: t('Last Month') },
+    { value: 'nextMonth', label: t('Next Month') },
+    { value: 'thisQuarter', label: t('This Quarter') },
+    { value: 'lastQuarter', label: t('Last Quarter') },
+    { value: 'nextQuarter', label: t('Next Quarter') },
+    { value: 'thisYear', label: t('This Year') },
+    { value: 'lastYear', label: t('Last Year') },
+    { value: 'nextYear', label: t('Next Year') },
+  ];
+
+  if (includeNow) {
+    options.splice(3, 0, { value: 'now', label: t('Now') });
+  }
+
+  return options;
+};
 
 type SmartDatePickerProps = {
   isRange?: boolean;
@@ -63,12 +71,12 @@ const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
 };
 
 export const DateFilterDynamicComponent = (props) => {
-  const { value, onChange } = props;
+  const { value, onChange, includeNow = false, ...restProps } = props;
   const flowEngine = useFlowEngine();
   const t = flowEngine.translate.bind(flowEngine);
   const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
-  const options = useMemo(() => getOptions(t), [t]);
+  const options = useMemo(() => getOptions(t, includeNow), [t, includeNow]);
   const handleSelect = (val) => {
     setOpen(false);
     if (val === 'exact') {
@@ -119,12 +127,12 @@ export const DateFilterDynamicComponent = (props) => {
     );
   };
   return (
-    <Space.Compact style={{ ...props.style, width: '100%' }}>
+    <Space.Compact style={{ ...restProps.style, width: '100%' }}>
       <Select
         options={options}
         open={open}
         onDropdownVisibleChange={setOpen}
-        {...props}
+        {...restProps}
         allowClear={false}
         style={{
           width: '100%',
@@ -168,7 +176,9 @@ export const DateFilterDynamicComponent = (props) => {
           popupMatchSelectWidth
         />,
       ]}
-      {(value?.type === 'exact' || !value?.type) && <SmartDatePicker {...props} />}
+      {(value?.type === 'exact' || !value?.type) && (
+        <SmartDatePicker {...restProps} value={value} onChange={onChange} />
+      )}
     </Space.Compact>
   );
 };

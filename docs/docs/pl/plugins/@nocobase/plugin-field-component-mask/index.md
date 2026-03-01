@@ -1,17 +1,14 @@
 ---
-displayName: "Komponent pola: maska"
+displayName: "Field component: mask"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:
   - 1.x
 description: |
-  Automatycznie wyświetla wartość pola w formie maski, zgodnie ze skonfigurowanymi regułami, obsługując podstawowe typy danych.
+  Automatically show field value as mask based on configured rules, supporting basic fields.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Komponent pola: maska
+# Field component: mask

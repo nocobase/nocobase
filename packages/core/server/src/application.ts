@@ -24,7 +24,7 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-
+import { AIManager } from '@nocobase/ai';
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import { Snowflake } from '@nocobase/snowflake-id';
 import {
@@ -259,6 +259,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public workerIdAllocator: WorkerIdAllocator;
   public snowflakeIdGenerator: SnowflakeIdGenerator;
 
+  public aiManager: AIManager;
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -514,10 +515,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+  async setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
     this._maintainingCommandStatus = _maintainingCommandStatus;
 
-    this.emit('maintaining', _maintainingCommandStatus);
+    await this.emitAsync('maintaining', _maintainingCommandStatus);
 
     if (_maintainingCommandStatus.status == 'command_end') {
       this._maintaining = false;
@@ -879,7 +880,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       const command = await this.cli.parseAsync(argv, options);
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_end',
         command: this.activatedCommand,
       });
@@ -892,7 +893,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         };
       }
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
@@ -1199,12 +1200,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           name: getCommandFullName(actionCommand),
         };
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_begin',
           command: this.activatedCommand,
         });
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_running',
           command: this.activatedCommand,
         });
@@ -1291,6 +1292,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.aiManager = new AIManager(this);
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.eventQueue = new EventQueue(this, options.eventQueue);
@@ -1378,6 +1380,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     for (const callback of Application.staticCommands) {
       callback(this);
     }
+
+    this.aiManager = new AIManager(this);
   }
 
   protected createMainDataSource(options: ApplicationOptions) {

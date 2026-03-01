@@ -1,14 +1,12 @@
 ---
-displayName: "असिंक्रोनस कार्य प्रबंधक"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  डेटा आयात/निर्यात जैसे असिंक्रोनस कार्यों को प्रबंधित करें और उनकी निगरानी करें। यह कार्य प्रगति को ट्रैक करने और सूचनाएं भेजने में सहायता करता है।
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# असिंक्रोनस कार्य प्रबंधक
+# Async task manager

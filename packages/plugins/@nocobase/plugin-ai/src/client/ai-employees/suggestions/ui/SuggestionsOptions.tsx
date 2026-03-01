@@ -8,28 +8,20 @@
  */
 
 import React, { CSSProperties, useState } from 'react';
-import { ToolCall } from '../../types';
-import { useChatBoxStore } from '../../chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
-import { useChatMessageActions } from '../../chatbox/hooks/useChatMessageActions';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 import { Button, Flex, Spin, Space, ButtonProps } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useT } from '../../../locale';
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { ToolsUIProperties } from '@nocobase/client';
 
-export const SuggestionsOptions: React.FC<{
-  messageId: string;
-  tool: ToolCall<{
+export const SuggestionsOptions: React.FC<
+  ToolsUIProperties<{
     options: string[];
-  }>;
-}> = ({ messageId, tool }) => {
+  }>
+> = ({ messageId, toolCall, decisions }) => {
   const t = useT();
   const responseLoading = useChatMessagesStore.use.responseLoading();
   const messages = useChatMessagesStore.use.messages();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const { callTool } = useChatMessageActions();
   const [disabled, setDisabled] = useState(false);
   const [selected, setSelected] = useState(null);
   const generating = responseLoading && messages[length - 1]?.content.messageId === messageId;
@@ -51,7 +43,19 @@ export const SuggestionsOptions: React.FC<{
     variant: 'dashed',
   };
   const btnProps = (option: string): ButtonProps =>
-    tool.selectedSuggestion === option || selected === option ? selectedBtnProps : defaultBtnProps;
+    toolCall.selectedSuggestion === option || selected === option ? selectedBtnProps : defaultBtnProps;
+
+  const optionsInArgs: unknown = toolCall.args?.options ?? [];
+  let options = [];
+  if (typeof optionsInArgs === 'string') {
+    try {
+      options = JSON.parse(optionsInArgs);
+    } catch (e) {
+      console.log(`fail to convert args from tool call ${toolCall.name}`, toolCall.args);
+    }
+  } else {
+    options = optionsInArgs as string[];
+  }
 
   return generating ? (
     <Space>
@@ -59,10 +63,10 @@ export const SuggestionsOptions: React.FC<{
     </Space>
   ) : (
     <Flex align="flex-start" gap="middle" wrap={true}>
-      {tool.args?.options?.map((option, index) => (
+      {options.map((option, index) => (
         <Button
           key={index}
-          disabled={tool.invokeStatus !== 'init' || disabled}
+          disabled={toolCall.invokeStatus !== 'interrupted' || disabled}
           {...btnProps(option)}
           onClick={() => {
             if (disabled) {
@@ -70,12 +74,7 @@ export const SuggestionsOptions: React.FC<{
             }
             setDisabled(true);
             setSelected(option);
-            callTool({
-              sessionId: currentConversation,
-              aiEmployee: currentEmployee,
-              messageId: messageId,
-              args: { option },
-            });
+            decisions.edit({ ...(toolCall.args ?? {}), option });
           }}
         >
           <div>{option}</div>

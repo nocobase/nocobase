@@ -1,19 +1,15 @@
 ---
-displayName: "Anpassat varumärke"
+displayName: "Custom brand"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Anpassa varumärkesnamnet och annan varumärkesrelaterad information.
+  Customize the brand name and more brand-related information.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Anpassat varumärke
+# Custom brand

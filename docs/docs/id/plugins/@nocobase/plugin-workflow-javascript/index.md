@@ -1,18 +1,15 @@
 ---
-displayName: "Alur Kerja: JavaScript"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Jalankan sepotong kode JavaScript dalam lingkungan Node.js yang terisolasi.
+  Execute a piece of JavaScript in an isolated Node.js environment.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: JavaScript
+# Workflow: JavaScript

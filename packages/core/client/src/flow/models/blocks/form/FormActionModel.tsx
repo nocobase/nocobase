@@ -54,8 +54,8 @@ FormSubmitActionModel.registerFlow({
           try {
             await ctx.form.validateFields();
             const confirmed = await ctx.modal.confirm({
-              title: ctx.t(params.title),
-              content: ctx.t(params.content),
+              title: ctx.t(params.title, { ns: 'lm-flow-engine' }),
+              content: ctx.t(params.content, { ns: 'lm-flow-engine' }),
               okText: ctx.t('Confirm'),
               cancelText: ctx.t('Cancel'),
             });
@@ -80,6 +80,7 @@ FormSubmitActionModel.registerFlow({
         try {
           ctx.model.setProps('loading', true);
           await submitHandler(ctx, params);
+          ctx.message.success(ctx.t('Saved successfully'));
           ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
@@ -87,6 +88,8 @@ FormSubmitActionModel.registerFlow({
           ctx.message.error(ctx.t('Save failed'));
           console.error('Form submission error:', error);
           ctx.exit();
+        } finally {
+          ctx.model.setProps('loading', false);
         }
       },
     },

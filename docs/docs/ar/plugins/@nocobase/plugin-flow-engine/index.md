@@ -1,15 +1,12 @@
 ---
-displayName: "محرك سير العمل للواجهة الأمامية"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# محرك سير العمل للواجهة الأمامية
+# Flow engine

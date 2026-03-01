@@ -1,14 +1,12 @@
 ---
-displayName: "Flusso di lavoro"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  Un potente strumento BPM che fornisce supporto fondamentale per l'automazione aziendale, con la possibilità di estendere un numero illimitato di trigger e nodi.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Flusso di lavoro
+# Workflow

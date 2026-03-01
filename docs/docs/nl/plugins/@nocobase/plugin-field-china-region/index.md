@@ -1,14 +1,12 @@
 ---
-displayName: "Collectieveld: Chinese administratieve regio\"s"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Biedt gegevens en een veldtype voor de Chinese administratieve regio's.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Collectieveld: Chinese administratieve regio's
+# Collection field: administrative divisions of China

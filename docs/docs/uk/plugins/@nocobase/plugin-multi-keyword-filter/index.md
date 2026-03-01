@@ -1,17 +1,14 @@
 ---
-displayName: "Багатоключовий фільтр"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  Підтримує фільтрацію за кількома ключовими словами для типових полів. Ви можете швидко вводити ключові слова або імпортувати їх масово з Excel.
+  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Багатоключовий фільтр
+# Multi-keyword filter

@@ -1,18 +1,15 @@
 ---
-displayName: "Göç Yönetimi"
+displayName: "Migration manager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Yapılandırma içeriğini bir uygulama ortamından diğerine taşımak için kullanılır.
+  Used to migrate configuration content between application environments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Göç Yönetimi
+# Migration manager

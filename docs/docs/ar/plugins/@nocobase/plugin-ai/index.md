@@ -1,14 +1,12 @@
 ---
-displayName: "موظفو الذكاء الاصطناعي"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
 description: |
-  أنشئ موظفي ذكاء اصطناعي بمهارات متنوعة للتعاون مع البشر، وبناء الأنظمة، ومعالجة العمليات التجارية.
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# موظفو الذكاء الاصطناعي
+# AI employees

@@ -1,14 +1,12 @@
 ---
-displayName: "Kullanıcılar"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  Temel kullanıcı modelini ve ayrıca oluşturan ile son güncelleyen alanlarını sağlar.
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Kullanıcılar
+# Users

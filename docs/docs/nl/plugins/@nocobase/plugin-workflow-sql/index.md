@@ -1,14 +1,12 @@
 ---
-displayName: "Workflow: SQL-knooppunt"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Voer willekeurige SQL-statements uit op de database binnen een workflow.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Workflow: SQL-knooppunt
+# Workflow: SQL node

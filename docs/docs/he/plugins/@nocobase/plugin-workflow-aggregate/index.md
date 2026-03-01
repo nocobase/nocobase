@@ -1,15 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת צבירה"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  ניתן להשתמש בו כדי לבצע שאילתות צבירה מול מסד הנתונים בתוך תהליך עבודה, כגון: ספירה, סיכום, ממוצע ועוד.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-
-# תהליך עבודה: צומת צבירה
+# Workflow: Aggregate node

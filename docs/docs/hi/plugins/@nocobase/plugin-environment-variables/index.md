@@ -1,15 +1,12 @@
 ---
-displayName: "चर और सीक्रेट"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  पर्यावरण चर और सीक्रेट का केंद्रीकृत प्रबंधन करें। इसका उपयोग संवेदनशील डेटा को स्टोर करने, कॉन्फ़िगरेशन डेटा का पुन: उपयोग करने, कई वातावरणों को अलग रखने और अन्य कई कामों के लिए किया जाता है।
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-# चर और सीक्रेट
+# Variables and secrets

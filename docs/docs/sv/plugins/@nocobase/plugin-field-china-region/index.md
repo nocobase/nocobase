@@ -1,15 +1,12 @@
 ---
-displayName: "Samlingsfält: Kinas administrativa indelningar"
+displayName: "Collection field: administrative divisions of China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Tillhandahåller data och fälttyp för Kinas administrativa indelningar.
+  Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Samlingsfält: Kinas administrativa indelningar
+# Collection field: administrative divisions of China

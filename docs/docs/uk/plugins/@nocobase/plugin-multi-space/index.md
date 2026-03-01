@@ -1,17 +1,14 @@
 ---
-displayName: "Багатопростір"
+displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Реалізує кілька незалежних просторів даних в межах одного екземпляра програми за допомогою логічної ізоляції.
+  Implements multiple independent data spaces within a single application instance through logical isolation.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Багатопростір
+# Multi-space

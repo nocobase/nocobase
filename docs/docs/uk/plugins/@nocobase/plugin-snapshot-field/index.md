@@ -1,18 +1,15 @@
 ---
-displayName: "Поле колекції: Знімок"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  При додаванні нового запису створює знімок для пов'язаного запису та зберігає його у новому записі. Знімок не оновлюється при оновленні пов'язаного запису.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
+# Collection field: Snapshot
 
-# Поле колекції: Знімок
-
-> Зверніть увагу: Цей плагін застарів.
+> Note: This plugin is deprecated.

@@ -1,17 +1,14 @@
 ---
-displayName: "ตัวแปรแบบกำหนดเอง"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  รองรับการเพิ่มและใช้งานตัวแปรแบบกำหนดเอง
+  Support for adding and using custom variables
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวแปรแบบกำหนดเอง
+# Custom variables

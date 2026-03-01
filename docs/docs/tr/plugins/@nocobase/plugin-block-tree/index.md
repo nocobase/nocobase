@@ -1,17 +1,14 @@
 ---
-displayName: "Blok: Ağaç"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Ağaç yapısında filtreleme bloğu sağlar.
+  Provides tree structure filter block
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Blok: Ağaç
+# Block: Tree

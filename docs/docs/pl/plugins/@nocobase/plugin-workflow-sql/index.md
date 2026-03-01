@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: węzeł SQL"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Umożliwia wykonywanie dowolnych zapytań SQL na bazie danych w ramach przepływu pracy.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: węzeł SQL
+# Workflow: SQL node

@@ -57,6 +57,10 @@ class TestViewActionModel extends ActionModel {
   defaultProps: any = { type: 'link', title: 'View' };
 }
 
+class TestAlwaysActionModel extends ActionModel {
+  defaultProps: any = { type: 'link', title: 'Always' };
+}
+
 // 在 beforeRender 中，根据 inputArgs（即当前行 record）决定是否隐藏按钮
 TestViewActionModel.registerFlow({
   key: 'autoHideByPhone',
@@ -122,6 +126,40 @@ describe('TableActionsColumnModel: pass record via inputArgs to FlowModelRendere
   });
 });
 
+describe('TableActionsColumnModel: hidden action layout', () => {
+  it('does not leave empty slot when first action is hidden by linkage', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestViewActionModel, TestAlwaysActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+      subModels: { actions: [{ use: 'TestViewActionModel' }, { use: 'TestAlwaysActionModel' }] },
+    });
+
+    const colProps = actionsCol.getColumnProps();
+    const record = { id: 1, phone: '123456' } as any;
+
+    const { container } = render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>{colProps.render?.(undefined, record, 0) as any}</App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('View')).toBeNull();
+      expect(screen.getByText('Always')).toBeInTheDocument();
+    });
+
+    const [, secondUid] = actionsCol.mapSubModels('actions', (action) => action.uid);
+    const wrappers = container.querySelectorAll('[data-test-droppable]');
+    expect(wrappers).toHaveLength(0);
+    expect(secondUid).toBeTruthy();
+  });
+});
+
 describe('TableActionsColumnModel: drag integration', () => {
   beforeEach(() => {
     capturedDroppableUids.length = 0;
@@ -160,8 +198,7 @@ describe('TableActionsColumnModel: drag integration', () => {
       expect(screen.getAllByText('View').length).toBe(2);
     });
 
-    const actionUids = actionsCol.mapSubModels('actions', (action) => action.uid);
-    expect(capturedDroppableUids).toEqual([actionsCol.uid, ...actionUids]);
+    expect(capturedDroppableUids).toEqual([actionsCol.uid]);
     expect(capturedDndProviders.length).toBe(1);
     expect(capturedDndProviders[0].persist).toBe(true);
   });

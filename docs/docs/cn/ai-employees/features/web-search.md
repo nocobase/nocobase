@@ -1,40 +1,26 @@
 # 联网搜索
 
-通常大语言模型的数据时效性比较差，缺少最新信息，所以在线 LLM 服务平台一般会提供联网搜索功能，让 AI 在回复前先使用技能搜索信息，再基于技能的搜索结果进行回复。
+联网搜索用于补充模型训练数据之外的最新信息。
 
-AI 员工对各在线 LLM 服务平台联网搜索功能做了适配，可以在 AI 员工模型配置中和对话中开启联网搜索功能。
+## 工作方式
 
-## 启用联网搜索功能
+联网搜索是否可用，取决于当前会话所选模型服务是否支持 Web Search。
 
-进入 AI 员工插件配置页面，点击 `AI employees` 标签页，进入 AI 员工管理页。
+- 支持：显示联网搜索开关，可按需开启/关闭。
+- 不支持：不显示该开关，且会自动关闭搜索状态。
 
-![20251021225643](https://static-docs.nocobase.com/20251021225643.png)
+## 会话中使用
 
-选择要启用联网搜索功能的 AI 员工，点击 `Edit` 按钮，进入 AI 员工编辑页面。
+在对话输入区域使用联网搜索开关：
 
-![20251022114043](https://static-docs.nocobase.com/20251022114043.png)
+- 打开后，AI 可先检索再回答。
 
-在 `Model settings` 标签页中，打开 `Web Search` 开关，点击 `Submit` 按钮保存修改。
+![web-search-switch-visible-on-supported-model.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/web-search-switch-visible-on-supported-model.png)
 
-![20251022114300](https://static-docs.nocobase.com/20251022114300.png)
+- 关闭后，AI 仅基于已有上下文回答。
 
-## 对话中使用联网搜索功能
+![web-search-switch-hidden-on-unsupported-model.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/web-search-switch-hidden-on-unsupported-model.png)
 
-AI 员工启用了联网搜索功能后，在对话输入框中会多出“联网”图标，默认是启用联网搜索，点击可以关闭。
+## 平台差异
 
-![20251022115110](https://static-docs.nocobase.com/20251022115110.png)
-
-启用联网搜索后，AI 员工回复中会展示联网搜索结果。
-
-![20251022115502](https://static-docs.nocobase.com/20251022115502.png)
-
-## 各 AI 平台联网搜索能力差异
-
-目前 AI 员工联网搜索功能依赖在线 LLM 服务平台提供，使用体验上会有差异，具体差异如下：
-
-| 平台      | 联网搜索 | 技能 | 实时响应检索词语 | 返回回答参考的外链信息 |
-| --------- | -------- | ----- | ---------------- | ---------------------- |
-| OpenAI    | ✅        | ✅     | ✅                | ✅                      |
-| Gemini    | ✅        | ❌     | ❌                | ✅                      |
-| Dashscope | ✅        | ✅     | ❌                | ❌                      |
-| DeepSeek  | ❌        | ❌     | ❌                | ❌                      |
+不同模型对 Web Search 的支持能力不同，请根据实际情况使用。

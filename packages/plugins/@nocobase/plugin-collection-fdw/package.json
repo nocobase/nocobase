@@ -1,0 +1,43 @@
+{
+  "name": "@nocobase/plugin-collection-fdw",
+  "version": "2.1.0-beta.6",
+  "main": "./dist/server/index.js",
+  "keywords": [
+    "Collections"
+  ],
+  "displayName": "Collection: Connect to foreign data (FDW)",
+  "displayName.zh-CN": "数据表：连接外部数据（FDW）",
+  "description": "Database-based foreign data wrapper (FDW) implementation for connecting to remote data tables, currently supports MySQL and PostgreSQL databases.",
+  "description.zh-CN": "基于数据库的 foreign data wrapper（FDW） 实现的连接远程数据表，目前支持 MySQL 和 PostgreSQL 数据库。",
+  "homepage": "https://docs.nocobase.com/handbook/collection-fdw",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-fdw",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "@ant-design/icons": "^5.1.4",
+    "@types/pg": "^8.10.9",
+    "mysql2": "^3.11.0",
+    "node-sql-parser": "^4.11.0",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "pg-types": "^2.1.0",
+    "sequelize": "^6.35.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "volta": {
+    "node": "18.18.2",
+    "yarn": "1.22.21"
+  },
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "license": "Apache-2.0"
+}

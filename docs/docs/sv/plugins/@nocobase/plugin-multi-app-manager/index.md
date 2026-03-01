@@ -1,15 +1,12 @@
 ---
-displayName: "Flerappshanterare (föråldrad)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  Flerappsfunktionen kör applikationer på ett processdelande sätt och är endast lämplig för test- och demo-miljöer. Använd den inte i produktionsmiljöer.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Flerappshanterare (föråldrad)
+# Multi-app manager (deprecated)

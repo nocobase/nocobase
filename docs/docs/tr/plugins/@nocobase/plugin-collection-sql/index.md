@@ -1,14 +1,12 @@
 ---
-displayName: "Koleksiyon: SQL"
+displayName: "Collection: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |
-  SQL koleksiyon şablonu sağlar.
+  Provides SQL collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Koleksiyon: SQL
+# Collection: SQL

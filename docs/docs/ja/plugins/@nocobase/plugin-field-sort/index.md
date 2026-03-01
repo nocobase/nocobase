@@ -1,14 +1,12 @@
 ---
-displayName: "コレクションフィールド：ソート"
+displayName: "Collection field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  コレクションのデータをソートするために使用します
+  Used to sort the data in a collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# コレクションフィールド：ソート
+# Collection field: Sort

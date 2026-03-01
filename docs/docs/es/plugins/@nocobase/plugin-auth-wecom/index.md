@@ -5,14 +5,11 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Proporciona las capacidades para integrar WeCom, incluyendo la autenticación, un canal de notificación y una fuente de datos para la sincronización de usuarios.
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
 # WeCom

@@ -1,18 +1,15 @@
 ---
-displayName: "แหล่งข้อมูล: Oracle ภายนอก"
+displayName: "Data source: External Oracle"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  ใช้ฐานข้อมูล Oracle ภายนอกเป็นแหล่งข้อมูล
+  Use external Oracle databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แหล่งข้อมูล: Oracle ภายนอก
+# Data source: External Oracle

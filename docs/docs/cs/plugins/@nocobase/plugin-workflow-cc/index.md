@@ -1,16 +1,12 @@
 ---
-displayName: "Pracovní postup: Kopie"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Poskytuje funkci zasílání kopií (CC) v pracovních postupech, která umožňuje odesílat schválení nebo jakékoli jiné informace konkrétním uživatelům.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Pracovní postup: Kopie
+# Workflow: CC

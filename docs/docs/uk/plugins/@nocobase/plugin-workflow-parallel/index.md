@@ -1,16 +1,12 @@
 ---
-displayName: "Робочий процес: Паралельний вузол"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Використовується для паралельного виконання розгалужених процесів у робочому процесі.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Робочий процес: Паралельний вузол
+# Workflow: Parallel node

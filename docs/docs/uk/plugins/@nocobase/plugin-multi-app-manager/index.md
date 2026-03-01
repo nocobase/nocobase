@@ -1,14 +1,12 @@
 ---
-displayName: "Менеджер кількох застосунків (застарілий)"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  Кілька застосунків працюють зі спільним процесом, що підходить лише для тестових та демонстраційних середовищ. Не використовуйте його у виробничому середовищі.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Менеджер кількох застосунків (застарілий)
+# Multi-app manager (deprecated)

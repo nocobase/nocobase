@@ -1,17 +1,12 @@
 ---
-displayName: "سير العمل: تعيين متغيرات JSON"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  يُستخدم لتعيين أي بيانات JSON إلى متغيرات مهيكلة لاستخدامها في العُقد اللاحقة.
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: تعيين متغيرات JSON
+# Workflow: JSON variable mapping

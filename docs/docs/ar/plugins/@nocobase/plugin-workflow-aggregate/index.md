@@ -1,15 +1,12 @@
 ---
-displayName: "سير العمل: عقدة التجميع"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  يُستخدم لإجراء استعلامات تجميعية على قاعدة البيانات ضمن سير العمل، مثل: إحصاء العدد، المجموع، المتوسط، وغيرها.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# سير العمل: عقدة التجميع
+# Workflow: Aggregate node

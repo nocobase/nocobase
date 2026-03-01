@@ -9,7 +9,7 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { escapeT, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import { escapeT, FlowContext, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -28,6 +28,8 @@ import {
   ensureScopedEngineView,
   unlinkScopedEngine,
 } from './referenceShared';
+
+const TARGET_CONTEXT_BRIDGE_MARKER = Symbol.for('nocobase.referenceBlockTargetContextBridge');
 
 /**
  * ReferenceBlockModel（插件版）
@@ -102,6 +104,23 @@ export class ReferenceBlockModel extends BlockModel {
   private _targetModel?: FlowModel;
   private _resolvedTargetUid?: string;
   private _invalidTargetUid?: string;
+
+  private _bridgeTargetContext(target: FlowModel, engine: FlowEngine) {
+    if (!target?.context || !this.context) {
+      return;
+    }
+
+    const targetContext = target.context as FlowContext & { [TARGET_CONTEXT_BRIDGE_MARKER]?: boolean };
+    if (targetContext[TARGET_CONTEXT_BRIDGE_MARKER]) {
+      return;
+    }
+
+    const bridge = new FlowContext();
+    bridge.defineProperty('engine', { value: engine });
+    bridge.addDelegate(this.context as any);
+    target.context.addDelegate(bridge);
+    targetContext[TARGET_CONTEXT_BRIDGE_MARKER] = true;
+  }
 
   get title() {
     return this._targetModel?.title || super.title;
@@ -237,7 +256,9 @@ export class ReferenceBlockModel extends BlockModel {
       return;
     }
 
+    const scopedEngine = this._ensureScopedEngine();
     target.setParent(this);
+    this._bridgeTargetContext(target, scopedEngine);
     const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
     if (oldTarget?.uid !== target.uid) {
       this.setSubModel('target', target);
@@ -727,7 +748,17 @@ ReferenceBlockModel.registerFlow({
           (parent as any).emitter?.emit?.('onSubModelAdded', newModel);
           await (newModel as any).afterAddAsSubModel?.();
 
-          await engine.modelRepository.destroy(newModel.uid);
+          // 将服务端 duplicate 出来的完整子树挂载到目标父节点
+          await ctx.api.request({
+            method: 'POST',
+            url: 'flowModels:attach',
+            params: {
+              uid: newModel.uid,
+              parentId: parent.uid,
+              subKey,
+              subType,
+            },
+          });
           await newModel.save();
 
           (newModel as any).isNew = false;

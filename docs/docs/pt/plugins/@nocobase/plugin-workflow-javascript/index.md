@@ -1,18 +1,15 @@
 ---
-displayName: "Fluxo de trabalho: JavaScript"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Execute um trecho de JavaScript em um ambiente Node.js isolado.
+  Execute a piece of JavaScript in an isolated Node.js environment.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Fluxo de trabalho: JavaScript
+# Workflow: JavaScript

@@ -1,14 +1,15 @@
 ---
-displayName: "Alur Kerja: Node Perhitungan Dinamis"
+displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  Berfungsi untuk melakukan perhitungan ekspresi dinamis berdasarkan baris data dalam alur kerja.
+  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Perhitungan Dinamis
+# Workflow: Dynamic calculation node
+
+> Note: This plugin is deprecated.

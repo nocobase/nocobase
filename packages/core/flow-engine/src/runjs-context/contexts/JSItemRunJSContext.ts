@@ -20,6 +20,11 @@ JSItemRunJSContext.define({
       Provides access to the data resource associated with the current form context.`,
     record: `Current record data object (read-only).
       Contains all field values of the parent record.`,
+    formValues: {
+      description: 'Snapshot of current form values (object). Available in form contexts (CreateForm/EditForm).',
+      detail: 'Record<string, any>',
+      examples: ['const { name, status } = ctx.formValues || {};'],
+    },
   },
   methods: {
     onRefReady: `Wait for form item container DOM element to be ready before executing callback.
@@ -34,6 +39,11 @@ JSItemRunJSContext.define(
       element: 'ElementProxy，表单项渲染容器，支持 innerHTML/append 等 DOM 操作',
       resource: '当前资源（只读）',
       record: '当前记录（只读）',
+      formValues: {
+        description: '当前表单值快照（对象）。仅表单相关上下文可用（Create/Edit Form）。',
+        detail: 'Record<string, any>',
+        examples: ['const { name, status } = ctx.formValues || {};'],
+      },
     },
     methods: {
       onRefReady: '容器就绪后执行回调。参数：(ref, callback, timeout?)',

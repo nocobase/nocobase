@@ -1,18 +1,15 @@
 ---
-displayName: "سير العمل: المتغير المخصص"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يُستخدم لإنشاء متغيرات مخصصة أو تعيين قيمة لها في سير العمل، وذلك لحفظ البيانات المؤقتة أثناء العملية.
+  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: المتغير المخصص
+# Workflow: Custom variable

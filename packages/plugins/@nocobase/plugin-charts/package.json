@@ -7,9 +7,9 @@
   "description": "The plugin has been deprecated, please use the data visualization plugin instead.",
   "description.ru-RU": "Данный плагин устарел, используйте вместо него плагин для визуализации данных.",
   "description.zh-CN": "已废弃插件，请使用数据可视化插件代替。",
-  "version": "2.0.0-beta.18",
+  "version": "2.1.0-beta.6",
   "main": "./dist/server/index.js",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",

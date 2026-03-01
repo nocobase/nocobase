@@ -1,15 +1,12 @@
 ---
-displayName: "Pengelola File"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Menyediakan layanan penyimpanan file, serta menyediakan template koleksi file dan bidang lampiran.
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Pengelola File
+# File manager

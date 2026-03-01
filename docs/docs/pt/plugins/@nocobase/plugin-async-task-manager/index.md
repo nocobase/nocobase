@@ -1,14 +1,12 @@
 ---
-displayName: "Gerenciador de tarefas assíncronas"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  Gerencie e monitore tarefas assíncronas, como importação e exportação de dados. Suporta rastreamento de progresso e notificações de tarefas.
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Gerenciador de tarefas assíncronas
+# Async task manager

@@ -1,14 +1,12 @@
 ---
-displayName: "การจัดการคอลเลกชันด้วยภาพกราฟ"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  เป็นเครื่องมือที่ทำงานคล้ายกับ ER Diagram ครับ ปัจจุบันรองรับเฉพาะฐานข้อมูลหลักเท่านั้น
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การจัดการคอลเลกชันด้วยภาพกราฟ
+# Graph collection manager

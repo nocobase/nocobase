@@ -1,14 +1,15 @@
 ---
-displayName: "Akce: Hromadná úprava"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Umožňuje hromadnou úpravu všech dat nebo vybraných dat.
+  Batch edit all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Akce: Hromadná úprava
+# Action: Batch edit

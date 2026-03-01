@@ -1,14 +1,14 @@
 ---
-displayName: "Azione: Richiesta personalizzata"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  Invia richieste a qualsiasi servizio HTTP, consentendo di inviare dati di contesto al servizio di destinazione.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Azione: Richiesta personalizzata
+# Action: Custom request

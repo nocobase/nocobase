@@ -1,14 +1,12 @@
 ---
-displayName: "בלוק: קנבן"
+displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |
-  מספק בלוק קנבן.
+  Provides kanban block.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# בלוק: קנבן
+# Block: Kanban

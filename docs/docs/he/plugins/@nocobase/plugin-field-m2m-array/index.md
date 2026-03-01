@@ -1,14 +1,12 @@
 ---
-displayName: "שדה אוסף: רבים לרבים (מערך)"
+displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  מאפשר ליצור קשרי רבים לרבים על ידי אחסון מערך של מפתחות ייחודיים של טבלת היעד.
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
+  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: רבים לרבים (מערך)
+# Collection field: Many to many (array)

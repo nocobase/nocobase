@@ -1,14 +1,12 @@
 ---
-displayName: "Mobil (veraltet)"
+displayName: "Mobile (deprecated)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Bietet die Möglichkeit, mobile Seiten zu konfigurieren.
+  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Mobil (veraltet)
+# Mobile (deprecated)

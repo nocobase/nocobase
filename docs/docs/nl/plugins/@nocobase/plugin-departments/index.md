@@ -1,14 +1,12 @@
 ---
-displayName: "Afdelingen"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  Organiseer gebruikers per afdeling, stel hiërarchische relaties in, koppel rollen om machtigingen te beheren, en ondersteun het gebruik als variabele in workflows en expressies.
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Afdelingen
+# Departments

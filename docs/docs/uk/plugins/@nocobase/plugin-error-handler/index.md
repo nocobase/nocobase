@@ -1,14 +1,12 @@
 ---
-displayName: "Обробник помилок"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Обробка помилок та винятків у застосунку.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Обробник помилок
+# Error handler

@@ -1,14 +1,12 @@
 ---
-displayName: "Pracovní postup: uzel pro odesílání e-mailů"
+displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Umožňuje odesílat e-maily v rámci pracovního postupu.
+  Send email in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pracovní postup: uzel pro odesílání e-mailů
+# Workflow: mailer node

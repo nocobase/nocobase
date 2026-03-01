@@ -1,14 +1,12 @@
 ---
-displayName: "Actie: Afdrukken"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Roept de printfunctie van de browser aan om één record af te drukken.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Actie: Afdrukken
+# Action: Print

@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { render } from '@testing-library/react';
+import React, { useRef } from 'react';
+import { render, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
-import { FormBlockModel } from '../../../..';
+import { FormBlockContent, FormBlockModel, FormComponent } from '../../../..';
 import { Application } from '../../../../../application/Application';
 import {
   InputFieldInterface,
@@ -21,9 +21,15 @@ import {
   M2OFieldInterface,
   NumberFieldInterface,
 } from '../../../../../collection-manager/interfaces';
+import { Form } from 'antd';
 // -----------------------------
 // Helpers
 // -----------------------------
+
+function getByPath(obj: any, namePath: any) {
+  const path = Array.isArray(namePath) ? namePath : [namePath];
+  return path.reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
+}
 
 async function createTestFormModelSubclass() {
   return class TestFormModel extends FormBlockModel {
@@ -246,6 +252,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (values: Record<string, any>) => Object.assign(store, values),
       getFieldsValue: () => ({ ...store }),
+      getFieldValue: (namePath: any) => getByPath(store, namePath),
       setFieldValue: (k: string, v: any) => (store[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
@@ -294,7 +301,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(flows.has('eventSettings')).toBe(true);
   });
 
-  it('delegates layout/linkageRules stepParams to grid model', async () => {
+  it('delegates layout/assignRules/linkageRules stepParams to grid model', async () => {
     const model = await setupFormModel();
     const engine = model.flowEngine as FlowEngine;
 
@@ -323,18 +330,23 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
       labelWrap: false,
       colon: false,
     };
+    const assignRulesParams = { value: [{ key: 'a1', targetPath: 'title', value: 'hello' }] };
     model.setStepParams('formModelSettings', 'layout', layoutParams);
+    model.setStepParams('formModelSettings', 'assignRules', assignRulesParams);
     model.setStepParams('eventSettings', 'linkageRules', { value: [{ key: 'r1' }] });
 
     expect(grid.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(grid.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(grid.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
 
     // model reads delegated params from grid first
     expect(model.getStepParams('formModelSettings', 'layout')).toEqual(layoutParams);
+    expect(model.getStepParams('formModelSettings', 'assignRules')).toEqual(assignRulesParams);
     expect(model.getStepParams('eventSettings', 'linkageRules')).toEqual({ value: [{ key: 'r1' }] });
 
     // model no longer stores these params locally
     expect((model.stepParams as any)?.formModelSettings?.layout).toBeUndefined();
+    expect((model.stepParams as any)?.formModelSettings?.assignRules).toBeUndefined();
     expect((model.stepParams as any)?.eventSettings?.linkageRules).toBeUndefined();
 
     await model.saveStepParams();
@@ -373,6 +385,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (v: any) => Object.assign(mem, v),
       getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
       setFieldValue: (k: string, v: any) => (mem[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
@@ -410,6 +423,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm2 = {
       setFieldsValue: (v: any) => Object.assign(mem2, v),
       getFieldsValue: () => ({ ...mem2 }),
+      getFieldValue: (namePath: any) => getByPath(mem2, namePath),
       setFieldValue: (k: string, v: any) => (mem2[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm2 });
@@ -419,6 +433,48 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const tpl2 = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
     await (model.context as any).resolveJsonTemplate(tpl2);
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('configured toMany dot aggregation path uses local value and skips server', async () => {
+    const model = await setupFormModel();
+
+    const api = {
+      request: vi.fn(async () => {
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({
+      assignees: [
+        { id: 3, name: 'A' },
+        { id: 5, name: 'B' },
+      ],
+    });
+    mockFormGridEnabledFields(model, ['assignees']);
+
+    const tpl = { names: '{{ ctx.formValues.assignees.name }}' } as any;
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ names: ['A', 'B'] });
+    expect(api.request).toHaveBeenCalledTimes(0);
+
+    const names = await (model.context as any).getVar('ctx.formValues.assignees.name');
+    expect(names).toEqual(['A', 'B']);
+    expect(api.request).toHaveBeenCalledTimes(0);
   });
 
   it('unconfigured field: new record returns undefined and does not call server', async () => {
@@ -438,6 +494,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (v: any) => Object.assign(mem, v),
       getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (k: string) => mem[k],
       setFieldValue: (k: string, v: any) => (mem[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
@@ -492,6 +549,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (v: any) => Object.assign(mem, v),
       getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (k: string) => mem[k],
       setFieldValue: (k: string, v: any) => (mem[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
@@ -539,6 +597,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const fakeForm = {
       setFieldsValue: (v: any) => Object.assign(mem, v),
       getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (k: string) => mem[k],
       setFieldValue: (k: string, v: any) => (mem[k] = v),
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
@@ -550,5 +609,166 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const out = await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
     expect(out).toEqual({ who: 'L1' });
+  });
+});
+
+const createRect = (height: number) => ({
+  x: 0,
+  y: 0,
+  width: 100,
+  height,
+  top: 0,
+  left: 0,
+  right: 100,
+  bottom: height,
+  toJSON: () => {},
+});
+
+const setRect = (node: HTMLElement | null, height: number) => {
+  if (!node) return;
+  node.getBoundingClientRect = () => createRect(height);
+};
+
+const FormContentHarness = ({
+  heightMode,
+  height,
+  gridModel,
+}: {
+  heightMode?: string;
+  height?: number;
+  gridModel: any;
+}) => {
+  const [form] = Form.useForm();
+  const modelRef = useRef<any>();
+  if (!modelRef.current) {
+    modelRef.current = {
+      form,
+      context: { view: { inputArgs: {} }, record: {} },
+      markUserModifiedFields: vi.fn(),
+      dispatchEvent: vi.fn(),
+      emitter: { emit: vi.fn() },
+    };
+  }
+
+  return (
+    <FormBlockContent
+      model={modelRef.current}
+      gridModel={gridModel}
+      heightMode={heightMode}
+      height={height}
+      grid={<div data-testid="grid" />}
+      actions={<div data-testid="actions" />}
+      footer={<div data-testid="footer" />}
+    />
+  );
+};
+
+describe('FormBlockModel block height', () => {
+  const originalResizeObserver = globalThis.ResizeObserver;
+
+  beforeEach(() => {
+    if (typeof globalThis.ResizeObserver === 'undefined') {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      } as any;
+    }
+  });
+
+  afterEach(() => {
+    globalThis.ResizeObserver = originalResizeObserver;
+  });
+
+  it('updates grid height when heightMode is fixed', async () => {
+    const gridModel: any = {
+      props: {},
+      setProps: vi.fn(),
+    };
+    gridModel.setProps = vi.fn((next) => Object.assign(gridModel.props, next));
+
+    const { container, rerender } = render(
+      <FormContentHarness heightMode="specifyValue" height={200} gridModel={gridModel} />,
+    );
+
+    gridModel.setProps.mockClear();
+
+    const gridEl = container.querySelector('[data-testid="grid"]') as HTMLElement;
+    const containerEl = gridEl?.parentElement as HTMLElement;
+    const actionsWrapper = container.querySelector('[data-testid="actions"]')?.parentElement as HTMLElement;
+    const footerWrapper = container.querySelector('[data-testid="footer"]')?.parentElement as HTMLElement;
+
+    setRect(containerEl, 400);
+    setRect(actionsWrapper, 40);
+    setRect(footerWrapper, 20);
+
+    rerender(<FormContentHarness heightMode="specifyValue" height={201} gridModel={gridModel} />);
+
+    await waitFor(() => {
+      expect(gridModel.setProps).toHaveBeenLastCalledWith({ height: 340 });
+    });
+  });
+
+  it('clears grid height when heightMode is not fixed', async () => {
+    const gridModel: any = {
+      props: { height: 120 },
+      setProps: vi.fn(),
+    };
+    gridModel.setProps = vi.fn((next) => Object.assign(gridModel.props, next));
+
+    render(<FormContentHarness heightMode="default" height={200} gridModel={gridModel} />);
+
+    await waitFor(() => {
+      expect(gridModel.setProps).toHaveBeenCalledWith({ height: undefined });
+    });
+  });
+});
+
+describe('FormComponent mobile horizontal layout class', () => {
+  const createModel = (isMobileLayout: boolean) => {
+    return {
+      form: undefined,
+      context: {
+        isMobileLayout,
+        view: { inputArgs: {} },
+        record: {},
+      },
+      markUserModifiedFields: vi.fn(),
+      dispatchEvent: vi.fn(),
+      emitter: { emit: vi.fn() },
+    } as any;
+  };
+
+  it('adds mobile horizontal keep class when mobile + horizontal', () => {
+    const model = createModel(true);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'horizontal' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className).toContain('nb-flow-keep-mobile-horizontal');
+  });
+
+  it('does not add keep class when layout is vertical', () => {
+    const model = createModel(true);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'vertical' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className || '').not.toContain('nb-flow-keep-mobile-horizontal');
+  });
+
+  it('does not add keep class when desktop + horizontal', () => {
+    const model = createModel(false);
+    const { container } = render(
+      <FormComponent model={model} layoutProps={{ layout: 'horizontal' }}>
+        <div data-testid="content">content</div>
+      </FormComponent>,
+    );
+    const formEl = container.querySelector('form.ant-form');
+    expect(formEl?.className || '').not.toContain('nb-flow-keep-mobile-horizontal');
   });
 });

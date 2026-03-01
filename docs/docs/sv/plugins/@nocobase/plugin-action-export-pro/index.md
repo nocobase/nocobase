@@ -1,19 +1,15 @@
 ---
-displayName: "Åtgärd: Exportera poster Pro"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Förbättrar dataexportfunktionerna med asynkron export för hantering av stora datamängder. Stöder export av bilagor.
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Åtgärd: Exportera poster Pro
+# Action: Export records Pro

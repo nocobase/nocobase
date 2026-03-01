@@ -1,18 +1,15 @@
 ---
-displayName: "Veri kaynağı: Harici MariaDB"
+displayName: "Data source: External MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Harici MariaDB veritabanlarını veri kaynağı olarak kullanın.
+  Use external MariaDB databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Veri kaynağı: Harici MariaDB
+# Data source: External MariaDB

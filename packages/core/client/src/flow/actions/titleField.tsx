@@ -21,7 +21,7 @@ export const titleField = defineAction({
       .filter((field) => isTitleField(dataSourceManager, field.options))
       .map((field) => ({
         value: field.name,
-        label: ctx.t(field.options.uiSchema?.title) || field.name,
+        label: field?.title,
       }));
     return {
       type: 'select',
@@ -38,7 +38,11 @@ export const titleField = defineAction({
     };
   },
   hideInSettings: async (ctx: FlowModelContext) => {
-    return !ctx.collectionField || !ctx.collectionField.isAssociationField();
+    return (
+      !ctx.collectionField ||
+      !ctx.collectionField.isAssociationField() ||
+      (ctx.model.subModels.field as any)?.disableTitleField
+    );
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     const target = ctx.model.collectionField.target;

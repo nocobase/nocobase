@@ -1,14 +1,12 @@
 ---
-displayName: "คอลเลกชัน: SQL"
+displayName: "Collection: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |
-  เป็นเทมเพลตสำหรับคอลเลกชัน SQL
+  Provides SQL collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# คอลเลกชัน: SQL
+# Collection: SQL

@@ -1,18 +1,15 @@
 ---
-displayName: "תגובות"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  מספק תבנית אוסף תגובות ובלוק המאפשרים להוסיף פונקציונליות תגובות לכל אוסף.
+  Provides comment collection template and block to add commenting functionality for any collection.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+points: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תגובות
+# Comments

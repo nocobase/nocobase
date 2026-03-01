@@ -1,18 +1,15 @@
 ---
-displayName: "الرسوم البيانية (مهمل)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  هذه الإضافة مهملة، يرجى استخدام إضافة تصور البيانات بدلاً منها.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
+# Charts (deprecated)
 
-# الرسوم البيانية (مهمل)
-
-> ملاحظة: هذه الإضافة مهملة.
+> Note: This plugin is deprecated.

@@ -1,14 +1,12 @@
 ---
-displayName: "Collectieveld: Veel-op-veel (array)"
+displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  Ondersteunt het opzetten van veel-op-veel relaties door een array van unieke sleutels van het doelmodel op te slaan.
+  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Collectieveld: Veel-op-veel (array)
+# Collection field: Many to many (array)

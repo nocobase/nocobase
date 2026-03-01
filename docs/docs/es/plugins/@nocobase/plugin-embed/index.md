@@ -1,17 +1,14 @@
 ---
-displayName: "Incrustar NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Incruste NocoBase en un sistema o página externa, integrándolo como parte de dicho sistema o página.
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Incrustar NocoBase
+# Embed NocoBase

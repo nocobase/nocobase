@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde: Svarsmeddelande"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Används för att sätta samman svarsmeddelanden och visa dem för klienten i arbetsflöden för formulärhändelser och begärandeavlyssning.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Svarsmeddelande
+# Workflow: Response message

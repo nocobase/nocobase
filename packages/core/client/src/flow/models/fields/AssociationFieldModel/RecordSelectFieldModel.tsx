@@ -10,7 +10,6 @@ import {
   CollectionField,
   EditableItemModel,
   tExpr,
-  FilterableItemModel,
   MultiRecordResource,
   useFlowViewContext,
   FlowModelRenderer,
@@ -23,7 +22,7 @@ import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
 import { PlusOutlined } from '@ant-design/icons';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -39,6 +38,69 @@ import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 import { BlockSceneEnum } from '../../base';
 import { ActionWithoutPermission } from '../../base/ActionModel';
 import { EditFormModel } from '../../blocks';
+
+function isPlainObject(val: unknown): val is Record<string, any> {
+  return !!val && typeof val === 'object' && !Array.isArray(val);
+}
+
+type HydrateStatus = 'pending' | 'done';
+
+type HydrationCandidate = {
+  item: AssociationOption;
+  tk: any;
+  tkKey: string;
+};
+
+export function collectAssociationHydrationCandidates(options: {
+  value: LazySelectProps['value'];
+  isMultiple: boolean;
+  valueKey: string;
+  labelKey: string;
+  statusMap: Map<string, HydrateStatus>;
+}): HydrationCandidate[] {
+  const { value, isMultiple, valueKey, labelKey, statusMap } = options;
+  const list = isMultiple ? (Array.isArray(value) ? value : []) : value != null ? [value] : [];
+
+  const activeTkKeys = new Set<string>();
+  for (const item of list) {
+    if (!isPlainObject(item)) continue;
+    const tk = item?.[valueKey];
+    if (tk == null) continue;
+    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
+    if (!tkKey) continue;
+    activeTkKeys.add(tkKey);
+  }
+
+  for (const key of Array.from(statusMap.keys())) {
+    if (!activeTkKeys.has(key)) {
+      statusMap.delete(key);
+    }
+  }
+
+  const candidates: HydrationCandidate[] = [];
+  for (const item of list) {
+    if (!isPlainObject(item)) continue;
+    const tk = item?.[valueKey];
+    if (tk == null) continue;
+    if (item?.[labelKey] != null) continue;
+
+    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
+    if (!tkKey) continue;
+
+    const status = statusMap.get(tkKey);
+    if (status === 'pending' || status === 'done') continue;
+
+    statusMap.set(tkKey, 'pending');
+    candidates.push({ item, tk, tkKey });
+  }
+
+  return candidates;
+}
+
+function markAssociationHydrationDone(statusMap: Map<string, HydrateStatus>, tkKey: string | null | undefined) {
+  if (!tkKey) return;
+  statusMap.set(tkKey, 'done');
+}
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -96,14 +158,15 @@ export function CreateContent({ model, toOne = false }) {
 
 const useFieldPermissionMessage = (model, allowEdit) => {
   const collection = model.context.collectionField?.collection;
-  const dataSource = collection.dataSource;
+  const dataSource = collection?.dataSource;
   const t = model.context.t;
   const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
-    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const dataSourceLabel = t(dataSource?.displayName || dataSource?.key || '');
+    const dataSourcePrefix = dataSourceLabel ? `${dataSourceLabel} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource?.displayName, dataSource?.key, name, t]);
   if (allowEdit) {
     return null;
   }
@@ -123,6 +186,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     value,
     multiple,
     allowMultiple,
+    keepDropdownOpenOnSelect = false,
     options,
     quickCreate,
     onChange,
@@ -131,10 +195,88 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     ...others
   } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
+  const shouldKeepOpenOnSelect = Boolean(keepDropdownOpenOnSelect && isMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const model: any = useFlowModel();
+  // 运行时状态挂在 model 上，避免值变化触发重渲染后本地状态丢失导致下拉收起
+  const keepOpenRuntimeRef = useRef<{ open?: boolean; preventCloseOnSelect: boolean }>();
+  if (!keepOpenRuntimeRef.current) {
+    const runtimeState =
+      model.__keepOpenOnSelectRuntime ||
+      (model.__keepOpenOnSelectRuntime = { open: undefined, preventCloseOnSelect: false });
+    keepOpenRuntimeRef.current = runtimeState;
+  }
+  const keepOpenRuntime = keepOpenRuntimeRef.current;
+  const [dropdownOpen, setDropdownOpen] = useState<boolean | undefined>(keepOpenRuntime.open);
+  const setKeepOpenRuntime = (patch: Partial<{ open?: boolean; preventCloseOnSelect: boolean }>) => {
+    Object.assign(keepOpenRuntime, patch);
+    if (Object.prototype.hasOwnProperty.call(patch, 'open')) {
+      setDropdownOpen(keepOpenRuntime.open);
+    }
+  };
   const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
+  const hydrateStatusRef = useRef<Map<string, HydrateStatus>>(new Map());
+
+  useEffect(() => {
+    const resource: any = model?.resource;
+    if (!resource || typeof resource.get !== 'function') return;
+    const valueKey = fieldNames?.value;
+    const labelKey = fieldNames?.label;
+    if (!valueKey || !labelKey) return;
+
+    const current = value;
+    const candidates = collectAssociationHydrationCandidates({
+      value: current,
+      isMultiple,
+      valueKey,
+      labelKey,
+      statusMap: hydrateStatusRef.current,
+    });
+    if (!candidates.length) return;
+
+    const namePath = model?.props?.name ?? model?.context?.fieldPathArray;
+    const blockCtx: any = model?.context?.blockModel?.context;
+
+    candidates.forEach(({ item, tk, tkKey }) => {
+      void (async () => {
+        try {
+          const record = await resource.get(tk);
+          if (!record || typeof record !== 'object') {
+            return;
+          }
+
+          const merge = { ...(item as any), ...(record as any) };
+          if (merge?.[labelKey] == null) {
+            return;
+          }
+
+          const nextValue = isMultiple
+            ? (Array.isArray(current) ? current : []).map((v: any) => {
+                if (!isPlainObject(v)) return v;
+                return v?.[valueKey] === tk ? merge : v;
+              })
+            : merge;
+
+          if (blockCtx && typeof blockCtx.setFormValue === 'function' && namePath != null) {
+            await blockCtx.setFormValue(namePath, nextValue, {
+              source: 'default',
+              markExplicit: false,
+              triggerEvent: false,
+            });
+            return;
+          }
+
+          onChange(nextValue as any);
+        } catch (error) {
+          // ignore
+        } finally {
+          markAssociationHydrationDone(hydrateStatusRef.current, tkKey);
+        }
+      })();
+    });
+  }, [fieldNames?.label, fieldNames?.value, isMultiple, model, onChange, value]);
+
   const QuickAddContent = ({ searchText }) => {
     return (
       <div
@@ -207,11 +349,41 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         options={realOptions}
         value={toSelectValue(value, fieldNames, isMultiple)}
         mode={isMultiple ? 'multiple' : undefined}
+        open={shouldKeepOpenOnSelect ? dropdownOpen : undefined}
         onChange={(value, option) => {
           onChange(option as AssociationOption | AssociationOption[]);
         }}
+        onSelect={(selectedValue, option) => {
+          if (shouldKeepOpenOnSelect) {
+            setKeepOpenRuntime({ preventCloseOnSelect: true, open: true });
+          }
+          others.onSelect?.(selectedValue, option);
+        }}
+        onDropdownVisibleChange={(open) => {
+          if (shouldKeepOpenOnSelect) {
+            // 仅拦截“点击选项后触发的关闭”，其它关闭行为保持默认
+            if (!open && keepOpenRuntime.preventCloseOnSelect) {
+              setKeepOpenRuntime({ preventCloseOnSelect: false, open: true });
+              others.onDropdownVisibleChange?.(true);
+              return;
+            }
+            setKeepOpenRuntime({ preventCloseOnSelect: false, open });
+          }
+          others.onDropdownVisibleChange?.(open);
+        }}
         optionRender={({ data }) => {
-          return <LabelByField option={data} fieldNames={fieldNames} />;
+          return (
+            <div
+              onMouseDown={() => {
+                if (shouldKeepOpenOnSelect) {
+                  // 提前标记“本次关闭由点击选项触发”，避免事件顺序导致漏拦截
+                  setKeepOpenRuntime({ preventCloseOnSelect: true });
+                }
+              }}
+            >
+              <LabelByField option={data} fieldNames={fieldNames} />
+            </div>
+          );
         }}
         popupMatchSelectWidth
         labelRender={(data) => {
@@ -348,6 +520,9 @@ const paginationState = {
   hasMore: true,
 };
 
+const getSearchGroupKey = (labelFieldName: string) => `__search__${labelFieldName}`;
+const getAssociationGroupKey = (foreignKey: string) => `__assoc__${foreignKey}`;
+
 // 事件绑定
 RecordSelectFieldModel.registerFlow({
   key: 'eventSettings',
@@ -356,6 +531,7 @@ RecordSelectFieldModel.registerFlow({
     bindEvent: {
       handler(ctx, params) {
         const labelFieldName = ctx.model.props.fieldNames.label;
+        const searchGroupKey = getSearchGroupKey(labelFieldName);
 
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
@@ -364,7 +540,7 @@ RecordSelectFieldModel.registerFlow({
               form: ctx.model.context.form,
             });
           } else {
-            ctx.model.resource.removeFilterGroup(labelFieldName);
+            ctx.model.resource.removeFilterGroup(searchGroupKey);
             paginationState.page = 1;
           }
         };
@@ -475,10 +651,10 @@ async function originalHandler(ctx, params) {
     const resource = ctx.model.resource;
     const key = `${labelFieldName}.${operator}`;
     if (searchText === '') {
-      resource.removeFilterGroup(labelFieldName);
+      resource.removeFilterGroup(getSearchGroupKey(labelFieldName));
     } else {
       resource.setPage(1);
-      resource.addFilterGroup(labelFieldName, {
+      resource.addFilterGroup(getSearchGroupKey(labelFieldName), {
         [key]: searchText,
       });
     }
@@ -527,7 +703,7 @@ RecordSelectFieldModel.registerFlow({
         resource.setPageSize(paginationState.pageSize);
         const isFilterScene = ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter;
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
-        const record = ctx.currentObject || ctx.record;
+        const record = ctx.item?.value || ctx.record;
         const sourceValue = record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
@@ -542,7 +718,7 @@ RecordSelectFieldModel.registerFlow({
         }
 
         if (orFilters.length > 0) {
-          resource.addFilterGroup(foreignKey, { $or: orFilters });
+          resource.addFilterGroup(getAssociationGroupKey(foreignKey), { $or: orFilters });
         }
         ctx.model.resource = resource;
       },
@@ -741,7 +917,7 @@ RecordSelectFieldModel.registerFlow({
         const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
         const size = ctx.inputArgs.size || params.size || 'medium';
         const sourceCollection = ctx.collectionField?.collection;
-        const sourceRecord = ctx.currentObject || ctx.record;
+        const sourceRecord = ctx.item?.value ?? ctx.record;
         const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
         const associationName = ctx.collectionField?.resourceName;
         const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
@@ -805,10 +981,4 @@ EditableItemModel.bindModelToInterface(
   'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   { isDefault: true, order: 1 },
-);
-
-FilterableItemModel.bindModelToInterface(
-  'RecordSelectFieldModel',
-  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
-  { isDefault: true },
 );

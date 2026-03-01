@@ -1,17 +1,15 @@
 ---
-displayName: "Biểu đồ (đã ngừng hỗ trợ)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  Plugin này đã ngừng hỗ trợ, vui lòng sử dụng plugin Trực quan hóa dữ liệu thay thế.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Biểu đồ (đã ngừng hỗ trợ)
+# Charts (deprecated)
 
-> Lưu ý: Plugin này đã ngừng hỗ trợ (deprecated).
+> Note: This plugin is deprecated.

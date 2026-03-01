@@ -1,16 +1,15 @@
 ---
-displayName: "Arbetsflöde: Godkännande"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Utlöses när en godkännandeförfrågan initieras via en åtgärdsknapp eller API. Dedikerad till godkännandeprocessen, med exklusiva godkännandenoder och block för att hantera dokument och spåra behandlingsprocesser.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Godkännande
+# Workflow: Approval

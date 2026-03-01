@@ -1,18 +1,15 @@
 ---
-displayName: "Samlingsfält: Ögonblicksbild"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  När du lägger till en ny post skapas en ögonblicksbild av dess relaterade post och sparas i den nya posten. Ögonblicksbilden uppdateras inte när den relaterade posten uppdateras.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+# Collection field: Snapshot
 
-# Samlingsfält: Ögonblicksbild
-
-> Obs: Detta plugin är föråldrat.
+> Note: This plugin is deprecated.

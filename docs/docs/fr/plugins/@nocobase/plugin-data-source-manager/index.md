@@ -1,14 +1,12 @@
 ---
-displayName: "Gestion des sources de données"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Gérez les sources de données, y compris la base de données Master intégrée, les bases de données externes et les API.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Gestion des sources de données
+# Data source manager

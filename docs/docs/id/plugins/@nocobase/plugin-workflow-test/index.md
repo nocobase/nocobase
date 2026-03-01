@@ -1,15 +1,12 @@
 ---
-displayName: "Alur Kerja: Perangkat Uji"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Alur Kerja: Perangkat Uji
+# Workflow: test kit

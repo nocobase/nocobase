@@ -26,7 +26,7 @@ const snippet: SnippetModule = {
 const value = Number(ctx.value ?? 0);
 
 if (!Number.isFinite(value)) {
-  ctx.element.innerHTML = '-';
+  ctx.render('-');
   return;
 }
 
@@ -42,7 +42,7 @@ const getColor = (val) => {
 
 const color = getColor(percent);
 
-ctx.element.innerHTML = \`
+ctx.render(\`
   <div style="display: flex; align-items: center; gap: 8px;">
     <div style="flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden;">
       <div style="
@@ -56,7 +56,7 @@ ctx.element.innerHTML = \`
       \${percent.toFixed(1)}%
     </span>
   </div>
-\`;
+\`);
 `,
 };
 

@@ -1,14 +1,12 @@
 ---
-displayName: "Журнали"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Серверні журнали, що переважно включають журнали запитів API та журнали роботи системи, а також дозволяє пакувати та завантажувати файли журналів.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Журнали
+# Logger

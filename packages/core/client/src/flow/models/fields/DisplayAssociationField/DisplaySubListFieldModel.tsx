@@ -20,7 +20,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const rowIndex = model.context.fieldIndex;
-  const resultIndex = castArray(rowIndex);
+  const resultIndex = castArray(rowIndex).filter(Boolean);
   const record = model.context.record;
   const collectionName = model.context.collectionField.name;
   const isConfigMode = !!model.context.flowSettingsEnabled;
@@ -42,6 +42,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
           const key = `row_${index}_${blockPage}`;
           const fork = gridModel.createFork({}, `${key}`);
           fork.gridContainerRef = React.createRef<HTMLDivElement>();
+          const parentItem = model?.context?.item;
           fork.context.defineProperty('fieldIndex', {
             get: () => [...resultIndex, `${collectionName}:${index}`],
           });
@@ -53,6 +54,17 @@ const ArrayNester = ({ name, value = [] }: any) => {
           });
           fork.context.defineProperty('currentObject', {
             get: () => item,
+          });
+          fork.context.defineProperty('item', {
+            get: () => ({
+              index,
+              length: resultValue.length,
+              __is_new__: item?.__is_new__,
+              __is_stored__: item?.__is_stored__,
+              value: item,
+              parentItem,
+            }),
+            cache: false,
           });
 
           return (

@@ -1,19 +1,15 @@
 ---
-displayName: "Datakälla: Extern PostgreSQL"
+displayName: "Data source: External PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Använd externa PostgreSQL-databaser som datakällor.
+  Use external PostgreSQL databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Datakälla: Extern PostgreSQL
+# Data source: External PostgreSQL

@@ -108,6 +108,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
         columns={columns}
         components={components}
         isConfigMode={isConfigMode}
+        parentFieldIndex={this.context.fieldIndex}
+        parentItem={this.context.item}
         filterTargetKey={this.collection.filterTargetKey}
       />
     );
@@ -221,7 +223,7 @@ SubTableFieldModel.registerFlow({
       title: tExpr('Enable select action'),
       uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       defaultParams: {
-        allowSelectExistingRecord: false,
+        allowSelectExistingRecord: true,
       },
       handler(ctx, params) {
         ctx.model.setProps({

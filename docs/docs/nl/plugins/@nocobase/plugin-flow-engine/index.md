@@ -1,16 +1,12 @@
 ---
-displayName: "Flow-engine"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-
-
-# Flow-engine
+# Flow engine

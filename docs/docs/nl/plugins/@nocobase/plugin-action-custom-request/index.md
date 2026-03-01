@@ -1,14 +1,14 @@
 ---
-displayName: "Actie: Aangepast verzoek"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  Met deze actie kunt u een verzoek versturen naar elke willekeurige HTTP-service, waarbij u contextuele gegevens naar de doelservice kunt meesturen.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Actie: Aangepast verzoek
+# Action: Custom request

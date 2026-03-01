@@ -1,16 +1,12 @@
 ---
-displayName: "ตั้งค่าใบอนุญาต"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  การตั้งค่า Instance ID และ License Key
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# การตั้งค่าใบอนุญาต
+# License settings

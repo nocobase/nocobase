@@ -1,18 +1,15 @@
 ---
-displayName: "מנהל ההגירה"
+displayName: "Migration manager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  משמש להעברת תוכן תצורה בין סביבות יישום שונות.
+  Used to migrate configuration content between application environments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מנהל ההגירה
+# Migration manager

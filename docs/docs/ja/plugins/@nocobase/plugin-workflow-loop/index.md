@@ -1,14 +1,12 @@
 ---
-displayName: "ワークフロー：ループノード"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  配列の各値に対してサブプロセス処理を繰り返したり、指定した回数だけサブプロセス処理を繰り返したりするために使用します
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ワークフロー：ループノード
+# Workflow: Loop node

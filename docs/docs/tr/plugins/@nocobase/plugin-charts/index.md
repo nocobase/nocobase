@@ -1,17 +1,15 @@
 ---
-displayName: "Grafikler (Kullanımdan Kaldırıldı)"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  Bu eklenti kullanımdan kaldırılmıştır. Lütfen bunun yerine veri görselleştirme eklentisini kullanın.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Grafikler (Kullanımdan Kaldırıldı)
+# Charts (deprecated)
 
-> Not: Bu eklenti kullanımdan kaldırılmıştır.
+> Note: This plugin is deprecated.

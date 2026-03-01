@@ -1,14 +1,12 @@
 ---
-displayName: "عميل الويب"
+displayName: "WEB client"
 packageName: '@nocobase/plugin-client'
 description: |
-  يوفر واجهة عميل لخادم NocoBase.
+  Provides a client interface for the NocoBase server
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# عميل الويب
+# WEB client

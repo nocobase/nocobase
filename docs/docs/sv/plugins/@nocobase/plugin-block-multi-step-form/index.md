@@ -1,18 +1,14 @@
 ---
-displayName: "Block: Flerstegsformulär"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Dela upp formulär med många fält i flera steg för att underlätta för användaren.
+  Break the form with many fields into multiple steps to ease the burden on users.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Block: Flerstegsformulär
+# Block: Multi-step form

@@ -1,14 +1,12 @@
 ---
-displayName: "Pencatat Log"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Log sisi server, terutama mencakup log permintaan API dan log runtime sistem, serta mendukung pengemasan dan pengunduhan file log.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Pencatat Log
+# Logger

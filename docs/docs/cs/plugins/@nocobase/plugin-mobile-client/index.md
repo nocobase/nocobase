@@ -1,17 +1,15 @@
 ---
-displayName: "Mobilní klient (zastaralý)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Poskytuje možnost konfigurace mobilních stránek.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Mobilní klient (zastaralý)
+# Mobile client(Deprecated)
 
-> Upozornění: Tento plugin je zastaralý.
+> Note: This plugin is deprecated.

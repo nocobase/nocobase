@@ -1,16 +1,12 @@
 ---
-displayName: "Fluxo de trabalho: kit de teste"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-
-
-# Fluxo de trabalho: kit de teste
+# Workflow: test kit

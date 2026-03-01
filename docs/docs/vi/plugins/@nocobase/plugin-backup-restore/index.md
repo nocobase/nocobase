@@ -1,18 +1,15 @@
 ---
-displayName: "Sao lưu và khôi phục ứng dụng (đã ngừng hỗ trợ)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Sao lưu và khôi phục ứng dụng, có thể dùng trong các trường hợp như sao chép, di chuyển hoặc nâng cấp ứng dụng.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# App backup & restore (deprecated)
 
-# Sao lưu và khôi phục ứng dụng (đã ngừng hỗ trợ)
-
-> Lưu ý: Plugin này đã ngừng hỗ trợ (deprecated).
+> Note: This plugin is deprecated.

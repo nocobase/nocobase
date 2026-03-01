@@ -1,18 +1,15 @@
 ---
-displayName: "Manajemen Migrasi"
+displayName: "Migration manager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Berfungsi untuk memigrasikan konten konfigurasi antar lingkungan aplikasi.
+  Used to migrate configuration content between application environments.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Manajemen Migrasi
+# Migration manager

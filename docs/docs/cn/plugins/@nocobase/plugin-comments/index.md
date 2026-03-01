@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+points: 0
 ---
 
 # 评论

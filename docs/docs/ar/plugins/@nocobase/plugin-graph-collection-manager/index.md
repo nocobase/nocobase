@@ -1,14 +1,12 @@
 ---
-displayName: "إدارة المجموعات الرسومية"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  أداة شبيهة بمخطط الكيان-العلاقة (ERD). تدعم حاليًا قاعدة البيانات الرئيسية فقط.
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# إدارة المجموعات الرسومية
+# Graph collection manager

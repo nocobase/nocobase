@@ -1,14 +1,12 @@
 ---
-displayName: "المتغيرات والأسرار"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  إدارة مركزية لمتغيرات البيئة والأسرار، تُستخدم لتخزين البيانات الحساسة، وإعادة استخدام بيانات التكوين، وعزل البيئات المتعددة، وغير ذلك.
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# المتغيرات والأسرار
+# Variables and secrets

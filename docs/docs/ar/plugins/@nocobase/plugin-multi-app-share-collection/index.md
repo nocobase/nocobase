@@ -1,5 +1,5 @@
 ---
-displayName: "مشاركة المجموعات بين تطبيقات متعددة"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,12 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
+# Multi-app share collection
 
-# مشاركة المجموعات بين تطبيقات متعددة
-
-> ملاحظة: هذه الإضافة مهملة.
+> Note: This plugin is deprecated.

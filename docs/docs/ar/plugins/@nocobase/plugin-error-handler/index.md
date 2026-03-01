@@ -1,14 +1,12 @@
 ---
-displayName: "معالج الأخطاء"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  يتولى معالجة الأخطاء والاستثناءات في التطبيق.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# معالج الأخطاء
+# Error handler

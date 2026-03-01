@@ -1,14 +1,12 @@
 ---
-displayName: "שדה אוסף: Markdown(Vditor)"
+displayName: "Collection field: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |
-  משמש לאחסון תוכן Markdown ולהצגתו באמצעות עורך Vditor. הוא תומך בתחביר Markdown נפוץ, כגון רשימות, קוד, ציטוטים ועוד, ומאפשר גם העלאת תמונות, הקלטות קוליות וכדומה. בנוסף, הוא מספק הצגה מיידית בגישת 'מה שאתם רואים זה מה שאתם מקבלים' (WYSIWYG).
+  Used to store Markdown and render it using Vditor editor, supports common Markdown syntax such as list, code, quote, etc., and supports uploading images, recordings, etc.It also allows for instant rendering, where what you see is what you get.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# שדה אוסף: Markdown(Vditor)
+# Collection field: Markdown(Vditor)

@@ -53,7 +53,14 @@ async function replaceVariables(template, variables, localVariables = {}) {
   return result;
 }
 
-export const parseTask = async (task: { message: TaskMessage }) => {
+export const parseTask = async (task: {
+  message: TaskMessage;
+  webSearch?: boolean;
+  model?: any;
+  skillSettings?: {
+    skills?: string[];
+  };
+}) => {
   let userMessage: any;
   const { message } = task;
   if (message?.user) {
@@ -91,7 +98,9 @@ export const parseTask = async (task: { message: TaskMessage }) => {
     systemMessage,
     attachments,
     workContext: message.workContext,
-    skillSettings: message.skillSettings,
+    skillSettings: task.skillSettings,
+    webSearch: task.webSearch,
+    model: task.model,
   };
 };
 

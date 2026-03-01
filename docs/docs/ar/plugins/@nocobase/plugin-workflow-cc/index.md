@@ -1,14 +1,12 @@
 ---
-displayName: "سير العمل: نسخة كربونية"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  توفر هذه الإضافة ميزة النسخ الكربوني (CC) ضمن سير العمل، مما يتيح إرسال الموافقات أو أي معلومات أخرى إلى مستخدمين محددين.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: نسخة كربونية
+# Workflow: CC

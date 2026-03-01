@@ -1,14 +1,12 @@
 ---
-displayName: "ฟิลด์คอลเลกชัน: สูตร"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  สามารถกำหนดค่าและจัดเก็บผลลัพธ์ของการคำนวณระหว่างค่าฟิลด์หลายค่าในเรคคอร์ดเดียวกันได้ โดยรองรับทั้งเอนจิน Math.js และฟังก์ชันสูตร Excel ครับ
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ฟิลด์คอลเลกชัน: สูตร
+# Collection field: Formula

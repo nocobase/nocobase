@@ -1,14 +1,12 @@
 ---
-displayName: "Oznámení: E-mail"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Slouží k odesílání e-mailových oznámení. V současnosti podporuje pouze SMTP přenos.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Oznámení: E-mail
+# Notification: Email

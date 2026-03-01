@@ -1,17 +1,15 @@
 ---
-displayName: "Kolom koleksi: Snapshot"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  Saat menambahkan data baru, buat snapshot untuk data relasionalnya dan simpan di data baru tersebut. Snapshot tidak akan diperbarui ketika data relasional diperbarui.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kolom Koleksi: Snapshot
+# Collection field: Snapshot
 
-> Catatan: Plugin ini sudah tidak digunakan lagi (deprecated).
+> Note: This plugin is deprecated.

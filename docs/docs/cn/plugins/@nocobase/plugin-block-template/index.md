@@ -7,6 +7,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # 区块：模板（已废弃）

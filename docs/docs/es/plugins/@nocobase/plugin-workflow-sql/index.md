@@ -1,14 +1,12 @@
 ---
-displayName: "Flujo de trabajo: Nodo SQL"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Permite ejecutar sentencias SQL arbitrarias en la base de datos directamente desde un flujo de trabajo.
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Flujo de trabajo: Nodo SQL
+# Workflow: SQL node

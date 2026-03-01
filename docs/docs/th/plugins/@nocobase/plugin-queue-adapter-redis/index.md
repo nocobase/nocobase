@@ -1,18 +1,15 @@
 ---
-displayName: "Redis อะแดปเตอร์คิวข้อความ"
+displayName: "Redis queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  ใช้ Redis ในการจัดการคิวข้อความของแอปพลิเคชัน
+  Used for hanlding message queue with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# Redis อะแดปเตอร์คิวข้อความ
+# Redis queue adapter

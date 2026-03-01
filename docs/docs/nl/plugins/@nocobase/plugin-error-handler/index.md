@@ -1,14 +1,12 @@
 ---
-displayName: "Foutafhandelaar"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Verwerkt fouten en uitzonderingen in de applicatie.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Foutafhandelaar
+# Error handler

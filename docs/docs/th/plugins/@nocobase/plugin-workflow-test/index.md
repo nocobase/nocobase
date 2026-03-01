@@ -1,13 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: ชุดเครื่องมือทดสอบ"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: ชุดเครื่องมือทดสอบ
+# Workflow: test kit

@@ -1,19 +1,14 @@
 ---
-displayName: "ब्लॉक: ट्री"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  ट्री संरचना वाला फ़िल्टर ब्लॉक प्रदान करता है।
+  Provides tree structure filter block
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-
-# ब्लॉक: ट्री
+# Block: Tree

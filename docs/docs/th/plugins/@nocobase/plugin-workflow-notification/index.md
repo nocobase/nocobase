@@ -1,14 +1,12 @@
 ---
-displayName: "เวิร์กโฟลว์: โหนดแจ้งเตือน"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  สามารถใช้เพื่อส่งการแจ้งเตือนประเภทต่างๆ ในเวิร์กโฟลว์ได้
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# เวิร์กโฟลว์: โหนดแจ้งเตือน
+# Workflow: notification node

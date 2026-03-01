@@ -1,17 +1,14 @@
 ---
-displayName: "Brouillons de formulaire"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Permet aux utilisateurs d'enregistrer des brouillons de formulaire et de reprendre l'édition plus tard.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Brouillons de formulaire
+# Form drafts

@@ -1,14 +1,14 @@
 ---
-displayName: "Aktion: Benutzerdefinierte Anfrage"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  Mit dieser Aktion können Sie Anfragen an beliebige HTTP-Dienste senden und dabei Kontextdaten an den Zieldienst übermitteln.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Aktion: Benutzerdefinierte Anfrage
+# Action: Custom request

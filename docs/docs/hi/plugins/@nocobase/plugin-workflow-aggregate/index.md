@@ -1,15 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: एग्रीगेट नोड"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  इसका उपयोग वर्कफ़्लो में डेटाबेस पर एग्रीगेट क्वेरी करने के लिए किया जा सकता है, जैसे: संख्या गिनना, योग करना, औसत निकालना आदि।
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-
-# वर्कफ़्लो: एग्रीगेट नोड
+# Workflow: Aggregate node

@@ -1,4 +1,5 @@
 import { defineConfig } from '@nocobase/build';
+import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -124,6 +125,10 @@ export default defineConfig({
   //   const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
   //   await writeIndexFiles(pkgPath);
   // },
+  beforeBuild: async () => {
+    const distPath = path.resolve(__dirname, 'dist');
+    await fs.remove(distPath);
+  },
 
   afterBuild: async (log) => {
     log('copying deps');
@@ -149,6 +154,7 @@ export default defineConfig({
       await fs.promises.cp(depPath, path.resolve(__dirname, 'dist/node_modules/@langchain/core/node_modules', dep), {
         recursive: true,
         force: true,
+        filter: (src) => !src.includes(`${path.sep}.bin${path.sep}`) && !src.endsWith(`${path.sep}.bin`),
       });
     }
     log('copying js-tiktoken/lite');
@@ -179,5 +185,14 @@ export default defineConfig({
         },
       },
     );
+
+    log('removing node_modules/**/*.d.ts');
+    fg.sync(['./node_modules/**/*.d.ts', './node_modules/**/*.d.cts'], {
+      cwd: path.resolve(__dirname, 'dist'),
+      absolute: true,
+      onlyFiles: true,
+    }).forEach((file) => {
+      fs.unlinkSync(file);
+    });
   },
 });

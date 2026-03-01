@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
 
 # 工作流：自定义操作事件

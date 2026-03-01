@@ -59,6 +59,7 @@ import { VariableScope } from '../../../variables/VariableScope';
 import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
+import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
@@ -318,6 +319,11 @@ const MenuSchemaToolbarWithContainer = () => {
 };
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+const MobileMenuControlContext = React.createContext<{
+  closeMobileMenu: () => void;
+}>({
+  closeMobileMenu: () => {},
+});
 
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
@@ -375,6 +381,10 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
   const navigate = useNavigateNoUpdate();
   const basenameOfCurrentRouter = useRouterBasename();
+  const { closeMobileMenu } = useContext(MobileMenuControlContext);
+  // 如果点击的是一个 group，直接跳转到第一个子页面
+  const path = item.redirect || item.path;
+  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
 
   useEffect(() => {
     if (divRef.current) {
@@ -399,16 +409,50 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
         const url = await parseURLAndParams(href, params || []);
 
         if (openInNewWindow !== false) {
+          if (props.options?.isMobile) {
+            closeMobileMenu();
+          }
           window.open(url, '_blank');
         } else {
-          navigateWithinSelf(href, navigate, window.location.origin + basenameOfCurrentRouter);
+          runAfterMobileMenuClosed({
+            isMobile: !!props.options?.isMobile,
+            closeMobileMenu,
+            callback: () => {
+              navigateWithinSelf(href, navigate, window.location.origin + basenameOfCurrentRouter);
+            },
+          });
         }
       } catch (err) {
         console.error(err);
+        if (props.options?.isMobile) {
+          closeMobileMenu();
+        }
         window.open(href, '_blank');
       }
     },
-    [parseURLAndParams, item],
+    [parseURLAndParams, item, props.options?.isMobile, closeMobileMenu, navigate, basenameOfCurrentRouter],
+  );
+
+  const handleClickMenuItem = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!props.options?.isMobile) {
+        navigate(path);
+        return;
+      }
+
+      // 移动端先收起菜单，再跳转，避免返回时菜单残留在打开态。
+      runAfterMobileMenuClosed({
+        isMobile: !!props.options?.isMobile,
+        closeMobileMenu,
+        callback: () => {
+          navigate(path);
+        },
+      });
+    },
+    [props.options?.isMobile, closeMobileMenu, navigate, path],
   );
 
   if (item._hidden) {
@@ -457,10 +501,6 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     );
   }
 
-  // 如果点击的是一个 group，直接跳转到第一个子页面
-  const path = item.redirect || item.path;
-  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
-
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
@@ -470,7 +510,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
             badgeProps={badgeProps}
           >
-            <Link to={path} aria-label={item.name}>
+            <Link to={path} aria-label={item.name} onClick={handleClickMenuItem}>
               {props.children}
             </Link>
           </WithTooltip>
@@ -706,7 +746,7 @@ const GlobalStyle = () => {
   return <El />;
 };
 
-export const InternalAdminLayout = () => {
+export const InternalAdminLayout = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
   const location = useLocation();
@@ -786,56 +826,66 @@ export const InternalAdminLayout = () => {
     };
   }, [styles.headerPopup]);
 
+  const closeMobileMenu = useCallback(() => {
+    if (!isMobileLayout) {
+      return;
+    }
+    setCollapsed(true);
+  }, [isMobileLayout]);
+
   return (
     <div style={rootStyle}>
       <div id="nocobase-app-container" style={appContainerStyle}>
-        <DndContext onDragEnd={onDragEnd}>
-          <ProLayout
-            contentStyle={contentStyle}
-            siderWidth={token.siderWidth || 200}
-            className={resetStyle}
-            location={location}
-            route={route}
-            actionsRender={actionsRender}
-            logo={
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                {AppsComponent && <AppsComponent />}
-                <NocoBaseLogo />
-              </div>
-            }
-            title={''}
-            layout="mix"
-            splitMenus
-            token={layoutToken}
-            headerRender={headerRender}
-            menuItemRender={menuItemRender}
-            subMenuItemRender={subMenuItemRender}
-            collapsedButtonRender={collapsedButtonRender}
-            onCollapse={onCollapse}
-            collapsed={collapsed}
-            onPageChange={onPageChange}
-            menu={{
-              // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
-              autoClose: false,
-            }}
-            menuProps={menuProps}
-          >
-            <RouteContext.Consumer>
-              {(value: RouteContextType) => {
-                const { isMobile } = value;
-
-                return (
-                  <SetIsMobileLayout isMobile={isMobile}>
-                    <ConfigProvider theme={isMobile ? mobileTheme : theme}>
-                      <GlobalStyle />
-                      <LayoutContent />
-                    </ConfigProvider>
-                  </SetIsMobileLayout>
-                );
+        <MobileMenuControlContext.Provider value={{ closeMobileMenu }}>
+          <DndContext onDragEnd={onDragEnd}>
+            <ProLayout
+              {...props}
+              contentStyle={contentStyle}
+              siderWidth={token.siderWidth || 200}
+              className={resetStyle}
+              location={location}
+              route={route}
+              actionsRender={actionsRender}
+              logo={
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {AppsComponent && <AppsComponent />}
+                  <NocoBaseLogo />
+                </div>
+              }
+              title={''}
+              layout="mix"
+              splitMenus
+              token={layoutToken}
+              headerRender={headerRender}
+              menuItemRender={menuItemRender}
+              subMenuItemRender={subMenuItemRender}
+              collapsedButtonRender={collapsedButtonRender}
+              onCollapse={onCollapse}
+              collapsed={collapsed}
+              onPageChange={onPageChange}
+              menu={{
+                // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
+                autoClose: false,
               }}
-            </RouteContext.Consumer>
-          </ProLayout>
-        </DndContext>
+              menuProps={menuProps}
+            >
+              <RouteContext.Consumer>
+                {(value: RouteContextType) => {
+                  const { isMobile } = value;
+
+                  return (
+                    <SetIsMobileLayout isMobile={isMobile}>
+                      <ConfigProvider theme={isMobile ? mobileTheme : theme}>
+                        <GlobalStyle />
+                        <LayoutContent />
+                      </ConfigProvider>
+                    </SetIsMobileLayout>
+                  );
+                }}
+              </RouteContext.Consumer>
+            </ProLayout>
+          </DndContext>
+        </MobileMenuControlContext.Provider>
       </div>
       <div id="nocobase-embed-container" style={embedContainerStyle}></div>
     </div>

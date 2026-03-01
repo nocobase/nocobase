@@ -1,18 +1,15 @@
 ---
-displayName: "Przepływ pracy: węzeł obliczania daty"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Umożliwia wykonywanie operacji na datach w przepływach pracy, takich jak dodawanie, odejmowanie, porównywanie czy formatowanie.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: węzeł obliczania daty
+# Workflow: date calculation node

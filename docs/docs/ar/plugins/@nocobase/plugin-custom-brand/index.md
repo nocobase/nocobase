@@ -1,18 +1,15 @@
 ---
-displayName: "تخصيص العلامة التجارية"
+displayName: "Custom brand"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يمكنك تخصيص اسم العلامة التجارية والمزيد من المعلومات المتعلقة بها.
+  Customize the brand name and more brand-related information.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# تخصيص العلامة التجارية
+# Custom brand

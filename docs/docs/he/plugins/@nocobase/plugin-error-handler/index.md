@@ -1,14 +1,12 @@
 ---
-displayName: "מטפל בשגיאות"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  טיפול בשגיאות וחריגות ביישום.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מטפל בשגיאות
+# Error handler

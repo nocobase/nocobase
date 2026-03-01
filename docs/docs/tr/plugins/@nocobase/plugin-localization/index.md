@@ -1,14 +1,12 @@
 ---
-displayName: "Yerelleştirme"
+displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Uygulamanın yerelleştirme kaynaklarını yönetmenizi sağlar.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Yerelleştirme
+# Localization

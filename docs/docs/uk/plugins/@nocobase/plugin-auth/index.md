@@ -1,14 +1,12 @@
 ---
-displayName: "Автентифікація"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  Керування автентифікацією користувачів, що включає автентифікацію за паролем, SMS та підтримку протоколів єдиного входу (SSO), з можливістю розширення.
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-# Автентифікація
+# Authentication

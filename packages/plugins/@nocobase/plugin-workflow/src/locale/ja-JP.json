@@ -256,5 +256,13 @@
   "Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).": "ワークフローは、送信が成功する前または後に、ワークフローの種類に基づいてトリガーされます（ローカルモードでのアクション前後のイベントと承認イベントをサポート）。",
   "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "ボタンをクリックするとデータを保存せずにワークフローが直接トリガーされます。「カスタムアクションイベント」にのみバインドできます。",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "不明なタイプのワークフローはエラーを引き起こします。このタイプを提供するプラグインを削除するか確認してください。",
-  "Yes": "Yes"
+  "Yes": "Yes",
+  "Failed to move node": "ノードの移動に失敗しました",
+  "Confirm move": "移動の確認",
+  "Moving this node may remove variable references.": "このノードを移動すると変数参照が削除される可能性があります。",
+  "Impacted current node variables": "現在のノードが参照する変数",
+  "Impacted dependent node variables": "現在のノード変数を参照するノード",
+  "Keep variable references": "変数参照を保持する",
+  "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "変数参照を保持する場合は手動調整が必要です。調整しないとワークフローが失敗する可能性があります。",
+  "Failed to update node variables": "ノード変数の更新に失敗しました"
 }

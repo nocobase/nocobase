@@ -1,14 +1,12 @@
 ---
-displayName: "معاينة ملفات Office"
+displayName: "Office File Previewer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  إضافة لمعاينة ملفات Office عبر خدمة المعاينة المباشرة من Microsoft.
+  A plugin for previewing office files via Microsoft live preview service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# معاينة ملفات Office
+# Office File Previewer

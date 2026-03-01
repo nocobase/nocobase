@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-custom-request",
-  "version": "2.0.0-beta.18",
+  "version": "2.1.0-beta.6",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-custom-request",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-custom-request",
@@ -11,7 +11,7 @@
   "description": "Sending a request to any HTTP service supports sending context data to the target service.",
   "description.ru-RU": "Отправка запроса к любому HTTP-сервису, поддерживается отправка контекстных данных в целевой сервис.",
   "description.zh-CN": "向任意 HTTP 服务发送请求，支持将上下文数据发送给目标服务。",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
@@ -19,6 +19,12 @@
     "lodash": "4.x",
     "react-i18next": "^11.15.1",
     "react-router-dom": "6.x"
+  },
+  "nocobase": {
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",

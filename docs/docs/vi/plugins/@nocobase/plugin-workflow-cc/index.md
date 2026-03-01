@@ -1,14 +1,12 @@
 ---
-displayName: "Luồng công việc: CC"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Cung cấp tính năng CC (gửi bản sao) trong các luồng công việc để gửi các phê duyệt hoặc bất kỳ loại thông tin nào khác đến những người dùng cụ thể.
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: CC
+# Workflow: CC

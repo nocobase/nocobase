@@ -1,15 +1,12 @@
 ---
-displayName: "Arbetsflöde: Aggregeringsnod"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Används för att utföra aggregerade databasfrågor i ett arbetsflöde, till exempel för att räkna antal, summera eller beräkna medelvärden.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
-
-# Arbetsflöde: Aggregeringsnod
+# Workflow: Aggregate node

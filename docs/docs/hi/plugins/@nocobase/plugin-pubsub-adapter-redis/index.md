@@ -1,18 +1,15 @@
 ---
-displayName: "Redis पब सब एडाप्टर"
+displayName: "Redis pub sub adapter"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Redis का उपयोग करके एप्लिकेशन पब/सब संदेशों को संभालने के लिए।
+  Used for hanlding pub/sub messages with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# Redis पब सब एडाप्टर
+# Redis pub sub adapter

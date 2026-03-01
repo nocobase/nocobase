@@ -1,18 +1,15 @@
 ---
-displayName: "ワークフロー：Webhook トリガー"
+displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  外部システムからのHTTP呼び出しを受け取り、イベントをトリガーします。支払いコールバックやメッセージ通知など、サードパーティシステムからのデータプッシュやイベント通知に利用できます
+  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ワークフロー：Webhook トリガー
+# Workflow: Webhook

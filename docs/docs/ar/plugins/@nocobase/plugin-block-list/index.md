@@ -1,14 +1,12 @@
 ---
-displayName: "الكتلة: قائمة"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  تعرض البيانات في شكل قائمة مع دعم الترقيم.
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# الكتلة: قائمة
+# Block: List

@@ -18,6 +18,15 @@ export default {
         result: config.path == null ? result : lodash.get(result, config.path),
       };
     },
+    duplicateConfig(node, { origin }) {
+      if (origin?.config?.duplicateFlag) {
+        return {
+          ...origin.config,
+          duplicated: true,
+        };
+      }
+      return origin?.config ?? node.config;
+    },
     test(config = {}) {
       return {
         status: 1,
@@ -94,12 +103,18 @@ export default {
         upstreamId: input?.id ?? null,
       });
 
+      const plugin = processor.options.plugin;
       setTimeout(() => {
+        // Check if app is still running before resuming to avoid "Database handle is closed" error
+        if (!plugin.app || plugin.app.stopped) {
+          return;
+        }
+
         job.set({
           status: 1,
         });
 
-        processor.options.plugin.resume(job);
+        plugin.resume(job);
       }, node.config.duration ?? 100);
 
       return null;

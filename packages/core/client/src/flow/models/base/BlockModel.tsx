@@ -15,7 +15,15 @@ import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 import { BlockPlaceholder, BlockDeletePlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
-export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | 'subForm' | BlockSceneType[];
+export type BlockSceneType =
+  | 'new'
+  | 'filter'
+  | 'one'
+  | 'many'
+  | 'select'
+  | 'subForm'
+  | 'bulkEditForm'
+  | BlockSceneType[];
 
 export const BlockSceneEnum = {
   new: 'new' as BlockSceneType,
@@ -25,6 +33,7 @@ export const BlockSceneEnum = {
   filter: 'filter' as BlockSceneType,
   oam: ['one', 'many'] as BlockSceneType,
   subForm: 'subForm' as BlockSceneType,
+  bulkEditForm: 'bulkEditForm' as BlockSceneType,
 };
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
@@ -34,6 +43,59 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   customModelClasses = {} as any;
   collectionRequired = false;
   private ObservedRenderComponent = null;
+
+  /**
+   * 记录各筛选来源是否活跃（有有效筛选值）
+   * key: filterId (筛选器 uid), value: boolean (是否有有效筛选)
+   */
+  private activeFilterSources: Map<string, boolean> = new Map();
+
+  /**
+   * 设置指定筛选来源的活跃状态
+   * @param filterId 筛选器 uid
+   * @param active 是否有有效筛选值
+   */
+  setFilterActive(filterId: string, active: boolean) {
+    this.activeFilterSources.set(filterId, active);
+  }
+
+  /**
+   * 检查是否有任何活跃的筛选来源
+   * @returns boolean
+   */
+  hasActiveFilters(): boolean {
+    // 检查 dataScope 是否有筛选
+    const resource = this['resource'] as any;
+    if (resource && resource['filter'] && Object.keys(resource['filter']).length > 0) {
+      return true;
+    }
+
+    // 检查所有绑定的筛选器
+    for (const [, active] of this.activeFilterSources) {
+      if (active) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 移除指定筛选来源
+   * @param filterId 筛选器 uid
+   */
+  removeFilterSource(filterId: string) {
+    this.activeFilterSources.delete(filterId);
+  }
+
+  /**
+   * 获取数据加载模式
+   * @returns 'auto' | 'manual'
+   */
+  getDataLoadingMode(): 'auto' | 'manual' {
+    return this.getStepParams('dataLoadingModeSettings')?.mode || 'auto';
+  }
+
   static _getScene() {
     return _.castArray(this['scene'] || []);
   }
@@ -67,6 +129,9 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   onInit(options: any): void {
     super.onInit(options);
+    this.context.defineProperty('blockModel', {
+      value: this,
+    });
     this.context.defineMethod('getModelClassName', (className: string) => {
       return this.getModelClassName(className);
     });
@@ -130,62 +195,17 @@ BlockModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        const title = ctx.t(params.title);
-        const description = ctx.t(params.description);
-        ctx.model.setDecoratorProps({ title: title, description: description });
+        const title = ctx.t(params.title, { ns: 'lm-flow-engine' });
+        const description = ctx.t(params.description, { ns: 'lm-flow-engine' });
+        ctx.model.setDecoratorProps({ title, description });
       },
     },
     linkageRules: {
       use: 'blockLinkageRules',
     },
-    // setBlockHeight: {
-    //   title: tval('Set block height'),
-    //   uiSchema: {
-    //     heightMode: {
-    //       type: 'string',
-    //       enum: [
-    //         { label: tval('Default'), value: HeightMode.DEFAULT },
-    //         { label: tval('Specify height'), value: HeightMode.SPECIFY_VALUE },
-    //         { label: tval('Full height'), value: HeightMode.FULL_HEIGHT },
-    //       ],
-    //       required: true,
-    //       'x-decorator': 'FormItem',
-    //       'x-component': 'Radio.Group',
-    //     },
-    //     height: {
-    //       title: tval('Height'),
-    //       type: 'string',
-    //       required: true,
-    //       'x-decorator': 'FormItem',
-    //       'x-component': 'NumberPicker',
-    //       'x-component-props': {
-    //         addonAfter: 'px',
-    //       },
-    //       'x-validator': [
-    //         {
-    //           minimum: 40,
-    //         },
-    //       ],
-    //       'x-reactions': {
-    //         dependencies: ['heightMode'],
-    //         fulfill: {
-    //           state: {
-    //             hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="defaultHeight"}}',
-    //             value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
-    //           },
-    //         },
-    //       },
-    //     },
-    //   },
-    //   defaultParams: () => {
-    //     return {
-    //       heightMode: HeightMode.DEFAULT,
-    //     };
-    //   },
-    //   handler(ctx, params) {
-    //     ctx.model.setDecoratorProps({ heightMode: params.heightMode, height: params.height });
-    //   },
-    // },
+    blockHeight: {
+      use: 'blockHeight',
+    },
   },
 });
 

@@ -9,7 +9,7 @@
 
 /**
  * 统一的安全全局对象代理：window/document/navigator
- * - window：仅允许常用的定时器、console、Math、Date、FormData、addEventListener、open（安全包装）、location（安全代理）
+ * - window：仅允许常用的定时器、console、Math、Date、FormData、Blob、URL、addEventListener、open（安全包装）、location（安全代理）
  * - document：仅允许 createElement/querySelector/querySelectorAll
  * - navigator：仅提供极少量低风险能力（clipboard.writeText、onLine、language、languages）
  * - 不允许随意访问未声明的属性，最小权限原则
@@ -211,6 +211,8 @@ export function createSafeWindow(extra?: Record<string, any>) {
     Math,
     Date,
     FormData,
+    ...(typeof Blob !== 'undefined' ? { Blob } : {}),
+    ...(typeof URL !== 'undefined' ? { URL } : {}),
     // 事件侦听仅绑定到真实 window，便于少量需要的全局监听
     addEventListener: addEventListener.bind(window),
     // 安全的 window.open 代理
@@ -348,5 +350,57 @@ export function createSafeNavigator(extra?: Record<string, any>) {
         throw new Error(`Access to navigator property "${String(prop)}" is not allowed.`);
       },
     },
+  );
+}
+
+/**
+ * Create a safe globals object for RunJS execution.
+ *
+ * - Always tries to provide `navigator`
+ * - Best-effort provides `window` and `document` in browser environments
+ * - Never throws (so callers can decide how to handle missing globals)
+ */
+export function createSafeRunJSGlobals(extraGlobals?: Record<string, any>): Record<string, any> {
+  const globals: Record<string, any> = {};
+
+  try {
+    const navigator = createSafeNavigator();
+    globals.navigator = navigator;
+    try {
+      globals.window = createSafeWindow({ navigator });
+    } catch {
+      // ignore when window is not available (e.g. SSR/tests)
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    globals.document = createSafeDocument();
+  } catch {
+    // ignore when document is not available (e.g. SSR/tests)
+  }
+
+  return extraGlobals ? { ...globals, ...extraGlobals } : globals;
+}
+
+/**
+ * Execute RunJS with safe globals (window/document/navigator).
+ *
+ * Keeps `this` binding by calling `ctx.runjs(...)` instead of passing bare function references.
+ */
+export async function runjsWithSafeGlobals(
+  ctx: unknown,
+  code: string,
+  options?: any,
+  extraGlobals?: Record<string, any>,
+): Promise<any> {
+  if (!ctx || (typeof ctx !== 'object' && typeof ctx !== 'function')) return undefined;
+  const runjs = (ctx as { runjs?: unknown }).runjs;
+  if (typeof runjs !== 'function') return undefined;
+  return (ctx as { runjs: (code: string, variables?: Record<string, any>, options?: any) => Promise<any> }).runjs(
+    code,
+    createSafeRunJSGlobals(extraGlobals),
+    options,
   );
 }

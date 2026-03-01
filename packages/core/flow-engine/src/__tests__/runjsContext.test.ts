@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import {
   RunJSContextRegistry,
-  getRunJSDocFor,
   createJSRunnerWithVersion,
-  getRunJSScenesForModel,
+  getRunJSDocFor,
   getRunJSScenesForContext,
+  getRunJSScenesForModel,
 } from '..';
-import { setupRunJSContexts } from '../runjs-context/setup';
 import { FlowContext } from '../flowContext';
 import { JSRunner } from '../JSRunner';
+import { setupRunJSContexts } from '../runjs-context/setup';
 
 describe('flowRunJSContext registry and doc', () => {
   beforeAll(async () => {
@@ -80,7 +80,10 @@ describe('flowRunJSContext registry and doc', () => {
       (ctx as any).defineProperty('model', { value: { constructor: { name: 'JSFieldModel' } } });
       (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.message).toMatch(/Ant Design 全局消息/);
+      const message = doc?.properties?.message;
+      const messageText =
+        typeof message === 'string' ? message : (message as any)?.description ?? (message as any)?.detail ?? '';
+      expect(String(messageText)).toMatch(/Ant Design 全局消息/);
     });
 
     it('should fallback to English when locale is not found', () => {
@@ -208,10 +211,10 @@ describe('flowRunJSContext registry and doc', () => {
       expect(doc?.properties?.message).toBeTruthy();
     });
 
-    it('should have api property in base context', () => {
+    it('should have request method in base context', () => {
       const ctx: any = { model: { constructor: { name: '*' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.api).toBeTruthy();
+      expect(doc?.methods?.request).toBeTruthy();
     });
 
     it('should have t method in base context', () => {

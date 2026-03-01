@@ -1,18 +1,15 @@
 ---
-displayName: "ความคิดเห็น"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  มีเทมเพลตคอลเลกชันสำหรับความคิดเห็นและบล็อก เพื่อเพิ่มความสามารถในการแสดงความคิดเห็นให้กับข้อมูลในคอลเลกชันใดก็ได้
-isFree: ไม่ฟรี
-builtIn: ไม่ใช่ฟังก์ชันในตัว
-defaultEnabled: ไม่ได้เปิดใช้งานโดยค่าเริ่มต้น
-points: 2
+  Provides comment collection template and block to add commenting functionality for any collection.
+isFree: false
+builtIn: false
+defaultEnabled: false
+points: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ความคิดเห็น
+# Comments

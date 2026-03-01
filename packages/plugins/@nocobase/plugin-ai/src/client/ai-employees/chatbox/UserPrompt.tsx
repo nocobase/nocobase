@@ -8,14 +8,15 @@
  */
 
 import React, { useMemo } from 'react';
-import { SchemaComponent, useAPIClient, useActionContext, useToken } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useActionContext, useRequest, useToken } from '@nocobase/client';
 import { useT } from '../../locale';
 import { Button, Popover, Card, Alert, App, Typography } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useChatBoxStore } from './stores/chat-box';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { AIEmployee } from '../types';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -38,8 +39,7 @@ const useEditActionProps = () => {
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-
-  const { refresh } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
 
   return {
     type: 'primary',
@@ -51,7 +51,7 @@ const useEditActionProps = () => {
           prompt: form.values?.prompt,
         },
       });
-      refresh();
+      await aiConfigRepository.refreshAIEmployees();
       setCurrentEmployee((prev) => ({
         ...prev,
         userConfig: {
@@ -134,6 +134,10 @@ const Edit: React.FC = () => {
 export const UserPrompt: React.FC = () => {
   const t = useT();
   const { token } = useToken();
+  const aiConfigRepository = useAIConfigRepository();
+  useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   return (

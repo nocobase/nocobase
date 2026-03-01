@@ -8,13 +8,12 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Space, Tabs, Tag } from 'antd';
+import { Avatar as AntdAvatar, Space, Tabs } from 'antd';
 import { ExtendCollectionsProvider, SchemaComponent, useAPIClient } from '@nocobase/client';
 import { useT } from '../../locale';
 import { useField } from '@formily/react';
 import { Field } from '@formily/core';
 import { avatars } from '../avatars';
-import { ModelSettings } from './ModelSettings';
 import { ProfileSettings } from './ProfileSettings';
 import { SystemPrompt } from './SystemPrompt';
 import aiEmployees from '../../../collections/ai-employees';
@@ -30,6 +29,7 @@ import {
 } from './hooks';
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
 import { CheckOutlined } from '@ant-design/icons';
+import { EnableSwitch } from './EnableSwitch';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
@@ -69,12 +69,6 @@ const AIEmployeeForm: React.FC<{
         //   children: <ChatSettings />,
         // },
         {
-          key: 'modelSettings',
-          label: t('Model settings'),
-          children: <ModelSettings />,
-          forceRender: true,
-        },
-        {
           key: 'skills',
           label: t('Skills'),
           children: <SkillSettings />,
@@ -109,20 +103,12 @@ const Enabled: React.FC = (props) => {
   return field.value && <CheckOutlined style={{ color: '#52c41a' }} />;
 };
 
-const LLMModel: React.FC = (props) => {
-  const field = useField<Field>();
-  if (!field.value) {
-    return null;
-  }
-  return <Tag>{field.value.model}</Tag>;
-};
-
 export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
       <SchemaComponent
-        components={{ AIEmployeeForm, Avatar, Templates, LLMModel, Enabled }}
+        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch }}
         scope={{
           t,
           useCreateFormProps,
@@ -304,23 +290,12 @@ export const Employees: React.FC = () => {
                     },
                     column4: {
                       type: 'void',
-                      title: t('Model'),
-                      'x-component': 'TableV2.Column',
-                      properties: {
-                        modelSettings: {
-                          type: 'string',
-                          'x-component': 'LLMModel',
-                        },
-                      },
-                    },
-                    column5: {
-                      type: 'void',
                       title: t('Enabled'),
                       'x-component': 'TableV2.Column',
                       properties: {
                         enabled: {
-                          type: 'string',
-                          'x-component': 'Enabled',
+                          type: 'boolean',
+                          'x-component': 'EnableSwitch',
                         },
                       },
                     },

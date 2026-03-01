@@ -1,17 +1,14 @@
 ---
-displayName: "AI: ฐานความรู้"
+displayName: "AI: Knowledge base"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  รองรับการเชื่อมต่อกับฐานข้อมูลเวกเตอร์ เพื่อแปลงเอกสารให้เป็นเวกเตอร์ ช่วยให้พนักงาน AI สามารถค้นหาข้อมูลได้อย่างชาญฉลาดและได้รับการสนับสนุนด้านความรู้
+  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# AI: ฐานความรู้
+# AI: Knowledge base

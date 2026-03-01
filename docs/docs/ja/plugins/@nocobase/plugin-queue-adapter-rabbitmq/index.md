@@ -1,18 +1,15 @@
 ---
-displayName: "RabbitMQ メッセージキューアダプター"
+displayName: "RabbitMQ queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  RabbitMQ を利用して、アプリケーションのメッセージキューを処理します
+  Used for hanlding message queue with RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# RabbitMQ メッセージキューアダプター
+# RabbitMQ queue adapter

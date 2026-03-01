@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-bulk-edit",
-  "version": "2.0.0-beta.18",
+  "version": "2.1.0-beta.6",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-bulk-edit",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-bulk-edit",
@@ -11,11 +11,18 @@
   "description": "Batch edit all records or selected records.",
   "description.ru-RU": "Массовое редактирование всех или только выбранных записей.",
   "description.zh-CN": "对全部数据或选中的数据进行批量编辑。",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
+  },
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

@@ -1,16 +1,12 @@
 ---
-displayName: "แบบฟอร์มสาธารณะ"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  แชร์แบบฟอร์มสาธารณะเพื่อรวบรวมข้อมูลจากผู้ใช้งานที่ไม่ระบุตัวตน
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-
-
-# แบบฟอร์มสาธารณะ
+# Public forms

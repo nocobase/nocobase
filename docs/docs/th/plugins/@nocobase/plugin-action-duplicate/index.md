@@ -1,14 +1,15 @@
 ---
-displayName: "แอคชัน: ทำซ้ำเรคคอร์ด"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  แอคชันนี้ใช้สำหรับทำซ้ำเรคคอร์ด คุณสามารถเลือกที่จะทำซ้ำเรคคอร์ดไปยังฟอร์มเพื่อแก้ไขก่อนส่ง หรือจะทำซ้ำโดยตรงเพื่อสร้างเรคคอร์ดใหม่ก็ได้
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# แอคชัน: ทำซ้ำเรคคอร์ด
+# Action: Duplicate record

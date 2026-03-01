@@ -1,14 +1,12 @@
 ---
-displayName: "Pole kolekce: Příloha (URL)"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  Podporuje přílohy ve formátu URL.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Pole kolekce: Příloha (URL)
+# Collection field: Attachment(URL)

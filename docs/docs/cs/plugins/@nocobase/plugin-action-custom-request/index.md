@@ -1,16 +1,14 @@
 ---
-displayName: "Akce: Vlastní požadavek"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
 description: |
-  Odesílá požadavky na libovolnou HTTP službu a umožňuje odesílat kontextová data cílové službě.
+  Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-
-
-# Akce: Vlastní požadavek
+# Action: Custom request

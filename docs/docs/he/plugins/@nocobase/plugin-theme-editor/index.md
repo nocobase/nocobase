@@ -1,14 +1,12 @@
 ---
-displayName: "עורך ערכות נושא"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  התאימו אישית את צבעי ממשק המשתמש, גדלים ועוד, ושמרו את התוצאה כערכת נושא. ניתן לעבור בין מספר ערכות נושא שונות.
+  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# עורך ערכות נושא
+# Theme editor

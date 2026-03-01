@@ -5,6 +5,368 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.7](https://github.com/nocobase/nocobase/compare/v2.0.6...v2.0.7) - 2026-02-27
+
+### 🎉 New Features
+
+- **[AI employees]** Support searching built-in docs with multiple keywords and reading multiple documents in a single tool calling ([#8718](https://github.com/nocobase/nocobase/pull/8718)) by @2013xile
+
+### 🚀 Improvements
+
+- **[client]** support summary configuration for table ([#8721](https://github.com/nocobase/nocobase/pull/8721)) by @chenos
+
+- **[Embed NocoBase]** Provide sanitize API to filter association values in action ([#8688](https://github.com/nocobase/nocobase/pull/8688)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Data visualization]** fix i18n for plugin chart entry text ([#8716](https://github.com/nocobase/nocobase/pull/8716)) by @heziqiang
+
+- **[Workflow: JavaScript]** Fix test cases can not pass on windows ([#8722](https://github.com/nocobase/nocobase/pull/8722)) by @mytharcher
+
+- **[AI employees]** Resolve issue where AI message renders with length 0 ([#8723](https://github.com/nocobase/nocobase/pull/8723)) by @heziqiang
+
+- **[Template print]** Fix the issue where ACL API changed but is not adapted to plugin by @mytharcher
+
+- **[Workflow: Approval]** Sanitize association values in approval actions, to avoid any data manipulation beyond permission by @mytharcher
+
+- **[Email manager]** Fix image content ID format parsing by @jiannx
+
+## [v2.0.6](https://github.com/nocobase/nocobase/compare/v2.0.5...v2.0.6) - 2026-02-26
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fixed AI conversation error when using MySQL database. ([#8708](https://github.com/nocobase/nocobase/pull/8708)) by @cgyrock
+
+## [v2.0.5](https://github.com/nocobase/nocobase/compare/v2.0.3...v2.0.5) - 2026-02-26
+
+### 🐛 Bug Fixes
+
+- **[client]** In mobile, close the menu first and then perform the page jump ([#8699](https://github.com/nocobase/nocobase/pull/8699)) by @zhangzhonghe
+
+- **[AI LLM: GigaChat]** Fixed GigaChat plugin not working in version 2.0. ([#8707](https://github.com/nocobase/nocobase/pull/8707)) by @cgyrock
+
+- **[AI employees]**
+  - Unify file input for chatGPT APIs using ContentBlock ([#8696](https://github.com/nocobase/nocobase/pull/8696)) by @cgyrock
+
+  - Fix ai agent error when user sends new message without confirming tool execution ([#8697](https://github.com/nocobase/nocobase/pull/8697)) by @cgyrock
+
+- **[AI: Knowledge base]** Fixed AI knowledge base plugin startup error. by @cgyrock
+
+- **[Email manager]** Image rendering error by @jiannx
+
+## [v2.0.3](https://github.com/nocobase/nocobase/compare/v1.9.51...v2.0.3) - 2026-02-24
+
+### 🎉 New Features
+
+- **[Core]** Open source commercial plugins and update license from AGPL-3.0 to Apache-2.0 ([#8682](https://github.com/nocobase/nocobase/pull/8682)) by @chenos
+
+### 🚀 Improvements
+
+- **[AI employees]** Update ai employee docs ([#8690](https://github.com/nocobase/nocobase/pull/8690)) by @heziqiang
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Unify mobile pagination behavior for table and grid card ([#8691](https://github.com/nocobase/nocobase/pull/8691)) by @zhangzhonghe
+
+  - chart block filter not working ([#8671](https://github.com/nocobase/nocobase/pull/8671)) by @chenos
+
+- **[AI employees]** aiTools:list API returns 403 ([#8672](https://github.com/nocobase/nocobase/pull/8672)) by @chenos
+
+- **[Localization]** improve handling of missing i18n keys ([#8673](https://github.com/nocobase/nocobase/pull/8673)) by @chenos
+
+## [v2.0.2](https://github.com/nocobase/nocobase/compare/v2.0.1...v2.0.2) - 2026-02-22
+
+### 🐛 Bug Fixes
+
+- **[Calendar]** Fix calendar localization and date formatting issues ([#8498](https://github.com/nocobase/nocobase/pull/8498)) by @sembaev-a-a
+
+## [v2.0.1](https://github.com/nocobase/nocobase/compare/v2.0.0...v2.0.1) - 2026-02-16
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fix browser OOM when using AI employee ([#8653](https://github.com/nocobase/nocobase/pull/8653)) by @mytharcher
+
+## [v2.0.0](https://github.com/nocobase/nocobase/compare/v1.9.47...v2.0.0) - 2026-02-15
+
+NocoBase 2.0 is a major upgrade focused on **building complex applications and scaling deployments**. This release brings systematic improvements to AI capabilities, application architecture, data editing experience, and frontend event flow, along with full adaptation of V2 pages and core features.
+
+## New Features
+
+### AI Employees
+
+AI capabilities are now built into the core as a first-class citizen, with extensibility through the plugin system:
+
+- Integrated into the core with plugin-based extensibility
+- Upgraded and optimized LangChain dependencies for better stability and scalability
+- Simplified AI employee interaction flow, lowering configuration and usage barriers
+
+![20260214075059](https://static-docs.nocobase.com/20260214075059.png)
+
+**Reference:**
+
+- [AI Employees](https://v2.docs.nocobase.com/ai-employees)
+
+### App Supervisor
+
+The App Supervisor plugin provides **unified discovery, scheduling, and management of multiple NocoBase application instances**, suitable for multi-app and multi-environment deployment scenarios.
+
+- Application auto-discovery and centralized management
+- Shared memory mechanism for improved inter-instance collaboration
+- Multi-environment hybrid deployment for complex delivery requirements
+
+**Shared Memory**
+
+![20260214075803](https://static-docs.nocobase.com/20260214075803.png)
+
+**Multi-Environment Hybrid Deployment**
+
+![20260214075815](https://static-docs.nocobase.com/20260214075815.png)
+
+**Reference:**
+
+- [Multi-App Management](https://v2.docs.nocobase.com/multi-app/multi-app)
+
+### Workflow Canvas Enhancement
+
+#### Drag-and-Drop Node Reordering
+
+![image-8ajlez.png](https://static-docs.nocobase.com/image-8ajlez.png)
+
+#### Copy and Paste Nodes
+
+![image-nskgho.png](https://static-docs.nocobase.com/image-nskgho.png)
+
+### Sub-table (Inline Edit / Popup Edit)
+
+To meet different levels of complexity in related data editing, NocoBase offers two sub-table edit modes:
+
+- **Sub-table (Inline Edit)**: Edit related data directly in the table for efficient operations, ideal for quick data entry and batch updates
+- **Sub-table (Popup Edit)**: Edit data via popup forms with support for more complex field types and validation logic, suitable for high-complexity scenarios
+
+**Sub-table (Inline Edit)**
+
+![20260214080224](https://static-docs.nocobase.com/20260214080224.png)
+
+**Sub-table (Popup Edit)**
+
+![20260214080233](https://static-docs.nocobase.com/20260214080233.png)
+
+**Reference:**
+
+- [Sub-table (Inline Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table)
+- [Sub-table (Popup Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
+
+### Field Assignment
+
+The new field assignment mechanism unifies and enhances **initialization and write logic** for form data, improving clarity and consistency:
+
+- **Unified** field assignment configuration entry, reducing the complexity of scattered configuration
+- Field assignment logic **no longer depends on field component type**, making data behavior more stable and predictable
+- Support for **field-level assignment on relation fields**, enabling complex relational data modeling
+- Both **default value** and **constant value** assignment modes, covering initialization and override scenarios
+- Legacy "field default value" is deprecated; please migrate to the new field assignment mechanism
+
+![20260214080932](https://static-docs.nocobase.com/20260214080932.png)
+
+**Reference:** Field Assignment (documentation coming soon)
+
+### Event Flow Execution Order
+
+Event flow runs strictly in the **Event → Flow → Step** hierarchy, with corresponding hooks triggered before and after each level for fine-grained control and extension.
+
+```yml
+event:
+  before:
+    - track_event_start
+  flows:
+    - name: flow1
+      before:
+        - track_flow_start
+      steps:
+        - name: step1
+          before: [track_step_start]
+          run: do_something
+          after: [track_step_done]
+      after:
+        - track_flow_end
+    - name: flow2
+      ...
+    - name: flow3
+      ...
+  after:
+    - track_event_end
+```
+
+![20260214081527](https://static-docs.nocobase.com/20260214081527.png)
+
+**Reference:**
+
+- [Event Flow](https://v2.docs.nocobase.com/interface-builder/event-flow)
+
+## Features Adapted to 2.0
+
+### Bulk Edit
+
+![20260214083041](https://static-docs.nocobase.com/20260214083041.png)
+
+**Reference:**
+
+- [Bulk Edit](https://v2.docs.nocobase.com/interface-builder/actions/types/bulk-edit)
+
+### Duplicate
+
+![20260214083146](https://static-docs.nocobase.com/20260214083146.png)
+
+**Reference:**
+
+- [Duplicate](https://v2.docs.nocobase.com/interface-builder/actions/types/duplicate)
+
+### Block Height
+
+![20260214083319](https://static-docs.nocobase.com/20260214083319.png)
+
+**Reference:**
+
+- [Block Height](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
+
+### Table Row Drag-and-Drop Sort
+
+![20260214085152](https://static-docs.nocobase.com/20260214085152.png)
+
+**Reference:**
+
+- [Drag Sort](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
+
+### Data Loading Method
+
+![20260214083433](https://static-docs.nocobase.com/20260214083433.png)
+
+**Reference:**
+
+- [Data Loading Method](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
+
+### Displaying Relation Fields in Forms
+
+![20260214083517](https://static-docs.nocobase.com/20260214083517.png)
+
+**Reference:**
+
+- [Form](https://v2.docs.nocobase.com/interface-builder/blocks/data-blocks/form)
+
+### Page (V2) Localization Support
+
+V2 pages now fully support localization across **pages, blocks, actions, and fields**.
+
+After enabling the localization plugin, the system automatically collects missing translation entries and displays them in the localization management list for centralized maintenance.
+
+In JS blocks, use `ctx.t()` to retrieve localized text with variable interpolation:
+
+```js
+const label = ctx.t('Your name is {{name}}', {
+  name: await ctx.getVar('ctx.user.nickname')
+});
+ctx.render(label);
+```
+
+### Approval 2.0
+
+All newly created approval workflows use the 2.0 block-based layout. Existing 1.x configurations remain supported. To switch a 1.x approval to the 2.0 layout, select the v2 version and reconfigure the interface. Note that once switched, it cannot be reverted to 1.x.
+
+#### Configure Initiator Interface
+
+![image-ba3ann.png](https://static-docs.nocobase.com/image-ba3ann.png)
+
+#### Configure Approver Interface
+
+![image-dl448q.png](https://static-docs.nocobase.com/image-dl448q.png)
+
+### CC (Carbon Copy) 2.0
+
+All newly created CC nodes use the 2.0 block-based layout for the recipient's view. Existing 1.x configurations remain supported. To switch a 1.x CC to the 2.0 layout, select the v2 version and reconfigure the interface. Note that once switched, it cannot be reverted to 1.x.
+
+![image-z26oib.png](https://static-docs.nocobase.com/image-z26oib.png)
+
+## Not Yet Available in 2.0
+
+The following features are not yet available in 2.0 and will be upgraded in future releases:
+
+
+| Feature                           | Current Alternative   |
+| --------------------------------- | --------------------- |
+| Custom Request                    | Workflow Request Node |
+| Browser Print                     | JS Action             |
+| Multi-step Form                   | JS Block              |
+| Tree Filter Block                 | JS Block              |
+| Calendar Block                    | JS Block              |
+| Custom Variable                   | Event Flow            |
+| Gantt Block                       | JS Block              |
+| Kanban Block                      | JS Block              |
+| Text Copy                         | Event Flow            |
+| Column Settings                   | JS Action             |
+| Style Linkage Rule                | Event Flow            |
+| Copy Text Shortcut                | Event Flow            |
+| QR Code Field                     | JS Field              |
+| Scan to Input                     | Event Flow            |
+| Embed NocoBase                    | —                    |
+| China Administrative Region Field | —                    |
+| Code Field                        | —                    |
+| Public Form                       | —                    |
+| Workflow Manual Node Todo         | —                    |
+| After Successful Submission       | Event Flow            |
+| Data Template                     | Event Flow            |
+
+## [v1.9.47](https://github.com/nocobase/nocobase/compare/v1.9.46...v1.9.47) - 2026-02-13
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix issue where cleared association attachment field is not saved after submit in edit form ([#8616](https://github.com/nocobase/nocobase/pull/8616)) by @katherinehhh
+
+- **[utils]** Fix security issue of `formula.js` evaluator engine ([#8416](https://github.com/nocobase/nocobase/pull/8416)) by @mytharcher
+
+- **[Workflow: Approval]** Fix the issue where approval data not showing in record detail popup if workflow mode is set to "Before save" by @mytharcher
+
+## [v1.9.46](https://github.com/nocobase/nocobase/compare/v1.9.45...v1.9.46) - 2026-02-10
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix field component options not refreshed in real time when association field switches pattern ([#8611](https://github.com/nocobase/nocobase/pull/8611)) by @katherinehhh
+
+- **[Data visualization: ECharts]** Fix ECharts spelling error by @heziqiang
+
+- **[Workflow: Approval]**
+  - Fix the issue where values missing from detail popup of "My application" by @mytharcher
+
+  - Fix error thrown when execute on before save mode by @mytharcher
+
+## [v1.9.45](https://github.com/nocobase/nocobase/compare/v1.9.44...v1.9.45) - 2026-02-09
+
+### 🐛 Bug Fixes
+
+- **[Field component: mask]** Fix an issue where the mask field settings popup could not load all user roles correctly. by @gchust
+
+- **[Workflow: Approval]** Fix incorrect id to load detail record by @mytharcher
+
+## [v1.9.44](https://github.com/nocobase/nocobase/compare/v1.9.43...v1.9.44) - 2026-02-08
+
+### 🎉 New Features
+
+- **[Workflow: Approval]** Add ACL control for approval APIs by @mytharcher
+
+## [v1.9.43](https://github.com/nocobase/nocobase/compare/v1.9.42...v1.9.43) - 2026-02-06
+
+### 🎉 New Features
+
+- **[Auth: DingTalk]** Allows to bind user with `unionId` by @2013xile
+
+### 🚀 Improvements
+
+- **[Collection field: Markdown(Vditor)]** Added a configuration option to set the default edit mode in the component settings. ([#8408](https://github.com/nocobase/nocobase/pull/8408)) by @Cyx649312038
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** Fix the vulnerability of import action ([#8544](https://github.com/nocobase/nocobase/pull/8544)) by @mytharcher
+
 ## [v1.9.42](https://github.com/nocobase/nocobase/compare/v1.9.41...v1.9.42) - 2026-02-02
 
 ### 🚀 Improvements

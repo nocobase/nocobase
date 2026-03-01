@@ -1,14 +1,12 @@
 ---
-displayName: "Blok: Izgara Kartı"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Verileri sayfalandırma desteğiyle bir ızgara listesi şeklinde gösterir.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Blok: Izgara Kartı
+# Block: GridCard

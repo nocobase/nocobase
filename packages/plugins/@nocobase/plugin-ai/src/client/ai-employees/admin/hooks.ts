@@ -22,7 +22,7 @@ import { useT } from '../../locale';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
 export const useCreateFormProps = () => {
   const t = useT();
@@ -31,6 +31,7 @@ export const useCreateFormProps = () => {
       createForm({
         initialValues: {
           username: `${uid()}`,
+          enabled: true,
           enableKnowledgeBase: false,
           knowledgeBase: {
             knowledgeBaseIds: [],
@@ -79,18 +80,13 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { refresh } = useDataBlockRequest();
-  const { refresh: refreshAIEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const t = useT();
 
   return {
     type: 'primary',
     async onClick() {
       const values = form.values;
-      const modelSettings = values?.modelSettings;
-      if (!modelSettings?.llmService || !modelSettings?.model) {
-        message.warning(t('Please complete model setting before submitting'));
-        return;
-      }
       await form.submit();
       await api.resource('aiEmployees').create({
         values,
@@ -99,7 +95,7 @@ export const useCreateActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
-      refreshAIEmployees();
+      await aiConfigRepository.refreshAIEmployees();
     },
   };
 };
@@ -110,7 +106,7 @@ export const useEditActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
-  const { refresh: refreshAIEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();
@@ -126,12 +122,9 @@ export const useEditActionProps = () => {
       }
       // Remove temporary field before submitting
       delete values._aboutMode;
+      // Remove enabled field to prevent editing it via form submission
+      delete values.enabled;
 
-      const modelSettings = values?.modelSettings;
-      if (!modelSettings?.llmService || !modelSettings?.model) {
-        message.warning(t('Please complete model settings before submitting'));
-        return;
-      }
       await form.submit();
       await resource.update({
         values,
@@ -141,7 +134,7 @@ export const useEditActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
-      refreshAIEmployees();
+      await aiConfigRepository.refreshAIEmployees();
     },
   };
 };

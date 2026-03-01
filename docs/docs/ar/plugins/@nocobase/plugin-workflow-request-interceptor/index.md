@@ -1,18 +1,15 @@
 ---
-displayName: 'سير العمل: حدث ما قبل الإجراء'
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  يتم تشغيله قبل تنفيذ أي طلب يتم بدؤه عبر زر إجراء أو واجهة برمجة تطبيقات (API)، مثل قبل إضافة البيانات أو تحديثها أو حذفها. مناسب للتحقق من صحة البيانات وإجراء الفحوصات المنطقية قبل تنفيذ الإجراء، ويمكن رفض الطلب باستخدام عقدة 'إنهاء العملية".
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# سير العمل: حدث ما قبل الإجراء
+# Workflow: Pre-action event

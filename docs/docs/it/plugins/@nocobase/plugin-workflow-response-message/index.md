@@ -1,14 +1,12 @@
 ---
-displayName: "Flusso di lavoro: Messaggio di risposta"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Utilizzato per assemblare e mostrare al client il messaggio di risposta nei flussi di lavoro di eventi del modulo e intercettazione delle richieste.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
-# Flusso di lavoro: Messaggio di risposta
+# Workflow: Response message

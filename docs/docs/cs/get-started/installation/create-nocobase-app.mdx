@@ -18,7 +18,55 @@ Vyberte verzi NocoBase ([Porovnání verzí](../quickstart.md)) a typ databáze 
 
 <Tabs>
 
-<Tab label="Verze Beta (2.0-beta)">
+<Tab label="Verze Latest">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Verze Beta">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -66,7 +114,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="Verze Alpha (2.0-alpha)">
+<Tab label="Verze Alpha">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -101,54 +149,6 @@ npx create-nocobase-app@alpha my-nocobase-app -d mysql \
 
 ```bash
 npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3306 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-</Tabs>
-
-</Tab>
-
-<Tab label="Verze Latest (1.9)">
-
-<Tabs>
-<Tab label="PostgreSQL">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d postgres \
-   -e DB_HOST=localhost \
-   -e DB_PORT=5432 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-
-<Tab label="MySQL">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d mysql \
-   -e DB_HOST=localhost \
-   -e DB_PORT=3306 \
-   -e DB_DATABASE=nocobase \
-   -e DB_USER=nocobase \
-   -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
-```
-
-</Tab>
-
-<Tab label="MariaDB">
-
-```bash
-yarn create nocobase-app my-nocobase-app -d mariadb \
    -e DB_HOST=localhost \
    -e DB_PORT=3306 \
    -e DB_DATABASE=nocobase \

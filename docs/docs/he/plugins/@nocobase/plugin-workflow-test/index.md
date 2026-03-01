@@ -1,15 +1,12 @@
 ---
-displayName: "תהליך עבודה: ערכת בדיקה"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-
-# תהליך עבודה: ערכת בדיקה
+# Workflow: test kit

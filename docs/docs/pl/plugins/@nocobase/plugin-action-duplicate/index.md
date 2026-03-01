@@ -1,14 +1,15 @@
 ---
-displayName: "Akcja: Duplikuj rekord"
+displayName: "Action: Duplicate record"
 packageName: '@nocobase/plugin-action-duplicate'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Zduplikuj rekord. Mogą Państwo skopiować go do formularza, edytować, a następnie zapisać, lub bezpośrednio zduplikować, aby utworzyć nowy rekord.
+  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Akcja: Duplikuj rekord
+# Action: Duplicate record

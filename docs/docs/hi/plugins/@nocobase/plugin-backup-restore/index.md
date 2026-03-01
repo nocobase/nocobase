@@ -1,17 +1,15 @@
 ---
-displayName: "ऐप का बैकअप और रीस्टोर (अप्रचलित)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  यह एप्लिकेशन का बैकअप लेने और उसे रीस्टोर करने के लिए है, जिसका उपयोग एप्लिकेशन की कॉपी बनाने, माइग्रेट करने और अपग्रेड करने जैसे कामों में किया जा सकता है।
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# ऐप का बैकअप और रीस्टोर (अप्रचलित)
+# App backup & restore (deprecated)
 
-> ध्यान दें: यह प्लगइन अब अप्रचलित हो चुका है।
+> Note: This plugin is deprecated.

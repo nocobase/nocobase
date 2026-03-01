@@ -109,7 +109,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     const genKey = (key) => {
       return this.name + key;
     };
-    const { dataSourceKey, collectionName, associationName } = ctx.view.inputArgs;
+    const { dataSourceKey, collectionName, associationName, filterByTk } = ctx.view.inputArgs;
     const dataSources = ctx.dataSourceManager
       .getDataSources()
       .map((dataSource) => {
@@ -199,7 +199,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         initOptions['associationName'] = associationName;
         initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
       }
-      return [
+      const items: any[] = [
         {
           key: genKey('current-collection'),
           label: 'Current collection',
@@ -212,7 +212,12 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
             },
           }),
         },
-        {
+      ];
+
+      // 新建记录的弹窗（如 Add new）没有 record 锚点（filterByTk），此时不应允许添加「关联记录」区块。
+      // 仅当弹窗携带 filterByTk（例如 View/Details 等记录态弹窗）时，才开放关联记录入口。
+      if (typeof filterByTk !== 'undefined' && filterByTk !== null) {
+        items.push({
           key: genKey('associated'),
           label: 'Associated records',
           children: () => {
@@ -251,13 +256,16 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               })
               .filter(Boolean);
           },
-        },
-        {
-          key: genKey('others-collections'),
-          label: 'Other collections',
-          children: children(ctx),
-        },
-      ];
+        });
+      }
+
+      items.push({
+        key: genKey('others-collections'),
+        label: 'Other collections',
+        children: children(ctx),
+      });
+
+      return items;
     }
     const items = [
       {
@@ -503,7 +511,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       if (collectionField && collectionField.isAssociationField()) {
         (this.resource as BaseRecordResource).addAppends(fieldPath);
         if (collectionField.targetCollection?.template === 'tree') {
-          (this.resource as BaseRecordResource).addAppends(`${fieldPath}.parent` + '(recursively=true)');
+          const result = fieldPath.includes('.') ? fieldPath.slice(fieldPath.lastIndexOf('.') + 1) : fieldPath;
+          if (collectionField.name === result) {
+            (this.resource as BaseRecordResource).addAppends(`${fieldPath}.parent` + '(recursively=true)');
+          }
         }
         if (refresh) {
           this.resource.refresh();
@@ -575,16 +586,42 @@ CollectionBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
+        const blockModel = ctx.model as CollectionBlockModel;
         const filterManager: FilterManager = ctx.model.context.filterManager;
         if (filterManager) {
           filterManager.bindToTarget(ctx.model.uid);
         }
+
+        // 检查数据加载模式
+        const loadingMode = blockModel.getDataLoadingMode();
+        const resource = blockModel.resource;
+        const isMultiResource = resource instanceof MultiRecordResource;
+
+        if (isMultiResource && loadingMode === 'manual' && !blockModel.hasActiveFilters()) {
+          // manual 模式且无活跃筛选时，清空数据且不加载
+          resource.setData([]);
+          resource.setMeta({ count: 0, hasNext: false, page: 1 });
+          resource.loading = false;
+          return;
+        }
+
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {
           await ctx.model.resource.refresh();
         }
       },
+    },
+  },
+});
+
+CollectionBlockModel.registerFlow({
+  key: 'dataLoadingModeSettings',
+  sort: 800,
+  title: tExpr('Set data loading mode'),
+  steps: {
+    dataLoadingMode: {
+      use: 'dataLoadingMode',
     },
   },
 });

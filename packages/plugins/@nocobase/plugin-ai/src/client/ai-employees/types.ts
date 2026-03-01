@@ -45,16 +45,6 @@ export type Conversation = {
   aiEmployee: AIEmployee;
 };
 
-export type ConversationOptions = {
-  sessionId: string;
-  options: {
-    conversationSetting?: ConversationSetting;
-  };
-};
-export type ConversationSetting = {
-  webSearch?: boolean;
-};
-
 export type ContextItem = {
   type: string;
   uid: string;
@@ -62,12 +52,12 @@ export type ContextItem = {
   content?: unknown;
 };
 
-export type ToolCall<T> = {
+export type ToolCall<T = unknown> = {
   id: string;
   type: string;
   name: string;
   status?: 'success' | 'error';
-  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
+  invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
   auto: boolean;
   args: T;
   [key: string]: any;
@@ -120,12 +110,17 @@ export type SendOptions = {
   editingMessageId?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
 
 export type ResendOptions = {
   sessionId: string;
   messageId?: string;
   aiEmployee: AIEmployee;
+  important?: string;
 };
 
 export type TaskMessage = {
@@ -133,15 +128,20 @@ export type TaskMessage = {
   system?: string;
   attachments?: any[];
   workContext?: ContextItem[];
-  skillSettings?: {
-    skills?: string[];
-  };
 };
 
 export type Task = {
   title?: string;
   message: TaskMessage;
   autoSend?: boolean;
+  skillSettings?: {
+    skills?: string[];
+  };
+  webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
 
 export type TriggerTaskOptions = {
@@ -211,4 +211,13 @@ export type WorkContextOptions = {
 export type WebSearching = {
   type: string;
   query: string;
+};
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: any;
+  };
 };

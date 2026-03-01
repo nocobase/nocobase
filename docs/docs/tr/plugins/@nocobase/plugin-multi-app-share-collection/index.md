@@ -1,16 +1,15 @@
 ---
-displayName: "Çoklu Uygulama Koleksiyon Paylaşımı"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Çoklu Uygulama Koleksiyon Paylaşımı
+# Multi-app share collection
 
-> Not: Bu eklenti kullanımdan kaldırılmıştır (deprecated).
+> Note: This plugin is deprecated.

@@ -1,14 +1,15 @@
 ---
-displayName: "Řízení přístupu"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Řízení přístupu, založené na rolích, zdrojích a akcích, umožňuje přesně spravovat oprávnění pro konfiguraci rozhraní, operace s daty, přístup k menu a oprávnění pluginů.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Řízení přístupu
+# Access control

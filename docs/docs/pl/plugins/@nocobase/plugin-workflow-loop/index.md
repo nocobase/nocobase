@@ -1,14 +1,12 @@
 ---
-displayName: "Przepływ pracy: Węzeł pętli"
+displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Służy do wielokrotnego przetwarzania podprocesów dla każdej wartości w tablicy, a także do przetwarzania podprocesów przez określoną liczbę razy.
+  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Przepływ pracy: Węzeł pętli
+# Workflow: Loop node

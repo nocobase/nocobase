@@ -1,14 +1,12 @@
 ---
-displayName: "워크플로우: 집계 쿼리 노드"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  워크플로우에서 데이터베이스에 대해 집계 쿼리를 수행할 때 사용됩니다. 예를 들어, 개수 통계, 합계, 평균값 등을 계산할 수 있습니다.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
-:::
 
-# 워크플로우: 집계 쿼리 노드
+# Workflow: Aggregate node

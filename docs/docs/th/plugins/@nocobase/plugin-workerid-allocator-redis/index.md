@@ -1,15 +1,15 @@
 ---
-displayName: "ตัวจัดสรร ID ของ Worker ด้วย Redis"
+displayName: "Redis worker ID allocator"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  ตัวจัดสรร ID ของ Worker ที่ใช้ Redis เป็นพื้นฐาน
+  Worker id allocator based on Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# ตัวจัดสรร ID ของ Worker ด้วย Redis
+# Redis worker ID allocator

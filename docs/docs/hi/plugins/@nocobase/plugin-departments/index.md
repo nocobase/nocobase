@@ -1,14 +1,12 @@
 ---
-displayName: "विभाग"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  आप उपयोगकर्ताओं को विभागों के अनुसार व्यवस्थित कर सकते हैं, पदानुक्रमित संबंध (ऊपर-नीचे के संबंध) स्थापित कर सकते हैं, अनुमतियों को नियंत्रित करने के लिए भूमिकाओं को जोड़ सकते हैं, और वर्कफ़्लो तथा एक्सप्रेशन में विभागों को वेरिएबल के रूप में उपयोग कर सकते हैं।
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# विभाग
+# Departments

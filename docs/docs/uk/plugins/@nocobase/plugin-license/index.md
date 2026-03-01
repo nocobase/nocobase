@@ -1,16 +1,12 @@
 ---
-displayName: "Налаштування ліцензії"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  Налаштування ідентифікатора екземпляра та ліцензійного ключа
+  Instance ID and license key settings
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
 
-
-
-# Налаштування ліцензії
+# License settings

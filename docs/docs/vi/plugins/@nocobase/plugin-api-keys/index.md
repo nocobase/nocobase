@@ -1,14 +1,12 @@
 ---
-displayName: "Xác thực: Khóa API"
+displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  Cho phép người dùng sử dụng khóa API để truy cập API HTTP của ứng dụng
+  Allows users to use API key to access application's HTTP API
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Xác thực: Khóa API
+# Auth: API keys

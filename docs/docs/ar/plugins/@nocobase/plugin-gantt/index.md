@@ -1,14 +1,12 @@
 ---
-displayName: "الكتلة: مخطط جانت"
+displayName: "Block: Gantt"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  توفر كتلة مخطط جانت.
+  Provides Gantt block.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# الكتلة: مخطط جانت
+# Block: Gantt

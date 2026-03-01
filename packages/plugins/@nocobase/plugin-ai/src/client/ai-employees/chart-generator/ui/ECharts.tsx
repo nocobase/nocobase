@@ -10,7 +10,7 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useT } from '../../../locale';
-import { useGlobalTheme, useToken } from '@nocobase/client';
+import { ToolsUIProperties, useGlobalTheme, useToken } from '@nocobase/client';
 import { ToolCall } from '../../types';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Alert, message, Button } from 'antd';
@@ -49,12 +49,11 @@ const ErrorFallback: React.FC<{ error: Error }> = ({ error }) => {
   );
 };
 
-export const Echarts: React.FC<{
-  messageId: string;
-  tool: ToolCall<{
+export const Echarts: React.FC<
+  ToolsUIProperties<{
     options: any;
-  }>;
-}> = ({ tool }) => {
+  }>
+> = ({ toolCall }) => {
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
@@ -72,12 +71,12 @@ export const Echarts: React.FC<{
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
-      onError={(error) => console.error(error, tool.args)}
-      resetKeys={[tool.args.options]}
+      onError={(error) => console.error(error, toolCall.args)}
+      resetKeys={[toolCall.args.options]}
     >
       <ReactECharts
         option={{
-          ...tool.args.options,
+          ...toolCall.args.options,
           animation: false,
           toolbox: {
             show: true,

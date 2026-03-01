@@ -6,7 +6,7 @@
   "description": "A plugin for previewing office files via Microsoft live preview service.",
   "description.ru-RU": "Плагин для просмотра Office-файлов через Microsoft live preview service.",
   "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
-  "version": "2.0.0-beta.18",
+  "version": "2.1.0-beta.6",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
@@ -21,5 +21,6 @@
     "kkFileView",
     "Microsoft Online",
     "Collection fields"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

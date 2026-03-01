@@ -1,17 +1,15 @@
 ---
-displayName: "Auditlogboeken (verouderd)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Deze plugin is verouderd. Gebruik deze niet, er komt in de toekomst een nieuwe auditlogboek-plugin.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Auditlogboeken (verouderd)
+# Audit logs (deprecated)
 
-> Let op: Deze plugin is verouderd.
+> Note: This plugin is deprecated.

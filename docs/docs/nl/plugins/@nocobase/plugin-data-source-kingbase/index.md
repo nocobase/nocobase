@@ -1,15 +1,15 @@
 ---
-displayName: "Gegevensbron: KingbaseES"
+displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Gebruik de KingbaseES-database als gegevensbron. U kunt deze zowel als primaire database als externe database inzetten.
+  Using the KingbaseES database as a data source, it can serve as the main database or as an external database.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
-:::
 
-# Gegevensbron: KingbaseES
+# Data source: KingbaseES

@@ -1,14 +1,12 @@
 ---
-displayName: "مدير المهام غير المتزامنة"
+displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  لإدارة ومراقبة المهام غير المتزامنة مثل استيراد وتصدير البيانات. يدعم تتبع تقدم المهام والإشعارات.
+  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-# مدير المهام غير المتزامنة
+# Async task manager

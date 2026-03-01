@@ -1,0 +1,26 @@
+{
+  "name": "@nocobase/plugin-block-tree",
+  "version": "2.1.0-beta.6",
+  "main": "dist/server/index.js",
+  "displayName": "Block: Tree",
+  "displayName.zh-CN": "区块：树",
+  "description": "Provides tree structure filter block",
+  "description.zh-CN": "提供树结构的筛选区块",
+  "homepage": "https://docs.nocobase.com/handbook/block-tree",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-tree",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "Blocks"
+  ],
+  "license": "Apache-2.0"
+}

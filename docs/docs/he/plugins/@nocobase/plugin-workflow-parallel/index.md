@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת מקבילי"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  משמש לתהליכי ענף הדורשים ביצוע מקבילי בתוך תהליך העבודה.
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
+  Could be used for parallel execution of branch processes in the workflow.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת מקבילי
+# Workflow: Parallel node

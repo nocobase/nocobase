@@ -1,14 +1,12 @@
 ---
-displayName: "İş Akışı: Gecikme Düğümü"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  İş akışının paralel dallarında diğer dalların tamamlanmasını beklemek için kullanılabilir.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# İş Akışı: Gecikme Düğümü
+# Workflow: Delay node

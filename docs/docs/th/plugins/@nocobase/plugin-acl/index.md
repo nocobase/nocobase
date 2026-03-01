@@ -1,14 +1,15 @@
 ---
-displayName: "การควบคุมสิทธิ์"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  การควบคุมสิทธิ์ที่อิงตามบทบาท, ทรัพยากร และการดำเนินการ ช่วยให้สามารถควบคุมได้อย่างแม่นยำ ทั้งสิทธิ์ในการกำหนดค่าอินเทอร์เฟซ, สิทธิ์ในการดำเนินการกับข้อมูล, สิทธิ์ในการเข้าถึงเมนู และสิทธิ์ของปลั๊กอิน
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
-:::
 
-# การควบคุมสิทธิ์
+# Access control

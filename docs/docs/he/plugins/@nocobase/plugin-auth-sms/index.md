@@ -1,14 +1,12 @@
 ---
-displayName: "הזדהות: SMS"
+displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  מאפשר הזדהות באמצעות קוד אימות הנשלח ב-SMS.
-isFree: כן
-builtIn: כן
-defaultEnabled: לא
+  SMS authentication.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# הזדהות: SMS
+# Auth: SMS

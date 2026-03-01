@@ -1,18 +1,15 @@
 ---
-displayName: "מתאם פרסום-מינוי של Redis"
+displayName: "Redis pub sub adapter"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  מטפל בהודעות פרסום-מינוי של היישום באמצעות Redis.
+  Used for hanlding pub/sub messages with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מתאם פרסום-מינוי של Redis
+# Redis pub sub adapter

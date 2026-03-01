@@ -1,14 +1,15 @@
 ---
-displayName: "פעולה: עדכון אצווה"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  מבצע עדכון אצווה לכל הרשומות או לרשומות שנבחרו.
-isFree: נכון
-builtIn: נכון
-defaultEnabled: לא נכון
+  Batch update all records or selected records.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# פעולה: עדכון אצווה
+# Action: Batch update

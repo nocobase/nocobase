@@ -1,14 +1,12 @@
 ---
-displayName: "Správa zdrojů dat"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Spravujte zdroje dat, včetně vestavěné databáze Master, externích databází, API a dalších.
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Správa zdrojů dat
+# Data source manager

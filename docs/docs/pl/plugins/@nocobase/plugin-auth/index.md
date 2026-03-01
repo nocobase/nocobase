@@ -1,14 +1,12 @@
 ---
-displayName: "Uwierzytelnianie użytkowników"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  Zarządzanie uwierzytelnianiem użytkowników, obejmujące podstawowe uwierzytelnianie hasłem, uwierzytelnianie SMS-em oraz obsługę protokołów SSO (Single Sign-On), z możliwością rozszerzenia.
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
-# Uwierzytelnianie użytkowników
+# Authentication

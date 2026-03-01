@@ -1426,6 +1426,8 @@
   "Use simple pagination mode": "Gebruik eenvoudige paginering",
   "Use the same time zone (GMT) for all users": "Gebruik dezelfde tijdzone (GMT) voor alle gebruikers",
   "Used for drag and drop sorting scenarios, supporting grouping sorting": "Gebruikt voor drag and drop sorteren, met ondersteuning voor groeperen",
+  "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.": "Used as the browser tab title when this tab is active. Supports variables. Leave empty to use Tab name.",
+  "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.": "Used as the browser tab title when tabs are disabled. Supports variables. Leave empty to use Page title.",
   "User": "Gebruiker",
   "User not found. Please sign in again to continue.": "Gebruiker niet gevonden. Meld je opnieuw aan om verder te gaan.",
   "User password changed, please signin again.": "Gebruikerswachtwoord gewijzigd, meld je opnieuw aan.",

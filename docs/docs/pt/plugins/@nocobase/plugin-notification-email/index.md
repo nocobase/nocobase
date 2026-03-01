@@ -1,14 +1,12 @@
 ---
-displayName: "Notificação: E-mail"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Usado para enviar notificações por e-mail com transporte SMTP integrado.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Notificação: E-mail
+# Notification: Email

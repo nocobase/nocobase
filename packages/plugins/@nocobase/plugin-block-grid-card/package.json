@@ -1,18 +1,18 @@
 {
   "name": "@nocobase/plugin-block-grid-card",
-  "version": "2.0.0-beta.18",
+  "version": "2.1.0-beta.6",
   "main": "dist/server/index.js",
   "displayName": "Block: GridCard",
   "displayName.zh-CN": "区块：网格卡片",
   "description": "Display data in a grid list with pagination support.",
   "description.zh-CN": "以栅格列表形式展示数据,支持分页设置",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "homepage": "https://docs.nocobase.com/handbook/block-grid-card",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-grid-card",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "Blocks"

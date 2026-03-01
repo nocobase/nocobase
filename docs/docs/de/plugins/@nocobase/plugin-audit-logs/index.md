@@ -1,17 +1,15 @@
 ---
-displayName: "Audit-Logs (veraltet)"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Dieses Plugin ist veraltet. Bitte verwenden Sie es nicht. Zukünftig wird es ein neues Audit-Log-Plugin geben.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Audit-Logs (veraltet)
+# Audit logs (deprecated)
 
-> Hinweis: Dieses Plugin ist veraltet (deprecated).
+> Note: This plugin is deprecated.

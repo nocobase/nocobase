@@ -1,14 +1,12 @@
 ---
-displayName: "ブロック：リスト"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  データをリスト形式で表示し、ページネーション設定をサポートします
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ブロック：リスト
+# Block: List

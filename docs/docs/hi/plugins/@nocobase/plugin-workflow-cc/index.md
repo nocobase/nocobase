@@ -1,14 +1,12 @@
 ---
-displayName: "वर्कफ़्लो: सीसी"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  वर्कफ़्लो में सीसी (कार्बन कॉपी) सुविधा प्रदान करता है, जिससे आप अनुमोदन या किसी भी अन्य प्रकार की जानकारी विशिष्ट उपयोगकर्ताओं को भेज सकते हैं।
-isFree: सही
-builtIn: सही
-defaultEnabled: गलत
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
+isFree: true
+builtIn: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# वर्कफ़्लो: सीसी
+# Workflow: CC

@@ -1,14 +1,12 @@
 ---
-displayName: "תהליך עבודה: צומת התראה"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  מאפשר לשלוח סוגי התראות שונים בתוך תהליך עבודה.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# תהליך עבודה: צומת התראה
+# Workflow: notification node

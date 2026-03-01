@@ -1,17 +1,14 @@
 ---
-displayName: "Formulářové koncepty"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Podporuje ukládání konceptů při vyplňování formulářů, které můžete později upravit a odeslat.
+  Allow users to save form drafts and continue editing later.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Formulářové koncepty
+# Form drafts

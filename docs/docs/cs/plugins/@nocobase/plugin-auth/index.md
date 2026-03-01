@@ -1,14 +1,12 @@
 ---
-displayName: "Ověřování uživatelů"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  Správa ověřování uživatelů, včetně ověřování heslem, SMS a podpory protokolů pro jednotné přihlášení (SSO), s možností rozšíření.
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Ověřování uživatelů
+# Authentication

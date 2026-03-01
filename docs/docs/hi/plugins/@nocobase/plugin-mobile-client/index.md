@@ -1,17 +1,15 @@
 ---
-displayName: "मोबाइल क्लाइंट (बंद किया गया)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  मोबाइल पेजों को कॉन्फ़िगर करने की क्षमता प्रदान करता है।
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
-# मोबाइल क्लाइंट (बंद किया गया)
+# Mobile client(Deprecated)
 
-> ध्यान दें: यह प्लगइन बंद कर दिया गया है।
+> Note: This plugin is deprecated.

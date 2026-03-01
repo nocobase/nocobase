@@ -1,14 +1,12 @@
 ---
-displayName: "מנהל אוספים ויזואלי"
+displayName: "Graph collection manager"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  כלי הדומה לדיאגרמת ER. כרגע נתמך רק מסד הנתונים הראשי.
+  An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
-:::
 
-# מנהל אוספים ויזואלי
+# Graph collection manager

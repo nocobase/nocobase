@@ -9,6 +9,7 @@
 
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 import { Upload } from '@formily/antd-v5';
+import { css } from '@emotion/css';
 import { UploadOutlined } from '@ant-design/icons';
 import { DisplayItemModel, EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import React, { useEffect, useState } from 'react';
@@ -17,32 +18,33 @@ import { castArray } from 'lodash';
 import { useField } from '@formily/react';
 
 const CardUpload = (props) => {
+  const { showFileName, value, onChange } = props;
   const outerField: any = useField();
   const [fileList, setFileList] = useState(
-    castArray(props.value || []).map((v) => {
+    castArray(value || []).map((v) => {
       return { url: v };
     }),
   );
   useEffect(() => {
     setFileList(
-      castArray(props.value || []).map((v) => {
+      castArray(value || []).map((v) => {
         return { url: v };
       }),
     );
-  }, [props.value]);
+  }, [value]);
 
   const handleChange = (newFileList) => {
     setFileList(newFileList);
     const file = newFileList[0];
     if (!file) {
-      props.onChange?.(undefined);
+      onChange?.(undefined);
       return;
     }
     if (file.status === 'done') {
       const url = file.response?.url || file.url;
-      props.onChange?.(url);
+      onChange?.(url);
     } else if (file.status === 'removed') {
-      props.onChange?.(undefined);
+      onChange?.(undefined);
     }
   };
   return (
@@ -52,9 +54,50 @@ const CardUpload = (props) => {
         value: fileList,
       }}
     >
-      <Upload {...props} listType="picture-card" fileList={fileList} onChange={handleChange}>
-        <UploadOutlined style={{ fontSize: 20 }} />
-      </Upload>
+      <div
+        style={{ display: 'flex' }}
+        className={css`
+          .ant-upload-list-picture-card {
+            margin-bottom: 10px;
+            .ant-upload-list-item-container {
+              margin: ${showFileName ? '8px 0px' : '0px'};
+            }
+          }
+          .ant-upload-select {
+            margin: ${showFileName ? '8px 0px' : '0px'};
+          }
+        `}
+      >
+        <Upload
+          {...props}
+          listType="picture-card"
+          fileList={fileList}
+          onChange={handleChange}
+          itemRender={(originNode, file: any) => {
+            const fileName = file.name || decodeURIComponent(file.url.split('/').pop());
+            return (
+              <>
+                {originNode}
+                {showFileName && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                    }}
+                    title={fileName}
+                  >
+                    {fileName}
+                  </div>
+                )}
+              </>
+            );
+          }}
+        >
+          <UploadOutlined style={{ fontSize: 20 }} />
+        </Upload>
+      </div>
     </FieldContext.Provider>
   );
 };

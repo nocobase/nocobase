@@ -1,14 +1,12 @@
 ---
-displayName: "Úložiště UI schématu"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  Poskytuje centralizovanou službu úložiště UI schématu.
+  Provides centralized UI schema storage service.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
-:::
 
-# Úložiště UI schématu
+# UI schema storage

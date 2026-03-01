@@ -1,15 +1,12 @@
 ---
-displayName: "حقل المجموعة: صيغة"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  يمكنك تهيئة وتخزين نتائج العمليات الحسابية بين قيم حقول متعددة في نفس السجل، مع دعم محركي Math.js و Excel formula functions.
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
 
-
-# حقل المجموعة: صيغة
+# Collection field: Formula

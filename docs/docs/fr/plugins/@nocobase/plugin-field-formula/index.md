@@ -1,14 +1,12 @@
 ---
-displayName: "Champ de collection : Formule"
+displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Configurez et stockez les résultats de calculs entre plusieurs valeurs de champs au sein d'un même enregistrement. Ce champ prend en charge les fonctions Math.js et les fonctions de formule Excel.
+  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Champ de collection : Formule
+# Collection field: Formula

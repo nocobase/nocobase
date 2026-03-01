@@ -1,14 +1,12 @@
 ---
-displayName: "Bộ xử lý lỗi"
+displayName: "Error handler"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Xử lý các lỗi và ngoại lệ trong ứng dụng.
+  Handling application errors and exceptions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Bộ xử lý lỗi
+# Error handler

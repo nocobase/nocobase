@@ -1,17 +1,15 @@
 ---
-displayName: "Uygulama yedekleme ve geri yükleme (kullanımdan kaldırıldı)"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Uygulamaları yedekler ve geri yükler; uygulama çoğaltma, taşıma ve yükseltme gibi senaryolarda kullanılabilir.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
-:::
 
-# Uygulama Yedekleme ve Geri Yükleme (Kullanımdan Kaldırıldı)
+# App backup & restore (deprecated)
 
-> Not: Bu eklenti kullanımdan kaldırılmıştır.
+> Note: This plugin is deprecated.
