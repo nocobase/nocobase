@@ -33,14 +33,23 @@ export function updatePreviewConfig(config: any) {
 
 const { Configuration } = lazy(() => import('./settings/Configuration'), 'Configuration');
 
-// --- Helper for Download (replacing file-saver) ---
+// --- Helper for Download ---
 const saveAs = (url: string, filename: string) => {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename || 'download';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  fetch(url)
+    .then((response) => response.blob())
+    .then((blob) => {
+      const blobUrl = URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      URL.revokeObjectURL(blobUrl);
+      link.remove();
+    })
+    .catch((err) => {
+      console.error('Download failed:', err);
+    });
 };
 
 // --- Legacy Code Integration ---
