@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Officeファイルプレビューアー",
+  "Configuration": "設定",
+  "Preview Type": "プレビュータイプ",
+  "Microsoft Online": "Microsoft Online（デフォルト）",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "KKFileView URL",
+  "KKFileView server address (e.g., http://localhost:8012)": "KKFileViewサーバーアドレス（例：http://localhost:8012）",
+  "Open in new window": "新しいウィンドウで開く",
+  "Download": "ダウンロード",
+  "Close": "閉じる",
+  "Save": "保存",
+  "Settings saved successfully": "設定が正常に保存されました",
+  "Failed to save settings": "設定の保存に失敗しました",
+  "Select preview type": "プレビュータイプを選択"
+}
