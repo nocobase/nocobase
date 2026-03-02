@@ -47,10 +47,12 @@ FormTriggerWorkflowActionModel.registerFlow({
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
 
         if (!ctx.blockModel) {
+          ctx.exit();
           return;
         }
 
@@ -67,7 +69,6 @@ FormTriggerWorkflowActionModel.registerFlow({
               data: values,
             });
           });
-          ctx.message.success(ctx.t('Operation succeeded'));
           ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
@@ -76,10 +77,12 @@ FormTriggerWorkflowActionModel.registerFlow({
         } finally {
           ctx.model.setProps('loading', false);
         }
-
-        if (ctx.view) {
-          ctx.view.close();
-        }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
       },
     },
   },
@@ -117,12 +120,14 @@ RecordTriggerWorkflowActionModel.registerFlow({
       async handler(ctx, params) {
         const { resource, collection } = ctx.blockModel;
         if (!resource || !collection) {
+          ctx.exit();
           return;
         }
         if (!params.group?.length) {
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
         try {
@@ -134,10 +139,17 @@ RecordTriggerWorkflowActionModel.registerFlow({
               filterByTk: getRecordKey(ctx.record, collection),
             },
           });
-          ctx.message.success(ctx.t('Operation succeeded'));
         } catch (error) {
           console.error('Error triggering workflows:', error);
+          ctx.exit();
         }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'stay',
       },
     },
   },
@@ -244,16 +256,19 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
         if (type === CONTEXT_TYPE.MULTIPLE_RECORDS) {
           if (!ctx.blockModel?.resource) {
             ctx.message.error(ctx.t('No resource selected for deletion'));
+            ctx.exit();
             return;
           }
           const resource = ctx.blockModel.resource as MultiRecordResource;
           if (resource.getSelectedRows().length === 0) {
             ctx.message.warning(ctx.t('Please select at least one record.', { ns: NAMESPACE }));
+            ctx.exit();
             return;
           }
           try {
@@ -268,6 +283,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             resource.setSelectedRows([]);
           } catch (error) {
             console.error('Error triggering workflows:', error);
+            ctx.exit();
             return;
           }
         } else if (type === CONTEXT_TYPE.GLOBAL) {
@@ -283,13 +299,19 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
+            ctx.exit();
             return;
           }
         } else {
           throw new Error('Invalid context type');
         }
-
-        ctx.message.success(ctx.t('Operation succeeded'));
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'stay',
       },
     },
   },
@@ -336,10 +358,17 @@ CollectionGlobalTriggerWorkflowActionModel.registerFlow({
                 : undefined,
             },
           });
-          ctx.message.success(ctx.t('Workflow triggered on selected records successfully'));
         } catch (error) {
           console.error('Error triggering workflows:', error);
+          ctx.exit();
         }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'stay',
       },
     },
   },

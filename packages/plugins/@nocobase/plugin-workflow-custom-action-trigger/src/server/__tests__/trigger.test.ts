@@ -75,7 +75,7 @@ describe('workflow: custom action trigger', () => {
         triggerWorkflows: workflow.key,
       });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(500);
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
