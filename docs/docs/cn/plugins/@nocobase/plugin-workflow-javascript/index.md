@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   在隔离环境中执行一段 JavaScript 代码。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

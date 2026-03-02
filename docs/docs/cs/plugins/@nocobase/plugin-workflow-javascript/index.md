@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   Execute a piece of JavaScript in an isolated Node.js environment.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
