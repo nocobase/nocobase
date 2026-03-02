@@ -236,10 +236,7 @@ export const DebugPanel: React.FC = () => {
     });
   }, []);
 
-  const getItemKey = useCallback(
-    (log: LogEntry) => (expandedIds.has(log.id) ? `${log.id}-e` : log.id),
-    [expandedIds],
-  );
+  const getItemKey = useCallback((log: LogEntry) => (expandedIds.has(log.id) ? `${log.id}-e` : log.id), [expandedIds]);
 
   const handleExport = () => {
     if (!currentConversation || logs.length === 0) return;
@@ -325,11 +322,7 @@ export const DebugPanel: React.FC = () => {
         ) : (
           <VirtualList ref={virtualListRef} data={filteredLogs} itemKey={getItemKey} itemHeight={40}>
             {(log) => (
-              <LogItem
-                log={log}
-                expanded={expandedIds.has(log.id)}
-                onToggleExpand={() => toggleExpand(log.id)}
-              />
+              <LogItem log={log} expanded={expandedIds.has(log.id)} onToggleExpand={() => toggleExpand(log.id)} />
             )}
           </VirtualList>
         )}

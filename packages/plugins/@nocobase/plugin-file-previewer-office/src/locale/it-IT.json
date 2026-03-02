@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Anteprima file Office",
+  "Configuration": "Configurazione",
+  "Preview Type": "Tipo di anteprima",
+  "Microsoft Online": "Microsoft Online (predefinito)",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "URL KKFileView",
+  "KKFileView server address (e.g., http://localhost:8012)": "Indirizzo del server KKFileView (ad esempio, http://localhost:8012)",
+  "Open in new window": "Apri in nuova finestra",
+  "Download": "Scarica",
+  "Close": "Chiudi",
+  "Save": "Salva",
+  "Settings saved successfully": "Impostazioni salvate con successo",
+  "Failed to save settings": "Errore durante il salvataggio delle impostazioni",
+  "Select preview type": "Seleziona tipo di anteprima"
+}

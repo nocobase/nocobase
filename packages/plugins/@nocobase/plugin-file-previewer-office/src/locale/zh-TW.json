@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Office 檔案預覽",
+  "Configuration": "配置",
+  "Preview Type": "預覽類型",
+  "Microsoft Online": "微軟線上預覽（默認）",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "KKFileView 伺服器地址",
+  "KKFileView server address (e.g., http://localhost:8012)": "KKFileView 伺服器地址 (例如: http://localhost:8012)",
+  "Open in new window": "在新視窗中開啟",
+  "Download": "下載",
+  "Close": "關閉",
+  "Save": "保存",
+  "Settings saved successfully": "設定保存成功",
+  "Failed to save settings": "保存設定失敗",
+  "Select preview type": "選擇預覽類型"
+}

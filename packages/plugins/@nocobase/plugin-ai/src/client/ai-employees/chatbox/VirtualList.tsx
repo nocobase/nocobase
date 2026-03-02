@@ -12,7 +12,9 @@ import RcVirtualList from 'rc-virtual-list';
 import type { ListRef } from 'rc-virtual-list';
 
 export interface VirtualListRef {
-  scrollTo: (arg: number | { index?: number; key?: React.Key; align?: 'top' | 'bottom' | 'auto'; offset?: number }) => void;
+  scrollTo: (
+    arg: number | { index?: number; key?: React.Key; align?: 'top' | 'bottom' | 'auto'; offset?: number },
+  ) => void;
 }
 
 export interface VirtualListProps<T> {
