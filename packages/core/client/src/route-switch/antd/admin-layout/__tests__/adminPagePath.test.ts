@@ -50,14 +50,45 @@ describe('adminPagePath', () => {
       currentPageUid: 'menu-uid',
       route: {
         schemaUid: 'page-uid',
+        type: NocoBaseDesktopRouteType.page,
+      },
+    });
+
+    expect(target).toBe('/admin/v1/page-uid/tabs/tab-1/popups/dialog?foo=bar');
+  });
+
+  it('should keep v2 suffix for flowPage legacy redirect target', () => {
+    const target = buildLegacyAdminRedirectPath({
+      pathname: '/admin/menu-uid/tab/tab-1/view/dialog',
+      search: '?foo=bar',
+      currentPageUid: 'menu-uid',
+      route: {
+        schemaUid: 'page-uid',
         type: NocoBaseDesktopRouteType.flowPage,
       },
     });
 
-    expect(target).toBe('/admin/v2/page-uid/tabs/tab-1/popups/dialog?foo=bar');
+    expect(target).toBe('/admin/v2/page-uid/tab/tab-1/view/dialog?foo=bar');
   });
 
-  it('should fallback to v1 for unknown type in legacy redirect and warn', () => {
+  it('should drop incompatible legacy suffix when route type and suffix family mismatch', () => {
+    const logger = { warn: vi.fn() };
+    const target = buildLegacyAdminRedirectPath({
+      pathname: '/admin/menu-uid/tabs/tab-1',
+      search: '',
+      currentPageUid: 'menu-uid',
+      route: {
+        schemaUid: 'page-uid',
+        type: NocoBaseDesktopRouteType.flowPage,
+      },
+      logger,
+    });
+
+    expect(target).toBe('/admin/v2/page-uid');
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('should fallback to v1 and drop incompatible suffix for unknown type in legacy redirect', () => {
     const logger = { warn: vi.fn() };
     const target = buildLegacyAdminRedirectPath({
       pathname: '/admin/menu-uid/view/child',
@@ -70,7 +101,7 @@ describe('adminPagePath', () => {
       logger,
     });
 
-    expect(target).toBe('/admin/v1/page-uid/view/child');
+    expect(target).toBe('/admin/v1/page-uid');
     expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 

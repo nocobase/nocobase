@@ -26,6 +26,45 @@ const normalizePathSuffix = (suffix: string | undefined) => {
   return suffix.startsWith('/') ? suffix : `/${suffix}`;
 };
 
+type LegacySuffixFamily = 'v1' | 'v2';
+
+const getLegacySuffixFamily = (suffix: string): LegacySuffixFamily | undefined => {
+  if (!suffix) {
+    return;
+  }
+  if (suffix.startsWith('/tabs/') || suffix.startsWith('/popups/')) {
+    return 'v1';
+  }
+  if (suffix.startsWith('/tab/') || suffix.startsWith('/view/')) {
+    return 'v2';
+  }
+};
+
+const normalizeLegacySuffixForPrefix = (
+  suffix: string,
+  prefix: string,
+  options?: { logger?: AdminPathLogger; type?: NocoBaseDesktopRouteType | string },
+) => {
+  const family = getLegacySuffixFamily(suffix);
+  if (!family) {
+    return suffix;
+  }
+  if (family === 'v1' && prefix === ADMIN_V1_PAGE_PREFIX) {
+    return suffix;
+  }
+  if (family === 'v2' && prefix === ADMIN_V2_PAGE_PREFIX) {
+    return suffix;
+  }
+  if (options?.type === NocoBaseDesktopRouteType.page || options?.type === NocoBaseDesktopRouteType.flowPage) {
+    options?.logger?.warn?.(
+      `[admin-route] Legacy suffix "${suffix}" does not match route type "${String(
+        options?.type,
+      )}"; redirect to base page.`,
+    );
+  }
+  return '';
+};
+
 const warnUnknownRouteType = (type: string, logger: AdminPathLogger = console) => {
   logger.warn?.(`[admin-route] Unknown route type "${type}", fallback to ${ADMIN_V1_PAGE_PREFIX}.`);
 };
@@ -89,8 +128,18 @@ export const buildLegacyAdminRedirectPath = (options: {
   route: AdminPageRouteLike | null | undefined;
   logger?: AdminPathLogger;
 }) => {
+  const schemaUid = options.route?.schemaUid;
+  if (!schemaUid) {
+    return '';
+  }
+
+  const prefix = getAdminPagePathPrefixByType(options.route?.type, { logger: options.logger });
   const suffix = getLegacyAdminPathSuffix(options.pathname, options.currentPageUid);
-  const targetPath = getAdminPagePathByRoute(options.route, { suffix, logger: options.logger });
+  const normalizedSuffix = normalizeLegacySuffixForPrefix(suffix, prefix, {
+    logger: options.logger,
+    type: options.route?.type,
+  });
+  const targetPath = `${prefix}/${schemaUid}${normalizePathSuffix(normalizedSuffix)}`;
   if (!targetPath) {
     return '';
   }

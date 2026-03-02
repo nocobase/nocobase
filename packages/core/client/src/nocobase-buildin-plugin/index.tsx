@@ -342,34 +342,10 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin/v1/:name/tabs/:tabUid/popups/*',
       Component: PagePopups,
     });
-    this.router.add('admin.v1.page.tab', {
-      path: '/admin/v1/:name/tab/:tabUid',
-      Component: 'AdminDynamicPage',
-    });
-    this.router.add('admin.v1.page.view', {
-      path: '/admin/v1/:name/view/*',
-      Component: 'AdminDynamicPage',
-    });
-    this.router.add('admin.v1.page.tab.view', {
-      path: '/admin/v1/:name/tab/:tabUid/view/*',
-      Component: 'AdminDynamicPage',
-    });
 
     this.router.add('admin.v2.page', {
       path: '/admin/v2/:name',
       Component: 'AdminDynamicPage',
-    });
-    this.router.add('admin.v2.page.tabs', {
-      path: '/admin/v2/:name/tabs/:tabUid',
-      Component: PageTabs as any,
-    });
-    this.router.add('admin.v2.page.popups', {
-      path: '/admin/v2/:name/popups/*',
-      Component: PagePopups,
-    });
-    this.router.add('admin.v2.page.tabs.popups', {
-      path: '/admin/v2/:name/tabs/:tabUid/popups/*',
-      Component: PagePopups,
     });
     this.router.add('admin.v2.page.tab', {
       path: '/admin/v2/:name/tab/:tabUid',

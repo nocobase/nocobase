@@ -607,11 +607,12 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     const parentRoute = getRouteNodeByRouteId(recordData.parentId, data.data);
                     const parentPath = !isMobile ? getAdminPagePathByRoute(parentRoute) : '';
                     const fallbackParentSchemaUid = getSchemaUidByRouteId(recordData.parentId, data.data, isMobile);
+                    const tabPathSegment =
+                      !isMobile && parentRoute?.type === NocoBaseDesktopRouteType.flowPage ? 'tab' : 'tabs';
+                    const basePrefix = basenameOfCurrentRouter.slice(0, -1);
                     const path = parentPath
-                      ? `${basenameOfCurrentRouter.slice(0, -1)}${parentPath}/tabs/${recordData.schemaUid}`
-                      : `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${fallbackParentSchemaUid}/tabs/${
-                          recordData.schemaUid
-                        }`;
+                      ? `${basePrefix}${parentPath}/${tabPathSegment}/${recordData.schemaUid}`
+                      : `${basePrefix}${basename}/${fallbackParentSchemaUid}/${tabPathSegment}/${recordData.schemaUid}`;
                     recordData._path = path;
 
                     return (
