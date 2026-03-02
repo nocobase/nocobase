@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Joi, { AnySchema, Root } from 'joi';
+import Joi, { AnySchema } from 'joi';
 import { ValidationOptions } from '../fields';
 import _ from 'lodash';
 
@@ -32,17 +32,17 @@ export function buildJoiSchema(validation: ValidationOptions, options: { label?:
 
   if (rules) {
     rules.forEach((rule) => {
-      if (!_.isEmpty(rule.args)) {
-        if (rule.name === 'pattern' && !_.isRegExp(rule.args.regex)) {
-          const lastSlash = rule.args.regex.lastIndexOf('/');
-          const isRegExpStr = rule.args.regex.startsWith('/') && lastSlash > 0;
+      const args = _.cloneDeep(rule.args);
+      if (!_.isEmpty(args)) {
+        if (rule.name === 'pattern' && !_.isRegExp(args.regex)) {
+          const lastSlash = args.regex.lastIndexOf('/');
+          const isRegExpStr = args.regex.startsWith('/') && lastSlash > 0;
           if (isRegExpStr) {
-            rule.args.regex = rule.args.regex.slice(1, lastSlash);
+            args.regex = args.regex.slice(1, lastSlash);
           }
-          rule.args.regex = new RegExp(rule.args.regex);
+          args.regex = new RegExp(args.regex);
         }
-        schema =
-          rule.paramsType === 'object' ? schema[rule.name](rule.args) : schema[rule.name](...Object.values(rule.args));
+        schema = rule.paramsType === 'object' ? schema[rule.name](args) : schema[rule.name](...Object.values(args));
       } else {
         schema = schema[rule.name]();
       }
