@@ -147,6 +147,20 @@ export function AfterSuccess() {
               'x-component': 'Variable.TextArea',
               'x-use-component-props': useLinkVariableProps,
             },
+            openInNewWindow: {
+              type: 'boolean',
+              'x-content': t('Open in new window'),
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-reactions': {
+                dependencies: ['actionAfterSuccess'],
+                fulfill: {
+                  state: {
+                    visible: '{{$deps[0] === "redirect"}}',
+                  },
+                },
+              },
+            },
             blocksToRefresh: {
               type: 'array',
               title: t('Refresh data blocks'),

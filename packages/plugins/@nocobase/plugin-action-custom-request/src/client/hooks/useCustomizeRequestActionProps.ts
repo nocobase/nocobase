@@ -54,6 +54,7 @@ export const useCustomizeRequestActionProps = () => {
         redirectTo: rawRedirectTo,
         successMessage: rawSuccessMessage,
         actionAfterSuccess,
+        openInNewWindow,
       } = onSuccess || {};
       let successMessage = rawSuccessMessage;
       let redirectTo = rawRedirectTo;
@@ -119,7 +120,9 @@ export const useCustomizeRequestActionProps = () => {
         }
         if (!successMessage) {
           if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-            if (isURL(redirectTo)) {
+            if (openInNewWindow) {
+              window.open(redirectTo, '_blank', 'noopener noreferrer');
+            } else if (isURL(redirectTo)) {
               window.location.href = redirectTo;
             } else {
               navigate(redirectTo);
@@ -132,7 +135,9 @@ export const useCustomizeRequestActionProps = () => {
             title: compile(successMessage),
             onOk: async () => {
               if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-                if (isURL(redirectTo)) {
+                if (openInNewWindow) {
+                  window.open(redirectTo, '_blank', 'noopener noreferrer');
+                } else if (isURL(redirectTo)) {
                   window.location.href = redirectTo;
                 } else {
                   navigate(redirectTo);
@@ -143,7 +148,9 @@ export const useCustomizeRequestActionProps = () => {
         } else {
           message.success(compile(successMessage));
           if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-            if (isURL(redirectTo)) {
+            if (openInNewWindow) {
+              window.open(redirectTo, '_blank', 'noopener noreferrer');
+            } else if (isURL(redirectTo)) {
               window.location.href = redirectTo;
             } else {
               navigate(redirectTo);
