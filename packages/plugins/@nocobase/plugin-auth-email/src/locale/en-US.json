@@ -1,0 +1,9 @@
+{
+    "The email is incorrect, please re-enter": "The email is incorrect, please re-enter",
+    "Please fill in your email address": "Please fill in your email address",
+    "The password is incorrect, please re-enter": "The password is incorrect, please re-enter",
+    "Not a valid email address, please re-enter": "Not a valid email address, please re-enter",
+    "The email has been registered, please login directly": "The email has been registered, please login directly",
+    "The email is not registered, please register first": "The email is not registered, please register first",
+    "Please keep and enable at least one authenticator": "Please keep and enable at least one authenticator"
+}

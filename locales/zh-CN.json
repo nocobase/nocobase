@@ -2369,6 +2369,15 @@
     "User not found": "用户不存在",
     "dingtalk": "钉钉"
   },
+  "@nocobase/plugin-auth-email": {
+    "The email is incorrect, please re-enter": "邮箱有误，请重新输入",
+    "Please fill in your email address": "请填写邮箱",
+    "The password is incorrect, please re-enter": "密码有误，请重新输入",
+    "Not a valid email address, please re-enter": "不是有效的邮箱地址，请重新输入",
+    "The email has been registered, please login directly": "邮箱已注册，请直接登录",
+    "The email is not registered, please register first": "邮箱未注册，请先注册",
+    "Please keep and enable at least one authenticator": "请至少保留并启用一个认证器"
+  },
   "@nocobase/plugin-auth-ldap": {
     "Account": "账号",
     "Add": "添加",
@@ -4807,6 +4816,20 @@
     "Two-factor authentication has expired": "双因素身份认证已过期",
     "Two-factor authentication has expired. Please sign-in again": "双因素身份认证已过期，请重新登录",
     "Verify": "验证"
+  },
+  "@nocobase/plugin-ui-templates": {
+    "Block UID": "区块 UID",
+    "Block UID is already set and cannot be modified": "当前已经指定区块UID，不允许修改",
+    "Copy": "复制",
+    "Other blocks": "其他区块",
+    "Please configure target block": "请先配置目标区块",
+    "Reference": "引用",
+    "Reference block": "引用区块",
+    "Reference mode": "引用模式",
+    "Reference settings": "引用区块配置",
+    "Some configurations using uid may need to be reconfigured": "部分使用uid的配置可能需要重新配置",
+    "Target UID": "Target UID",
+    "Target block is invalid": "目标区块无效"
   },
   "@nocobase/plugin-user-data-sync": {
     "Authenticator": "用户认证",
