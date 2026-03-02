@@ -42,4 +42,13 @@ features:
         details: Eklenti geliştirmeye yönelik daha fazla eğitime göz atın.
         link: /development
 
+  - title: Çözümler
+    details: NocoBase üzerine inşa edilmiş sektör çözüm şablonları.
+    items:
+      - title: Bilet çözümü
+        details: Çok kanallı erişim, SLA yönetimi, bilgi tabanı ve daha fazlasıyla AI destekli akıllı bilet platformu.
+        link: /solution/ticket-system/
+      - title: CRM (Önizleme)
+        details: Kod gerektirmeyen, esnek müşteri ilişkileri yönetim platformu; müşteriler, potansiyel müşteriler, fırsatlar, siparişler ve daha fazlası.
+        link: /solution/crm/
 ---

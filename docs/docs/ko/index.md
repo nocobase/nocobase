@@ -42,4 +42,13 @@ features:
         details: 더 많은 플러그인 개발 튜토리얼을 살펴보세요.
         link: /development
 
+  - title: 솔루션
+    details: NocoBase를 기반으로 구축한 업종별 솔루션 템플릿.
+    items:
+      - title: 티켓 솔루션
+        details: AI 기반 지능형 티켓 관리 플랫폼. 다중 채널 접근, SLA 관리, 지식 베이스 등을 지원합니다.
+        link: /solution/ticket-system/
+      - title: CRM (미리보기)
+        details: 노코드, 유연한 고객 관계 관리 플랫폼. 고객, 리드, 영업 기회, 주문 등의 기능을 포함합니다.
+        link: /solution/crm/
 ---

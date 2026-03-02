@@ -43,4 +43,13 @@ features:
         details: Explorez d'autres tutoriels sur le développement de plugins.
         link: /development
 
+  - title: Solutions
+    details: Modèles de solutions sectorielles basés sur NocoBase.
+    items:
+      - title: Solution de tickets
+        details: Plateforme de tickets intelligente alimentée par l'IA, avec accès multi-canaux, gestion SLA, base de connaissances et plus.
+        link: /solution/ticket-system/
+      - title: CRM (Aperçu)
+        details: Plateforme de gestion de la relation client sans code et flexible, couvrant clients, prospects, opportunités, commandes et plus.
+        link: /solution/crm/
 ---
