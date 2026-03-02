@@ -43,4 +43,13 @@ features:
         details: Utforska fler handledningar om plugin-utveckling.
         link: /development
 
+  - title: Lösningar
+    details: Branschspecifika lösningsmallar byggda på NocoBase.
+    items:
+      - title: Ticketing-lösning
+        details: AI-driven intelligent ticketing-plattform med flerkanalsåtkomst, SLA-hantering, kunskapsbas och mer.
+        link: /solution/ticket-system/
+      - title: CRM (Förhandsgranskning)
+        details: No-code, flexibel kundrelationshanteringsplattform som täcker kunder, leads, affärsmöjligheter, beställningar och mer.
+        link: /solution/crm/
 ---

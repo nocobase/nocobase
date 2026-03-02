@@ -43,4 +43,13 @@ features:
         details: Khám phá thêm các hướng dẫn phát triển plugin.
         link: /development
 
+  - title: Giải pháp
+    details: Mẫu giải pháp ngành được xây dựng trên NocoBase.
+    items:
+      - title: Giải pháp ticket
+        details: Nền tảng ticket thông minh do AI hỗ trợ với truy cập đa kênh, quản lý SLA, cơ sở kiến thức và hơn thế nữa.
+        link: /solution/ticket-system/
+      - title: CRM (Xem trước)
+        details: Nền tảng quản lý quan hệ khách hàng không cần mã và linh hoạt, bao gồm khách hàng, khách hàng tiềm năng, cơ hội, đơn hàng và hơn thế nữa.
+        link: /solution/crm/
 ---
