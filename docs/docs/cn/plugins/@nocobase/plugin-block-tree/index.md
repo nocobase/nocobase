@@ -5,8 +5,8 @@ supportedVersions:
   - 1.x
 description: |
   提供树结构的筛选区块
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

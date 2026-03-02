@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   在点击绑定了自定义事件的按钮后触发。适用于对数据行的自定义操作编排。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

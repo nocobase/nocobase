@@ -6,10 +6,10 @@ supportedVersions:
   - 2.x
 description: |
   提供评论数据表模板和区块，为任意数据表的数据添加评论功能。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 0
+editionLevel: 0
 ---
 
 # 评论
