@@ -24,12 +24,15 @@ import {
   useDataBlockResource,
   useRequest,
   useSchemaComponentContext,
+  useApp,
 } from '@nocobase/client';
 import { App, Spin, Tabs, message } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
 import { usersSchema, usersSettingsSchema } from './schemas/users';
+import type { PluginUsersClient } from './index';
+import _ from 'lodash';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -136,12 +139,37 @@ const UsersManagementTab: React.FC = () => {
   const { t } = useUsersTranslation();
   const collectionManager = useCollectionManager();
   const usersCollection = useMemo(() => collectionManager?.getCollection('users'), [collectionManager]);
+  const app = useApp();
+  const usersPlugin = app.pm.get('users') as PluginUsersClient;
+  const extraColumns = usersPlugin?.getUsersTableColumns();
+
+  const schema = useMemo(() => {
+    if (!usersCollection || !extraColumns || extraColumns.size === 0) {
+      return usersSchema;
+    }
+
+    const clonedSchema = _.cloneDeep(usersSchema);
+    const tableProperties = clonedSchema.properties.block1.properties.table.properties;
+
+    const actionsColumnKey = _.last(Object.keys(tableProperties));
+    const actionsColumn = tableProperties[actionsColumnKey];
+
+    extraColumns.forEach((columnSchema, key) => {
+      const newColumnKey = `column-${key}`;
+      tableProperties[newColumnKey] = columnSchema;
+    });
+
+    delete tableProperties[actionsColumnKey];
+    tableProperties[actionsColumnKey] = actionsColumn;
+
+    return clonedSchema;
+  }, [usersCollection, extraColumns]);
 
   if (!usersCollection) return <Spin />;
 
   return (
     <SchemaComponent
-      schema={usersSchema}
+      schema={schema}
       scope={{ t, useCancelActionProps, useSubmitActionProps, useEditFormProps }}
       components={{ PasswordField, ProfileEditForm, ProfileCreateForm, FilterAction }}
     />
