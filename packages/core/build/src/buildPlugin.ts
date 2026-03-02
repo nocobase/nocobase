@@ -134,6 +134,19 @@ const external = [
   'lodash',
   'china-division',
   'file-saver',
+
+  // langChain
+  "langchain",
+  "@langchain/core",
+  "@langchain/classic",
+  "@langchain/langgraph",
+  "@langchain/langgraph-checkpoint",
+  "@langchain/community",
+  "@langchain/openai",
+  "@langchain/anthropic",
+  "@langchain/google-genai",
+  "@langchain/deepseek",
+  "@langchain/ollama"
 ];
 const pluginPrefix = (
   process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'

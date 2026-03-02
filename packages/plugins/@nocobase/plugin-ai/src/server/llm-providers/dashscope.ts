@@ -11,6 +11,9 @@ import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import { EmbeddingProvider, LLMProvider } from './provider';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { SupportedModel } from '../manager/ai-manager';
+import { Context } from '@nocobase/actions';
+import PluginAIServer from '../plugin';
+import path from 'node:path';
 
 const DASHSCOPE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
@@ -58,6 +61,28 @@ export class DashscopeProvider extends LLMProvider {
       },
       verbose: false,
     });
+  }
+
+  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
+    if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
+      return super.parseAttachment(ctx, attachment);
+    }
+    const parsed = await this.aiPlugin.documentLoaders.cached.load(attachment);
+    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
+    if (!parsed.supported || !parsed.text) {
+      return {
+        placement: 'system',
+        content: `File ${safeFilename} is not a supported document type for text parsing.`,
+      };
+    }
+    return {
+      placement: 'system',
+      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
+    };
+  }
+
+  private get aiPlugin(): PluginAIServer {
+    return this.app.pm.get('ai');
   }
 }
 

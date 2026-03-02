@@ -189,18 +189,24 @@ export class AnthropicProvider extends LLMProvider {
     const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
-        type: 'image_url',
-        image_url: {
-          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        placement: 'contentBlocks',
+        content: {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+          },
         },
       };
     } else {
       return {
-        type: 'document',
-        source: {
-          type: 'base64',
-          media_type: attachment.mimetype,
-          data,
+        placement: 'contentBlocks',
+        content: {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: attachment.mimetype,
+            data,
+          },
         },
       };
     }
