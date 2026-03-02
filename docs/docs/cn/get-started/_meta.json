@@ -71,6 +71,22 @@
       },
       {
         "type": "custom-link",
+        "label": "内网部署",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
         "label": "静态资源代理",
         "items": [
           {
