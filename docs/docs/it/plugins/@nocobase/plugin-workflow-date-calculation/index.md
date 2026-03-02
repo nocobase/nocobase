@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

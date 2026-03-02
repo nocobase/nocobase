@@ -5,8 +5,8 @@ supportedVersions:
   - 1.x
 description: |
   支持新增和使用自定义变量
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

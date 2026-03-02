@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   Triggers after click a custom action button.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
