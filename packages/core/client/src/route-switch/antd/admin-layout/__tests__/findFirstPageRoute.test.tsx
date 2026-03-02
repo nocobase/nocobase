@@ -275,4 +275,31 @@ describe('findFirstPageRoute', () => {
     const result = findFirstPageRoute(routes);
     expect(result).toEqual(routes[1]);
   });
+
+  it('should treat route with missing type but schemaUid as fallback page route', () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        schemaUid: 'missing-type',
+        title: 'Missing type',
+      },
+    ];
+
+    const result = findFirstPageRoute(routes);
+    expect(result).toEqual(routes[0]);
+  });
+
+  it('should treat unknown type with schemaUid as fallback page route', () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        schemaUid: 'unknown-type',
+        title: 'Unknown type',
+        type: NocoBaseDesktopRouteType.flowRoute,
+      },
+    ];
+
+    const result = findFirstPageRoute(routes);
+    expect(result).toEqual(routes[0]);
+  });
 });

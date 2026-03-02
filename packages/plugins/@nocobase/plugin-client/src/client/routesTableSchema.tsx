@@ -13,6 +13,7 @@ import { useField, useForm } from '@formily/react';
 import {
   CollectionField,
   css,
+  getAdminPagePathByRoute,
   getFlowPageMenuSchema,
   getPageMenuSchema,
   getTabSchema,
@@ -40,7 +41,7 @@ import _ from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockProps } from './useTableBlockProps';
-import { getSchemaUidByRouteId } from './utils';
+import { getRouteNodeByRouteId, getSchemaUidByRouteId } from './utils';
 
 const VariableTextArea = getVariableComponentWithScope(Variable.TextArea);
 
@@ -589,7 +590,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     recordData.type === NocoBaseDesktopRouteType.page ||
                     recordData.type === NocoBaseDesktopRouteType.flowPage
                   ) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`;
+                    const path = isMobile
+                      ? `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`
+                      : `${basenameOfCurrentRouter.slice(0, -1)}${getAdminPagePathByRoute(recordData)}`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -601,11 +604,15 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.tabs && data?.data) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${getSchemaUidByRouteId(
-                      recordData.parentId,
-                      data.data,
-                      isMobile,
-                    )}/tabs/${recordData.schemaUid}`;
+                    const parentRoute = getRouteNodeByRouteId(recordData.parentId, data.data);
+                    const parentPath = !isMobile ? getAdminPagePathByRoute(parentRoute) : '';
+                    const fallbackParentSchemaUid = getSchemaUidByRouteId(recordData.parentId, data.data, isMobile);
+                    const tabPathSegment =
+                      !isMobile && parentRoute?.type === NocoBaseDesktopRouteType.flowPage ? 'tab' : 'tabs';
+                    const basePrefix = basenameOfCurrentRouter.slice(0, -1);
+                    const path = parentPath
+                      ? `${basePrefix}${parentPath}/${tabPathSegment}/${recordData.schemaUid}`
+                      : `${basePrefix}${basename}/${fallbackParentSchemaUid}/${tabPathSegment}/${recordData.schemaUid}`;
                     recordData._path = path;
 
                     return (

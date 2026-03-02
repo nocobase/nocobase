@@ -18,6 +18,7 @@ import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   css,
+  findFirstPageRoute,
   findRouteBySchemaUid,
   isVariable,
   NocoBaseDesktopRouteType,
@@ -42,6 +43,7 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
+import { getAdminPagePathByRoute } from './adminPagePath';
 import { useDeleteRouteSchema } from './useDeleteRouteSchema';
 
 const components = { TreeSelect };
@@ -150,9 +152,13 @@ export const RemoveRoute: FC = () => {
 
             if (prevSibling || nextSibling) {
               const sibling = prevSibling || nextSibling;
+              const siblingPath =
+                sibling.type === NocoBaseDesktopRouteType.group
+                  ? getAdminPagePathByRoute(findFirstPageRoute(sibling.children || []))
+                  : getAdminPagePathByRoute(sibling);
 
               // 如果删除的是当前打开的页面或分组，需要跳转到上一个页面或分组
-              navigate(`/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`);
+              navigate(siblingPath || '/admin');
             } else {
               navigate(`/`);
             }

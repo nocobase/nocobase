@@ -15,7 +15,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCurrentRoute } from '../../../route-switch';
+import {
+  findRouteBySchemaUid,
+  getAdminPagePathBySchemaUid,
+  NocoBaseDesktopRouteType,
+  useAllAccessDesktopRoutes,
+  useCurrentRoute,
+} from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
 
@@ -112,6 +118,7 @@ export const pageTabSettings = new SchemaSettings({
         const currentRoute = useCurrentRoute();
         const navigate = useNavigateNoUpdate();
         const schema = useFieldSchema();
+        const { allAccessRoutes } = useAllAccessDesktopRoutes();
 
         return {
           title: t('Delete'),
@@ -131,7 +138,13 @@ export const pageTabSettings = new SchemaSettings({
 
                 // 如果删除的是当前打开的 tab，需要跳转到其他 tab
                 if (window.location.pathname.includes(currentRoute.schemaUid)) {
-                  navigate(`/admin/${schema['x-uid']}`);
+                  const pageRoute = findRouteBySchemaUid(schema['x-uid'], allAccessRoutes);
+                  const pageType =
+                    pageRoute?.type ||
+                    (window.location.pathname.startsWith('/admin/v2/')
+                      ? NocoBaseDesktopRouteType.flowPage
+                      : NocoBaseDesktopRouteType.page);
+                  navigate(getAdminPagePathBySchemaUid(schema['x-uid'], pageType) || '/admin');
                 }
               },
             });
