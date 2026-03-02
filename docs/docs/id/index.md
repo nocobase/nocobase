@@ -42,4 +42,13 @@ features:
         details: Jelajahi tutorial pengembangan plugin lainnya.
         link: /development
 
+  - title: Solusi
+    details: Template solusi industri yang dibangun di atas NocoBase.
+    items:
+      - title: Solusi Tiket
+        details: Platform tiket cerdas berbasis AI dengan akses multi-saluran, manajemen SLA, basis pengetahuan, dan lainnya.
+        link: /solution/ticket-system/
+      - title: CRM (Pratinjau)
+        details: Platform manajemen hubungan pelanggan tanpa kode dan fleksibel, mencakup pelanggan, prospek, peluang, pesanan, dan lainnya.
+        link: /solution/crm/
 ---
