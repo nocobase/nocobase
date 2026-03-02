@@ -10,4 +10,5 @@
 export * from './ai-manager';
 export * from './document-manager';
 export * from './tools-manager';
+export * from './skills-manager';
 export * from './loader';

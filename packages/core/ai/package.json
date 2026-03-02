@@ -10,7 +10,8 @@
     "@nocobase/resourcer": "2.1.0-alpha.7",
     "@nocobase/utils": "2.1.0-alpha.7",
     "fast-glob": "^3.3.2",
-    "flexsearch": "^0.8.2"
+    "flexsearch": "^0.8.2",
+    "gray-matter": "^4.0.3"
   },
   "repository": {
     "type": "git",

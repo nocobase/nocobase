@@ -23,7 +23,7 @@ import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
 import { conversationMiddleware, toolCallStatusMiddleware, toolInteractionMiddleware } from './middleware';
-import { ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import { defineTools, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
@@ -32,6 +32,7 @@ import { concat } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
+import { z } from 'zod';
 
 export interface ModelRef {
   llmService: string;
@@ -94,7 +95,7 @@ export class AIEmployee {
 
   private async initSession({ messageId, provider, model, providerName }) {
     const tools = await this.getAIEmployeeTools();
-
+    tools.push(await this.buildSkillsTool());
     if (!messageId && this.legacy !== true) {
       return {
         historyMessages: [],
@@ -1181,6 +1182,33 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
     const skillFilter = this.skillSettings?.skills ?? [];
     return tools.filter((t) => skillFilter.length === 0 || skillFilter.includes(t.definition.name));
+  }
+
+  private async buildSkillsTool() {
+    const { skillsManager } = this.plugin.ai;
+    const skillNames = this.employee.skillSettings?._skills ?? [];
+    const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
+    const specifiedSkills = await skillsManager.getSkills(skillNames);
+    const available = [...generalSkills, ...specifiedSkills].map((it) => `${it.name}: ${it.description}`).join('\n');
+    return defineTools({
+      scope: 'GENERAL',
+      silence: true,
+      definition: {
+        name: 'loadSkills',
+        description: `Load a specialized skill.\n\nAvailable skills: \n${available}\n\nReturns the skill's prompt and context.`,
+        schema: z.object({
+          skillName: z.string().describe('Name of skill to load'),
+        }),
+      },
+      invoke: async (ctx, args) => {
+        const skillName = args.skillName as string;
+        const skills = await skillsManager.getSkills(skillName);
+        return {
+          status: 'success',
+          content: skills.content,
+        };
+      },
+    });
   }
 
   private getMiddleware(options: {
