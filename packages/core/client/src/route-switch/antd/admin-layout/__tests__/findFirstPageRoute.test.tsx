@@ -276,7 +276,7 @@ describe('findFirstPageRoute', () => {
     expect(result).toEqual(routes[1]);
   });
 
-  it('should treat route with missing type and schemaUid as fallback page route', () => {
+  it('should treat route with missing type but schemaUid as fallback page route', () => {
     const routes: NocoBaseDesktopRoute[] = [
       {
         id: 1,

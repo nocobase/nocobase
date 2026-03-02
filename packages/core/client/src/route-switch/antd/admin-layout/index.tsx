@@ -934,16 +934,25 @@ export const AdminLegacyRedirect: FC = () => {
     if (!currentPageUid) {
       return '';
     }
-    const route = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
-    if (!route) {
-      return '';
+    const pageRoute = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
+    if (pageRoute) {
+      return buildLegacyAdminRedirectPath({
+        pathname: location.pathname,
+        search: location.search,
+        currentPageUid,
+        route: pageRoute,
+      });
     }
-    return buildLegacyAdminRedirectPath({
-      pathname: location.pathname,
-      search: location.search,
-      currentPageUid,
-      route,
-    });
+
+    // Group links historically use /admin/:groupId. Keep them navigable by redirecting
+    // to the first visible page under the group.
+    const groupRoute = findRouteById(currentPageUid, allAccessRoutes);
+    if (groupRoute?.type === NocoBaseDesktopRouteType.group) {
+      const firstGroupPagePath = getAdminPagePathByRoute(findFirstPageRoute(groupRoute.children || []));
+      return firstGroupPagePath ? `${firstGroupPagePath}${location.search || ''}` : '/admin';
+    }
+
+    return '';
   }, [allAccessRoutes, currentPageUid, location.pathname, location.search]);
 
   if (!targetPath || targetPath === `${location.pathname}${location.search}`) {
