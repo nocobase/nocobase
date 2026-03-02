@@ -89,15 +89,28 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   // root role has all permissions
   if (ctx.state.currentRole !== 'root') {
-    const crRepo = ctx.db.getRepository('uiButtonSchemasRoles');
-    const hasRoles = await crRepo.find({
+    const schemaRoleRepo = ctx.db.getRepository('uiButtonSchemasRoles');
+    const customRequestRoleRepo = ctx.db.getRepository('customRequestsRoles');
+
+    const schemaRoles = await schemaRoleRepo.find({
       filter: {
         uid: filterByTk,
       },
     });
-    if (hasRoles.length) {
-      if (!hasRoles.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
-        return ctx.throw(403, 'custom request no permission');
+
+    const customRequestRoles = await customRequestRoleRepo.find({
+      filter: {
+        customRequestKey: filterByTk,
+      },
+    });
+
+    const roleRows = [...schemaRoles, ...customRequestRoles];
+    if (roleRows.length) {
+      if (!roleRows.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
+        return ctx.throw(
+          403,
+          ctx.t('You do not have permission to access this custom request', { ns: 'action-custom-request' }),
+        );
       }
     }
   }
