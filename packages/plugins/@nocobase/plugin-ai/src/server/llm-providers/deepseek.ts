@@ -8,70 +8,16 @@
  */
 
 import { ChatDeepSeek } from '@langchain/deepseek';
-import { AIMessage, AIMessageChunk, BaseMessage } from '@langchain/core/messages';
+import { AIMessageChunk, BaseMessage } from '@langchain/core/messages';
 import { LLMProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
 import type OpenAI from 'openai';
-
-const REASONING_MAP_KEY = '__nb_reasoning_map';
-
-const getToolCallsKey = (toolCalls: Array<{ id?: string; name?: string; function?: { name?: string } }> = []) =>
-  toolCalls
-    .map((toolCall) => {
-      const id = toolCall?.id ?? '';
-      const name = toolCall?.name ?? toolCall?.function?.name ?? '';
-      return `${id}:${name}`;
-    })
-    .join('|');
-
-const collectReasoningMap = (messages: BaseMessage[]) => {
-  const reasoningMap = new Map<string, string>();
-  for (const message of messages ?? []) {
-    if (!AIMessage.isInstance(message)) {
-      continue;
-    }
-    if (!message.tool_calls?.length) {
-      continue;
-    }
-    const reasoningContent = message.additional_kwargs?.reasoning_content;
-    if (typeof reasoningContent !== 'string' || !reasoningContent) {
-      continue;
-    }
-    const key = getToolCallsKey(message.tool_calls as any[]);
-    if (key) {
-      reasoningMap.set(key, reasoningContent);
-    }
-  }
-  return reasoningMap;
-};
-
-const patchRequestMessagesReasoning = (request: any, reasoningMap?: Map<string, string>) => {
-  if (!reasoningMap?.size || !Array.isArray(request?.messages)) {
-    return;
-  }
-  const lastMessage = request.messages.at(-1);
-  if (lastMessage?.role !== 'tool') {
-    return;
-  }
-  for (const message of request.messages) {
-    if (message?.role !== 'assistant') {
-      continue;
-    }
-    if (!Array.isArray(message.tool_calls) || message.tool_calls.length === 0) {
-      continue;
-    }
-    if (message.reasoning_content) {
-      continue;
-    }
-    const key = getToolCallsKey(message.tool_calls);
-    const reasoningContent = key ? reasoningMap.get(key) : undefined;
-    if (reasoningContent) {
-      message.reasoning_content = reasoningContent;
-    }
-  }
-};
+import { collectReasoningMap, patchRequestMessagesReasoning, REASONING_MAP_KEY } from './common/reasoning';
+import { Context } from '@nocobase/actions';
+import PluginAIServer from '../plugin';
+import path from 'node:path';
 
 class ReasoningDeepSeek extends ChatDeepSeek {
   async _generate(messages: BaseMessage[], options: any, runManager?: any) {
@@ -115,9 +61,6 @@ class ReasoningDeepSeek extends ChatDeepSeek {
     return super.completionWithRetry(request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, requestOptions);
   }
 }
-import { Context } from '@nocobase/actions';
-import PluginAIServer from '../plugin';
-import path from 'node:path';
 
 export class DeepSeekProvider extends LLMProvider {
   declare chatModel: ChatDeepSeek;

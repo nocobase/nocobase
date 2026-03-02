@@ -7,18 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
+import { AIMessageChunk } from '@langchain/core/messages';
+import { OpenAIEmbeddings } from '@langchain/openai';
 import { EmbeddingProvider, LLMProvider } from './provider';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
+import _ from 'lodash';
 import PluginAIServer from '../plugin';
 import path from 'node:path';
+import { ReasoningChatOpenAI } from './common/reasoning';
 
 const DASHSCOPE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
 export class DashscopeProvider extends LLMProvider {
-  declare chatModel: ChatOpenAI;
+  declare chatModel: ReasoningChatOpenAI;
 
   get baseURL() {
     return DASHSCOPE_URL;
@@ -52,7 +56,7 @@ export class DashscopeProvider extends LLMProvider {
       modelKwargs['search_options'] = { forced_search: true };
     }
 
-    return new ChatOpenAI({
+    return new ReasoningChatOpenAI({
       apiKey,
       ...this.modelOptions,
       modelKwargs,
@@ -61,6 +65,34 @@ export class DashscopeProvider extends LLMProvider {
       },
       verbose: false,
     });
+  }
+
+  parseResponseMessage(message: Model) {
+    const result = super.parseResponseMessage(message);
+    if (['user', 'tool'].includes(result?.role)) {
+      return result;
+    }
+    const { metadata } = message?.toJSON() ?? {};
+    if (!_.isEmpty(metadata?.additional_kwargs?.reasoning_content)) {
+      result.content = {
+        ...(result.content ?? {}),
+        reasoning: {
+          status: 'stop',
+          content: metadata?.additional_kwargs.reasoning_content,
+        },
+      };
+    }
+    return result;
+  }
+
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+    if (!_.isEmpty(chunk?.additional_kwargs?.reasoning_content)) {
+      return {
+        status: 'streaming',
+        content: chunk.additional_kwargs.reasoning_content as string,
+      };
+    }
+    return null;
   }
 
   async parseAttachment(ctx: Context, attachment: any): Promise<any> {
