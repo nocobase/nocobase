@@ -15,7 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCurrentRoute } from '../../../route-switch';
+import { getAdminPagePathBySchemaUid, useCurrentRoute } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
 
@@ -131,7 +131,7 @@ export const pageTabSettings = new SchemaSettings({
 
                 // 如果删除的是当前打开的 tab，需要跳转到其他 tab
                 if (window.location.pathname.includes(currentRoute.schemaUid)) {
-                  navigate(`/admin/${schema['x-uid']}`);
+                  navigate(getAdminPagePathBySchemaUid(schema['x-uid'], currentRoute?.type) || '/admin');
                 }
               },
             });

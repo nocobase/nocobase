@@ -16,7 +16,7 @@ import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -57,6 +57,7 @@ import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { VariableScope } from '../../../variables/VariableScope';
 import { KeepAlive, useKeepAlive } from './KeepAlive';
+import { buildLegacyAdminRedirectPath, getAdminGroupPath, getAdminPagePathByRoute } from './adminPagePath';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
@@ -65,6 +66,7 @@ import { useApplications } from './useApplications';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
 
 export * from './useDeleteRouteSchema';
+export * from './adminPagePath';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
@@ -911,54 +913,44 @@ const NavigateToDefaultPage: FC = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const location = useLocationNoUpdate();
 
-  const defaultPageUid = findFirstPageRoute(allAccessRoutes)?.schemaUid;
+  const defaultPagePath = getAdminPagePathByRoute(findFirstPageRoute(allAccessRoutes));
 
   return (
     <>
       {props.children}
-      {defaultPageUid && (location.pathname === '/admin' || location.pathname === '/admin/') && (
-        <Navigate replace to={`/admin/${defaultPageUid}`} />
+      {defaultPagePath && (location.pathname === '/admin' || location.pathname === '/admin/') && (
+        <Navigate replace to={defaultPagePath} />
       )}
     </>
   );
 };
 
-const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRoute[]) => {
-  if (!routes) return;
-
-  for (const route of routes) {
-    if (route.menuSchemaUid === schemaUid) {
-      return route;
-    }
-
-    if (route.children?.length) {
-      const result = findRouteByMenuSchemaUid(schemaUid, route.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-};
-
-/**
- * Compatibility with legacy page routes
- * @param props
- * @returns
- */
-const LegacyRouteCompat: FC = (props) => {
+export const AdminLegacyRedirect: FC = () => {
   const currentPageUid = useCurrentPageUid();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const location = useLocation();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
-    if (route) {
-      navigate(location.pathname.replace(currentPageUid, route.schemaUid) + location.search);
+  const targetPath = useMemo(() => {
+    if (!currentPageUid) {
+      return '';
     }
-  }, [allAccessRoutes, currentPageUid, location.pathname, location.search, navigate]);
+    const route = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
+    if (!route) {
+      return '';
+    }
+    return buildLegacyAdminRedirectPath({
+      pathname: location.pathname,
+      search: location.search,
+      currentPageUid,
+      route,
+    });
+  }, [allAccessRoutes, currentPageUid, location.pathname, location.search]);
 
-  return <>{props.children}</>;
+  if (!targetPath || targetPath === `${location.pathname}${location.search}`) {
+    return <AppNotFound />;
+  }
+
+  return <Navigate replace to={targetPath} />;
 };
 
 export const AdminProvider = (props) => {
@@ -969,13 +961,11 @@ export const AdminProvider = (props) => {
           <ACLRolesCheckProvider>
             <RoutesRequestProvider>
               <NavigateToDefaultPage>
-                <LegacyRouteCompat>
-                  <RemoteCollectionManagerProvider>
-                    <CurrentAppInfoProvider>
-                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                    </CurrentAppInfoProvider>
-                  </RemoteCollectionManagerProvider>
-                </LegacyRouteCompat>
+                <RemoteCollectionManagerProvider>
+                  <CurrentAppInfoProvider>
+                    <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                  </CurrentAppInfoProvider>
+                </RemoteCollectionManagerProvider>
               </NavigateToDefaultPage>
             </RoutesRequestProvider>
           </ACLRolesCheckProvider>
@@ -999,7 +989,7 @@ export class AdminLayoutPlugin extends Plugin {
   }
   async load() {
     this.app.schemaSettingsManager.add(userCenterSettings);
-    this.app.addComponents({ AdminLayout, AdminDynamicPage });
+    this.app.addComponents({ AdminLayout, AdminDynamicPage, AdminLegacyRedirect });
     this.app.use(MobileLayoutProvider);
   }
 }
@@ -1081,24 +1071,13 @@ function convertRoutesToLayout(
         };
       }
 
-      if (item.type === NocoBaseDesktopRouteType.page) {
+      if (item.type === NocoBaseDesktopRouteType.page || item.type === NocoBaseDesktopRouteType.flowPage) {
+        const pagePath = getAdminPagePathByRoute(item);
         return {
           name,
           icon: item.icon ? <Icon type={item.icon} /> : null,
-          path: `/admin/${item.schemaUid}`,
-          redirect: `/admin/${item.schemaUid}`,
-          hideInMenu: item.hideInMenu,
-          _route: item,
-          _parentRoute: parentRoute,
-        };
-      }
-
-      if (item.type === NocoBaseDesktopRouteType.flowPage) {
-        return {
-          name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
-          path: `/admin/${item.schemaUid}`,
-          redirect: `/admin/${item.schemaUid}`,
+          path: pagePath,
+          redirect: pagePath,
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
@@ -1118,11 +1097,11 @@ function convertRoutesToLayout(
         const groupRoute: any = {
           name,
           icon: item.icon ? <Icon type={item.icon} /> : null,
-          path: `/admin/${item.id}`,
+          path: getAdminGroupPath(item.id),
           redirect:
             children[0]?.key === 'x-designer-button'
               ? undefined
-              : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || item.id}`,
+              : getAdminPagePathByRoute(findFirstPageRoute(itemChildren)) || getAdminGroupPath(item.id),
           hideInMenu: item.hideInMenu,
           _route: item,
           _depth: depth,
@@ -1174,6 +1153,15 @@ export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
 
   for (const route of routes.filter((item) => !item.hideInMenu)) {
     if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+      return route;
+    }
+
+    if (
+      route.schemaUid &&
+      route.type !== NocoBaseDesktopRouteType.group &&
+      route.type !== NocoBaseDesktopRouteType.link &&
+      route.type !== NocoBaseDesktopRouteType.tabs
+    ) {
       return route;
     }
 

@@ -325,35 +325,94 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin',
       Component: 'AdminLayout',
     });
+
+    this.router.add('admin.v1.page', {
+      path: '/admin/v1/:name',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.v1.page.tabs', {
+      path: '/admin/v1/:name/tabs/:tabUid',
+      Component: PageTabs as any,
+    });
+    this.router.add('admin.v1.page.popups', {
+      path: '/admin/v1/:name/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.v1.page.tabs.popups', {
+      path: '/admin/v1/:name/tabs/:tabUid/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.v1.page.tab', {
+      path: '/admin/v1/:name/tab/:tabUid',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.v1.page.view', {
+      path: '/admin/v1/:name/view/*',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.v1.page.tab.view', {
+      path: '/admin/v1/:name/tab/:tabUid/view/*',
+      Component: 'AdminDynamicPage',
+    });
+
+    this.router.add('admin.v2.page', {
+      path: '/admin/v2/:name',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.v2.page.tabs', {
+      path: '/admin/v2/:name/tabs/:tabUid',
+      Component: PageTabs as any,
+    });
+    this.router.add('admin.v2.page.popups', {
+      path: '/admin/v2/:name/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.v2.page.tabs.popups', {
+      path: '/admin/v2/:name/tabs/:tabUid/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.v2.page.tab', {
+      path: '/admin/v2/:name/tab/:tabUid',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.v2.page.view', {
+      path: '/admin/v2/:name/view/*',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.v2.page.tab.view', {
+      path: '/admin/v2/:name/tab/:tabUid/view/*',
+      Component: 'AdminDynamicPage',
+    });
+
     this.router.add('admin.page', {
       path: '/admin/:name',
-      Component: 'AdminDynamicPage',
+      Component: 'AdminLegacyRedirect',
     });
     this.router.add('admin.page.tabs', {
       path: '/admin/:name/tabs/:tabUid',
-      Component: PageTabs as any,
+      Component: 'AdminLegacyRedirect',
     });
     this.router.add('admin.page.popups', {
       path: '/admin/:name/popups/*',
-      Component: PagePopups,
+      Component: 'AdminLegacyRedirect',
     });
     this.router.add('admin.page.tabs.popups', {
       path: '/admin/:name/tabs/:tabUid/popups/*',
-      Component: PagePopups,
+      Component: 'AdminLegacyRedirect',
     });
 
-    // 和 2.0 相关的路由
+    // 和 2.0 相关的 legacy 路由
     this.router.add('admin.page.tab', {
       path: '/admin/:name/tab/:tabUid', // 为了和 2.0 的路由区分，这里使用 tab 而不是 tabs
-      Component: 'AdminDynamicPage',
+      Component: 'AdminLegacyRedirect',
     });
     this.router.add('admin.page.view', {
       path: '/admin/:name/view/*',
-      Component: 'AdminDynamicPage',
+      Component: 'AdminLegacyRedirect',
     });
     this.router.add('admin.page.tab.view', {
       path: '/admin/:name/tab/:tabUid/view/*',
-      Component: 'AdminDynamicPage',
+      Component: 'AdminLegacyRedirect',
     });
   }
 
