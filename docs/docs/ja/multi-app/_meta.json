@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "概要",
-    "link": "/multi-app/"
+    "label": "マルチアプリ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "共有メモリモード",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "マルチ環境モード",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "複数アプリ",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "複数スペース",
+    "label": "マルチスペース",
     "link": "/multi-app/multi-space"
   }
 ]

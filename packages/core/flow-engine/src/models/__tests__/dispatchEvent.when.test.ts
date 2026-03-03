@@ -105,6 +105,45 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
     expect(calls).toEqual(['static-a', 'dynamic']);
   });
 
+  test("phase='afterAllFlows': skips when event aborted by ctx.exitAll()", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('Abort', {
+      on: { eventName: 'go' },
+      sort: -10,
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('abort');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+    model.registerFlow('AfterAll', {
+      on: { eventName: 'go', phase: 'afterAllFlows' },
+      steps: {
+        d: { handler: async () => void calls.push('after-all') } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['abort']);
+  });
+
   test("phase='beforeFlow': instance flow runs before the target static flow", async () => {
     const engine = new FlowEngine();
     class M extends FlowModel {}
@@ -161,6 +200,39 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
     expect(calls).toEqual(['static-a', 'static-b', 'dynamic']);
   });
 
+  test("phase='afterFlow': skips when anchor flow is aborted by ctx.exitAll()", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: {
+          handler: async (ctx: any) => {
+            calls.push('static-a');
+            ctx.exitAll();
+          },
+        } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'afterFlow', flowKey: 'S' },
+      steps: {
+        d: { handler: async () => void calls.push('dynamic') } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a']);
+  });
+
   test("phase='beforeStep': instance flow runs before the target static step", async () => {
     const engine = new FlowEngine();
     class M extends FlowModel {}
@@ -215,6 +287,39 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
 
     await model.dispatchEvent('go');
     expect(calls).toEqual(['static-a', 'dynamic', 'static-b']);
+  });
+
+  test("phase='afterStep': skips when anchor step is aborted by ctx.exitAll()", async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: {
+          handler: async (ctx: any) => {
+            calls.push('static-a');
+            ctx.exitAll();
+          },
+        } as any,
+        b: { handler: async () => void calls.push('static-b') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('D', {
+      on: { eventName: 'go', phase: 'afterStep', flowKey: 'S', stepKey: 'a' },
+      steps: {
+        d: { handler: async () => void calls.push('dynamic') } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['static-a']);
   });
 
   test("phase='beforeFlow': ctx.exitAll() stops anchor flow and subsequent flows", async () => {
@@ -428,6 +533,115 @@ describe('dispatchEvent dynamic event flow phase (scheduleModelOperation integra
 
     await model.dispatchEvent('go');
     expect(calls).toEqual(['static-a', 'dynamic']);
+  });
+
+  test('fallback to event:end (missing anchor) skips when event aborted by ctx.exitAll()', async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const calls: string[] = [];
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: { handler: async () => void calls.push('static-a') } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('Abort', {
+      on: { eventName: 'go' },
+      sort: -10,
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            calls.push('abort');
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+    model.registerFlow('FallbackToEnd', {
+      on: { eventName: 'go', phase: 'beforeFlow', flowKey: 'missing' },
+      steps: {
+        d: { handler: async () => void calls.push('fallback-end') } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    expect(calls).toEqual(['abort']);
+  });
+
+  test('event:end is still emitted with aborted=true when exitAll happens', async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const endEvents: any[] = [];
+    const onEnd = (payload: any) => {
+      endEvents.push(payload);
+    };
+    engine.emitter.on('model:event:go:end', onEnd);
+
+    const model = engine.createModel({ use: 'M' });
+    model.registerFlow('Abort', {
+      on: { eventName: 'go' },
+      steps: {
+        d: {
+          handler: async (ctx: any) => {
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    await model.dispatchEvent('go');
+    engine.emitter.off('model:event:go:end', onEnd);
+
+    expect(endEvents).toHaveLength(1);
+    expect(endEvents[0]?.aborted).toBe(true);
+  });
+
+  test('flow:end/step:end are emitted with aborted=true when exitAll happens', async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    const flowEndEvents: any[] = [];
+    const stepEndEvents: any[] = [];
+    const onFlowEnd = (payload: any) => {
+      flowEndEvents.push(payload);
+    };
+    const onStepEnd = (payload: any) => {
+      stepEndEvents.push(payload);
+    };
+    engine.emitter.on('model:event:go:flow:S:end', onFlowEnd);
+    engine.emitter.on('model:event:go:flow:S:step:a:end', onStepEnd);
+
+    M.registerFlow({
+      key: 'S',
+      on: { eventName: 'go' },
+      steps: {
+        a: {
+          handler: async (ctx: any) => {
+            ctx.exitAll();
+          },
+        } as any,
+      },
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    await model.dispatchEvent('go');
+
+    engine.emitter.off('model:event:go:flow:S:end', onFlowEnd);
+    engine.emitter.off('model:event:go:flow:S:step:a:end', onStepEnd);
+
+    expect(flowEndEvents).toHaveLength(1);
+    expect(stepEndEvents).toHaveLength(1);
+    expect(flowEndEvents[0]?.aborted).toBe(true);
+    expect(stepEndEvents[0]?.aborted).toBe(true);
   });
 
   test('multiple flows on same anchor: executes by flow.sort asc (stable)', async () => {

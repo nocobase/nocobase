@@ -41,4 +41,14 @@ features:
       - title: עוד...
         details: גלו מדריכים נוספים לפיתוח תוספים.
         link: /development
+
+  - title: פתרונות
+    details: תבניות פתרונות תעשייתיים הבנויות על NocoBase.
+    items:
+      - title: פתרון כרטיסים
+        details: פלטפורמת כרטיסים חכמה מבוססת AI עם גישה רב-ערוצית, ניהול SLA, בסיס ידע ועוד.
+        link: /solution/ticket-system/
+      - title: CRM (תצוגה מקדימה)
+        details: פלטפורמת ניהול קשרי לקוחות ללא קוד וגמישה, המכסה לקוחות, לידים, הזדמנויות, הזמנות ועוד.
+        link: /solution/crm/
 ---

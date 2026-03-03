@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SelectProps, createSelectSchemaSettingsItem, useCollection, useCompile } from "@nocobase/client";
-import { useCollectionKey } from "../../schema";
-import { generateCommonTemplate } from "../../locale";
+import { SelectProps, createSelectSchemaSettingsItem, useCollection, useCompile } from '@nocobase/client';
+import { useCollectionKey } from '../../schema';
+import { generateCommonTemplate } from '../../locale';
 
 function useOptions(): SelectProps['options'] {
   const collection = useCollection();
@@ -17,7 +17,7 @@ function useOptions(): SelectProps['options'] {
   const compile = useCompile();
   return collection
     .getFields((field) => collection.isTitleField(field))
-    .map(field => ({ label: field.uiSchema?.title ? compile(field.uiSchema.title) : field.name, value: field.name }));
+    .map((field) => ({ label: field.uiSchema?.title ? compile(field.uiSchema.title) : field.name, value: field.name }));
 }
 
 export const titleFieldSchemaSettingsItem = createSelectSchemaSettingsItem({

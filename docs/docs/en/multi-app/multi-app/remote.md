@@ -4,9 +4,6 @@ pkg: '@nocobase/plugin-app-supervisor'
 
 # Multi-Environment Mode
 
-:::info 🚀 Coming soon
-:::
-
 ## Introduction
 
 The shared-memory multi-application mode provides clear advantages in deployment and operations. However, as the number of applications and business complexity increase, a single instance may gradually face challenges such as resource contention and reduced stability. For these scenarios, a **multi-environment hybrid deployment** can be adopted to support more complex business requirements.

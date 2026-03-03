@@ -43,4 +43,13 @@ features:
         details: Entdecken Sie weitere Tutorials zur Plugin-Entwicklung.
         link: /development
 
+  - title: Lösungen
+    details: Branchenspezifische Lösungsvorlagen für NocoBase.
+    items:
+      - title: Ticketing-Lösung
+        details: KI-gestützte intelligente Ticketing-Plattform mit Multi-Channel-Zugang, SLA-Management, Wissensdatenbank und mehr.
+        link: /solution/ticket-system/
+      - title: CRM (Vorschau)
+        details: No-Code, flexible Kundenbeziehungsmanagement-Plattform mit Kunden, Leads, Opportunities, Bestellungen und mehr.
+        link: /solution/crm/
 ---

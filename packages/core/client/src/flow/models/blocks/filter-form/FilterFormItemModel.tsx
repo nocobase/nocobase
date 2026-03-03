@@ -9,20 +9,20 @@
 
 import {
   Collection,
-  tExpr,
   FieldModelRenderer,
   FilterableItemModel,
   FlowModelContext,
   FormItem,
+  tExpr,
 } from '@nocobase/flow-engine';
 import { Empty } from 'antd';
 import _, { cloneDeep, debounce, isEqual } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
+import { FilterManager } from '../filter-manager';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
-import { FilterManager } from '../filter-manager';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
 const getAssociationTargetCollection = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
@@ -87,6 +87,37 @@ const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => 
   }
 
   return pickValue(value);
+};
+
+const buildVirtualFilterCollectionField = (ctx: FlowModelContext, filterField: any) => {
+  if (!filterField) {
+    return;
+  }
+
+  const resolvedTitle = filterField?.title || filterField?.name;
+  const interfaceName = filterField?.interface;
+  const interfaceConfig = interfaceName
+    ? // @ts-ignore
+      ctx?.dataSourceManager?.collectionFieldInterfaceManager?.getFieldInterface?.(interfaceName)
+    : undefined;
+
+  const result = {
+    ...filterField,
+    title: resolvedTitle,
+    uiSchema: {
+      ...(filterField?.uiSchema || {}),
+      title: resolvedTitle,
+    },
+    filterable: filterField?.filterable || interfaceConfig?.filterable,
+    isAssociationField:
+      typeof filterField?.isAssociationField === 'function'
+        ? filterField.isAssociationField
+        : () => Boolean(filterField?.target),
+    getComponentProps:
+      typeof filterField?.getComponentProps === 'function' ? filterField.getComponentProps : () => ({}),
+  };
+
+  return result;
 };
 
 const buildFilterFormFieldItem = ({
@@ -410,6 +441,16 @@ export class FilterFormItemModel extends FilterableItemModel<{
     super.onInit(options);
     // 创建防抖的 doFilter 方法，延迟 300ms
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
+
+    const initFilterField = this.getStepParams('filterFormItemSettings', 'init')?.filterField;
+    if (initFilterField) {
+      this.context.defineProperty('filterField', {
+        value: {
+          ...initFilterField,
+          title: initFilterField?.title || initFilterField?.name,
+        },
+      });
+    }
   }
 
   onMount(): void {
@@ -548,7 +589,8 @@ FilterFormItemModel.registerFlow({
             'x-decorator': 'FormItem',
             'x-reactions': (field) => {
               const model = ctx.model;
-              const originTitle = model.collectionField?.title || ctx.filterField?.title;
+              const originTitle =
+                model.collectionField?.title || ctx.filterField?.title || ctx.filterField?.name || model.fieldPath;
               field.decoratorProps = {
                 ...field.decoratorProps,
                 extra: model.context.t('Original field title: ') + originTitle,
@@ -559,11 +601,12 @@ FilterFormItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          label: ctx.collectionField?.title || ctx.filterField?.title,
+          label: ctx.collectionField?.title || ctx.filterField?.title || ctx.filterField?.name,
         };
       },
       handler(ctx, params) {
-        if (params.label && params.label === ctx.collectionField?.title) {
+        const originTitle = ctx.collectionField?.title || ctx.filterField?.title || ctx.filterField?.name;
+        if (params.label && params.label === originTitle) {
           ctx.model.setProps({ label: params.label });
         } else {
           ctx.model.setProps({ label: ctx.t(params.label, { ns: 'lm-flow-engine' }) });
@@ -575,7 +618,38 @@ FilterFormItemModel.registerFlow({
     // },
     init: {
       async handler(ctx, params) {
-        const collectionField = ctx.model.collectionField;
+        const normalizedFilterField = params.filterField
+          ? {
+              ...params.filterField,
+              title: params.filterField?.title || params.filterField?.name,
+            }
+          : params.filterField;
+        ctx.model.context.defineProperty('filterField', {
+          value: normalizedFilterField,
+        });
+
+        ctx.model.setProps({
+          name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
+        });
+
+        let collectionField = ctx.model.collectionField;
+        // SQL 图表筛选等场景下没有 collectionName/dataSourceKey，无法解析真实 collectionField。
+        // 此时用 filterField 元数据注入一个虚拟字段，避免误显示“字段已删除”占位。
+        const fieldSettingsInitParams = ctx.model.getFieldSettingsInitParams?.() || {};
+        const hasCollectionContext = !!(
+          // @ts-ignore
+          (fieldSettingsInitParams?.dataSourceKey && fieldSettingsInitParams?.collectionName)
+        );
+        if (!hasCollectionContext && !collectionField && normalizedFilterField) {
+          const virtualField = buildVirtualFilterCollectionField(ctx, normalizedFilterField);
+          if (virtualField) {
+            ctx.model.context.defineProperty('collectionField', {
+              value: virtualField,
+            });
+            collectionField = virtualField as any;
+          }
+        }
+
         if (collectionField?.getComponentProps) {
           const componentProps = collectionField.getComponentProps();
           const fieldModel = ctx.model.subModels?.field;
@@ -589,12 +663,6 @@ FilterFormItemModel.registerFlow({
             required: undefined,
           });
         }
-        ctx.model.setProps({
-          name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
-        });
-        ctx.model.context.defineProperty('filterField', {
-          value: params.filterField,
-        });
       },
     },
 

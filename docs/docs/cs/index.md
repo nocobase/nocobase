@@ -42,4 +42,13 @@ features:
         details: Prozkoumejte další tutoriály pro vývoj pluginů.
         link: /development
 
+  - title: Řešení
+    details: Šablony průmyslových řešení postaven na NocoBase.
+    items:
+      - title: Řešení pro tiketování
+        details: Inteligentní platforma pro tiketování poháněná AI s podporou více kanálů, správy SLA, znalostní báze a další.
+        link: /solution/ticket-system/
+      - title: CRM (náhled)
+        details: Bez kódu, flexibilní platforma pro správu vztahů se zákazníky s podporou zákazníků, leadů, obchodních příležitostí, objednávek a dalších.
+        link: /solution/crm/
 ---

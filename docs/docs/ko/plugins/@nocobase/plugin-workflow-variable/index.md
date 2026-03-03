@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

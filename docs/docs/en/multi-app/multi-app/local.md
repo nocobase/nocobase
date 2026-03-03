@@ -4,9 +4,6 @@ pkg: '@nocobase/plugin-app-supervisor'
 
 # Shared-Memory Mode
 
-:::info 🚀 Coming soon
-:::
-
 ## Introduction
 
 When users want to split business domains at the application level without introducing complex deployment and operations, the shared-memory multi-application mode can be used.

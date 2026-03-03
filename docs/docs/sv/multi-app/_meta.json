@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Översikt",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
     "label": "Flera applikationer",
-    "link": "/multi-app/multi-app"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Delat minnesläge",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Fler-miljöläge",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Flera utrymmen",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]

@@ -93,6 +93,37 @@ describe('workflow: custom action trigger > manually execute', () => {
       expect(e1.context.user).toMatchObject({ id: users[1].id });
     });
 
+    it('root execute with userId as object', async () => {
+      const w1 = await WorkflowModel.create({
+        type: 'custom-action',
+        config: {
+          type: CONTEXT_TYPE.SINGLE_RECORD,
+          collection: 'posts',
+          appends: ['category'],
+        },
+      });
+
+      const p1 = await PostRepo.create({
+        values: { title: 't1', category: { title: 'c1' } },
+      });
+
+      const { category, ...data } = p1.toJSON();
+      const res1 = await rootAgent.resource('workflows').execute({
+        filterByTk: w1.id,
+        values: {
+          data,
+          userId: users[1], // pass user object instead of plain id
+        },
+      });
+
+      expect(res1.status).toBe(200);
+      expect(res1.body.data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [e1] = await w1.getExecutions();
+      expect(e1.id).toBe(res1.body.data.execution.id);
+      expect(e1.context.data).toMatchObject({ id: data.id, categoryId: category.id, category: { title: 'c1' } });
+      expect(e1.context.user).toMatchObject({ id: users[1].id });
+    });
+
     it('admin execute', async () => {
       const w1 = await WorkflowModel.create({
         type: 'custom-action',

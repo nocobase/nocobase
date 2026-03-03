@@ -5,6 +5,72 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.9](https://github.com/nocobase/nocobase/compare/v2.0.8...v2.0.9) - 2026-03-02
+
+### 🐛 修复
+
+- **[client]**
+  - 修复默认值组件中不渲染字段组件的问题 ([#8744](https://github.com/nocobase/nocobase/pull/8744)) by @mytharcher
+
+  - 修复切换菜单是数据区块不刷新的问题。 ([#8735](https://github.com/nocobase/nocobase/pull/8735)) by @gchust
+
+- **[database]** 修复v2版本的字段自定义正则校验失败 ([#8729](https://github.com/nocobase/nocobase/pull/8729)) by @jiannx
+
+- **[flow-engine]** 修复 ctx.exit 无法终止用户定义的事件流执行的问题。 ([#8737](https://github.com/nocobase/nocobase/pull/8737)) by @gchust
+
+- **[工作流：审批]** 补全缺失的参数以避免提交审批时关系数据未被更新和处理 by @mytharcher
+
+## [v2.0.8](https://github.com/nocobase/nocobase/compare/v2.0.7...v2.0.8) - 2026-03-01
+
+### 🎉 新特性
+
+- **[AI 员工]** 更新 AI 对话用户提示词编辑 ([#8725](https://github.com/nocobase/nocobase/pull/8725)) by @heziqiang
+
+### 🐛 修复
+
+- **[server]** 通过追加 hash 参数解决缓存未更新问题 ([#8730](https://github.com/nocobase/nocobase/pull/8730)) by @chenos
+
+- **[AI 员工]** 修复AI数据源配置渲染异常 ([#8731](https://github.com/nocobase/nocobase/pull/8731)) by @cgyrock
+
+- **[工作流：自定义操作事件]** 修复自定义操作事件作为子流程被调用时卡住的问题 ([#8738](https://github.com/nocobase/nocobase/pull/8738)) by @mytharcher
+
+- **[工作流：审批]**
+  - 在审批操作中过滤关系字段的值，以避免越权的数据操作 by @mytharcher
+
+  - 修复手动执行审批工作流时的报错 by @mytharcher
+
+  - 修复加签和转签后由于缺失 `dataAfter` 字段值导致的加载列表报错问题 by @mytharcher
+
+  - 修复基于 ACL 过滤 appends 参数的问题 by @mytharcher
+
+  - 修复用户没有相关权限时关系字段不应该被创建或更新的权限问题 by @mytharcher
+
+## [v2.0.7](https://github.com/nocobase/nocobase/compare/v2.0.6...v2.0.7) - 2026-02-27
+
+### 🎉 新特性
+
+- **[AI 员工]** 支持通过多个关键词检索内置文档，一次性读取多个文档 ([#8718](https://github.com/nocobase/nocobase/pull/8718)) by @2013xile
+
+### 🚀 优化
+
+- **[client]** 表格支持总结行（summary）的配置 ([#8721](https://github.com/nocobase/nocobase/pull/8721)) by @chenos
+
+- **[嵌入 NocoBase]** 权限插件提供过滤关系字段值的 API ([#8688](https://github.com/nocobase/nocobase/pull/8688)) by @mytharcher
+
+### 🐛 修复
+
+- **[数据可视化]** 修复 i18n 图表插件入口和占位的文案 ([#8716](https://github.com/nocobase/nocobase/pull/8716)) by @heziqiang
+
+- **[工作流：JavaScript 节点]** 修复 windows 下测试用例无法通过的问题 ([#8722](https://github.com/nocobase/nocobase/pull/8722)) by @mytharcher
+
+- **[AI 员工]** 修复 AI 对话消息中渲染了 0 的问题 ([#8723](https://github.com/nocobase/nocobase/pull/8723)) by @heziqiang
+
+- **[模板打印]** 修复未适配 ACL API 变更导致的报错问题 by @mytharcher
+
+- **[工作流：审批]** 在审批操作中过滤关系字段的值，以避免越权的数据操作 by @mytharcher
+
+- **[邮件管理]** 修复图片contentId格式解析 by @jiannx
+
 ## [v2.0.6](https://github.com/nocobase/nocobase/compare/v2.0.5...v2.0.6) - 2026-02-26
 
 ### 🐛 修复

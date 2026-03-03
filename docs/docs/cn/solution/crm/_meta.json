@@ -6,8 +6,18 @@
   },
   {
     "type": "file",
+    "name": "design",
+    "label": "详细设计"
+  },
+  {
+    "type": "file",
     "name": "installation",
     "label": "如何安装"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "旧版 CRM（v1）"
   },
   {
     "type": "file",

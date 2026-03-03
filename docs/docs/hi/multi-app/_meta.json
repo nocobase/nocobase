@@ -1,13 +1,24 @@
 [
   {
     "type": "custom-link",
-    "label": "अवलोकन",
-    "link": "/multi-app/"
-  },
-  {
-    "type": "custom-link",
-    "label": "मल्टी-ऐप",
-    "link": "/multi-app/multi-app"
+    "label": "मल्टी-एप्लिकेशन",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "अवलोकन",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "साझा मेमोरी मोड",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "बहु-पर्यावरण मोड",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
