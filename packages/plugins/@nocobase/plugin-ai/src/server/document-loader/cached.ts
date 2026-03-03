@@ -47,6 +47,18 @@ export class CachedDocumentLoader {
       };
     }
 
+    if (sourceFile.size === 0) {
+      return {
+        supported: true,
+        fromCache: false,
+        text: '',
+        documents: [],
+        meta: {
+          sourceFileId: sourceFile.id,
+        },
+      };
+    }
+
     const cached = await this.loadFromCache(sourceFile);
     if (cached) {
       return cached;

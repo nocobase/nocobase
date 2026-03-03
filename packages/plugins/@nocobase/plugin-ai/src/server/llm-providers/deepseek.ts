@@ -51,10 +51,16 @@ export class DeepSeekProvider extends LLMProvider {
     }
     const parsed = await this.aiPlugin.documentLoaders.cached.load(attachment);
     const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    if (!parsed.supported || !parsed.text) {
+    if (!parsed.supported) {
       return {
         placement: 'system',
         content: `File ${safeFilename} is not a supported document type for text parsing.`,
+      };
+    }
+    if (parsed.text.length === 0) {
+      return {
+        placement: 'system',
+        content: `The file provided by the user is an empty file, file name is "${safeFilename}"`,
       };
     }
     return {
