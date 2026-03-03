@@ -22,8 +22,13 @@ import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
-import { conversationMiddleware, toolCallStatusMiddleware, toolInteractionMiddleware } from './middleware';
-import { defineTools, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import {
+  conversationMiddleware,
+  skillToolBindingMiddleware,
+  toolCallStatusMiddleware,
+  toolInteractionMiddleware,
+} from './middleware';
+import { defineTools, SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
@@ -94,13 +99,12 @@ export class AIEmployee {
   }
 
   private async initSession({ messageId, provider, model, providerName }) {
-    const tools = await this.getAIEmployeeTools();
-    tools.push(await this.buildSkillsTool());
+    const { tools, baseToolNames } = await this.getAgentTools();
     if (!messageId && this.legacy !== true) {
       return {
         historyMessages: [],
         tools,
-        middleware: this.getMiddleware({ tools, model, providerName }),
+        middleware: this.getMiddleware({ tools, baseToolNames, model, providerName }),
         config: undefined,
         state: undefined,
       };
@@ -117,6 +121,7 @@ export class AIEmployee {
       tools,
       middleware: this.getMiddleware({
         tools,
+        baseToolNames,
         model,
         providerName,
         messageId,
@@ -1184,12 +1189,92 @@ If information is missing, clearly state it in the summary.</Important>`;
     return tools.filter((t) => skillFilter.length === 0 || skillFilter.includes(t.definition.name));
   }
 
-  private async buildSkillsTool() {
+  private async getAvailableSkills(): Promise<SkillsEntry[]> {
     const { skillsManager } = this.plugin.ai;
-    const skillNames = this.employee.skillSettings?._skills ?? [];
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
-    const specifiedSkills = await skillsManager.getSkills(skillNames);
-    const available = [...generalSkills, ...specifiedSkills].map((it) => `${it.name}: ${it.description}`).join('\n');
+    const specifiedSkillNames = this.employee.skillSettings?._skills ?? [];
+    const specifiedSkills = specifiedSkillNames.length ? await skillsManager.getSkills(specifiedSkillNames) : [];
+    return _.uniqBy([...(generalSkills || []), ...(specifiedSkills || [])], 'name');
+  }
+
+  private async getAgentTools(): Promise<{ tools: ToolsEntry[]; baseToolNames: Set<string> }> {
+    const baseTools = await this.getAIEmployeeTools();
+    const baseToolNames = new Set(baseTools.map((it) => it.definition.name));
+    const toolMap = await this.getToolsMap();
+    const availableSkills = await this.getAvailableSkills();
+    const skillTools = _.uniq(
+      availableSkills
+        .flatMap((it) => it.tools ?? [])
+        .map((toolName) => toolMap.get(toolName))
+        .filter((it) => !!it)
+        .map((it) => it.definition.name),
+    )
+      .map((toolName) => toolMap.get(toolName))
+      .filter((it) => !!it);
+
+    const toolsMap = new Map<string, ToolsEntry>(baseTools.map((it) => [it.definition.name, it]));
+    for (const tool of skillTools) {
+      toolsMap.set(tool.definition.name, tool);
+    }
+
+    const loadSkillsTool = await this.buildSkillsTool(availableSkills);
+    toolsMap.set(loadSkillsTool.definition.name, loadSkillsTool);
+    return {
+      tools: Array.from(toolsMap.values()),
+      baseToolNames,
+    };
+  }
+
+  async getLoadedSkillNames(): Promise<string[]> {
+    const list = (await this.aiToolMessagesModel.findAll({
+      where: {
+        sessionId: this.sessionId,
+        toolName: 'loadSkills',
+        status: 'success',
+      },
+      order: [['id', 'ASC']],
+    })) as Model<AIToolMessage>[];
+    const result = new Set<string>();
+    for (const item of list) {
+      const { content } = item.toJSON();
+      if (_.isPlainObject(content) && typeof content['skillName'] === 'string') {
+        result.add(content['skillName']);
+        continue;
+      }
+      if (typeof content === 'string') {
+        try {
+          const parsed = JSON.parse(content);
+          if (_.isPlainObject(parsed) && typeof parsed['skillName'] === 'string') {
+            result.add(parsed['skillName']);
+          }
+        } catch (e) {
+          // ignore unexpected plain-string content
+        }
+      }
+    }
+    return Array.from(result.values());
+  }
+
+  async getActivatedSkillToolNames(): Promise<Set<string>> {
+    const loadedSkillNames = await this.getLoadedSkillNames();
+    if (!loadedSkillNames.length) {
+      return new Set<string>();
+    }
+    const availableSkills = await this.getAvailableSkills();
+    const skillsMap = new Map(availableSkills.map((it) => [it.name, it]));
+    const result = new Set<string>();
+    for (const skillName of loadedSkillNames) {
+      const target = skillsMap.get(skillName);
+      for (const toolName of target?.tools ?? []) {
+        result.add(toolName);
+      }
+    }
+    return result;
+  }
+
+  private async buildSkillsTool(availableSkills: SkillsEntry[]) {
+    const skillsMap = new Map(availableSkills.map((it) => [it.name, it]));
+    const available = availableSkills.map((it) => `${it.name}: ${it.description}`).join('\n');
     return defineTools({
       scope: 'GENERAL',
       silence: true,
@@ -1202,10 +1287,24 @@ If information is missing, clearly state it in the summary.</Important>`;
       },
       invoke: async (ctx, args) => {
         const skillName = args.skillName as string;
-        const skills = await skillsManager.getSkills(skillName);
+        const skills = skillsMap.get(skillName);
+        if (!skills) {
+          return {
+            status: 'error',
+            content: {
+              message: 'Skill not found',
+            },
+          };
+        }
+        const toolMap = await this.getToolsMap();
+        const activatedTools = (skills.tools ?? []).filter((toolName) => toolMap.has(toolName));
         return {
           status: 'success',
-          content: skills.content,
+          content: {
+            skillName: skills.name,
+            skillContent: skills.content,
+            activatedTools,
+          },
         };
       },
     });
@@ -1215,11 +1314,15 @@ If information is missing, clearly state it in the summary.</Important>`;
     providerName: string;
     model: string;
     tools: ToolsEntry[];
+    baseToolNames: Set<string>;
     messageId?: string;
     agentThread?: AgentThread;
   }) {
-    const { providerName, model, tools, messageId, agentThread } = options;
+    const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
     return [
+      skillToolBindingMiddleware(this, {
+        baseToolNames: Array.from(baseToolNames.values()),
+      }),
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
       conversationMiddleware(this, { providerName, model, messageId, agentThread }),
