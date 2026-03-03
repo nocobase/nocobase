@@ -66,7 +66,7 @@ function BindGlobalWorkflowConfig() {
               'x-component-props': {
                 message: multipleRecords
                   ? `{{t('Only support custom action workflow with context type set to "Multiple records".', { ns: "${NAMESPACE}" })}}`
-                  : `{{t('Only support custom action workflow with context type set to "None".', { ns: "${NAMESPACE}" })}}`,
+                  : `{{t('Only support custom action workflow with context type set to "Custom trigger data".', { ns: "${NAMESPACE}" })}}`,
                 style: {
                   marginBottom: '1em',
                 },

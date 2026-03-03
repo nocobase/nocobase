@@ -9,13 +9,26 @@
 
 import React from 'react';
 import { Action } from '@nocobase/client';
+import { TriggerCollectionRecordSelect, WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
 
 import { useGlobalTriggerWorkflowCustomActionProps } from './hooks';
 import { useCurrentWorkflowContext } from '@nocobase/plugin-workflow/client';
+import { CONTEXT_TYPE } from '../common/constants';
 
 export function TriggerScopeProvider(props) {
   const workflow = useCurrentWorkflowContext();
-  return props.types.includes(workflow.config.type) ? props.children : null;
+  return props.types.includes(workflow.config.type) ||
+    (props.types.includes(CONTEXT_TYPE.GLOBAL) && !workflow.config.type)
+    ? props.children
+    : null;
+}
+
+export function TriggerDataInput(props) {
+  const workflow = useCurrentWorkflowContext();
+  if (workflow.config.type) {
+    return <TriggerCollectionRecordSelect {...props} />;
+  }
+  return <WorkflowVariableJSON changeOnSelect autoSize={{ minRows: 6 }} {...props} />;
 }
 
 export function GlobalTriggerWorkflowAction(props) {
