@@ -20,9 +20,11 @@
     "pm": "nocobase pm",
     "pm2": "nocobase pm2",
     "dev": "nocobase dev",
+    "dev:client-v2": "nocobase dev --client-v2-only",
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",
     "build": "nocobase build",
+    "build:client-v2": "nocobase build --client-v2-only",
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:server": "nocobase test:server",
@@ -101,6 +103,7 @@
     "react-dom": "^18.0.0",
     "safe-load-script": "^0.0.1",
     "typescript": "5.1.3",
+    "vite-plugin-node-polyfills": "^0.25.0",
     "vitest": "^1.5.0"
   },
   "volta": {

@@ -19,7 +19,7 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
-import { isAbsolute, resolve } from 'path';
+import { extname, isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -91,6 +91,8 @@ export class Gateway extends EventEmitter {
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
+  private packageVersionCache = new Map<string, string>();
+  private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
 
   private onTerminate = async (signal?: NodeJS.Signals) => {
@@ -256,6 +258,135 @@ export class Gateway extends EventEmitter {
     this.responseError(res, error);
   }
 
+  private getV2PublicPath() {
+    const appPublicPath = process.env.APP_PUBLIC_PATH || '/';
+    const withLeadingSlash = appPublicPath.startsWith('/') ? appPublicPath : `/${appPublicPath}`;
+    const withTrailingSlash = withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+    return `${withTrailingSlash.replace(/\/$/, '')}/v2/`;
+  }
+
+  private isV2Request(pathname: string) {
+    const v2PublicPath = this.getV2PublicPath();
+    return pathname === v2PublicPath.slice(0, -1) || pathname.startsWith(v2PublicPath);
+  }
+
+  private isV2IndexRequest(pathname: string) {
+    if (!this.isV2Request(pathname)) {
+      return false;
+    }
+    const v2PublicPath = this.getV2PublicPath();
+    if (
+      pathname === v2PublicPath ||
+      pathname === v2PublicPath.slice(0, -1) ||
+      pathname === `${v2PublicPath}index.html`
+    ) {
+      return true;
+    }
+    return !extname(pathname);
+  }
+
+  private getPackageVersion(packageName: string, fallbackVersion: string) {
+    const cachedVersion = this.packageVersionCache.get(packageName);
+    if (cachedVersion) {
+      return cachedVersion;
+    }
+
+    try {
+      const packageJsonPath = require.resolve(`${packageName}/package.json`, { paths: [process.cwd()] });
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      const version = packageJson?.version || fallbackVersion;
+      this.packageVersionCache.set(packageName, version);
+      return version;
+    } catch (error) {
+      return fallbackVersion;
+    }
+  }
+
+  private getCdnUrl(packagePath: string, query = '') {
+    const base = (process.env.ESM_CDN_BASE_URL || 'https://esm.sh').replace(/\/+$/, '');
+    const suffix = process.env.ESM_CDN_SUFFIX || '';
+    const [pathname, urlQuery = ''] = packagePath.split('?');
+    const mergedQuery = [urlQuery, query].filter(Boolean).join('&');
+    return `${base}/${pathname.replace(/^\/+/, '')}${suffix}${mergedQuery ? `?${mergedQuery}` : ''}`;
+  }
+
+  private getV2ImportMapScript() {
+    const reactVersion = this.getPackageVersion('react', '18.3.1');
+    const reactDomVersion = this.getPackageVersion('react-dom', reactVersion);
+    const antdVersion = this.getPackageVersion('antd', '5.24.2');
+    const antdIconsVersion = this.getPackageVersion('@ant-design/icons', '5.6.1');
+    const imports = {
+      react: this.getCdnUrl(`react@${reactVersion}`),
+      'react/jsx-runtime': this.getCdnUrl(`react@${reactVersion}/jsx-runtime`),
+      'react-dom': this.getCdnUrl(`react-dom@${reactDomVersion}`),
+      'react-dom/client': this.getCdnUrl(`react-dom@${reactDomVersion}/client`),
+      antd: this.getCdnUrl(`antd@${antdVersion}`, `bundle=1&deps=react@${reactVersion},react-dom@${reactDomVersion}`),
+      '@ant-design/icons': this.getCdnUrl(`@ant-design/icons@${antdIconsVersion}`),
+    };
+    return `<script type="importmap">${JSON.stringify({ imports })}</script>`;
+  }
+
+  private getV2RuntimeConfigScript() {
+    const runtimeConfig = {
+      __nocobase_public_path__: this.getV2PublicPath(),
+      __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+      __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
+      __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
+      __nocobase_api_client_share_token__: process.env.API_CLIENT_SHARE_TOKEN === 'true',
+      __nocobase_ws_url__: process.env.WEBSOCKET_URL || '',
+      __nocobase_ws_path__: process.env.WS_PATH,
+      __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+      __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
+    };
+
+    const scriptContent = Object.entries(runtimeConfig)
+      .map(([key, value]) => `window['${key}'] = ${JSON.stringify(value)};`)
+      .join('\n');
+    return `<script>${scriptContent}</script>`;
+  }
+
+  private getV2IndexTemplate() {
+    const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/v2/index.html`;
+    if (!fs.existsSync(file)) {
+      return null;
+    }
+    const stat = fs.statSync(file);
+    if (
+      this.v2IndexTemplateCache &&
+      this.v2IndexTemplateCache.file === file &&
+      this.v2IndexTemplateCache.mtimeMs === stat.mtimeMs
+    ) {
+      return this.v2IndexTemplateCache.html;
+    }
+
+    const html = fs.readFileSync(file, 'utf-8');
+    this.v2IndexTemplateCache = {
+      file,
+      mtimeMs: stat.mtimeMs,
+      html,
+    };
+    return html;
+  }
+
+  private renderV2IndexHtml() {
+    const html = this.getV2IndexTemplate();
+    if (!html) {
+      return null;
+    }
+    const injectScripts = `${this.getV2RuntimeConfigScript()}\n${this.getV2ImportMapScript()}`;
+    const moduleScriptMatch = html.match(/<script\b[^>]*type=["']module["'][^>]*>/i);
+
+    if (moduleScriptMatch?.[0]) {
+      return html.replace(moduleScriptMatch[0], `${injectScripts}\n${moduleScriptMatch[0]}`);
+    }
+
+    if (html.includes('</head>')) {
+      return html.replace('</head>', `${injectScripts}\n</head>`);
+    }
+
+    return `${injectScripts}\n${html}`;
+  }
+
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
     const { PLUGIN_STATICS_PATH, APP_PUBLIC_PATH } = process.env;
@@ -318,6 +449,30 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      if (this.isV2Request(pathname)) {
+        if (handleApp !== 'main') {
+          const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+          if (isProxy) {
+            return;
+          }
+        }
+
+        if (this.isV2IndexRequest(pathname)) {
+          const v2Html = this.renderV2IndexHtml();
+          if (v2Html) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(v2Html);
+            return;
+          }
+        }
+
+        req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+        await compress(req, res);
+        return handler(req, res, {
+          public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
+        });
+      }
+
       if (handleApp !== 'main') {
         const isProxy = await supervisor.proxyWeb(handleApp, req, res);
         if (isProxy) {

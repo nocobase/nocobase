@@ -8,8 +8,16 @@ const path = require('path');
 console.log('VERSION: ', packageJson.version);
 
 function getUmiConfig() {
-  const { APP_PORT, API_BASE_URL, API_CLIENT_STORAGE_TYPE, API_CLIENT_STORAGE_PREFIX, APP_PUBLIC_PATH } = process.env;
+  const {
+    APP_PORT,
+    APP_V2_PORT,
+    API_BASE_URL,
+    API_CLIENT_STORAGE_TYPE,
+    API_CLIENT_STORAGE_PREFIX,
+    APP_PUBLIC_PATH,
+  } = process.env;
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
+  const V2_PUBLIC_PATH = `${(APP_PUBLIC_PATH || '/').replace(/\/$/, '')}/v2/`;
   const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${APP_PORT}`;
   const LOCAL_STORAGE_BASE_URL = 'storage/uploads/';
   const STATIC_PATH = 'static/';
@@ -27,6 +35,20 @@ function getUmiConfig() {
       [APP_PUBLIC_PATH + STATIC_PATH]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
+      },
+    };
+  }
+
+  function getClientV2Proxy() {
+    if (!APP_V2_PORT) {
+      return {};
+    }
+
+    return {
+      [V2_PUBLIC_PATH]: {
+        target: `http://127.0.0.1:${APP_V2_PORT}`,
+        changeOrigin: true,
+        ws: true,
       },
     };
   }
@@ -72,6 +94,8 @@ function getUmiConfig() {
       },
       // for local storage
       ...getLocalStorageProxy(),
+      // v2 shell dev server proxy
+      ...getClientV2Proxy(),
     },
   };
 }

@@ -282,6 +282,28 @@ function parseEnv(name) {
   }
 }
 
+function resolveV2PublicPath(appPublicPath = '/') {
+  const normalized = String(appPublicPath || '/').trim() || '/';
+  const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  const withTrailingSlash = withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+  return `${withTrailingSlash.replace(/\/$/, '')}/v2/`;
+}
+
+function verifyV2PublicPathCases() {
+  const cases = {
+    '/': '/v2/',
+    '/nocobase/': '/nocobase/v2/',
+  };
+  for (const [input, expected] of Object.entries(cases)) {
+    const actual = resolveV2PublicPath(input);
+    if (actual !== expected) {
+      throw new Error(`Invalid V2 public path resolve result: ${input} -> ${actual}, expected ${expected}`);
+    }
+  }
+}
+
+exports.resolveV2PublicPath = resolveV2PublicPath;
+
 function buildIndexHtml(force = false) {
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
@@ -440,6 +462,8 @@ exports.initEnv = function initEnv() {
       process.env[key] = env[key];
     }
   }
+
+  verifyV2PublicPathCases();
 
   if (!process.env.__env_modified__ && process.env.APP_PUBLIC_PATH) {
     const publicPath = process.env.APP_PUBLIC_PATH.replace(/\/$/g, '');
