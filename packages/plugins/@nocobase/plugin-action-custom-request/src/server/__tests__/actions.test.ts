@@ -37,7 +37,7 @@ describe('actions', () => {
     db = app.db;
     repo = db.getRepository('customRequests');
     agent = app.agent();
-    resource = (agent.set('X-Role', 'admin') as any).resource('customRequests');
+    resource = ((agent as any).set('X-Role', 'admin') as any).resource('customRequests');
     user = await db.getRepository('users').findOne();
     await agent.login(user.id);
   });

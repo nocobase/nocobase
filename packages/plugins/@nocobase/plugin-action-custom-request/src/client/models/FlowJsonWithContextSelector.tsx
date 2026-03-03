@@ -14,6 +14,8 @@ import { Button } from 'antd';
 import type { TextAreaProps } from 'antd/es/input';
 import React, { useCallback, useMemo, useRef } from 'react';
 
+const JsonInput = Input.JSON as any;
+
 export type FlowJsonWithContextSelectorProps = TextAreaProps & {
   value?: any;
   onChange?: (value: any) => void;
@@ -71,7 +73,7 @@ export const FlowJsonWithContextSelector: React.FC<FlowJsonWithContextSelectorPr
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      <Input.JSON ref={inputRef} value={value} onChange={onChange} {...props} />
+      <JsonInput ref={inputRef} value={value} onChange={onChange} {...props} />
       <div
         style={{
           position: 'absolute',
