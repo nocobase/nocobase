@@ -117,6 +117,12 @@ export class FlowEngine {
   private _previousEngine?: FlowEngine;
   private _nextEngine?: FlowEngine;
 
+  /**
+   * 视图销毁回调。由 useDrawer / useDialog / usePage 在创建视图时注册，
+   * 供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+   */
+  private _destroyView?: () => void;
+
   private _resources = new Map<string, typeof FlowResource>();
 
   /**
@@ -280,6 +286,26 @@ export class FlowEngine {
     if (prev) {
       prev._nextEngine = undefined;
     }
+  }
+
+  /**
+   * 注册视图销毁回调（由 useDrawer / useDialog / usePage 调用）。
+   */
+  public setDestroyView(fn: () => void): void {
+    this._destroyView = fn;
+  }
+
+  /**
+   * 销毁当前引擎关联的视图（弹窗/抽屉/页面）。
+   * 跳过路由回退逻辑，直接执行 destroy 以避免与后续导航冲突。
+   * @returns 是否成功销毁（无视图注册时返回 false）
+   */
+  public destroyView(): boolean {
+    if (this._destroyView) {
+      this._destroyView();
+      return true;
+    }
+    return false;
   }
 
   // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API

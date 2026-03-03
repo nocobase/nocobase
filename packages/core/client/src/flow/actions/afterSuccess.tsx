@@ -65,12 +65,63 @@ export const afterSuccess = defineAction({
   async handler(ctx, params) {
     const { successMessage, manualClose = false, actionAfterSuccess = 'previous', redirectTo } = params;
 
-    // Close view first if going back to previous page/popup
+    // Close current view if going back to previous page/popup
     if (actionAfterSuccess === 'previous') {
       if (ctx.view) {
         ctx.view.close();
       }
     }
+
+    /**
+     * 关闭弹窗视图并执行内部路由导航。
+     * 通过遍历引擎栈调用 destroyView() 直接销毁弹窗（跳过路由回退逻辑），
+     * 避免与后续的 router.navigate 冲突。
+     *
+     * 支持两种场景：
+     * 1. 跳转到完全不同的页面 → 关闭所有弹窗层
+     * 2. 当前路径包含目标路径（部分后退） → 只关闭多出的弹窗层
+     */
+    const closeViewsAndNavigate = (url: string) => {
+      if (ctx.view && ctx.engine) {
+        const currentPath = window.location.pathname;
+        const targetPath = url.startsWith('/') ? url : `/${url}`;
+
+        // 从栈顶（最内层）到栈底（根）收集所有引擎
+        let top = ctx.engine;
+        while (top.nextEngine) top = top.nextEngine;
+        const engines = [];
+        let eng = top;
+        while (eng) {
+          engines.push(eng);
+          eng = eng.previousEngine;
+        }
+
+        if (currentPath !== targetPath && currentPath.startsWith(targetPath)) {
+          // 部分后退：目标路径是当前路径的前缀，按 URL 中的 /popups/ 段数计算需关闭的层数
+          const remaining = currentPath.slice(targetPath.length);
+          const layersToClose = (remaining.match(/\/popups\//g) || []).length;
+          let closed = 0;
+          for (const e of engines) {
+            if (closed >= layersToClose) break;
+            if (e.destroyView()) closed++;
+          }
+        } else {
+          // 不同页面：关闭所有弹窗视图
+          for (const e of engines) {
+            e.destroyView();
+          }
+        }
+      }
+      ctx.router.navigate(url);
+    };
+
+    const navigateTo = (url: string) => {
+      if (isURL(url)) {
+        window.location.href = url;
+        return;
+      }
+      closeViewsAndNavigate(url);
+    };
 
     // Show success message
     if (successMessage) {
@@ -80,11 +131,7 @@ export const afterSuccess = defineAction({
           title: translatedMessage,
           onOk: async () => {
             if (actionAfterSuccess === 'redirect' && redirectTo) {
-              if (isURL(redirectTo)) {
-                window.location.href = redirectTo;
-              } else {
-                ctx.router.navigate(redirectTo);
-              }
+              navigateTo(redirectTo);
             }
           },
         });
@@ -96,11 +143,7 @@ export const afterSuccess = defineAction({
 
     // Handle redirect (when not manual close, redirect happens immediately)
     if (actionAfterSuccess === 'redirect' && redirectTo) {
-      if (isURL(redirectTo)) {
-        window.location.href = redirectTo;
-      } else {
-        ctx.router.navigate(redirectTo);
-      }
+      navigateTo(redirectTo);
     }
   },
 });

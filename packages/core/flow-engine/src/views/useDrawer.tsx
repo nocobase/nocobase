@@ -169,6 +169,8 @@ export function useDrawer() {
       get: () => currentDrawer,
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
+    // 注册视图销毁回调，供外部通过引擎栈遍历来关闭多层弹窗
+    scopedEngine.setDestroyView(() => currentDrawer.destroy());
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentDrawer);
 
