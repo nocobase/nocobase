@@ -285,6 +285,125 @@ describe('create', () => {
     expect(u1.age).toEqual(20);
   });
 
+  describe('upsert', () => {
+    test('should create new record when not exists', async () => {
+      const [u1, created] = await User.repository.upsert({
+        filterKeys: ['name'],
+        values: {
+          name: 'upsert_user1',
+          age: 25,
+        },
+      });
+
+      expect(created).toBe(true);
+      expect(u1.name).toEqual('upsert_user1');
+      expect(u1.age).toEqual(25);
+    });
+
+    test('should update existing record when exists', async () => {
+      // 先创建记录
+      await User.repository.create({
+        values: {
+          name: 'upsert_user2',
+          age: 30,
+        },
+      });
+
+      // upsert 应该更新
+      const [u2, created] = await User.repository.upsert({
+        filterKeys: ['name'],
+        values: {
+          name: 'upsert_user2',
+          age: 35,
+        },
+      });
+
+      expect(created).toBe(false);
+      expect(u2.name).toEqual('upsert_user2');
+      expect(u2.age).toEqual(35);
+
+      // 验证数据库中确实更新了
+      const count = await User.repository.count({
+        filter: { name: 'upsert_user2' },
+      });
+      expect(count).toEqual(1);
+    });
+
+    test('should work with multiple filterKeys', async () => {
+      await User.repository.create({
+        values: {
+          name: 'multi_key_user',
+          age: 20,
+        },
+      });
+
+      const [u3, created] = await User.repository.upsert({
+        filterKeys: ['name', 'age'],
+        values: {
+          name: 'multi_key_user',
+          age: 20,
+          email: 'test@example.com',
+        },
+      });
+
+      expect(created).toBe(false);
+      expect(u3.email).toEqual('test@example.com');
+    });
+
+    test('should fallback to updateOrCreate when useNativeUpsert is false', async () => {
+      const [u4, created] = await User.repository.upsert({
+        filterKeys: ['name'],
+        values: {
+          name: 'fallback_user',
+          age: 40,
+        },
+        useNativeUpsert: false,
+      });
+
+      expect(u4.name).toEqual('fallback_user');
+      expect(u4.age).toEqual(40);
+    });
+
+    test('should update updated_at when only conflict fields are provided (postgres DO NOTHING fix)', async () => {
+      // 先创建记录
+      const [u5Created, created1] = await User.repository.upsert({
+        filterKeys: ['name'],
+        values: {
+          name: 'only_conflict_fields_user',
+          age: 50,
+        },
+      });
+      expect(created1).toBe(true);
+
+      // 获取创建时的 updatedAt
+      const originalUpdatedAt = u5Created.updatedAt;
+
+      // 等待一小段时间确保时间戳会变化
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // 再次 upsert，只提供冲突字段（没有其他字段需要更新）
+      // 修复前：使用 DO NOTHING，RETURNING 不会返回数据，需要额外查询
+      // 修复后：使用 DO UPDATE SET updated_at = CURRENT_TIMESTAMP，RETURNING 正常返回
+      const [u5Updated, created2] = await User.repository.upsert({
+        filterKeys: ['name'],
+        values: {
+          name: 'only_conflict_fields_user',
+          // 注意：没有提供 age 或其他非冲突字段
+        },
+      });
+
+      // 应该返回已存在的记录，而不是创建新记录
+      expect(created2).toBe(false);
+      expect(u5Updated).toBeDefined();
+      expect(u5Updated.name).toEqual('only_conflict_fields_user');
+      // 记录的 age 应该保持不变
+      expect(u5Updated.age).toEqual(50);
+
+      // updatedAt 应该被更新（因为我们使用了 DO UPDATE SET updated_at）
+      expect(new Date(u5Updated.updatedAt).getTime()).toBeGreaterThanOrEqual(new Date(originalUpdatedAt).getTime());
+    });
+  });
+
   test('create with association', async () => {
     const u1 = await User.repository.create({
       values: {

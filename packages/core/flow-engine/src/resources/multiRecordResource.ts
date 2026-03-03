@@ -152,6 +152,36 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
+  /**
+   * Upsert - 使用数据库原生 upsert 能力（如 PostgreSQL ON CONFLICT）
+   * @param filterKeys 用于判断记录是否存在的字段列表
+   * @param data 要插入或更新的数据
+   * @param options 额外配置
+   * @returns Promise<{ data: TDataItem; meta: { created: boolean } }>
+   */
+  async upsert(
+    filterKeys: string[],
+    data: Partial<TDataItem>,
+    options?: AxiosRequestConfig & { refresh?: boolean },
+  ): Promise<{ data: TDataItem; meta: { created: boolean } }> {
+    const config = this.mergeRequestConfig(
+      {
+        data: {
+          filterKeys,
+          values: data,
+        },
+      },
+      options,
+    );
+    const res = await this.runAction<{ data: TDataItem; meta: { created: boolean } }, any>('upsert', config);
+    this.markDataSourceDirty();
+    this.emit('saved', data);
+    if (options?.refresh !== false) {
+      await this.refresh();
+    }
+    return res;
+  }
+
   async destroySelectedRows(): Promise<void> {
     const selectedRows = this.getSelectedRows();
     if (selectedRows.length === 0) {

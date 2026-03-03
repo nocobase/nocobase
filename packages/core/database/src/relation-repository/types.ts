@@ -83,6 +83,20 @@ export interface FirstOrCreateOptions extends CommonOptions {
   context?: any;
 }
 
+export interface UpsertOptions extends CommonOptions {
+  filterKeys: string[];
+  values?: Values;
+  hooks?: boolean;
+  context?: any;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
+  /**
+   * 是否使用数据库原生的 upsert 能力（如 PostgreSQL 的 ON CONFLICT）
+   * 默认为 true，在支持的数据库上会使用原生 upsert
+   * 设为 false 则回退到先查询后更新/创建的方式
+   */
+  useNativeUpsert?: boolean;
+}
+
 export interface ThroughValues {
   [key: string]: any;
 }

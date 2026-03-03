@@ -19,7 +19,15 @@ import { OptionsParser } from '../options-parser';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { valuesToFilter } from '../utils/filter-utils';
-import { CreateOptions, Filter, FindOptions, FirstOrCreateOptions, TargetKey, UpdateOptions } from './types';
+import {
+  CreateOptions,
+  Filter,
+  FindOptions,
+  FirstOrCreateOptions,
+  TargetKey,
+  UpdateOptions,
+  UpsertOptions,
+} from './types';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();
@@ -157,8 +165,22 @@ export abstract class RelationRepository {
   }
 
   @transaction()
-  async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+  async updateOrCreate(options: FirstOrCreateOptions & { useNativeUpsert?: boolean }) {
+    const { filterKeys, values, transaction, hooks, context, useNativeUpsert } = options;
+
+    // 对于支持的数据库，使用原生 upsert
+    if (useNativeUpsert !== false && this.db.inDialect('postgres', 'mysql', 'mariadb', 'sqlite')) {
+      const [instance] = await this.upsert({
+        filterKeys,
+        values,
+        transaction,
+        hooks,
+        context,
+        useNativeUpsert: true,
+      });
+      return instance;
+    }
+
     const filter = valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -176,6 +198,39 @@ export abstract class RelationRepository {
     }
 
     return this.create({ values, transaction, hooks, context });
+  }
+
+  /**
+   * Upsert - 使用数据库原生 upsert 能力
+   * 对于关联仓库，使用目标仓库的 upsert 方法
+   */
+  @transaction()
+  async upsert(options: UpsertOptions): Promise<[Model, boolean]> {
+    const { filterKeys, values, transaction, context, ...rest } = options;
+
+    // 获取目标仓库
+    const targetRepo = this.targetCollection.repository;
+
+    // 先尝试查找现有记录
+    const filter = valuesToFilter(values, filterKeys);
+    const existingInstance = await this.findOne({ filter, transaction, context });
+
+    if (existingInstance) {
+      // 更新现有记录
+      await this.update({
+        filterByTk: existingInstance.get(
+          this.targetCollection.filterTargetKey || this.targetCollection.model.primaryKeyAttribute,
+        ),
+        values,
+        transaction,
+        ...rest,
+      });
+      return [existingInstance, false];
+    }
+
+    // 创建新记录
+    const newInstance = await this.create({ values, transaction, context, ...rest });
+    return [newInstance, true];
   }
 
   @transaction()
