@@ -11,13 +11,7 @@ import { ActionScene, defineAction, tExpr } from '@nocobase/flow-engine';
 import { saveAs } from 'file-saver';
 import { customRequestFlowActionUiSchema } from './customRequestFlowActionUiSchema';
 import { CustomRequestStepParams } from './customRequestFlowActionTypes';
-import {
-  makeRequestKey,
-  normalizeNameValueArray,
-  parseJsonString,
-  toStepResultError,
-  toStepResultSuccess,
-} from './utils';
+import { makeRequestKey, normalizeNameValueArray, parseJsonString } from './utils';
 
 const normalizeRoleNames = (roles: unknown): string[] => {
   if (!Array.isArray(roles)) {
@@ -50,7 +44,8 @@ const normalizeBodyData = (input: unknown) => {
   return parseJsonString(input);
 };
 
-const getFormValues = (rawFormValues: unknown): Record<string, any> | undefined => {
+const resolveFormValues = (ctx: any): Record<string, any> | undefined => {
+  const rawFormValues = ctx?.blockModel?.form?.getFieldsValue?.();
   if (!rawFormValues || typeof rawFormValues !== 'object') {
     return undefined;
   }
@@ -58,10 +53,6 @@ const getFormValues = (rawFormValues: unknown): Record<string, any> | undefined 
     return (rawFormValues as any).values;
   }
   return rawFormValues as Record<string, any>;
-};
-
-const resolveFormValues = (ctx: any): Record<string, any> | undefined => {
-  return getFormValues(ctx?.blockModel?.form?.getFieldsValue?.());
 };
 
 const getSelectedRecord = (ctx: any) => {
@@ -89,6 +80,41 @@ const getDownloadFilename = (contentDisposition: string): string | undefined => 
   const asciiMatch = contentDisposition.match(/filename="([^"]+)"/i);
   if (asciiMatch) {
     return asciiMatch[1];
+  }
+};
+
+const buildRuntimeOptionsFromParams = (params: CustomRequestStepParams) => {
+  return {
+    url: params?.url,
+    headers: normalizeNameValueArray(params?.headers),
+    params: normalizeNameValueArray(params?.params),
+    data: normalizeBodyData(params?.data),
+  };
+};
+
+const resolveRuntimeOptions = async (ctx: any, params: CustomRequestStepParams) => {
+  const rawOptions = buildRuntimeOptionsFromParams(params);
+  if (typeof ctx?.resolveJsonTemplate !== 'function') {
+    return rawOptions;
+  }
+
+  try {
+    const resolved = await ctx.resolveJsonTemplate(rawOptions);
+    if (!resolved || typeof resolved !== 'object') {
+      return rawOptions;
+    }
+    return Object.keys(resolved).reduce(
+      (acc, key) => {
+        const value = (resolved as Record<string, any>)[key];
+        if (typeof value !== 'undefined') {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
+  } catch (error) {
+    return rawOptions;
   }
 };
 
@@ -175,6 +201,7 @@ export const customRequestFlowAction = defineAction({
     const dataSourceKey =
       inputCurrentRecord?.dataSourceKey || ctx.collection?.dataSourceKey || ctx.resource?.getDataSourceKey?.();
     const selectedRecord = getSelectedRecord(ctx);
+    const runtimeOptions = await resolveRuntimeOptions(ctx, params);
 
     try {
       const response = await ctx.request({
@@ -190,6 +217,7 @@ export const customRequestFlowAction = defineAction({
           },
           $nForm: formValues,
           $nSelectedRecord: selectedRecord,
+          options: runtimeOptions,
         },
       });
 
@@ -205,13 +233,13 @@ export const customRequestFlowAction = defineAction({
         return;
       }
 
-      return toStepResultSuccess(response);
+      return response;
     } catch (error) {
       if (responseType === 'stream') {
         throw error;
       }
 
-      return toStepResultError(error);
+      return error;
     }
   },
 });

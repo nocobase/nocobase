@@ -11,11 +11,11 @@ import { uid } from '@nocobase/utils/client';
 
 type RequestNameValue = {
   name: string;
-  value: string;
+  value: unknown;
 };
 
 export function makeRequestKey() {
-  return `v2-${uid()}`;
+  return `request-${uid()}`;
 }
 
 export function parseJsonString(input: unknown) {
@@ -40,32 +40,7 @@ export function normalizeNameValueArray(arr: any): RequestNameValue[] {
   return arr
     .map((item) => ({
       name: String(item?.name || '').trim(),
-      value: typeof item?.value === 'undefined' || item?.value === null ? '' : String(item.value),
+      value: typeof item?.value === 'undefined' || item?.value === null ? '' : item.value,
     }))
     .filter((item) => !!item.name);
-}
-
-export function toStepResultSuccess(response: any) {
-  const data = response?.data?.data ?? response?.data;
-  return {
-    ok: true,
-    status: response?.status,
-    headers: response?.headers || {},
-    data,
-  };
-}
-
-export function toStepResultError(error: any) {
-  const status = error?.response?.status || 500;
-  const data = error?.response?.data;
-  const message = data?.message || error?.message || 'Request failed';
-  return {
-    ok: false,
-    status,
-    headers: error?.response?.headers || {},
-    data,
-    error: {
-      message,
-    },
-  };
 }

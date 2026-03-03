@@ -85,6 +85,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     },
     $nForm,
     $nSelectedRecord,
+    options: runtimeOptions,
   } = values;
 
   // root role has all permissions
@@ -127,15 +128,12 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   ctx.withoutDataWrapping = true;
 
-  const {
-    dataSourceKey,
-    collectionName,
-    url,
-    headers = [],
-    params = [],
-    data = {},
-    ...options
-  } = requestConfig.options || {};
+  const mergedOptions = {
+    ...(requestConfig.options || {}),
+    ...omitNullAndUndefined(runtimeOptions || {}),
+  };
+
+  const { dataSourceKey, collectionName, url, headers = [], params = [], data = {}, ...options } = mergedOptions;
   if (!url) {
     return ctx.throw(400, ctx.t('Please configure the request settings first', { ns: 'action-custom-request' }));
   }
